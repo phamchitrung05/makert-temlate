@@ -42,7 +42,9 @@ class EnsureAccountIsActive
      */
     public function handle(Request $request, Closure $next, string $guard): Response
     {
-        $account = Auth::guard($guard)->user();
+        $account = $guard === 'sanctum'
+            ? $request->user()
+            : Auth::guard($guard)->user();
 
         abort_unless($account && method_exists($account, 'isActive') && $account->isActive(), 403);
 

@@ -104,7 +104,10 @@ class AuthenticationTest extends TestCase
             'password' => 'a-secure-password',
         ]);
 
-        $response->assertOk()->assertJsonPath('user.id', $admin->id);
+        $response->assertOk()
+            ->assertJsonPath('user.id', $admin->id)
+            ->assertJsonPath('tokenType', 'Bearer');
+        $this->assertNotEmpty($response->json('accessToken'));
         $this->assertAuthenticatedAs($admin, 'admin');
         $this->getJson('/api/admin/me')->assertOk()->assertJsonPath('user.email', 'admin@example.com');
     }

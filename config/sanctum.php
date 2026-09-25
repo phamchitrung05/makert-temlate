@@ -54,6 +54,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Token Lifetime
+    |--------------------------------------------------------------------------
+    |
+    | Personal access tokens issued by this application receive an explicit
+    | expiry. Sanctum still validates the token against its own expiration
+    | column; this value only centralizes the default used by our actions.
+    |
+    */
+
+    'token_expiration_days' => (int) env('SANCTUM_TOKEN_EXPIRATION_DAYS', 30),
+
+    /*
+    |--------------------------------------------------------------------------
     | Token Prefix
     |--------------------------------------------------------------------------
     |

@@ -284,7 +284,7 @@ Catch-all route chỉ được dùng cho `/admin/{path}` sau khi đã tách publ
 
 - Customer đăng nhập qua Google/Facebook bằng Laravel Socialite và `customer` guard.
 - Admin đăng nhập bằng email/password qua `admin` guard; không dùng OAuth customer để vào admin.
-- Admin API cùng origin dùng session guard `auth:admin` và CSRF.
+- Browser login/callback có thể dùng session guard; API admin/customer dùng `auth:sanctum` với Bearer token sau khi token issue flow hoàn tất.
 - API Bearer request dùng `auth:sanctum`; guard/token ability không thay thế Policy và Spatie Permission.
 - Session guard vẫn được giữ cho OAuth callback và browser redirect; Vue API client sẽ dùng Sanctum token sau khi token issue flow được triển khai.
 - `User` là model quản trị, dùng trait `HasRoles` của Spatie; `Customer` không có back-office role.
@@ -904,7 +904,11 @@ Deliverables:
 - [x] Admin email/password login/logout/reset.
 - [x] `admin` và `customer` guard/provider.
 - [x] Thêm `HasApiTokens` cho User/Customer và cấu hình Sanctum guards.
-- [ ] Issue/revoke Sanctum token ở auth endpoint.
+- [x] Publish Sanctum config và `personal_access_tokens` migration.
+- [x] Test tạo token cho User/Customer và schema rollback.
+- [x] Admin login issue Sanctum Bearer token.
+- [x] Customer session exchange issue Sanctum Bearer token.
+- [x] Revoke current token và revoke toàn bộ token của account.
 - [x] Customer identity linking an toàn và onboarding khi OAuth thiếu email.
 - [x] Admin status và session invalidation middleware.
 - [x] Roles/permissions seeder.

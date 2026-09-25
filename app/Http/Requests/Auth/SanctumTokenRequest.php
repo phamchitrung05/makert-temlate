@@ -6,26 +6,27 @@ use Illuminate\Foundation\Http\FormRequest;
 
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Validate credential đăng nhập admin
+ * CHỨC NĂNG FILE: Validate thông tin thiết bị khi issue Sanctum token
  * =====================================================================
  *
- * Request này chỉ phục vụ admin guard. Customer OAuth không đi qua request
- * này và không được gửi password vào endpoint admin.
+ * Device name giúp người dùng nhận biết và revoke token theo thiết bị ở
+ * giai đoạn quản lý session. Không nhận abilities từ client; abilities do
+ * server quyết định theo loại account.
  *
  * CÁC HÀM/METHOD TRONG FILE:
- * - authorize(): cho phép request đi tới controller; permission kiểm tra sau khi login
- * - rules(): validate email, password và remember
+ * - authorize(): cho phép account đã authenticated yêu cầu token
+ * - rules(): giới hạn device_name
  * =====================================================================
  */
-class AdminLoginRequest extends FormRequest
+class SanctumTokenRequest extends FormRequest
 {
     /**
      * =====================================================================
-     * CHỨC NĂNG: Cho phép gửi request login admin
+     * CHỨC NĂNG: Cho phép issue token cho account hiện tại
      * =====================================================================
      *
      * OUTPUT:
-     * - bool: luôn true vì endpoint tự xử lý credential và rate limit
+     * - bool: true; auth middleware quyết định account đã đăng nhập
      * =====================================================================
      */
     public function authorize(): bool
@@ -35,19 +36,16 @@ class AdminLoginRequest extends FormRequest
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Khai báo rule validate login admin
+     * CHỨC NĂNG: Validate device name
      * =====================================================================
      *
      * OUTPUT:
-     * - array<string, array<int, string>>: rule cho email, password và remember
+     * - array<string, array<int, string>>: device_name optional và giới hạn độ dài
      * =====================================================================
      */
     public function rules(): array
     {
         return [
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
-            'remember' => ['sometimes', 'boolean'],
             'device_name' => ['sometimes', 'string', 'max:100'],
         ];
     }

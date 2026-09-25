@@ -43,7 +43,7 @@ class AdminSessionController extends Controller
      * - AdminLoginRequest: email, password, remember
      *
      * OUTPUT:
-     * - JSON 200 gồm admin data khi credential hợp lệ
+     * - JSON 200 gồm admin data và Sanctum Bearer token khi credential hợp lệ
      * - ValidationException 422 khi credential sai hoặc admin không active
      *
      * SIDE EFFECT:
@@ -73,6 +73,12 @@ class AdminSessionController extends Controller
         /** @var User $user */
         $user = Auth::guard('admin')->user();
         $user->forceFill(['last_login_at' => now()])->saveQuietly();
+        $expiresAt = now()->addDays((int) config('sanctum.token_expiration_days', 30));
+        $token = $user->createToken(
+            $credentials['device_name'] ?? 'admin-web',
+            ['admin'],
+            $expiresAt,
+        );
 
         activity()
             ->causedBy($user)
@@ -83,6 +89,9 @@ class AdminSessionController extends Controller
 
         return response()->json([
             'user' => $user->only(['id', 'name', 'email', 'username', 'status']),
+            'accessToken' => $token->plainTextToken,
+            'tokenType' => 'Bearer',
+            'expiresAt' => $expiresAt->toIso8601String(),
         ]);
     }
 
