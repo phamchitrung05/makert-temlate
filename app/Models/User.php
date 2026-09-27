@@ -14,9 +14,9 @@ use Spatie\Permission\Traits\HasRoles;
  * CHỨC NĂNG FILE: Đại diện cho tài khoản quản trị của hệ thống
  * =====================================================================
  *
- * User chỉ được dùng bởi admin guard. Customer OAuth dùng model Customer
- * và customer guard riêng, vì vậy credential và permission của hai nhóm
- * người dùng không bị trộn lẫn.
+ * User là model admin được xác thực qua Sanctum. Customer OAuth dùng model
+ * Customer và customer guard riêng, vì vậy credential và permission của hai
+ * nhóm người dùng không bị trộn lẫn.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - isActive(): kiểm tra admin có được phép đăng nhập và gọi protected route
@@ -24,7 +24,7 @@ use Spatie\Permission\Traits\HasRoles;
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : dữ liệu admin từ seeder, Form Request hoặc authentication provider
- * - OUTPUT: Authenticatable admin model cho guard `admin` và HasRoles của Spatie
+ * - OUTPUT: Authenticatable admin model cho Sanctum và HasRoles của Spatie
  * - SIDE EFFECT: không tự ghi database ngoài thao tác Eloquent của caller
  * =====================================================================
  */

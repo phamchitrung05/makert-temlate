@@ -1,11 +1,6 @@
-import { createMongoAbility } from '@casl/ability'
-import { abilitiesPlugin } from '@casl/vue'
-
-export default function (app) {
-  const userAbilityRules = useCookie('userAbilityRules')
-  const initialAbility = createMongoAbility(userAbilityRules.value ?? [])
-
-  app.use(abilitiesPlugin, initialAbility, {
-    useGlobalProperties: true,
-  })
-}
+/**
+ * CASL đang được tạm hoãn ở Vue nên module này không export plugin mặc định.
+ * Trình tự động đăng ký plugin sẽ bỏ qua file, còn source và dependency CASL
+ * vẫn được giữ lại để có thể triển khai authorization UI trong giai đoạn sau.
+ */
+export const isCaslDeferred = true

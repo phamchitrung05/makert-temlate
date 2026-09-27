@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\Media\ProcessMediaConversionsJob;
 use Spatie\ImageOptimizer\Optimizers\Avifenc;
 use Spatie\ImageOptimizer\Optimizers\Cwebp;
 use Spatie\ImageOptimizer\Optimizers\Gifsicle;
@@ -13,7 +14,6 @@ use Spatie\MediaLibrary\Conversions\ImageGenerators\Pdf;
 use Spatie\MediaLibrary\Conversions\ImageGenerators\Svg;
 use Spatie\MediaLibrary\Conversions\ImageGenerators\Video;
 use Spatie\MediaLibrary\Conversions\ImageGenerators\Webp;
-use Spatie\MediaLibrary\Conversions\Jobs\PerformConversionsJob;
 use Spatie\MediaLibrary\Downloaders\DefaultDownloader;
 use Spatie\MediaLibrary\MediaCollections\FileAdder;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -36,6 +36,15 @@ return [
     'disk_name' => env('MEDIA_DISK', 'public'),
 
     /*
+     * Disks selected by MediaAsset visibility. Archive/package uploads must
+     * remain on the private disk and are never served directly by the picker.
+     */
+    'asset_disks' => [
+        'public' => env('MEDIA_PUBLIC_DISK', 'media_public'),
+        'private' => env('MEDIA_PRIVATE_DISK', 'media_private'),
+    ],
+
+    /*
      * The disk on which to store conversions (thumbnails, etc.) and responsive images
      * when no disk is specified explicitly on the media collection or via
      * `storingConversionsOnDisk()`. When left null, conversions are stored on the
@@ -50,7 +59,7 @@ return [
      * The maximum file size of an item in bytes.
      * Adding a larger file will result in an exception.
      */
-    'max_file_size' => 1024 * 1024 * 10, // 10MB
+    'max_file_size' => (int) env('MEDIA_MAX_FILE_SIZE', 512 * 1024 * 1024),
 
     /*
      * Uploads whose file name contains any of these extensions will be rejected.
@@ -269,7 +278,7 @@ return [
      * your custom jobs extend the ones provided by the package.
      */
     'jobs' => [
-        'perform_conversions' => PerformConversionsJob::class,
+        'perform_conversions' => ProcessMediaConversionsJob::class,
         'generate_responsive_images' => GenerateResponsiveImagesJob::class,
     ],
 

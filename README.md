@@ -1,33 +1,103 @@
-# vue
+# Market Template
 
-This template should help get you started developing with Vue 3 in Vite.
+Nền tảng bán tài nguyên số gồm public site Laravel và admin dashboard Vue 3 +
+Vuetify chạy dưới `/admin`. Laravel là source of truth cho authentication,
+authorization, dữ liệu và download; admin frontend dùng Sanctum Bearer token.
 
-## Recommended IDE Setup
+## Yêu cầu
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- PHP 8.2+
+- Composer
+- Node.js và npm 10+
+- SQLite (mặc định cho môi trường local) hoặc database tương thích Laravel
 
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
+## Cài đặt local
 
 ```sh
-pnpm install
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+npm ci
 ```
 
-### Compile and Hot-Reload for Development
+Trên PowerShell, thay lệnh sao chép bằng:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Nếu dùng SQLite và file chưa tồn tại, tạo `database/database.sqlite` trước khi
+chạy migration. Chi tiết biến môi trường nằm ở
+[docs/ENVIRONMENT.md](docs/ENVIRONMENT.md).
+
+## Chạy ứng dụng
+
+Mở hai terminal:
 
 ```sh
-pnpm dev
+php artisan serve
+npm run dev
 ```
 
-### Type-Check, Compile and Minify for Production
+Admin mở tại [http://localhost:8000/admin](http://localhost:8000/admin) khi
+Laravel dùng port mặc định. Vite phục vụ asset ở port 5173.
+
+## Kiểm tra API
+
+Liveness endpoint không cần đăng nhập:
 
 ```sh
-pnpm build
+curl http://localhost:8000/api/health
 ```
+
+Response có dạng:
+
+```json
+{
+  "success": true,
+  "message": null,
+  "data": {
+    "status": "ok",
+    "service": "api",
+    "timestamp": "2026-09-25T00:00:00+00:00"
+  },
+  "errors": [],
+  "meta": {}
+}
+```
+
+Các API dùng envelope chung do `App\Http\Responses\BaseResponse` tạo:
+
+- Thành công: `success`, `message`, `data`, `errors`, `meta`.
+- Lỗi: cùng envelope, `success=false` và chi tiết field nằm trong `errors`.
+- Không có nội dung: dùng HTTP 204, body rỗng.
+
+## Mock API local
+
+Các route demo của template dùng MSW. Bật trong `.env` local:
+
+```dotenv
+VITE_ENABLE_MSW=true
+```
+
+Không bật MSW trong production; khi đó frontend phải gọi endpoint Laravel thật
+qua `VITE_API_BASE_URL`. Xóa cache/service worker cũ nếu trình duyệt vẫn giữ
+handler từ một phiên development trước.
+
+## Kiểm thử và build
+
+```sh
+php artisan test
+npm run build
+```
+
+## Quy ước dự án
+
+- Kiến trúc và vị trí mở rộng Laravel/Vue 3 được ghi tại
+  [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md); tiến độ thực hiện nằm
+  tại [docs/PLAN.md](docs/PLAN.md).
+- Vue dùng Composition API và `<script setup>`; file `.vue` mới hoặc được chỉnh
+  sửa phải có block comment theo [docs/PLAN.md](docs/PLAN.md#cấu-trúc-comment-bắt-buộc-cho-file-vue).
+- CASL hiện tạm hoãn trong Vue; quyền thực tế luôn được kiểm tra ở Laravel.
+- Không ghi access token, password hoặc secret vào source, comment hay README.

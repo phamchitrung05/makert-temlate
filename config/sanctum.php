@@ -37,7 +37,9 @@ return [
     |
     */
 
-    'guard' => ['admin', 'customer'],
+    // API authentication is Bearer-only. Customer session is used solely to
+    // exchange an OAuth login for a personal access token.
+    'guard' => [],
 
     /*
     |--------------------------------------------------------------------------

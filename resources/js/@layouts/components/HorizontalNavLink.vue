@@ -1,6 +1,21 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: Hiển thị một liên kết trong menu điều hướng ngang
+  =====================================================================
+
+  Component dựng RouterLink hoặc thẻ liên kết từ navigation item và đánh dấu mục
+  đang active. CASL đang tạm hoãn nên component không lọc item theo quyền frontend.
+
+  CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
+  - Không có hàm cục bộ; component dùng helper layout để tạo URL và trạng thái active.
+
+  INPUT/OUTPUT CỦA COMPONENT (tổng thể):
+  - INPUT : props item và isSubItem mô tả liên kết cùng vị trí trong menu
+  - OUTPUT: một mục menu ngang có trạng thái active/disabled tương ứng
+  =====================================================================
+-->
 <script setup>
 import { layoutConfig } from '@layouts'
-import { can } from '@layouts/plugins/casl'
 import {
   getComputedNavLinkToProp,
   getDynamicI18nProps,
@@ -22,7 +37,6 @@ const props = defineProps({
 
 <template>
   <li
-    v-if="can(item.action, item.subject)"
     class="nav-link"
     :class="[
       {

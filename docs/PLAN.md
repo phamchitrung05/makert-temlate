@@ -5,6 +5,9 @@
 **Trạng thái:** Kế hoạch thực thi
 **Repository:** `D:\AI\market-template`
 
+**Tài liệu cấu trúc:** [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)
+**Kế hoạch Media Library chi tiết:** [PLAN_MEDIA_LIBRARY.md](./PLAN_MEDIA_LIBRARY.md)
+
 ## 1. Mục tiêu và nguyên tắc
 
 Xây dựng một cửa hàng bán và phân phối tài nguyên số cho developer/designer. Sản phẩm đầu tiên là một cửa hàng do một đội ngũ quản lý; marketplace nhiều seller chỉ được mở sau khi mô hình bán hàng đã được kiểm chứng.
@@ -20,7 +23,7 @@ Các nguyên tắc bắt buộc:
 - Dùng `spatie/laravel-activitylog` cho audit trail; không tạo `audit_logs` riêng.
 - Dùng một bảng `slugable` tập trung cho các model có URL public; không đặt cột `slug` rải rác trên từng bảng.
 - Frontend viết JavaScript; không thêm TypeScript vào module mới.
-- Customer dùng Socialite với `customer` session guard; admin dùng `admin` session guard và CSRF.
+- Customer dùng Socialite với `customer` session guard; admin dùng Sanctum Bearer token, không dùng admin session.
 - API authentication dùng Laravel Sanctum personal access token với `Authorization: Bearer ...`; không lưu JWT tự viết.
 - Chỉ thêm abstraction khi có một domain boundary rõ ràng hoặc có kiểm thử độc lập.
 
@@ -114,20 +117,71 @@ AI agent chỉ được tạo hoặc sửa class/method sau khi:
 
 Pull request thiếu comment bắt buộc hoặc comment không còn khớp behavior sẽ không đạt Definition of Done.
 
+### Cấu trúc comment bắt buộc cho file Vue
+
+Mọi file `.vue` mới hoặc được chỉnh sửa phải có block comment ở đầu file, đặt trước `<script setup>` hoặc `<template>`. Comment viết bằng tiếng Việt và giữ đủ cấu trúc sau:
+
+```vue
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: <trách nhiệm chính của component/page>
+  =====================================================================
+
+  <Mô tả context nghiệp vụ, nơi component được sử dụng và lý do tồn tại>
+
+  CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
+  - loadData(): <chức năng>
+  - visibleItems: <computed data>
+  - watcher route.params.id: <side effect khi route thay đổi>
+
+  INPUT/OUTPUT CỦA COMPONENT (tổng thể):
+  - INPUT : props, route params, store hoặc API data
+  - OUTPUT: UI render, emitted events, navigation và side effect
+  =====================================================================
+-->
+<script setup>
+```
+
+Quy tắc áp dụng cho Vue:
+
+- Liệt kê props/emits, hàm, computed và watcher quan trọng; nếu không có thì ghi rõ `Không có`.
+- Hàm nghiệp vụ cục bộ phải có comment gần khai báo, ghi rõ `INPUT`, `OUTPUT`, `SIDE EFFECT` và `EXCEPTION` khi có liên quan.
+- Không cần comment riêng cho import, ref hoặc phép gán hiển nhiên; comment phải giải thích behavior thay vì lặp lại cú pháp.
+- Không ghi secret, access token, password hoặc dữ liệu cá nhân thật trong comment.
+- File Vue cũ chỉ bắt buộc chuẩn hóa khi task có chỉnh sửa file đó; không mass-edit ngoài phạm vi task.
+
 ## 1.2. Chuẩn architecture bắt buộc
 
 ### Laravel
 
-- Tuân theo Laravel architecture: Route → Middleware → Form Request → Controller → Action/Service → Model/Policy → Resource/Response.
+- Tuân theo Laravel architecture: Route → Middleware → Form Request → Controller → Action/Service → Repository/Model/Policy → Resource/Response.
 - Controller chỉ điều phối HTTP; không chứa business rule dài, query phức tạp hoặc transaction không có tên.
-- Validation nằm trong Form Request.
-- Authorization nằm trong Policy, Gate hoặc permission middleware của Spatie.
+- Validation cổng HTTP nằm trong Form Request, tách `XCreateRequest` và `XUpdateRequest` cho từng resource; rule nghiệp vụ nằm trong `App\Validators` và được repository gọi khi tạo hoặc cập nhật.
+- `TaxonomyController` là base chung cho category, tag và technology. Lớp con khai báo `repositoryInterface()`, `createRequestClass()` và `updateRequestClass()`; `resolveRequest()` gọi `validateResolved()` trên FormRequest do container tạo.
+- FormRequest bắt buộc phải chặn giá trị enum trước khi dữ liệu chạm vào model, vì `BaseRepository::create()` gọi `forceFill()` trước khi chạy validator của repository.
+- Authorization nằm trong Policy, Gate hoặc permission middleware của Spatie. Permission middleware phải truyền guard `admin` vì `config/auth.php` không còn guard `web`; token Sanctum được resolve qua guard `admin` khai báo với driver `sanctum`.
 - Business mutation nhiều bước nằm trong Action/Service và ghi rõ transaction boundary.
 - Query dùng Eloquent scope/query object khi được tái sử dụng; list endpoint phải eager load quan hệ cần trả về.
 - Model giữ relation, cast, scope và invariant cấp model; không biến model thành một service lớn.
 - Job dùng cho conversion, scan, email, webhook retry và aggregate; job phải idempotent khi có thể.
 - Không truy cập database từ Blade hoặc Vue.
 - Migration phải có foreign key, index, rollback và không sửa migration đã chạy ở môi trường dùng chung.
+
+### Chuẩn API response
+
+- Dùng `App\Http\Responses\BaseResponse` làm điểm duy nhất tạo JSON response cho API.
+- Success response luôn có `success`, `message`, `data`, `errors` và `meta`.
+- Error response giữ cùng envelope; lỗi validation nằm trong `errors` theo từng field.
+- Exception của request API/JSON được chuyển qua `BaseResponse::fromException()`; không trả stack trace hoặc message lỗi nội bộ 5xx.
+- Response không có body dùng HTTP 204 qua `BaseResponse::noContent()`.
+- Danh sách phục vụ `VDataTableServer` dùng `BaseResponse::dataTable()` với
+  `data.items` là các dòng và `data.itemsLength` là tổng số dòng; giữ
+  `meta.pagination` để client dùng current page, per-page, total và links khi
+  cần.
+- `BaseResponse::paginated()` vẫn giữ contract `data` là mảng danh sách để
+  không phá vỡ các endpoint hiện tại; chỉ chuyển endpoint sang `dataTable()`
+  khi frontend đã dùng mapping DataTableServer tương ứng.
+- Frontend service unwrap `data` tại boundary; store/component không tự biết chi tiết envelope HTTP.
 
 ### Vue 3
 
@@ -137,7 +191,8 @@ Pull request thiếu comment bắt buộc hoặc comment không còn khớp beha
 - State server dùng Pinia/composable; state dẫn xuất dùng `computed`; watcher chỉ dùng cho side effect.
 - Props đi xuống, events đi lên; `v-model` chỉ dùng cho contract hai chiều rõ ràng.
 - API client và mapping response nằm trong `services/` hoặc composable; không gọi API rải rác trong template.
-- Backend Laravel là source of truth cho auth, permission, validation và entitlement; CASL chỉ điều khiển UX.
+- Backend Laravel là source of truth cho auth, permission, validation và entitlement.
+- CASL tạm thời chưa được áp dụng trong Vue; source và dependency được giữ lại để triển khai authorization UI ở giai đoạn sau.
 - Mọi task Vue phải có loading, empty, error và retry state phù hợp.
 
 ## 1.3. Quy tắc cập nhật trạng thái task
@@ -150,9 +205,11 @@ Pull request thiếu comment bắt buộc hoặc comment không còn khớp beha
 
 ### Trạng thái hiện tại
 
-- Đợt 0 — Foundation: `DONE` cho dependency, package migrations, Sanctum package/config/migration, schema V1 và schema rollback test; `IN PROGRESS` cho route shell, environment docs và tắt MSW production.
-- Đợt 1 — Authentication và permission: `IN PROGRESS`.
-- Đợt gần nhất đã hoàn thành: migration V1, package setup, schema test và role/permission seeder.
+- Đợt 0 — Foundation: `DONE`. Dependency, package migrations, Sanctum package/config/migration, schema V1, schema rollback test, local environment, npm lockfile, health endpoint, environment docs, tách public/admin Blade và tách route public/admin đã hoàn thành.
+- Đợt 1 — Authentication và permission: `IN PROGRESS`. Sanctum admin login/profile/revoke, customer OAuth, token lifecycle, role/permission seeder và Vue admin login nối API thật đã hoàn thành. Policy và permission middleware cho resource đã xong trong Đợt 2; còn lại admin xem danh sách customer.
+- Đợt 2 — Resource và taxonomy: `IN PROGRESS`. Backend, admin table/form, service/store và fake CRUD frontend đã hoàn thành; còn Resource Version và frontend Media Library ở Đợt 3.
+- Đợt 3 — Media và version: `IN PROGRESS`. Task 1–5 của Media Library (domain, usage, upload security pipeline, API và authorization) đã `DONE`; bước tiếp theo là frontend service/store/picker.
+- Đợt gần nhất đã hoàn thành: Media API `/api/admin/media-assets` với filter/pagination, upload/update, usage attach/detach/reorder, delete/retry/download, policy/permission và private stream/temporary URL. Xác minh bằng 69 test pass (356 assertions); Pint riêng các file Task 5 đạt.
 
 ## 2. Phạm vi theo giai đoạn
 
@@ -231,7 +288,7 @@ Chưa đưa vào MVP 1:
 | State admin | Pinia |
 | Router admin | Vue Router auto hiện có |
 | Customer auth | Laravel Socialite + `customer` session guard |
-| Admin auth | `admin` session guard + CSRF trên cùng origin |
+| Admin auth | Email/password đổi sang Sanctum Bearer token |
 | API auth | Laravel Sanctum personal access tokens |
 | Permission | `spatie/laravel-permission` |
 | File/media | `spatie/laravel-medialibrary` |
@@ -283,21 +340,20 @@ Catch-all route chỉ được dùng cho `/admin/{path}` sau khi đã tách publ
 ### 3.3 Auth và authorization
 
 - Customer đăng nhập qua Google/Facebook bằng Laravel Socialite và `customer` guard.
-- Admin đăng nhập bằng email/password qua `admin` guard; không dùng OAuth customer để vào admin.
-- Browser login/callback có thể dùng session guard; API admin/customer dùng `auth:sanctum` với Bearer token sau khi token issue flow hoàn tất.
+- Admin đăng nhập bằng email/password để cấp Sanctum Bearer token; không dùng OAuth customer để vào admin.
+- Customer OAuth callback dùng session guard; API admin/customer dùng `auth:sanctum` với Bearer token.
 - API Bearer request dùng `auth:sanctum`; guard/token ability không thay thế Policy và Spatie Permission.
-- Session guard vẫn được giữ cho OAuth callback và browser redirect; Vue API client sẽ dùng Sanctum token sau khi token issue flow được triển khai.
+- Vue admin API client chỉ dùng Sanctum token; session guard chỉ dành cho customer OAuth callback và browser redirect.
 - `User` là model quản trị, dùng trait `HasRoles` của Spatie; `Customer` không có back-office role.
 - `User` và `Customer` đều implement `Authenticatable`, nhưng mỗi model thuộc một provider/guard riêng.
-- `config/auth.php` có hai provider (`users`, `customers`), hai session guard (`admin`, `customer`) và password broker riêng cho admin.
-- `/api/account/*` dùng `auth:customer`; `/admin` và `/api/admin/*` dùng `auth:admin`, kiểm tra `status=active` và CSRF cho mutation.
-- Hai guard có thể dùng chung session store; tách guard/provider không tự tạo hai cookie hoặc hai miền bảo mật. Nếu cần cách ly cookie, thiết kế subdomain và session domain riêng ở giai đoạn vận hành.
+- `config/auth.php` có hai provider (`users`, `customers`); chỉ customer giữ session guard, admin dùng provider của Sanctum token.
+- `/api/account/*` dùng `auth:customer`; `/api/admin/*` dùng `auth:sanctum` với ability `admin` và kiểm tra `status=active`.
 - Chỉ tạo bản ghi `users` admin qua seeder/luồng mời do quản trị viên cấp quyền; không có endpoint đăng ký admin công khai.
 - Tìm OAuth identity bằng cặp `(provider, provider_user_id)` trước. Không tự liên kết tài khoản chỉ vì email provider trùng email đã có; liên kết thêm identity phải yêu cầu customer đang đăng nhập hoặc quy trình xác minh riêng.
 - Không đánh dấu `email_verified_at` chỉ dựa vào email trả về từ provider; cần tín hiệu xác minh đáng tin cậy hoặc email verification của ứng dụng.
 - Dùng permission middleware cho coarse route access.
 - Dùng Laravel Policy cho quyền theo model, ownership và trạng thái resource.
-- CASL chỉ ẩn/hiện action ở UI; không được xem là security boundary.
+- CASL tạm thời chưa tham gia router, menu hoặc render UI; khi triển khai lại chỉ được dùng cho UX, không được xem là security boundary.
 - Không lưu access token demo trong cookie khi API thật đã bật.
 
 Roles ban đầu:
@@ -354,19 +410,29 @@ Quy tắc:
 
 ### 4.2 Media Library
 
-Model nào sở hữu file phải `implements HasMedia` và dùng `InteractsWithMedia`.
+Kế hoạch triển khai chi tiết, dependency và acceptance checklist nằm tại
+[PLAN_MEDIA_LIBRARY.md](./PLAN_MEDIA_LIBRARY.md). Tài liệu này là nguồn chi tiết
+cho phần Media Library trung tâm; mục hiện tại giữ nguyên các nguyên tắc tổng
+quát của toàn hệ thống.
 
-Collections chuẩn:
+`MediaAsset` là owner nghiệp vụ trung tâm, implements `HasMedia` và dùng
+`InteractsWithMedia` với collection `library`. Spatie vẫn quản lý file vật lý
+trong bảng `media`; `Resource`, `Post` và `ResourceVersion` liên kết asset qua
+`media_asset_usages`, trong đó `field` phân biệt `cover`, `preview`, `thumbnail`,
+`package` hoặc `documentation`. Bảng usage này là liên kết nghiệp vụ mở rộng,
+không phải pivot nội bộ thay thế bảng `media` của Spatie.
 
-| Model | Collection | Disk | Mục đích |
+Mapping field chuẩn:
+
+| Model/field | `kind` | Disk | Mục đích |
 |---|---|---|---|
-| `Resource` | `cover` | public | Ảnh cover |
-| `Resource` | `preview` | public | Gallery/preview |
-| `ResourceVersion` | `package` | private | ZIP/source package |
-| `ResourceVersion` | `documentation` | private hoặc public | Tài liệu theo policy |
-| `Post` | `cover` | public | Ảnh bài viết |
-| `User` | `avatar` | public | Avatar |
-| `Invoice` | `pdf` | private | Hóa đơn |
+| `Resource.cover` | image | public | Ảnh cover |
+| `Resource.preview` | image | public | Gallery/preview |
+| `ResourceVersion.package` | archive | private | ZIP/source package |
+| `ResourceVersion.documentation` | document | private hoặc public | Tài liệu theo policy |
+| `Post.thumbnail` | image | public | Ảnh bài viết |
+| `User.avatar` | image | public | Avatar |
+| `Invoice.pdf` | document | private | Hóa đơn |
 
 Quy tắc file:
 
@@ -493,9 +559,9 @@ Không thêm `old_values` hoặc `new_values` vào bảng riêng. Attribute chan
 
 Customer không dùng password trong flow OAuth mặc định. Không tạo endpoint đăng ký/password reset cho customer trong MVP.
 
-`users` chỉ dùng cho admin; customer OAuth không thể dùng `admin` guard và không tự động nhận admin role.
+`users` chỉ dùng cho admin; customer OAuth không thể nhận admin Sanctum ability hoặc admin role.
 
-Password reset của admin dùng broker `admins` và bảng `password_reset_tokens` mặc định của Laravel. Customer không có password reset trong MVP.
+Admin password reset chưa mở endpoint trong boundary Sanctum hiện tại; customer cũng không có password reset trong MVP.
 
 `customer_identities` lưu các identity OAuth của customer:
 
@@ -698,19 +764,30 @@ app/
 │   ├── Controllers/Admin/
 │   ├── Controllers/Account/
 │   ├── Requests/
-│   └── Resources/
+│   │   ├── Admin/          # FormRequest tách Create/Update cho từng resource
+│   │   └── Auth/
+│   ├── Resources/          # Laravel JsonResource, định hình data cho client
+│   └── Responses/          # BaseResponse, envelope JSON duy nhất của API
 ├── Jobs/
 ├── Models/
+│   └── Concerns/          # HasSlug: tự sinh slug khi model tạo/cập nhật
 ├── Notifications/
 ├── Policies/
-├── Services/
+├── Repositories/
+│   ├── Contracts/          # interface kế thừa RepositoryInterface của gói
+│   ├── Criteria/           # điều kiện lọc tách rời, ghép được nhiều lớp
+│   └── Eloquent/           # implementation BaseRepository
+├── Services/               # SlugService và service dùng chung
+├── Validators/             # rule nghiệp vụ, repository gọi khi create/update
 └── Support/
 ```
 
 Quy tắc backend:
 
 - Controller nhận request, gọi Action/Query và trả response.
-- Validation nằm trong Form Request.
+- Truy cập dữ liệu đi qua repository kế thừa `prettus/l5-repository`; controller type-hint vào interface trong `Repositories/Contracts` nên có thể thay implementation trong test.
+- Rule `in:...` nối động từ enum không khai báo được trong property vì PHP không cho function call trong constant expression; validator nạp rules qua `setRules()` trong constructor vì `AbstractValidator::getRules()` chỉ đọc property `$rules`.
+- Validation cổng HTTP nằm trong Form Request (`Http/Requests/Admin`), còn rule nghiệp vụ do `Validators` đảm nhiệm khi repository ghi dữ liệu. `ResourceRequest` phải chặn giá trị enum trước khi model cast, vì `BaseRepository::create()` gọi `forceFill()` trước khi chạy validator.
 - Authorization nằm trong Policy và permission middleware.
 - Mutation nhiều bước chạy trong transaction.
 - Conversion, scan, email và aggregate chạy queue.
@@ -764,14 +841,15 @@ resources/js/
 └── plugins/
 ```
 
-Mỗi feature resource có:
+Feature Resource admin hiện đặt theo cấu trúc Vuexy thực tế:
 
-- `pages/admin/resources/index.vue`: composition surface.
-- `views/admin/resources/ResourceTable.vue`: list/filter/pagination.
-- `views/admin/resources/ResourceForm.vue`: create/edit form.
-- `views/admin/resources/ResourceVersionPanel.vue`: version/package.
-- `composables/useResources.js`: fetch, filters, pagination, mutation.
-- `services/resources.js`: endpoint mapping.
+- `resources/js/pages/apps/ecommerce/resource/list/index.vue`: composition surface list.
+- `resources/js/pages/apps/ecommerce/resource/add/index.vue`: composition surface add/edit.
+- `resources/js/views/apps/ecommerce/resource/ResourceTable.vue`: list/filter/pagination.
+- `resources/js/views/apps/ecommerce/resource/ResourceForm.vue`: create/edit form.
+- `resources/js/stores/resource.js`: state và mutation qua Pinia.
+- `resources/js/services/resource.js`: endpoint mapping.
+- `resources/js/views/apps/ecommerce/resource/ResourceVersionPanel.vue`: version/package (chưa triển khai).
 
 ### 8.3 Vuetify
 
@@ -798,11 +876,8 @@ Mỗi feature resource có:
 - `GET /auth/{provider}/redirect` (`google` hoặc `facebook`)
 - `GET /auth/{provider}/callback`
 - `POST /auth/logout`
-- `POST /admin/login`
-- `POST /admin/logout`
+- `POST /api/admin/login`
 - `GET /api/admin/me`
-- `POST /admin/password/forgot`
-- `POST /admin/password/reset`
 - `GET /api/account/me`
 
 ### 9.2 Admin resources
@@ -869,21 +944,22 @@ Quy tắc:
 
 ### Đợt 0 — Foundation
 
-**Status:** `IN PROGRESS`
+**Status:** `DONE`
 
 Deliverables:
 
-- [ ] Tạo `.env`, APP_KEY và database local.
-- [ ] Chọn npm hoặc pnpm và giữ một lockfile.
-- [ ] Tách public Blade và admin Blade.
-- [ ] Tách route public/admin/API.
+- [x] Tạo `.env`, APP_KEY và database local.
+- [x] Chọn npm và giữ một lockfile (`package-lock.json`); ghim `npm@10.9.8` trong `package.json`.
+- [x] Tách public Blade và admin Blade.
+- [x] Tách route public/admin/API.
 - [x] Cài Socialite, Spatie Permission, Media Library và Activity Log.
 - [x] Cài Laravel Sanctum và publish `personal_access_tokens` migration/config.
 - [x] Tạo migration V1 cho users/customers/identities/slugable/catalog/version/download.
 - [x] Publish migrations/config của các package.
-- [ ] Tắt MSW mặc định ở production.
-- [ ] Tạo `/api/health`.
-- [ ] Cập nhật README và environment docs.
+- [x] Tắt MSW mặc định ở production.
+- [x] Tạo `/api/health`.
+- [x] Chuẩn hóa API response bằng `BaseResponse`, gồm success/error/validation/pagination/no-content và exception envelope.
+- [x] Cập nhật README và environment docs.
 
 Exit criteria:
 
@@ -901,7 +977,7 @@ Exit criteria:
 Deliverables:
 
 - [x] Google/Facebook OAuth callback cho customer, xác minh identity theo provider ID.
-- [x] Admin email/password login/logout/reset.
+- [x] Admin email/password login bằng Sanctum Bearer token.
 - [x] `admin` và `customer` guard/provider.
 - [x] Thêm `HasApiTokens` cho User/Customer và cấu hình Sanctum guards.
 - [x] Publish Sanctum config và `personal_access_tokens` migration.
@@ -910,12 +986,12 @@ Deliverables:
 - [x] Customer session exchange issue Sanctum Bearer token.
 - [x] Revoke current token và revoke toàn bộ token của account.
 - [x] Customer identity linking an toàn và onboarding khi OAuth thiếu email.
-- [x] Admin status và session invalidation middleware.
+- [x] Admin status và Sanctum token invalidation middleware.
 - [x] Roles/permissions seeder.
-- [ ] Policy và permission middleware cho resource.
+- [x] Policy và permission middleware cho resource — hoàn thành trong Đợt 2 với `permission:` middleware trên từng route `/api/admin/*` và guard `admin` trong `config/auth.php`.
 - [ ] Admin xem danh sách customer cơ bản.
-- [ ] Vue admin login dùng session API thật, bỏ fake token flow.
-- [ ] CASL nhận ability từ API để điều khiển UI.
+- [x] Vue admin login dùng Sanctum API thật, lưu Bearer token trong sessionStorage và bỏ fake token flow.
+- [ ] CASL nhận ability từ API để điều khiển UI — `TODO`, tạm hoãn; source và dependency vẫn được giữ lại.
 
 Exit criteria:
 
@@ -930,23 +1006,31 @@ Exit criteria:
 
 ### Đợt 2 — Resource và taxonomy
 
+**Status:** `IN PROGRESS`
+
 Deliverables:
 
-- Resource model/migration/factory/seeder.
-- Resource status/visibility/slug.
-- Category tree, tag và technology.
-- CRUD API và admin table/form.
-- Slug collision test.
-- Server pagination/filter/sort.
+- [x] Resource model/migration/factory/seeder. Migration đã có từ schema V1; bổ sung `Resource` model, `ResourceFactory` và `CatalogSeeder`; `php artisan migrate:fresh --seed` chạy thành công trên MySQL.
+- [x] Resource status/visibility/slug. Bổ sung 6 enum trong `app/Enums`, model `Slug` và `SlugService` sinh slug tập trung; slug cũ giữ `is_primary = false` để redirect 301.
+- [x] Category tree, tag và technology. Ba model cùng pivot `categorizables`, `taggables`, `resource_technology`; seeder tạo 11 danh mục, 7 tag và 10 công nghệ.
+- [x] CRUD API và admin table/form. Đã xong API (20 endpoint `/api/admin/*` kèm repository, validator, action và `JsonResource`); frontend có `ResourceTable.vue`, `ResourceForm.vue`, service/store và fake CRUD/publish/archive giữ cùng contract.
+- [x] Slug collision test. `ResourceSlugCollisionTest` xác nhận trùng tên sinh hậu tố `-2`, `-3` và slug cũ bị hạ cấp.
+- [x] Server pagination/filter/sort. `RequestCriteria` đọc `search`/`orderBy`/`sortedBy`; 5 Criteria riêng lọc theo status, type, category, published và public.
 
 Exit criteria:
 
-- Tạo, sửa, archive resource.
-- Publish yêu cầu permission.
-- Public chỉ thấy resource published.
-- Admin table dùng `VDataTableServer`.
+- [x] Tạo, sửa, archive resource — `ResourceCrudTest` xác nhận cả ba.
+- [x] Publish yêu cầu permission — `ResourcePermissionTest` chứng minh thiếu `resources.publish` bị 403.
+- [x] Public chỉ thấy resource published — `PublicResourceVisibilityTest` qua `PubliclyVisibleResourceCriteria`.
+- [x] Admin table dùng `VDataTableServer` — đã có `ResourceTable.vue`, server pagination/filter/sort và fake endpoint `/api/admin/resources` để giữ đúng response contract.
 
 ### Đợt 3 — Media và version
+
+Kế hoạch task riêng cho Media Library trung tâm: [PLAN_MEDIA_LIBRARY.md](./PLAN_MEDIA_LIBRARY.md).
+
+Task 1 — domain contract, Task 2 — `MediaAsset` domain, Task 3 — usage relation,
+Task 4 — upload validation/security pipeline và Task 5 — Media API/authorization
+đã `DONE`; các task tiếp theo thực hiện theo dependency trong file kế hoạch riêng.
 
 Deliverables:
 
@@ -963,6 +1047,65 @@ Exit criteria:
 - Preview có thumbnail.
 - File nguy hiểm và archive vượt giới hạn bị từ chối.
 - Queue failure có trạng thái lỗi và retry.
+
+### Đợt 3.1 — Thứ tự triển khai và phụ thuộc
+
+**Status:** `TODO`
+**Nguyên tắc:** hoàn thành backend/security contract trước, sau đó mới nối
+frontend upload. Không đánh dấu Đợt 3 `DONE` nếu package chưa private hoặc chưa
+có test từ chối file nguy hiểm.
+
+| Thứ tự | Task | Phạm vi chính | Điều kiện hoàn thành |
+|---|---|---|---|
+| 1 | Chuẩn bị storage và queue | Xác nhận `local` private, `public`, queue driver, `storage:link`, giới hạn upload và biến môi trường | Local upload/queue chạy được; không hard-code secret/path |
+| 2 | Media domain contract | Cho `Resource`/`ResourceVersion` dùng `HasMedia` + `InteractsWithMedia`; khai báo collection `cover`, `preview`, `package`, `documentation`; đăng ký disk/conversion | Collection và disk mapping có test; package luôn private |
+| 3 | Validation và temporary upload | FormRequest cho cover/preview/package; MIME, extension, size; temporary upload; chặn path traversal, symlink, executable | Request lỗi trả 422; file không hợp lệ không được attach |
+| 4 | Checksum, scan và conversion pipeline | `UploadMediaAction`, SHA-256, custom properties, archive scan, conversion job, retry/backoff và failure state | Media có `checksum`, `scan_status`, `conversion_status`; job lỗi retry được |
+| 5 | Resource Version workflow | CRUD/version action, unique `(resource_id, version)`, default version, attach package chỉ khi scan sạch | Version draft/ready/archived đúng lifecycle; chỉ một default version |
+| 6 | Admin media/version API | Endpoint upload/remove/metadata/version; `JsonResource`; authorize admin permission; không trả storage path/public package URL | API contract ổn định, lỗi có envelope `BaseResponse` |
+| 7 | Vue admin integration | `resourceService`/Pinia bổ sung upload/version action; `ResourceForm` cover/preview; `ResourceVersionPanel`; progress/error/retry | Admin upload được và thấy trạng thái xử lý; không reload để mất state |
+| 8 | Fake API và test acceptance | MSW handler tương ứng, feature/unit test, queue failure test, security test, build/lint | Fake và Laravel giữ cùng contract; toàn bộ exit criteria Đợt 3 đạt |
+
+### Đợt 3.2 — Trạng thái media đề xuất
+
+Không mở rộng `ResourceVersionStatus` chỉ để biểu diễn trạng thái xử lý file.
+Giữ lifecycle version hiện tại (`draft`, `ready`, `archived`) và lưu trạng thái
+xử lý trên custom properties của Media Library:
+
+```text
+scan_status:       pending | clean | rejected | error
+conversion_status: pending | processing | ready | failed
+checksum_sha256:   string
+upload_metadata:   original_name, mime_type, size, uploaded_by
+```
+
+Luồng package:
+
+```text
+version draft
+  → upload temporary
+  → checksum + archive/security scan
+  → scan clean
+  → conversion/thumbnail queue
+  → media ready
+  → version ready (khi admin xác nhận hoặc workflow cho phép)
+```
+
+Nếu scan thất bại, package không được chuyển sang `ready`, không được cấp URL
+trực tiếp và phải có action retry hoặc thay file.
+
+### Đợt 3.3 — Definition of Done
+
+- `Resource` có collection `cover` và `preview`; `ResourceVersion` có
+  `package` và `documentation`.
+- Cover/preview có conversion `thumb` và `web` chạy qua queue.
+- Package nằm trên private disk, không lộ path nội bộ hoặc public URL lâu hạn.
+- Upload validation chặn MIME/extension/size sai, executable, path traversal,
+  symlink nguy hiểm và archive vượt giới hạn.
+- Checksum và scan status được lưu trên Media custom properties.
+- Queue failure được ghi nhận và retry được.
+- Có API test cho upload/metadata/version và test bảo mật package.
+- Vue có progress, loading, empty/error state và retry cho upload.
 
 ### Đợt 4 — Publish workflow và public catalog
 
@@ -1059,7 +1202,7 @@ Backend test bắt buộc:
 - Auth và email verification.
 - Spatie role/permission.
 - Google/Facebook OAuth callback, liên kết identity và trường hợp thiếu email.
-- Tách `web`/`admin` guard, reset password admin và chặn cross-guard access.
+- Tách customer session với admin Sanctum token và chặn cross-boundary access.
 - Policy cho resource/media/download/order.
 - Resource CRUD và publish transition.
 - Media validation và package authorization.
@@ -1165,7 +1308,7 @@ Trước Đợt 0:
 - MySQL local/production.
 - S3 provider.
 - Email provider.
-- npm hay pnpm; chỉ giữ một lockfile.
+- npm 10 và `package-lock.json`; không sử dụng pnpm trong repository.
 
 Trước Đợt 5:
 
@@ -1186,14 +1329,100 @@ Trước Đợt 7:
 
 ## 15. Việc cần làm ngay
 
-1. Sửa `composer.json` để thêm Socialite, Spatie Permission, Media Library và Activity Log theo version tương thích Laravel 12.
-2. Publish config/migration của package và chạy migration sạch.
-3. Tách route `/admin` khỏi catch-all hiện tại.
-4. Thêm APP_KEY vào môi trường development/test.
-5. Tắt MSW mặc định, chỉ bật bằng environment flag.
-6. Tạo `RolePermissionSeeder` và các Policy đầu tiên.
-7. Tạo Resource, ResourceVersion và các Media collection.
-8. Hoàn thành free download trước khi bắt đầu payment.
+1. [x] Chuẩn hóa boundary giữa BaseController, BaseCrudController, controller domain và Action trước khi mở rộng CRUD mới.
+2. [x] Xây admin table/form cho resource trong Vue (`pages/apps/ecommerce/resource/list`, `ResourceTable.vue`, `ResourceForm.vue`) dùng `VDataTableServer`.
+3. [x] Bổ sung service, store và menu Resources cho admin Vue.
+4. [ ] Thực hiện Đợt 3 — Media Library, upload pipeline và Resource Version theo thứ tự ở mục 3.1.
+5. Xây public catalog Blade và luồng free download.
+6. Hoàn thành free download trước khi bắt đầu payment.
+
+## 15.1 Việc đã hoàn thành trong Đợt 2 (phần backend)
+
+- Model: `Resource`, `Category`, `Tag`, `Technology`, `ResourceVersion`, `Slug`.
+- Enum: `ResourceType`, `ResourceStatus`, `ResourceVisibility`, `TechnologyType`, `TaxonomyStatus`, `ResourceVersionStatus`.
+- Repository: 4 interface trong `app/Repositories/Contracts` và 4 implementation trong `app/Repositories/Eloquent`, bind qua `RepositoryServiceProvider`.
+- Validator: 4 class trong `app/Validators`, nạp rules trong constructor vì `AbstractValidator::getRules()` chỉ đọc property `$rules`.
+- Criteria: `PublishedResourceCriteria`, `PubliclyVisibleResourceCriteria`, `ResourceStatusCriteria`, `ResourceTypeCriteria`, `ResourceCategoryCriteria`.
+- Service và action: `SlugService`; trait `HasSlug` tự sinh slug trong hook `created` và `updated` của model; `ResourceAction` là base chung cho `CreateResourceAction` và `UpdateResourceAction`.
+- FormRequest: 9 class trong `Http/Requests/Admin` gồm `ResourceCreateRequest`, `ResourceUpdateRequest` và 6 request taxonomy, kế thừa `TaxonomyRequest`.
+- API: 20 endpoint `/api/admin/*` với `auth:sanctum` + `abilities:admin` + `account.active:sanctum` + `permission:`.
+- `BaseResponse::paginated()` đổi sang nhận `AnonymousResourceCollection`; `fromException()` bổ sung nhánh cho `Prettus ValidatorException` và `DomainException`.
+- `BaseResponse::dataTable()` bổ sung contract riêng cho Vuetify
+  `VDataTableServer`: `data.items`, `data.itemsLength` và
+  `meta.pagination`; có unit test xác nhận tổng dòng và metadata phân trang.
+- Các datatable Vuexy demo hiện tại vẫn dùng fake payload riêng; admin
+  `ResourceTable.vue` đã dùng contract mới ở Bước 6 với fake endpoint resource,
+  không mass-edit các component demo ngoài phạm vi task.
+- Morph map bật cho 6 model; `slugable` dùng morph name `sluggable` khớp tên cột `sluggable_type`.
+
+## 15.2 Chuẩn hóa controller và Action boundary
+
+**Status:** `DONE`
+
+Mục tiêu: giảm lặp lại ở các controller CRUD nhưng không ép những domain có
+lifecycle phức tạp như Resource vào một CRUD base quá chung.
+
+### Quyết định kiến trúc
+
+- Giữ `App\Http\Controllers\Controller` làm base HTTP tối thiểu, hoặc đổi tên
+  hẳn thành `BaseController`; không duy trì thêm một lớp base rỗng trùng vai trò.
+- Nếu có behavior CRUD dùng chung, tạo `BaseCrudController` kế thừa base HTTP.
+- `TaxonomyController` kế thừa `BaseCrudController`; Category, Tag và Technology
+  chỉ khai báo repository, FormRequest, resource/message và query riêng.
+- `ResourceController` không bị ép dùng CRUD base cho `store()` và `update()`;
+  hai method này tiếp tục gọi `CreateResourceAction` và `UpdateResourceAction`.
+- `publish()` và `archive()` luôn là Action riêng vì đây là state transition có
+  điều kiện, transaction và activity log.
+- Base controller không chứa query hoặc business rule riêng của Resource,
+  Category, Tag, Technology hay Post.
+
+### Các bước triển khai
+
+- [x] Kiểm kê method trùng giữa `ResourceController`, `TaxonomyController` và
+  các controller tương lai; xác định phần nào là HTTP helper, CRUD mechanics
+  và domain behavior.
+- [x] Tạo hoặc chuẩn hóa `BaseController` với các helper tối thiểu dùng chung,
+  gồm giới hạn `per_page` và helper response nếu thật sự cần; mọi envelope vẫn
+  đi qua `BaseResponse`.
+- [x] Tạo `BaseCrudController` cho `index`, `store`, `show`, `update`,
+  `destroy` chỉ khi contract của các controller con giống nhau; dùng các hook
+  abstract/protected cho repository, request và JsonResource.
+- [x] Cho `TaxonomyController` kế thừa `BaseCrudController`, giữ riêng logic
+  resolve FormRequest, message taxonomy và repository taxonomy.
+- [x] Xác định rõ behavior xoá của từng taxonomy: Category/Tag soft delete,
+  Technology hard delete; cho phép override hook xoá khi behavior khác nhau.
+- [x] Giữ `ResourceController` là controller domain đặc thù; không chuyển
+  transaction, sync taxonomy, slug, publish/archive vào base controller.
+- [x] Khai báo các method domain riêng trong repository contract nếu controller
+  hoặc Action cần gọi qua interface, thay vì chỉ có interface package rỗng.
+- [x] Sửa comment transaction để phản ánh đúng: `l5-repository` không tự mở
+  transaction; transaction nhiều bước nằm trong Action/Service.
+- [x] Bổ sung test hồi quy cho CRUD taxonomy, Resource create/update/publish/
+  archive và kiểm tra không thay đổi response envelope hoặc permission.
+
+### Quy tắc quyết định khi tạo Action cho domain mới
+
+- [x] Không tạo Action chỉ vì model có quan hệ category/tag.
+- [x] Tạo `CreateXAction`/`UpdateXAction` khi use case ghi từ hai bảng trở lên,
+  cần transaction, có lifecycle/state transition hoặc có side effect như slug,
+  revision, media, activity log, notification hay cache invalidation.
+- [x] Với Post, bắt đầu bằng CRUD base nếu chỉ là CRUD đơn giản; khi có draft,
+  publish, revision, cover media, SEO hoặc activity log thì tạo
+  `CreatePostAction`, `UpdatePostAction`, `PublishPostAction` theo từng use case.
+- [x] Nếu Resource và Post dùng chung việc sync category/tag, tách một helper
+  nhỏ như `TaxonomySynchronizer`; không tạo một `CreateAnyContentAction` biết
+  mọi domain.
+
+### Acceptance criteria
+
+- [x] Controller taxonomy con chỉ còn khai báo cấu hình domain và query riêng.
+- [x] Resource create/update vẫn chạy qua Action và rollback toàn bộ khi sync
+  taxonomy hoặc side effect thất bại.
+- [x] Publish/archive vẫn kiểm tra đúng trạng thái nguồn và ghi activity log.
+- [x] Không có business rule Resource bị đưa vào `BaseController` hoặc
+  `BaseCrudController`.
+- [x] Test backend hiện có vẫn pass; thêm test cho inheritance/CRUD base mà
+  không làm thay đổi API contract.
 
 ## 16. Tài liệu tham khảo
 

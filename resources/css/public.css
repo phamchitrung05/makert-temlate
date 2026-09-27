@@ -1,0 +1,104 @@
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Entry CSS cho public website render bằng Blade
+ * =====================================================================
+ *
+ * Public website không chạy Vue/Vuetify nên không dùng stylesheet của admin
+ * dashboard. File này chỉ cung cấp layout và token tối thiểu đủ để các
+ * trang public hiển thị được trước khi có design system riêng.
+ *
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - Không có; file chỉ chứa khai báo CSS.
+ *
+ * INPUT/OUTPUT CỦA FILE (tổng thể):
+ * - INPUT : class dùng trong resources/views/layouts/public.blade.php
+ * - OUTPUT: style nền tảng cho layout public
+ * =====================================================================
+ */
+:root {
+  --color-bg: #ffffff;
+  --color-surface: #f6f7f9;
+  --color-text: #1f2430;
+  --color-muted: #626b7a;
+  --color-border: #e3e6eb;
+  --color-primary: #4f46e5;
+  --container-width: 1140px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--container-width);
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+}
+
+.skip-link:focus {
+  position: static;
+  display: inline-block;
+  padding: 0.5rem 1rem;
+}
+
+.site-header {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.site-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  min-height: 4rem;
+  flex-wrap: wrap;
+}
+
+.site-brand {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.site-nav {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.site-nav a {
+  color: var(--color-muted);
+  text-decoration: none;
+}
+
+.site-nav a:hover,
+.site-nav a:focus-visible {
+  color: var(--color-primary);
+}
+
+main {
+  padding-block: 3rem;
+}
+
+.site-footer {
+  border-top: 1px solid var(--color-border);
+  padding-block: 1.5rem;
+  color: var(--color-muted);
+}

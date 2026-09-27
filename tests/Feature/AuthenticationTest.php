@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Laravel\Socialite\Two\User as SocialiteUser;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\User as SocialiteUser;
 use Tests\TestCase;
 
 /**
@@ -17,13 +17,13 @@ use Tests\TestCase;
  * CHỨC NĂNG FILE: Kiểm thử authentication và guard separation V1
  * =====================================================================
  *
- * Test suite dùng SQLite in-memory riêng để kiểm tra admin session,
- * customer OAuth identity và việc hai guard không truy cập chéo nhau.
+ * Test suite dùng SQLite in-memory riêng để kiểm tra admin Sanctum token,
+ * customer OAuth identity và việc hai boundary không truy cập chéo nhau.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - setUp(): cấu hình connection/schema cô lập cho mỗi test
  * - tearDown(): rollback schema và giải phóng connection
- * - test_admin_can_login(): kiểm tra admin login và admin API
+ * - test_admin_can_login(): kiểm tra admin token login và admin API
  * - test_suspended_admin_cannot_login(): kiểm tra status enforcement
  * - test_customer_oauth_creates_local_identity(): kiểm tra OAuth local mapping
  * - test_customer_guard_cannot_access_admin_endpoint(): kiểm tra guard boundary
@@ -87,7 +87,7 @@ class AuthenticationTest extends TestCase
      * =====================================================================
      *
      * OUTPUT:
-     * - Assert HTTP 200, admin guard authenticated và profile đúng
+     * - Assert HTTP 200 BaseResponse, cấp Bearer token và token gọi được profile API
      * =====================================================================
      */
     public function test_admin_can_login(): void
@@ -99,17 +99,21 @@ class AuthenticationTest extends TestCase
             'status' => 'active',
         ]);
 
-        $response = $this->postJson('/admin/login', [
+        $response = $this->postJson('/api/admin/login', [
             'email' => 'admin@example.com',
             'password' => 'a-secure-password',
         ]);
 
         $response->assertOk()
-            ->assertJsonPath('user.id', $admin->id)
-            ->assertJsonPath('tokenType', 'Bearer');
-        $this->assertNotEmpty($response->json('accessToken'));
-        $this->assertAuthenticatedAs($admin, 'admin');
-        $this->getJson('/api/admin/me')->assertOk()->assertJsonPath('user.email', 'admin@example.com');
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.user.id', $admin->id)
+            ->assertJsonPath('data.tokenType', 'Bearer');
+        $token = $response->json('data.accessToken');
+        $this->assertNotEmpty($token);
+        $this->withToken($token)
+            ->getJson('/api/admin/me')
+            ->assertOk()
+            ->assertJsonPath('data.user.email', 'admin@example.com');
     }
 
     /**
@@ -118,7 +122,7 @@ class AuthenticationTest extends TestCase
      * =====================================================================
      *
      * OUTPUT:
-     * - Assert HTTP 422 và admin guard chưa authenticated
+     * - Assert HTTP 422 BaseResponse và không cấp token cho admin bị suspended
      * =====================================================================
      */
     public function test_suspended_admin_cannot_login(): void
@@ -130,12 +134,14 @@ class AuthenticationTest extends TestCase
             'status' => 'suspended',
         ]);
 
-        $this->postJson('/admin/login', [
+        $this->postJson('/api/admin/login', [
             'email' => 'suspended@example.com',
             'password' => 'a-secure-password',
-        ])->assertStatus(422);
+        ])->assertStatus(422)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Dữ liệu gửi lên không hợp lệ.')
+            ->assertJsonStructure(['success', 'message', 'data', 'errors', 'meta']);
 
-        $this->assertGuest('admin');
     }
 
     /**
@@ -174,7 +180,7 @@ class AuthenticationTest extends TestCase
      * =====================================================================
      *
      * OUTPUT:
-     * - Assert HTTP 401 cho admin API khi chỉ có customer session
+     * - Assert HTTP 401 với customer session và HTTP 403 với customer token
      * =====================================================================
      */
     public function test_customer_guard_cannot_access_admin_endpoint(): void
@@ -185,8 +191,16 @@ class AuthenticationTest extends TestCase
             'status' => 'active',
         ]);
 
+        $token = $customer->createToken('customer-web', ['customer']);
+
         $this->actingAs($customer, 'customer')
             ->getJson('/api/admin/me')
             ->assertUnauthorized();
+
+        $this->withToken($token->plainTextToken)
+            ->getJson('/api/admin/me')
+            ->assertForbidden()
+            ->assertJsonPath('success', false)
+            ->assertJsonStructure(['success', 'message', 'data', 'errors', 'meta']);
     }
 }

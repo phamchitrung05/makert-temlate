@@ -1,17 +1,8 @@
 <?php
 
-use App\Http\Controllers\Auth\AdminSessionController;
 use App\Http\Controllers\Auth\CustomerOAuthController;
+use App\Http\Controllers\Public\HomeController;
 use Illuminate\Support\Facades\Route;
-
-Route::post('/admin/login', [AdminSessionController::class, 'login'])
-    ->middleware('throttle:10,1');
-Route::post('/admin/logout', [AdminSessionController::class, 'logout'])
-    ->middleware('auth:admin');
-Route::post('/admin/password/forgot', [AdminSessionController::class, 'forgotPassword'])
-    ->middleware('throttle:5,1');
-Route::post('/admin/password/reset', [AdminSessionController::class, 'resetPassword'])
-    ->middleware('throttle:5,1');
 
 Route::get('/auth/{provider}/redirect', [CustomerOAuthController::class, 'redirect'])
     ->whereIn('provider', ['google', 'facebook'])
@@ -22,6 +13,14 @@ Route::get('/auth/{provider}/callback', [CustomerOAuthController::class, 'callba
 Route::post('/auth/logout', [CustomerOAuthController::class, 'logout'])
     ->middleware('auth:customer');
 
-Route::get('{any?}', function() {
-    return view('application');
+// Public website renders with Blade so the catalog, blog and landing pages stay
+// server-rendered for SEO. This boundary is registered before the admin SPA so
+// a future public route can never be shadowed by the catch-all below.
+Route::get('/', [HomeController::class, 'index'])->name('home');
+
+// Admin SPA boundary. The Vue router mounts under this prefix, so no arbitrary
+// root URL can boot the admin application.
+Route::view('/admin', 'admin')->name('admin.login');
+Route::get('/admin/{any?}', function () {
+    return view('admin');
 })->where('any', '.*');

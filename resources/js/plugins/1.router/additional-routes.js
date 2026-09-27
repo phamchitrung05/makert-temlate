@@ -1,3 +1,6 @@
+import { useAdminAuthStore } from '@/stores/adminAuth'
+import { store } from '@/plugins/2.pinia'
+
 const emailRouteComponent = () => import('@/pages/apps/email/index.vue')
 
 // 👉 Redirects
@@ -8,14 +11,10 @@ export const redirects = [
     path: '/',
     name: 'index',
     redirect: to => {
-      // TODO: Get type from backend
-      const userData = useCookie('userData')
-      const userRole = userData.value?.role
-      if (userRole === 'admin')
+      const adminAuth = useAdminAuthStore(store)
+      if (adminAuth.isAuthenticated)
         return { name: 'dashboards-crm' }
-      if (userRole === 'client')
-        return { name: 'access-control' }
-      
+
       return { name: 'login', query: to.query }
     },
   },

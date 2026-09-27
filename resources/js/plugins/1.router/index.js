@@ -3,6 +3,8 @@ import { createRouter, createWebHistory } from 'vue-router/auto'
 import { redirects, routes } from './additional-routes'
 import { setupGuards } from './guards'
 
+const ADMIN_ROUTER_BASE = '/admin/'
+
 function recursiveLayouts(route) {
   if (route.children) {
     for (let i = 0; i < route.children.length; i++)
@@ -15,7 +17,8 @@ function recursiveLayouts(route) {
 }
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  // Page files keep their route paths internally; the browser-facing admin boundary is /admin.
+  history: createWebHistory(ADMIN_ROUTER_BASE),
   scrollBehavior(to) {
     if (to.hash)
       return { el: to.hash, behavior: 'smooth', top: 60 }

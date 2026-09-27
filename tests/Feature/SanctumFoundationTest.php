@@ -25,6 +25,7 @@ use Tests\TestCase;
  * - test_admin_and_customer_can_create_tokens(): kiểm tra hai tokenable model
  * - test_customer_session_can_exchange_for_token(): kiểm tra session-to-token exchange
  * - test_current_token_can_be_revoked(): kiểm tra revoke qua auth:sanctum
+ * - test_missing_token_returns_json_unauthorized(): kiểm tra API không redirect khi thiếu token
  * =====================================================================
  */
 class SanctumFoundationTest extends TestCase
@@ -110,12 +111,12 @@ class SanctumFoundationTest extends TestCase
         $this->assertNotEmpty($customerToken->plainTextToken);
         $this->assertDatabaseCount('personal_access_tokens', 2);
         $this->assertDatabaseHas('personal_access_tokens', [
-            'tokenable_type' => User::class,
+            'tokenable_type' => $admin->getMorphClass(),
             'tokenable_id' => $admin->id,
             'name' => 'admin-web',
         ]);
         $this->assertDatabaseHas('personal_access_tokens', [
-            'tokenable_type' => Customer::class,
+            'tokenable_type' => $customer->getMorphClass(),
             'tokenable_id' => $customer->id,
             'name' => 'customer-web',
         ]);
@@ -149,11 +150,29 @@ class SanctumFoundationTest extends TestCase
 
     /**
      * =====================================================================
+     * CHỨC NĂNG: Từ chối API Sanctum khi thiếu Bearer token
+     * =====================================================================
+     *
+     * OUTPUT:
+     * - HTTP 401 BaseResponse JSON, không redirect tới route web không tồn tại
+     * =====================================================================
+     */
+    public function test_missing_token_returns_json_unauthorized(): void
+    {
+        $this->getJson('/api/admin/me')
+            ->assertUnauthorized()
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', config('messages.common.unauthenticated'))
+            ->assertJsonStructure(['success', 'message', 'data', 'errors', 'meta']);
+    }
+
+    /**
+     * =====================================================================
      * CHỨC NĂNG: Đổi customer session thành Sanctum Bearer token
      * =====================================================================
      *
      * OUTPUT:
-     * - HTTP 201, accessToken plain text và token row thuộc Customer
+     * - HTTP 201 BaseResponse, data.accessToken plain text và token row thuộc Customer
      * =====================================================================
      */
     public function test_customer_session_can_exchange_for_token(): void
@@ -167,10 +186,12 @@ class SanctumFoundationTest extends TestCase
         $response = $this->actingAs($customer, 'customer')
             ->postJson('/api/account/token', ['device_name' => 'browser']);
 
-        $response->assertCreated()->assertJsonPath('tokenType', 'Bearer');
-        $this->assertNotEmpty($response->json('accessToken'));
+        $response->assertCreated()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.tokenType', 'Bearer');
+        $this->assertNotEmpty($response->json('data.accessToken'));
         $this->assertDatabaseHas('personal_access_tokens', [
-            'tokenable_type' => Customer::class,
+            'tokenable_type' => $customer->getMorphClass(),
             'tokenable_id' => $customer->id,
             'name' => 'browser',
         ]);

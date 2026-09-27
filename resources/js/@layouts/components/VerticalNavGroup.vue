@@ -1,3 +1,24 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: Hiển thị và điều khiển một nhóm menu điều hướng dọc
+  =====================================================================
+
+  Component quản lý trạng thái active/open của nhóm theo route, chế độ menu thu
+  gọn và các nhóm con đang mở. CASL đang tạm hoãn nên nhóm không bị lọc theo quyền.
+
+  CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
+  - isAnyChildOpen(children): kiểm tra đệ quy xem nhóm con nào đang mở
+  - collapseChildren(children): đóng toàn bộ nhóm con trong nhánh hiện tại
+  - watcher route.path: đồng bộ trạng thái active/open với route
+  - watcher isGroupOpen: đồng bộ nhóm hiện tại vào openGroups
+  - watcher openGroups: đóng nhóm inactive theo hành vi accordion
+  - watcher vertical nav mini: đóng/mở nhóm theo trạng thái thu gọn
+
+  INPUT/OUTPUT CỦA COMPONENT (tổng thể):
+  - INPUT : prop item chứa cấu hình nhóm và danh sách children; route và layout state
+  - OUTPUT: nhóm menu dọc có thể mở/đóng; cập nhật openGroups dùng chung
+  =====================================================================
+-->
 <script setup>
 import { TransitionGroup } from 'vue'
 import { layoutConfig } from '@layouts'
@@ -5,7 +26,6 @@ import {
   TransitionExpand,
   VerticalNavLink,
 } from '@layouts/components'
-import { canViewNavMenuGroup } from '@layouts/plugins/casl'
 import { useLayoutConfigStore } from '@layouts/stores/config'
 import { injectionKeyIsVerticalNavHovered } from '@layouts/symbols'
 import {
@@ -37,6 +57,13 @@ const isVerticalNavHovered = inject(injectionKeyIsVerticalNavHovered, ref(false)
 const isGroupActive = ref(false)
 const isGroupOpen = ref(false)
 
+/**
+ * Kiểm tra đệ quy xem nhánh menu có nhóm con đang mở hay không.
+ *
+ * INPUT: children là danh sách navigation item của nhánh hiện tại.
+ * OUTPUT: boolean cho biết ít nhất một nhóm con có trong openGroups.
+ * SIDE EFFECT: Không có.
+ */
 const isAnyChildOpen = children => {
   return children.some(child => {
     let result = openGroups.value.includes(child.title)
@@ -47,6 +74,13 @@ const isAnyChildOpen = children => {
   })
 }
 
+/**
+ * Đóng toàn bộ nhóm con thuộc nhánh menu hiện tại.
+ *
+ * INPUT: children là danh sách navigation item cần đóng.
+ * OUTPUT: Không trả dữ liệu.
+ * SIDE EFFECT: Loại title của các nhóm con khỏi openGroups.
+ */
 const collapseChildren = children => {
   children.forEach(child => {
     if ('children' in child)
@@ -119,7 +153,6 @@ watch(configStore.isVerticalNavMini(isVerticalNavHovered), val => {
 
 <template>
   <li
-    v-if="canViewNavMenuGroup(item)"
     class="nav-group"
     :class="[
       {

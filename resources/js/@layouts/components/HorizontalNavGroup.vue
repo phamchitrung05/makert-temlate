@@ -1,10 +1,25 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: Hiển thị một nhóm menu điều hướng ngang dạng popper
+  =====================================================================
+
+  Component đồng bộ trạng thái active với route và dựng danh sách menu con trong
+  popper. CASL đang tạm hoãn nên nhóm không bị lọc theo quyền frontend.
+
+  CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
+  - watcher route.path: cập nhật trạng thái active khi route thay đổi
+
+  INPUT/OUTPUT CỦA COMPONENT (tổng thể):
+  - INPUT : props item, childrenAtEnd và isSubItem; route cùng layout state
+  - OUTPUT: nhóm menu ngang và popper chứa các navigation item con
+  =====================================================================
+-->
 <script setup>
 import { layoutConfig } from '@layouts'
 import {
   HorizontalNavLink,
   HorizontalNavPopper,
 } from '@layouts/components'
-import { canViewNavMenuGroup } from '@layouts/plugins/casl'
 import { useLayoutConfigStore } from '@layouts/stores/config'
 import {
   getDynamicI18nProps,
@@ -50,7 +65,6 @@ watch(() => route.path, () => {
 
 <template>
   <HorizontalNavPopper
-    v-if="canViewNavMenuGroup(item)"
     :is-rtl="configStore.isAppRTL"
     class="nav-group"
     tag="li"

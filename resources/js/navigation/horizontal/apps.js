@@ -1,3 +1,19 @@
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Khai báo menu điều hướng ngang cho admin Vue
+ * =====================================================================
+ *
+ * Menu ngang dùng cùng route name với vertical navigation. Resource nằm
+ * trong Ecommerce để hai layout cung cấp một đường dẫn quản trị thống nhất.
+ *
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - Không có; file export một mảng cấu hình menu.
+ *
+ * INPUT/OUTPUT CỦA FILE (tổng thể):
+ * - INPUT : route name, icon và cấu hình children.
+ * - OUTPUT: mảng navigation dùng cho horizontal layout.
+ * =====================================================================
+ */
 export default [
   {
     title: 'Apps',
@@ -17,6 +33,13 @@ export default [
               { title: 'List', to: 'apps-ecommerce-product-list' },
               { title: 'Add', to: 'apps-ecommerce-product-add' },
               { title: 'Category', to: 'apps-ecommerce-product-category-list' },
+            ],
+          },
+          {
+            title: 'Resource',
+            children: [
+              { title: 'List', to: 'apps-ecommerce-resource-list' },
+              { title: 'Add', to: 'apps-ecommerce-resource-add' },
             ],
           },
           {

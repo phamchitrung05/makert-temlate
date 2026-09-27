@@ -32,6 +32,7 @@ class InitialSchemaTest extends TestCase
             'model_has_roles',
             'role_has_permissions',
             'media',
+            'media_assets',
             'activity_log',
             'personal_access_tokens',
             'slugable',
@@ -56,6 +57,7 @@ class InitialSchemaTest extends TestCase
 
         $this->assertFalse($schema->hasTable('downloads'));
         $this->assertFalse($schema->hasTable('media'));
+        $this->assertFalse($schema->hasTable('media_assets'));
         $this->assertFalse($schema->hasTable('users'));
 
         DB::purge('schema_check');

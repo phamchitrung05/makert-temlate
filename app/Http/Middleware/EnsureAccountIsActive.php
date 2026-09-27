@@ -30,7 +30,7 @@ class EnsureAccountIsActive
      * INPUT:
      * - $request: HTTP request đã authenticated
      * - $next: middleware kế tiếp
-     * - $guard: admin hoặc customer
+     * - $guard: sanctum hoặc customer
      *
      * OUTPUT:
      * - Response kế tiếp khi account active

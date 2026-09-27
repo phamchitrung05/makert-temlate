@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\SanctumTokenRequest;
+use App\Http\Responses\BaseResponse;
 use App\Models\Customer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * =====================================================================
@@ -36,7 +38,7 @@ class SanctumTokenController extends Controller
      * - customer session từ auth:customer middleware
      *
      * OUTPUT:
-     * - JSON 201 gồm accessToken plain text, tokenType và expiresAt
+     * - JSON 201 theo BaseResponse gồm accessToken plain text, tokenType và expiresAt
      *
      * SIDE EFFECT:
      * - INSERT personal_access_tokens với abilities `customer`
@@ -50,11 +52,11 @@ class SanctumTokenController extends Controller
         $expiresAt = now()->addDays((int) config('sanctum.token_expiration_days', 30));
         $token = $customer->createToken($deviceName, ['customer'], $expiresAt);
 
-        return response()->json([
+        return BaseResponse::created([
             'accessToken' => $token->plainTextToken,
             'tokenType' => 'Bearer',
             'expiresAt' => $expiresAt->toIso8601String(),
-        ], 201);
+        ], 'Token customer đã được cấp.');
     }
 
     /**
@@ -72,12 +74,12 @@ class SanctumTokenController extends Controller
      * - DELETE current personal_access_tokens row
      * =====================================================================
      */
-    public function revokeCurrentToken(Request $request): JsonResponse
+    public function revokeCurrentToken(Request $request): Response
     {
         $token = $request->user()?->currentAccessToken();
         $token?->delete();
 
-        return response()->json(status: 204);
+        return BaseResponse::noContent();
     }
 
     /**
@@ -95,10 +97,10 @@ class SanctumTokenController extends Controller
      * - DELETE mọi personal_access_tokens của tokenable hiện tại
      * =====================================================================
      */
-    public function revokeAllTokens(Request $request): JsonResponse
+    public function revokeAllTokens(Request $request): Response
     {
         $request->user()?->tokens()->delete();
 
-        return response()->json(status: 204);
+        return BaseResponse::noContent();
     }
 }

@@ -45,7 +45,10 @@ export default defineConfig({
       },
     }),
     laravel({
-      input: ['resources/js/main.js'],
+      input: [
+        'resources/js/main.js',
+        'resources/css/public.css',
+      ],
       refresh: true,
     }),
     vueJsx(), // Docs: https://github.com/vuetifyjs/vuetify-loader/tree/master/packages/vite-plugin

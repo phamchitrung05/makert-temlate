@@ -38,6 +38,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(RolePermissionSeeder::class);
+        $this->call(CatalogSeeder::class);
 
         $admin = User::factory()->create([
             'name' => 'Development Admin',
@@ -47,5 +48,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $admin->assignRole('super-admin');
+
+        $this->call(MediaAssetSeeder::class);
     }
 }

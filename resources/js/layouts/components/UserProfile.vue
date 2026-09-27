@@ -1,30 +1,39 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: Hiển thị menu tài khoản của quản trị viên đang đăng nhập
+  =====================================================================
+
+  Component đọc user từ admin auth store, hiển thị avatar/thông tin tài khoản và
+  cung cấp action logout để thu hồi Sanctum token trước khi về trang đăng nhập.
+
+  CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
+  - userData: phản chiếu admin user hiện tại từ Pinia store
+  - logout(): thu hồi token hiện tại và điều hướng đến route login
+
+  INPUT/OUTPUT CỦA COMPONENT (tổng thể):
+  - INPUT : user/session state từ admin auth store
+  - OUTPUT: menu profile và điều hướng về login sau khi logout
+  =====================================================================
+-->
 <script setup>
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
+import { useAdminAuthStore } from '@/stores/adminAuth'
 
 const router = useRouter()
-const ability = useAbility()
+const adminAuth = useAdminAuthStore()
+const userData = computed(() => adminAuth.user)
 
-// TODO: Get type from backend
-const userData = useCookie('userData')
-
+/**
+ * Kết thúc phiên đăng nhập admin hiện tại.
+ *
+ * INPUT: Sanctum session hiện tại trong admin auth store.
+ * OUTPUT: Promise hoàn tất sau khi thu hồi token và điều hướng.
+ * SIDE EFFECT: Gọi revoke token API, xóa sessionStorage/store và chuyển đến login.
+ * EXCEPTION: Store luôn dọn local session trong finally nếu request revoke lỗi.
+ */
 const logout = async () => {
-
-  // Remove "accessToken" from cookie
-  useCookie('accessToken').value = null
-
-  // Remove "userData" from cookie
-  userData.value = null
-
-  // Redirect to login page
-  await router.push('/login')
-
-  // ℹ️ We had to remove abilities in then block because if we don't nav menu items mutation is visible while redirecting user to login page
-
-  // Remove "userAbilities" from cookie
-  useCookie('userAbilityRules').value = null
-
-  // Reset ability to initial ability
-  ability.update([])
+  await adminAuth.logout()
+  await router.push({ name: 'login' })
 }
 
 const userProfileList = [
@@ -138,10 +147,10 @@ const userProfileList = [
 
               <div>
                 <h6 class="text-h6 font-weight-medium">
-                  {{ userData.fullName || userData.username }}
+                  {{ userData.name || userData.username }}
                 </h6>
                 <VListItemSubtitle class="text-capitalize text-disabled">
-                  {{ userData.role }}
+                  {{ adminAuth.roles[0] }}
                 </VListItemSubtitle>
               </div>
             </div>

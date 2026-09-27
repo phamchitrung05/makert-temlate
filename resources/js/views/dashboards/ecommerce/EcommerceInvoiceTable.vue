@@ -1,3 +1,27 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: Hiển thị bảng hóa đơn trong dashboard thương mại điện tử
+  =====================================================================
+
+  Component tải danh sách hóa đơn theo bộ lọc, phân trang và sắp xếp. Dữ liệu
+  có thể đến từ Laravel API hoặc MSW local; khi request lỗi, component giữ UI
+  ổn định với danh sách rỗng, cảnh báo và nút retry thay vì truy cập null.
+
+  CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
+  - updateOptions(options): cập nhật page/sort từ VDataTableServer
+  - invoices: chuẩn hóa danh sách hóa đơn về mảng an toàn
+  - totalInvoices: chuẩn hóa tổng số bản ghi về số an toàn
+  - resolveInvoiceBalanceVariant(balance, total): xác định nhãn/màu số dư
+  - resolveInvoiceStatusVariantAndIcon(status): xác định màu/icon trạng thái
+  - computedMoreList(paramId): tạo menu thao tác cho từng hóa đơn
+  - deleteInvoice(id): xóa hóa đơn và tải lại danh sách
+  - retryInvoices(): gọi lại request sau khi tải dữ liệu thất bại
+
+  INPUT/OUTPUT CỦA COMPONENT (tổng thể):
+  - INPUT : query/filter state, response `/api/apps/invoice`, retry action
+  - OUTPUT: bảng hóa đơn, loading/error/empty state và navigation tới invoice pages
+  =====================================================================
+-->
 <script setup>
 const searchQuery = ref('')
 const selectedStatus = ref(null)
@@ -9,6 +33,13 @@ const page = ref(1)
 const sortBy = ref()
 const orderBy = ref()
 
+/**
+ * Đồng bộ phân trang và sắp xếp từ VDataTableServer vào query state.
+ *
+ * INPUT: options do VDataTableServer phát ra, có thể thiếu sortBy khi chưa sắp xếp.
+ * OUTPUT: Không trả dữ liệu.
+ * SIDE EFFECT: Cập nhật page, sortBy và orderBy để useApi refetch.
+ */
 const updateOptions = options => {
   page.value = options.page
   sortBy.value = options.sortBy[0]?.key
@@ -47,6 +78,8 @@ const headers = [
 
 const {
   data: invoiceData,
+  error: invoiceError,
+  isFetching: isLoading,
   execute: fetchInvoices,
 } = await useApi(createUrl('/apps/invoice', {
   query: {
@@ -59,10 +92,16 @@ const {
   },
 }))
 
-const invoices = computed(() => invoiceData.value.invoices)
-const totalInvoices = computed(() => invoiceData.value.totalInvoices)
+const invoices = computed(() => invoiceData.value?.invoices ?? [])
+const totalInvoices = computed(() => invoiceData.value?.totalInvoices ?? 0)
 
-// 👉 Invoice balance variant resolver
+/**
+ * Chuyển số dư hóa đơn thành trạng thái hiển thị và màu chip.
+ *
+ * INPUT: balance và total là giá trị tiền của một hóa đơn.
+ * OUTPUT: object gồm status và chip props cho template.
+ * SIDE EFFECT: Không có.
+ */
 const resolveInvoiceBalanceVariant = (balance, total) => {
   if (balance === total)
     return {
@@ -81,6 +120,13 @@ const resolveInvoiceBalanceVariant = (balance, total) => {
   }
 }
 
+/**
+ * Chuyển trạng thái hóa đơn thành màu và icon Vuetify.
+ *
+ * INPUT: status chuỗi từ API.
+ * OUTPUT: object gồm variant và icon; trạng thái lạ dùng fallback.
+ * SIDE EFFECT: Không có.
+ */
 const resolveInvoiceStatusVariantAndIcon = status => {
   if (status === 'Partial Payment')
     return {
@@ -119,6 +165,13 @@ const resolveInvoiceStatusVariantAndIcon = status => {
   }
 }
 
+/**
+ * Tạo danh sách thao tác cho menu của một hóa đơn.
+ *
+ * INPUT: paramId là id hóa đơn dùng cho route edit.
+ * OUTPUT: computed function trả về các menu item.
+ * SIDE EFFECT: Không có.
+ */
 const computedMoreList = computed(() => {
   return paramId => [
     {
@@ -143,17 +196,53 @@ const computedMoreList = computed(() => {
   ]
 })
 
+/**
+ * Xóa hóa đơn qua API rồi tải lại danh sách hiện tại.
+ *
+ * INPUT: id hóa đơn cần xóa.
+ * OUTPUT: Promise hoàn tất sau request và lần refetch.
+ * SIDE EFFECT: DELETE dữ liệu server/mock và cập nhật bảng.
+ * EXCEPTION: Lỗi request được giữ cho API layer xử lý.
+ */
 const deleteInvoice = async id => {
   await $api(`/apps/invoice/${ id }`, { method: 'DELETE' })
   fetchInvoices()
 }
+
+/**
+ * Tải lại danh sách hóa đơn mà không truyền DOM event vào execute().
+ *
+ * INPUT: Không có.
+ * OUTPUT: Promise của request fetchInvoices.
+ * SIDE EFFECT: Gửi lại GET `/apps/invoice` với query state hiện tại.
+ */
+const retryInvoices = () => fetchInvoices()
 </script>
 
 <template>
-  <VCard
-    v-if="invoices"
-    id="invoice-list"
-  >
+  <VCard id="invoice-list">
+    <VAlert
+      v-if="invoiceError"
+      class="ma-4"
+      type="warning"
+      variant="tonal"
+    >
+      Không tải được dữ liệu hóa đơn. Hãy thử lại hoặc kiểm tra API backend.
+      <template #append>
+        <VBtn
+          size="small"
+          variant="text"
+          @click="retryInvoices"
+        >
+          Thử lại
+        </VBtn>
+      </template>
+    </VAlert>
+    <VProgressLinear
+      v-if="isLoading"
+      indeterminate
+      color="primary"
+    />
     <VCardText>
       <div class="d-flex justify-space-between flex-wrap gap-4">
         <div class="d-flex gap-4 align-center">

@@ -1,9 +1,35 @@
 <?php
 
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Khởi tạo Laravel application và chuẩn hóa exception API
+ * =====================================================================
+ *
+ * File đăng ký route, middleware alias và quy tắc render exception. Các request
+ * API hoặc request yêu cầu JSON dùng BaseResponse để giữ cùng envelope lỗi;
+ * request web vẫn được Laravel xử lý theo cơ chế mặc định.
+ *
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - withMiddleware(): đăng ký middleware alias và quy tắc redirect guest
+ * - withExceptions(): chọn JSON response và chuyển exception API qua BaseResponse
+ *
+ * INPUT/OUTPUT CỦA FILE (tổng thể):
+ * - INPUT : cấu hình môi trường, request HTTP và exception trong vòng đời app
+ * - OUTPUT: Application đã cấu hình route, middleware và exception renderer
+ * =====================================================================
+ */
+
+use App\Http\Middleware\EnsureAccountIsActive;
+use App\Http\Responses\BaseResponse;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use App\Http\Middleware\EnsureAccountIsActive;
+use Illuminate\Http\Request;
+use Laravel\Sanctum\Http\Middleware\CheckAbilities;
+use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
+use Spatie\Permission\Middleware\PermissionMiddleware;
+use Spatie\Permission\Middleware\RoleMiddleware;
+use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -15,8 +41,26 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'account.active' => EnsureAccountIsActive::class,
+            'abilities' => CheckAbilities::class,
+            'ability' => CheckForAnyAbility::class,
+            'permission' => PermissionMiddleware::class,
+            'role' => RoleMiddleware::class,
+            'role_or_permission' => RoleOrPermissionMiddleware::class,
         ]);
+        $middleware->redirectGuestsTo(
+            fn (Request $request): ?string => $request->is('api/*') ? null : '/admin/login',
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->shouldRenderJsonWhen(
+            fn (Request $request): bool => $request->is('api/*') || $request->expectsJson(),
+        );
+
+        $exceptions->render(function (\Throwable $exception, Request $request) {
+            if (! $request->is('api/*') && ! $request->expectsJson()) {
+                return null;
+            }
+
+            return BaseResponse::fromException($exception);
+        });
     })->create();
