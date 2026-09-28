@@ -3,7 +3,9 @@
 namespace App\Actions\Resources;
 
 use App\Models\Resource;
+use App\Models\User;
 use App\Repositories\Contracts\ResourceRepositoryInterface;
+use App\Services\MediaAssetUsageService;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -32,6 +34,10 @@ use Illuminate\Support\Facades\DB;
  */
 abstract class ResourceAction
 {
+    public function __construct(
+        protected readonly MediaAssetUsageService $mediaAssetUsageService,
+    ) {}
+
     /**
      * =====================================================================
      * CHỨC NĂNG: Chạy closure bên trong transaction
@@ -88,6 +94,41 @@ abstract class ResourceAction
 
     /**
      * =====================================================================
+     * CHỨC NĂNG: Đồng bộ cover/preview MediaAsset của Resource
+     * =====================================================================
+     *
+     * INPUT:
+     * - $resource: Resource vừa tạo hoặc đang cập nhật
+     * - $attributes: payload có thể chứa media.cover_id/preview_ids
+     * - $actorId: admin thực hiện mutation
+     * OUTPUT: Không trả giá trị; usage được replace trong transaction caller
+     * =====================================================================
+     */
+    protected function syncMedia(Resource $resource, array $attributes, ?int $actorId): void
+    {
+        if (! array_key_exists('media', $attributes)) {
+            return;
+        }
+
+        $actor = User::query()->findOrFail($actorId);
+        $media = (array) ($attributes['media'] ?? []);
+        $fields = [];
+
+        if (array_key_exists('cover_id', $media)) {
+            $fields['resource.cover'] = $media['cover_id'] === null
+                ? []
+                : [$media['cover_id']];
+        }
+
+        if (array_key_exists('preview_ids', $media)) {
+            $fields['resource.preview'] = (array) ($media['preview_ids'] ?? []);
+        }
+
+        $this->mediaAssetUsageService->syncFields($actor, $resource, $fields);
+    }
+
+    /**
+     * =====================================================================
      * CHỨC NĂNG: Lấy các mảng id taxonomy ra khỏi payload
      * =====================================================================
      *
@@ -117,7 +158,10 @@ abstract class ResourceAction
      */
     protected function extractAttributes(array $attributes): array
     {
-        return array_diff_key($attributes, array_flip(self::TAXONOMY_FIELDS));
+        return array_diff_key($attributes, array_flip([
+            ...self::TAXONOMY_FIELDS,
+            'media',
+        ]));
     }
 
     /**
@@ -150,7 +194,13 @@ abstract class ResourceAction
      */
     protected function reloadWithRelations(Resource $resource): Resource
     {
-        return $resource->fresh(['author', 'categories', 'tags', 'technologies']);
+        return $resource->fresh([
+            'author',
+            'categories',
+            'tags',
+            'technologies',
+            'mediaAssetUsages.mediaAsset.media',
+        ]);
     }
 
     /**

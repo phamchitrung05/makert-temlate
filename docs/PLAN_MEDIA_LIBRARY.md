@@ -2,7 +2,7 @@
 
 **Phiên bản:** 1.0
 **Ngày tạo:** 2026-09-27
-**Trạng thái:** `TODO`
+**Trạng thái:** `IN PROGRESS`
 **Tài liệu roadmap tổng:** [PLAN.md](./PLAN.md)
 **Tài liệu cấu trúc:** [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)
 
@@ -169,8 +169,8 @@ quyền và field hay không.
 - [x] Chốt enum `MediaAssetKind` và `MediaAssetVisibility` trong `app/Enums`.
 - [x] Chốt danh sách field được phép và rule single/multiple bằng
   `MediaAssetField`.
-- [x] Chốt morph map cho `resource`, `resource_version` và `media_asset`; alias
-  `post` sẽ được đăng ký cùng model Post ở task tích hợp.
+- [x] Chốt morph map cho `resource`, `resource_version`, `media_asset` và
+  `post`.
 - [x] Chốt policy theo actor và permission `media.view/upload/attach/delete/retry`.
 - [x] Ghi contract upload, list, attach, detach và temporary download URL.
 
@@ -247,22 +247,27 @@ bao giờ bị expose thành public URL trực tiếp.
 
 ### Task 6 — Frontend service và Pinia store
 
-**Status:** `TODO`
+**Status:** `DONE`
 **Phụ thuộc:** Task 5
 
-- [ ] Tạo `resources/js/services/mediaAsset.js` để gọi API và unwrap envelope.
-- [ ] Tạo `resources/js/stores/mediaAsset.js` quản lý list, selected asset,
+- [x] Tạo `resources/js/services/mediaAsset.js` để gọi API và unwrap envelope.
+- [x] Tạo `resources/js/stores/mediaAsset.js` quản lý list, selected asset,
   filters, pagination, upload progress, loading, error và retry.
-- [ ] Giữ search/filter tạm thời ở page URL khi cần bookmark/refresh.
-- [ ] Không đưa HTTP call vào template/component con.
-- [ ] Thêm fake API dataset/handler với response giống Laravel thật.
+- [x] Giữ search/filter tạm thời ở page URL khi cần bookmark/refresh.
+- [x] Không đưa HTTP call vào template/component con.
+- [x] Thêm fake API dataset/handler với response giống Laravel thật.
+- [x] Tạo màn hình admin `Media > File` theo file-based router và navigation
+  dọc/ngang của project.
+- [x] Bổ sung bảng server-side, filter, upload progress, detail, retry,
+  download và delete state cho màn hình File.
 
-**Kết quả:** UI có thể chuyển fake → thật tại service boundary mà không đổi
-contract table/picker.
+**Kết quả:** UI Media > File có thể chuyển fake → thật tại service boundary mà
+không đổi contract table/picker; giao diện picker nhúng vào Resource/Post vẫn là
+phạm vi Task 7–8.
 
 ### Task 7 — Media Picker UI
 
-**Status:** `TODO`
+**Status:** `DONE`
 **Phụ thuộc:** Task 6
 
 Tạo các component theo cấu trúc Vue hiện tại:
@@ -275,33 +280,42 @@ resources/js/views/apps/media/
 └── MediaAssetDetails.vue
 ```
 
-- [ ] Dialog nhận `kind`, `field`, `multiple`, `visibility` và emit `select`.
-- [ ] Grid có loading, empty, error, retry, pagination và filter.
-- [ ] Upload hiển thị progress, scan/conversion status và lỗi theo asset.
-- [ ] Không hiển thị archive trong picker `kind=image`.
-- [ ] Chặn thao tác attach ở UI nếu user không có capability, nhưng vẫn dựa vào
+- [x] Dialog nhận `kind`, `field`, `multiple`, `visibility` và emit `select`.
+- [x] Grid có loading, empty, error, retry, pagination và filter.
+- [x] Upload hiển thị progress, scan/conversion status và lỗi theo asset.
+- [x] Không hiển thị archive trong picker `kind=image`.
+- [x] Chặn thao tác attach ở UI nếu user không có capability, nhưng vẫn dựa vào
   backend để authorize.
-- [ ] Chạy ESLint/build và kiểm tra keyboard/focus trong dialog.
+- [x] Chạy ESLint/build và kiểm tra keyboard/focus trong dialog.
+
+**Kết quả:** Picker dùng chung nằm trong `resources/js/views/apps/media/field/`.
+`MediaAssetField` là custom field wrapper cho form nghiệp vụ; `MediaLibraryDialog`
+điều phối list/upload/selection, còn grid và drop-zone là component trình bày.
+Task 8 gắn field này vào Resource, Post và Resource Version để gọi API attach.
 
 ### Task 8 — Tích hợp Resource, Post và Resource Version
 
-**Status:** `TODO`
+**Status:** `DONE`
 **Phụ thuộc:** Task 3, Task 7 và domain tương ứng đã có
 
-- [ ] Resource cover dùng `resource.cover` và chỉ nhận image single.
-- [ ] Resource preview dùng `resource.preview` và nhận image multiple.
-- [ ] Resource Version package dùng `resource_version.package`, archive private,
+- [x] Resource cover dùng `resource.cover` và chỉ nhận image single.
+- [x] Resource preview dùng `resource.preview` và nhận image multiple.
+- [x] Resource Version package dùng `resource_version.package`, archive private,
   scan clean mới cho phép version ready.
-- [ ] Resource Version documentation dùng `resource_version.documentation` và
+- [x] Resource Version documentation dùng `resource_version.documentation` và
   filter document.
-- [ ] Post thumbnail/content images dùng field riêng, không dùng lại rule của
+- [x] Post thumbnail/content images dùng field riêng, không dùng lại rule của
   Resource.
-- [ ] Khi update/replace/delete model, usage cũ được detach đúng transaction.
+- [x] Khi update/replace/delete model, usage cũ được detach đúng transaction.
 
 ### Task 9 — Fake API và frontend tests
 
 **Status:** `TODO`
-**Phụ thuộc:** Task 6, Task 7
+**Phụ thuộc:** Task 6, Task 7, Task 8
+
+**Ghi chú phiên 2026-09-28:** Task 9 chưa triển khai vì đã muộn; dời sang
+buổi chiều/phiên kế tiếp. Không đánh dấu `DONE` hoặc bắt đầu Task 10 trước khi
+các frontend test bên dưới chạy đạt.
 
 - [ ] Test service mapping, filter và pagination.
 - [ ] Test store loading/error/retry/upload progress.
@@ -346,14 +360,14 @@ UI có thể dựng skeleton, nhưng không đánh dấu tích hợp hoàn thàn
 - [ ] Không có file nguy hiểm, path traversal hoặc archive vượt giới hạn lọt qua.
 - [ ] Queue failure có trạng thái lỗi và retry idempotent.
 - [ ] API, fake API, service, store và component dùng cùng response contract.
-- [ ] Resource, Post và Resource Version dùng chung picker nhưng giữ rule field
+- [x] Resource, Post và Resource Version dùng chung picker nhưng giữ rule field
   riêng.
 - [ ] Test backend/frontend, build, lint và tài liệu đều đạt.
 
 ## 8. Tài liệu cần cập nhật khi hoàn thành
 
-- [ ] Cập nhật trạng thái từng task trong file này.
-- [ ] Cập nhật Đợt 3 và mốc gần nhất trong [PLAN.md](./PLAN.md).
-- [ ] Cập nhật bản đồ thư mục, API và flow trong
+- [x] Cập nhật trạng thái từng task trong file này.
+- [x] Cập nhật Đợt 3 và mốc gần nhất trong [PLAN.md](./PLAN.md).
+- [x] Cập nhật bản đồ thư mục, API và flow trong
   [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md).
-- [ ] Nếu thêm disk/queue/env, cập nhật [ENVIRONMENT.md](./ENVIRONMENT.md).
+- [x] Nếu thêm disk/queue/env, cập nhật [ENVIRONMENT.md](./ENVIRONMENT.md).

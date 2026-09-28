@@ -211,11 +211,18 @@ class MediaApiTest extends TestCase
 
         $this->assertSame('Cover alpha', $response->json('data.items.0.title'));
 
-        $this->withToken($token)
+        $fieldResponse = $this->withToken($token)
             ->getJson('/api/admin/media-assets?field=resource.cover')
             ->assertOk()
-            ->assertJsonPath('data.itemsLength', 1)
-            ->assertJsonPath('data.items.0.id', $cover->id);
+            ->assertJsonPath('data.itemsLength', 2)
+            ->assertJsonCount(2, 'data.items');
+
+        $fieldAssetIds = collect($fieldResponse->json('data.items'))
+            ->pluck('id')
+            ->all();
+
+        $this->assertContains($cover->id, $fieldAssetIds);
+        $this->assertContains($preview->id, $fieldAssetIds);
 
         $this->withToken($token)
             ->getJson('/api/admin/media-assets?kind=archive&field=resource.cover')

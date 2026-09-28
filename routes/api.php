@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\MediaAssetController;
+use App\Http\Controllers\Admin\PostController;
 use App\Http\Controllers\Admin\ResourceController;
+use App\Http\Controllers\Admin\ResourceVersionController;
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\TechnologyController;
 use App\Http\Controllers\Auth\AdminTokenController;
@@ -112,6 +114,27 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
         Route::post('/resources/{resource}/archive', [ResourceController::class, 'archive'])
             ->whereNumber('resource')
             ->middleware('permission:resources.archive,admin');
+
+        Route::middleware('permission:resource_versions.manage,admin')->group(function (): void {
+            Route::get('/resource-versions', [ResourceVersionController::class, 'index']);
+            Route::post('/resource-versions', [ResourceVersionController::class, 'store']);
+            Route::get('/resource-versions/{resourceVersion}', [ResourceVersionController::class, 'show'])
+                ->whereNumber('resourceVersion');
+            Route::put('/resource-versions/{resourceVersion}', [ResourceVersionController::class, 'update'])
+                ->whereNumber('resourceVersion');
+            Route::delete('/resource-versions/{resourceVersion}', [ResourceVersionController::class, 'destroy'])
+                ->whereNumber('resourceVersion');
+            Route::post('/resource-versions/{resourceVersion}/ready', [ResourceVersionController::class, 'ready'])
+                ->whereNumber('resourceVersion');
+        });
+
+        Route::middleware('permission:posts.manage,admin')->group(function (): void {
+            Route::get('/posts', [PostController::class, 'index']);
+            Route::post('/posts', [PostController::class, 'store']);
+            Route::get('/posts/{post}', [PostController::class, 'show'])->whereNumber('post');
+            Route::put('/posts/{post}', [PostController::class, 'update'])->whereNumber('post');
+            Route::delete('/posts/{post}', [PostController::class, 'destroy'])->whereNumber('post');
+        });
     });
 
 Route::middleware(['web', 'auth:customer', 'account.active:customer'])

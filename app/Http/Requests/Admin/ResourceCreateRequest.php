@@ -68,6 +68,10 @@ class ResourceCreateRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'status' => ['required', 'string', 'in:'.implode(',', ResourceStatus::values())],
             'visibility' => ['required', 'string', 'in:'.implode(',', ResourceVisibility::values())],
+            'media' => ['sometimes', 'array'],
+            'media.cover_id' => ['nullable', 'integer', 'min:1'],
+            'media.preview_ids' => ['sometimes', 'array'],
+            'media.preview_ids.*' => ['integer', 'distinct', 'min:1'],
         ];
     }
 
@@ -89,6 +93,7 @@ class ResourceCreateRequest extends FormRequest
             'category_ids',
             'tag_ids',
             'technology_ids',
+            'media',
         ]);
     }
 }

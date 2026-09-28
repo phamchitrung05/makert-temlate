@@ -4,8 +4,8 @@
  * =====================================================================
  *
  * File tập hợp handler theo từng feature và bật worker khi biến môi trường
- * `VITE_ENABLE_MSW` được đặt thành `true`. Handler resource admin được đăng ký
- * tại đây để page VDataTableServer có thể dùng fake data trước API thật.
+ * `VITE_ENABLE_MSW` được đặt thành `true`. Handler resource và media admin được
+ * đăng ký tại đây để các màn hình nghiệp vụ có thể dùng fake data trước API thật.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - default(): khởi động MSW worker khi fake API được bật
@@ -26,9 +26,12 @@ import { handlerAppsEcommerce } from '@db/apps/ecommerce/index'
 import { handlerAppsEmail } from '@db/apps/email/index'
 import { handlerAppsInvoice } from '@db/apps/invoice/index'
 import { handlerAppsKanban } from '@db/apps/kanban/index'
+import { handlerAppsMedia } from '@db/apps/media/index'
 import { handlerAppLogistics } from '@db/apps/logistics/index'
 import { handlerAppsPermission } from '@db/apps/permission/index'
 import { handlerAppsResources } from '@db/apps/resources/index'
+import { handlerAppsResourceVersions } from '@db/apps/resourceVersions/index'
+import { handlerAppsPosts } from '@db/apps/posts/index'
 import { handlerAppsUsers } from '@db/apps/users/index'
 import { handlerDashboard } from '@db/dashboard/index'
 import { handlerPagesDatatable } from '@db/pages/datatable/index'
@@ -36,7 +39,7 @@ import { handlerPagesFaq } from '@db/pages/faq/index'
 import { handlerPagesHelpCenter } from '@db/pages/help-center/index'
 import { handlerPagesProfile } from '@db/pages/profile/index'
 
-const worker = setupWorker(...handlerAppsEcommerce, ...handlerAppsAcademy, ...handlerAppsInvoice, ...handlerAppsUsers, ...handlerAppsEmail, ...handlerAppsCalendar, ...handlerAppsChat, ...handlerAppsPermission, ...handlerAppsResources, ...handlerPagesHelpCenter, ...handlerPagesProfile, ...handlerPagesFaq, ...handlerPagesDatatable, ...handlerAppBarSearch, ...handlerAppLogistics, ...handlerAppsKanban, ...handlerDashboard)
+const worker = setupWorker(...handlerAppsEcommerce, ...handlerAppsAcademy, ...handlerAppsInvoice, ...handlerAppsUsers, ...handlerAppsEmail, ...handlerAppsCalendar, ...handlerAppsChat, ...handlerAppsPermission, ...handlerAppsResources, ...handlerAppsResourceVersions, ...handlerAppsPosts, ...handlerAppsMedia, ...handlerPagesHelpCenter, ...handlerPagesProfile, ...handlerPagesFaq, ...handlerPagesDatatable, ...handlerAppBarSearch, ...handlerAppLogistics, ...handlerAppsKanban, ...handlerDashboard)
 
 /**
  * Khởi động MSW worker khi ứng dụng được cấu hình dùng fake API.

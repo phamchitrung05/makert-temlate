@@ -31,6 +31,7 @@ import { destr } from 'destr'
 import { HttpResponse, http } from 'msw'
 import { paginateArray } from '@api-utils/paginateArray'
 import { db } from '@db/apps/resources/db'
+import { db as mediaDb } from '@db/apps/media/db'
 
 /**
  * Chuẩn hóa khóa sort từ các dạng query mà VDataTableServer có thể phát ra.
@@ -133,6 +134,14 @@ const toResourceItem = resource => ({
   published_at: resource.published_at,
   created_at: resource.created_at ?? resource.updated_at,
   updated_at: resource.updated_at,
+  media: {
+    cover: resource.media?.cover_id
+      ? mediaDb.mediaAssets.find(asset => asset.id === resource.media.cover_id) ?? null
+      : null,
+    preview: (resource.media?.preview_ids ?? [])
+      .map(id => mediaDb.mediaAssets.find(asset => asset.id === id))
+      .filter(Boolean),
+  },
 })
 
 /**
@@ -203,6 +212,10 @@ const createRecord = payload => {
     categories: [],
     tags: [],
     technologies: [],
+    media: {
+      cover_id: payload.media?.cover_id ?? null,
+      preview_ids: payload.media?.preview_ids ?? [],
+    },
   }
 
   db.resources.unshift(record)
@@ -243,6 +256,13 @@ const updateRecord = (resource, payload) => {
 
   if (resource.status !== 'published')
     resource.published_at = null
+
+  if (payload.media !== undefined) {
+    resource.media = {
+      cover_id: payload.media?.cover_id ?? null,
+      preview_ids: payload.media?.preview_ids ?? [],
+    }
+  }
 
   return resource
 }

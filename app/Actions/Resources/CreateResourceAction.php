@@ -72,6 +72,7 @@ class CreateResourceAction extends ResourceAction
                 );
 
                 $this->syncTaxonomy($resource, $taxonomy);
+                $this->syncMedia($resource, $attributes, $actorId);
 
                 return $resource;
             },

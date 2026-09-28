@@ -52,6 +52,10 @@ const normalizeResource = resource => {
     demoUrl: resource.demoUrl ?? resource.demo_url ?? '',
     documentationUrl: resource.documentationUrl ?? resource.documentation_url ?? '',
     isFeatured: resource.isFeatured ?? resource.is_featured ?? false,
+    media: {
+      cover: resource.media?.cover ?? null,
+      preview: Array.isArray(resource.media?.preview) ? resource.media.preview : [],
+    },
   }
 }
 
@@ -68,12 +72,20 @@ const toApiPayload = payload => {
     'demo_url': payload.demoUrl,
     'documentation_url': payload.documentationUrl,
     'is_featured': payload.isFeatured,
+    media: {
+      'cover_id': payload.cover?.id ?? null,
+      'preview_ids': Array.isArray(payload.preview)
+        ? payload.preview.map(asset => asset.id).filter(Boolean)
+        : [],
+    },
   }
 
   delete apiPayload.shortDescription
   delete apiPayload.demoUrl
   delete apiPayload.documentationUrl
   delete apiPayload.isFeatured
+  delete apiPayload.cover
+  delete apiPayload.preview
 
   return apiPayload
 }

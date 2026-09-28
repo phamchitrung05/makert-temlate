@@ -71,6 +71,10 @@ class ResourceUpdateRequest extends FormRequest
                 'max:255',
                 Rule::unique('resources', 'code')->ignore($resourceId),
             ],
+            'media' => ['sometimes', 'array'],
+            'media.cover_id' => ['nullable', 'integer', 'min:1'],
+            'media.preview_ids' => ['sometimes', 'array'],
+            'media.preview_ids.*' => ['integer', 'distinct', 'min:1'],
         ];
     }
 
@@ -92,6 +96,7 @@ class ResourceUpdateRequest extends FormRequest
             'category_ids',
             'tag_ids',
             'technology_ids',
+            'media',
         ]);
     }
 }

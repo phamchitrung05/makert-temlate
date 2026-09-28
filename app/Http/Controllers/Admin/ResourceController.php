@@ -13,12 +13,15 @@ use App\Http\Resources\ResourceItem;
 use App\Http\Resources\ResourceSummary;
 use App\Http\Responses\BaseResponse;
 use App\Models\Resource;
+use App\Models\User;
 use App\Repositories\Contracts\ResourceRepositoryInterface;
 use App\Repositories\Criteria\ResourceCategoryCriteria;
 use App\Repositories\Criteria\ResourceStatusCriteria;
 use App\Repositories\Criteria\ResourceTypeCriteria;
+use App\Services\MediaAssetUsageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -124,7 +127,13 @@ class ResourceController extends Controller
      */
     public function show(Resource $resource): JsonResponse
     {
-        $resource->loadMissing(['author', 'categories', 'tags', 'technologies']);
+        $resource->loadMissing([
+            'author',
+            'categories',
+            'tags',
+            'technologies',
+            'mediaAssetUsages.mediaAsset.media',
+        ]);
 
         return BaseResponse::success(
             ResourceItem::make($resource),
@@ -173,9 +182,17 @@ class ResourceController extends Controller
      * SIDE EFFECT:
      * - SET deleted_at; bản ghi vẫn còn để giữ lịch sử download
      */
-    public function destroy(Resource $resource): Response
+    public function destroy(Resource $resource, MediaAssetUsageService $mediaAssetUsageService): Response
     {
-        $resource->delete();
+        DB::transaction(function () use ($resource, $mediaAssetUsageService): void {
+            $actor = request()->user();
+            if (! $actor instanceof User) {
+                abort(Response::HTTP_UNAUTHORIZED);
+            }
+
+            $mediaAssetUsageService->detachAll($actor, $resource);
+            $resource->delete();
+        });
 
         return BaseResponse::noContent();
     }
@@ -195,7 +212,13 @@ class ResourceController extends Controller
     public function publish(Resource $resource, PublishResourceAction $action): JsonResponse
     {
         $published = $action->handle($resource, request()->user()->id);
-        $published->loadMissing(['author', 'categories', 'tags', 'technologies']);
+        $published->loadMissing([
+            'author',
+            'categories',
+            'tags',
+            'technologies',
+            'mediaAssetUsages.mediaAsset.media',
+        ]);
 
         return BaseResponse::success(
             ResourceItem::make($published),
@@ -218,7 +241,13 @@ class ResourceController extends Controller
     public function archive(Resource $resource, ArchiveResourceAction $action): JsonResponse
     {
         $archived = $action->handle($resource, request()->user()->id);
-        $archived->loadMissing(['author', 'categories', 'tags', 'technologies']);
+        $archived->loadMissing([
+            'author',
+            'categories',
+            'tags',
+            'technologies',
+            'mediaAssetUsages.mediaAsset.media',
+        ]);
 
         return BaseResponse::success(
             ResourceItem::make($archived),

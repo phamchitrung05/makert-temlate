@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\MediaAssetField;
+use App\Enums\MediaAssetVisibility;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
 use App\Models\User;
@@ -38,6 +39,108 @@ use Illuminate\Validation\ValidationException;
  */
 class MediaAssetUsageService
 {
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Đồng bộ nhiều field media bằng danh sách id
+     * =====================================================================
+     *
+     * INPUT:
+     * - $actor: admin đang ghi domain
+     * - $linkable: model sở hữu usage
+     * - $fieldAssets: map field enum => danh sách media_asset_id; field bị bỏ
+     *   qua khi không có trong map để update domain không làm mất media cũ
+     *
+     * OUTPUT:
+     * - Không trả giá trị; các usage được replace trong cùng transaction
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Rollback toàn bộ nếu một field hoặc asset không hợp lệ
+     * =====================================================================
+     */
+    public function syncFields(User $actor, Model $linkable, array $fieldAssets): void
+    {
+        DB::transaction(function () use ($actor, $linkable, $fieldAssets): void {
+            foreach ($fieldAssets as $field => $assetIds) {
+                $field = $field instanceof MediaAssetField
+                    ? $field
+                    : MediaAssetField::from((string) $field);
+
+                $this->replaceByIds($actor, $linkable, $field, $assetIds);
+            }
+        });
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Replace usage bằng danh sách MediaAsset id theo thứ tự
+     * =====================================================================
+     *
+     * INPUT:
+     * - $assetIds: id asset theo thứ tự hiển thị; null được hiểu là clear
+     * OUTPUT:
+     * - Collection: usage mới sau khi replace
+     * EXCEPTION: ValidationException nếu id thiếu, trùng hoặc bị xoá mềm
+     * =====================================================================
+     */
+    public function replaceByIds(
+        User $actor,
+        Model $linkable,
+        MediaAssetField $field,
+        ?iterable $assetIds,
+    ): Collection {
+        $ids = collect($assetIds ?? [])
+            ->map(fn (mixed $id): int => (int) $id)
+            ->values();
+
+        if ($ids->contains(fn (int $id): bool => $id < 1) || $ids->duplicates()->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'media' => "Danh sách asset của field {$field->value} không hợp lệ.",
+            ]);
+        }
+
+        $assets = MediaAsset::query()
+            ->whereIn('id', $ids->all())
+            ->get()
+            ->keyBy('id');
+
+        if ($assets->count() !== $ids->count()) {
+            throw ValidationException::withMessages([
+                'media' => "Một hoặc nhiều asset của field {$field->value} không tồn tại hoặc đã bị xoá.",
+            ]);
+        }
+
+        $orderedAssets = $ids->map(fn (int $id): MediaAsset => $assets->get($id));
+
+        return $this->replace($actor, $linkable, $field, $orderedAssets);
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Gỡ toàn bộ usage khi model nghiệp vụ bị xoá
+     * =====================================================================
+     *
+     * INPUT:
+     * - $actor: admin thực hiện thao tác xoá để ghi audit
+     * - $linkable: model cần gỡ usage
+     * OUTPUT: Không trả giá trị; MediaAsset vẫn được giữ nguyên
+     * EXCEPTION/TRANSACTION: mọi usage được xoá trong một transaction
+     * =====================================================================
+     */
+    public function detachAll(User $actor, Model $linkable): void
+    {
+        DB::transaction(function () use ($actor, $linkable): void {
+            $usages = $linkable->mediaAssetUsages()->with('mediaAsset')->get();
+
+            foreach ($usages as $usage) {
+                $usage->delete();
+
+                if ($usage->mediaAsset instanceof MediaAsset) {
+                    $this->logUsageActivity($actor, $usage->mediaAsset, 'media_asset.detached', $usage);
+                }
+            }
+        });
+    }
+
     /**
      * =====================================================================
      * CHỨC NĂNG: Attach một asset vào field của model nghiệp vụ
@@ -276,6 +379,13 @@ class MediaAssetUsageService
         if ($field->kind() !== $asset->kind) {
             throw ValidationException::withMessages([
                 'media_asset_id' => "Asset {$asset->kind->value} không phù hợp field {$field->value}.",
+            ]);
+        }
+
+        if ($field === MediaAssetField::ResourceVersionPackage
+            && $asset->visibility !== MediaAssetVisibility::Private) {
+            throw ValidationException::withMessages([
+                'media_asset_id' => 'Package của resource version phải nằm trên private visibility.',
             ]);
         }
 

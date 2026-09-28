@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Customer;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
+use App\Models\Post;
 use App\Models\Resource;
 use App\Models\ResourceVersion;
 use App\Models\Tag;
@@ -69,6 +70,7 @@ class AppServiceProvider extends ServiceProvider
             'resource_version' => ResourceVersion::class,
             'media_asset' => MediaAsset::class,
             'media_asset_usage' => MediaAssetUsage::class,
+            'post' => Post::class,
             'category' => Category::class,
             'tag' => Tag::class,
             'technology' => Technology::class,

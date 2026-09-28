@@ -1,18 +1,36 @@
 # Handoff phiên làm việc — Media Library
 
-**Ngày cập nhật:** 2026-09-28  
-**Mục tiêu phiên tiếp theo:** tiếp tục triển khai Media Library từ Task 6 trong
+**Ngày cập nhật:** 2026-09-28 (ghi nhận cuối buổi sáng)
+**Mục tiêu phiên tiếp theo:** buổi chiều bắt đầu triển khai Task 9; sau đó mới
+chuyển sang acceptance/security của Task 10 trong
 [`PLAN_MEDIA_LIBRARY.md`](./PLAN_MEDIA_LIBRARY.md).
+
+## Ghi chú bàn giao cuối buổi sáng — không triển khai trùng
+
+- Task 8 đã hoàn tất và đã được đánh dấu `DONE` trong
+  `docs/PLAN_MEDIA_LIBRARY.md`.
+- Task 9 và Task 10 chưa làm trong phiên này, vẫn giữ trạng thái `TODO`; do đã
+  muộn nên Task 9 được dời sang buổi chiều/phiên kế tiếp.
+- Các thay đổi sáng nay đã được giữ nguyên trong worktree; không reset hoặc
+  xoá thay đổi trước đó.
+- Phiên chiều nên bắt đầu bằng việc thiết lập Vitest + Vue Test Utils (project
+  hiện chưa có script test frontend), rồi viết test theo checklist Task 9.
 
 ## Trạng thái đã hoàn thành
 
-Task 1 đến Task 5 đã `DONE`:
+Task 1 đến Task 7 đã `DONE`:
 
 1. Domain contract và enum.
 2. `MediaAsset` domain, Spatie Media Library, disk public/private.
 3. `media_asset_usages`, attach/detach/reorder/replace service.
 4. Upload validation, checksum, archive scan, conversion queue và retry.
 5. Media API, authorization, filter/pagination và private download.
+6. Frontend service/store, fake API và màn hình admin `Media > File`.
+7. Media Picker UI và custom field dùng chung.
+
+Task 8 đã `DONE`: Resource, Resource Version và Post dùng chung picker nhưng
+giữ field/kind/cardinality riêng; action đồng bộ usage trong transaction và
+detach usage cũ khi replace/delete.
 
 Task 5 đã có các endpoint dưới `/api/admin/media-assets`:
 
@@ -34,40 +52,49 @@ private disk. Private asset yêu cầu policy và permission phù hợp.
 
 ```text
 php artisan test
-69 tests passed, 356 assertions
+73 tests passed, 395 assertions
 
-Pint riêng các file Task 5: PASS
-php artisan route:list --path=api/admin/media-assets: 10 routes
+Pint riêng controller/test Media API: PASS
+SFC picker compile: 4 files passed
+ESLint Media/Picker: PASS
+npm run build: PASS
 git diff --check: không có lỗi nội dung
 ```
 
-`vendor/bin/pint --test` toàn project còn một số lỗi định dạng cũ ngoài phạm vi
-Task 5; không format hàng loạt các file đó nếu chưa có yêu cầu riêng.
+Pint đã pass trên toàn bộ file PHP liên quan Task 8. Không format hàng loạt các
+file PHP cũ ngoài phạm vi nếu chưa có yêu cầu riêng.
 
-## Việc cần làm tiếp theo — Task 6
+Frontend Task 6–7 đã chạy ESLint các file Media/Picker với 0 error, compile trực
+tiếp 4 SFC picker và `npm run build` thành công. Build vẫn in cảnh báo asset PNG
+cũ được resolve lúc runtime.
 
-Đọc kỹ `docs/PLAN_MEDIA_LIBRARY.md`, đặc biệt Task 6 và response contract trong
-`docs/PROJECT_STRUCTURE.md`, sau đó triển khai:
+Môi trường đã được chuẩn bị bằng `.env` và `composer install`; package
+`prettus/l5-repository` đã có trong `vendor`, nên full backend suite đã chạy
+pass.
 
-- `resources/js/services/mediaAsset.js`:
-  - list/filter/pagination/sort;
-  - detail;
-  - upload với progress;
-  - update metadata;
-  - attach/detach/reorder/delete/retry/download;
-  - unwrap envelope `BaseResponse` tại service boundary.
-- `resources/js/stores/mediaAsset.js`:
-  - list/items/itemsLength;
-  - selected asset/detail;
-  - filters và pagination;
-  - loading, upload progress, error;
-  - retry và mutation actions.
-- Fake API dataset/handler giữ đúng response contract Laravel thật nếu cần cho UI.
-- Không đưa HTTP call trực tiếp vào component.
-- Dùng Composition API/Pinia pattern hiện tại của project.
+## Task 8 — Đã hoàn thành
 
-Sau Task 6 mới chuyển sang Task 7 — Media Picker UI. Không tích hợp Resource/Post
-picker trước khi service/store contract ổn định.
+Đã triển khai:
+
+- Resource: `resource.cover` image single và `resource.preview` image multiple.
+- Resource Version: package archive private, scan clean gate; documentation
+  document multiple.
+- Post: thumbnail image single và content images image multiple.
+- CRUD API/action cho Resource Version và Post, fake API và navigation tương ứng.
+- `MediaTask8IntegrationTest` bao phủ replace/delete/rollback, scan gate và
+  field-kind validation.
+
+Đã kiểm chứng: `php artisan test` (73 tests/395 assertions), Pint các file Task
+8, ESLint frontend và `npm run build` đều đạt. Build còn cảnh báo PNG cũ được
+resolve lúc runtime.
+
+## Việc cần làm tiếp theo — Task 9 (buổi chiều)
+
+- Thiết lập Vitest + Vue Test Utils + happy-dom và script `test:run`.
+- Bổ sung test service mapping, store loading/error/retry/upload progress,
+  picker single/multiple và Resource form giữ state khi API lỗi.
+- Kiểm tra fake API giữ cùng response contract với Laravel.
+- Chỉ sau khi Task 9 pass mới chuyển sang security/acceptance Task 10.
 
 ## Quy trình bắt đầu phiên mới
 
@@ -79,4 +106,5 @@ rg -n "defineStore|resources/js/services|useApi" resources/js
 ```
 
 Không reset hoặc xóa các thay đổi hiện có trong worktree. Các thay đổi backend
-Task 1–5 là nền tảng đã hoàn tất và phải được giữ nguyên.
+Task 1–5, frontend Task 6–7 và phần tích hợp Task 8 là nền tảng đã hoàn tất và
+phải được giữ nguyên.

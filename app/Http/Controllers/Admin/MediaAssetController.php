@@ -389,7 +389,10 @@ class MediaAssetController extends Controller
      */
     private function applyFilters(Builder $query, array $filters): void
     {
-        if (isset($filters['kind'])) {
+        if (isset($filters['field'])) {
+            $field = MediaAssetField::from($filters['field']);
+            $query->where('kind', $field->kind()->value);
+        } elseif (isset($filters['kind'])) {
             $query->where('kind', $filters['kind']);
         }
 
@@ -399,11 +402,6 @@ class MediaAssetController extends Controller
 
         if (isset($filters['owner'])) {
             $query->where('created_by', (int) $filters['owner']);
-        }
-
-        if (isset($filters['field'])) {
-            $query->whereHas('usages', fn (Builder $usageQuery) => $usageQuery
-                ->where('field', $filters['field']));
         }
 
         if (isset($filters['scan_status'])) {

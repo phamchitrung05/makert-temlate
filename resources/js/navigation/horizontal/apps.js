@@ -4,7 +4,7 @@
  * =====================================================================
  *
  * Menu ngang dùng cùng route name với vertical navigation. Resource nằm
- * trong Ecommerce để hai layout cung cấp một đường dẫn quản trị thống nhất.
+ * trong Ecommerce; Media là nhóm nghiệp vụ riêng cho file dùng chung.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - Không có; file export một mảng cấu hình menu.
@@ -40,6 +40,7 @@ export default [
             children: [
               { title: 'List', to: 'apps-ecommerce-resource-list' },
               { title: 'Add', to: 'apps-ecommerce-resource-add' },
+              { title: 'Versions', to: 'apps-ecommerce-resource-version-list' },
             ],
           },
           {
@@ -68,6 +69,21 @@ export default [
             title: 'Settings',
             to: 'apps-ecommerce-settings',
           },
+        ],
+      },
+      {
+        title: 'Blog',
+        icon: { icon: 'tabler-news' },
+        children: [
+          { title: 'Posts', to: 'apps-blog-post-list' },
+          { title: 'Add Post', to: 'apps-blog-post-add' },
+        ],
+      },
+      {
+        title: 'Media',
+        icon: { icon: 'tabler-photo' },
+        children: [
+          { title: 'File', to: 'apps-media-file' },
         ],
       },
       {

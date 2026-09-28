@@ -294,10 +294,10 @@ Search, filter, sort và pagination có thể để ở URL/page state nếu c�
 bookmark hoặc chia sẻ link; không đưa mọi state tạm thời vào store.
 
 Media Library trung tâm dùng contract tại `app/Enums/MediaAsset*`. Alias
-`resource_version` và `media_asset` đã được đăng ký trong `AppServiceProvider`;
-alias `post` sẽ được thêm khi model Post được triển khai.
+`resource_version`, `media_asset` và `post` đã được đăng ký trong
+`AppServiceProvider`.
 
-Các file Media Library đã triển khai đến Task 5:
+Các file Media Library đã triển khai đến Task 8:
 
 ```text
 app/Models/MediaAsset.php
@@ -330,13 +330,60 @@ app/Enums/MediaScanStatus.php
 app/Enums/MediaConversionStatus.php
 app/Exceptions/MediaSecurityException.php
 config/media-assets.php
+
+resources/js/services/mediaAsset.js
+resources/js/stores/mediaAsset.js
+resources/js/pages/apps/media/file/index.vue
+resources/js/views/apps/media/MediaAssetTable.vue
+resources/js/views/apps/media/MediaAssetUploadDialog.vue
+resources/js/views/apps/media/MediaAssetDetails.vue
+resources/js/views/apps/media/field/MediaAssetField.vue
+resources/js/views/apps/media/field/MediaLibraryDialog.vue
+resources/js/views/apps/media/field/MediaAssetGrid.vue
+resources/js/views/apps/media/field/MediaUploadDropZone.vue
+resources/js/views/apps/media/field/mediaAssetFields.js
+resources/js/views/apps/media/field/useMediaCapabilities.js
+resources/js/plugins/fake-api/handlers/apps/media/db.js
+resources/js/plugins/fake-api/handlers/apps/media/index.js
+```
+
+Các file tích hợp domain của Task 8:
+
+```text
+app/Actions/Resources/CreateResourceVersionAction.php
+app/Actions/Resources/UpdateResourceVersionAction.php
+app/Actions/Resources/MarkResourceVersionReadyAction.php
+app/Http/Controllers/Admin/ResourceVersionController.php
+app/Http/Requests/Admin/ResourceVersionCreateRequest.php
+app/Http/Requests/Admin/ResourceVersionUpdateRequest.php
+app/Http/Resources/ResourceVersionResource.php
+app/Models/Post.php
+app/Actions/Posts/CreatePostAction.php
+app/Actions/Posts/UpdatePostAction.php
+app/Http/Controllers/Admin/PostController.php
+app/Http/Requests/Admin/PostCreateRequest.php
+app/Http/Requests/Admin/PostUpdateRequest.php
+app/Http/Resources/PostResource.php
+database/migrations/*_create_posts_table.php
+tests/Feature/MediaTask8IntegrationTest.php
+
+resources/js/services/resourceVersion.js
+resources/js/stores/resourceVersion.js
+resources/js/views/apps/ecommerce/resource-version/ResourceVersionForm.vue
+resources/js/pages/apps/ecommerce/resource-version/
+resources/js/services/post.js
+resources/js/stores/post.js
+resources/js/views/apps/blog/post/PostForm.vue
+resources/js/pages/apps/blog/post/
+resources/js/plugins/fake-api/handlers/apps/resourceVersions/
+resources/js/plugins/fake-api/handlers/apps/posts/
 ```
 
 `MediaAsset` sở hữu collection Spatie `library`; bảng `media_assets` chỉ lưu
 metadata nghiệp vụ, còn bảng `media` lưu file vật lý. Disk `media_public` và
 `media_private` được cấu hình trong `config/filesystems.php` và chọn qua
-`config/media-library.php` theo visibility. Model `Resource` và
-`ResourceVersion` dùng trait `HasMediaAssets`; mutation usage đi qua
+`config/media-library.php` theo visibility. Model `Resource`,
+`ResourceVersion` và `Post` dùng trait `HasMediaAssets`; mutation usage đi qua
 `MediaAssetUsageService` để giữ field/kind/cardinality/permission trong một
 transaction. Upload Task 4 dùng `MediaUploadValidator` và
 `ArchiveSecurityScanner` trước khi action copy file vào Spatie collection;
@@ -350,6 +397,42 @@ permission admin riêng (`media.view`, `media.upload`, `media.attach`,
 asset chỉ trả temporary URL có hạn hoặc stream qua controller sau policy check;
 archive phải có `scan_status=clean` mới được download.
 
+Task 6 bổ sung màn hình `Media > File` tại `apps-media-file`. Page giữ filter,
+pagination, sort và query URL; `MediaAssetTable` chỉ render server-side table,
+`MediaAssetUploadDialog` chỉ phát payload upload, còn `MediaAssetDetails` chỉ
+trình bày metadata an toàn. Fake API nằm trong MSW handler cùng response contract
+để có thể chuyển sang Laravel thật tại service boundary.
+
+Task 7 bổ sung picker dùng chung dưới `resources/js/views/apps/media/field/`.
+`MediaAssetField` là wrapper cho form nghiệp vụ; `MediaLibraryDialog` nhận
+`kind`, `field`, `multiple`, `visibility` và emit asset đã chọn. Grid/upload
+drop-zone chỉ xử lý presentation và phát event; capability frontend chỉ khóa UI,
+authorization thật vẫn do backend policy/permission quyết định.
+
+Task 8 nối `MediaAssetField` vào các domain qua payload `media`:
+
+```text
+Resource
+  media.cover_id       → resource.cover (image, single, public)
+  media.preview_ids    → resource.preview (image, multiple, public)
+ResourceVersion
+  media.package_id     → resource_version.package (archive, private, single)
+  media.documentation_ids → resource_version.documentation (document, multiple)
+Post
+  media.thumbnail_id   → post.thumbnail (image, single)
+  media.content_image_ids → post.content_images (image, multiple)
+```
+
+Create/update actions gọi `MediaAssetUsageService::syncFields()` trong cùng
+transaction với model. Replace sẽ xóa usage cũ theo field và tạo lại theo thứ
+tự payload; delete model gọi `detachAll()` trước soft delete. Resource Version
+chỉ chuyển `ready` khi có đúng một package archive private với
+`scan_status=clean`.
+
+Trong list API, `field` là context của picker và được backend ánh xạ về `kind`
+được phép; nó không giới hạn kết quả vào các asset đã có usage ở field đó. Nhờ
+vậy asset mới hoặc chưa attach vẫn xuất hiện để người dùng lựa chọn.
+
 ### 4.5. Router và page
 
 - File dưới `resources/js/pages` tạo route tự động qua
@@ -359,6 +442,19 @@ archive phải có `scan_status=clean` mới được download.
     `apps-ecommerce-resource-list`.
   - `pages/apps/ecommerce/resource/add/index.vue` →
     `apps-ecommerce-resource-add`.
+
+- Media Library admin dùng cùng file-based router và được hiển thị trong cả
+  vertical/horizontal navigation:
+
+  ```text
+  navigation
+  └── Media
+      └── File → pages/apps/media/file/index.vue → apps-media-file
+  ```
+
+  Page `Media > File` là composition surface; bảng, upload dialog và detail
+  dialog nằm trong `resources/js/views/apps/media/`, còn HTTP đi qua
+  `mediaAssetService` và `useMediaAssetStore`.
 - Route bổ sung thủ công nằm ở
   `resources/js/plugins/1.router/additional-routes.js`.
 - Guard nằm ở `resources/js/plugins/1.router/guards.js`.

@@ -94,6 +94,8 @@ const createFormState = resource => ({
   description: resource?.description ?? '',
   demoUrl: resource?.demoUrl ?? '',
   documentationUrl: resource?.documentationUrl ?? '',
+  cover: resource?.media?.cover ?? null,
+  preview: Array.isArray(resource?.media?.preview) ? resource.media.preview : [],
 })
 
 const form = reactive(createFormState(props.resource))
@@ -317,10 +319,21 @@ const submit = async action => {
 
           <VCard title="Media">
             <VCardText>
-              <DropZone />
-              <p class="text-body-2 text-medium-emphasis mt-4 mb-0">
-                Upload cover, preview và package sẽ được nối với Media Library ở bước tiếp theo.
-              </p>
+              <MediaAssetField
+                v-model="form.cover"
+                field="resource.cover"
+                :multiple="false"
+                visibility="public"
+                label="Cover image"
+                class="mb-6"
+              />
+              <MediaAssetField
+                v-model="form.preview"
+                field="resource.preview"
+                multiple
+                visibility="public"
+                label="Preview images"
+              />
             </VCardText>
           </VCard>
         </VCol>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\MediaAssetField;
 use App\Models\Resource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -68,12 +69,44 @@ class ResourceItem extends JsonResource
                 'tags' => TaxonomyItem::collection($this->whenLoaded('tags')),
                 'technologies' => TaxonomyItem::collection($this->whenLoaded('technologies')),
             ],
+            'media' => $this->mediaPayload(),
             'author' => $this->whenLoaded('author', fn (): ?array => $this->author
                 ? ['id' => $this->author->id, 'name' => $this->author->name]
                 : null),
             'published_at' => $this->published_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
+        ];
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Định hình media đang gắn với Resource
+     * =====================================================================
+     *
+     * OUTPUT:
+     * - cover: một MediaAsset hoặc null
+     * - preview: danh sách MediaAsset theo sort_order
+     * =====================================================================
+     */
+    private function mediaPayload(): array
+    {
+        $usages = $this->resource->relationLoaded('mediaAssetUsages')
+            ? $this->mediaAssetUsages
+            : collect();
+
+        $cover = $usages
+            ->first(fn ($usage): bool => $usage->field === MediaAssetField::ResourceCover)
+            ?->mediaAsset;
+        $preview = $usages
+            ->filter(fn ($usage): bool => $usage->field === MediaAssetField::ResourcePreview)
+            ->sortBy('sort_order')
+            ->map(fn ($usage) => $usage->mediaAsset)
+            ->filter();
+
+        return [
+            'cover' => $cover ? MediaAssetResource::make($cover) : null,
+            'preview' => MediaAssetResource::collection($preview),
         ];
     }
 }

@@ -3,8 +3,8 @@
  * CHỨC NĂNG FILE: Khai báo menu điều hướng dọc cho admin Vue
  * =====================================================================
  *
- * Menu dùng route name do file-based router sinh ra. Nhóm Resource được đặt
- * trong Ecommerce để cùng ngữ cảnh với Product, Order và Customer.
+ * Menu dùng route name do file-based router sinh ra. Resource nằm trong
+ * Ecommerce; Media là nhóm nghiệp vụ riêng để quản lý file dùng chung.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - Không có; file export một mảng cấu hình menu.
@@ -37,6 +37,7 @@ export default [
         children: [
           { title: 'List', to: 'apps-ecommerce-resource-list' },
           { title: 'Add', to: 'apps-ecommerce-resource-add' },
+          { title: 'Versions', to: 'apps-ecommerce-resource-version-list' },
         ],
       },
       {
@@ -65,6 +66,21 @@ export default [
         title: 'Settings',
         to: 'apps-ecommerce-settings',
       },
+    ],
+  },
+  {
+    title: 'Blog',
+    icon: { icon: 'tabler-news' },
+    children: [
+      { title: 'Posts', to: 'apps-blog-post-list' },
+      { title: 'Add Post', to: 'apps-blog-post-add' },
+    ],
+  },
+  {
+    title: 'Media',
+    icon: { icon: 'tabler-photo' },
+    children: [
+      { title: 'File', to: 'apps-media-file' },
     ],
   },
   {

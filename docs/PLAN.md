@@ -208,8 +208,8 @@ Quy tắc áp dụng cho Vue:
 - Đợt 0 — Foundation: `DONE`. Dependency, package migrations, Sanctum package/config/migration, schema V1, schema rollback test, local environment, npm lockfile, health endpoint, environment docs, tách public/admin Blade và tách route public/admin đã hoàn thành.
 - Đợt 1 — Authentication và permission: `IN PROGRESS`. Sanctum admin login/profile/revoke, customer OAuth, token lifecycle, role/permission seeder và Vue admin login nối API thật đã hoàn thành. Policy và permission middleware cho resource đã xong trong Đợt 2; còn lại admin xem danh sách customer.
 - Đợt 2 — Resource và taxonomy: `IN PROGRESS`. Backend, admin table/form, service/store và fake CRUD frontend đã hoàn thành; còn Resource Version và frontend Media Library ở Đợt 3.
-- Đợt 3 — Media và version: `IN PROGRESS`. Task 1–5 của Media Library (domain, usage, upload security pipeline, API và authorization) đã `DONE`; bước tiếp theo là frontend service/store/picker.
-- Đợt gần nhất đã hoàn thành: Media API `/api/admin/media-assets` với filter/pagination, upload/update, usage attach/detach/reorder, delete/retry/download, policy/permission và private stream/temporary URL. Xác minh bằng 69 test pass (356 assertions); Pint riêng các file Task 5 đạt.
+- Đợt 3 — Media và version: `IN PROGRESS`. Task 1–8 của Media Library (domain, usage, upload security pipeline, API/authorization, frontend service/store, màn hình `Media > File`, Media Picker UI và tích hợp Resource/Post/Resource Version) đã `DONE`; Task 9–10 còn lại là fake API/frontend tests và acceptance/security.
+- Đợt gần nhất đã hoàn thành: Resource dùng `resource.cover`/`resource.preview`; Resource Version dùng package archive private với scan clean gate và documentation document; Post dùng thumbnail/content images riêng. Update/replace/delete đều đồng bộ usage trong transaction. Backend 73 tests, Pint các file Task 8, ESLint frontend và production build đều đạt (build còn cảnh báo PNG cũ resolve lúc runtime).
 
 ## 2. Phạm vi theo giai đoạn
 
@@ -892,12 +892,14 @@ Feature Resource admin hiện đặt theo cấu trúc Vuexy thực tế:
 
 ### 9.3 Versions và media
 
-- `GET /api/admin/resources/{resource}/versions`
-- `POST /api/admin/resources/{resource}/versions`
-- `PUT /api/admin/resource-versions/{version}`
-- `POST /api/admin/resource-versions/{version}/package`
-- `POST /api/admin/media`
-- `DELETE /api/admin/media/{media}`
+- `GET /api/admin/resource-versions`
+- `POST /api/admin/resource-versions`
+- `GET /api/admin/resource-versions/{resourceVersion}`
+- `PUT /api/admin/resource-versions/{resourceVersion}`
+- `DELETE /api/admin/resource-versions/{resourceVersion}`
+- `POST /api/admin/resource-versions/{resourceVersion}/ready`
+- `POST /api/admin/posts`, `PUT /api/admin/posts/{post}`, `DELETE /api/admin/posts/{post}`
+- `GET|POST|PATCH|DELETE /api/admin/media-assets`
 
 ### 9.4 Public và account
 
@@ -1029,8 +1031,11 @@ Exit criteria:
 Kế hoạch task riêng cho Media Library trung tâm: [PLAN_MEDIA_LIBRARY.md](./PLAN_MEDIA_LIBRARY.md).
 
 Task 1 — domain contract, Task 2 — `MediaAsset` domain, Task 3 — usage relation,
-Task 4 — upload validation/security pipeline và Task 5 — Media API/authorization
-đã `DONE`; các task tiếp theo thực hiện theo dependency trong file kế hoạch riêng.
+Task 4 — upload validation/security pipeline, Task 5 — Media API/authorization,
+Task 6 — frontend service/store và Media > File, Task 7 — Media Picker UI, và
+Task 8 — tích hợp Resource/Post/Resource Version đã `DONE`; Task 9 frontend tests
+và Task 10 acceptance/security vẫn `TODO`, thực hiện theo dependency trong file
+kế hoạch riêng.
 
 Deliverables:
 
@@ -1050,7 +1055,7 @@ Exit criteria:
 
 ### Đợt 3.1 — Thứ tự triển khai và phụ thuộc
 
-**Status:** `TODO`
+**Status:** `IN PROGRESS`
 **Nguyên tắc:** hoàn thành backend/security contract trước, sau đó mới nối
 frontend upload. Không đánh dấu Đợt 3 `DONE` nếu package chưa private hoặc chưa
 có test từ chối file nguy hiểm.
@@ -1332,7 +1337,7 @@ Trước Đợt 7:
 1. [x] Chuẩn hóa boundary giữa BaseController, BaseCrudController, controller domain và Action trước khi mở rộng CRUD mới.
 2. [x] Xây admin table/form cho resource trong Vue (`pages/apps/ecommerce/resource/list`, `ResourceTable.vue`, `ResourceForm.vue`) dùng `VDataTableServer`.
 3. [x] Bổ sung service, store và menu Resources cho admin Vue.
-4. [ ] Thực hiện Đợt 3 — Media Library, upload pipeline và Resource Version theo thứ tự ở mục 3.1.
+4. [ ] Hoàn tất Đợt 3 — Media Library, upload pipeline và Resource Version theo thứ tự ở mục 3.1 (Task 1–8 đã xong; Task 9–10 được dời sang phiên chiều/kế tiếp).
 5. Xây public catalog Blade và luồng free download.
 6. Hoàn thành free download trước khi bắt đầu payment.
 
