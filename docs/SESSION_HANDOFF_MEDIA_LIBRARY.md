@@ -1,20 +1,18 @@
 # Handoff phiên làm việc — Media Library
 
-**Ngày cập nhật:** 2026-09-28 (ghi nhận cuối buổi sáng)
-**Mục tiêu phiên tiếp theo:** buổi chiều bắt đầu triển khai Task 9; sau đó mới
-chuyển sang acceptance/security của Task 10 trong
+**Ngày cập nhật:** 2026-09-28 (sau khi hoàn thành Task 9)
+**Mục tiêu phiên tiếp theo:** triển khai acceptance/security của Task 10 trong
 [`PLAN_MEDIA_LIBRARY.md`](./PLAN_MEDIA_LIBRARY.md).
 
-## Ghi chú bàn giao cuối buổi sáng — không triển khai trùng
+## Ghi chú bàn giao sau Task 9 — không triển khai trùng
 
 - Task 8 đã hoàn tất và đã được đánh dấu `DONE` trong
   `docs/PLAN_MEDIA_LIBRARY.md`.
-- Task 9 và Task 10 chưa làm trong phiên này, vẫn giữ trạng thái `TODO`; do đã
-  muộn nên Task 9 được dời sang buổi chiều/phiên kế tiếp.
-- Các thay đổi sáng nay đã được giữ nguyên trong worktree; không reset hoặc
-  xoá thay đổi trước đó.
-- Phiên chiều nên bắt đầu bằng việc thiết lập Vitest + Vue Test Utils (project
-  hiện chưa có script test frontend), rồi viết test theo checklist Task 9.
+- Task 9 đã hoàn tất và đã được đánh dấu `DONE`; Task 10 vẫn giữ `TODO`.
+- Người dùng đã tạm dừng trước Task 10 để chuyển sang làm việc tại nhà; không
+  triển khai Task 10 trong phiên này.
+- Các thay đổi Task 1–9 đã được giữ nguyên trong worktree; không reset hoặc xoá
+  thay đổi trước đó.
 
 ## Trạng thái đã hoàn thành
 
@@ -88,13 +86,24 @@ pass.
 8, ESLint frontend và `npm run build` đều đạt. Build còn cảnh báo PNG cũ được
 resolve lúc runtime.
 
-## Việc cần làm tiếp theo — Task 9 (buổi chiều)
+## Task 9 — Đã hoàn thành
 
-- Thiết lập Vitest + Vue Test Utils + happy-dom và script `test:run`.
-- Bổ sung test service mapping, store loading/error/retry/upload progress,
-  picker single/multiple và Resource form giữ state khi API lỗi.
-- Kiểm tra fake API giữ cùng response contract với Laravel.
-- Chỉ sau khi Task 9 pass mới chuyển sang security/acceptance Task 10.
+Đã thêm Vitest 3, Vue Test Utils, happy-dom, `@pinia/testing` và script
+`npm run test:run`. Bộ test frontend hiện có 14 test bao phủ service mapping,
+store loading/error/retry/upload progress, picker single/multiple và field-kind,
+Resource Form giữ media state khi API lỗi, cùng response envelope/pagination của
+Fake API.
+
+Kiểm chứng: `npm run test:run` — 5 test files, 14 tests passed.
+
+## Việc cần làm tiếp theo — Task 10
+
+Phiên ở nhà tiếp tục trực tiếp từ checklist dưới đây; không làm lại Task 1–9:
+
+- Chạy acceptance/security checklist cho upload image/archive.
+- Kiểm tra executable, MIME giả, path traversal, symlink và archive quá giới hạn.
+- Kiểm tra permission, private download, queue failure/retry và idempotency.
+- Chỉ đánh dấu Task 10 `DONE` sau khi toàn bộ backend/frontend/build/lint pass.
 
 ## Quy trình bắt đầu phiên mới
 
@@ -106,5 +115,5 @@ rg -n "defineStore|resources/js/services|useApi" resources/js
 ```
 
 Không reset hoặc xóa các thay đổi hiện có trong worktree. Các thay đổi backend
-Task 1–5, frontend Task 6–7 và phần tích hợp Task 8 là nền tảng đã hoàn tất và
-phải được giữ nguyên.
+Task 1–5, frontend Task 6–7, phần tích hợp Task 8 và test Task 9 là nền tảng đã
+hoàn tất và phải được giữ nguyên.

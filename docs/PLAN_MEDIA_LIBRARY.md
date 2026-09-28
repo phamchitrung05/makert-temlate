@@ -310,23 +310,27 @@ Task 8 gắn field này vào Resource, Post và Resource Version để gọi API
 
 ### Task 9 — Fake API và frontend tests
 
-**Status:** `TODO`
+**Status:** `DONE`
 **Phụ thuộc:** Task 6, Task 7, Task 8
 
-**Ghi chú phiên 2026-09-28:** Task 9 chưa triển khai vì đã muộn; dời sang
-buổi chiều/phiên kế tiếp. Không đánh dấu `DONE` hoặc bắt đầu Task 10 trước khi
-các frontend test bên dưới chạy đạt.
+**Kết quả phiên 2026-09-28:** đã thiết lập Vitest + Vue Test Utils + happy-dom,
+script `test:run` và test contract Fake API. Task 10 vẫn giữ `TODO` và chưa bắt
+đầu.
 
-- [ ] Test service mapping, filter và pagination.
-- [ ] Test store loading/error/retry/upload progress.
-- [ ] Test picker single/multiple, filter theo kind/field và emit selection.
-- [ ] Test Resource form attach cover/preview không làm mất state khi API lỗi.
-- [ ] Test fake API giữ cùng response contract với Laravel.
+- [x] Test service mapping, filter và pagination.
+- [x] Test store loading/error/retry/upload progress.
+- [x] Test picker single/multiple, filter theo kind/field và emit selection.
+- [x] Test Resource form attach cover/preview không làm mất state khi API lỗi.
+- [x] Test fake API giữ cùng response contract với Laravel.
 
 ### Task 10 — Backend acceptance và security tests
 
 **Status:** `TODO`
 **Phụ thuộc:** Task 4, Task 5, Task 8
+
+**Ghi chú bàn giao 2026-09-28:** Chưa triển khai theo chủ ý. Người dùng tạm
+dừng công việc sau khi hoàn thành Task 9; phiên tiếp theo bắt đầu từ checklist
+acceptance/security này và không đánh dấu `DONE` trước khi chạy đủ quality gate.
 
 - [ ] Upload ảnh hợp lệ tạo MediaAsset và conversion job.
 - [ ] Upload archive hợp lệ giữ private disk và tạo checksum.
@@ -355,11 +359,11 @@ UI có thể dựng skeleton, nhưng không đánh dấu tích hợp hoàn thàn
 - [ ] `MediaAsset` là owner nghiệp vụ duy nhất của file trong library.
 - [ ] Spatie `media` vẫn là bảng quản lý file vật lý; không tạo `mediables`.
 - [ ] `media_asset_usages` attach được model/field, có index và transaction.
-- [ ] Picker lọc đúng `kind`/field ở backend và hỗ trợ single/multiple.
+- [x] Picker lọc đúng `kind`/field ở backend và hỗ trợ single/multiple.
 - [ ] Ảnh có conversion; archive/package private, có checksum và scan status.
 - [ ] Không có file nguy hiểm, path traversal hoặc archive vượt giới hạn lọt qua.
 - [ ] Queue failure có trạng thái lỗi và retry idempotent.
-- [ ] API, fake API, service, store và component dùng cùng response contract.
+- [x] API, fake API, service, store và component dùng cùng response contract.
 - [x] Resource, Post và Resource Version dùng chung picker nhưng giữ rule field
   riêng.
 - [ ] Test backend/frontend, build, lint và tài liệu đều đạt.

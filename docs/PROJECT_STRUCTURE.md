@@ -297,7 +297,7 @@ Media Library trung tâm dùng contract tại `app/Enums/MediaAsset*`. Alias
 `resource_version`, `media_asset` và `post` đã được đăng ký trong
 `AppServiceProvider`.
 
-Các file Media Library đã triển khai đến Task 8:
+Các file Media Library đã triển khai đến Task 9:
 
 ```text
 app/Models/MediaAsset.php
@@ -345,7 +345,19 @@ resources/js/views/apps/media/field/mediaAssetFields.js
 resources/js/views/apps/media/field/useMediaCapabilities.js
 resources/js/plugins/fake-api/handlers/apps/media/db.js
 resources/js/plugins/fake-api/handlers/apps/media/index.js
+vitest.config.js
+tests/frontend/setup.js
+tests/frontend/mediaAssetService.test.js
+tests/frontend/mediaAssetStore.test.js
+tests/frontend/mediaLibraryDialog.test.js
+tests/frontend/resourceForm.test.js
+tests/frontend/fakeMediaApi.test.js
 ```
+
+Vitest chạy trong `happy-dom` qua `npm run test:run`; các test service/store
+mock boundary HTTP, còn picker/resource form dùng Vue Test Utils với Pinia thật
+và stub presentation. Fake API test bind trực tiếp resolver MSW để kiểm tra
+envelope/pagination và field-kind validation cùng contract Laravel.
 
 Các file tích hợp domain của Task 8:
 
