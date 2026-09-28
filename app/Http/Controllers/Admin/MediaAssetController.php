@@ -27,6 +27,7 @@ use App\Services\MediaAssetUsageService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -321,7 +322,7 @@ class MediaAssetController extends Controller
             ]);
         }
 
-        $this->dispatchRetry($mediaAsset, $media);
+        $this->dispatchRetry($mediaAsset);
 
         return BaseResponse::success(
             MediaAssetResource::make($mediaAsset->fresh()->load('createdBy')),
@@ -494,40 +495,56 @@ class MediaAssetController extends Controller
      * CHỨC NĂNG: Đặt status pending và dispatch retry job tương ứng
      * =====================================================================
      *
-     * INPUT: asset và media item cần retry.
+     * INPUT: MediaAsset cần retry; media item được đọc lại dưới row lock.
      * OUTPUT: Không trả giá trị; queue nhận ScanMediaAssetJob hoặc conversion job.
-     * EXCEPTION: ValidationException nếu status hiện tại không retry được.
+     * SIDE EFFECT: status pending và queue dispatch chỉ xảy ra sau transaction commit.
+     * EXCEPTION/TRANSACTION: ValidationException nếu status hiện tại không retry được;
+     * transaction lock bảo đảm hai request đồng thời không dispatch trùng.
      */
-    private function dispatchRetry(MediaAsset $mediaAsset, \Spatie\MediaLibrary\MediaCollections\Models\Media $media): void
+    private function dispatchRetry(MediaAsset $mediaAsset): void
     {
-        if ($mediaAsset->kind === MediaAssetKind::Archive) {
-            if ($media->getCustomProperty('scan_status') !== MediaScanStatus::Error->value) {
+        DB::transaction(function () use ($mediaAsset): void {
+            $lockedAsset = MediaAsset::query()
+                ->whereKey($mediaAsset->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+            $media = $this->mediaItem($lockedAsset);
+
+            if ($media === null) {
                 throw ValidationException::withMessages([
-                    'scan_status' => 'Chỉ archive có scan_status error mới được retry.',
+                    'media_asset' => 'Asset chưa có file vật lý để retry.',
                 ]);
             }
 
-            $media->setCustomProperty('scan_status', MediaScanStatus::Pending->value)->save();
-            ScanMediaAssetJob::dispatch($media->getKey());
+            if ($lockedAsset->kind === MediaAssetKind::Archive) {
+                if ($media->getCustomProperty('scan_status') !== MediaScanStatus::Error->value) {
+                    throw ValidationException::withMessages([
+                        'scan_status' => 'Chỉ archive có scan_status error mới được retry.',
+                    ]);
+                }
 
-            return;
-        }
+                $media->setCustomProperty('scan_status', MediaScanStatus::Pending->value)->save();
+                ScanMediaAssetJob::dispatch($media->getKey())->afterCommit();
 
-        if ($mediaAsset->kind === MediaAssetKind::Image) {
-            if ($media->getCustomProperty('conversion_status') !== MediaConversionStatus::Failed->value) {
-                throw ValidationException::withMessages([
-                    'conversion_status' => 'Chỉ image có conversion_status failed mới được retry.',
-                ]);
+                return;
             }
 
-            $media->setCustomProperty('conversion_status', MediaConversionStatus::Pending->value)->save();
-            ProcessMediaConversionsJob::dispatch($media->getKey());
+            if ($lockedAsset->kind === MediaAssetKind::Image) {
+                if ($media->getCustomProperty('conversion_status') !== MediaConversionStatus::Failed->value) {
+                    throw ValidationException::withMessages([
+                        'conversion_status' => 'Chỉ image có conversion_status failed mới được retry.',
+                    ]);
+                }
 
-            return;
-        }
+                $media->setCustomProperty('conversion_status', MediaConversionStatus::Pending->value)->save();
+                ProcessMediaConversionsJob::dispatch($media->getKey())->afterCommit();
 
-        throw ValidationException::withMessages([
-            'media_asset' => 'Kind này chưa có queue retry tương ứng.',
-        ]);
+                return;
+            }
+
+            throw ValidationException::withMessages([
+                'media_asset' => 'Kind này chưa có queue retry tương ứng.',
+            ]);
+        });
     }
 }

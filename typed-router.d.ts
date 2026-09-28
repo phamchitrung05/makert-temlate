@@ -49,6 +49,7 @@ declare module 'vue-router/auto-routes' {
     'apps-kanban': RouteRecordInfo<'apps-kanban', '/apps/kanban', Record<never, never>, Record<never, never>>,
     'apps-logistics-dashboard': RouteRecordInfo<'apps-logistics-dashboard', '/apps/logistics/dashboard', Record<never, never>, Record<never, never>>,
     'apps-logistics-fleet': RouteRecordInfo<'apps-logistics-fleet', '/apps/logistics/fleet', Record<never, never>, Record<never, never>>,
+    'apps-media-demo': RouteRecordInfo<'apps-media-demo', '/apps/media/demo', Record<never, never>, Record<never, never>>,
     'apps-media-file': RouteRecordInfo<'apps-media-file', '/apps/media/file', Record<never, never>, Record<never, never>>,
     'apps-permissions': RouteRecordInfo<'apps-permissions', '/apps/permissions', Record<never, never>, Record<never, never>>,
     'apps-roles': RouteRecordInfo<'apps-roles', '/apps/roles', Record<never, never>, Record<never, never>>,

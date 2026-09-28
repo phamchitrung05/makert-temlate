@@ -208,8 +208,8 @@ Quy tắc áp dụng cho Vue:
 - Đợt 0 — Foundation: `DONE`. Dependency, package migrations, Sanctum package/config/migration, schema V1, schema rollback test, local environment, npm lockfile, health endpoint, environment docs, tách public/admin Blade và tách route public/admin đã hoàn thành.
 - Đợt 1 — Authentication và permission: `IN PROGRESS`. Sanctum admin login/profile/revoke, customer OAuth, token lifecycle, role/permission seeder và Vue admin login nối API thật đã hoàn thành. Policy và permission middleware cho resource đã xong trong Đợt 2; còn lại admin xem danh sách customer.
 - Đợt 2 — Resource và taxonomy: `IN PROGRESS`. Backend, admin table/form, service/store và fake CRUD frontend đã hoàn thành; còn Resource Version và frontend Media Library ở Đợt 3.
-- Đợt 3 — Media và version: `IN PROGRESS`. Task 1–9 của Media Library (domain, usage, upload security pipeline, API/authorization, frontend service/store, màn hình `Media > File`, Media Picker UI, tích hợp Resource/Post/Resource Version và frontend tests) đã `DONE`; Task 10 acceptance/security vẫn `TODO` và được tạm dừng để tiếp tục ở phiên làm việc tại nhà.
-- Đợt gần nhất đã hoàn thành: Resource dùng `resource.cover`/`resource.preview`; Resource Version dùng package archive private với scan clean gate và documentation document; Post dùng thumbnail/content images riêng. Update/replace/delete đều đồng bộ usage trong transaction. Backend 73 tests, frontend Vitest 14 tests, Pint các file Task 8, ESLint frontend và production build đều đạt (build còn cảnh báo PNG cũ resolve lúc runtime).
+- Đợt 3 — Media và version: `DONE`. Task 1–10 của Media Library (domain, usage, upload security pipeline, API/authorization, frontend service/store, màn hình `Media > File`, Media Picker UI, tích hợp Resource/Post/Resource Version, frontend tests và acceptance/security) đã `DONE`.
+- Đợt gần nhất đã hoàn thành: Resource dùng `resource.cover`/`resource.preview`; Resource Version dùng package archive private với scan clean gate và documentation document; Post dùng thumbnail/content images riêng. Upload đã có acceptance cho MIME/executable/path traversal/symlink/archive limit, private download và queue retry idempotency. Update/replace/delete đều đồng bộ usage trong transaction. Backend 79 tests/417 assertions, frontend Vitest 14 tests, Pint, ESLint, production build và `git diff --check` đều đạt (build còn cảnh báo PNG cũ resolve lúc runtime).
 
 ## 2. Phạm vi theo giai đoạn
 
@@ -1032,10 +1032,11 @@ Kế hoạch task riêng cho Media Library trung tâm: [PLAN_MEDIA_LIBRARY.md](.
 
 Task 1 — domain contract, Task 2 — `MediaAsset` domain, Task 3 — usage relation,
 Task 4 — upload validation/security pipeline, Task 5 — Media API/authorization,
-Task 6 — frontend service/store và Media > File, Task 7 — Media Picker UI, và
-Task 8 — tích hợp Resource/Post/Resource Version và Task 9 — frontend tests đã
-`DONE`; Task 10 acceptance/security vẫn `TODO`, thực hiện theo dependency trong
-file kế hoạch riêng.
+Task 6 — frontend service/store và Media > File, Task 7 — Media Picker UI,
+Task 8 — tích hợp Resource/Post/Resource Version, Task 9 — frontend tests và
+Task 10 — acceptance/security đã `DONE` theo dependency trong file kế hoạch
+riêng. Demo UI sandbox `Media > Demo` cũng đã hoàn tất để kiểm tra viewport,
+panel và scroll trước khi áp dụng chính thức.
 
 Deliverables:
 
@@ -1045,6 +1046,8 @@ Deliverables:
 - Checksum, validation và scan status.
 - Queue conversion.
 - Package private.
+- Media Demo UI sandbox với viewport cố định, panel liền mạch và
+  `PerfectScrollbar` overlay.
 
 Exit criteria:
 
@@ -1055,7 +1058,7 @@ Exit criteria:
 
 ### Đợt 3.1 — Thứ tự triển khai và phụ thuộc
 
-**Status:** `IN PROGRESS`
+**Status:** `DONE`
 **Nguyên tắc:** hoàn thành backend/security contract trước, sau đó mới nối
 frontend upload. Không đánh dấu Đợt 3 `DONE` nếu package chưa private hoặc chưa
 có test từ chối file nguy hiểm.
@@ -1337,7 +1340,7 @@ Trước Đợt 7:
 1. [x] Chuẩn hóa boundary giữa BaseController, BaseCrudController, controller domain và Action trước khi mở rộng CRUD mới.
 2. [x] Xây admin table/form cho resource trong Vue (`pages/apps/ecommerce/resource/list`, `ResourceTable.vue`, `ResourceForm.vue`) dùng `VDataTableServer`.
 3. [x] Bổ sung service, store và menu Resources cho admin Vue.
-4. [ ] Hoàn tất Đợt 3 — Media Library, upload pipeline và Resource Version theo thứ tự ở mục 3.1 (Task 1–9 đã xong; còn Task 10 acceptance/security).
+4. [x] Hoàn tất Đợt 3 — Media Library, upload pipeline và Resource Version theo thứ tự ở mục 3.1 (Task 1–10 đã xong, gồm acceptance/security và quality gate).
 5. Xây public catalog Blade và luồng free download.
 6. Hoàn thành free download trước khi bắt đầu payment.
 

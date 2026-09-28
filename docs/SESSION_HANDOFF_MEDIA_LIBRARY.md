@@ -1,18 +1,36 @@
 # Handoff phiên làm việc — Media Library
 
-**Ngày cập nhật:** 2026-09-28 (sau khi hoàn thành Task 9)
-**Mục tiêu phiên tiếp theo:** triển khai acceptance/security của Task 10 trong
-[`PLAN_MEDIA_LIBRARY.md`](./PLAN_MEDIA_LIBRARY.md).
+**Ngày cập nhật:** 2026-09-29 (sau khi hoàn thiện Media Demo UI)
+**Trạng thái:** Task 10 đã hoàn tất; không còn checklist acceptance/security
+nào đang chờ xử lý trong [`PLAN_MEDIA_LIBRARY.md`](./PLAN_MEDIA_LIBRARY.md).
+
+Quy ước viewport, panel và PerfectScrollbar của trang demo được ghi tại
+[`MEDIA_DEMO_VIEWPORT_GUIDELINES.md`](./MEDIA_DEMO_VIEWPORT_GUIDELINES.md); đọc
+tài liệu này trước khi tiếp tục chỉnh giao diện `/apps/media/demo`.
+
+## Bổ sung Media Demo UI — đã hoàn thành
+
+- Route/navigation `Media > Demo` tại `/apps/media/demo` đã sẵn sàng để duyệt
+  giao diện trước khi áp dụng vào màn hình chính.
+- Demo có ba panel viewport, border liền mạch, elevation chung trên
+  `.media-manager__columns`, header/filter cố định và vùng file scroll riêng.
+- Sidebar và danh sách file dùng `PerfectScrollbar` overlay giống Email, có
+  `suppressScrollX` và cập nhật rail sau mỗi lần filter/pagination/view mode đổi.
+- Mobile chuyển về page scroll tự nhiên để kéo tới item cuối; demo có thêm 50
+  file local để kiểm tra scroll và pagination.
+- Chi tiết quy ước nằm trong
+  [`MEDIA_DEMO_VIEWPORT_GUIDELINES.md`](./MEDIA_DEMO_VIEWPORT_GUIDELINES.md).
 
 ## Ghi chú bàn giao sau Task 9 — không triển khai trùng
 
 - Task 8 đã hoàn tất và đã được đánh dấu `DONE` trong
   `docs/PLAN_MEDIA_LIBRARY.md`.
-- Task 9 đã hoàn tất và đã được đánh dấu `DONE`; Task 10 vẫn giữ `TODO`.
-- Người dùng đã tạm dừng trước Task 10 để chuyển sang làm việc tại nhà; không
-  triển khai Task 10 trong phiên này.
-- Các thay đổi Task 1–9 đã được giữ nguyên trong worktree; không reset hoặc xoá
-  thay đổi trước đó.
+- Task 9 và Task 10 đã hoàn tất và đã được đánh dấu `DONE`.
+- Task 10 đã bổ sung acceptance/security test cho upload image/archive,
+  executable/MIME giả/path traversal/symlink/archive limit, permission/private
+  download, queue failure và retry idempotency.
+- Các thay đổi Task 1–10 đã được giữ nguyên trong worktree; không reset hoặc
+  xoá thay đổi trước đó.
 
 ## Trạng thái đã hoàn thành
 
@@ -50,21 +68,20 @@ private disk. Private asset yêu cầu policy và permission phù hợp.
 
 ```text
 php artisan test
-73 tests passed, 395 assertions
+79 tests passed, 417 assertions
 
-Pint riêng controller/test Media API: PASS
-SFC picker compile: 4 files passed
-ESLint Media/Picker: PASS
+Pint các file controller/test liên quan Task 10: PASS
+ESLint toàn bộ resources/js: PASS
+npm run test:run: 5 test files, 14 tests passed
 npm run build: PASS
-git diff --check: không có lỗi nội dung
+git diff --check: PASS
 ```
 
-Pint đã pass trên toàn bộ file PHP liên quan Task 8. Không format hàng loạt các
+Pint đã pass trên toàn bộ file PHP liên quan Task 10. Không format hàng loạt các
 file PHP cũ ngoài phạm vi nếu chưa có yêu cầu riêng.
 
-Frontend Task 6–7 đã chạy ESLint các file Media/Picker với 0 error, compile trực
-tiếp 4 SFC picker và `npm run build` thành công. Build vẫn in cảnh báo asset PNG
-cũ được resolve lúc runtime.
+Frontend Task 6–9 đã chạy ESLint toàn bộ `resources/js`, Vitest và `npm run build`
+thành công. Build vẫn in cảnh báo asset PNG cũ được resolve lúc runtime.
 
 Môi trường đã được chuẩn bị bằng `.env` và `composer install`; package
 `prettus/l5-repository` đã có trong `vendor`, nên full backend suite đã chạy
@@ -96,14 +113,11 @@ Fake API.
 
 Kiểm chứng: `npm run test:run` — 5 test files, 14 tests passed.
 
-## Việc cần làm tiếp theo — Task 10
+## Việc tiếp theo
 
-Phiên ở nhà tiếp tục trực tiếp từ checklist dưới đây; không làm lại Task 1–9:
-
-- Chạy acceptance/security checklist cho upload image/archive.
-- Kiểm tra executable, MIME giả, path traversal, symlink và archive quá giới hạn.
-- Kiểm tra permission, private download, queue failure/retry và idempotency.
-- Chỉ đánh dấu Task 10 `DONE` sau khi toàn bộ backend/frontend/build/lint pass.
+Task 10 đã hoàn tất. Khi mở rộng Media Library, giữ nguyên các contract đã được
+kiểm chứng và chạy lại toàn bộ quality gate sau mỗi thay đổi liên quan upload,
+download private hoặc queue retry.
 
 ## Quy trình bắt đầu phiên mới
 
@@ -115,5 +129,5 @@ rg -n "defineStore|resources/js/services|useApi" resources/js
 ```
 
 Không reset hoặc xóa các thay đổi hiện có trong worktree. Các thay đổi backend
-Task 1–5, frontend Task 6–7, phần tích hợp Task 8 và test Task 9 là nền tảng đã
-hoàn tất và phải được giữ nguyên.
+Task 1–5, frontend Task 6–7, phần tích hợp Task 8, test Task 9 và acceptance/
+security Task 10 là nền tảng đã hoàn tất và phải được giữ nguyên.

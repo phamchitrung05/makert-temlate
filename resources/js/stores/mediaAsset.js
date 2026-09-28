@@ -21,6 +21,8 @@
  * - OUTPUT: state readonly, action Promise và lỗi request
  * =====================================================================
  */
+/* eslint-disable camelcase -- Laravel API fields preserve snake_case contract. */
+
 import { computed, reactive, readonly, shallowRef } from 'vue'
 import { defineStore } from 'pinia'
 import { mediaAssetService } from '@/services/mediaAsset'
@@ -60,6 +62,7 @@ export const useMediaAssetStore = defineStore('mediaAsset', () => {
   const list = computed(() => items.value)
   const detail = computed(() => selectedAsset.value)
   const hasItems = computed(() => items.value.length > 0)
+
   const query = computed(() => ({
     ...filters,
     page: pagination.value.current_page,
@@ -138,6 +141,7 @@ export const useMediaAssetStore = defineStore('mediaAsset', () => {
 
         if (index >= 0) {
           const nextItems = [...items.value]
+
           nextItems[index] = response
           items.value = nextItems
         }
@@ -228,6 +232,7 @@ export const useMediaAssetStore = defineStore('mediaAsset', () => {
     error.value = null
   }
 
+  // Aliases giữ tên ngắn, dễ dùng trong picker và tương thích convention cũ.
   return {
     items: readonly(items),
     list,
@@ -257,7 +262,6 @@ export const useMediaAssetStore = defineStore('mediaAsset', () => {
     clearError,
     clearSelection,
     reset,
-    // Aliases giữ tên ngắn, dễ dùng trong picker và tương thích convention cũ.
     fetchAssets: fetchMediaAssets,
     fetchAsset: fetchMediaAsset,
     uploadAsset: uploadMediaAsset,

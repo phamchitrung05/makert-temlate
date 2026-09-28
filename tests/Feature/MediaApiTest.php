@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Enums\MediaAssetField;
 use App\Enums\MediaAssetKind;
 use App\Enums\MediaAssetVisibility;
+use App\Enums\MediaConversionStatus;
 use App\Enums\MediaScanStatus;
+use App\Jobs\Media\ProcessMediaConversionsJob;
 use App\Jobs\Media\ScanMediaAssetJob;
 use App\Models\MediaAsset;
 use App\Models\Resource;
@@ -38,6 +40,8 @@ use Tests\UsesIsolatedDatabase;
  * - test_upload_show_and_update_metadata(): kiểm tra upload/detail/update
  * - test_usage_endpoints_and_delete_lock(): kiểm tra attach/reorder/detach/delete
  * - test_retry_and_private_download(): kiểm tra retry và stream private
+ * - test_private_download_requires_upload_permission(): kiểm tra private download
+ * - test_retry_transition_is_idempotent(): kiểm tra retry không dispatch trùng
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : HTTP request admin và MediaAsset fixture
@@ -393,5 +397,93 @@ class MediaApiTest extends TestCase
             $this->assertStringContainsString('attachment', (string) $download->headers->get('Content-Disposition'));
             $this->assertStringNotContainsString(storage_path(), (string) $download->getContent());
         }
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Chặn private download khi admin chỉ có quyền xem
+     * =====================================================================
+     *
+     * INPUT: Token chỉ có media.view và private archive đã scan clean.
+     * OUTPUT: HTTP 403; không cấp URL hoặc stream private.
+     */
+    public function test_private_download_requires_upload_permission(): void
+    {
+        $token = $this->actorToken(['media.view']);
+        $asset = MediaAsset::factory()->archive()->create([
+            'visibility' => MediaAssetVisibility::Private,
+        ]);
+        $this->mediaFor($asset, 'private.zip', [
+            'scan_status' => MediaScanStatus::Clean->value,
+            'upload_metadata' => [
+                'original_name' => 'private.zip',
+                'mime_type' => 'application/zip',
+                'extension' => 'zip',
+                'size' => 18,
+            ],
+        ]);
+
+        $this->withToken($token)
+            ->get("/api/admin/media-assets/{$asset->id}/download")
+            ->assertForbidden()
+            ->assertJsonPath('success', false);
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Đảm bảo retry chuyển trạng thái một lần duy nhất
+     * =====================================================================
+     *
+     * INPUT: Archive error và image conversion failed qua endpoint retry.
+     * OUTPUT: Request đầu dispatch job; request lặp trả 422 và không dispatch trùng.
+     */
+    public function test_retry_transition_is_idempotent(): void
+    {
+        $token = $this->actorToken([
+            'media.view',
+            'media.retry',
+        ]);
+        $archive = MediaAsset::factory()->archive()->create([
+            'visibility' => MediaAssetVisibility::Private,
+        ]);
+        $archiveMedia = $this->mediaFor($archive, 'retry.zip', [
+            'scan_status' => MediaScanStatus::Error->value,
+            'conversion_status' => MediaConversionStatus::Ready->value,
+        ]);
+
+        $this->withToken($token)
+            ->postJson("/api/admin/media-assets/{$archive->id}/retry")
+            ->assertAccepted();
+        $this->withToken($token)
+            ->postJson("/api/admin/media-assets/{$archive->id}/retry")
+            ->assertStatus(422);
+
+        Queue::assertPushed(
+            ScanMediaAssetJob::class,
+            fn (ScanMediaAssetJob $job): bool => $job->mediaId === $archiveMedia->id,
+        );
+        Queue::assertPushedTimes(ScanMediaAssetJob::class, 1);
+
+        $image = MediaAsset::factory()->image()->create([
+            'visibility' => MediaAssetVisibility::Public,
+        ]);
+        $imageMedia = $this->mediaFor($image, 'retry.png', [
+            'scan_status' => MediaScanStatus::Clean->value,
+            'conversion_status' => MediaConversionStatus::Failed->value,
+        ]);
+        Queue::fake();
+
+        $this->withToken($token)
+            ->postJson("/api/admin/media-assets/{$image->id}/retry")
+            ->assertAccepted();
+        $this->withToken($token)
+            ->postJson("/api/admin/media-assets/{$image->id}/retry")
+            ->assertStatus(422);
+
+        Queue::assertPushed(
+            ProcessMediaConversionsJob::class,
+            fn (ProcessMediaConversionsJob $job): bool => $job->mediaId() === $imageMedia->id,
+        );
+        Queue::assertPushedTimes(ProcessMediaConversionsJob::class, 1);
     }
 }

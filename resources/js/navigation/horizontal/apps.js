@@ -84,6 +84,7 @@ export default [
         icon: { icon: 'tabler-photo' },
         children: [
           { title: 'File', to: 'apps-media-file' },
+          { title: 'Demo', to: 'apps-media-demo' },
         ],
       },
       {

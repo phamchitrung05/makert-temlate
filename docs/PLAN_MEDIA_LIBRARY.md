@@ -293,6 +293,28 @@ resources/js/views/apps/media/
 điều phối list/upload/selection, còn grid và drop-zone là component trình bày.
 Task 8 gắn field này vào Resource, Post và Resource Version để gọi API attach.
 
+### Bổ sung — Media Demo UI sandbox
+
+**Status:** `DONE`
+**Phụ thuộc:** Task 6, Task 7
+
+Đã bổ sung route và navigation `Media > Demo` tại `/apps/media/demo` để duyệt
+giao diện Media Library trước khi áp dụng vào màn hình chính:
+
+- [x] Dùng layout `layout-content-height-fixed` và pattern viewport giống
+  `email/index`.
+- [x] Dựng ba panel thư mục, danh sách file/filter và thông tin file với
+  border liền mạch, không double border ở ranh giới.
+- [x] Giữ header/filter cố định; chỉ vùng item file scroll trên desktop.
+- [x] Dùng `PerfectScrollbar` overlay giống Email, mảnh và chặn scroll ngang;
+  gọi `ps.update()` sau khi filter/pagination/view mode thay đổi.
+- [x] Responsive mobile cho phép page scroll tới item cuối cùng.
+- [x] Bổ sung 50 file mẫu local để kiểm tra grid/list, pagination và scroll.
+- [x] Chuẩn hóa Tabler icon, typography, elevation và alignment theo project.
+
+Chi tiết pattern layout/scroll được ghi tại
+[`MEDIA_DEMO_VIEWPORT_GUIDELINES.md`](./MEDIA_DEMO_VIEWPORT_GUIDELINES.md).
+
 ### Task 8 — Tích hợp Resource, Post và Resource Version
 
 **Status:** `DONE`
@@ -314,8 +336,8 @@ Task 8 gắn field này vào Resource, Post và Resource Version để gọi API
 **Phụ thuộc:** Task 6, Task 7, Task 8
 
 **Kết quả phiên 2026-09-28:** đã thiết lập Vitest + Vue Test Utils + happy-dom,
-script `test:run` và test contract Fake API. Task 10 vẫn giữ `TODO` và chưa bắt
-đầu.
+script `test:run` và test contract Fake API; các acceptance/security test của
+Task 10 đã hoàn tất trong cùng phiên.
 
 - [x] Test service mapping, filter và pagination.
 - [x] Test store loading/error/retry/upload progress.
@@ -325,21 +347,22 @@ script `test:run` và test contract Fake API. Task 10 vẫn giữ `TODO` và ch�
 
 ### Task 10 — Backend acceptance và security tests
 
-**Status:** `TODO`
+**Status:** `DONE`
 **Phụ thuộc:** Task 4, Task 5, Task 8
 
-**Ghi chú bàn giao 2026-09-28:** Chưa triển khai theo chủ ý. Người dùng tạm
-dừng công việc sau khi hoàn thành Task 9; phiên tiếp theo bắt đầu từ checklist
-acceptance/security này và không đánh dấu `DONE` trước khi chạy đủ quality gate.
+**Kết quả phiên 2026-09-28:** đã bổ sung acceptance/security test cho upload,
+private download, archive limit/symlink, queue failure và retry idempotency.
+Toàn bộ backend/frontend quality gate đã pass.
 
-- [ ] Upload ảnh hợp lệ tạo MediaAsset và conversion job.
-- [ ] Upload archive hợp lệ giữ private disk và tạo checksum.
-- [ ] File executable, MIME giả, path traversal, symlink và archive quá giới hạn
+- [x] Upload ảnh hợp lệ tạo MediaAsset và conversion job.
+- [x] Upload archive hợp lệ giữ private disk và tạo checksum.
+- [x] File executable, MIME giả, path traversal, symlink và archive quá giới hạn
   bị từ chối.
-- [ ] User không đủ permission không list private asset, attach hoặc download.
-- [ ] Attach sai kind/field trả 422; asset bị soft-delete không thể attach mới.
-- [ ] Queue failure lưu trạng thái lỗi và retry được; retry idempotent.
-- [ ] Chạy `php artisan test`, `npm run build`, ESLint và `git diff --check`.
+- [x] User không đủ permission không list private asset, attach hoặc download.
+- [x] Attach sai kind/field trả 422; asset bị soft-delete không thể attach mới.
+- [x] Queue failure lưu trạng thái lỗi và retry được; retry idempotent.
+- [x] Chạy `php artisan test`, `npm run test:run`, `npm run build`, ESLint, Pint
+  và `git diff --check`.
 
 ## 6. Thứ tự triển khai theo phiên Codex
 
@@ -360,13 +383,13 @@ UI có thể dựng skeleton, nhưng không đánh dấu tích hợp hoàn thàn
 - [ ] Spatie `media` vẫn là bảng quản lý file vật lý; không tạo `mediables`.
 - [ ] `media_asset_usages` attach được model/field, có index và transaction.
 - [x] Picker lọc đúng `kind`/field ở backend và hỗ trợ single/multiple.
-- [ ] Ảnh có conversion; archive/package private, có checksum và scan status.
-- [ ] Không có file nguy hiểm, path traversal hoặc archive vượt giới hạn lọt qua.
-- [ ] Queue failure có trạng thái lỗi và retry idempotent.
+- [x] Ảnh có conversion; archive/package private, có checksum và scan status.
+- [x] Không có file nguy hiểm, path traversal hoặc archive vượt giới hạn lọt qua.
+- [x] Queue failure có trạng thái lỗi và retry idempotent.
 - [x] API, fake API, service, store và component dùng cùng response contract.
 - [x] Resource, Post và Resource Version dùng chung picker nhưng giữ rule field
   riêng.
-- [ ] Test backend/frontend, build, lint và tài liệu đều đạt.
+- [x] Test backend/frontend, build, lint và tài liệu đều đạt.
 
 ## 8. Tài liệu cần cập nhật khi hoàn thành
 
