@@ -1,17 +1,35 @@
 # Handoff phiên làm việc — Media Library
 
-**Ngày cập nhật:** 2026-09-29 (sau khi hoàn thiện Media Demo UI)
+**Ngày cập nhật:** 2026-09-29 (sau khi hoàn thiện Media Asset UI)
 **Trạng thái:** Task 10 đã hoàn tất; không còn checklist acceptance/security
 nào đang chờ xử lý trong [`PLAN_MEDIA_LIBRARY.md`](./PLAN_MEDIA_LIBRARY.md).
 
 Quy ước viewport, panel và PerfectScrollbar của trang demo được ghi tại
 [`MEDIA_DEMO_VIEWPORT_GUIDELINES.md`](./MEDIA_DEMO_VIEWPORT_GUIDELINES.md); đọc
-tài liệu này trước khi tiếp tục chỉnh giao diện `/apps/media/demo`.
+tài liệu này trước khi tiếp tục chỉnh giao diện `/apps/media/media-asset`.
 
-## Bổ sung Media Demo UI — đã hoàn thành
+## Cập nhật sáng 2026-09-29
 
-- Route/navigation `Media > Demo` tại `/apps/media/demo` đã sẵn sàng để duyệt
+- [x] Hoàn tất điều hướng thư mục Media Asset bằng route động; query giữ search,
+  sort, pagination và view mode, còn file đang chọn vẫn giữ ở state cục bộ.
+- [x] Thêm thumbnail icon theo định dạng cho PDF, ZIP, SVG, DOCX, XLSX, PPTX,
+  MP3, TXT và CSV; ảnh JPG/PNG tiếp tục dùng thumbnail ảnh thật.
+- [x] Dùng `contain` cho icon định dạng để không bị cắt trong card và panel chi
+  tiết; dùng `cover` cho thumbnail ảnh.
+- [x] Chuẩn hóa icon toolbar tìm kiếm, grid/list về bộ Tabler:
+  `tabler-search`, `tabler-layout-grid`, `tabler-list`.
+- [x] Đổi tên page và navigation từ Demo thành Media Asset; route mới là
+  `/apps/media/media-asset`, còn URL Demo cũ vẫn redirect để không hỏng bookmark.
+- [x] Kiểm chứng bằng ESLint, Vitest (14 tests), production build và
+  `git diff --check`.
+
+## Bổ sung Media Asset UI — đã hoàn thành
+
+- Route/navigation `Media > Media Asset` tại `/apps/media/media-asset` đã sẵn sàng để duyệt
   giao diện trước khi áp dụng vào màn hình chính.
+- Sidebar thư mục của Media Asset dùng route động `/apps/media/media-asset/folder/:folder`;
+  search, sort, pagination và view mode được giữ trong query, còn file đang chọn
+  và panel thông tin vẫn giữ ở state cục bộ.
 - Demo có ba panel viewport, border liền mạch, elevation chung trên
   `.media-manager__columns`, header/filter cố định và vùng file scroll riêng.
 - Sidebar và danh sách file dùng `PerfectScrollbar` overlay giống Email, có

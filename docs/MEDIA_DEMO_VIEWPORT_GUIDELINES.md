@@ -1,12 +1,16 @@
-# Media Demo — Viewport UI Guidelines
+# Media Asset — Viewport UI Guidelines
 
 Tài liệu này ghi lại pattern giao diện viewport của trang demo Media Library để
 các lần triển khai sau giữ đúng hành vi layout, panel và scrollbar của project.
 
 ## Phạm vi áp dụng
 
-- Page demo: `resources/js/pages/apps/media/demo/index.vue`
-- Route: `/apps/media/demo`
+- Page: `resources/js/pages/apps/media/media-asset/index.vue`
+- Routes: `/apps/media/media-asset` và `/apps/media/media-asset/folder/:folder`
+- Folder slug hợp lệ: `images`, `videos`, `documents`, `trash`; thư mục mặc định
+  dùng route gốc.
+- Thư mục được lưu trong route để hỗ trợ refresh, bookmark và Back/Forward. File
+  đang chọn vẫn là state cục bộ nên panel thông tin không trở thành route riêng.
 - Layout page: dùng `layout-content-height-fixed`, tương tự
   `resources/js/pages/apps/email/index.vue`.
 
@@ -102,6 +106,10 @@ cho các vùng file/sidebar:
   và `font-weight-bold`.
 - Icon sidebar dùng Tabler: `tabler-folder`, `tabler-photo`, `tabler-video`,
   `tabler-file-text`, `tabler-trash`.
+- Toolbar dùng `tabler-search`, `tabler-layout-grid` và `tabler-list`; không dùng
+  `mdi-*` cho các nút tìm kiếm hoặc chuyển đổi grid/list.
+- Thumbnail JPG/PNG dùng `cover`; thumbnail icon định dạng dùng `contain` để
+  giữ trọn hình icon trong card và panel thông tin.
 - Không dùng các alias MDI chưa được project đăng ký nếu Tabler tương đương đã
   có sẵn.
 

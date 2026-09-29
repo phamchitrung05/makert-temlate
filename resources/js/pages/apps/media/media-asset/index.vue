@@ -1,6 +1,6 @@
 <!--
   =====================================================================
-  CHỨC NĂNG FILE: Trang demo giao diện quản lý Media Library
+  CHỨC NĂNG FILE: Trang Media Asset giao diện quản lý Media Library
   =====================================================================
 
   Trang demo sử dụng layout quản lý Media được chuẩn bị trong block view-moi:
@@ -9,14 +9,14 @@
 
   CÁC HÀM/COMPUTED TRONG FILE:
   - filteredFiles()/pagedFiles(): lọc, sắp xếp và phân trang file mẫu
-  - selectCategory()/selectFile(): cập nhật ngữ cảnh thư mục và file đang xem
+  - categoryRoute()/selectFile(): điều hướng thư mục và cập nhật file đang xem
   - toggleFileSelection(): mô phỏng chọn nhiều file trong grid
-  - resetDemoView(): đưa filter và layout về trạng thái ban đầu
+  - syncRouteQuery()/resetDemoView(): đồng bộ filter với URL và đưa layout về mặc định
   - showUploadNotice(): hiển thị feedback cho nút upload demo
 
   INPUT/OUTPUT CỦA COMPONENT (tổng thể):
   - INPUT : thao tác filter, category, view mode, pagination và chọn file.
-  - OUTPUT: giao diện demo Media Library tại /apps/media/demo.
+  - OUTPUT: giao diện Media Asset tại /apps/media/media-asset.
   =====================================================================
 -->
 <script setup>
@@ -30,33 +30,106 @@ import {
   watch,
 } from 'vue'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
+import csvFileIcon from '@images/icons/file/media-demo/csv.png'
+import docxFileIcon from '@images/icons/file/media-demo/docx.png'
+import mp3FileIcon from '@images/icons/file/media-demo/mp3.png'
+import pdfFileIcon from '@images/icons/file/media-demo/pdf.png'
+import pptxFileIcon from '@images/icons/file/media-demo/pptx.png'
+import svgFileIcon from '@images/icons/file/media-demo/svg.png'
+import txtFileIcon from '@images/icons/file/media-demo/txt.png'
+import xlsxFileIcon from '@images/icons/file/media-demo/xlsx.png'
+import zipFileIcon from '@images/icons/file/media-demo/zip.png'
 
 definePage({
   meta: {
-    navActiveLink: 'apps-media-demo',
+    navActiveLink: 'apps-media-media-asset',
     layoutWrapperClasses: 'layout-content-height-fixed',
   },
 })
 
-const selectedCategory = shallowRef('Tất cả tệp')
-const search = shallowRef('')
-const folderFilter = shallowRef('Tất cả thư mục')
-const sortBy = shallowRef('Mới nhất')
-const viewMode = shallowRef('grid')
-const page = shallowRef(1)
-const itemsPerPage = shallowRef(12)
+const route = useRoute()
+const router = useRouter()
+
+const folderFilterOptions = [
+  { value: 'all', label: 'Tất cả thư mục' },
+  { value: 'image', label: 'Hình ảnh' },
+  { value: 'video', label: 'Video' },
+  { value: 'document', label: 'Tài liệu' },
+]
+
+const folderFilterByValue = Object.fromEntries(folderFilterOptions.map(option => [option.value, option.label]))
+const folderFilterByLabel = Object.fromEntries(folderFilterOptions.map(option => [option.label, option.value]))
+
+const sortByValue = {
+  newest: 'Mới nhất',
+  oldest: 'Cũ nhất',
+  name: 'Tên A-Z',
+  size: 'Kích thước',
+}
+
+const routeQueryValue = key => {
+  const value = route.query[key]
+
+  return Array.isArray(value) ? value[0] : value
+}
+
+const parsePositiveInteger = (value, fallback) => {
+  const parsed = Number.parseInt(value, 10)
+
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+}
+
+const search = shallowRef(routeQueryValue('q') ?? '')
+const folderFilter = shallowRef(folderFilterByValue[routeQueryValue('type')] ?? folderFilterOptions[0].label)
+const sortBy = shallowRef(sortByValue[routeQueryValue('sort')] ?? sortByValue.newest)
+const viewMode = shallowRef(['grid', 'list'].includes(routeQueryValue('view')) ? routeQueryValue('view') : 'grid')
+const page = shallowRef(parsePositiveInteger(routeQueryValue('page'), 1))
+const initialItemsPerPage = parsePositiveInteger(routeQueryValue('perPage'), 12)
+const itemsPerPage = shallowRef([12, 24, 48].includes(initialItemsPerPage) ? initialItemsPerPage : 12)
 const selectedFile = shallowRef(null)
 const isUploadNoticeVisible = shallowRef(false)
 const filesScrollbar = useTemplateRef('filesScrollbar')
 const sidebarScrollbar = useTemplateRef('sidebarScrollbar')
 
 const categories = [
-  { name: 'Tất cả tệp', count: 248, icon: 'tabler-folder' },
-  { name: 'Hình ảnh', count: 120, icon: 'tabler-photo' },
-  { name: 'Video', count: 36, icon: 'tabler-video' },
-  { name: 'Tài liệu', count: 68, icon: 'tabler-file-text' },
-  { name: 'Thùng rác', count: 12, icon: 'tabler-trash' },
+  { slug: 'all', name: 'Tất cả tệp', count: 248, icon: 'tabler-folder' },
+  { slug: 'images', name: 'Hình ảnh', count: 120, icon: 'tabler-photo', type: 'image' },
+  { slug: 'videos', name: 'Video', count: 36, icon: 'tabler-video', type: 'video' },
+  { slug: 'documents', name: 'Tài liệu', count: 68, icon: 'tabler-file-text', type: 'document' },
+  { slug: 'trash', name: 'Thùng rác', count: 12, icon: 'tabler-trash', isTrash: true },
 ]
+
+const activeCategory = computed(() => categories.find(category => category.slug === route.params.folder) ?? categories[0])
+const selectedCategory = computed(() => activeCategory.value.name)
+
+const categoryRoute = slug => {
+  const query = { ...route.query }
+
+  delete query.page
+  delete query.type
+
+  if (slug === 'all')
+    return { name: 'apps-media-media-asset', query }
+
+  return {
+    name: 'apps-media-media-asset-folder',
+    params: { folder: slug },
+    query,
+  }
+}
+
+const fileTypeThumbnails = {
+  csv: csvFileIcon,
+  docx: docxFileIcon,
+  mp3: mp3FileIcon,
+  mp4: mp3FileIcon,
+  pdf: pdfFileIcon,
+  pptx: pptxFileIcon,
+  svg: svgFileIcon,
+  txt: txtFileIcon,
+  xlsx: xlsxFileIcon,
+  zip: zipFileIcon,
+}
 
 const demoFilePresets = [
   {
@@ -65,18 +138,95 @@ const demoFilePresets = [
     typeLabel: 'JPG (Hình ảnh)',
     resolution: '1600 x 1200 px',
     thumbnail: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600',
+    thumbnailMode: 'cover',
+  },
+  {
+    ext: 'PNG',
+    type: 'image',
+    typeLabel: 'PNG (Hình ảnh)',
+    resolution: '1600 x 1200 px',
+    thumbnail: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=600',
+    thumbnailMode: 'cover',
   },
   {
     ext: 'MP4',
     type: 'video',
     typeLabel: 'MP4 (Video)',
     resolution: '1920 x 1080 px',
+    thumbnail: fileTypeThumbnails.mp4,
+    thumbnailMode: 'contain',
   },
   {
     ext: 'PDF',
     type: 'document',
     typeLabel: 'PDF (Tài liệu)',
     resolution: 'A4 document',
+    thumbnail: fileTypeThumbnails.pdf,
+    thumbnailMode: 'contain',
+  },
+  {
+    ext: 'ZIP',
+    type: 'document',
+    typeLabel: 'ZIP (Tệp nén)',
+    resolution: 'Compressed archive',
+    thumbnail: fileTypeThumbnails.zip,
+    thumbnailMode: 'contain',
+  },
+  {
+    ext: 'SVG',
+    type: 'document',
+    typeLabel: 'SVG (Đồ họa vector)',
+    resolution: 'Vector graphic',
+    thumbnail: fileTypeThumbnails.svg,
+    thumbnailMode: 'contain',
+  },
+  {
+    ext: 'DOCX',
+    type: 'document',
+    typeLabel: 'DOCX (Tài liệu)',
+    resolution: 'Office document',
+    thumbnail: fileTypeThumbnails.docx,
+    thumbnailMode: 'contain',
+  },
+  {
+    ext: 'XLSX',
+    type: 'document',
+    typeLabel: 'XLSX (Bảng tính)',
+    resolution: 'Office spreadsheet',
+    thumbnail: fileTypeThumbnails.xlsx,
+    thumbnailMode: 'contain',
+  },
+  {
+    ext: 'PPTX',
+    type: 'document',
+    typeLabel: 'PPTX (Bản trình chiếu)',
+    resolution: 'Office presentation',
+    thumbnail: fileTypeThumbnails.pptx,
+    thumbnailMode: 'contain',
+  },
+  {
+    ext: 'MP3',
+    type: 'document',
+    typeLabel: 'MP3 (Âm thanh)',
+    resolution: 'Audio file',
+    thumbnail: fileTypeThumbnails.mp3,
+    thumbnailMode: 'contain',
+  },
+  {
+    ext: 'TXT',
+    type: 'document',
+    typeLabel: 'TXT (Văn bản)',
+    resolution: 'Plain text file',
+    thumbnail: fileTypeThumbnails.txt,
+    thumbnailMode: 'contain',
+  },
+  {
+    ext: 'CSV',
+    type: 'document',
+    typeLabel: 'CSV (Dữ liệu)',
+    resolution: 'Comma-separated values',
+    thumbnail: fileTypeThumbnails.csv,
+    thumbnailMode: 'contain',
   },
 ]
 
@@ -90,6 +240,8 @@ const files = reactive([
     typeLabel: 'JPG (Hình ảnh)',
     resolution: '1920 x 1280 px',
     thumbnail: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=600',
+    thumbnailMode: 'cover',
+    isDeleted: false,
     selected: true,
   },
   {
@@ -101,6 +253,8 @@ const files = reactive([
     typeLabel: 'PNG (Hình ảnh)',
     resolution: '1600 x 1200 px',
     thumbnail: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=600',
+    thumbnailMode: 'cover',
+    isDeleted: false,
     selected: false,
   },
   {
@@ -112,6 +266,8 @@ const files = reactive([
     typeLabel: 'JPG (Hình ảnh)',
     resolution: '2048 x 1365 px',
     thumbnail: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=600',
+    thumbnailMode: 'cover',
+    isDeleted: false,
     selected: false,
   },
   {
@@ -122,6 +278,9 @@ const files = reactive([
     type: 'document',
     typeLabel: 'PDF (Tài liệu)',
     resolution: 'A4 document',
+    thumbnail: fileTypeThumbnails.pdf,
+    thumbnailMode: 'contain',
+    isDeleted: true,
     selected: false,
   },
   {
@@ -132,6 +291,9 @@ const files = reactive([
     type: 'document',
     typeLabel: 'DOCX (Tài liệu)',
     resolution: 'Office document',
+    thumbnail: fileTypeThumbnails.docx,
+    thumbnailMode: 'contain',
+    isDeleted: true,
     selected: false,
   },
   {
@@ -142,6 +304,9 @@ const files = reactive([
     type: 'video',
     typeLabel: 'MP4 (Video)',
     resolution: '1920 x 1080 px',
+    thumbnail: fileTypeThumbnails.mp4,
+    thumbnailMode: 'contain',
+    isDeleted: false,
     selected: false,
   },
   ...Array.from({ length: 50 }, (_, index) => {
@@ -153,6 +318,7 @@ const files = reactive([
       name: `demo-media-${sequence}.${preset.ext.toLowerCase()}`,
       size: `${(1.2 + (index % 9) * 0.7).toFixed(1)} MB`,
       ...preset,
+      isDeleted: index % 5 === 0,
       selected: false,
     }
   }),
@@ -161,19 +327,22 @@ const files = reactive([
 selectedFile.value = files[0]
 
 const folderTypeMap = {
-  'Hình ảnh': 'image',
-  Video: 'video',
-  'Tài liệu': 'document',
+  ...folderFilterByLabel,
+  'Tất cả thư mục': null,
 }
 
 const filteredFiles = computed(() => {
   const query = search.value.trim().toLowerCase()
-  const categoryType = folderTypeMap[selectedCategory.value]
+  const categoryType = activeCategory.value.type
   const folderType = folderTypeMap[folderFilter.value]
 
   const nextFiles = files.filter(file => {
     const matchesSearch = !query || file.name.toLowerCase().includes(query)
-    const matchesCategory = !categoryType || file.type === categoryType
+
+    const matchesCategory = activeCategory.value.isTrash
+      ? file.isDeleted
+      : !file.isDeleted && (!categoryType || file.type === categoryType)
+
     const matchesFolder = !folderType || file.type === folderType
 
     return matchesSearch && matchesCategory && matchesFolder
@@ -193,6 +362,79 @@ const filteredFiles = computed(() => {
   })
 })
 
+const routeQueryKeys = ['q', 'type', 'sort', 'page', 'perPage', 'view']
+
+const normalizedQueryValue = value => {
+  if (Array.isArray(value))
+    return value.join(',')
+
+  return value == null ? undefined : String(value)
+}
+
+const queriesEqual = (firstQuery, secondQuery) => {
+  const keys = new Set([...Object.keys(firstQuery), ...Object.keys(secondQuery)])
+
+  return [...keys].every(key => normalizedQueryValue(firstQuery[key]) === normalizedQueryValue(secondQuery[key]))
+}
+
+const syncStateFromRoute = () => {
+  const nextSearch = routeQueryValue('q') ?? ''
+  const nextFolderFilter = folderFilterByValue[routeQueryValue('type')] ?? folderFilterOptions[0].label
+  const nextSortBy = sortByValue[routeQueryValue('sort')] ?? sortByValue.newest
+  const nextViewMode = ['grid', 'list'].includes(routeQueryValue('view')) ? routeQueryValue('view') : 'grid'
+  const nextPage = parsePositiveInteger(routeQueryValue('page'), 1)
+  const nextItemsPerPageValue = parsePositiveInteger(routeQueryValue('perPage'), 12)
+
+  search.value = nextSearch
+  folderFilter.value = nextFolderFilter
+  sortBy.value = nextSortBy
+  viewMode.value = nextViewMode
+  page.value = nextPage
+  itemsPerPage.value = [12, 24, 48].includes(nextItemsPerPageValue) ? nextItemsPerPageValue : 12
+}
+
+const syncRouteQuery = () => {
+  const query = { ...route.query }
+
+  routeQueryKeys.forEach(key => delete query[key])
+
+  if (search.value.trim())
+    query.q = search.value.trim()
+  if (folderFilterByLabel[folderFilter.value] !== 'all')
+    query.type = folderFilterByLabel[folderFilter.value]
+  if (sortBy.value !== sortByValue.newest)
+    query.sort = Object.keys(sortByValue).find(key => sortByValue[key] === sortBy.value)
+  if (page.value > 1)
+    query.page = String(page.value)
+  if (itemsPerPage.value !== 12)
+    query.perPage = String(itemsPerPage.value)
+  if (viewMode.value !== 'grid')
+    query.view = viewMode.value
+
+  if (queriesEqual(query, route.query))
+    return
+
+  void router.replace({
+    name: route.name,
+    params: route.params,
+    query,
+  })
+}
+
+watch(
+  () => [route.query.q, route.query.type, route.query.sort, route.query.page, route.query.perPage, route.query.view],
+  () => {
+    syncStateFromRoute()
+    syncRouteQuery()
+  },
+  { immediate: true },
+)
+
+watch(
+  [search, folderFilter, sortBy, viewMode, page, itemsPerPage],
+  syncRouteQuery,
+)
+
 const pageCount = computed(() => Math.max(1, Math.ceil(filteredFiles.value.length / itemsPerPage.value)))
 
 const pagedFiles = computed(() => {
@@ -200,6 +442,14 @@ const pagedFiles = computed(() => {
 
   return filteredFiles.value.slice(start, start + itemsPerPage.value)
 })
+
+watch(filteredFiles, () => {
+  if (page.value > pageCount.value)
+    page.value = pageCount.value
+
+  if (!selectedFile.value || !filteredFiles.value.some(file => file.id === selectedFile.value.id))
+    selectedFile.value = filteredFiles.value[0] ?? null
+}, { immediate: true })
 
 const updateMediaScrollbars = async () => {
   await nextTick()
@@ -224,17 +474,6 @@ const displayedRange = computed(() => {
 
   return `${start} - ${end} của ${filteredFiles.value.length} tệp mẫu`
 })
-
-/**
- * Chọn category từ sidebar và đưa pagination về trang đầu.
- *
- * Input: category name từ danh sách categories.
- * Output: cập nhật bộ lọc category và danh sách file hiển thị.
- */
-const selectCategory = category => {
-  selectedCategory.value = category
-  page.value = 1
-}
 
 /**
  * Chọn file để hiển thị panel thông tin bên phải.
@@ -263,8 +502,8 @@ const toggleFileSelection = file => {
  * Input: Không có.
  * Output: giao diện demo trở về trạng thái ban đầu giống lúc mở page.
  */
-const resetDemoView = () => {
-  selectedCategory.value = 'Tất cả tệp'
+const resetDemoView = async () => {
+  await router.replace({ name: 'apps-media-media-asset' })
   search.value = ''
   folderFilter.value = 'Tất cả thư mục'
   sortBy.value = 'Mới nhất'
@@ -298,7 +537,7 @@ const updateItemsPerPage = value => {
     <div class="d-flex flex-wrap justify-space-between gap-y-4 gap-x-6 mb-6 p-4">
       <div class="d-flex flex-column justify-center">
         <h4 class="text-h4 font-weight-medium">
-          Media Demo
+          Media Asset
         </h4>
         <div class="text-body-1">
           Sandbox giao diện quản lý file dùng chung cho Resource, Post và Resource Version.
@@ -359,22 +598,29 @@ const updateItemsPerPage = value => {
               density="compact"
               nav
             >
-              <VListItem
+              <RouterLink
                 v-for="item in categories"
-                :key="item.name"
-                :prepend-icon="item.icon"
-                :aria-current="selectedCategory === item.name ? 'page' : undefined"
-                class="media-folder-item"
-                :class="{ 'media-folder-item--active text-primary': selectedCategory === item.name }"
-                @click="selectCategory(item.name)"
+                :key="item.slug"
+                v-slot="{ isExactActive, href, navigate }"
+                :to="categoryRoute(item.slug)"
+                custom
               >
-                <VListItemTitle class="text-body-1">
-                  {{ item.name }}
-                </VListItemTitle>
-                <template #append>
-                  <span class="text-caption text-medium-emphasis">{{ item.count }}</span>
-                </template>
-              </VListItem>
+                <VListItem
+                  :href="href"
+                  :prepend-icon="item.icon"
+                  :aria-current="isExactActive ? 'page' : undefined"
+                  class="media-folder-item"
+                  :class="{ 'media-folder-item--active text-primary': isExactActive }"
+                  @click="navigate"
+                >
+                  <VListItemTitle class="text-body-1">
+                    {{ item.name }}
+                  </VListItemTitle>
+                  <template #append>
+                    <span class="text-caption text-medium-emphasis">{{ item.count }}</span>
+                  </template>
+                </VListItem>
+              </RouterLink>
             </VList>
           </PerfectScrollbar>
         </VCard>
@@ -393,7 +639,7 @@ const updateItemsPerPage = value => {
         >
           <div class="d-flex justify-space-between align-center flex-wrap flex-md-nowrap gap-3 media-manager__summary">
             <div>
-              <span class="text-subtitle-1 font-weight-bold">Tất cả tệp</span>
+              <span class="text-subtitle-1 font-weight-bold">{{ selectedCategory }}</span>
               <span class="text-caption text-medium-emphasis text-no-wrap ms-2">
                 Hiển thị {{ displayedRange }}
               </span>
@@ -411,10 +657,9 @@ const updateItemsPerPage = value => {
             >
               <VTextField
                 v-model="search"
-                density="compact"
                 variant="outlined"
                 placeholder="Tìm kiếm tệp..."
-                prepend-inner-icon="mdi-magnify"
+                prepend-inner-icon="tabler-search"
                 hide-details
                 clearable
                 @update:model-value="page = 1"
@@ -426,8 +671,7 @@ const updateItemsPerPage = value => {
             >
               <VSelect
                 v-model="folderFilter"
-                :items="['Tất cả thư mục', 'Hình ảnh', 'Video', 'Tài liệu']"
-                density="compact"
+                :items="folderFilterOptions.map(option => option.label)"
                 variant="outlined"
                 hide-details
                 @update:model-value="page = 1"
@@ -440,7 +684,6 @@ const updateItemsPerPage = value => {
               <VSelect
                 v-model="sortBy"
                 :items="['Mới nhất', 'Cũ nhất', 'Tên A-Z', 'Kích thước']"
-                density="compact"
                 variant="outlined"
                 hide-details
               />
@@ -457,13 +700,13 @@ const updateItemsPerPage = value => {
                 color="primary"
               >
                 <VBtn
-                  icon="mdi-view-grid-outline"
+                  icon="tabler-layout-grid"
                   value="grid"
                   size="small"
                   aria-label="Xem dạng lưới"
                 />
                 <VBtn
-                  icon="mdi-view-list-outline"
+                  icon="tabler-list"
                   value="list"
                   size="small"
                   aria-label="Xem dạng danh sách"
@@ -516,7 +759,7 @@ const updateItemsPerPage = value => {
                     v-if="file.thumbnail"
                     :src="file.thumbnail"
                     height="120"
-                    cover
+                    :cover="file.thumbnailMode === 'cover'"
                     class="bg-grey-lighten-2"
                     alt=""
                   />
@@ -567,7 +810,7 @@ const updateItemsPerPage = value => {
                     <VImg
                       v-if="file.thumbnail"
                       :src="file.thumbnail"
-                      cover
+                      :cover="file.thumbnailMode === 'cover'"
                       alt=""
                     />
                     <VIcon
@@ -640,7 +883,7 @@ const updateItemsPerPage = value => {
             :src="selectedFile.thumbnail"
             height="180"
             rounded="lg"
-            cover
+            :cover="selectedFile.thumbnailMode === 'cover'"
             class="mb-3"
             alt=""
           />

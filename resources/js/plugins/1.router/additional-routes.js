@@ -28,6 +28,22 @@ export const redirects = [
     name: 'pages-account-settings',
     redirect: () => ({ name: 'pages-account-settings-tab', params: { tab: 'account' } }),
   },
+
+  // Legacy Media Demo URLs remain available for existing bookmarks.
+  {
+    path: '/apps/media/demo',
+    name: 'apps-media-demo',
+    redirect: to => ({ name: 'apps-media-media-asset', query: to.query }),
+  },
+  {
+    path: '/apps/media/demo/folder/:folder',
+    name: 'apps-media-demo-folder',
+    redirect: to => ({
+      name: 'apps-media-media-asset-folder',
+      params: { folder: to.params.folder },
+      query: to.query,
+    }),
+  },
 ]
 export const routes = [
   // Email filter
@@ -52,6 +68,26 @@ export const routes = [
       layoutWrapperClasses: 'layout-content-height-fixed',
     },
   },
+
+  // Media Asset folder
+  {
+    path: '/apps/media/media-asset/folder/:folder',
+    name: 'apps-media-media-asset-folder',
+    component: () => import('@/pages/apps/media/media-asset/index.vue'),
+    beforeEnter: to => {
+      const validFolders = ['images', 'videos', 'documents', 'trash']
+
+      if (validFolders.includes(to.params.folder))
+        return true
+
+      return { name: 'apps-media-media-asset', query: to.query }
+    },
+    meta: {
+      navActiveLink: 'apps-media-media-asset',
+      layoutWrapperClasses: 'layout-content-height-fixed',
+    },
+  },
+
   {
     path: '/dashboards/logistics',
     name: 'dashboards-logistics',
