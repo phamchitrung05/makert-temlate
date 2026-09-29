@@ -1,7 +1,7 @@
 # Kế hoạch triển khai nền tảng bán Digital Resources
 
 **Phiên bản:** 2.0
-**Ngày cập nhật:** 2026-09-25
+**Ngày cập nhật:** 2026-09-29
 **Trạng thái:** Kế hoạch thực thi
 **Repository:** `D:\AI\market-template`
 
@@ -206,10 +206,13 @@ Quy tắc áp dụng cho Vue:
 ### Trạng thái hiện tại
 
 - Đợt 0 — Foundation: `DONE`. Dependency, package migrations, Sanctum package/config/migration, schema V1, schema rollback test, local environment, npm lockfile, health endpoint, environment docs, tách public/admin Blade và tách route public/admin đã hoàn thành.
-- Đợt 1 — Authentication và permission: `IN PROGRESS`. Sanctum admin login/profile/revoke, customer OAuth, token lifecycle, role/permission seeder và Vue admin login nối API thật đã hoàn thành. Policy và permission middleware cho resource đã xong trong Đợt 2; còn lại admin xem danh sách customer.
-- Đợt 2 — Resource và taxonomy: `IN PROGRESS`. Backend, admin table/form, service/store và fake CRUD frontend đã hoàn thành; còn Resource Version và frontend Media Library ở Đợt 3.
+- Đợt 1 — Authentication và permission: `IN PROGRESS`. Sanctum admin login/profile/revoke, customer OAuth, token lifecycle, role/permission seeder và Vue admin login nối API thật đã hoàn thành. Policy và permission middleware cho resource đã xong trong Đợt 2; còn lại admin xem danh sách customer, còn CASL tiếp tục tạm hoãn và không chặn nghiệp vụ.
+- Đợt 2 — Resource và taxonomy: `DONE`. Backend, admin table/form, service/store, fake CRUD frontend và toàn bộ exit criteria đã hoàn thành; Resource Version và Media Library tiếp tục được hoàn tất trong Đợt 3.
 - Đợt 3 — Media và version: `DONE`. Task 1–10 của Media Library (domain, usage, upload security pipeline, API/authorization, frontend service/store, màn hình `Media > File`, Media Picker UI, tích hợp Resource/Post/Resource Version, frontend tests và acceptance/security) đã `DONE`.
+- Đợt 4 — Admin Dashboard và Blog Admin: `IN PROGRESS`. Post CRUD, service/store, fake API, trang danh sách/form và Media Picker đã có từ Đợt 3; tiếp theo là workflow review/publish, revision, taxonomy, SEO, rich-text sanitization và hoàn thiện kiểm thử quản trị.
+- Giao diện public: đang được hoàn thiện ở luồng riêng. Luồng công việc hiện tại không xây public UI; chỉ chuẩn bị contract/API để tích hợp sau khi Admin Dashboard hoàn tất.
 - Đợt gần nhất đã hoàn thành: Resource dùng `resource.cover`/`resource.preview`; Resource Version dùng package archive private với scan clean gate và documentation document; Post dùng thumbnail/content images riêng. Upload đã có acceptance cho MIME/executable/path traversal/symlink/archive limit, private download và queue retry idempotency. Update/replace/delete đều đồng bộ usage trong transaction. Backend 79 tests/417 assertions, frontend Vitest 14 tests, Pint, ESLint, production build và `git diff --check` đều đạt (build còn cảnh báo PNG cũ resolve lúc runtime).
+- Cập nhật sáng 2026-09-29: Media Asset đã có route thư mục, query state cho bộ lọc, thumbnail icon theo định dạng file và toolbar dùng icon Tabler chuẩn; panel chi tiết vẫn giữ file đang chọn bằng state cục bộ.
 
 ## 2. Phạm vi theo giai đoạn
 
@@ -1008,7 +1011,7 @@ Exit criteria:
 
 ### Đợt 2 — Resource và taxonomy
 
-**Status:** `IN PROGRESS`
+**Status:** `DONE`
 
 Deliverables:
 
@@ -1028,6 +1031,8 @@ Exit criteria:
 
 ### Đợt 3 — Media và version
 
+**Status:** `DONE`
+
 Kế hoạch task riêng cho Media Library trung tâm: [PLAN_MEDIA_LIBRARY.md](./PLAN_MEDIA_LIBRARY.md).
 
 Task 1 — domain contract, Task 2 — `MediaAsset` domain, Task 3 — usage relation,
@@ -1035,7 +1040,7 @@ Task 4 — upload validation/security pipeline, Task 5 — Media API/authorizati
 Task 6 — frontend service/store và Media > File, Task 7 — Media Picker UI,
 Task 8 — tích hợp Resource/Post/Resource Version, Task 9 — frontend tests và
 Task 10 — acceptance/security đã `DONE` theo dependency trong file kế hoạch
-riêng. Demo UI sandbox `Media > Demo` cũng đã hoàn tất để kiểm tra viewport,
+riêng. UI sandbox `Media > Media Asset` cũng đã hoàn tất để kiểm tra viewport,
 panel và scroll trước khi áp dụng chính thức.
 
 Deliverables:
@@ -1046,7 +1051,7 @@ Deliverables:
 - Checksum, validation và scan status.
 - Queue conversion.
 - Package private.
-- Media Demo UI sandbox với viewport cố định, panel liền mạch và
+- Media Asset UI sandbox với viewport cố định, panel liền mạch và
   `PerfectScrollbar` overlay.
 
 Exit criteria:
@@ -1115,24 +1120,75 @@ trực tiếp và phải có action retry hoặc thay file.
 - Có API test cho upload/metadata/version và test bảo mật package.
 - Vue có progress, loading, empty/error state và retry cho upload.
 
-### Đợt 4 — Publish workflow và public catalog
+### Đợt 4 — Admin Dashboard và Blog Admin
 
-Deliverables:
+**Status:** `IN PROGRESS`
+**Phạm vi:** backend và Vue Admin; không triển khai giao diện public trong đợt
+này. Public UI đang được hoàn thiện ở luồng riêng.
 
-- Publish checklist.
-- Home/catalog/detail/category.
-- SEO cơ bản.
-- Empty/404/loading state.
-- Related resource đơn giản theo category/technology.
+Nền tảng đã có từ Đợt 3:
+
+- [x] Model/migration/factory Post cơ bản với `draft`, `published`, `archived`,
+  slug và soft delete.
+- [x] Admin Post CRUD API dùng `BaseResponse`, permission `posts.manage` và
+  transaction khi đồng bộ media.
+- [x] Service, Pinia store, fake API, navigation, trang danh sách và form Post.
+- [x] Thumbnail và content images dùng chung Media Library qua
+  `post.thumbnail` và `post.content_images`.
+
+Deliverables còn lại:
+
+- [ ] Chốt workflow `draft → review → published → archived`, transition hợp lệ,
+  publish checklist và `published_at`.
+- [ ] Tách permission/policy phù hợp cho xem, tạo, sửa, duyệt, publish và xóa
+  Post; backend tiếp tục là security boundary, CASL chỉ hỗ trợ UX khi làm sau.
+- [ ] Bổ sung revision và khả năng xem/khôi phục phiên bản nội dung trong admin.
+- [ ] Gắn category/tag cho Post, giữ contract rõ ràng khi dùng chung taxonomy
+  với Resource.
+- [ ] Bổ sung SEO metadata cho Post: meta title, description, canonical và Open
+  Graph data cần thiết cho public layer.
+- [ ] Tích hợp rich-text editor và sanitize nội dung ở backend trước khi lưu hoặc
+  render.
+- [ ] Hoàn thiện Post list bằng server pagination/filter/sort theo status,
+  category, tác giả và thời gian xuất bản.
+- [ ] Hoàn thiện Post form/editor với validation, media, taxonomy, SEO, revision,
+  publish action, loading, empty, error và retry state.
+- [ ] Đồng bộ fake API với contract Laravel và bổ sung test backend/frontend cho
+  CRUD, transition, permission, revision, sanitize và lỗi API.
 
 Exit criteria:
 
-- Admin publish end-to-end.
-- Guest xem resource public.
-- Resource draft/private không lộ trong public query.
-- Canonical và metadata đúng.
+- Admin tạo, sửa, gửi duyệt, publish và archive Post đúng transition/quyền.
+- Publish tạo `published_at`, revision và media/taxonomy/SEO không mất khi API lỗi.
+- Rich text nguy hiểm bị sanitize; draft/review không được public query trả về.
+- Danh sách/form admin có loading, empty, error, retry và server-side filter.
+- Backend/frontend tests, Pint, ESLint, build và `git diff --check` đạt.
 
-### Đợt 5 — Free download
+### Đợt 5 — Tích hợp public catalog, blog và legal
+
+**Status:** `IN PROGRESS`
+**Phạm vi:** do luồng giao diện public riêng thực hiện; không phải ưu tiên của
+luồng Admin Dashboard hiện tại.
+
+Deliverables:
+
+- Home/catalog/resource detail/category và related resources.
+- Public blog list/detail dùng contract Post đã chốt ở Đợt 4.
+- SEO, canonical, Open Graph, sitemap và robots.
+- Terms, privacy, license và refund.
+- Empty/404/loading state và publish visibility đúng cho Resource/Post.
+
+Exit criteria:
+
+- Guest chỉ thấy Resource và Post đã published/public.
+- Draft/private/review không lộ trong public query.
+- Canonical, metadata, sitemap và legal pages đúng.
+- Public UI tích hợp API/contract mà không đưa business rule sang Blade.
+
+### Đợt 6 — Free download
+
+**Status:** `TODO`
+**Điều kiện bắt đầu:** Admin Dashboard và contract public cần thiết đã ổn định.
 
 Deliverables:
 
@@ -1149,23 +1205,9 @@ Exit criteria:
 - User không có quyền bị từ chối.
 - Có feature test cho download allow/deny/history.
 
-### Đợt 6 — Blog và legal
-
-Deliverables:
-
-- Posts, revision, cover media.
-- Public blog.
-- Sitemap/robots.
-- Terms, privacy, license, refund.
-
-Exit criteria:
-
-- Admin publish bài viết.
-- Draft không xuất hiện public.
-- Rich text được sanitize.
-- SEO page có canonical/metadata.
-
 ### Đợt 7 — Commerce test mode
+
+**Status:** `TODO`
 
 Deliverables:
 
@@ -1184,6 +1226,8 @@ Exit criteria:
 - Refund cập nhật entitlement theo policy.
 
 ### Đợt 8 — Production hardening
+
+**Status:** `TODO`
 
 Deliverables:
 
@@ -1318,7 +1362,7 @@ Trước Đợt 0:
 - Email provider.
 - npm 10 và `package-lock.json`; không sử dụng pnpm trong repository.
 
-Trước Đợt 5:
+Trước Đợt 6:
 
 - Free download có cần verify email không.
 - Download limit theo user/IP.
@@ -1341,8 +1385,17 @@ Trước Đợt 7:
 2. [x] Xây admin table/form cho resource trong Vue (`pages/apps/ecommerce/resource/list`, `ResourceTable.vue`, `ResourceForm.vue`) dùng `VDataTableServer`.
 3. [x] Bổ sung service, store và menu Resources cho admin Vue.
 4. [x] Hoàn tất Đợt 3 — Media Library, upload pipeline và Resource Version theo thứ tự ở mục 3.1 (Task 1–10 đã xong, gồm acceptance/security và quality gate).
-5. Xây public catalog Blade và luồng free download.
-6. Hoàn thành free download trước khi bắt đầu payment.
+5. [ ] Hoàn tất admin xem danh sách customer; CASL tiếp tục tạm hoãn và không
+   chặn nghiệp vụ quản trị.
+6. [ ] Hoàn thiện Đợt 4 — Blog Admin: workflow review/publish, revision,
+   taxonomy, SEO metadata và rich-text sanitization.
+7. [ ] Hoàn thiện Vue Admin Post list/form/editor, Media Picker, publish action,
+   loading/empty/error/retry và server-side filter/sort/pagination.
+8. [ ] Đồng bộ fake API và bổ sung acceptance test backend/frontend cho Blog
+   Admin trước khi tích hợp public layer.
+9. [ ] Nhận bàn giao giao diện public từ luồng riêng và chỉ tích hợp contract
+   Resource/Post sau khi nghiệp vụ Admin Dashboard ổn định.
+10. [ ] Hoàn thành free download trước khi bắt đầu payment.
 
 ## 15.1 Việc đã hoàn thành trong Đợt 2 (phần backend)
 

@@ -2,7 +2,8 @@
 
 **Phiên bản:** 1.0
 **Ngày tạo:** 2026-09-27
-**Trạng thái:** `IN PROGRESS`
+**Ngày hoàn tất:** 2026-09-29
+**Trạng thái:** `DONE`
 **Tài liệu roadmap tổng:** [PLAN.md](./PLAN.md)
 **Tài liệu cấu trúc:** [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)
 
@@ -293,12 +294,12 @@ resources/js/views/apps/media/
 điều phối list/upload/selection, còn grid và drop-zone là component trình bày.
 Task 8 gắn field này vào Resource, Post và Resource Version để gọi API attach.
 
-### Bổ sung — Media Demo UI sandbox
+### Bổ sung — Media Asset UI sandbox
 
 **Status:** `DONE`
 **Phụ thuộc:** Task 6, Task 7
 
-Đã bổ sung route và navigation `Media > Demo` tại `/apps/media/demo` để duyệt
+Đã bổ sung route và navigation `Media > Media Asset` tại `/apps/media/media-asset` để duyệt
 giao diện Media Library trước khi áp dụng vào màn hình chính:
 
 - [x] Dùng layout `layout-content-height-fixed` và pattern viewport giống
@@ -311,6 +312,12 @@ giao diện Media Library trước khi áp dụng vào màn hình chính:
 - [x] Responsive mobile cho phép page scroll tới item cuối cùng.
 - [x] Bổ sung 50 file mẫu local để kiểm tra grid/list, pagination và scroll.
 - [x] Chuẩn hóa Tabler icon, typography, elevation và alignment theo project.
+- [x] Sidebar thư mục dùng route động; query giữ search, sort, pagination và view
+  mode, còn file đang chọn vẫn giữ ở state để panel chi tiết không đổi thành route.
+- [x] Thumbnail ảnh dùng ảnh preview thật; các định dạng PDF, ZIP, SVG, DOCX,
+  XLSX, PPTX, MP3, TXT và CSV dùng icon file tương ứng với chế độ `contain`.
+- [x] Icon tìm kiếm và chuyển đổi grid/list dùng tên Tabler đã được project đăng
+  ký, không dùng alias MDI chưa được bundle.
 
 Chi tiết pattern layout/scroll được ghi tại
 [`MEDIA_DEMO_VIEWPORT_GUIDELINES.md`](./MEDIA_DEMO_VIEWPORT_GUIDELINES.md).
@@ -379,9 +386,9 @@ UI có thể dựng skeleton, nhưng không đánh dấu tích hợp hoàn thàn
 
 ## 7. Definition of Done
 
-- [ ] `MediaAsset` là owner nghiệp vụ duy nhất của file trong library.
-- [ ] Spatie `media` vẫn là bảng quản lý file vật lý; không tạo `mediables`.
-- [ ] `media_asset_usages` attach được model/field, có index và transaction.
+- [x] `MediaAsset` là owner nghiệp vụ duy nhất của file trong library.
+- [x] Spatie `media` vẫn là bảng quản lý file vật lý; không tạo `mediables`.
+- [x] `media_asset_usages` attach được model/field, có index và transaction.
 - [x] Picker lọc đúng `kind`/field ở backend và hỗ trợ single/multiple.
 - [x] Ảnh có conversion; archive/package private, có checksum và scan status.
 - [x] Không có file nguy hiểm, path traversal hoặc archive vượt giới hạn lọt qua.
