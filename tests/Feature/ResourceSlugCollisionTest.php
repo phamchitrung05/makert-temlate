@@ -20,12 +20,12 @@ use Tests\UsesIsolatedDatabase;
  *
  * Bảng `slugable` có unique index trên (sluggable_type, slug, locale) nên
  * hai resource cùng tên không được dùng chung một slug. SlugService phải tự
- * thêm hậu tố `-2`, `-3`... và luôn giữ slug cũ để phục vụ redirect 301.
+ * thêm hậu tố `-1`, `-2`... và luôn giữ slug cũ để phục vụ redirect 301.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - setUp(): migrate SQLite in-memory và seed permission
  * - test_two_resources_with_same_title_get_distinct_slugs(): trùng tên lần 1
- * - test_third_duplicate_gets_suffix_three(): trùng tên lần 3
+ * - test_third_duplicate_gets_suffix_two(): trùng tên lần 3
  * - test_slug_is_unique_per_locale_not_across_models(): cùng tên khác loại
  * - test_creating_resource_rejects_duplicate_code(): code trùng bị từ chối
  *
@@ -97,7 +97,7 @@ class ResourceSlugCollisionTest extends TestCase
      * =====================================================================
      *
      * OUTPUT:
-     * - Slug thứ nhất giữ nguyên, slug thứ hai có hậu tố `-2`
+     * - Slug thứ nhất giữ nguyên, slug thứ hai có hậu tố `-1`
      */
     public function test_two_resources_with_same_title_get_distinct_slugs(): void
     {
@@ -107,18 +107,18 @@ class ResourceSlugCollisionTest extends TestCase
         $second = $this->createResource('Vue Admin', $actorId);
 
         $this->assertSame('vue-admin', $first->primarySlug()->slug);
-        $this->assertSame('vue-admin-2', $second->primarySlug()->slug);
+        $this->assertSame('vue-admin-1', $second->primarySlug()->slug);
     }
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Kiểm tra lần trùng thứ ba nhận hậu tố `-3`
+     * CHỨC NĂNG: Kiểm tra lần trùng thứ ba nhận hậu tố `-2`
      * =====================================================================
      *
      * OUTPUT:
-     * - Slug thứ ba có hậu tố `-3`
+     * - Slug thứ ba có hậu tố `-2`
      */
-    public function test_third_duplicate_gets_suffix_three(): void
+    public function test_third_duplicate_gets_suffix_two(): void
     {
         $actorId = User::factory()->create()->id;
 
@@ -126,7 +126,7 @@ class ResourceSlugCollisionTest extends TestCase
         $this->createResource('Landing Page', $actorId);
         $third = $this->createResource('Landing Page', $actorId);
 
-        $this->assertSame('landing-page-3', $third->primarySlug()->slug);
+        $this->assertSame('landing-page-2', $third->primarySlug()->slug);
     }
 
     /**

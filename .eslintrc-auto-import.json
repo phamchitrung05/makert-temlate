@@ -361,6 +361,14 @@
     "watchTriggerable": true,
     "watchWithFilter": true,
     "whenever": true,
-    "getAdminAccessToken": true
+    "getAdminAccessToken": true,
+    "useSeoMetadata": true,
+    "analyzeContent": true,
+    "analyzeSeo": true,
+    "buildContentUrl": true,
+    "createSeo": true,
+    "useSlug": true,
+    "wordsOf": true,
+    "useMediaAssetManager": true
   }
 }

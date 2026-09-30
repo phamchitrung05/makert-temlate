@@ -129,6 +129,7 @@ class ResourceController extends Controller
     {
         $resource->loadMissing([
             'author',
+            'seoMetadata',
             'categories',
             'tags',
             'technologies',
@@ -214,6 +215,7 @@ class ResourceController extends Controller
         $published = $action->handle($resource, request()->user()->id);
         $published->loadMissing([
             'author',
+            'seoMetadata',
             'categories',
             'tags',
             'technologies',
@@ -243,6 +245,7 @@ class ResourceController extends Controller
         $archived = $action->handle($resource, request()->user()->id);
         $archived->loadMissing([
             'author',
+            'seoMetadata',
             'categories',
             'tags',
             'technologies',
@@ -305,7 +308,7 @@ class ResourceController extends Controller
         $paginator = $repository->paginate($perPage);
 
         return $paginator->setCollection(
-            $paginator->getCollection()->loadMissing(['author', 'categories', 'tags', 'technologies']),
+            $paginator->getCollection()->loadMissing(['author', 'seoMetadata', 'categories', 'tags', 'technologies']),
         );
     }
 }

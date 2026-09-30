@@ -34,69 +34,40 @@ class RolePermissionSeeder extends Seeder
      */
     public function run(): void
     {
-        $permissionNames = [
-            'resources.view',
-            'resources.create',
-            'resources.update',
-            'resources.delete',
-            'resources.publish',
-            'resources.archive',
-            'resource_versions.manage',
-            'posts.manage',
-            'taxonomy.manage',
-            'media.view',
-            'media.upload',
-            'media.attach',
-            'media.delete',
-            'media.retry',
-            'users.view',
-            'users.manage',
-            'analytics.view',
-            'settings.manage',
-        ];
+        $permissionConfig = config('permissions');
+        $guard = 'admin';
+        $permissionNames = collect($permissionConfig['catalog'])
+            ->flatMap(fn (array $actions, string $resource): array => collect($actions)
+                ->map(fn (string $action): string => $resource.'.'.$action)
+                ->all())
+            ->unique()
+            ->values();
 
         $permissions = collect($permissionNames)
             ->mapWithKeys(fn (string $name): array => [
-                $name => Permission::findOrCreate($name, 'admin'),
+                $name => Permission::findOrCreate($name, $guard),
             ]);
 
+        // Role mặc định chỉ phục vụ dữ liệu khởi tạo; role thực tế sẽ được
+        // quản lý/gán permission từ trang quản trị trong các bước tiếp theo.
         $roles = [
             'super-admin' => $permissions,
             'admin' => $permissions->only([
-                'resources.view',
-                'resources.create',
-                'resources.update',
-                'resources.publish',
-                'resources.archive',
-                'resource_versions.manage',
-                'posts.manage',
-                'media.view',
-                'media.upload',
-                'media.attach',
-                'media.delete',
-                'media.retry',
+                'resources.view', 'resources.create', 'resources.update',
+                'resources.publish', 'resources.archive', 'resource_versions.manage',
+                'posts.manage', 'media.view', 'media.upload', 'media.attach',
+                'media.delete', 'media.retry',
             ]),
             'editor' => $permissions->only([
-                'resources.view',
-                'resources.create',
-                'resources.update',
-                'resources.publish',
-                'resource_versions.manage',
-                'posts.manage',
-                'taxonomy.manage',
-                'media.view',
-                'media.upload',
-                'media.attach',
+                'resources.view', 'resources.create', 'resources.update',
+                'resources.publish', 'resource_versions.manage', 'posts.manage',
+                'taxonomy.manage', 'media.view', 'media.upload', 'media.attach',
             ]),
-            'support' => $permissions->only([
-                'resources.view',
-                'media.view',
-                'users.view',
-            ]),
+            'support' => $permissions->only(['resources.view', 'media.view', 'users.view']),
         ];
 
         foreach ($roles as $roleName => $rolePermissions) {
-            $role = Role::findOrCreate($roleName, 'admin');
+            $role = Role::findOrCreate($roleName, $guard);
             $role->syncPermissions($rolePermissions->values());
         }
     }

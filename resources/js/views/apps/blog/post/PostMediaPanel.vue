@@ -6,15 +6,18 @@
   Component giữ phần media của giao diện Post mới và tái sử dụng MediaAssetField
   để mọi thao tác chọn/upload tuân theo contract Media Library hiện có.
 
-  CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
+  CÁC HÀM/METHOD TRONG FILE:
   - Không có; dữ liệu đi qua hai v-model rõ ràng
 
-  INPUT/OUTPUT CỦA COMPONENT (tổng thể):
-  - INPUT : v-model thumbnail và contentImages
+  INPUT/OUTPUT CỦA CLASS (tổng thể):
+  - INPUT : v-model thumbnail/contentImages, disabled khi form tải/lưu
   - OUTPUT: cập nhật asset đã chọn cho PostForm
   =====================================================================
 -->
 <script setup>
+import MediaAssetField from '@/views/apps/media/field/MediaAssetField.vue'
+
+const props = defineProps({ disabled: { type: Boolean, default: false } })
 const thumbnail = defineModel('thumbnail', { type: Object, default: null })
 const contentImages = defineModel('contentImages', { type: Array, default: () => [] })
 </script>
@@ -31,6 +34,7 @@ const contentImages = defineModel('contentImages', { type: Array, default: () =>
       <div class="media-picker-shell pa-4 rounded-lg">
         <MediaAssetField
           v-model="thumbnail"
+          :disabled="props.disabled"
           field="post.thumbnail"
           :multiple="false"
           visibility="public"
@@ -54,6 +58,7 @@ const contentImages = defineModel('contentImages', { type: Array, default: () =>
       <div class="media-picker-shell pa-4 rounded-lg">
         <MediaAssetField
           v-model="contentImages"
+          :disabled="props.disabled"
           field="post.content_images"
           multiple
           visibility="public"

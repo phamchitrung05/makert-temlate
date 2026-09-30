@@ -1,5 +1,15 @@
 <?php
 
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Đăng ký API health, admin và account/token.
+ * CÁC HÀM/METHOD TRONG FILE: các route group closure cho auth/quyền;
+ * Slug dùng endpoint chung đa model có throttle; không còn endpoint riêng của Post.
+ * INPUT/OUTPUT CỦA CLASS (tổng thể): HTTP path và middleware -> controller JSON.
+ * =====================================================================
+ */
+
+use App\Http\Controllers\Admin\AiImportController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\MediaAssetController;
 use App\Http\Controllers\Admin\PostController;
@@ -22,6 +32,10 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
     ->prefix('admin')
     ->group(function (): void {
         Route::get('/me', [AdminTokenController::class, 'me']);
+
+        // Input: alias/title/ID; quyền theo model kiểm tra tại controller.
+        Route::post('/slugs/preview', \App\Http\Controllers\Admin\SlugPreviewController::class)
+            ->middleware('throttle:60,1');
 
         Route::middleware('permission:media.view,admin')->group(function (): void {
             Route::get('/media-assets', [MediaAssetController::class, 'index'])
@@ -129,6 +143,8 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
         });
 
         Route::middleware('permission:posts.manage,admin')->group(function (): void {
+            Route::post('/posts/ai/import', [AiImportController::class, 'store']);
+            Route::get('/posts/ai/import/{aiImport}', [AiImportController::class, 'show'])->whereUuid('aiImport');
             Route::get('/posts', [PostController::class, 'index']);
             Route::post('/posts', [PostController::class, 'store']);
             Route::get('/posts/{post}', [PostController::class, 'show'])->whereNumber('post');

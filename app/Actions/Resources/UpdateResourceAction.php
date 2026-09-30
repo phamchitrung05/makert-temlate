@@ -66,6 +66,7 @@ class UpdateResourceAction extends ResourceAction
                 );
 
                 $this->syncTaxonomy($resource, $taxonomy);
+                $this->syncSeo($resource, $attributes, $actorId);
                 $this->syncMedia($resource, $attributes, $actorId);
             },
             $repository,

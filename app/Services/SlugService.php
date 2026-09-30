@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Slug;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Str;
 
 /**
@@ -16,10 +17,12 @@ use Illuminate\Support\Str;
  * 1. Mỗi model chỉ có một slug `is_primary = true` cho mỗi locale.
  * 2. Slug cũ không bị xóa, giữ `is_primary = false` để redirect 301.
  * 3. Trùng slug trong cùng morph type và locale được giải quyết bằng hậu tố
- *    `-2`, `-3`...
+ *    `-1`, `-2`...
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - syncForModel(): tạo hoặc cập nhật slug primary cho một model
+ * - previewForModel(): trả slug khả dụng, không ghi database
+ * - slugExists(): kiểm tra slug trong cùng type/locale
  * - resolveBySlug(): tìm model theo slug kèm locale
  * - isPrimarySlug(): kiểm tra slug có còn là bản primary hiện tại
  * - makeUniqueSlug(): sinh slug không trùng bằng hậu tố tăng dần
@@ -31,8 +34,8 @@ use Illuminate\Support\Str;
  * - OUTPUT: Slug vừa tạo/cập nhật, hoặc Model|null khi resolve
  *
  * EXCEPTION/TRANSACTION:
- * - Không tự mở transaction; caller (Action) phải bọc trong transaction
- *   để việc đổi slug và việc đổi tên model là nguyên tử
+ * - sync mở transaction/savepoint để rollback demote khi trùng; caller vẫn
+ *   bọc toàn bộ thay đổi model trong transaction và retry khi deadlock.
  * =====================================================================
  */
 class SlugService
@@ -55,34 +58,47 @@ class SlugService
      * - INSERT hoặc UPDATE bản ghi slug trong bảng `slugable`
      *
      * EXCEPTION/TRANSACTION:
-     * - Không mở transaction; caller chịu trách nhiệm
+     * - Mở savepoint, retry unique collision tối đa 5 lần; caller retry deadlock.
      */
     public function syncForModel(Model $model, string $source, ?string $locale = null): Slug
     {
         $locale ??= (string) config('app.locale');
-        $relation = $this->slugRelation($model);
-        $base = $this->makeUniqueSlug($model, $source, $locale);
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            try {
+                // Savepoint rollback cả demote khi INSERT bị trùng; locking read
+                // nhìn thấy slug vừa được commit bởi request cạnh tranh.
+                return $model->getConnection()->transaction(function () use ($model, $source, $locale): Slug {
+                    $model->newQuery()->whereKey($model->getKey())->lockForUpdate()->firstOrFail();
+                    $base = $this->makeUniqueSlug($model, $source, $locale, true);
+                    $relation = $this->slugRelation($model);
+                    $this->demoteExistingSlugs($relation, $locale);
+                    $existing = $this->slugRelation($model)->where('slug', $base)->where('locale', $locale)->first();
+                    if ($existing) {
+                        $existing->forceFill(['is_primary' => true])->save();
 
-        $this->demoteExistingSlugs($relation, $locale);
+                        return $existing->refresh();
+                    }
 
-        $existing = $relation
-            ->where('slug', $base)
-            ->where('locale', $locale)
-            ->first();
-
-        if ($existing) {
-            $existing->forceFill(['is_primary' => true])->save();
-
-            return $existing->refresh();
+                    return $this->slugRelation($model)->create([
+                        'slug' => $base, 'locale' => $locale, 'is_primary' => true,
+                    ]);
+                });
+            } catch (UniqueConstraintViolationException $exception) {
+                if ($attempt === 4) {
+                    throw $exception;
+                }
+            }
         }
+        throw new \LogicException('Slug retry exhausted.');
+    }
 
-        $slug = $relation->create([
-            'slug' => $base,
-            'locale' => $locale,
-            'is_primary' => true,
-        ]);
-
-        return $slug->refresh();
+    /**
+     * Input: model mới hoặc đã lưu, title và locale tùy chọn.
+     * Output: slug khả dụng tại thời điểm đọc; không giữ chỗ hoặc ghi dữ liệu.
+     */
+    public function previewForModel(Model $model, string $source, ?string $locale = null): string
+    {
+        return $this->makeUniqueSlug($model, $source, $locale ?? (string) config('app.locale'));
     }
 
     /**
@@ -142,9 +158,9 @@ class SlugService
      * - $locale: locale cần kiểm tra trùng
      *
      * OUTPUT:
-     * - string: slug không trùng, có hậu tố `-2`, `-3` nếu cần
+     * - string: slug không trùng, có hậu tố `-1`, `-2` nếu cần
      */
-    private function makeUniqueSlug(Model $model, string $source, string $locale): string
+    private function makeUniqueSlug(Model $model, string $source, string $locale, bool $lock = false): string
     {
         $base = Str::slug($source);
 
@@ -152,11 +168,13 @@ class SlugService
             $base = 'item';
         }
 
+        $base = rtrim(substr($base, 0, 250), '-');
         $slug = $base;
-        $suffix = 2;
+        $suffix = 1;
 
-        while ($this->slugExists($model, $slug, $locale)) {
-            $slug = $base.'-'.$suffix;
+        while ($this->slugExists($model, $slug, $locale, $lock)) {
+            $ending = '-'.$suffix;
+            $slug = rtrim(substr($base, 0, 250 - strlen($ending)), '-').$ending;
             $suffix++;
         }
 
@@ -196,14 +214,15 @@ class SlugService
      * OUTPUT:
      * - bool: true nếu còn model khác giữ slug này
      */
-    private function slugExists(Model $model, string $slug, string $locale): bool
+    private function slugExists(Model $model, string $slug, string $locale, bool $lock = false): bool
     {
         return Slug::query()
             ->where('slug', $slug)
             ->where('locale', $locale)
             ->where('sluggable_type', $model->getMorphClass())
-            ->where('sluggable_id', '!=', $model->getKey())
-            ->exists();
+            ->when($model->exists, fn ($query) => $query->where('sluggable_id', '!=', $model->getKey()))
+            ->when($lock, fn ($query) => $query->lockForUpdate())
+            ->first(['id']) !== null;
     }
 
     /**

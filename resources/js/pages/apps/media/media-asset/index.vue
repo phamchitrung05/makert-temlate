@@ -3,17 +3,14 @@
   CHỨC NĂNG FILE: Trang Media Asset giao diện quản lý Media Library
   =====================================================================
 
-  Trang demo sử dụng layout quản lý Media được chuẩn bị trong block view-moi:
-  thư mục, bộ lọc, grid/list file và panel metadata. Dữ liệu chỉ là mẫu local
-  để duyệt giao diện; không upload, xoá hoặc thay đổi MediaAsset thật.
-
+  Khôi phục bố cục ba cột nguyên bản và dùng dữ liệu thật từ Media Asset API.
   CÁC HÀM/COMPUTED TRONG FILE:
-  - filteredFiles()/pagedFiles(): lọc, sắp xếp và phân trang file mẫu
-  - categoryRoute()/selectFile(): điều hướng thư mục và cập nhật file đang xem
-  - toggleFileSelection(): mô phỏng chọn nhiều file trong grid
-  - syncRouteQuery()/resetDemoView(): đồng bộ filter với URL và đưa layout về mặc định
-  - showUploadNotice(): hiển thị feedback cho nút upload demo
-
+  - displayFile(): map API sang card; selectFile(): tải detail.
+  - handleUpload/handleUpdate/handleDelete(): mutation API.
+  - toggleFileSelection(): checkbox; resetDemoView(): refresh API.
+  - fileTags()/formatUploadDate(): định dạng metadata cho panel cũ.
+  - syncStateFromRoute/syncRouteQuery(): đồng bộ filter URL.
+  - updateItemsPerPage/updateMediaScrollbars(): pagination và scrollbar.
   INPUT/OUTPUT CỦA COMPONENT (tổng thể):
   - INPUT : thao tác filter, category, view mode, pagination và chọn file.
   - OUTPUT: giao diện Media Asset tại /apps/media/media-asset.
@@ -24,11 +21,13 @@ import {
   computed,
   nextTick,
   onMounted,
-  reactive,
   shallowRef,
   useTemplateRef,
   watch,
 } from 'vue'
+import { useMediaAssetManager } from '@/composables/useMediaAssetManager'
+import MediaAssetUploadDialog from '@/views/apps/media/MediaAssetUploadDialog.vue'
+import MediaAssetDetails from '@/views/apps/media/MediaAssetDetails.vue'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import csvFileIcon from '@images/icons/file/media-demo/csv.png'
 import docxFileIcon from '@images/icons/file/media-demo/docx.png'
@@ -86,17 +85,18 @@ const viewMode = shallowRef(['grid', 'list'].includes(routeQueryValue('view')) ?
 const page = shallowRef(parsePositiveInteger(routeQueryValue('page'), 1))
 const initialItemsPerPage = parsePositiveInteger(routeQueryValue('perPage'), 12)
 const itemsPerPage = shallowRef([12, 24, 48].includes(initialItemsPerPage) ? initialItemsPerPage : 12)
-const selectedFile = shallowRef(null)
-const isUploadNoticeVisible = shallowRef(false)
+const uploadVisible = shallowRef(false)
+const detailsVisible = shallowRef(false)
+const folderNoticeVisible = shallowRef(false)
 const filesScrollbar = useTemplateRef('filesScrollbar')
 const sidebarScrollbar = useTemplateRef('sidebarScrollbar')
 
 const categories = [
-  { slug: 'all', name: 'Tất cả tệp', count: 248, icon: 'tabler-folder' },
-  { slug: 'images', name: 'Hình ảnh', count: 120, icon: 'tabler-photo', type: 'image' },
-  { slug: 'videos', name: 'Video', count: 36, icon: 'tabler-video', type: 'video' },
-  { slug: 'documents', name: 'Tài liệu', count: 68, icon: 'tabler-file-text', type: 'document' },
-  { slug: 'trash', name: 'Thùng rác', count: 12, icon: 'tabler-trash', isTrash: true },
+  { slug: 'all', name: 'Tất cả tệp', icon: 'tabler-folder' },
+  { slug: 'images', name: 'Hình ảnh', icon: 'tabler-photo', type: 'image' },
+  { slug: 'videos', name: 'Video', icon: 'tabler-video', type: 'video' },
+  { slug: 'documents', name: 'Tài liệu', icon: 'tabler-file-text', type: 'document' },
+  { slug: 'trash', name: 'Thùng rác', icon: 'tabler-trash', isTrash: true },
 ]
 
 const activeCategory = computed(() => categories.find(category => category.slug === route.params.folder) ?? categories[0])
@@ -131,236 +131,96 @@ const fileTypeThumbnails = {
   zip: zipFileIcon,
 }
 
-const demoFilePresets = [
-  {
-    ext: 'JPG',
-    type: 'image',
-    typeLabel: 'JPG (Hình ảnh)',
-    resolution: '1600 x 1200 px',
-    thumbnail: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600',
-    thumbnailMode: 'cover',
-  },
-  {
-    ext: 'PNG',
-    type: 'image',
-    typeLabel: 'PNG (Hình ảnh)',
-    resolution: '1600 x 1200 px',
-    thumbnail: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=600',
-    thumbnailMode: 'cover',
-  },
-  {
-    ext: 'MP4',
-    type: 'video',
-    typeLabel: 'MP4 (Video)',
-    resolution: '1920 x 1080 px',
-    thumbnail: fileTypeThumbnails.mp4,
-    thumbnailMode: 'contain',
-  },
-  {
-    ext: 'PDF',
-    type: 'document',
-    typeLabel: 'PDF (Tài liệu)',
-    resolution: 'A4 document',
-    thumbnail: fileTypeThumbnails.pdf,
-    thumbnailMode: 'contain',
-  },
-  {
-    ext: 'ZIP',
-    type: 'document',
-    typeLabel: 'ZIP (Tệp nén)',
-    resolution: 'Compressed archive',
-    thumbnail: fileTypeThumbnails.zip,
-    thumbnailMode: 'contain',
-  },
-  {
-    ext: 'SVG',
-    type: 'document',
-    typeLabel: 'SVG (Đồ họa vector)',
-    resolution: 'Vector graphic',
-    thumbnail: fileTypeThumbnails.svg,
-    thumbnailMode: 'contain',
-  },
-  {
-    ext: 'DOCX',
-    type: 'document',
-    typeLabel: 'DOCX (Tài liệu)',
-    resolution: 'Office document',
-    thumbnail: fileTypeThumbnails.docx,
-    thumbnailMode: 'contain',
-  },
-  {
-    ext: 'XLSX',
-    type: 'document',
-    typeLabel: 'XLSX (Bảng tính)',
-    resolution: 'Office spreadsheet',
-    thumbnail: fileTypeThumbnails.xlsx,
-    thumbnailMode: 'contain',
-  },
-  {
-    ext: 'PPTX',
-    type: 'document',
-    typeLabel: 'PPTX (Bản trình chiếu)',
-    resolution: 'Office presentation',
-    thumbnail: fileTypeThumbnails.pptx,
-    thumbnailMode: 'contain',
-  },
-  {
-    ext: 'MP3',
-    type: 'document',
-    typeLabel: 'MP3 (Âm thanh)',
-    resolution: 'Audio file',
-    thumbnail: fileTypeThumbnails.mp3,
-    thumbnailMode: 'contain',
-  },
-  {
-    ext: 'TXT',
-    type: 'document',
-    typeLabel: 'TXT (Văn bản)',
-    resolution: 'Plain text file',
-    thumbnail: fileTypeThumbnails.txt,
-    thumbnailMode: 'contain',
-  },
-  {
-    ext: 'CSV',
-    type: 'document',
-    typeLabel: 'CSV (Dữ liệu)',
-    resolution: 'Comma-separated values',
-    thumbnail: fileTypeThumbnails.csv,
-    thumbnailMode: 'contain',
-  },
-]
+/* API query dùng pagination/sort phía server, giữ nguyên query URL của UI. */
+const apiQuery = computed(() => ({
+  search: search.value?.trim() || undefined,
+  kind: activeCategory.value.type
+    || (folderFilterByLabel[folderFilter.value] === 'all' ? undefined : folderFilterByLabel[folderFilter.value]),
+  sort: sortBy.value === 'Tên A-Z' ? 'title' : 'created_at',
+  direction: ['Cũ nhất', 'Tên A-Z'].includes(sortBy.value) ? 'asc' : 'desc',
+  page: page.value,
+  'per_page': itemsPerPage.value,
+}))
 
-const files = reactive([
-  {
-    id: 1,
-    name: 'coffee-shop-interior.jpg',
-    ext: 'JPG',
-    size: '2.4 MB',
-    type: 'image',
-    typeLabel: 'JPG (Hình ảnh)',
-    resolution: '1920 x 1280 px',
-    thumbnail: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=600',
-    thumbnailMode: 'cover',
-    isDeleted: false,
-    selected: true,
-  },
-  {
-    id: 2,
-    name: 'coffee-packaging.png',
-    ext: 'PNG',
-    size: '1.8 MB',
-    type: 'image',
-    typeLabel: 'PNG (Hình ảnh)',
-    resolution: '1600 x 1200 px',
-    thumbnail: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=600',
-    thumbnailMode: 'cover',
-    isDeleted: false,
-    selected: false,
-  },
-  {
-    id: 3,
-    name: 'breakfast-coffee.jpg',
-    ext: 'JPG',
-    size: '3.1 MB',
-    type: 'image',
-    typeLabel: 'JPG (Hình ảnh)',
-    resolution: '2048 x 1365 px',
-    thumbnail: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=600',
-    thumbnailMode: 'cover',
-    isDeleted: false,
-    selected: false,
-  },
-  {
-    id: 4,
-    name: 'brand-guideline.pdf',
-    ext: 'PDF',
-    size: '6.8 MB',
-    type: 'document',
-    typeLabel: 'PDF (Tài liệu)',
-    resolution: 'A4 document',
-    thumbnail: fileTypeThumbnails.pdf,
-    thumbnailMode: 'contain',
-    isDeleted: true,
-    selected: false,
-  },
-  {
-    id: 5,
-    name: 'contract.docx',
-    ext: 'DOCX',
-    size: '1.4 MB',
-    type: 'document',
-    typeLabel: 'DOCX (Tài liệu)',
-    resolution: 'Office document',
-    thumbnail: fileTypeThumbnails.docx,
-    thumbnailMode: 'contain',
-    isDeleted: true,
-    selected: false,
-  },
-  {
-    id: 6,
-    name: 'product-demo.mp4',
-    ext: 'MP4',
-    size: '12.6 MB',
-    type: 'video',
-    typeLabel: 'MP4 (Video)',
-    resolution: '1920 x 1080 px',
-    thumbnail: fileTypeThumbnails.mp4,
-    thumbnailMode: 'contain',
-    isDeleted: false,
-    selected: false,
-  },
-  ...Array.from({ length: 50 }, (_, index) => {
-    const preset = demoFilePresets[index % demoFilePresets.length]
-    const sequence = String(index + 1).padStart(2, '0')
+const manager = useMediaAssetManager(apiQuery)
+const { items, total, selected, loading, busy, progress, error } = manager
 
-    return {
-      id: index + 7,
-      name: `demo-media-${sequence}.${preset.ext.toLowerCase()}`,
-      size: `${(1.2 + (index % 9) * 0.7).toFixed(1)} MB`,
-      ...preset,
-      isDeleted: index % 5 === 0,
-      selected: false,
-    }
-  }),
-])
+/** Input: API asset. Output: metadata tương thích card/panel cũ, không tạo dữ liệu mẫu. */
+const displayFile = asset => {
+  if (!asset) return null
+  const name = asset.file?.original_name || asset.title
+  const ext = name.split('.').pop()?.toLowerCase()
+  const bytes = Number(asset.file?.size || 0)
 
-selectedFile.value = files[0]
-
-const folderTypeMap = {
-  ...folderFilterByLabel,
-  'Tất cả thư mục': null,
+  return {
+    ...asset,
+    name,
+    ext: ext?.toUpperCase(),
+    size: bytes < 1024 ? `${bytes} B` : `${(bytes / 1024 / 1024).toFixed(2)} MB`,
+    type: asset.kind,
+    typeLabel: asset.file?.mime_type || asset.kind,
+    resolution: asset.file?.width && asset.file?.height ? `${asset.file.width} × ${asset.file.height}` : '—',
+    thumbnail: asset.file?.preview_url || (asset.kind === 'image' ? asset.file?.url : null) || fileTypeThumbnails[ext],
+    thumbnailMode: asset.kind === 'image' ? 'cover' : 'contain',
+  }
 }
 
+const selectedFile = computed(() => displayFile(selected.value))
+const isTrashView = computed(() => Boolean(activeCategory.value.isTrash))
+
 const filteredFiles = computed(() => {
-  const query = search.value.trim().toLowerCase()
-  const categoryType = activeCategory.value.type
-  const folderType = folderTypeMap[folderFilter.value]
+  if (isTrashView.value)
+    return []
 
-  const nextFiles = files.filter(file => {
-    const matchesSearch = !query || file.name.toLowerCase().includes(query)
+  const files = items.value.map(displayFile)
 
-    const matchesCategory = activeCategory.value.isTrash
-      ? file.isDeleted
-      : !file.isDeleted && (!categoryType || file.type === categoryType)
-
-    const matchesFolder = !folderType || file.type === folderType
-
-    return matchesSearch && matchesCategory && matchesFolder
-  })
-
-  return [...nextFiles].sort((first, second) => {
-    if (sortBy.value === 'Tên A-Z')
-      return first.name.localeCompare(second.name)
-
-    if (sortBy.value === 'Kích thước')
-      return Number.parseFloat(second.size) - Number.parseFloat(first.size)
-
-    if (sortBy.value === 'Cũ nhất')
-      return first.id - second.id
-
-    return second.id - first.id
-  })
+  return sortBy.value === 'Kích thước'
+    ? [...files].sort((first, second) => Number(second.file?.size || 0) - Number(first.file?.size || 0))
+    : files
 })
+
+const checkedIds = shallowRef([])
+const closeDetails = () => manager.select(null)
+
+/**
+ * Tạo danh sách chip metadata thật theo hình thức khu vực "Thẻ" của giao diện cũ.
+ *
+ * Input: selectedFile lấy từ API.
+ * Output: mảng nhãn usage; nếu chưa được sử dụng thì hiển thị visibility và kind.
+ */
+const fileTags = computed(() => {
+  const usages = selectedFile.value?.usages?.map(usage => usage.field).filter(Boolean) ?? []
+
+  if (usages.length)
+    return usages
+
+  return [selectedFile.value?.visibility, selectedFile.value?.kind].filter(Boolean)
+})
+
+/**
+ * Định dạng ngày tải lên theo locale tiếng Việt cho panel thông tin.
+ *
+ * Input: chuỗi ISO hoặc giá trị ngày hợp lệ.
+ * Output: ngày tiếng Việt; trả dấu gạch khi API không có ngày.
+ */
+const formatUploadDate = value => value
+  ? new Intl.DateTimeFormat('vi-VN', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(value))
+  : '—'
+
+const handleUpload = async payload => {
+  if (await manager.upload({ ...payload, file: Array.isArray(payload.file) ? payload.file[0] : payload.file }))
+    uploadVisible.value = false
+}
+
+const handleUpdate = async payload => {
+  if (await manager.update(payload.id, payload.data))
+    detailsVisible.value = false
+}
+
+const handleDelete = async () => {
+  if (selected.value && window.confirm(`Xóa "${selected.value.title}"?`))
+    await manager.remove(selected.value.id)
+}
 
 const routeQueryKeys = ['q', 'type', 'sort', 'page', 'perPage', 'view']
 
@@ -398,7 +258,7 @@ const syncRouteQuery = () => {
 
   routeQueryKeys.forEach(key => delete query[key])
 
-  if (search.value.trim())
+  if (search.value?.trim())
     query.q = search.value.trim()
   if (folderFilterByLabel[folderFilter.value] !== 'all')
     query.type = folderFilterByLabel[folderFilter.value]
@@ -435,20 +295,21 @@ watch(
   syncRouteQuery,
 )
 
-const pageCount = computed(() => Math.max(1, Math.ceil(filteredFiles.value.length / itemsPerPage.value)))
+const visibleTotal = computed(() => isTrashView.value ? 0 : total.value)
+const pageCount = computed(() => Math.max(1, Math.ceil(visibleTotal.value / itemsPerPage.value)))
+const pagedFiles = filteredFiles
 
-const pagedFiles = computed(() => {
-  const start = (page.value - 1) * itemsPerPage.value
+watch(pageCount, count => { if (page.value > count) page.value = count })
+watch(() => route.params.folder, () => { page.value = 1; checkedIds.value = []; closeDetails() })
+watch(filteredFiles, files => {
+  if (isTrashView.value || !files.length) {
+    closeDetails()
 
-  return filteredFiles.value.slice(start, start + itemsPerPage.value)
-})
+    return
+  }
 
-watch(filteredFiles, () => {
-  if (page.value > pageCount.value)
-    page.value = pageCount.value
-
-  if (!selectedFile.value || !filteredFiles.value.some(file => file.id === selectedFile.value.id))
-    selectedFile.value = filteredFiles.value[0] ?? null
+  if (!selected.value || !files.some(file => file.id === selected.value.id))
+    void manager.select(files[0].id, files[0])
 }, { immediate: true })
 
 const updateMediaScrollbars = async () => {
@@ -466,62 +327,32 @@ watch(
 onMounted(updateMediaScrollbars)
 
 const displayedRange = computed(() => {
-  if (!filteredFiles.value.length)
-    return '0 - 0 của 0 tệp'
-
+  if (!visibleTotal.value) return '0 - 0 của 0 tệp'
   const start = (page.value - 1) * itemsPerPage.value + 1
-  const end = Math.min(page.value * itemsPerPage.value, filteredFiles.value.length)
 
-  return `${start} - ${end} của ${filteredFiles.value.length} tệp mẫu`
+  return `${start} - ${Math.min(start + items.value.length - 1, visibleTotal.value)} của ${visibleTotal.value} tệp`
 })
 
-/**
- * Chọn file để hiển thị panel thông tin bên phải.
- *
- * Input: file mẫu từ grid hoặc list.
- * Output: selectedFile trỏ tới file được chọn.
- */
-const selectFile = file => {
-  selectedFile.value = file
-}
+/** Input: asset card. Output: chi tiết tải từ API. */
+const selectFile = file => manager.select(file.id, file)
 
-/**
- * Bật/tắt trạng thái checkbox của file mà không rời panel chi tiết.
- *
- * Input: file mẫu từ card.
- * Output: cập nhật thuộc tính selected trong dữ liệu local.
- */
+
+/** Input: file. Output: chọn checkbox local, không tự attach usage. */
 const toggleFileSelection = file => {
-  file.selected = !file.selected
-  selectedFile.value = file
+  checkedIds.value = checkedIds.value.includes(file.id)
+    ? checkedIds.value.filter(id => id !== file.id)
+    : [...checkedIds.value, file.id]
 }
 
-/**
- * Đưa filter, chế độ xem, pagination và file đang chọn về mặc định.
- *
- * Input: Không có.
- * Output: giao diện demo trở về trạng thái ban đầu giống lúc mở page.
- */
-const resetDemoView = async () => {
-  await router.replace({ name: 'apps-media-media-asset' })
-  search.value = ''
-  folderFilter.value = 'Tất cả thư mục'
-  sortBy.value = 'Mới nhất'
-  viewMode.value = 'grid'
-  page.value = 1
-  itemsPerPage.value = 12
-  selectedFile.value = files[0]
-}
 
-/**
- * Hiển thị thông báo cho nút upload của giao diện demo.
- *
- * Input: Không có.
- * Output: mở snackbar; không gửi file tới backend.
- */
-const showUploadNotice = () => {
-  isUploadNoticeVisible.value = true
-}
+/** Input: không có. Output: refresh dữ liệu mà giữ filter hiện tại. */
+const resetDemoView = () => manager.load()
+
+/** Input: không có. Output: mở dialog upload thật. */
+const showUploadNotice = () => { uploadVisible.value = true }
+
+/** Input: không có. Output: báo rõ API hiện chưa có nghiệp vụ tạo thư mục. */
+const showFolderNotice = () => { folderNoticeVisible.value = true }
 
 const updateItemsPerPage = value => {
   itemsPerPage.value = Number(value)
@@ -585,8 +416,8 @@ const updateItemsPerPage = value => {
               icon="tabler-plus"
               size="x-small"
               variant="text"
-              aria-label="Thêm thư mục demo"
-              @click="showUploadNotice"
+              aria-label="Thêm thư mục"
+              @click="showFolderNotice"
             />
           </div>
           <PerfectScrollbar
@@ -616,9 +447,6 @@ const updateItemsPerPage = value => {
                   <VListItemTitle class="text-body-1">
                     {{ item.name }}
                   </VListItemTitle>
-                  <template #append>
-                    <span class="text-caption text-medium-emphasis">{{ item.count }}</span>
-                  </template>
                 </VListItem>
               </RouterLink>
             </VList>
@@ -683,7 +511,7 @@ const updateItemsPerPage = value => {
             >
               <VSelect
                 v-model="sortBy"
-                :items="['Mới nhất', 'Cũ nhất', 'Tên A-Z', 'Kích thước']"
+                :items="Object.values(sortByValue)"
                 variant="outlined"
                 hide-details
               />
@@ -720,8 +548,37 @@ const updateItemsPerPage = value => {
             class="media-manager__files flex-grow-1"
             :options="{ wheelPropagation: false, suppressScrollX: true }"
           >
+            <VProgressLinear
+              v-if="loading"
+              indeterminate
+              class="mt-2"
+            />
+            <VAlert
+              v-else-if="error"
+              type="error"
+              variant="tonal"
+              class="mt-2"
+            >
+              {{ error }}
+            </VAlert>
+            <VAlert
+              v-else-if="isTrashView"
+              type="info"
+              variant="tonal"
+              class="mt-2"
+            >
+              API Media Asset hiện chưa hỗ trợ danh sách tệp đã xóa.
+            </VAlert>
+            <VAlert
+              v-else-if="!pagedFiles.length"
+              type="info"
+              variant="tonal"
+              class="mt-2"
+            >
+              Không có tệp phù hợp.
+            </VAlert>
             <VRow
-              v-if="viewMode === 'grid'"
+              v-if="!loading && !error && !isTrashView && pagedFiles.length && viewMode === 'grid'"
               class="mt-2"
             >
               <VCol
@@ -741,7 +598,7 @@ const updateItemsPerPage = value => {
                 >
                   <div class="d-flex justify-space-between position-absolute w-100 px-2 pt-2 file-card__actions">
                     <VCheckboxBtn
-                      v-model="file.selected"
+                      :model-value="checkedIds.includes(file.id)"
                       color="primary"
                       density="compact"
                       @click.stop="toggleFileSelection(file)"
@@ -750,8 +607,8 @@ const updateItemsPerPage = value => {
                       icon="mdi-dots-vertical"
                       size="x-small"
                       variant="text"
-                      aria-label="Tùy chọn file"
-                      @click.stop
+                      aria-label="Thông tin file"
+                      @click.stop="selectFile(file)"
                     />
                   </div>
 
@@ -789,7 +646,7 @@ const updateItemsPerPage = value => {
             </VRow>
 
             <VList
-              v-else
+              v-else-if="!loading && !error && !isTrashView && pagedFiles.length"
               class="mt-2"
               lines="two"
             >
@@ -821,9 +678,9 @@ const updateItemsPerPage = value => {
                 </template>
                 <template #append>
                   <VCheckboxBtn
-                    v-model="file.selected"
+                    :model-value="checkedIds.includes(file.id)"
                     color="primary"
-                    @click.stop
+                    @click.stop="toggleFileSelection(file)"
                   />
                 </template>
               </VListItem>
@@ -869,13 +726,32 @@ const updateItemsPerPage = value => {
         >
           <div class="d-flex justify-space-between align-center mb-3">
             <span class="font-weight-bold text-subtitle-1">Thông tin tệp</span>
-            <VBtn
-              icon="mdi-close"
-              size="x-small"
-              variant="text"
-              aria-label="Đóng thông tin tệp"
-              @click="selectedFile = null"
-            />
+            <div class="d-flex align-center">
+              <VBtn
+                icon="tabler-edit"
+                size="x-small"
+                variant="text"
+                aria-label="Sửa metadata"
+                :disabled="busy"
+                @click="detailsVisible = true"
+              />
+              <VBtn
+                v-if="selectedFile.file?.scan_status === 'error' || selectedFile.file?.conversion_status === 'failed'"
+                icon="tabler-refresh"
+                size="x-small"
+                variant="text"
+                aria-label="Xử lý lại tệp"
+                :disabled="busy"
+                @click="manager.retry(selectedFile.id)"
+              />
+              <VBtn
+                icon="mdi-close"
+                size="x-small"
+                variant="text"
+                aria-label="Đóng thông tin tệp"
+                @click="closeDetails"
+              />
+            </div>
           </div>
 
           <VImg
@@ -910,7 +786,7 @@ const updateItemsPerPage = value => {
             </div>
             <div class="d-flex justify-space-between py-1 border-b">
               <span class="text-medium-emphasis">Ngày tải lên:</span>
-              <span>14 Thg 4, 2024</span>
+              <span>{{ formatUploadDate(selectedFile.created_at) }}</span>
             </div>
             <div class="d-flex justify-space-between py-1">
               <span class="text-medium-emphasis">Thư mục:</span>
@@ -923,37 +799,24 @@ const updateItemsPerPage = value => {
           </div>
           <div class="d-flex flex-wrap gap-1 mb-4">
             <VChip
+              v-for="tag in fileTags"
+              :key="tag"
               size="x-small"
               color="primary"
               variant="tonal"
               class="me-1"
             >
-              coffee
-            </VChip>
-            <VChip
-              size="x-small"
-              color="primary"
-              variant="tonal"
-              class="me-1"
-            >
-              nội thất
-            </VChip>
-            <VChip
-              size="x-small"
-              color="primary"
-              variant="tonal"
-            >
-              cửa hàng
+              {{ tag }}
             </VChip>
           </div>
-
           <div class="d-flex gap-2">
             <VBtn
               color="primary"
               class="flex-grow-1 text-none"
               prepend-icon="tabler-download"
               density="comfortable"
-              @click="showUploadNotice"
+              :disabled="busy"
+              @click="manager.download(selected)"
             >
               Tải xuống
             </VBtn>
@@ -963,7 +826,8 @@ const updateItemsPerPage = value => {
               class="flex-grow-1 text-none ms-2"
               prepend-icon="tabler-trash"
               density="comfortable"
-              @click="showUploadNotice"
+              :disabled="busy"
+              @click="handleDelete"
             >
               Xóa
             </VBtn>
@@ -973,12 +837,25 @@ const updateItemsPerPage = value => {
     </VRow>
   </div>
 
+  <MediaAssetUploadDialog
+    v-model="uploadVisible"
+    :loading="busy"
+    :progress="progress"
+    :error="error"
+    @submit="handleUpload"
+  />
+  <MediaAssetDetails
+    v-model="detailsVisible"
+    :asset="selected"
+    :loading="busy"
+    @update="handleUpdate"
+  />
   <VSnackbar
-    v-model="isUploadNoticeVisible"
+    v-model="folderNoticeVisible"
     color="info"
     :timeout="3000"
   >
-    Đây là demo giao diện; thao tác này chưa kết nối backend.
+    API Media Asset hiện chưa hỗ trợ tạo thư mục tùy chỉnh.
   </VSnackbar>
 </template>
 

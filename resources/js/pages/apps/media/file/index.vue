@@ -235,6 +235,24 @@ const handleDelete = async asset => {
 }
 
 /**
+ * Cập nhật metadata từ dialog detail rồi tải lại list để usage và timestamp đồng bộ.
+ *
+ * Input: payload `{ id, data }` từ MediaAssetDetails.
+ * Output: Promise mutation; lỗi hiển thị qua snackbar.
+ */
+const handleUpdate = async payload => {
+  try {
+    await mediaAssetStore.updateMediaAsset(payload.id, payload.data)
+    isDetailsVisible.value = false
+    showFeedback('Đã cập nhật metadata file.')
+    await fetchAssets()
+  }
+  catch {
+    showFeedback(errorMessage.value, 'error')
+  }
+}
+
+/**
  * Retry scan hoặc conversion theo trạng thái backend.
  *
  * Input: asset row có scan/conversion error.
@@ -431,6 +449,8 @@ watch(
     <MediaAssetDetails
       v-model="isDetailsVisible"
       :asset="selectedAsset"
+      :loading="isMutating"
+      @update="handleUpdate"
     />
 
     <VSnackbar

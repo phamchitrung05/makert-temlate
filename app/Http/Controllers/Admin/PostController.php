@@ -23,8 +23,10 @@ class PostController extends Controller
     public function index(Request $request): JsonResponse
     {
         $paginator = Post::query()
-            ->with(['slugs', 'mediaAssetUsages.mediaAsset.media'])
+            ->with(['slugs', 'seoMetadata', 'categories', 'tags', 'mediaAssetUsages.mediaAsset.media'])
             ->when($request->filled('search'), fn ($query) => $query->where('title', 'like', '%'.$request->string('search').'%'))
+            ->when($request->filled('category_id'), fn ($query) => $query->whereHas('categories', fn ($categories) => $categories->whereKey($request->integer('category_id'))))
+            ->when($request->filled('tag_id'), fn ($query) => $query->whereHas('tags', fn ($tags) => $tags->whereKey($request->integer('tag_id'))))
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->paginate($this->resolvePerPage($request));
@@ -41,7 +43,7 @@ class PostController extends Controller
 
     public function show(Post $post): JsonResponse
     {
-        $post->loadMissing(['slugs', 'mediaAssetUsages.mediaAsset.media']);
+        $post->loadMissing(['slugs', 'seoMetadata', 'categories', 'tags', 'mediaAssetUsages.mediaAsset.media']);
 
         return BaseResponse::success(PostResource::make($post), 'Chi tiết bài viết.');
     }

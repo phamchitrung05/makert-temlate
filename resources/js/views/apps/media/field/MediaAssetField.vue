@@ -7,12 +7,14 @@
   bind v-model và truyền field contract. Việc lưu usage/attach vẫn do form cha
   và API nghiệp vụ xử lý ở bước tích hợp domain.
 
-  CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
+  CÁC HÀM/METHOD TRONG FILE:
   - selectedAssets(): chuẩn hóa single/multiple model value
   - handleSelect(): cập nhật v-model và phát selection lên form cha
   - clearAsset()/removeAsset(): bỏ asset khỏi field hiện tại
+  - moveAsset(): đổi thứ tự danh sách bằng mảng mới
+  - isImage()/previewOf(): đọc loại và URL preview
 
-  INPUT/OUTPUT CỦA COMPONENT (tổng thể):
+  INPUT/OUTPUT CỦA CLASS (tổng thể):
   - INPUT : modelValue, kind, field, multiple, visibility và capability.
   - OUTPUT: update:modelValue, select và clear.
   =====================================================================
@@ -82,24 +84,48 @@ const selectedAssets = computed(() => {
   return props.modelValue ? [props.modelValue] : []
 })
 
+/** Input: asset. Output: có phải ảnh hay không. */
 const isImage = asset => asset?.kind === 'image'
+
+/** Input: asset. Output: URL preview hoặc null. */
 const previewOf = asset => asset?.file?.preview_url || asset?.file?.url || null
 
+/** Input: selection dialog. Output: emit model khi field có quyền và không disabled. */
 const handleSelect = selection => {
+  if (props.disabled || !canAttach.value)
+    return
   emit('update:modelValue', selection)
   emit('select', selection)
 }
 
+/** Input: không có. Output: emit field rỗng, không xóa asset trong thư viện. */
 const clearAsset = () => {
+  if (props.disabled || !canAttach.value)
+    return
   emit('update:modelValue', props.multiple ? [] : null)
   emit('clear')
 }
 
+/** Input: asset cần bỏ. Output: emit selection còn lại, không ghi API. */
 const removeAsset = asset => {
+  if (props.disabled || !canAttach.value)
+    return
   if (!props.multiple)
     return clearAsset()
 
   emit('update:modelValue', selectedAssets.value.filter(selected => selected.id !== asset.id))
+}
+
+/** Input: index và hướng (-1/1). Output: emit danh sách đã đổi thứ tự, không ghi API. */
+const moveAsset = (index, direction) => {
+  if (props.disabled || !canAttach.value)
+    return
+  const next = [...selectedAssets.value]
+  const target = index + direction
+  if (target < 0 || target >= next.length)
+    return
+  ;[next[index], next[target]] = [next[target], next[index]]
+  emit('update:modelValue', next)
 }
 </script>
 
@@ -114,7 +140,7 @@ const removeAsset = asset => {
       class="d-flex flex-wrap gap-3 mb-3"
     >
       <div
-        v-for="asset in selectedAssets"
+        v-for="(asset, index) in selectedAssets"
         :key="asset.id"
         class="media-asset-field__item"
       >
@@ -138,6 +164,27 @@ const removeAsset = asset => {
         </VAvatar>
         <div class="text-body-2 text-truncate mt-1">
           {{ asset.title }}
+        </div>
+        <div
+          v-if="props.multiple"
+          class="d-flex"
+        >
+          <VBtn
+            icon="tabler-arrow-left"
+            size="x-small"
+            variant="text"
+            :disabled="props.disabled || !canAttach || index === 0"
+            :aria-label="`Move ${asset.title} earlier`"
+            @click="moveAsset(index, -1)"
+          />
+          <VBtn
+            icon="tabler-arrow-right"
+            size="x-small"
+            variant="text"
+            :disabled="props.disabled || !canAttach || index === selectedAssets.length - 1"
+            :aria-label="`Move ${asset.title} later`"
+            @click="moveAsset(index, 1)"
+          />
         </div>
         <VBtn
           icon="tabler-x"
@@ -185,8 +232,9 @@ const removeAsset = asset => {
     :field="props.field"
     :multiple="props.multiple"
     :visibility="props.visibility"
-    :can-attach="canAttach"
-    :can-upload="canUpload"
+    :initial-selection="selectedAssets"
+    :can-attach="canAttach && !props.disabled"
+    :can-upload="canUpload && !props.disabled"
     @select="handleSelect"
   />
 </template>

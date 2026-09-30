@@ -6,22 +6,31 @@
   Component nhận các model của form từ PostForm, cung cấp chế độ viết/xem trước
   an toàn và cho phép chỉnh các option preview chưa có backend persistence.
 
-  CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
-  - plainContent: chuyển HTML từ Tiptap thành text dùng cho preview/thống kê
+  CÁC HÀM/METHOD TRONG FILE:
+  - plainContent: lấy text đã phân tích dùng chung với SEO
   - wordCount: đếm số từ trong content
+  - slugDomain: lấy domain làm prefix của ô Slug
   - copyPermalink(): sao chép permalink preview nếu Clipboard API khả dụng
 
-  INPUT/OUTPUT CỦA COMPONENT (tổng thể):
+  INPUT/OUTPUT CỦA CLASS (tổng thể):
   - INPUT : v-model title/content/excerpt/options và slug preview
-  - OUTPUT: cập nhật các model; sao chép permalink theo thao tác người dùng
+  - OUTPUT: cập nhật các model, emit title-blur; sao chép permalink
   =====================================================================
 -->
 <script setup>
 import { computed, shallowRef } from 'vue'
+import PostEditor from './PostEditor.vue'
 
 const props = defineProps({
   slug: { type: String, required: true },
+  permalink: { type: String, required: true },
+  slugLoading: { type: Boolean, default: false },
+  slugError: { type: String, default: '' },
+  contentAnalysis: { type: Object, required: true },
+  disabled: { type: Boolean, default: false },
 })
+
+const emit = defineEmits(['titleBlur'])
 
 const title = defineModel('title', { type: String, default: '' })
 const content = defineModel('content', { type: String, default: '' })
@@ -31,13 +40,9 @@ const postOptions = defineModel('options', { type: Array, default: () => [] })
 const contentTab = shallowRef('write')
 const copied = shallowRef(false)
 
-const plainContent = computed(() => content.value
-  .replace(/<[^>]*>/g, ' ')
-  .replace(/&nbsp;/gi, ' ')
-  .replace(/\s+/g, ' ')
-  .trim())
-
-const wordCount = computed(() => plainContent.value ? plainContent.value.split(/\s+/).length : 0)
+const plainContent = computed(() => props.contentAnalysis.text)
+const wordCount = computed(() => props.contentAnalysis.words.length)
+const slugDomain = computed(() => `${new URL(props.permalink).origin}/`)
 
 /**
  * INPUT: permalink preview hiện tại.
@@ -49,9 +54,12 @@ const copyPermalink = async () => {
   if (!navigator?.clipboard)
     return
 
-  await navigator.clipboard.writeText(`https://yourdomain.com/blog/${props.slug}`)
-  copied.value = true
-  window.setTimeout(() => { copied.value = false }, 1500)
+  try {
+    await navigator.clipboard.writeText(props.permalink)
+    copied.value = true
+    window.setTimeout(() => { copied.value = false }, 1500)
+  }
+  catch { copied.value = false }
 }
 </script>
 
@@ -68,8 +76,9 @@ const copyPermalink = async () => {
             label="Post Title"
             placeholder="Enter an engaging title for your post..."
             :rules="[requiredValidator]"
-            counter="120"
-            maxlength="120"
+            counter="255"
+            maxlength="255"
+            @blur="emit('titleBlur')"
           >
             <template #append-inner>
               <VIcon
@@ -84,22 +93,36 @@ const copyPermalink = async () => {
         <VCol cols="12">
           <AppTextField
             :model-value="props.slug"
-            label="Permalink preview"
-            prefix="https://yourdomain.com/blog/"
+            label="Slug"
+            :prefix="slugDomain"
+            persistent-placeholder
+            placeholder="Slug sẽ được tạo từ Title"
+            :loading="props.slugLoading"
+            hint="Slug được trả về sau khi rời ô Title. Đường dẫn bài viết đầy đủ dùng /blog/slug."
+            persistent-hint
             readonly
-            hide-details
           >
             <template #append-inner>
               <IconBtn
                 size="x-small"
                 :color="copied ? 'success' : 'secondary'"
                 aria-label="Copy permalink"
+                :disabled="!props.slug || props.slugLoading"
                 @click="copyPermalink"
               >
                 <VIcon :icon="copied ? 'tabler-check' : 'tabler-copy'" />
               </IconBtn>
             </template>
           </AppTextField>
+          <VAlert
+            v-if="props.slugError"
+            type="warning"
+            variant="tonal"
+            class="mt-2"
+            role="alert"
+          >
+            {{ props.slugError }}
+          </VAlert>
         </VCol>
       </VRow>
     </VCardText>
@@ -149,11 +172,11 @@ const copyPermalink = async () => {
     </VCardItem>
 
     <VCardText>
-      <ProductDescriptionEditor
+      <PostEditor
         v-if="contentTab === 'write'"
         v-model="content"
         placeholder="Start writing your post..."
-        class="border rounded"
+        :disabled="props.disabled"
       />
       <div
         v-else
@@ -225,15 +248,6 @@ const copyPermalink = async () => {
       <template #title>
         Excerpt
       </template>
-      <template #append>
-        <VChip
-          size="x-small"
-          color="secondary"
-          variant="tonal"
-        >
-          Planned
-        </VChip>
-      </template>
     </VCardItem>
 
     <VCardText>
@@ -242,9 +256,9 @@ const copyPermalink = async () => {
         label="Excerpt"
         placeholder="Write a short description for your post..."
         rows="3"
-        counter="200"
-        maxlength="200"
-        hint="Used for preview; backend persistence will be added separately."
+        counter="5000"
+        maxlength="5000"
+        hint="Tóm tắt bài viết; dùng làm mô tả SEO khi Meta Description để trống."
         persistent-hint
       />
     </VCardText>

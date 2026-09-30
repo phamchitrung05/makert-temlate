@@ -389,6 +389,13 @@ class MediaAssetUsageService
             ]);
         }
 
+        if (in_array($field, [MediaAssetField::PostThumbnail, MediaAssetField::PostContentImages], true)
+            && $asset->visibility !== MediaAssetVisibility::Public) {
+            throw ValidationException::withMessages([
+                'media_asset_id' => 'Ảnh bài viết phải có visibility public.',
+            ]);
+        }
+
         if ($this->morphAlias($linkable) !== $field->linkableMorphAlias()) {
             throw ValidationException::withMessages([
                 'field' => "Field {$field->value} không thuộc model {$this->morphAlias($linkable)}.",

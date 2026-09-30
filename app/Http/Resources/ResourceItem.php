@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Enums\MediaAssetField;
 use App\Models\Resource;
+use App\Services\SeoMetadataService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -42,6 +43,8 @@ class ResourceItem extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $seo = app(SeoMetadataService::class)->raw($this->resource);
+
         return [
             'id' => $this->id,
             'type' => $this->type->value,
@@ -56,10 +59,18 @@ class ResourceItem extends JsonResource
             'demo_url' => $this->demo_url,
             'documentation_url' => $this->documentation_url,
             'seo' => [
-                'title' => $this->seo_title,
-                'description' => $this->seo_description,
-                'canonical_url' => $this->canonical_url,
+                'focus_keyword' => $seo['focus_keyword'],
+                'title' => $seo['seo_title'],
+                'description' => $seo['seo_description'],
+                'canonical_url' => $seo['canonical_url'],
+                'robots_index' => $seo['robots_index'],
+                'robots_follow' => $seo['robots_follow'],
+                'og_title' => $seo['og_title'],
+                'og_description' => $seo['og_description'],
+                'og_image_id' => $seo['og_image_id'],
             ],
+            'seo_metadata' => $seo,
+            'seo_resolved' => app(SeoMetadataService::class)->resolve($this->resource),
             'counters' => [
                 'views' => $this->view_count,
                 'downloads' => $this->download_count,

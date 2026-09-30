@@ -7,14 +7,17 @@
   mediaAsset store. Component có thể dùng trong Resource, Post và Resource
   Version mà không biết cách attach nghiệp vụ cụ thể của form cha.
 
-  CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
+  CÁC HÀM/METHOD TRONG FILE:
   - fetchAssets(): tải danh sách theo kind/field/filter hiện tại
   - toggleAsset()/confirmSelection(): xử lý single/multiple selection
   - handleUpload()/handleRetry(): điều phối mutation qua store
   - errorMessage()/canAttach/canUpload(): trạng thái UI và capability
+  - resetSelection(): sao chép lựa chọn hiện có vào draft
+  - close()/handleDialogUpdate(): đóng dialog không commit draft
+  - showFeedback()/showDetails()/focusSearch(): feedback, chi tiết và focus
 
-  INPUT/OUTPUT CỦA COMPONENT (tổng thể):
-  - INPUT : open, kind, field, multiple, visibility và capability override.
+  INPUT/OUTPUT CỦA CLASS (tổng thể):
+  - INPUT : open, kind, field, multiple, visibility, initialSelection và capability.
   - OUTPUT: update:open, select asset hoặc asset array.
   =====================================================================
 -->
@@ -29,6 +32,10 @@ import { getMediaAssetFieldConfig } from './mediaAssetFields'
 import { useMediaCapabilities } from './useMediaCapabilities'
 
 const props = defineProps({
+  initialSelection: {
+    type: Array,
+    default: () => [],
+  },
   open: {
     type: Boolean,
     default: false,
@@ -128,12 +135,14 @@ const errorMessage = computed(() => {
   return messages.join(' ') || payload.message || 'Không thể tải Media Library.'
 })
 
+/** Input: message/màu. Output: mở snackbar feedback. */
 const showFeedback = (message, color = 'success') => {
   feedbackMessage.value = message
   feedbackColor.value = color
   isFeedbackVisible.value = true
 }
 
+/** Input: query của dialog. Output: Promise load store; field visibility cố định được ưu tiên. */
 const fetchAssets = () => {
   if (!props.open || fieldKindMismatch.value)
     return Promise.resolve(null)
@@ -142,7 +151,7 @@ const fetchAssets = () => {
     search: searchQuery.value || undefined,
     kind: effectiveKind.value || undefined,
     field: props.field || undefined,
-    visibility: selectedVisibility.value || undefined,
+    visibility: props.visibility || selectedVisibility.value || undefined,
     'scan_status': selectedScanStatus.value || undefined,
     page: page.value,
     'per_page': itemsPerPage.value,
@@ -151,10 +160,12 @@ const fetchAssets = () => {
   })
 }
 
+/** Input: initialSelection. Output: draft mới không trùng ID, không mutate selection cha. */
 const resetSelection = () => {
-  selectedAssets.value = []
+  selectedAssets.value = [...new Map(props.initialSelection.map(asset => [asset.id, asset])).values()]
 }
 
+/** Input: không có. Output: đóng nếu không upload, không emit select. */
 const close = () => {
   if (isMutating.value)
     return
@@ -162,6 +173,7 @@ const close = () => {
   emit('update:open', false)
 }
 
+/** Input: trạng thái VDialog. Output: forward open hoặc đóng an toàn. */
 const handleDialogUpdate = value => {
   if (value)
     emit('update:open', true)
@@ -169,6 +181,7 @@ const handleDialogUpdate = value => {
     close()
 }
 
+/** Input: asset. Output: single commit ngay; multiple chỉ cập nhật draft. */
 const toggleAsset = asset => {
   if (!canAttach.value)
     return
@@ -192,14 +205,16 @@ const toggleAsset = asset => {
   selectedAssets.value = [...selectedAssets.value, asset]
 }
 
+/** Input: draft. Output: emit selection (kể cả gallery rỗng), sau đó đóng. */
 const confirmSelection = () => {
-  if (!canAttach.value || !selectedAssets.value.length)
+  if (!canAttach.value || (!props.multiple && !selectedAssets.value.length))
     return
 
   emit('select', props.multiple ? [...selectedAssets.value] : selectedAssets.value[0])
   close()
 }
 
+/** Input: file payload. Output: upload độc lập với Post rồi refresh list hoặc báo lỗi. */
 const handleUpload = async payload => {
   try {
     await mediaAssetStore.uploadMediaAsset(payload)
@@ -211,6 +226,7 @@ const handleUpload = async payload => {
   }
 }
 
+/** Input: asset. Output: retry pipeline khi có quyền, hiển thị feedback. */
 const handleRetry = async asset => {
   if (!canRetry.value)
     return
@@ -225,6 +241,7 @@ const handleRetry = async asset => {
   }
 }
 
+/** Input: asset. Output: tải metadata và mở panel chi tiết. */
 const showDetails = async asset => {
   await mediaAssetStore.fetchMediaAsset(asset.id)
 
@@ -232,6 +249,7 @@ const showDetails = async asset => {
     isDetailsVisible.value = true
 }
 
+/** Input: không có. Output: focus ô tìm kiếm sau DOM update. */
 const focusSearch = async () => {
   await nextTick()
   searchInput.value?.$el?.querySelector?.('input')?.focus()
@@ -331,6 +349,7 @@ watch(
           >
             <AppSelect
               v-model="selectedVisibility"
+              :disabled="Boolean(props.visibility)"
               label="Visibility"
               :items="visibilityOptions"
               clearable
@@ -446,7 +465,7 @@ watch(
         </VBtn>
         <VBtn
           v-if="props.multiple"
-          :disabled="!canAttach || !selectedAssets.length || isMutating"
+          :disabled="!canAttach || isMutating"
           @click="confirmSelection"
         >
           Select {{ selectedAssets.length || '' }}

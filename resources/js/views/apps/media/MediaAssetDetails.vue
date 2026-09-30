@@ -17,7 +17,8 @@
   =====================================================================
 -->
 <script setup>
-import { computed } from 'vue'
+/* eslint-disable camelcase -- Laravel API fields preserve snake_case contract. */
+import { computed, reactive, watch } from 'vue'
 
 const props = defineProps({
   modelValue: {
@@ -28,11 +29,28 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
 })
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'update'])
 
 const file = computed(() => props.asset?.file ?? {})
+const form = reactive({ title: '', alt_text: '', visibility: 'public' })
+
+watch(() => props.asset, asset => {
+  form.title = asset?.title ?? ''
+  form.alt_text = asset?.alt_text ?? ''
+  form.visibility = asset?.visibility ?? 'public'
+}, { immediate: true })
+
+const submit = () => {
+  if (!props.asset)
+    return
+  emit('update', { id: props.asset.id, data: { title: form.title, alt_text: form.alt_text, visibility: form.visibility } })
+}
 
 /**
  * Định dạng byte trong panel chi tiết.
@@ -79,6 +97,34 @@ const formatDate = value => {
       </VCardItem>
 
       <VCardText>
+        <VForm @submit.prevent="submit">
+          <VRow class="mb-3">
+            <VCol cols="12">
+              <AppTextField
+                v-model="form.title"
+                label="Title"
+                :disabled="props.loading"
+                required
+              />
+            </VCol>
+            <VCol cols="12">
+              <AppTextarea
+                v-model="form.alt_text"
+                label="Alt text"
+                rows="2"
+                :disabled="props.loading"
+              />
+            </VCol>
+            <VCol cols="12">
+              <AppSelect
+                v-model="form.visibility"
+                label="Visibility"
+                :items="['public', 'private']"
+                :disabled="props.loading || props.asset.kind === 'archive'"
+              />
+            </VCol>
+          </VRow>
+        </VForm>
         <VList lines="two">
           <VListItem
             title="Kind"
@@ -127,8 +173,19 @@ const formatDate = value => {
       </VCardText>
 
       <VCardActions class="justify-end">
-        <VBtn @click="emit('update:modelValue', false)">
+        <VBtn
+          variant="tonal"
+          :disabled="props.loading"
+          @click="emit('update:modelValue', false)"
+        >
           Close
+        </VBtn>
+        <VBtn
+          color="primary"
+          :loading="props.loading"
+          @click="submit"
+        >
+          Save
         </VBtn>
       </VCardActions>
     </VCard>

@@ -3,12 +3,20 @@
 namespace App\Http\Resources;
 
 use App\Enums\MediaAssetField;
+use App\Services\SeoMetadataService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** Định hình Post cùng thumbnail và content images. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Serialize Post, metadata SEO và media đã tải.
+ * CÁC HÀM/METHOD TRONG FILE: toArray(): JSON; primarySlugFromLoadedRelation(): slug.
+ * INPUT/OUTPUT CỦA CLASS (tổng thể): Post/request -> mảng JSON API.
+ * =====================================================================
+ */
 class PostResource extends JsonResource
 {
+    /** Input: request và Post đã load quan hệ. Output: payload không chứa score client. */
     public function toArray(Request $request): array
     {
         $usages = $this->resource->relationLoaded('mediaAssetUsages')
@@ -23,11 +31,36 @@ class PostResource extends JsonResource
             ->map(fn ($usage) => $usage->mediaAsset)
             ->filter();
 
+        $slug = $this->primarySlugFromLoadedRelation()?->slug;
+        $service = app(SeoMetadataService::class);
+        $seo = $service->raw($this->resource);
+
         return [
             'id' => $this->id,
             'title' => $this->title,
-            'slug' => $this->primarySlugFromLoadedRelation()?->slug,
+            'slug' => $slug,
             'content' => $this->content,
+            'excerpt' => $this->excerpt,
+            'focus_keyword' => $seo['focus_keyword'],
+            'seo_title' => $seo['seo_title'],
+            'seo_description' => $seo['seo_description'],
+            'canonical_url' => $seo['canonical_url'],
+            'robots_index' => $seo['robots_index'],
+            'robots_follow' => $seo['robots_follow'],
+            'og_title' => $seo['og_title'],
+            'og_description' => $seo['og_description'],
+            'og_image_id' => $seo['og_image_id'],
+            'seo_metadata' => $seo,
+            'seo_resolved' => $service->resolve($this->resource),
+            'categories' => $this->whenLoaded('categories', fn () => $this->categories->map(fn ($category): array => [
+                'id' => $category->id,
+                'name' => $category->name,
+            ])->values()),
+            'tags' => $this->whenLoaded('tags', fn () => $this->tags->map(fn ($tag): array => [
+                'id' => $tag->id,
+                'name' => $tag->name,
+            ])->values()),
+            'permalink' => url('/blog/'.$slug),
             'status' => $this->status->value,
             'published_at' => $this->published_at?->toIso8601String(),
             'media' => [
@@ -42,6 +75,7 @@ class PostResource extends JsonResource
     /**
      * Trả slug primary từ relation đã eager load để list Post không tạo N+1;
      * fallback về model helper cho các caller chỉ hydrate một Post.
+     * Input: relation slugs. Output: slug primary của locale hoặc null.
      */
     private function primarySlugFromLoadedRelation(): ?\App\Models\Slug
     {

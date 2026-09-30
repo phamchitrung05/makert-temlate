@@ -163,4 +163,41 @@ describe('MediaLibraryDialog', () => {
     expect(wrapper.text()).toContain('resource.cover')
     expect(wrapper.text()).toContain('image')
   })
+
+  it('preserves previous selections, cancels draft changes and confirms an empty gallery', async () => {
+    const first = asset(1)
+    const second = asset(2)
+
+    serviceMocks.service.list.mockResolvedValue({ items: [first, second], itemsLength: 2 })
+
+    const wrapper = mountDialog({ field: 'post.content_images', multiple: true, initialSelection: [first] })
+
+    await flushPromises()
+    expect(wrapper.text()).toContain('1 file đã chọn')
+    await wrapper.find('[data-testid="asset-2"]').trigger('click')
+    expect(wrapper.emitted('select')).toBeUndefined()
+    await wrapper.setProps({ open: false })
+    await wrapper.setProps({ open: true })
+    await flushPromises()
+    expect(wrapper.text()).toContain('1 file đã chọn')
+    await wrapper.find('[data-testid="asset-1"]').trigger('click')
+    await wrapper.findAll('button').find(button => button.text().includes('Select')).trigger('click')
+    expect(wrapper.emitted('select')).toEqual([[[]]])
+    wrapper.unmount()
+  })
+
+  it('keeps existing selected IDs absent from the current page, without duplicating IDs', async () => {
+    const first = asset(1)
+    const second = asset(2)
+
+    serviceMocks.service.list.mockResolvedValue({ items: [second], itemsLength: 2 })
+
+    const wrapper = mountDialog({ field: 'post.content_images', multiple: true, initialSelection: [first, first] })
+
+    await flushPromises()
+    await wrapper.find('[data-testid="asset-2"]').trigger('click')
+    await wrapper.findAll('button').find(button => button.text().includes('Select')).trigger('click')
+    expect(wrapper.emitted('select')).toEqual([[[first, second]]])
+    wrapper.unmount()
+  })
 })

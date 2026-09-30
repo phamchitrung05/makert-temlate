@@ -6,6 +6,7 @@ use App\Enums\ResourceStatus;
 use App\Enums\ResourceType;
 use App\Enums\ResourceVisibility;
 use App\Models\Concerns\HasMediaAssets;
+use App\Models\Concerns\HasSeoMetadata;
 use App\Models\Concerns\HasSlug;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -47,7 +48,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 class Resource extends Model
 {
     /** @use HasFactory<\Database\Factories\ResourceFactory> */
-    use HasFactory, HasMediaAssets, HasSlug, LogsActivity, SoftDeletes;
+    use HasFactory, HasMediaAssets, HasSeoMetadata, HasSlug, LogsActivity, SoftDeletes;
 
     /**
      * @var list<string>
@@ -66,9 +67,6 @@ class Resource extends Model
         'is_featured',
         'demo_url',
         'documentation_url',
-        'seo_title',
-        'seo_description',
-        'canonical_url',
         'published_at',
     ];
 

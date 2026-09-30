@@ -6,6 +6,7 @@ use App\Models\Resource;
 use App\Models\User;
 use App\Repositories\Contracts\ResourceRepositoryInterface;
 use App\Services\MediaAssetUsageService;
+use App\Services\SeoMetadataService;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -23,6 +24,7 @@ use Illuminate\Support\Facades\DB;
  * - extractTaxonomy(): lấy các mảng *_ids ra khỏi payload
  * - extractAttributes(): loại các mảng *_ids khỏi dữ liệu ghi vào bảng resources
  * - resolveRepository(): lấy repository từ container nếu caller không truyền
+ * - __construct(), syncMedia(), syncSeo(), reloadWithRelations(): đồng bộ SEO/media và load kết quả
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : payload của action con
@@ -36,6 +38,7 @@ abstract class ResourceAction
 {
     public function __construct(
         protected readonly MediaAssetUsageService $mediaAssetUsageService,
+        protected readonly SeoMetadataService $seoMetadataService,
     ) {}
 
     /**
@@ -127,6 +130,12 @@ abstract class ResourceAction
         $this->mediaAssetUsageService->syncFields($actor, $resource, $fields);
     }
 
+    /** Input: Resource và payload SEO. Output: metadata SEO được đồng bộ nếu payload có field. */
+    protected function syncSeo(Resource $resource, array $attributes, ?int $actorId): void
+    {
+        $this->seoMetadataService->sync($resource, $attributes, $actorId ? User::findOrFail($actorId) : null);
+    }
+
     /**
      * =====================================================================
      * CHỨC NĂNG: Lấy các mảng id taxonomy ra khỏi payload
@@ -158,7 +167,7 @@ abstract class ResourceAction
      */
     protected function extractAttributes(array $attributes): array
     {
-        return array_diff_key($attributes, array_flip([
+        return array_diff_key($attributes, $this->seoMetadataService->fields($attributes), array_flip([
             ...self::TAXONOMY_FIELDS,
             'media',
         ]));
@@ -196,6 +205,7 @@ abstract class ResourceAction
     {
         return $resource->fresh([
             'author',
+            'seoMetadata',
             'categories',
             'tags',
             'technologies',
