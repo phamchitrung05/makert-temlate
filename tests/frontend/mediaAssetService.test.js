@@ -1,5 +1,19 @@
 /* eslint-disable camelcase */
 
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Kiểm thử API mapping của Media Asset service.
+ * =====================================================================
+ *
+ * CÁC HÀM/COMPUTED/WATCHER TRONG FILE: các test unwrap/list/filter/upload
+ * và mutation; không có component watcher.
+ * INPUT/OUTPUT CỦA TEST (tổng thể):
+ * - INPUT : BaseResponse giả lập và query/filter media.
+ * - OUTPUT: mapping đúng envelope/pagination và request method/body.
+ * - SIDE EFFECT: chỉ mock `$api`; không gọi mạng hoặc ghi database.
+ * =====================================================================
+ */
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const apiMocks = vi.hoisted(() => ({
@@ -47,6 +61,30 @@ describe('mediaAssetService', () => {
       items: [{ id: 3 }],
       itemsLength: 1,
       pagination: { current_page: 2, per_page: 12, total: 25 },
+    })
+  })
+
+  it('omits empty list filters before calling the real API', async () => {
+    apiMocks.$api.mockResolvedValue({
+      success: true,
+      data: { items: [], itemsLength: 0 },
+      meta: { pagination: null },
+    })
+
+    await mediaAssetService.list({
+      search: '',
+      kind: null,
+      owner: 99,
+      conversion_status: null,
+      page: 1,
+      per_page: 20,
+    })
+
+    expect(apiMocks.$api).toHaveBeenCalledWith('/admin/media-assets', {
+      query: {
+        page: 1,
+        per_page: 20,
+      },
     })
   })
 

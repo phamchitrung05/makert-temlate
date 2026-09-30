@@ -7,15 +7,15 @@
 
 | Khu vực | Số file |
 |---|---:|
-| `app/` | 124 |
-| `resources/js/` | 957 |
+| `app/` | 136 |
+| `resources/js/` | 965 |
 | `routes/` | 3 |
-| `database/migrations/` | 29 |
-| `tests/` | 40 |
+| `database/migrations/` | 31 |
+| `tests/` | 44 |
 | `docs/` | 10 |
-| Vue SFC (`.vue`) | 740 |
-| PHP (`.php`) | 221 |
-| JavaScript (`.js`) | 223 |
+| Vue SFC (`.vue`) | 746 |
+| PHP (`.php`) | 248 |
+| JavaScript (`.js`) | 227 |
 
 Các số liệu trên được đếm bằng `rg --files` và cần cập nhật khi project thay đổi lớn.
 
@@ -123,12 +123,18 @@ docs/                      Plans, handoff notes and this inventory
 
 ### AI import
 
-- Implemented boundary: `ai_imports` persistence, admin job API, queue job, extractor/sanitizer, provider adapter and Post form AI dialog.
-- Main files: `app/Models/AiImport.php`, `app/Jobs/ProcessAiImportJob.php`, `app/Services/Ai/ArticleImportService.php`, `app/Services/Ai/StructuredAiProvider.php`, `app/Http/Controllers/Admin/AiImportController.php`, `config/ai-import.php`.
+- Implemented boundary: `ai_imports` persistence, admin job API, queue job, extractor/sanitizer, provider adapter, registry/target adapter and Post form AI dialog.
+- Main files: `app/Models/AiImport.php`, `app/Models/AiProvenance.php`, `app/Jobs/ProcessAiImportJob.php`, `app/Services/Ai/ArticleImportService.php`, `app/Services/Ai/StructuredAiProvider.php`, `app/Services/Ai/Contracts/`, `app/Services/Ai/Registries/`, `app/Services/Ai/Targets/PostAiAdapter.php`, `app/Http/Controllers/Admin/AiImportController.php`, `config/ai-import.php`, `config/ai-agent.php`.
+- Frontend files: `resources/js/components/ai/`, `resources/js/services/aiAgent.js`,
+  `resources/js/stores/aiAgent.js` và `resources/js/views/apps/blog/post/dialog/CreateWithAiDialog.vue`.
+- Candidate có session/parent lineage, regenerate khác retry kỹ thuật, apply toàn bộ
+  hoặc từng field và ghi provenance. Candidate không tạo Post/slug trước khi Apply.
 - The provider is optional/configurable; without credentials the deterministic sanitizer/extractor returns a safe draft and source thumbnail URL.
 - Thumbnail asset creation and actual rewrite quality depend on configured provider/media pipeline; no provider credential is committed to the repository.
 - API keys stay server-side and are configured through environment/config.
 - AI result is a draft preview; it must not auto-create/publish a Post without user action.
+- Laravel AI SDK chưa bật vì môi trường hiện tại PHP 8.2; cần PHP 8.3 trước khi
+  cài provider SDK tương thích.
 
 ## 5. API route map
 
@@ -150,7 +156,13 @@ All admin routes are under `/api/admin`, protected by Sanctum admin middleware a
 - `PUT /api/admin/posts/{post}`
 - `DELETE /api/admin/posts/{post}`
 - `POST /api/admin/slugs/preview`
-- AI import routes are under `/api/admin/posts/ai/import`.
+- `GET /api/admin/ai-agent/capabilities/{target}`
+- `POST|GET /api/admin/posts/ai/import`, `/api/admin/posts/ai/import/{id}`
+- `POST /api/admin/posts/ai/import/{id}/regenerate`
+- `POST /api/admin/posts/ai/import/{id}/retry`
+- `GET /api/admin/posts/ai/import/{id}/candidates`
+- `POST /api/admin/posts/ai/import/{id}/apply`
+- `POST /api/admin/posts/ai/import/{id}/cancel`, `DELETE /api/admin/posts/ai/import/{id}`
 
 ### Media Asset
 
@@ -205,6 +217,8 @@ php artisan route:list --path=api
 
 - Post: `postService.test.js`, `postForm.test.js`, `postEditor.test.js`, `postSeo.test.js`, `postMediaPanel.test.js`, slug tests.
 - Media: `mediaAssetService.test.js`, `mediaAssetStore.test.js`, `mediaLibraryDialog.test.js`, `fakeMediaApi.test.js`.
+- AI: `aiAgentService.test.js` và các feature/unit test `AiImportApiTest`,
+  `AiCandidateApiTest`, `AiRegistriesTest`, `ArticleImportServiceTest`.
 
 ```powershell
 npm run test:run
@@ -220,7 +234,13 @@ npm run lint
 - `VITE_PUBLIC_URL`: public permalink origin.
 - `VITE_TINYMCE_API_KEY` or `VITE_TINYMCE_LICENSE_KEY`: editor runtime.
 - Laravel app key, DB, Sanctum, filesystem disks, queue connection.
-- AI provider key/model/base URL: server-side only; `AI_IMPORT_ENABLED`, `AI_IMPORT_PROVIDER`, `AI_IMPORT_ENDPOINT`, `AI_IMPORT_KEY`, `AI_IMPORT_MODEL`, `AI_IMPORT_TIMEOUT`.
+- AI provider key/model/base URL: server-side only; `AI_IMPORT_ENABLED`,
+  `AI_IMPORT_PROVIDER`, `AI_IMPORT_ENDPOINT`, `AI_IMPORT_KEY`, `AI_IMPORT_MODEL`,
+  `AI_IMPORT_TIMEOUT`, `AI_IMPORT_CONNECT_TIMEOUT`, `AI_IMPORT_JOB_TIMEOUT`,
+  `AI_IMPORT_MAX_REDIRECTS`, `AI_IMPORT_MAX_HTML_BYTES`,
+  `AI_IMPORT_MAX_IMAGE_BYTES`, `AI_IMPORT_PROMPT_VERSION`,
+  `AI_IMPORT_RETENTION_DAYS`, `AI_IMPORT_QUOTA_PER_HOUR` và
+  `AI_IMPORT_IDEMPOTENCY_WINDOW_MINUTES`.
 - Media conversion/size/disk policy: `config/media-assets.php`, `config/media-library.php`, `config/filesystems.php`.
 
 ## 10. How future AI should use this file
@@ -239,3 +259,4 @@ npm run lint
 | 2026-09-30 | Created central project inventory | `docs/PROJECT_INVENTORY.md` | `git diff --check` |
 | 2026-09-30 | Implemented Post taxonomy, Media UI integration and AI import vertical slice | Post, Media, AI | Backend 96 tests/539 assertions; frontend 59 tests; build pass |
 | 2026-09-30 | Restored original Media Asset layout, removed folder counters and stabilized item selection | Media Asset UI/composable | Targeted Media tests and build pass |
+| 2026-09-30 | Unified AI Content Agent registry, candidate lineage, provenance and capability-driven dialog; synchronized plan documents | `app/Services/Ai`, `resources/js/components/ai`, `docs/PLAN_POST_MEDIA_AI_INTEGRATION.md` | Backend 112 tests/600 assertions; frontend 64 tests; build pass |

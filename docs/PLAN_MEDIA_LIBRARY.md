@@ -4,6 +4,11 @@
 **Ngày tạo:** 2026-09-27
 **Ngày hoàn tất:** 2026-09-29
 **Trạng thái:** `DONE`
+
+**Đối chiếu 2026-09-30:** Media Library đã dùng API thật cho các thao tác chính;
+phần AI chọn/attach asset và provenance được theo dõi trong
+[PLAN_POST_MEDIA_AI_INTEGRATION.md](./PLAN_POST_MEDIA_AI_INTEGRATION.md), không tạo
+luồng media riêng.
 **Tài liệu roadmap tổng:** [PLAN.md](./PLAN.md)
 **Tài liệu cấu trúc:** [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)
 
@@ -405,3 +410,17 @@ UI có thể dựng skeleton, nhưng không đánh dấu tích hợp hoàn thàn
 - [x] Cập nhật bản đồ thư mục, API và flow trong
   [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md).
 - [x] Nếu thêm disk/queue/env, cập nhật [ENVIRONMENT.md](./ENVIRONMENT.md).
+
+## 9. Nhật ký đối chiếu 2026-09-30
+
+- [x] Giữ dialog picker theo component dùng chung; bổ sung `MediaLibraryDialogLayout`
+  để `MediaLibraryDialog` và `MediaAssetGrid` dùng cùng hierarchy project.
+- [x] Sửa context field/kind khi mở picker để detail và test không mất metadata
+  (`resource.cover`, `image`, v.v.).
+- [x] Media Asset page tiếp tục gọi API thật qua adapter hiện tại; không đưa lại
+  mock data vào production flow.
+- [x] Kiểm chứng sau lượt tích hợp: backend 112 tests/600 assertions, frontend
+  64 tests và production build đạt; warning `section-title-icon.png` là asset
+  legacy đã có trước.
+- [ ] Hợp nhất `useMediaAssetManager` về `useMediaAssetStore` và bổ sung browser/
+  staging test với storage thật.

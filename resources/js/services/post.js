@@ -56,6 +56,11 @@ export const postService = {
     return unwrap(await $api('/admin/posts/ai/import', { method: 'POST', body: payload }))
   },
 
+  /** Input: job UUID. Output: current progress/result for polling. */
+  async aiImportStatus(jobId) {
+    return unwrap(await $api(`/admin/posts/ai/import/${jobId}`))
+  },
+
   /** Input: query phân trang. Output: items và tổng số bài. */
   async list(params = {}) {
     const response = await $api('/admin/posts', { query: params })

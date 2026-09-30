@@ -297,7 +297,7 @@ Media Library trung tâm dùng contract tại `app/Enums/MediaAsset*`. Alias
 `resource_version`, `media_asset` và `post` đã được đăng ký trong
 `AppServiceProvider`.
 
-Các file Media Library đã triển khai đến Task 9:
+Các file Media Library đã triển khai đến Task 10:
 
 ```text
 app/Models/MediaAsset.php
@@ -445,7 +445,36 @@ Trong list API, `field` là context của picker và được backend ánh xạ 
 được phép; nó không giới hạn kết quả vào các asset đã có usage ở field đó. Nhờ
 vậy asset mới hoặc chưa attach vẫn xuất hiện để người dùng lựa chọn.
 
-### 4.5. Router và page
+### 4.5. AI Content Agent dùng chung
+
+AI Content Agent dùng chung cho Post/Resource/Sound theo boundary registry và
+adapter; không tạo một pipeline riêng cho từng model:
+
+```text
+app/Services/Ai/Contracts/             provider/target contract
+app/Services/Ai/Registries/             target/provider/prompt/schema registry
+app/Services/Ai/Targets/PostAiAdapter.php
+app/Services/Ai/ArticleImportService.php
+app/Services/Ai/StructuredAiProvider.php
+app/Models/AiImport.php                 session/run/candidate lineage
+app/Models/AiProvenance.php             provenance theo field đã apply
+app/Http/Controllers/Admin/AiImportController.php
+database/migrations/*ai_import*         lifecycle và lineage fields
+resources/js/services/aiAgent.js
+resources/js/stores/aiAgent.js
+resources/js/components/ai/              dialog/preview dùng chung
+resources/js/views/apps/blog/post/dialog/CreateWithAiDialog.vue
+```
+
+Capability được đọc từ `GET /api/admin/ai-agent/capabilities/{target}`. Post URL
+import dùng các route dưới `/api/admin/posts/ai/import`; candidate chưa tạo slug
+hoặc Post thật, chỉ thao tác Apply mới gọi Post Action/SlugService. API key luôn
+ở backend; deterministic provider là fallback khi chưa cấu hình provider thật.
+
+Chi tiết trạng thái và việc còn lại nằm duy nhất trong
+`docs/PLAN_POST_MEDIA_AI_INTEGRATION.md`.
+
+### 4.6. Router và page
 
 - File dưới `resources/js/pages` tạo route tự động qua
   `unplugin-vue-router`.
@@ -472,7 +501,7 @@ vậy asset mới hoặc chưa attach vẫn xuất hiện để người dùng l
 - Guard nằm ở `resources/js/plugins/1.router/guards.js`.
 - Trang cần metadata layout/auth bằng `definePage({ meta: { ... } })` khi cần.
 
-### 4.6. Navigation
+### 4.7. Navigation
 
 Menu phải được cập nhật ở cả hai file nếu admin hỗ trợ hai layout:
 
@@ -483,7 +512,7 @@ resources/js/navigation/horizontal/apps.js
 
 Dùng route name thay vì hard-code URL khi navigation trỏ tới page nội bộ.
 
-### 4.7. Fake API và API thật
+### 4.8. Fake API và API thật
 
 Khi `VITE_ENABLE_MSW=true`, MSW được đăng ký từ
 `resources/js/plugins/fake-api/index.js`. Mỗi feature có thể đặt handler và

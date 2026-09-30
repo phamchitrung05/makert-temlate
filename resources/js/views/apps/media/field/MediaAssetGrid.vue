@@ -4,7 +4,7 @@
   =====================================================================
 
   Component chỉ nhận asset và selection từ dialog, sau đó phát event khi user
-  chọn, mở detail hoặc retry. Không gọi HTTP và không tự quyết định policy.
+  chọn hoặc retry. Không gọi HTTP và không tự quyết định policy.
 
   CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
   - fileOf()/previewOf(): lấy metadata hiển thị an toàn
@@ -13,7 +13,7 @@
 
   INPUT/OUTPUT CỦA COMPONENT (tổng thể):
   - INPUT : assets, selected assets, loading, multiple và capability.
-  - OUTPUT: emit toggle/detail/retry cho MediaLibraryDialog.
+  - OUTPUT: emit toggle/retry cho MediaLibraryDialog.
   =====================================================================
 -->
 <script setup>
@@ -46,7 +46,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['toggle', 'details', 'retry'])
+const emit = defineEmits(['toggle', 'retry'])
 
 const selectedIds = computed(() => new Set(props.selectedAssets.map(asset => asset.id)))
 
@@ -79,6 +79,12 @@ const selectionHint = asset => {
 
   return props.multiple ? 'Chọn asset này' : 'Chọn asset'
 }
+
+const shouldShowStatus = status => Boolean(status) && !['pending', 'ready', 'clean'].includes(status)
+
+const shouldShowScanStatus = asset => shouldShowStatus(fileOf(asset).scan_status)
+
+const shouldShowConversionStatus = asset => shouldShowStatus(fileOf(asset).conversion_status)
 
 const handleKeydown = (event, asset) => {
   if (!canSelect(asset) || !['Enter', ' '].includes(event.key))
@@ -146,15 +152,13 @@ const handleKeydown = (event, asset) => {
             />
           </div>
 
-          <VCardText class="pb-2">
-            <div class="text-body-1 font-weight-medium text-truncate">
-              {{ asset.title }}
-            </div>
-            <div class="text-body-2 text-medium-emphasis text-truncate">
-              {{ fileOf(asset).original_name || fileOf(asset).file_name || 'No file metadata' }}
-            </div>
+          <VCardText
+            v-if="shouldShowScanStatus(asset) || shouldShowConversionStatus(asset)"
+            class="pb-2"
+          >
             <div class="d-flex flex-wrap gap-1 mt-2">
               <VChip
+                v-if="shouldShowScanStatus(asset)"
                 :color="resolveStatus(fileOf(asset).scan_status).color"
                 size="x-small"
                 label
@@ -162,7 +166,7 @@ const handleKeydown = (event, asset) => {
                 Scan {{ resolveStatus(fileOf(asset).scan_status).text }}
               </VChip>
               <VChip
-                v-if="fileOf(asset).conversion_status"
+                v-if="shouldShowConversionStatus(asset)"
                 :color="resolveStatus(fileOf(asset).conversion_status).color"
                 size="x-small"
                 label
@@ -172,17 +176,11 @@ const handleKeydown = (event, asset) => {
             </div>
           </VCardText>
 
-          <VCardActions class="pt-0">
+          <VCardActions
+            v-if="props.canRetry && (fileOf(asset).scan_status === 'error' || fileOf(asset).conversion_status === 'failed')"
+            class="pt-0 justify-end"
+          >
             <VBtn
-              variant="text"
-              size="small"
-              @click.stop="emit('details', asset)"
-            >
-              Details
-            </VBtn>
-            <VSpacer />
-            <VBtn
-              v-if="props.canRetry && (fileOf(asset).scan_status === 'error' || fileOf(asset).conversion_status === 'failed')"
               icon="tabler-refresh"
               variant="text"
               size="small"
@@ -199,6 +197,9 @@ const handleKeydown = (event, asset) => {
 <style scoped>
 .media-asset-card {
   cursor: pointer;
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  box-shadow: 0 2px 6px rgba(var(--v-theme-on-surface), 0.08);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -209,7 +210,7 @@ const handleKeydown = (event, asset) => {
 
 .media-asset-card--selected {
   border: 2px solid rgb(var(--v-theme-primary));
-  box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 0.14);
+  box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 0.14), 0 2px 6px rgba(var(--v-theme-on-surface), 0.08);
 }
 
 .media-asset-card[aria-disabled='true'] {
@@ -224,7 +225,7 @@ const handleKeydown = (event, asset) => {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: rgba(var(--v-theme-on-surface), 0.04);
+  background: rgb(var(--v-theme-grey-200));
 }
 
 .media-asset-card__check {

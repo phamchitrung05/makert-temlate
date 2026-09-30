@@ -32,7 +32,6 @@ const defaultFilters = () => ({
   kind: null,
   field: null,
   visibility: null,
-  owner: null,
   scan_status: null,
   conversion_status: null,
   sort: 'created_at',

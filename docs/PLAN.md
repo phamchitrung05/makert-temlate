@@ -209,10 +209,13 @@ Quy tắc áp dụng cho Vue:
 - Đợt 1 — Authentication và permission: `IN PROGRESS`. Sanctum admin login/profile/revoke, customer OAuth, token lifecycle, role/permission seeder và Vue admin login nối API thật đã hoàn thành. Policy và permission middleware cho resource đã xong trong Đợt 2; còn lại admin xem danh sách customer, còn CASL tiếp tục tạm hoãn và không chặn nghiệp vụ.
 - Đợt 2 — Resource và taxonomy: `DONE`. Backend, admin table/form, service/store, fake CRUD frontend và toàn bộ exit criteria đã hoàn thành; Resource Version và Media Library tiếp tục được hoàn tất trong Đợt 3.
 - Đợt 3 — Media và version: `DONE`. Task 1–10 của Media Library (domain, usage, upload security pipeline, API/authorization, frontend service/store, màn hình `Media > File`, Media Picker UI, tích hợp Resource/Post/Resource Version, frontend tests và acceptance/security) đã `DONE`.
-- Đợt 4 — Admin Dashboard và Blog Admin: `IN PROGRESS`. Post CRUD, service/store, fake API, trang danh sách/form và Media Picker đã có từ Đợt 3; tiếp theo là workflow review/publish, revision, taxonomy, SEO, rich-text sanitization và hoàn thiện kiểm thử quản trị.
+- Đợt 4 — Admin Dashboard và Blog Admin: `IN PROGRESS`. Post CRUD, taxonomy,
+  SEO metadata, editor/media integration, server pagination/search và AI Content
+  Agent foundation đã có; còn workflow review/publish đầy đủ, revision, backend
+  sanitization, status filter và browser/staging verification.
 - Giao diện public: đang được hoàn thiện ở luồng riêng. Luồng công việc hiện tại không xây public UI; chỉ chuẩn bị contract/API để tích hợp sau khi Admin Dashboard hoàn tất.
-- Đợt gần nhất đã hoàn thành: Resource dùng `resource.cover`/`resource.preview`; Resource Version dùng package archive private với scan clean gate và documentation document; Post dùng thumbnail/content images riêng. Upload đã có acceptance cho MIME/executable/path traversal/symlink/archive limit, private download và queue retry idempotency. Update/replace/delete đều đồng bộ usage trong transaction. Backend 79 tests/417 assertions, frontend Vitest 14 tests, Pint, ESLint, production build và `git diff --check` đều đạt (build còn cảnh báo PNG cũ resolve lúc runtime).
-- Cập nhật sáng 2026-09-29: Media Asset đã có route thư mục, query state cho bộ lọc, thumbnail icon theo định dạng file và toolbar dùng icon Tabler chuẩn; panel chi tiết vẫn giữ file đang chọn bằng state cục bộ.
+- Đợt gần nhất đã hoàn thành: Resource dùng `resource.cover`/`resource.preview`; Resource Version dùng package archive private với scan clean gate và documentation document; Post dùng thumbnail/content images riêng, taxonomy/SEO round-trip và dialog AI giữ hierarchy cũ. Upload đã có acceptance cho MIME/executable/path traversal/symlink/archive limit, private download và queue retry idempotency. Update/replace/delete đều đồng bộ usage trong transaction. Backend 112 tests/600 assertions, frontend Vitest 64 tests, Pint, ESLint, production build và `git diff --check` đều đạt (build còn cảnh báo PNG cũ resolve lúc runtime).
+- Cập nhật 2026-09-30: AI Agent có registry/adapter/candidate lineage, regenerate/retry/apply chọn lọc và capability endpoint; GPT/Gemini thật, logo provenance và browser/staging vẫn pending.
 
 ## 2. Phạm vi theo giai đoạn
 
@@ -1143,18 +1146,19 @@ Deliverables còn lại:
 - [ ] Tách permission/policy phù hợp cho xem, tạo, sửa, duyệt, publish và xóa
   Post; backend tiếp tục là security boundary, CASL chỉ hỗ trợ UX khi làm sau.
 - [ ] Bổ sung revision và khả năng xem/khôi phục phiên bản nội dung trong admin.
-- [ ] Gắn category/tag cho Post, giữ contract rõ ràng khi dùng chung taxonomy
+- [x] Gắn category/tag cho Post, giữ contract rõ ràng khi dùng chung taxonomy
   với Resource.
-- [ ] Bổ sung SEO metadata cho Post: meta title, description, canonical và Open
-  Graph data cần thiết cho public layer.
-- [ ] Tích hợp rich-text editor và sanitize nội dung ở backend trước khi lưu hoặc
-  render.
-- [ ] Hoàn thiện Post list bằng server pagination/filter/sort theo status,
-  category, tác giả và thời gian xuất bản.
-- [ ] Hoàn thiện Post form/editor với validation, media, taxonomy, SEO, revision,
-  publish action, loading, empty, error và retry state.
-- [ ] Đồng bộ fake API với contract Laravel và bổ sung test backend/frontend cho
-  CRUD, transition, permission, revision, sanitize và lỗi API.
+- [x] Bổ sung SEO metadata cho Post: meta title, description, canonical và Open
+  Graph data ở lớp admin/API; public SEO vẫn thuộc Đợt 5.
+- [x] Tích hợp rich-text editor TinyMCE và giữ HTML trong form; [ ] sanitize
+  nội dung ở backend trước khi lưu hoặc render.
+- [x] Hoàn thiện Post list bằng server pagination/search và filter category/tag
+  ở API; [ ] bổ sung filter status/tác giả/thời gian và UI tương ứng.
+- [x] Hoàn thiện phần Post form/editor với validation, media, taxonomy, SEO,
+  loading, empty, error và retry state; [ ] revision và workflow publish đầy đủ.
+- [x] Đồng bộ fake/API client với contract Laravel và bổ sung test backend/frontend
+  cho CRUD, taxonomy, SEO, media và lỗi API; [ ] bổ sung coverage transition,
+  permission granular, revision và sanitize.
 
 Exit criteria:
 
@@ -1163,6 +1167,23 @@ Exit criteria:
 - Rich text nguy hiểm bị sanitize; draft/review không được public query trả về.
 - Danh sách/form admin có loading, empty, error, retry và server-side filter.
 - Backend/frontend tests, Pint, ESLint, build và `git diff --check` đạt.
+
+### Đợt 4.1 — AI Content Agent (theo dõi chi tiết ở plan hợp nhất)
+
+**Status:** `IN PROGRESS`
+
+Chi tiết contract, registry, migration, candidate/provenance và danh sách endpoint
+được quản lý duy nhất trong [PLAN_POST_MEDIA_AI_INTEGRATION.md](./PLAN_POST_MEDIA_AI_INTEGRATION.md).
+
+- [x] Provider/target/prompt/schema registry và contract adapter nội bộ.
+- [x] Post URL adapter với queue lifecycle, SSRF guard, structured fallback và
+  capability endpoint.
+- [x] Candidate lineage, regenerate/retry, comparison và apply từng field; chỉ
+  Apply mới tạo Post draft/slug và ghi provenance.
+- [x] Dialog AI dùng chung; `CreateWithAiDialog` giữ hierarchy giao diện cũ và
+  chỉ bổ sung field/capability cần thiết.
+- [ ] Adapter GPT/Gemini thật, logo provider/model, Resource/Sound adapter, file
+  input và browser/staging test.
 
 ### Đợt 5 — Tích hợp public catalog, blog và legal
 
@@ -1388,11 +1409,12 @@ Trước Đợt 7:
 5. [ ] Hoàn tất admin xem danh sách customer; CASL tiếp tục tạm hoãn và không
    chặn nghiệp vụ quản trị.
 6. [ ] Hoàn thiện Đợt 4 — Blog Admin: workflow review/publish, revision,
-   taxonomy, SEO metadata và rich-text sanitization.
-7. [ ] Hoàn thiện Vue Admin Post list/form/editor, Media Picker, publish action,
-   loading/empty/error/retry và server-side filter/sort/pagination.
-8. [ ] Đồng bộ fake API và bổ sung acceptance test backend/frontend cho Blog
-   Admin trước khi tích hợp public layer.
+   backend rich-text sanitization, status filter và granular permission.
+7. [x] Hoàn thiện nền tảng Vue Admin Post list/form/editor, Media Picker,
+   loading/empty/error/retry và server-side pagination/search; [ ] bổ sung
+   filter status/tác giả/thời gian và revision UI.
+8. [x] Đồng bộ API client/fake contract và acceptance test nền tảng cho Blog
+   Admin; [ ] bổ sung coverage transition, sanitize và browser/staging.
 9. [ ] Nhận bàn giao giao diện public từ luồng riêng và chỉ tích hợp contract
    Resource/Post sau khi nghiệp vụ Admin Dashboard ổn định.
 10. [ ] Hoàn thành free download trước khi bắt đầu payment.
@@ -1484,6 +1506,19 @@ lifecycle phức tạp như Resource vào một CRUD base quá chung.
   `BaseCrudController`.
 - [x] Test backend hiện có vẫn pass; thêm test cho inheritance/CRUD base mà
   không làm thay đổi API contract.
+
+## 15.3 Cập nhật hợp nhất Post/Media/AI — 2026-09-30
+
+- [x] Cập nhật `docs/PLAN_POST_MEDIA_AI_INTEGRATION.md` thành plan duy nhất cho
+  Post, Media và AI Content Agent; không tạo thêm plan AI song song.
+- [x] Ghi nhận backend AI registry/adapter, lifecycle `ai_imports`, candidate
+  lineage, regenerate/retry/apply và provenance theo field.
+- [x] Ghi nhận capability endpoint và frontend AI dialog/service/store; dialog
+  Post vẫn dùng hierarchy cũ, chỉ bổ sung các field cần thiết.
+- [x] Đồng bộ mốc kiểm thử: backend 112 tests/600 assertions, frontend 64 tests,
+  Pint, ESLint phạm vi thay đổi và production build đều đạt.
+- [ ] Laravel AI SDK/GPT/Gemini thật (môi trường hiện tại PHP 8.2, SDK yêu cầu
+  PHP 8.3), logo provider, Resource/Sound adapter và browser/staging test.
 
 ## 16. Tài liệu tham khảo
 

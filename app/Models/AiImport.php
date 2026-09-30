@@ -19,6 +19,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AiImport extends Model
 {
@@ -28,17 +29,60 @@ class AiImport extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = ['created_by', 'source_url', 'status', 'result_json', 'error_message', 'provider', 'prompt_version', 'expires_at'];
+    protected $fillable = [
+        'created_by', 'source_url', 'normalized_url', 'source_hash', 'status',
+        'current_step', 'progress', 'input_json', 'source_meta_json', 'result_json',
+        'error_code', 'error_message', 'provider', 'prompt_version', 'started_at',
+        'completed_at', 'expires_at',
+        'session_id', 'parent_id', 'operation', 'applied_target_id', 'applied_fields',
+    ];
 
     /** Input: không có. Output: danh sách cast thuộc tính model. */
     protected function casts(): array
     {
-        return ['result_json' => 'array', 'expires_at' => 'datetime'];
+        return [
+            'input_json' => 'array',
+            'source_meta_json' => 'array',
+            'result_json' => 'array',
+            'applied_fields' => 'array',
+            'applied_target_id' => 'integer',
+            'progress' => 'integer',
+            'started_at' => 'datetime',
+            'completed_at' => 'datetime',
+            'expires_at' => 'datetime',
+        ];
     }
 
     /** Input: không có. Output: quan hệ User tạo import. */
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /** Input: import session. Output: sibling/descendant candidate runs. */
+    public function candidates(): HasMany
+    {
+        return $this->hasMany(self::class, 'session_id', 'session_id')->where($this->getKeyName(), '!=', $this->getKey());
+    }
+
+    /** Input: step/progress pipeline. Output: persisted polling state. */
+    public function advance(string $step, int $progress): void
+    {
+        if ($this->status === 'cancelled') {
+            return;
+        }
+
+        $this->forceFill([
+            'status' => $step,
+            'current_step' => $step,
+            'progress' => max(0, min(100, $progress)),
+            'started_at' => $this->started_at ?? now(),
+        ])->save();
+    }
+
+    /** Input: current model identity. Output: true when cancellation was requested. */
+    public function isCancelled(): bool
+    {
+        return $this->fresh()?->status === 'cancelled';
     }
 }

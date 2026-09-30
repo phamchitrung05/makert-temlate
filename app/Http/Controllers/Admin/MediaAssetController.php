@@ -75,7 +75,7 @@ class MediaAssetController extends Controller
      * CHỨC NĂNG: Trả danh sách MediaAsset có filter và pagination
      * =====================================================================
      *
-     * INPUT: query kind, field, visibility, owner, search, status, sort/page.
+     * INPUT: query kind, field, visibility, search, status, sort/page.
      * OUTPUT: JsonResponse dataTable với items và meta.pagination.
      * SIDE EFFECT: chỉ đọc database.
      */
@@ -399,10 +399,6 @@ class MediaAssetController extends Controller
 
         if (isset($filters['visibility'])) {
             $query->where('visibility', $filters['visibility']);
-        }
-
-        if (isset($filters['owner'])) {
-            $query->where('created_by', (int) $filters['owner']);
         }
 
         if (isset($filters['scan_status'])) {

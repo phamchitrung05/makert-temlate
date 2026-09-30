@@ -2,12 +2,18 @@
 
 Đã được duyệt ngày 2026-09-29. Lưu kế hoạch trước khi triển khai.
 
+> Ghi chú cập nhật 2026-09-30: file này giữ checklist riêng cho Add/Edit Post.
+> Taxonomy, Media API và AI Content Agent đã được hợp nhất theo dõi ở
+> [PLAN_POST_MEDIA_AI_INTEGRATION.md](./PLAN_POST_MEDIA_AI_INTEGRATION.md); không
+> tạo thêm pipeline hoặc plan song song.
+
 ## Phạm vi
 
 - Sinh slug từ backend khi blur Title; không tạo bản ghi lúc preview.
 - Hoàn thiện dialog Media cho Featured Image và Gallery.
 - Lưu metadata SEO độc lập và chấm điểm/checklist realtime.
-- Không triển khai AI, taxonomy hoặc trang blog public mới.
+- AI và taxonomy không triển khai thành pipeline riêng trong file này; trạng thái
+  tích hợp hiện tại được ghi ở plan hợp nhất bên trên.
 - Giữ nguyên thay đổi local không thuộc nhiệm vụ.
 
 ## 1. Slug
@@ -103,10 +109,14 @@ Chưa có trang blog public. Metadata admin chưa tự xuất ra HTML public. Kh
 - [x] Chuyển Featured Image và Image Gallery sang cột phải cùng Post Settings.
 - [x] Chuyển engine SEO từ `postSeo.js` sang `resources/js/composables/seoMetadata.js` để dùng chung model.
 - [x] Đổi `usePostSlug.js` thành composable `useSlug.js`, nhận title/model type/model ID dạng reactive hoặc getter.
-- [x] Frontend 41 tests qua; ESLint/Pint qua; production build qua (58.78s), TinyMCE runtime được tách thành chunk tải lười.
-- [x] Toàn bộ backend 90 tests / 522 assertions qua, gồm API đa model, phân quyền create/update, validation, collision và bỏ qua chính model khi edit.
+- [x] Frontend 64 tests qua; ESLint/Pint qua; production build qua, TinyMCE runtime được tách thành chunk tải lười.
+- [x] Toàn bộ backend 112 tests / 600 assertions qua, gồm API đa model, phân quyền create/update, validation, collision, taxonomy và AI candidate/apply.
 - [x] Chủ dự án chọn dùng key Tiny Cloud; đã thêm chỗ nhập `VITE_TINYMCE_API_KEY` vào `.env` và hướng dẫn trong `.env.example`. Để `VITE_TINYMCE_LICENSE_KEY` trống khi dùng Cloud.
 - [ ] Chủ dự án điền key, khởi động lại Vite/build và kiểm thử TinyMCE trực tiếp trên trình duyệt. Chưa kiểm chứng key/domain thật.
+
+- [x] Post form round-trip category/tag và SEO metadata được đồng bộ qua API;
+  dialog `CreateWithAiDialog` giữ nguyên hierarchy cũ và chỉ bổ sung capability,
+  prompt/provider/model, candidate và apply chọn lọc. Chi tiết AI nằm ở plan hợp nhất.
 
 Component map đợt điều chỉnh: PostForm giữ dữ liệu; PostContentPanel hiển thị Title/Slug; PostEditor bọc TinyMCE; PostSeoTabs điều phối ba tab; useSlug giữ vòng đời request riêng của form và gọi useSlugStore; Pinia slug phụ trách request API chung, không chia sẻ slug kết quả giữa các form.
 

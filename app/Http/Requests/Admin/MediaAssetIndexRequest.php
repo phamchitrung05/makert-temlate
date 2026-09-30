@@ -58,7 +58,6 @@ class MediaAssetIndexRequest extends FormRequest
             'kind' => ['sometimes', 'string', Rule::in(MediaAssetKind::values())],
             'field' => ['sometimes', 'string', Rule::in(MediaAssetField::values())],
             'visibility' => ['sometimes', 'string', Rule::in(MediaAssetVisibility::values())],
-            'owner' => ['sometimes', 'integer', 'min:1', 'exists:users,id'],
             'search' => ['sometimes', 'string', 'max:100'],
             'scan_status' => ['sometimes', 'string', Rule::in(MediaScanStatus::values())],
             'conversion_status' => ['sometimes', 'string', Rule::in(MediaConversionStatus::values())],

@@ -133,6 +133,18 @@ const toUploadFormData = ({ file, ...payload }) => {
 }
 
 /**
+ * Bỏ các bộ lọc chưa được chọn trước khi tạo query string.
+ *
+ * Input: object filter từ store/component.
+ * Output: object chỉ còn giá trị có nghĩa để Laravel không validate key rỗng.
+ */
+const compactQuery = params => Object.fromEntries(
+  Object.entries(params).filter(([key, value]) => (
+    key !== 'owner' && value !== undefined && value !== null && value !== ''
+  )),
+)
+
+/**
  * API client Media Library.
  *
  * Input: tham số nghiệp vụ của từng endpoint.
@@ -140,7 +152,7 @@ const toUploadFormData = ({ file, ...payload }) => {
  */
 export const mediaAssetService = {
   async list(params = {}) {
-    const response = await $api('/admin/media-assets', { query: params })
+    const response = await $api('/admin/media-assets', { query: compactQuery(params) })
     const payload = unwrapApiResponse(response) || {}
 
     return {

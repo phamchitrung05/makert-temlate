@@ -7,7 +7,7 @@
   hiện tại vào state cục bộ, phối hợp các panel nội dung/media/settings và chỉ
   gửi những field backend hiện hỗ trợ.
 
-  CÁC HÀM/METHOD TRONG FILE:
+  CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
   - isEditing/pageTitle/pageDescription: nội dung header theo create/edit mode
   - permalinkSlug/generateSlug/resetSlug: slug backend thông qua useSlug dùng chung
   - publicOrigin/permalink/contentAnalysis/seoAnalysis: URL và phân tích SEO chung
@@ -15,21 +15,21 @@
   - createPostOptions(): tạo state mặc định cho nhóm tùy chọn bài viết
   - sync(): đồng bộ Post prop vào form state
   - submit(): validate và emit payload với trạng thái được chọn
-  - runAiImport(): đọc URL qua API AI và áp dụng draft vào form
+  - applyAiContent(): áp dụng candidate field từ AI Agent vào form cục bộ
   - watcher props.post: cập nhật form khi API tải xong Post
 
-  INPUT/OUTPUT CỦA CLASS (tổng thể):
+  INPUT/OUTPUT CỦA COMPONENT (tổng thể):
   - INPUT : post, loading, saving và error từ page/store
   - OUTPUT: emit submit payload title/content/status/media/SEO hoặc emit discard
   =====================================================================
 -->
 <script setup>
 import { computed, reactive, shallowRef, watch } from 'vue'
-import { postService } from '@/services/post'
 import PostContentPanel from './PostContentPanel.vue'
 import PostMediaPanel from './PostMediaPanel.vue'
 import PostSettingsSidebar from './PostSettingsSidebar.vue'
 import PostSeoTabs from './PostSeoTabs.vue'
+import CreateWithAiDialog from './dialog/CreateWithAiDialog.vue'
 import { buildContentUrl, createSeo } from '../../../../composables/seoMetadata'
 import { useSeoMetadata } from '../../../../composables/useSeoMetadata'
 import { useSlug } from '../../../../composables/useSlug'
@@ -44,9 +44,6 @@ const props = defineProps({
 const emit = defineEmits(['submit', 'discard'])
 const formRef = shallowRef()
 const aiDialog = shallowRef(false)
-const aiUrl = shallowRef('')
-const aiLoading = shallowRef(false)
-const aiError = shallowRef('')
 
 /** Input: không có. Output: option preview mới, chưa lưu backend. */
 const createPostOptions = () => [
@@ -149,24 +146,14 @@ const submit = async (status = form.status) => {
   })
 }
 
-const runAiImport = async () => {
-  if (!aiUrl.value || aiLoading.value) return
-  aiLoading.value = true
-  aiError.value = ''
-  try {
-    const result = await postService.aiImport({ url: aiUrl.value, language: 'vi', generateThumbnail: true })
-
-    const draft = result?.draft ?? {}
-
-    form.title = draft.title ?? form.title
-    form.content = draft.content ?? form.content
-    form.excerpt = draft.excerpt ?? form.excerpt
-    form.seo = createSeo(draft)
-
-    aiDialog.value = false
-  } catch (error) {
-    aiError.value = error?.data?.message || error?.message || 'Không thể import bài viết.'
-  } finally { aiLoading.value = false }
+/** Input: candidate fields từ AI Agent. Output: cập nhật form cục bộ, chưa lưu. */
+const applyAiContent = payload => {
+  form.title = payload.title ?? form.title
+  form.content = payload.content ?? form.content
+  form.excerpt = payload.excerpt ?? form.excerpt
+  if (payload.seo) form.seo = createSeo(payload.seo)
+  if (Array.isArray(payload.categories)) form.categories = [...payload.categories]
+  if (Array.isArray(payload.tags)) form.tags = [...payload.tags]
 }
 </script>
 
@@ -237,50 +224,11 @@ const runAiImport = async () => {
       {{ props.error }}
     </VAlert>
 
-    <VDialog
+    <CreateWithAiDialog
       v-model="aiDialog"
-      max-width="560"
-    >
-      <VCard title="Fill bài viết từ URL">
-        <VCardText>
-          <AppTextField
-            v-model="aiUrl"
-            label="URL bài viết nguồn"
-            placeholder="https://example.com/article"
-            :disabled="aiLoading"
-            @keyup.enter="runAiImport"
-          />
-          <VAlert
-            v-if="aiError"
-            color="error"
-            variant="tonal"
-            class="mt-3"
-          >
-            {{ aiError }}
-          </VAlert>
-          <p class="text-caption mt-3 mb-0">
-            Kết quả được điền vào bản nháp để bạn kiểm tra trước khi lưu.
-          </p>
-        </VCardText>
-        <VCardActions>
-          <VSpacer />
-          <VBtn
-            variant="text"
-            :disabled="aiLoading"
-            @click="aiDialog = false"
-          >
-            Hủy
-          </VBtn>
-          <VBtn
-            color="primary"
-            :loading="aiLoading"
-            @click="runAiImport"
-          >
-            Import
-          </VBtn>
-        </VCardActions>
-      </VCard>
-    </VDialog>
+      :target-id="props.post?.id"
+      @apply="applyAiContent"
+    />
 
     <VForm
       ref="formRef"

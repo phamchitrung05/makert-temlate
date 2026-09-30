@@ -1,5 +1,12 @@
 # Kế hoạch triển khai nghiệp vụ SEO dùng chung
 
+**Trạng thái:** Đã hoàn tất lớp SEO admin/API cho Post và engine dùng chung;
+public SEO, sitemap và structured data vẫn để giai đoạn sau.
+
+**Đối chiếu AI:** Các field SEO canonical do AI trả về được map qua
+`PostAiAdapter` và chỉ ghi khi người dùng Apply candidate. Chi tiết candidate,
+prompt và provenance nằm trong [PLAN_POST_MEDIA_AI_INTEGRATION.md](./PLAN_POST_MEDIA_AI_INTEGRATION.md).
+
 ## Mục tiêu
 
 Tách metadata SEO khỏi bảng `posts` để có thể dùng chung cho Post, Resource,
@@ -180,6 +187,8 @@ Checklist phải:
 - [x] Tách `useSeoMetadata` để PostForm dùng chung engine phân tích content/checklist.
 - [x] Chuyển utility SEO sang `composables/seoMetadata.js`; hỗ trợ field title/description/media khác nhau giữa các model.
 - [x] Chuẩn hóa preview slug thành `composables/useSlug.js`, không còn logic Post-specific trong component.
-- [x] Backend test hiện tại: 96 tests, 539 assertions; frontend: 59 tests.
+- [x] Baseline trước lượt AI/Media: backend 96 tests, 539 assertions; frontend: 59 tests.
+- [x] Cập nhật sau tích hợp AI/Media: backend 112 tests, 600 assertions; frontend
+  64 tests; candidate apply giữ nguyên field SEO không được chọn.
 - [x] ESLint file thay đổi, Pint và production build đã chạy đạt.
 - [ ] Chưa triển khai trang public SEO, sitemap, structured data và trang quản lý role.

@@ -12,9 +12,35 @@ use App\Models\ResourceVersion;
 use App\Models\Tag;
 use App\Models\Technology;
 use App\Models\User;
+use App\Services\Ai\Contracts\AiProviderContract;
+use App\Services\Ai\Registries\PromptRegistry;
+use App\Services\Ai\Registries\ProviderRegistry;
+use App\Services\Ai\Registries\SchemaRegistry;
+use App\Services\Ai\Registries\TargetRegistry;
+use App\Services\Ai\StructuredAiProvider;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
 
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Đăng ký binding AI registry/provider và morph map của ứng dụng.
+ * =====================================================================
+ *
+ * Provider là điểm composition root: các service AI được bind một lần vào
+ * container, còn morph alias được khóa trước khi model ghi quan hệ polymorphic.
+ * Không đặt business rule hoặc truy vấn database trong provider.
+ *
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - register(): bind provider contract và các registry singleton.
+ * - boot(): kích hoạt morph map.
+ * - enforceMorphMap(): khai báo alias/model cho quan hệ polymorphic.
+ *
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : service container và danh sách model domain.
+ * - OUTPUT: binding/morph registry sẵn sàng cho request, job và model.
+ * - SIDE EFFECT: thay đổi container và registry toàn cục của Laravel.
+ * =====================================================================
+ */
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -22,13 +48,23 @@ class AppServiceProvider extends ServiceProvider
      * CHỨC NĂNG: Đăng ký các binding dùng chung của ứng dụng
      * =====================================================================
      *
+     * INPUT:
+     * - Không nhận tham số; dùng container của Laravel.
+     * OUTPUT:
+     * - Không trả giá trị; các contract/registry được resolve từ container.
      * SIDE EFFECT:
-     * - Ghi binding vào container; không truy cập database
+     * - Ghi binding vào container; không truy cập database.
+     * EXCEPTION/TRANSACTION:
+     * - Không mở transaction; lỗi binding phát hiện khi resolve dependency.
      * =====================================================================
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(AiProviderContract::class, StructuredAiProvider::class);
+        $this->app->singleton(PromptRegistry::class);
+        $this->app->singleton(ProviderRegistry::class);
+        $this->app->singleton(TargetRegistry::class);
+        $this->app->singleton(SchemaRegistry::class);
     }
 
     /**
@@ -36,8 +72,14 @@ class AppServiceProvider extends ServiceProvider
      * CHỨC NĂNG: Khởi động các cấu hình runtime của ứng dụng
      * =====================================================================
      *
+     * INPUT:
+     * - Không nhận tham số; sử dụng danh sách alias khai báo trong provider.
+     * OUTPUT:
+     * - Không trả giá trị; runtime có morph map ổn định.
      * SIDE EFFECT:
-     * - Đăng ký morph map cho các cột polymorphic dùng chung
+     * - Đăng ký morph map cho các cột polymorphic dùng chung.
+     * EXCEPTION/TRANSACTION:
+     * - Không mở transaction; alias không hợp lệ sẽ ném exception từ Laravel.
      * =====================================================================
      */
     public function boot(): void

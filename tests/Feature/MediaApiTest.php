@@ -229,6 +229,12 @@ class MediaApiTest extends TestCase
         $this->assertContains($preview->id, $fieldAssetIds);
 
         $this->withToken($token)
+            ->getJson('/api/admin/media-assets?owner=not-an-id&per_page=100')
+            ->assertOk()
+            ->assertJsonPath('data.itemsLength', 3)
+            ->assertJsonCount(3, 'data.items');
+
+        $this->withToken($token)
             ->getJson('/api/admin/media-assets?kind=archive&field=resource.cover')
             ->assertStatus(422)
             ->assertJsonPath('success', false);
