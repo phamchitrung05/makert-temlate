@@ -1,3 +1,12 @@
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Quy tắc lint mã nguồn JavaScript/Vue và bỏ qua mã sinh tự động.
+ * =====================================================================
+ * CÁC HÀM/METHOD TRONG FILE: Không có; file export cấu hình ESLint.
+ * INPUT/OUTPUT CỦA FILE (tổng thể): Mã nguồn/config -> rules và ignore patterns.
+ * SIDE EFFECT: Không sửa file; lệnh ESLint quyết định có dùng --fix hay không.
+ * =====================================================================
+ */
 module.exports = {
   env: {
     browser: true,
@@ -24,7 +33,7 @@ module.exports = {
     'regex',
     'regexp',
   ],
-  ignorePatterns: ['resources/js/plugins/iconify/*.js', 'node_modules', 'dist', '*.d.ts', 'vendor', '*.json'],
+  ignorePatterns: ['resources/js/plugins/iconify/*.js', 'node_modules', 'dist', 'public/build', 'public/mockServiceWorker.js', '*.d.ts', 'vendor', '*.json'],
   rules: {
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
     'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',

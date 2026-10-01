@@ -26,13 +26,13 @@ use Throwable;
  * CÁC HÀM/METHOD TRONG FILE:
  * - __construct(): nhận ConversionCollection + Media của Spatie hoặc media id retry
  * - mediaId(): trả id media cho cả hai mode khởi tạo
- * - handle(): chạy conversions còn thiếu và đánh dấu ready
+ * - handle(): bỏ media đã cleanup hoặc chạy conversions còn thiếu và đánh dấu ready
  * - failed(): đánh dấu failed sau khi hết retry
  * - markStatus(): lưu conversion status
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : ConversionCollection/Media từ Spatie hoặc media id image
- * - OUTPUT: conversion files và conversion_status trong custom properties
+ * - OUTPUT: conversion files/status; job bị discard khi cleanup đã xóa media
  * - SIDE EFFECT: ghi derived files lên conversion disk
  * =====================================================================
  */
@@ -42,9 +42,15 @@ class ProcessMediaConversionsJob implements ShouldQueue
 
     public int $tries = 3;
 
+    public bool $deleteWhenMissingModels = true;
+
     /** @var array<int, int> */
     public array $backoff = [60, 300, 900];
 
+    /**
+     * INPUT: ConversionCollection/Media của Spatie hoặc media ID cần retry.
+     * OUTPUT: Job queue; không gọi converter hoặc ghi database khi khởi tạo.
+     */
     public function __construct(
         public readonly ConversionCollection|int $conversionsOrMediaId,
         public readonly ?Media $queuedMedia = null,
@@ -56,6 +62,7 @@ class ProcessMediaConversionsJob implements ShouldQueue
      * CHỨC NĂNG: Lấy media id của job ở cả mode Spatie và mode retry
      * =====================================================================
      *
+     * INPUT: Media/ID đã lưu trong job.
      * OUTPUT:
      * - int: id media được conversion
      */
@@ -78,12 +85,15 @@ class ProcessMediaConversionsJob implements ShouldQueue
      * =====================================================================
      *
      * INPUT: FileManipulator từ container.
-     * OUTPUT: Không trả giá trị; media được đánh dấu ready khi thành công.
+     * OUTPUT: Bỏ qua media đã cleanup; media còn tồn tại được đánh dấu ready khi thành công.
      * EXCEPTION/TRANSACTION: lỗi conversion được đánh dấu failed và ném lại để retry.
      */
     public function handle(FileManipulator $fileManipulator): void
     {
-        $media = $this->queuedMedia ?? Media::query()->findOrFail($this->mediaId());
+        $media = Media::query()->find($this->mediaId());
+        if ($media === null) {
+            return;
+        }
         $this->markStatus($media, MediaConversionStatus::Processing);
 
         try {

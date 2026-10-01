@@ -4,11 +4,13 @@ namespace Tests\Feature;
 
 use App\Enums\AiCapability;
 use App\Jobs\ProcessAiImageGenerationJob;
+use App\Jobs\ProcessAiImportJob;
 use App\Models\AiImport;
 use App\Models\AiProvider;
 use App\Models\User;
 use App\Services\Ai\AiImageGenerationService;
 use App\Services\Ai\AiSettingsService;
+use App\Services\Ai\ArticleImportService;
 use App\Services\Ai\ModelResolver;
 use App\Services\Ai\Registries\ProviderRegistry;
 use Database\Seeders\RolePermissionSeeder;
@@ -91,6 +93,53 @@ final class AiProviderSettingsApiTest extends TestCase
         Auth::forgetGuards();
 
         return $user->createToken('ai-provider-settings-test', ['admin'])->plainTextToken;
+    }
+
+    /**
+     * Input: Catalog có text-only, image-only, unknown và disabled models.
+     * Output: Text-only hiển thị/chạy được; output sai JSON vẫn bị từ chối.
+     * Side effect: Database cô lập, HTTP/queue fake; không gọi model thật.
+     */
+    public function test_text_capability_alone_is_visible_and_runs_without_native_json_mode(): void
+    {
+        Queue::fake();
+        Http::preventStrayRequests();
+        $token = $this->token();
+        $provider = $this->connection();
+        $text = $provider->models()->create(['remote_model_id' => 'text-only', 'label' => 'Text', 'capabilities' => ['text_generation']]);
+        $provider->models()->create(['remote_model_id' => 'image-only', 'label' => 'Image', 'capabilities' => ['image_generation']]);
+        $provider->models()->create(['remote_model_id' => 'unknown', 'label' => 'Unknown', 'capabilities' => []]);
+        $provider->models()->create(['remote_model_id' => 'disabled', 'label' => 'Disabled', 'capabilities' => ['text_generation'], 'is_enabled' => false]);
+
+        $options = $this->withToken($token)->getJson('/api/admin/ai-agent/capabilities/post')->assertOk()->json('data.providers');
+        $option = collect($options)->firstWhere('key', $provider->key);
+        $this->assertSame(['text-only'], $option['models']);
+        $this->assertSame($text->id, $option['model_options'][0]['id']);
+
+        Http::fake(['https://gateway.example/v1/chat/completions' => Http::sequence()
+            ->push(['choices' => [['message' => ['content' => json_encode(['title' => 'AI title', 'content_html' => '<p>AI content</p>'])]]]])
+            ->push(['choices' => [['message' => ['content' => 'not JSON']]]]),
+        ]);
+        $request = [
+            'target_type' => 'post', 'operation' => 'create',
+            'input' => ['type' => 'text', 'text' => 'Nội dung nguồn đủ dài để kiểm thử tạo bài viết bằng model content.'],
+            'provider' => $provider->key, 'model' => 'text-only', 'requested_outputs' => ['title', 'content'],
+        ];
+        $id = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', $request)
+            ->assertStatus(202)->assertJsonPath('data.status', 'queued')->json('data.job_id');
+        Queue::assertPushed(ProcessAiImportJob::class, fn ($job): bool => $job->importId === $id);
+        $run = AiImport::findOrFail($id);
+        $this->assertSame(['text_generation'], data_get($run->input_json, 'ai_connection.capabilities'));
+        (new ProcessAiImportJob($id))->handle(app(ArticleImportService::class));
+        $this->withToken($token)->getJson('/api/admin/ai-agent/sessions/'.$id)
+            ->assertOk()->assertJsonPath('data.status', 'ready')->assertJsonPath('data.draft.title', 'AI title');
+        Http::assertSent(fn ($request): bool => $request['model'] === 'text-only' && ! isset($request['response_format']));
+
+        $childId = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions/'.$id.'/regenerate', ['instructions' => 'Thử lại'])
+            ->assertStatus(202)->json('data.job_id');
+        (new ProcessAiImportJob($childId))->handle(app(ArticleImportService::class));
+        $this->withToken($token)->getJson('/api/admin/ai-agent/sessions/'.$childId)
+            ->assertOk()->assertJsonPath('data.status', 'failed')->assertJsonPath('data.error_code', 'AI_PROVIDER_INVALID_JSON');
     }
 
     /**

@@ -2,6 +2,8 @@
 
 namespace App\Services\Ai;
 
+use App\Enums\AiCapability;
+
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Adapter OpenAI Chat Completions trả structured JSON.
@@ -70,7 +72,7 @@ final class OpenAiProvider extends AbstractStructuredAiProvider
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Gửi prompt tới OpenAI với response_format JSON object.
+     * CHỨC NĂNG: Gửi prompt JSON; dùng JSON mode khi model khai báo structured_output.
      * =====================================================================
      * INPUT: context canonical từ AbstractStructuredAiProvider.
      * OUTPUT: response JSON; retryability tuân theo boundary POST của AiProviderClient.
@@ -84,12 +86,14 @@ final class OpenAiProvider extends AbstractStructuredAiProvider
         $payload = [
             'model' => $input['model'],
             'temperature' => (float) ($this->connection()?->snapshot['temperature'] ?? config('ai-import.openai.temperature', 0.2)),
-            'response_format' => ['type' => 'json_object'],
             'messages' => [
                 ['role' => 'system', 'content' => $input['instructions']],
                 ['role' => 'user', 'content' => $this->canonicalInput($input)],
             ],
         ];
+        if ($this->connection() === null || in_array(AiCapability::Structured->value, $this->connection()->snapshot['capabilities'] ?? [], true)) {
+            $payload['response_format'] = ['type' => 'json_object'];
+        }
         $connection = $this->connection() ?? new AiConnection([
             'driver' => 'openai', 'provider' => 'openai',
             'base_url' => preg_replace('#/chat/completions/?$#', '', (string) config('ai-import.openai.endpoint')),

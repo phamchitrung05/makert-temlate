@@ -14,6 +14,7 @@ use App\Services\Media\ArchiveSecurityScanner;
 use App\Services\Media\MediaUploadValidator;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Queue\DatabaseQueue;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Spatie\MediaLibrary\Conversions\FileManipulator;
@@ -45,6 +46,8 @@ use ZipArchive;
  * - test_upload_action_stores_checksum_status_and_dispatches_jobs(): kiểm tra pipeline upload
  * - test_archive_upload_is_private_and_preflight_rejects_dangerous_entry(): kiểm tra archive private/security
  * - test_queue_failures_persist_error_status_for_retry(): kiểm tra queue failure
+ * - test_conversion_retry_skips_media_removed_before_processing(): bỏ qua media đã cleanup.
+ * - test_serialized_conversion_job_is_discarded_when_media_is_removed(): kiểm tra database queue sau cleanup.
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : UploadedFile giả lập và MediaAsset upload action
@@ -449,5 +452,61 @@ class MediaUploadPipelineTest extends TestCase
             MediaConversionStatus::Failed->value,
             $image->fresh()->getFirstMedia('library')->getCustomProperty('conversion_status'),
         );
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Bỏ qua conversion retry nếu cleanup đã xóa media.
+     * =====================================================================
+     * INPUT: Job mang media ID và asset bị clear collection trước khi worker chạy.
+     * OUTPUT: Không gọi converter, không tạo lại media hoặc ném lỗi retry.
+     * SIDE EFFECT: Chỉ ghi/xóa fixture trong database và storage cô lập.
+     * =====================================================================
+     */
+    public function test_conversion_retry_skips_media_removed_before_processing(): void
+    {
+        $actor = \App\Models\User::factory()->create();
+        $asset = app(UploadMediaAssetAction::class)->handle($this->pngUpload(), MediaAssetKind::Image, 'Expired AI image', $actor->id);
+        $job = new ProcessMediaConversionsJob($asset->getFirstMedia('library')->getKey());
+        $asset->clearMediaCollection('library');
+        $manipulator = \Mockery::mock(FileManipulator::class);
+        $manipulator->shouldNotReceive('performConversions');
+
+        $job->handle($manipulator);
+
+        $this->assertDatabaseCount('media', 0);
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Worker bỏ job Spatie đã serialize khi media bị cleanup.
+     * =====================================================================
+     * INPUT: Payload database queue chứa Media model; collection bị xóa sau enqueue.
+     * OUTPUT: Job bị discard, không fail hoặc retry và không tạo file conversion.
+     * SIDE EFFECT: Dùng queue/database/storage cô lập; không gọi provider thật.
+     * =====================================================================
+     */
+    public function test_serialized_conversion_job_is_discarded_when_media_is_removed(): void
+    {
+        $actor = \App\Models\User::factory()->create();
+        $asset = app(UploadMediaAssetAction::class)->handle($this->pngUpload(), MediaAssetKind::Image, 'Cancelled AI image', $actor->id);
+        $job = Queue::pushed(ProcessMediaConversionsJob::class)->first();
+        $queue = new DatabaseQueue($this->app['db']->connection(), 'jobs', 'media-cleanup-test');
+        $queue->setContainer($this->app);
+        $queue->setConnectionName('database');
+        $queue->push($job, '', 'media-cleanup-test');
+        $asset->clearMediaCollection('library');
+        $manipulator = \Mockery::mock(FileManipulator::class);
+        $manipulator->shouldNotReceive('performConversions');
+        $this->app->instance(FileManipulator::class, $manipulator);
+
+        $queued = $queue->pop('media-cleanup-test');
+        $this->assertNotNull($queued);
+        $queued->fire();
+
+        $this->assertTrue($queued->isDeleted());
+        $this->assertFalse($queued->hasFailed());
+        $this->assertDatabaseCount('jobs', 0);
+        $this->assertDatabaseCount('media', 0);
     }
 }

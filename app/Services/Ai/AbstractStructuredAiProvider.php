@@ -19,6 +19,7 @@ use Illuminate\Http\Client\ConnectionException;
  * CÁC HÀM/METHOD TRONG FILE:
  * - generate(): tạo request context và validate canonical output.
  * - withModel(): chọn model đã được registry allowlist.
+ * - withConnection(), connection(): giữ/đọc snapshot connection server-side.
  * - requestedModel(): đọc model override để ghi provenance.
  * - normalizePayload(): bóc JSON khỏi các response shape phổ biến.
  * - validatePayload(): kiểm tra field/type trước khi đưa vào domain.
@@ -116,7 +117,8 @@ abstract class AbstractStructuredAiProvider implements AiProviderContract
      * CHỨC NĂNG: Tạo structured output và chuẩn hóa thành canonical fields.
      * =====================================================================
      * INPUT: title, content, language, style, prompt key, instruction.
-     * OUTPUT: mảng field allowlist; transport lỗi được chuyển thành exception.
+     * OUTPUT: mảng field allowlist với contract kiểu dữ liệu nêu rõ trong prompt;
+     *   transport lỗi được chuyển thành exception.
      * SIDE EFFECT: có thể gọi provider HTTP; không ghi domain database.
      * EXCEPTION/TRANSACTION: AiImportException khi transport/schema lỗi; không transaction.
      *
@@ -144,7 +146,11 @@ abstract class AbstractStructuredAiProvider implements AiProviderContract
                 'content_html' => $content,
                 'language' => $language,
                 'rewrite_style' => $rewriteStyle,
-                'instructions' => $prompt['instructions'].' Allowed fields: '.implode(', ', $schema['fields']).'.',
+                'instructions' => $prompt['instructions'].' Allowed fields: '.implode(', ', $schema['fields']).'. '
+                    .'Return one flat JSON object, without wrapping fields in value objects. '
+                    .'Use strings for text fields, including content_html (HTML string). '
+                    .'Use JSON booleans for robots_index and robots_follow, and arrays of integer IDs '
+                    .'for suggested_category_ids and suggested_tag_ids. Omit optional fields with no value; do not return null.',
                 'user_instructions' => $instructions,
                 'prompt_key' => $promptKey,
                 'prompt_version' => $prompt['version'],
@@ -197,7 +203,8 @@ abstract class AbstractStructuredAiProvider implements AiProviderContract
      * CHỨC NĂNG: Kiểm tra canonical output, loại field ngoài schema và sai kiểu.
      * =====================================================================
      * INPUT: array output đã parse.
-     * OUTPUT: array canonical fields an toàn cho ArticleImportService.
+     * OUTPUT: array canonical fields an toàn; null có nghĩa field chưa có giá trị,
+     *   dùng fallback nguồn như field bị bỏ qua.
      * SIDE EFFECT: chỉ đọc schema và tạo array mới.
      * EXCEPTION/TRANSACTION: AiImportException khi field/type không hợp lệ; không transaction.
      * =====================================================================
@@ -210,16 +217,16 @@ abstract class AbstractStructuredAiProvider implements AiProviderContract
             'robots_follow', 'og_title', 'og_description', 'suggested_category_ids',
             'suggested_tag_ids', 'thumbnail_prompt', 'thumbnail_alt_text',
         ];
-        $result = array_intersect_key($payload, array_flip($allowed));
+        $result = array_filter(array_intersect_key($payload, array_flip($allowed)), static fn (mixed $value): bool => $value !== null);
 
         foreach (['title', 'content_html', 'content', 'excerpt', 'focus_keyword', 'seo_title', 'seo_description', 'canonical_url', 'og_title', 'og_description', 'thumbnail_prompt', 'thumbnail_alt_text'] as $field) {
             if (array_key_exists($field, $result) && ! is_string($result[$field])) {
-                throw new AiImportException('AI provider trả sai kiểu dữ liệu.', 'AI_PROVIDER_SCHEMA');
+                throw new AiImportException('AI provider trả sai kiểu dữ liệu cho '.$field.'.', 'AI_PROVIDER_SCHEMA');
             }
         }
         foreach (['robots_index', 'robots_follow'] as $field) {
             if (array_key_exists($field, $result) && ! is_bool($result[$field])) {
-                throw new AiImportException('AI provider trả sai kiểu dữ liệu.', 'AI_PROVIDER_SCHEMA');
+                throw new AiImportException('AI provider trả sai kiểu dữ liệu cho '.$field.'.', 'AI_PROVIDER_SCHEMA');
             }
         }
         foreach (['suggested_category_ids', 'suggested_tag_ids'] as $field) {

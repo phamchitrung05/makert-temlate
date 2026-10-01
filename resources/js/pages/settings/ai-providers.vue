@@ -10,8 +10,21 @@ definePage({ meta: { action: 'manage', subject: 'ai_settings' } })
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Trang Settings quản trị connection và catalog model.
- * CÁC HÀM/METHOD: openNew(), editProvider(), saveProvider(), test(), sync(), disable(),
- * openModel(), saveModel(). INPUT: UI actions; OUTPUT: catalog phản hồi.
+ * =====================================================================
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - providerModels(provider): lọc model theo tìm kiếm của từng provider.
+ * - statusType(provider): chọn loại thông báo trạng thái kết nối.
+ * - providerDescription(provider), providerIcon(provider), providerIconColor(provider): mô tả và biểu tượng provider.
+ * - providerAvailabilityPercent(provider), providerAvailabilityLabel(provider): tính mức khả dụng của catalog.
+ * - providerCapability(provider, capability), formatDate(value): kiểm tra capability và định dạng thời gian.
+ * - perform(action, options): điều phối thao tác API, loading và feedback.
+ * - refreshCatalog(), selectProvider(provider), clearNotice(): tải catalog, chọn provider và đóng thông báo.
+ * - openNew(), editProvider(provider), saveProviderForm(payload): tạo/sửa connection provider.
+ * - test(provider), sync(provider), disable(provider): kiểm tra, đồng bộ và tắt provider.
+ * - openModel(provider, model), saveModelForm(payload), testModel(provider, model): thêm/sửa capability và test model.
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT: catalog provider/model từ composable và thao tác quản trị.
+ * - OUTPUT: dialog tạo/sửa, catalog phản hồi và thông báo kết quả.
  * SIDE EFFECT: gọi composable API; không tự chứa HTTP hoặc API key.
  * EXCEPTION/TRANSACTION: page không mở transaction; API/error lifecycle do composable xử lý.
  * =====================================================================
@@ -20,7 +33,9 @@ const { providers, presets, loading, saving, error, load, saveProvider, disableP
 const providerDialog = ref(false)
 const modelDialog = ref(false)
 const selectedProvider = ref(null)
+const selectedModel = ref(null)
 const modelTestStatuses = ref({})
+const snackbar = ref({ visible: false, message: '', color: alertColors.completed })
 const notice = ref('')
 const busyId = ref(null)
 const modelSearch = ref({})
@@ -99,9 +114,19 @@ const filteredProviders = computed(() => {
 
 const modelHeaders = [
   { title: 'Model', key: 'label' },
+  { title: 'Capabilities', key: 'capabilities', sortable: false },
   { title: 'Catalog', key: 'is_available' },
   { title: 'Thao tác', key: 'actions', sortable: false, align: 'end' },
 ]
+
+// INPUT: capability key từ catalog; OUTPUT: nhãn thống nhất với dialog chỉnh sửa model.
+const capabilityLabels = {
+  'text_generation': 'Tạo nội dung',
+  'structured_output': 'Structured output',
+  'image_generation': 'Tạo ảnh',
+  vision: 'Vision',
+  embedding: 'Embedding',
+}
 
 const providerDescription = provider => provider.kind === 'official'
   ? `Kết nối chính thức qua driver ${provider.driver}.`
@@ -332,31 +357,32 @@ function disable(provider) {
 
 /**
  * =====================================================================
- * CHỨC NĂNG: Mở dialog thêm model catalog
+ * CHỨC NĂNG: Mở dialog thêm hoặc chỉnh sửa model catalog
  * =====================================================================
- * INPUT: provider catalog.
- * OUTPUT: dialog model nhận context provider để thêm model thủ công.
+ * INPUT: provider catalog và model cần sửa; null khi thêm mới.
+ * OUTPUT: dialog nhận model hiện tại để sửa capability hoặc form thêm mới.
  * SIDE EFFECT: đổi state dialog; không gọi endpoint.
  * EXCEPTION/TRANSACTION: không mở transaction.
  * =====================================================================
  */
-function openModel(provider) {
+function openModel(provider, model = null) {
   selectedProvider.value = provider
+  selectedModel.value = model
   modelDialog.value = true
 }
 
 /**
  * =====================================================================
- * CHỨC NĂNG: Lưu model thủ công
+ * CHỨC NĂNG: Thêm model thủ công hoặc lưu chỉnh sửa capability
  * =====================================================================
- * INPUT: model payload từ AiModelDialog.
- * OUTPUT: catalog reload và notice thành công.
+ * INPUT: model payload từ AiModelDialog và ID model đang chỉnh sửa nếu có.
+ * OUTPUT: catalog reload và notice thành công; model cũ được cập nhật đúng ID.
  * SIDE EFFECT: gọi composable model API, cập nhật catalog và đóng dialog.
  * EXCEPTION/TRANSACTION: lỗi validation/API hiển thị trong notice.
  * =====================================================================
  */
 function saveModelForm(payload) {
-  return perform(() => saveModel(selectedProvider.value.id, payload), {
+  return perform(() => saveModel(selectedProvider.value.id, payload, selectedModel.value?.id ?? null), {
     message: 'Đã lưu model.',
     after: () => { modelDialog.value = false },
   })
@@ -367,67 +393,60 @@ function saveModelForm(payload) {
  * CHỨC NĂNG: Test một model catalog cụ thể
  * =====================================================================
  * INPUT: provider và model catalog item.
- * OUTPUT: notice, catalog reload và trạng thái test theo model.
- * SIDE EFFECT: có thể phát sinh request model test từ server-side.
- * EXCEPTION/TRANSACTION: lỗi provider hiển thị trong notice và đánh dấu thất bại; không gửi key từ browser.
+ * OUTPUT: snackbar và trạng thái test ngay tại model; không tải lại catalog.
+ * SIDE EFFECT: gọi request model test server-side; giữ nguyên tab/filter hiện tại.
+ * EXCEPTION/TRANSACTION: lỗi hiển thị trong snackbar, đánh dấu thất bại và luôn dọn busyId.
  * =====================================================================
  */
-function testModel(provider, model) {
+async function testModel(provider, model) {
   if (busyId.value) return
 
+  busyId.value = `model-test-${model.id}`
   modelTestStatuses.value[model.id] = 'testing'
+  snackbar.value.visible = false
 
-  return perform(async () => {
-    try {
-      const result = await testProvider(provider.id, model.id)
+  try {
+    const result = await testProvider(provider.id, model.id)
 
-      modelTestStatuses.value[model.id] = 'success'
-
-      return result
+    modelTestStatuses.value[model.id] = 'success'
+    snackbar.value = {
+      visible: true,
+      message: result?.message ?? `Model ${model.label || model.remote_model_id} đã phản hồi thành công.`,
+      color: alertColors.completed,
     }
-    catch (reason) {
-      modelTestStatuses.value[model.id] = 'failed'
-      throw reason
+  }
+  catch (reason) {
+    modelTestStatuses.value[model.id] = 'failed'
+    snackbar.value = {
+      visible: true,
+      message: reason?.data?.message ?? reason?.message ?? 'Kiểm tra model thất bại.',
+      color: alertColors.danger,
     }
-  }, { key: `model-test-${model.id}`, after: refreshCatalog })
+  }
+  finally {
+    busyId.value = null
+  }
 }
 
 onMounted(() => refreshCatalog().catch(() => {}))
 </script>
 
 <template>
-  <div
-    id="view-moi"
-    class="ai-providers-page"
-  >
-    <VContainer
-      fluid
-      class="pa-4 pa-md-6"
-    >
+  <div class="ai-providers-page">
+
       <VRow>
         <VCol cols="12">
-          <div class="d-flex flex-wrap align-center justify-space-between gap-4 mb-2">
+          <div class="d-flex flex-wrap justify-space-between gap-y-4 gap-x-6 mb-6">
             <div>
-              <div class="d-flex align-center text-caption text-medium-emphasis mb-1">
-                <span>AI Settings</span>
-                <VIcon
-                  icon="tabler-chevron-right"
-                  size="14"
-                  class="mx-1"
-                />
-                <span class="text-high-emphasis">Providers</span>
-              </div>
-              <h1 class="text-h4 font-weight-bold mb-1">
+              <h4 class="text-h4 font-weight-medium">
                 AI Providers
-              </h1>
-              <p class="text-body-2 text-medium-emphasis mb-0">
+              </h4>
+              <div class="text-body-1">
                 Quản lý connection, API key và catalog model cho luồng tạo nội dung, hình ảnh.
-              </p>
+              </div>
             </div>
             <VBtn
-              color="primary"
               prepend-icon="tabler-plus"
-              class="text-none"
               @click="openNew"
             >
               Thêm provider
@@ -692,9 +711,9 @@ onMounted(() => refreshCatalog().catch(() => {}))
             v-if="selectedProviderDetail"
             border
             elevation="0"
-            class="h-100"
+            class="provider-detail-card d-flex flex-column"
           >
-            <VCardItem>
+            <VCardItem class="flex-shrink-0">
               <template #prepend>
                 <VAvatar
                   :color="providerIconColor(selectedProviderDetail)"
@@ -720,9 +739,8 @@ onMounted(() => refreshCatalog().catch(() => {}))
 
             <VTabs
               v-model="activeDetailTab"
-              grow
               density="compact"
-              class="px-4"
+              class="px-4 flex-shrink-0"
             >
               <VTab value="overview">
                 Overview
@@ -737,9 +755,12 @@ onMounted(() => refreshCatalog().catch(() => {}))
                 Advanced
               </VTab>
             </VTabs>
-            <VDivider />
+            <VDivider class="flex-shrink-0" />
 
-            <VWindow v-model="activeDetailTab">
+            <VWindow
+              v-model="activeDetailTab"
+              class="provider-detail-window"
+            >
               <VWindowItem value="overview">
                 <VCardText>
                   <div class="d-flex align-center justify-space-between mb-3">
@@ -899,6 +920,25 @@ onMounted(() => refreshCatalog().catch(() => {}))
                     class="text-no-wrap"
                     hide-default-footer
                   >
+                    <template #item.capabilities="{ item }">
+                      <div class="d-flex flex-wrap gap-1 py-1">
+                        <VChip
+                          v-for="capability in item.capabilities"
+                          :key="capability"
+                          :color="capability === 'image_generation' ? 'info' : 'primary'"
+                          size="x-small"
+                          variant="tonal"
+                        >
+                          {{ capabilityLabels[capability] ?? capability }}
+                        </VChip>
+                        <span
+                          v-if="!item.capabilities?.length"
+                          class="text-caption text-medium-emphasis"
+                        >
+                          Chưa xác nhận
+                        </span>
+                      </div>
+                    </template>
                     <template #item.is_available="{ item }">
                       <VChip
                         :color="item.is_available && item.is_enabled ? 'success' : 'secondary'"
@@ -910,6 +950,15 @@ onMounted(() => refreshCatalog().catch(() => {}))
                     </template>
                     <template #item.actions="{ item }">
                       <div class="d-flex align-center justify-end gap-1">
+                        <VBtn
+                          icon="tabler-edit"
+                          variant="text"
+                          size="small"
+                          :disabled="!!busyId || saving"
+                          aria-label="Chỉnh sửa model"
+                          title="Chỉnh sửa model và capabilities"
+                          @click="openModel(selectedProviderDetail, item)"
+                        />
                         <VBtn
                           icon="tabler-player-play"
                           variant="text"
@@ -1050,7 +1099,7 @@ onMounted(() => refreshCatalog().catch(() => {}))
             v-else
             border
             elevation="0"
-            class="h-100 d-flex align-center justify-center"
+            class="provider-detail-card d-flex align-center justify-center"
           >
             <VCardText class="text-center py-12">
               <VAvatar
@@ -1074,8 +1123,17 @@ onMounted(() => refreshCatalog().catch(() => {}))
           </VCard>
         </VCol>
       </VRow>
-    </VContainer>
+
   </div>
+
+  <VSnackbar
+    v-model="snackbar.visible"
+    :color="snackbar.color"
+    :timeout="4000"
+    location="top end"
+  >
+    {{ snackbar.message }}
+  </VSnackbar>
 
   <AiProviderConnectionDialog
     v-model="providerDialog"
@@ -1088,7 +1146,8 @@ onMounted(() => refreshCatalog().catch(() => {}))
   <AiModelDialog
     v-model="modelDialog"
     :provider="selectedProvider"
-    :saving="saving"
+    :model="selectedModel"
+    :saving="saving || busyId === 'settings-save'"
     @save="saveModelForm"
   />
 </template>
@@ -1096,6 +1155,19 @@ onMounted(() => refreshCatalog().catch(() => {}))
 <style scoped>
 .ai-providers-page {
   min-block-size: 100%;
+}
+
+/* Giữ panel ổn định khi chuyển tab; nội dung dài chỉ cuộn trong vùng tab. */
+.provider-detail-card {
+  block-size: 640px;
+}
+
+.provider-detail-window {
+  flex: 1 1 0;
+  min-block-size: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .provider-item {

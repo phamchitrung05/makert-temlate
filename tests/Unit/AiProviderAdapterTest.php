@@ -23,6 +23,7 @@ use Tests\TestCase;
  * - test_provider_normalizes_connection_timeout(): khóa lỗi retry timeout.
  * - test_provider_rejects_refusal_response(): khóa refusal không retry.
  * - test_provider_marks_quota_error_as_retryable(): khóa HTTP 429 retry.
+ * - test_null_optional_fields_are_omitted_but_incorrect_types_are_rejected(): JSON contract.
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : fake HTTP response và config provider.
@@ -31,6 +32,30 @@ use Tests\TestCase;
  */
 class AiProviderAdapterTest extends TestCase
 {
+    /**
+     * Input: Provider trả field tùy chọn null hoặc text field kiểu object.
+     * Output: null dùng source fallback; object không bị ép chuỗi hoặc đưa vào Post.
+     * Side effect: HTTP fake; không gọi AI thật.
+     */
+    public function test_null_optional_fields_are_omitted_but_incorrect_types_are_rejected(): void
+    {
+        Config::set('ai-import.openai.key', 'test-openai-key');
+        Config::set('ai-import.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
+        Http::fake(['https://api.openai.test/*' => Http::sequence()
+            ->push(['choices' => [['message' => ['content' => json_encode(['title' => 'Title', 'canonical_url' => null, 'thumbnail_prompt' => null, 'robots_index' => false, 'suggested_category_ids' => []])]]]])
+            ->push(['choices' => [['message' => ['content' => json_encode(['title' => ['value' => 'Title']])]]]]),
+        ]);
+        $this->assertSame(['title' => 'Title', 'robots_index' => false, 'suggested_category_ids' => []], (new OpenAiProvider)->generate('Nguồn', '<p>Gốc</p>'));
+        Http::assertSent(fn ($request): bool => str_contains($request['messages'][0]['content'], 'flat JSON object'));
+        try {
+            (new OpenAiProvider)->generate('Nguồn', '<p>Gốc</p>');
+            $this->fail('Không chấp nhận field text dạng object.');
+        } catch (\App\Exceptions\AiImportException $exception) {
+            $this->assertSame('AI_PROVIDER_SCHEMA', $exception->errorCode);
+            $this->assertStringContainsString('title', $exception->getMessage());
+        }
+    }
+
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng Chat Completions được map sang canonical output

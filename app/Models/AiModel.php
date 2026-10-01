@@ -77,7 +77,8 @@ class AiModel extends Model
      * CHỨC NĂNG: Kiểm tra model có thể chạy một capability hay không
      * =====================================================================
      * INPUT: AiCapability cần thực thi và provider relation đã hydrate.
-     * OUTPUT: boolean; chỉ true khi provider/model đang hoạt động và capability rõ ràng.
+     * OUTPUT: boolean; text_generation đủ cho content; structured_output là tùy chọn
+     *   transport, JSON trả về vẫn được pipeline kiểm tra schema.
      * SIDE EFFECT: chỉ đọc model/config; không gọi provider hoặc ghi database.
      * EXCEPTION/TRANSACTION: false khi relation thiếu hoặc model không hợp lệ;
      *   không mở transaction.
@@ -93,8 +94,7 @@ class AiModel extends Model
             return false;
         }
 
-        return ($capability !== AiCapability::Text || $this->supports(AiCapability::Structured))
-            && ($capability !== AiCapability::Image
-                || (bool) config('ai-providers.presets.'.$provider->driver.'.image_supported', false));
+        return $capability !== AiCapability::Image
+            || (bool) config('ai-providers.presets.'.$provider->driver.'.image_supported', false);
     }
 }

@@ -863,11 +863,14 @@ Quyết định triển khai:
   thủ công khi endpoint không cung cấp catalog.
 - [x] Hiển thị provider theo dạng expandable list với số model, thời điểm sync và
   trạng thái kết nối.
-- [x] Hiển thị model thuộc provider với search, active/available, remote model ID
-  và thao tác test kết nối; capability không còn là cột thao tác trong catalog.
-- [x] Thêm hai selector mặc định riêng:
-  `Default text model` và `Default image model`; chỉ hiển thị model đúng capability.
-- [x] Thêm selector fallback và các thông số chung có type/validation rõ ràng.
+- [x] Hiển thị model thuộc provider với search, active/available, remote model ID,
+  cột capabilities và thao tác chỉnh sửa capabilities/test kết nối. Test model
+  chỉ cập nhật tick/snackbar, giữ nguyên tab và bộ lọc; panel giữ chiều cao 640px.
+- [x] Chuẩn bị `AiDefaultsPanel` với hai selector `Default text model` và
+  `Default image model`; chỉ hiển thị model đúng capability.
+- [x] Chuẩn bị selector fallback và các thông số chung có type/validation rõ ràng.
+  Theo quyết định ngày 01-10-2026, `AiDefaultsPanel` sẽ nằm trong **System Settings**
+  khi triển khai mục này; không gắn vào AI Providers trong đợt nghiệm thu hiện tại.
 - [x] API chỉ trả masked key/metadata public; frontend không tự gửi key trực tiếp
   tới provider.
 - [x] Dùng permission riêng `ai_settings.manage` cho provider/settings và activity log
@@ -901,24 +904,38 @@ Quyết định triển khai:
   default resolver, model capability và không lộ secret.
 - [x] Frontend tests cho provider/model selector, default fallback, unavailable model,
   test/sync loading-error-success và image model filtering.
-- [ ] Staging test bằng key thật cho ít nhất một text provider và một image provider;
-  kiểm tra queue worker, provenance, quota, timeout và cleanup asset.
+- [~] Nghiệm thu bằng key thật: local gateway/text, queue, provenance, quota và
+  cleanup đã đạt ngày 01-10-2026. Image model hiện cấu hình trả HTTP 403;
+  chuyển đổi/lưu trữ ảnh được xác minh riêng bằng fixture. Staging chưa chạy,
+  theo lựa chọn "Kiểm thử local trước". Chi tiết tại
+  [báo cáo nghiệm thu local](qa/PHASE16_LOCAL_SMOKE_2026-10-01.md).
 
 ### 16.8. Definition of Done
 
-- [ ] Admin thêm được provider chính thức bằng API key và test connection thành công (chờ key/staging).
+- [ ] Admin thêm được provider chính thức bằng API key và test connection thành công
+  (local chưa có key OpenAI/Gemini chính thức).
 - [x] Admin thêm được một OpenAI-compatible gateway, test connection và import được
-  nhiều model từ `/models` bằng HTTP fake; gateway không có `/models` vẫn dùng được bằng model thủ công.
+  nhiều model từ `/models`; đã xác minh thêm bằng key thật trên local với 7 model.
+  Gateway không có `/models` vẫn dùng được bằng model thủ công.
 - [x] Provider có nhiều model được sync, hiển thị và enable/disable riêng từng model.
 - [x] Model mặc định text/image được lưu trong settings và được dùng khi request không
   chỉ định model.
 - [x] Request chỉ được chọn model đúng capability; model không khả dụng trả lỗi rõ ràng.
-- [ ] AI Agent chạy thật qua key server-side và vẫn giữ structured output/provenance (adapter đã sẵn sàng, chưa chạy key thật).
+- [x] AI Agent chạy thật qua key server-side với `glm-5.3-cn` trên local, trả
+  structured output; cả Apply qua API và browser Save as Draft đều ghi provenance
+  đúng provider/model/prompt/nhóm field. Kiểm thử bổ sung dialog trên provider gốc
+  xác nhận `text_generation` đủ để chọn/chạy content; `structured_output` chỉ bật
+  JSON mode tùy chọn. Capability hiện có của người dùng được giữ nguyên.
 - [x] Image generation là optional, không làm content run thất bại khi image provider lỗi.
 - [x] Không có API key thật trong frontend response, log, test fixture hoặc Git;
   test fixture chỉ dùng key giả và response chỉ trả `has_api_key`.
 - [x] Deterministic fallback và route legacy vẫn hoạt động khi chưa cấu hình provider thật.
-- [~] Backend/frontend tests, lint và build đạt; staging smoke test còn chờ key thật.
+- [x] Backend đạt 146 tests/769 assertions; frontend đạt 104 tests; production
+  build thành công. ESLint toàn mã nguồn đã đạt 0 errors ngày 01-10-2026;
+  các file sửa trong đợt debug dialog tiếp tục đạt 0 errors. Chi tiết tại
+  [báo cáo sửa dialog/queue](qa/POST_AI_DIALOG_FIX_2026-10-02.md).
+- [ ] Staging smoke test cho text/image bằng key thật: còn chờ môi trường staging
+  và key/model có quyền tạo ảnh. Không coi kết quả local/fixture là nghiệm thu staging.
 
 ### 16.9. Thứ tự triển khai đề xuất
 

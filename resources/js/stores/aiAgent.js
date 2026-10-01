@@ -2,9 +2,9 @@
  * =====================================================================
  * CHỨC NĂNG FILE: Pinia state cho AI Agent session/candidate dùng chung.
  * CÁC HÀM/METHOD TRONG FILE: loadCapabilities(), start(), poll(),
- * regenerate(), retry(), cancel(), apply().
+ * regenerate(), retry(), cancel(), apply(), syncCandidates(), reset().
  * INPUT/OUTPUT CỦA CLASS (tổng thể): request AI -> state readonly và các
- * action điều phối API; UI không tự quản lý polling hoặc retry.
+ * action điều phối API; bỏ response cũ khi dialog reset hoặc chuyển run.
  * =====================================================================
  */
 import { computed, readonly, shallowRef } from 'vue'
@@ -17,86 +17,111 @@ export const useAiAgentStore = defineStore('aiAgent', () => {
   const candidates = shallowRef([])
   const isLoading = shallowRef(false)
   const error = shallowRef(null)
+  let resetGeneration = 0
+  let capabilityGeneration = 0
   const isRunning = computed(() => ['queued', 'running', 'processing', 'fetching', 'extracting', 'rewriting', 'seo', 'thumbnail'].includes(session.value?.status))
 
   /** Input: target key. Output: capability allowlist được lưu vào state. */
   const loadCapabilities = async targetType => {
-    capabilities.value = await aiAgentService.capabilities(targetType)
+    const generation = ++capabilityGeneration
+    const response = await aiAgentService.capabilities(targetType)
+    if (generation === capabilityGeneration) capabilities.value = response
 
-    return capabilities.value
+    return response
   }
 
   /** Input: request target/input/provider. Output: session queued từ API. */
   const start = async request => {
+    const generation = resetGeneration
+
     isLoading.value = true
     error.value = null
     try {
-      session.value = await aiAgentService.createSession(request)
-      syncCandidates(session.value)
+      const response = await aiAgentService.createSession(request)
+      if (generation === resetGeneration) {
+        session.value = response
+        syncCandidates(response)
+      }
 
-      return session.value
+      return response
     }
     catch (requestError) {
-      error.value = requestError
+      if (generation === resetGeneration) error.value = requestError
       throw requestError
     }
     finally {
-      isLoading.value = false
+      if (generation === resetGeneration) isLoading.value = false
     }
   }
 
   /** Input: session ID và target. Output: lifecycle/candidate mới nhất. */
   const poll = async (sessionId, targetType) => {
-    session.value = await aiAgentService.status(sessionId, targetType)
-    syncCandidates(session.value)
+    const generation = resetGeneration
+    const currentSession = session.value
+    const response = await aiAgentService.status(sessionId, targetType)
+    if (generation === resetGeneration && session.value === currentSession) {
+      session.value = response
+      syncCandidates(response)
+    }
 
-    return session.value
+    return response
   }
 
+  /** Input: run cha/request. Output: child mới; bỏ response nếu dialog đã reset. */
   const regenerate = async (sessionId, request) => {
+    const generation = resetGeneration
+
     isLoading.value = true
     error.value = null
     try {
       const response = await aiAgentService.regenerate(sessionId, request)
 
-      session.value = response
-      syncCandidates(response)
+      if (generation === resetGeneration) {
+        session.value = response
+        syncCandidates(response)
+      }
 
       return response
     }
     catch (requestError) {
-      error.value = requestError
+      if (generation === resetGeneration) error.value = requestError
       throw requestError
     }
     finally {
-      isLoading.value = false
+      if (generation === resetGeneration) isLoading.value = false
     }
   }
 
   /** Input: session/job lỗi. Output: trạng thái queue sau retry kỹ thuật. */
   const retry = async sessionId => {
+    const generation = resetGeneration
+
     isLoading.value = true
     error.value = null
     try {
-      session.value = await aiAgentService.retry(sessionId)
-      syncCandidates(session.value)
+      const response = await aiAgentService.retry(sessionId)
+      if (generation === resetGeneration) {
+        session.value = response
+        syncCandidates(response)
+      }
 
-      return session.value
+      return response
     }
     catch (requestError) {
-      error.value = requestError
+      if (generation === resetGeneration) error.value = requestError
       throw requestError
     }
     finally {
-      isLoading.value = false
+      if (generation === resetGeneration) isLoading.value = false
     }
   }
 
   /** Input: session/job ID. Output: session cancelled hoặc terminal. */
   const cancel = async sessionId => {
+    const generation = resetGeneration
     const response = await aiAgentService.cancel(sessionId)
 
-    session.value = { ...session.value, ...response, status: response?.status ?? 'cancelled' }
+    if (generation === resetGeneration) session.value = { ...session.value, ...response, status: response?.status ?? 'cancelled' }
 
     return response
   }
@@ -116,9 +141,11 @@ export const useAiAgentStore = defineStore('aiAgent', () => {
 
   /** Input: không có. Output: xóa session/candidate/error trong state. */
   const reset = () => {
+    resetGeneration++
     session.value = null
     candidates.value = []
     error.value = null
+    isLoading.value = false
   }
 
   return {

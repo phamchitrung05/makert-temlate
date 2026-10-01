@@ -2,6 +2,8 @@
 
 namespace App\Services\Ai;
 
+use App\Enums\AiCapability;
+
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Adapter Google Gemini trả structured JSON.
@@ -70,7 +72,7 @@ final class GeminiProvider extends AbstractStructuredAiProvider
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Gửi context tới Gemini generateContent.
+     * CHỨC NĂNG: Gửi context JSON, bật JSON mode khi model hỗ trợ structured_output.
      * =====================================================================
      * INPUT: context canonical từ AbstractStructuredAiProvider.
      * OUTPUT: response JSON; retryability tuân theo boundary POST của AiProviderClient.
@@ -85,9 +87,11 @@ final class GeminiProvider extends AbstractStructuredAiProvider
             'contents' => [['role' => 'user', 'parts' => [['text' => $input['instructions']."\n".$this->canonicalInput($input)]]]],
             'generationConfig' => [
                 'temperature' => (float) ($this->connection()?->snapshot['temperature'] ?? config('ai-import.gemini.temperature', 0.2)),
-                'responseMimeType' => 'application/json',
             ],
         ];
+        if ($this->connection() === null || in_array(AiCapability::Structured->value, $this->connection()->snapshot['capabilities'] ?? [], true)) {
+            $payload['generationConfig']['responseMimeType'] = 'application/json';
+        }
         $connection = $this->connection() ?? new AiConnection([
             'driver' => 'gemini', 'provider' => 'gemini',
             'base_url' => (string) config('ai-import.gemini.endpoint'),

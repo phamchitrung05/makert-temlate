@@ -43,7 +43,7 @@ const props = defineProps({
         />
       </template>
       <VCardTitle class="text-subtitle-2">
-        Đang xử lý...
+        Tiến trình xử lý
       </VCardTitle>
       <template #append>
         <span class="text-caption font-weight-medium text-medium-emphasis font-monospace">
