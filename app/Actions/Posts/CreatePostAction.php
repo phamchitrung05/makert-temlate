@@ -32,10 +32,14 @@ use Illuminate\Support\Facades\DB;
 class CreatePostAction
 {
     /**
-     * Nhận service domain cho media và SEO.
-     *
-     * Input: MediaAssetUsageService và SeoMetadataService từ container.
-     * Output: action sẵn sàng xử lý; không gọi database khi khởi tạo.
+     * =====================================================================
+     * CHỨC NĂNG: Nhận service media, SEO và lineage AI từ container.
+     * =====================================================================
+     * INPUT: MediaAssetUsageService, SeoMetadataService và AiProvenanceService.
+     * OUTPUT: action sẵn sàng xử lý.
+     * SIDE EFFECT: không gọi database khi khởi tạo.
+     * EXCEPTION/TRANSACTION: không có; không mở transaction.
+     * =====================================================================
      */
     public function __construct(
         private readonly MediaAssetUsageService $mediaAssetUsageService,
@@ -44,10 +48,14 @@ class CreatePostAction
     ) {}
 
     /**
-     * Tạo Post và đồng bộ các quan hệ trong transaction có retry deadlock.
-     *
-     * Input: attributes đã validate và admin ID.
-     * Output: Post mới đã eager load; rollback khi một boundary thất bại.
+     * =====================================================================
+     * CHỨC NĂNG: Tạo Post và đồng bộ quan hệ trong transaction có retry deadlock.
+     * =====================================================================
+     * INPUT: attributes đã validate và admin ID.
+     * OUTPUT: Post mới đã eager load.
+     * SIDE EFFECT: ghi Post, SEO, taxonomy, media usage và lineage AI.
+     * EXCEPTION/TRANSACTION: rollback khi một boundary thất bại; retry deadlock tối đa 5 lần.
+     * =====================================================================
      */
     public function handle(array $attributes, int $actorId): Post
     {
@@ -56,8 +64,9 @@ class CreatePostAction
             $taxonomy = $this->extractTaxonomy($attributes);
             $aiRunId = $attributes['ai_run_id'] ?? null;
             $aiFields = (array) ($attributes['ai_fields'] ?? []);
+            $aiRuns = (array) ($attributes['ai_runs'] ?? []);
             unset($attributes['media']);
-            unset($attributes['ai_run_id'], $attributes['ai_fields']);
+            unset($attributes['ai_run_id'], $attributes['ai_fields'], $attributes['ai_runs']);
 
             $post = Post::query()->create(array_merge(array_diff_key($attributes, $this->seoMetadataService->fields($attributes), array_flip(['category_ids', 'tag_ids'])), [
                 'created_by' => $actorId,
@@ -67,17 +76,21 @@ class CreatePostAction
             $this->syncSeo($post, $attributes, $actorId);
             $this->syncTaxonomy($post, $taxonomy);
             $this->syncMedia($post, $media, $actorId);
-            $this->recordProvenance($post, $actorId, $aiRunId, $aiFields, $this->provenanceValues($attributes, $taxonomy, $media));
+            $this->recordProvenance($post, $actorId, $aiRunId, $aiFields, $aiRuns, $this->provenanceValues($attributes, $taxonomy, $media));
 
             return $this->fresh($post);
         }, 5);
     }
 
     /**
-     * Đồng bộ category/tag pivot của Post mới.
-     *
-     * Input: Post và map taxonomy ID.
-     * Output: không trả giá trị; pivot được sync hoặc exception truyền lên.
+     * =====================================================================
+     * CHỨC NĂNG: Đồng bộ category/tag pivot của Post mới.
+     * =====================================================================
+     * INPUT: Post và map taxonomy ID.
+     * OUTPUT: không trả giá trị.
+     * SIDE EFFECT: ghi pivot category/tag.
+     * EXCEPTION/TRANSACTION: query exception truyền lên; dùng transaction của handle().
+     * =====================================================================
      */
     private function syncTaxonomy(Post $post, array $taxonomy): void
     {
@@ -90,10 +103,14 @@ class CreatePostAction
     }
 
     /**
-     * Lấy taxonomy từ payload create.
-     *
-     * Input: attributes bất kỳ đã validate.
-     * Output: map category_ids/tag_ids luôn ở dạng mảng.
+     * =====================================================================
+     * CHỨC NĂNG: Lấy taxonomy từ payload create.
+     * =====================================================================
+     * INPUT: attributes bất kỳ đã validate.
+     * OUTPUT: map category_ids/tag_ids luôn ở dạng mảng.
+     * SIDE EFFECT: không mutate input hoặc ghi database.
+     * EXCEPTION/TRANSACTION: không có; không mở transaction.
+     * =====================================================================
      */
     private function extractTaxonomy(array $attributes): array
     {
@@ -102,10 +119,14 @@ class CreatePostAction
     }
 
     /**
-     * Đồng bộ metadata SEO qua service chung.
-     *
-     * Input: Post, attributes SEO và actor ID.
-     * Output: không trả giá trị; metadata được tạo/cập nhật trong transaction cha.
+     * =====================================================================
+     * CHỨC NĂNG: Đồng bộ metadata SEO qua service chung.
+     * =====================================================================
+     * INPUT: Post, attributes SEO và actor ID.
+     * OUTPUT: không trả giá trị.
+     * SIDE EFFECT: tạo/cập nhật metadata SEO.
+     * EXCEPTION/TRANSACTION: service exception truyền lên; dùng transaction của handle().
+     * =====================================================================
      */
     private function syncSeo(Post $post, array $attributes, int $actorId): void
     {
@@ -113,10 +134,14 @@ class CreatePostAction
     }
 
     /**
-     * Đồng bộ thumbnail/content image usage.
-     *
-     * Input: Post, media map và actor ID.
-     * Output: không trả giá trị; usage được replace hoặc ném lỗi quyền/asset.
+     * =====================================================================
+     * CHỨC NĂNG: Đồng bộ thumbnail/content image usage.
+     * =====================================================================
+     * INPUT: Post, media map và actor ID.
+     * OUTPUT: không trả giá trị.
+     * SIDE EFFECT: thay thế media usage theo field được gửi.
+     * EXCEPTION/TRANSACTION: lỗi quyền/asset truyền lên; dùng transaction của handle().
+     * =====================================================================
      */
     private function syncMedia(Post $post, array $media, int $actorId): void
     {
@@ -139,11 +164,14 @@ class CreatePostAction
     }
 
     /**
-     * Gom payload domain sau khi đã tách media/taxonomy cho audit AI.
-     *
-     * Input: attributes Post còn lại, taxonomy map và media map.
-     * Output: map phẳng đủ dữ liệu để AiProvenanceService băm từng field.
-     * Side effect: không có; không ghi database.
+     * =====================================================================
+     * CHỨC NĂNG: Gom payload domain sau khi tách media/taxonomy cho audit AI.
+     * =====================================================================
+     * INPUT: attributes Post còn lại, taxonomy map và media map.
+     * OUTPUT: map phẳng đủ dữ liệu để AiProvenanceService băm từng field.
+     * SIDE EFFECT: không có; không ghi database.
+     * EXCEPTION/TRANSACTION: không có; không mở transaction.
+     * =====================================================================
      */
     private function provenanceValues(array $attributes, array $taxonomy, array $media): array
     {
@@ -151,24 +179,33 @@ class CreatePostAction
     }
 
     /**
-     * Ghi lineage AI sau khi Post và các relation đã đồng bộ.
-     *
-     * Input: Post mới, actor ID, run UUID, field selection và payload values.
-     * Output: không trả giá trị; service bỏ qua khi không có metadata AI.
-     * Side effect: insert audit và cập nhật AiImport trong transaction cha.
+     * =====================================================================
+     * CHỨC NĂNG: Ghi lineage AI sau khi Post và relation đã đồng bộ.
+     * =====================================================================
+     * INPUT: Post mới, actor ID, run UUID hoặc danh sách run, field selection và values.
+     * OUTPUT: không trả giá trị; bỏ qua khi không có metadata AI.
+     * SIDE EFFECT: insert audit và cập nhật AiImport.
+     * EXCEPTION/TRANSACTION: provenance validation exception truyền lên; dùng transaction của handle().
+     * =====================================================================
      */
-    private function recordProvenance(Post $post, int $actorId, ?string $runId, array $fields, array $values): void
+    private function recordProvenance(Post $post, int $actorId, ?string $runId, array $fields, array $runs, array $values): void
     {
-        if ($runId !== null || $fields !== []) {
+        if ($runs !== []) {
+            $this->aiProvenanceService->recordPostRuns($actorId, $post, $runs, $values);
+        } elseif ($runId !== null || $fields !== []) {
             $this->aiProvenanceService->recordPost($actorId, $post, $runId, $fields, $values);
         }
     }
 
     /**
-     * Nạp lại Post cùng quan hệ dùng cho response.
-     *
-     * Input: Post đã lưu.
-     * Output: Post fresh với slug, SEO, taxonomy và media relations.
+     * =====================================================================
+     * CHỨC NĂNG: Nạp lại Post cùng quan hệ dùng cho response.
+     * =====================================================================
+     * INPUT: Post đã lưu.
+     * OUTPUT: Post fresh với slug, SEO, taxonomy và media relations.
+     * SIDE EFFECT: truy vấn read-only database.
+     * EXCEPTION/TRANSACTION: query exception truyền lên; dùng transaction của handle().
+     * =====================================================================
      */
     private function fresh(Post $post): Post
     {

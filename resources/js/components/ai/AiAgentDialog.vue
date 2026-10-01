@@ -27,6 +27,7 @@
 import { computed, onBeforeUnmount, reactive, shallowRef, watch } from 'vue'
 import { useAiAgentStore } from '@/stores/aiAgent'
 import AiAgentCandidatePreview from './AiAgentCandidatePreview.vue'
+import { findProvider, providerModels } from '@/utils/aiModelOptions'
 
 const props = defineProps({
   targetType: { type: String, required: true },
@@ -50,13 +51,26 @@ const inputTypes = computed(() => capability.value.input_types ?? capability.val
 const outputFields = computed(() => capability.value.outputs ?? [])
 const prompts = computed(() => (capability.value.prompts ?? []).map(item => typeof item === 'string' ? { key: item, label: item } : item))
 const providers = computed(() => capability.value.providers ?? [])
-const models = computed(() => providers.value.find(item => item.key === form.provider)?.models ?? [])
+
+const models = computed(() => {
+  return providerModels(findProvider(providers.value, form.provider), null)
+})
+
 const currentCandidate = computed(() => store.candidates.find(item => String(item.id) === String(selectedCandidateId.value)) ?? store.candidates[0] ?? null)
 const candidateItems = computed(() => store.candidates.map((item, index) => ({ title: `${index + 1}. ${item.model || item.provider || 'Candidate'}`, value: item.id })))
 const busy = computed(() => store.isLoading || polling.value)
 const sessionId = computed(() => store.session?.id ?? store.session?.session_id ?? store.session?.job_id)
 
-/** Input: không có. Output: capability và mặc định tương thích target. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Tải capability và khởi tạo lựa chọn cho target
+ * =====================================================================
+ * INPUT: targetType/operation từ props.
+ * OUTPUT: Capability và form options tương thích target.
+ * SIDE EFFECT: Gọi capability API qua store, cập nhật state; để trống model nhằm dùng default server.
+ * EXCEPTION/TRANSACTION: Lỗi tải capability truyền lên lifecycle caller; không tự gọi provider.
+ * =====================================================================
+ */
 const load = async () => {
   message.value = ''
 
@@ -65,10 +79,27 @@ const load = async () => {
   form.operation = props.operation
   form.inputType = (result.input_types ?? result.inputs ?? ['url'])[0]
   form.outputs = [...(result.outputs ?? [])]
-  form.provider = result.providers?.[0]?.key ?? ''
+
+  /**
+   * =====================================================================
+   * GHI CHÚ: Để trống provider/model để server dùng default theo capability.
+   * =====================================================================
+   * Không suy đoán default ở browser; resolver server-side là source of truth.
+   * =====================================================================
+   */
+  form.provider = ''
 }
 
-/** Input: form đang chọn. Output: payload theo contract AI Agent. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Tạo AI Agent request từ form
+ * =====================================================================
+ * INPUT: Form đang chọn và target props.
+ * OUTPUT: Payload canonical cho input/output/prompt/provider/model.
+ * SIDE EFFECT: Hàm thuần; không gửi request hoặc ghi Post.
+ * EXCEPTION/TRANSACTION: Validation thực tế do backend đảm nhiệm.
+ * =====================================================================
+ */
 const buildRequest = () => ({
   target_type: props.targetType, target_id: props.targetId, operation: form.operation,
   input: { type: form.inputType, ...(form.inputType === 'url' ? { url: form.inputValue } : { text: form.inputValue }) },
@@ -77,14 +108,32 @@ const buildRequest = () => ({
   provider: form.provider || null, model: form.model || null, requested_outputs: form.outputs,
 })
 
-/** Input: không có. Output: dừng polling; job backend không bị hủy ngầm. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Dừng timer và vô hiệu callback của vòng polling cũ
+ * =====================================================================
+ * INPUT: Không có đối số; dùng dialog lifecycle.
+ * OUTPUT: Polling state về idle; job backend vẫn chạy.
+ * SIDE EFFECT: Hủy timeout và tăng generation token.
+ * EXCEPTION/TRANSACTION: Không gọi API hoặc hủy job backend ngầm.
+ * =====================================================================
+ */
 const stopPolling = () => {
   pollingGeneration++
   clearTimeout(pollingTimer)
   polling.value = false
 }
 
-/** Input: response session. Output: cập nhật tiến trình đến trạng thái cuối. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Theo dõi run đến trạng thái terminal với backoff
+ * =====================================================================
+ * INPUT: Response session/job queued.
+ * OUTPUT: Tiến trình/candidate trong store và trạng thái polling.
+ * SIDE EFFECT: Gọi status API định kỳ; tạo timeout có thể hủy.
+ * EXCEPTION/TRANSACTION: Lỗi polling hiển thị trong dialog; không gọi provider trực tiếp.
+ * =====================================================================
+ */
 const pollUntilDone = async response => {
   const id = response?.id ?? response?.session_id ?? response?.job_id
   if (!id || ['ready', 'completed', 'succeeded', 'failed', 'cancelled', 'expired'].includes(response.status)) return
@@ -118,7 +167,16 @@ const pollUntilDone = async response => {
   pollingTimer = setTimeout(tick, 1000)
 }
 
-/** Input: form. Output: tạo session/candidate mới, giữ lỗi cho người dùng. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Xếp hàng session nội dung từ form hiện tại
+ * =====================================================================
+ * INPUT: Input có nội dung và ít nhất một output đã chọn.
+ * OUTPUT: Session/candidate mới và vòng polling.
+ * SIDE EFFECT: Gọi start API qua store; không tự lưu Post.
+ * EXCEPTION/TRANSACTION: Lỗi API được chuyển thành message cho người dùng.
+ * =====================================================================
+ */
 const run = async () => {
   if (!form.inputValue.trim() || !form.outputs.length || busy.value) return
   message.value = ''
@@ -126,14 +184,32 @@ const run = async () => {
   catch (error) { message.value = error?.data?.message || error.message }
 }
 
-/** Input: session hiện tại và lựa chọn mới. Output: candidate mới, không ghi đè. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Tạo candidate mới theo prompt/model/fields đã chọn
+ * =====================================================================
+ * INPUT: Session hiện tại và lựa chọn override.
+ * OUTPUT: Child candidate mới, giữ candidate cũ.
+ * SIDE EFFECT: Gọi regenerate API qua store rồi polling.
+ * EXCEPTION/TRANSACTION: Lỗi API hiển thị trong dialog.
+ * =====================================================================
+ */
 const regenerate = async () => {
   if (!sessionId.value || busy.value) return
   try { await pollUntilDone(await store.regenerate(sessionId.value, { ...buildRequest(), fields: selectedFields.value })) }
   catch (error) { message.value = error?.data?.message || error.message }
 }
 
-/** Input: candidate/fields đã chọn. Output: emit payload hoặc gọi apply draft. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Áp dụng các field đã chọn theo chế độ preview hoặc lưu draft
+ * =====================================================================
+ * INPUT: Candidate ready và danh sách field selected.
+ * OUTPUT: Event apply hoặc applied.
+ * SIDE EFFECT: Emit payload cho parent; persistOnApply=true gọi API lưu draft.
+ * EXCEPTION/TRANSACTION: Lỗi apply hiển thị trong dialog; backend kiểm tra provenance khi lưu.
+ * =====================================================================
+ */
 const apply = async () => {
   if (!currentCandidate.value || !selectedFields.value.length) return
   const output = currentCandidate.value.outputs ?? currentCandidate.value.draft ?? {}
@@ -275,6 +351,8 @@ onBeforeUnmount(stopPolling)
               v-model="form.model"
               label="Model (trống = mặc định)"
               :items="models"
+              item-title="label"
+              item-value="value"
               clearable
               :disabled="busy"
             />

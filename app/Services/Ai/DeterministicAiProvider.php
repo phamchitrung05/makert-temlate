@@ -25,29 +25,60 @@ namespace App\Services\Ai;
  */
 final class DeterministicAiProvider extends AbstractStructuredAiProvider
 {
-    /** Input: không có. Output: false để dùng fallback deterministic. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: false để dùng fallback deterministic.
+     * =====================================================================
+     * INPUT: không có.
+     * OUTPUT: false để dùng fallback deterministic.
+     * SIDE EFFECT: Không ghi database hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
     public function configured(): bool
     {
         return false;
     }
 
-    /** Input: không có. Output: provider identity deterministic. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: provider identity deterministic.
+     * =====================================================================
+     * INPUT: không có.
+     * OUTPUT: provider identity deterministic.
+     * SIDE EFFECT: Không ghi database hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
     public function providerName(): string
     {
         return 'deterministic';
     }
 
-    /** Input: không có. Output: model identity deterministic. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: model identity deterministic.
+     * =====================================================================
+     * INPUT: không có.
+     * OUTPUT: model identity deterministic.
+     * SIDE EFFECT: Không ghi database hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
     public function modelName(): string
     {
         return 'deterministic';
     }
 
     /**
-     * Input: context structured output.
-     * Output: không có vì configured() luôn false.
-     * Exception: LogicException nếu boundary bị gọi sai.
-     *
+     * =====================================================================
+     * CHỨC NĂNG: Bảo vệ boundary structured output của provider deterministic.
+     * =====================================================================
+     * INPUT: context structured output.
+     * OUTPUT: không có vì configured() luôn false.
+     * SIDE EFFECT: không gọi network hoặc ghi database.
+     * EXCEPTION/TRANSACTION: LogicException nếu boundary bị gọi sai; không mở transaction.
+     * =====================================================================
      * @param  array<string, mixed>  $input
      */
     protected function requestPayload(array $input): mixed

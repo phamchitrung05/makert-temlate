@@ -32,10 +32,14 @@ use Tests\TestCase;
 class AiProviderAdapterTest extends TestCase
 {
     /**
-     * Kiểm tra OpenAI Chat Completions được map về canonical output.
-     *
-     * Input: fake choices.message.content JSON.
-     * Output: title/content_html đã parse; không gọi mạng thật.
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm chứng Chat Completions được map sang canonical output
+     * =====================================================================
+     * INPUT: Fake choices.message.content chứa JSON và config test.
+     * OUTPUT: Assertions title/content_html cùng header Authorization đúng.
+     * SIDE EFFECT: Chỉ gọi HTTP fake; không ghi domain database.
+     * EXCEPTION/TRANSACTION: Không gọi mạng thật hoặc mở transaction.
+     * =====================================================================
      */
     public function test_openai_provider_maps_chat_json_output(): void
     {
@@ -57,10 +61,14 @@ class AiProviderAdapterTest extends TestCase
     }
 
     /**
-     * Kiểm tra Gemini generateContent được map về canonical output.
-     *
-     * Input: fake candidates.content.parts.text JSON.
-     * Output: field SEO đã parse; API key chỉ nằm ở header server-side.
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm chứng generateContent được map sang canonical output
+     * =====================================================================
+     * INPUT: Fake candidates.content.parts.text và config test.
+     * OUTPUT: Assertions SEO output và API key chỉ nằm trong header.
+     * SIDE EFFECT: Chỉ gọi HTTP fake; không ghi domain database.
+     * EXCEPTION/TRANSACTION: Không gọi mạng thật hoặc mở transaction.
+     * =====================================================================
      */
     public function test_gemini_provider_maps_generate_content_output(): void
     {
@@ -84,7 +92,16 @@ class AiProviderAdapterTest extends TestCase
             && ! str_contains($request->url(), 'key='));
     }
 
-    /** Input: content không phải JSON. Output: lỗi domain INVALID_JSON. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm chứng từ chối structured JSON sai định dạng
+     * =====================================================================
+     * INPUT: HTTP fake trả message content không phải JSON.
+     * OUTPUT: AiImportException AI_PROVIDER_INVALID_JSON không retry.
+     * SIDE EFFECT: Chỉ dùng HTTP fake và config test.
+     * EXCEPTION/TRANSACTION: Test bắt domain exception; không gọi mạng thật.
+     * =====================================================================
+     */
     public function test_provider_rejects_malformed_json(): void
     {
         Config::set('ai-import.openai.key', 'test-openai-key');
@@ -104,7 +121,16 @@ class AiProviderAdapterTest extends TestCase
         }
     }
 
-    /** Input: ConnectionException. Output: lỗi timeout retryable thống nhất. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm chứng timeout POST không tự lặp generation có phí
+     * =====================================================================
+     * INPUT: HTTP fake ném ConnectionException cho generation request.
+     * OUTPUT: AiImportException AI_PROVIDER_TIMEOUT không retry.
+     * SIDE EFFECT: Chỉ dùng HTTP fake và config test.
+     * EXCEPTION/TRANSACTION: Test bắt lỗi domain an toàn; không gửi request thật.
+     * =====================================================================
+     */
     public function test_provider_normalizes_connection_timeout(): void
     {
         Config::set('ai-import.openai.key', 'test-openai-key');
@@ -116,11 +142,20 @@ class AiProviderAdapterTest extends TestCase
             $this->fail('Provider phải chuẩn hóa lỗi kết nối.');
         } catch (\App\Exceptions\AiImportException $exception) {
             $this->assertSame('AI_PROVIDER_TIMEOUT', $exception->errorCode);
-            $this->assertTrue($exception->retryable);
+            $this->assertFalse($exception->retryable);
         }
     }
 
-    /** Input: provider response refusal. Output: lỗi domain không retry. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm chứng provider refusal được báo thành lỗi domain
+     * =====================================================================
+     * INPUT: HTTP fake trả refusal thay vì content.
+     * OUTPUT: Exception thông báo từ chối; không trả candidate.
+     * SIDE EFFECT: Chỉ dùng HTTP fake và config test.
+     * EXCEPTION/TRANSACTION: Test mong đợi exception; không gọi mạng thật.
+     * =====================================================================
+     */
     public function test_provider_rejects_refusal_response(): void
     {
         Config::set('ai-import.openai.key', 'test-openai-key');
@@ -136,7 +171,16 @@ class AiProviderAdapterTest extends TestCase
         (new OpenAiProvider)->generate('Nguồn', '<p>Gốc</p>');
     }
 
-    /** Input: HTTP quota. Output: lỗi retryable để queue phân loại. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm chứng HTTP 429 được phân loại retryable
+     * =====================================================================
+     * INPUT: HTTP fake trả quota status 429.
+     * OUTPUT: Exception AI_PROVIDER_HTTP_429 có retryable=true.
+     * SIDE EFFECT: Chỉ dùng HTTP fake và config test.
+     * EXCEPTION/TRANSACTION: Test bắt domain exception; không gọi mạng thật.
+     * =====================================================================
+     */
     public function test_provider_marks_quota_error_as_retryable(): void
     {
         Config::set('ai-import.openai.key', 'test-openai-key');

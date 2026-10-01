@@ -24,7 +24,18 @@ use InvalidArgumentException;
  */
 final class SchemaRegistry
 {
-    /** INPUT: schema key. OUTPUT: schema metadata versioned. SIDE EFFECT: đọc config. EXCEPTION/TRANSACTION: InvalidArgumentException; không transaction. @return array<string, mixed> */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Resolve schema version đã đăng ký.
+     * =====================================================================
+     * INPUT: schema key.
+     * OUTPUT: schema metadata versioned.
+     * SIDE EFFECT: đọc config; không gọi provider.
+     * EXCEPTION/TRANSACTION: InvalidArgumentException; không mở transaction.
+     *
+     * @return array<string, mixed>
+     * =====================================================================
+     */
     public function get(string $key): array
     {
         $schema = $this->all()[$key] ?? null;
@@ -35,7 +46,18 @@ final class SchemaRegistry
         return $schema + ['key' => $key];
     }
 
-    /** INPUT: không có. OUTPUT: toàn bộ schema metadata. SIDE EFFECT: đọc config. EXCEPTION/TRANSACTION: không có. @return array<string, array<string, mixed>> */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Trả toàn bộ schema metadata.
+     * =====================================================================
+     * INPUT: không có.
+     * OUTPUT: schema metadata theo key.
+     * SIDE EFFECT: đọc config; không gọi provider.
+     * EXCEPTION/TRANSACTION: không có; không mở transaction.
+     *
+     * @return array<string, array<string, mixed>>
+     * =====================================================================
+     */
     public function all(): array
     {
         return (array) config('ai-agent.schemas', []);

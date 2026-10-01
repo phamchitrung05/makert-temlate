@@ -32,6 +32,7 @@ import AiAgentCandidatePreview from '@/components/ai/AiAgentCandidatePreview.vue
 import ArticleSourcePreviewCard from './ArticleSourcePreviewCard.vue'
 import AiImportProgressCard from './AiImportProgressCard.vue'
 import { toPostPayload } from '@/composables/aiCandidate'
+import { findProvider, providerModels } from '@/utils/aiModelOptions'
 
 const props = defineProps({ targetId: { type: [Number, String], default: null } })
 const emit = defineEmits(['apply', 'applied'])
@@ -53,7 +54,10 @@ const busy = computed(() => store.isLoading || polling.value)
 const sessionId = computed(() => store.session?.id ?? store.session?.session_id ?? store.session?.job_id)
 const prompts = computed(() => (capability.value.prompts ?? []).map(item => typeof item === 'string' ? { key: item, label: item } : item))
 const providers = computed(() => capability.value.providers ?? [])
-const models = computed(() => providers.value.find(item => item.key === form.provider)?.models ?? [])
+
+const models = computed(() => {
+  return providerModels(findProvider(providers.value, form.provider), null)
+})
 
 const progressSteps = computed(() => {
   const current = store.session?.current_step || store.session?.status || 'queued'
@@ -86,8 +90,14 @@ const stepperItems = [
 ]
 
 /**
- * Input: không có. Output: đưa dialog về trạng thái sạch khi mở lại.
- * Side effect: reset session/candidate trong store và các field cục bộ.
+ * =====================================================================
+ * CHỨC NĂNG: Đưa dialog về trạng thái sạch khi mở lại.
+ * =====================================================================
+ * INPUT: không có.
+ * OUTPUT: state sạch để tạo session mới.
+ * SIDE EFFECT: reset session/candidate trong store và các field cục bộ.
+ * EXCEPTION: không gọi provider hoặc lưu Post.
+ * =====================================================================
  */
 const resetDialogState = () => {
   store.reset()
@@ -108,7 +118,13 @@ const load = async () => {
     const result = await store.loadCapabilities('post')
 
     form.inputType = result.input_types?.[0] ?? result.inputs?.[0] ?? 'url'
-    form.provider = result.providers?.[0]?.key ?? ''
+
+    /**
+     * =====================================================================
+     * GHI CHÚ: Không chọn provider/model thì server resolve text model mặc định.
+     * =====================================================================
+     */
+    form.provider = ''
     form.outputs = [...(result.outputs ?? [])]
   }
   catch (error) {
@@ -116,7 +132,7 @@ const load = async () => {
   }
 }
 
-const buildRequest = () => ({ target_type: 'post', target_id: props.targetId, operation: 'create', input: { type: form.inputType, ...(form.inputType === 'url' ? { url: form.inputValue } : { text: form.inputValue }) }, output_language: form.language, instructions: form.instructions, selection_mode: form.selectionMode, prompt_key: form.selectionMode === 'manual' ? form.promptKey : null, provider: form.provider, model: form.model || null, requested_outputs: form.outputs })
+const buildRequest = () => ({ target_type: 'post', target_id: props.targetId, operation: 'create', input: { type: form.inputType, ...(form.inputType === 'url' ? { url: form.inputValue } : { text: form.inputValue }) }, output_language: form.language, instructions: form.instructions, selection_mode: form.selectionMode, prompt_key: form.selectionMode === 'manual' ? form.promptKey : null, provider: form.provider || null, model: form.model || null, requested_outputs: form.outputs })
 
 let pollGeneration = 0
 const stop = () => { clearTimeout(timer); pollGeneration++; polling.value = false }
@@ -153,9 +169,14 @@ const run = async () => {
 }
 
 /**
- * Input: output canonical và danh sách field người dùng chọn.
- * Output: payload đúng shape PostForm kèm run/field provenance; không tự lưu
- * hoặc tạo slug.
+ * =====================================================================
+ * CHỨC NĂNG: Phát candidate được chọn để PostForm áp dụng.
+ * =====================================================================
+ * INPUT: output canonical và danh sách field người dùng chọn.
+ * OUTPUT: payload đúng shape PostForm kèm run/field provenance.
+ * SIDE EFFECT: emit apply và đóng dialog; không tự lưu hoặc tạo slug.
+ * EXCEPTION: bỏ qua khi candidate hoặc danh sách field rỗng.
+ * =====================================================================
  */
 const apply = () => {
   if (!candidate.value || !selectedFields.value.length) return
@@ -176,7 +197,16 @@ const regenerate = async () => {
   catch (error) { message.value = error?.data?.message || error.message }
 }
 
-/** Input: session/job terminal lỗi. Output: run được queue lại và polling tiếp. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Queue lại run text đã lỗi và tiếp tục polling.
+ * =====================================================================
+ * INPUT: session/job ở trạng thái lỗi.
+ * OUTPUT: run được queue lại.
+ * SIDE EFFECT: gọi AI Agent API; không tự ghi Post.
+ * EXCEPTION/TRANSACTION: lỗi transport hiển thị an toàn trên dialog.
+ * =====================================================================
+ */
 const retryRun = async () => {
   if (!sessionId.value || busy.value) return
   message.value = ''
@@ -184,7 +214,16 @@ const retryRun = async () => {
   catch (error) { message.value = error?.data?.message || error.message }
 }
 
-/** Input: session đang chạy. Output: request cancel best-effort và dừng polling. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Gửi yêu cầu hủy session đang chạy và dừng polling.
+ * =====================================================================
+ * INPUT: session hiện tại.
+ * OUTPUT: polling dừng ở client.
+ * SIDE EFFECT: gọi cancel best-effort; worker server vẫn tự kết thúc an toàn.
+ * EXCEPTION/TRANSACTION: lỗi cancel chỉ hiển thị message.
+ * =====================================================================
+ */
 const cancel = async () => {
   try {
     if (sessionId.value) await store.cancel(sessionId.value)
@@ -194,7 +233,16 @@ const cancel = async () => {
   }
 }
 
-/** Input: không có. Output: đổi ngôn ngữ nguồn/đích theo UI cũ. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Hoán đổi ngôn ngữ nguồn/đích của dialog.
+ * =====================================================================
+ * INPUT: state ngôn ngữ hiện tại.
+ * OUTPUT: cập nhật sourceLanguage và form.language.
+ * SIDE EFFECT: chỉ đổi state cục bộ; không gọi API.
+ * EXCEPTION/TRANSACTION: Không có.
+ * =====================================================================
+ */
 const swapLanguages = () => { const value = sourceLanguage.value
 
   sourceLanguage.value = form.language; form.language = value }
@@ -384,6 +432,8 @@ onBeforeUnmount(stop)
                 class="mt-2"
                 label="Model"
                 :items="models"
+                item-title="label"
+                item-value="value"
                 clearable
                 :disabled="busy"
               />

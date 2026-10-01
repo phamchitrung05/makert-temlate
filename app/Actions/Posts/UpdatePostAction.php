@@ -30,10 +30,14 @@ use Illuminate\Support\Facades\DB;
 class UpdatePostAction
 {
     /**
-     * Nhận service domain cho media và SEO.
-     *
-     * Input: MediaAssetUsageService và SeoMetadataService từ container.
-     * Output: action sẵn sàng xử lý; không gọi database khi khởi tạo.
+     * =====================================================================
+     * CHỨC NĂNG: Nhận service media, SEO và lineage AI từ container.
+     * =====================================================================
+     * INPUT: MediaAssetUsageService, SeoMetadataService và AiProvenanceService.
+     * OUTPUT: action sẵn sàng xử lý.
+     * SIDE EFFECT: không gọi database khi khởi tạo.
+     * EXCEPTION/TRANSACTION: không có; không mở transaction.
+     * =====================================================================
      */
     public function __construct(
         private readonly MediaAssetUsageService $mediaAssetUsageService,
@@ -42,24 +46,33 @@ class UpdatePostAction
     ) {}
 
     /**
-     * Cập nhật Post và quan hệ trong transaction có row lock.
-     *
-     * Input: Post, attributes hợp lệ và admin ID.
-     * Output: Post fresh cùng slug/SEO/taxonomy/media; lỗi được rollback.
+     * =====================================================================
+     * CHỨC NĂNG: Cập nhật Post và quan hệ trong transaction có row lock.
+     * =====================================================================
+     * INPUT: Post, attributes hợp lệ và admin ID.
+     * OUTPUT: Post fresh cùng slug/SEO/taxonomy/media.
+     * SIDE EFFECT: ghi Post, SEO, taxonomy, media usage và lineage AI.
+     * EXCEPTION/TRANSACTION: rollback khi boundary thất bại; retry deadlock tối đa 5 lần.
+     * =====================================================================
      */
     public function handle(Post $post, array $attributes, int $actorId): Post
     {
         return DB::transaction(function () use ($post, $attributes, $actorId): Post {
-            // Input: ID Post. Output: instance mới mỗi retry; tránh dirty/original
-            // của lần save đã rollback làm mất event đổi title và slug.
+            /**
+             * =====================================================================
+             * GHI CHÚ: Lấy instance Post mới ở mỗi retry để trạng thái dirty/original
+             * của lần save đã rollback không làm mất event đổi title và slug.
+             * =====================================================================
+             */
             $post = Post::query()->whereKey($post->getKey())->lockForUpdate()->firstOrFail();
             $media = (array) ($attributes['media'] ?? []);
             $taxonomy = array_map(static fn ($ids): array => (array) $ids,
                 array_intersect_key($attributes, array_flip(['category_ids', 'tag_ids'])));
             $aiRunId = $attributes['ai_run_id'] ?? null;
             $aiFields = (array) ($attributes['ai_fields'] ?? []);
+            $aiRuns = (array) ($attributes['ai_runs'] ?? []);
             unset($attributes['media']);
-            unset($attributes['ai_run_id'], $attributes['ai_fields']);
+            unset($attributes['ai_run_id'], $attributes['ai_fields'], $attributes['ai_runs']);
             $attributes['updated_by'] = $actorId;
 
             $post->fill(array_diff_key($attributes, $this->seoMetadataService->fields($attributes), array_flip(['category_ids', 'tag_ids'])));
@@ -88,7 +101,7 @@ class UpdatePostAction
                 $this->mediaAssetUsageService->syncFields($actor, $post, $fields);
             }
 
-            $this->recordProvenance($post, $actorId, $aiRunId, $aiFields, $this->provenanceValues($attributes, $taxonomy, $media));
+            $this->recordProvenance($post, $actorId, $aiRunId, $aiFields, $aiRuns, $this->provenanceValues($attributes, $taxonomy, $media));
 
             return $post->fresh([
                 'slugs',
@@ -101,10 +114,14 @@ class UpdatePostAction
     }
 
     /**
-     * Đồng bộ metadata SEO partial qua service chung.
-     *
-     * Input: Post đang sửa, attributes SEO và actor ID.
-     * Output: không trả giá trị; metadata được cập nhật nếu payload có field SEO.
+     * =====================================================================
+     * CHỨC NĂNG: Đồng bộ metadata SEO partial qua service chung.
+     * =====================================================================
+     * INPUT: Post đang sửa, attributes SEO và actor ID.
+     * OUTPUT: không trả giá trị.
+     * SIDE EFFECT: cập nhật metadata nếu payload có field SEO.
+     * EXCEPTION/TRANSACTION: service exception truyền lên; dùng transaction của handle().
+     * =====================================================================
      */
     private function syncSeo(Post $post, array $attributes, int $actorId): void
     {
@@ -112,11 +129,14 @@ class UpdatePostAction
     }
 
     /**
-     * Gom payload domain sau khi đã tách media/taxonomy cho audit AI.
-     *
-     * Input: attributes Post còn lại, taxonomy map và media map.
-     * Output: map phẳng đủ dữ liệu để AiProvenanceService băm từng field.
-     * Side effect: không có; không ghi database.
+     * =====================================================================
+     * CHỨC NĂNG: Gom payload domain sau khi tách media/taxonomy cho audit AI.
+     * =====================================================================
+     * INPUT: attributes Post còn lại, taxonomy map và media map.
+     * OUTPUT: map phẳng đủ dữ liệu để AiProvenanceService băm từng field.
+     * SIDE EFFECT: không có; không ghi database.
+     * EXCEPTION/TRANSACTION: không có; không mở transaction.
+     * =====================================================================
      */
     private function provenanceValues(array $attributes, array $taxonomy, array $media): array
     {
@@ -124,15 +144,20 @@ class UpdatePostAction
     }
 
     /**
-     * Ghi lineage AI sau khi update và các relation đã đồng bộ.
-     *
-     * Input: Post, actor ID, run UUID, field selection và payload values.
-     * Output: không trả giá trị; service bỏ qua khi không có metadata AI.
-     * Side effect: insert audit và cập nhật AiImport trong transaction cha.
+     * =====================================================================
+     * CHỨC NĂNG: Ghi lineage AI sau khi Post và relation đã đồng bộ.
+     * =====================================================================
+     * INPUT: Post, actor ID, run UUID hoặc danh sách run, field selection và values.
+     * OUTPUT: không trả giá trị; bỏ qua khi không có metadata AI.
+     * SIDE EFFECT: insert audit và cập nhật AiImport.
+     * EXCEPTION/TRANSACTION: provenance validation exception truyền lên; dùng transaction của handle().
+     * =====================================================================
      */
-    private function recordProvenance(Post $post, int $actorId, ?string $runId, array $fields, array $values): void
+    private function recordProvenance(Post $post, int $actorId, ?string $runId, array $fields, array $runs, array $values): void
     {
-        if ($runId !== null || $fields !== []) {
+        if ($runs !== []) {
+            $this->aiProvenanceService->recordPostRuns($actorId, $post, $runs, $values);
+        } elseif ($runId !== null || $fields !== []) {
             $this->aiProvenanceService->recordPost($actorId, $post, $runId, $fields, $values);
         }
     }

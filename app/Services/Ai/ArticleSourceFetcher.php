@@ -23,11 +23,14 @@ use Illuminate\Support\Facades\Http;
 class ArticleSourceFetcher
 {
     /**
+     * =====================================================================
+     * CHỨC NĂNG: Tải ảnh metadata qua egress boundary an toàn.
+     * =====================================================================
      * INPUT: URL ảnh từ metadata nguồn.
      * OUTPUT: bytes ảnh đã kiểm MIME/signature/size.
      * SIDE EFFECT: gọi HTTP GET outbound.
-     * EXCEPTION/TRANSACTION: AiImportException khi URL/response không hợp lệ;
-     *   không mở transaction.
+     * EXCEPTION/TRANSACTION: AiImportException khi URL/response không hợp lệ; không transaction.
+     * =====================================================================
      */
     public function downloadImage(string $url): string
     {
@@ -48,12 +51,16 @@ class ArticleSourceFetcher
     }
 
     /**
+     * =====================================================================
+     * CHỨC NĂNG: Tải HTML cuối cùng sau tối đa N redirect.
+     * =====================================================================
      * INPUT: URL HTTP(S).
      * OUTPUT: HTML cuối cùng sau tối đa N redirect.
      * SIDE EFFECT: gọi HTTP GET và kiểm response size/content type.
      * EXCEPTION/TRANSACTION: AiImportException cho redirect/HTTP/size; không transaction.
      *
      * @return array{url:string,html:string,content_type:string}
+     * =====================================================================
      */
     public function fetch(string $url): array
     {
@@ -112,10 +119,14 @@ class ArticleSourceFetcher
     }
 
     /**
+     * =====================================================================
+     * CHỨC NĂNG: Validate URL trước mọi outbound request.
+     * =====================================================================
      * INPUT: URL người dùng hoặc Location redirect.
      * OUTPUT: URL normalized chỉ http/https, không private address/credential.
      * SIDE EFFECT: DNS lookup để kiểm địa chỉ private.
      * EXCEPTION/TRANSACTION: AiImportException nếu URL không được phép; không transaction.
+     * =====================================================================
      */
     public function validateUrl(string $url): string
     {
@@ -133,17 +144,35 @@ class ArticleSourceFetcher
             throw new AiImportException('URL nguồn không được phép.', 'URL_NOT_ALLOWED');
         }
 
-        return $scheme.'://'.$host.(isset($parts['port']) ? ':'.$parts['port'] : '').($parts['path'] ?? '/').(isset($parts['query']) ? '?'.$parts['query'] : '');
+        $normalizedHost = trim($host, '[]');
+        $displayHost = str_contains($normalizedHost, ':') ? '['.$normalizedHost.']' : $normalizedHost;
+
+        return $scheme.'://'.$displayHost.(isset($parts['port']) ? ':'.$parts['port'] : '').($parts['path'] ?? '/').(isset($parts['query']) ? '?'.$parts['query'] : '');
     }
 
     /**
+     * =====================================================================
+     * CHỨC NĂNG: Nhận diện host local/private/link-local/cloud metadata.
+     * =====================================================================
      * INPUT: hostname hoặc IP đã parse.
-     * OUTPUT: true nếu localhost/private/link-local/cloud metadata.
+     * OUTPUT: true nếu địa chỉ không được phép.
      * SIDE EFFECT: có thể DNS resolve hostname.
-     * EXCEPTION/TRANSACTION: không mở transaction; lỗi DNS được coi như không có address.
+     * EXCEPTION/TRANSACTION: lỗi DNS được coi như không có address; không transaction.
+     * =====================================================================
      */
     private function isPrivateAddress(string $host): bool
     {
+        /**
+         * =====================================================================
+         * GHI CHÚ: PHP giữ host IPv6 trong ngoặc vuông; cần chuẩn hóa trước khi
+         * kiểm tra dải IP, bao gồm cả metadata/private address dạng IPv4-mapped IPv6.
+         * =====================================================================
+         */
+        $host = rtrim(trim($host, '[]'), '.');
+        if (str_starts_with($host, '::ffff:')) {
+            $packed = @inet_pton($host);
+            $host = $packed !== false ? (string) inet_ntop(substr($packed, -4)) : $host;
+        }
         if (in_array($host, ['localhost', 'localhost.localdomain', 'metadata.google.internal'], true)) {
             return true;
         }
@@ -151,6 +180,15 @@ class ArticleSourceFetcher
             return filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
         }
         $addresses = gethostbynamel($host) ?: [];
+        foreach (@dns_get_record($host, DNS_A | DNS_AAAA) ?: [] as $record) {
+            if (filled($record['ip'] ?? null)) {
+                $addresses[] = (string) $record['ip'];
+            }
+            if (filled($record['ipv6'] ?? null)) {
+                $addresses[] = (string) $record['ipv6'];
+            }
+        }
+        $addresses = array_values(array_unique($addresses));
         foreach ($addresses as $address) {
             if (filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
                 return true;
@@ -161,10 +199,14 @@ class ArticleSourceFetcher
     }
 
     /**
+     * =====================================================================
+     * CHỨC NĂNG: Resolve Location redirect thành URL tuyệt đối.
+     * =====================================================================
      * INPUT: URL hiện tại và Location header tương đối/tuyệt đối.
      * OUTPUT: URL tuyệt đối để validate lại ở vòng redirect tiếp theo.
      * SIDE EFFECT: không gọi network.
-     * EXCEPTION/TRANSACTION: không mở transaction.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
      */
     private function resolveRedirect(string $base, string $location): string
     {

@@ -33,7 +33,7 @@ import CreateWithAiDialog from './dialog/CreateWithAiDialog.vue'
 import { buildContentUrl, createSeo } from '../../../../composables/seoMetadata'
 import { useSeoMetadata } from '../../../../composables/useSeoMetadata'
 import { useSlug } from '../../../../composables/useSlug'
-import { mergePostCandidate, overwrittenFields } from '@/composables/aiCandidate'
+import { activeAiLineage, mergeAiLineage, mergePostCandidate, overwrittenFields } from '@/composables/aiCandidate'
 
 const props = defineProps({
   post: { type: Object, default: null },
@@ -50,7 +50,16 @@ const pendingAiProvenance = shallowRef(null)
 const overwriteDialog = shallowRef(false)
 const overwritten = shallowRef([])
 
-/** Input: không có. Output: option preview mới, chưa lưu backend. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Khởi tạo option preview cho mỗi form Post
+ * =====================================================================
+ * INPUT: Không có đối số.
+ * OUTPUT: Mảng option mới; chưa phải cấu hình được lưu backend.
+ * SIDE EFFECT: Không thay đổi shared state hoặc gọi API.
+ * EXCEPTION/TRANSACTION: Không ném lỗi hoặc mở transaction.
+ * =====================================================================
+ */
 const createPostOptions = () => [
   { key: 'comments', title: 'Allow Comments', subtitle: 'Let readers comment on this post.', value: true },
   { key: 'sharing', title: 'Enable Social Sharing', subtitle: 'Show social sharing buttons.', value: true },
@@ -70,7 +79,7 @@ const form = reactive({
   options: createPostOptions(),
   thumbnail: null,
   contentImages: [],
-  aiProvenance: null,
+  aiLineage: [],
 })
 
 const isEditing = computed(() => Boolean(props.post?.id))
@@ -102,10 +111,14 @@ const { contentAnalysis, seoAnalysis } = useSeoMetadata({
 })
 
 /**
+ * =====================================================================
+ * CHỨC NĂNG: Đồng bộ Post hiện tại vào form và reset lineage AI cục bộ.
+ * =====================================================================
  * INPUT: Post từ API hoặc null khi tạo mới.
  * OUTPUT: cập nhật form state, không trả giá trị.
  * SIDE EFFECT: reset toàn bộ field được backend hỗ trợ khi Post thay đổi.
  * EXCEPTION: dữ liệu media sai shape được chuẩn hóa về null/mảng rỗng.
+ * =====================================================================
  */
 const sync = post => {
   form.title = post?.title ?? ''
@@ -118,17 +131,21 @@ const sync = post => {
   form.options = createPostOptions()
   form.thumbnail = post?.media?.thumbnail ?? null
   form.contentImages = Array.isArray(post?.media?.content_images) ? post.media.content_images : []
-  form.aiProvenance = null
+  form.aiLineage = []
   resetSlug(post)
 }
 
 watch(() => props.post, sync, { immediate: true })
 
 /**
+ * =====================================================================
+ * CHỨC NĂNG: Validate form và phát payload lưu Post.
+ * =====================================================================
  * INPUT: status đích; mặc định dùng status đang chọn trong sidebar.
  * OUTPUT: emit `submit` khi form hợp lệ.
  * SIDE EFFECT: cập nhật form.status trước khi phát payload cho page.
  * EXCEPTION: dừng im lặng khi Vuetify validation không đạt.
+ * =====================================================================
  */
 const submit = async (status = form.status) => {
   if (props.loading || props.saving)
@@ -150,17 +167,19 @@ const submit = async (status = form.status) => {
     tags: [...form.tags],
     thumbnail: form.thumbnail,
     contentImages: form.contentImages,
-    aiProvenance: form.aiProvenance ? {
-      runId: form.aiProvenance.runId,
-      fields: [...(form.aiProvenance.fields ?? [])],
-    } : null,
+    aiRuns: activeAiLineage(form.aiLineage, form),
   })
 }
 
 /**
- * Input: candidate fields và lineage metadata từ AI Agent.
- * Output: cập nhật pending payload cục bộ, chưa lưu backend.
- * Side effect: mở xác nhận nếu payload sẽ ghi đè dữ liệu hiện tại.
+ * =====================================================================
+ * CHỨC NĂNG: Chuẩn bị candidate AI và xác nhận field bị ghi đè.
+ * =====================================================================
+ * INPUT: candidate fields và lineage metadata từ AI Agent.
+ * OUTPUT: cập nhật pending payload cục bộ, chưa lưu backend.
+ * SIDE EFFECT: mở xác nhận nếu payload sẽ ghi đè dữ liệu hiện tại.
+ * EXCEPTION: không gọi API hoặc lưu Post tại bước này.
+ * =====================================================================
  */
 const applyAiContent = (payload, provenance = null) => {
   pendingAiPayload.value = payload
@@ -171,16 +190,18 @@ const applyAiContent = (payload, provenance = null) => {
 }
 
 /**
- * Input: pending payload/provenance sau khi admin xác nhận.
- * Output: merge field được chọn vào form và đóng dialog.
- * Side effect: form giữ aiProvenance để postService gửi run/field lên API.
+ * =====================================================================
+ * CHỨC NĂNG: Áp dụng candidate và lineage sau khi admin xác nhận.
+ * =====================================================================
+ * INPUT: pending payload/provenance sau khi admin xác nhận.
+ * OUTPUT: merge field được chọn vào form và đóng dialog.
+ * SIDE EFFECT: form giữ aiLineage để postService gửi danh sách run/field lên API.
+ * EXCEPTION: không gọi API hoặc lưu Post tại bước này.
+ * =====================================================================
  */
 const commitAiContent = () => {
   if (pendingAiPayload.value) Object.assign(form, mergePostCandidate(form, pendingAiPayload.value))
-  form.aiProvenance = pendingAiProvenance.value ? {
-    runId: pendingAiProvenance.value.runId,
-    fields: [...(pendingAiProvenance.value.fields ?? [])],
-  } : null
+  form.aiLineage = mergeAiLineage(form.aiLineage, pendingAiProvenance.value, form)
   pendingAiPayload.value = null
   pendingAiProvenance.value = null
   overwriteDialog.value = false
@@ -327,7 +348,9 @@ const commitAiContent = () => {
           <PostMediaPanel
             v-model:thumbnail="form.thumbnail"
             v-model:content-images="form.contentImages"
+            :title="form.title"
             :disabled="props.loading || props.saving"
+            @ai-image-applied="(asset, provenance) => applyAiContent({ thumbnail: asset }, provenance)"
           />
           <PostSettingsSidebar
             v-model:status="form.status"

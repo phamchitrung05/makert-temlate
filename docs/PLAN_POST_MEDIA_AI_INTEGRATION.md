@@ -2,9 +2,9 @@
 
 **Phiên bản:** 2.0 — hợp nhất AI Content Agent
 **Ngày:** 2026-09-30
-**Trạng thái:** Đã triển khai end-to-end Post/Media và URL/text AI Agent; provider
-OpenAI/Gemini HTTP, candidate lineage, provenance và generic session đã hoạt động.
-Laravel AI SDK, file input, Resource/Sound adapter và browser/staging vẫn chờ điều kiện môi trường
+**Trạng thái:** Đã triển khai end-to-end Post/Media, AI Agent và nền tảng Phase 16
+provider/catalog/settings/image bằng HTTP server-side. Còn smoke test key thật,
+Laravel AI SDK adapter, file input, Resource/Sound adapter và browser/staging.
 **Phạm vi:** Admin Post Add/Edit, Media File, Media Asset và AI Content Agent cho Post, Resource, Sound và các model tương lai
 
 ## 1. Mục tiêu
@@ -405,8 +405,8 @@ Prompt yêu cầu viết lại bằng tiếng Việt, giữ dữ kiện chính, 
   Structured Output khi PHP 8.3/Laravel 12 tương thích.
 - [x] Giữ `StructuredAiProvider` hiện tại như compatibility/fallback trong lúc
   chuyển đổi; không gọi SDK trực tiếp từ Controller hoặc Vue.
-- [x] Chuẩn hóa refusal, malformed output, timeout và quota; token usage/cost còn chờ
-  provider contract trả usage thống nhất.
+- [ ] Chuẩn hóa token usage/cost qua provider contract và telemetry; nội dung này được
+  hoãn, chưa có bảng thống kê trong Phase 16.
 - [x] Dùng deterministic/mock HTTP provider trong test; không gọi mạng từ test mặc định.
 
 ### 8.2. Prompt, schema và target registry
@@ -628,7 +628,7 @@ Thứ tự release:
   dung lượng gốc vẫn do MediaUploadValidator kiểm soát.
 - [x] AI không tự publish; người dùng vẫn phải Save Draft/Publish.
 - [x] Permission, validation, provenance theo run/field và logo provider đã có; token
-  usage/cost, audit history UI và cleanup toàn bộ asset orphan vẫn có thể mở rộng.
+  usage/cost được hoãn, audit history UI và cleanup toàn bộ asset orphan vẫn có thể mở rộng.
 - [x] Backend/frontend tests và lint JavaScript/Vue pass tại lần kiểm chứng gần nhất;
   production build đã chạy lại sau lượt selector/fake usage cuối.
 - [ ] Staging browser test hoàn tất với queue worker và storage thật.
@@ -748,3 +748,191 @@ Kiểm chứng lượt này:
 - Queue development đang có các job conversion ảnh cũ; PHP runtime hiện không có
   GD/Imagick nên conversion worker có thể đánh dấu `failed`. Lượt kiểm thử AI này
   tắt thumbnail và chạy riêng `ProcessAiImportJob` để xác nhận pipeline nội dung.
+
+## 16. Kế hoạch tiếp theo — Provider thật, AI Settings và Model Catalog
+
+**Trạng thái:** `Đã triển khai nền tảng HTTP + UI; còn smoke test key thật và adapter Laravel AI SDK`
+
+Phần catalog/provider, settings, resolver, content/image pipeline, provenance,
+security boundary và giao diện quản trị đã được triển khai. Các test hiện dùng
+HTTP fake và deterministic fallback để không ghi secret hoặc phát sinh chi phí;
+staging với key thật và adapter Laravel AI SDK vẫn là bước tích hợp sau khi môi
+trường PHP 8.3 sẵn sàng.
+
+### 16.1. Mục tiêu và quyết định triển khai
+
+Mục tiêu của phase này là đưa AI Agent từ registry/config tĩnh sang kết nối
+provider thật có thể cấu hình trong Admin, đồng thời vẫn giữ deterministic provider
+làm fallback an toàn.
+
+Quyết định triển khai:
+
+- Tách rõ hai loại onboarding: provider chính thức (OpenAI/Gemini/DeepSeek chính
+  thức) dùng endpoint/driver đã biết; provider gateway bên thứ ba dùng endpoint
+  OpenAI-compatible do admin nhập.
+- Với provider chính thức, endpoint và driver là preset an toàn; admin chủ yếu nhập
+  API key, bật provider và chọn model mà key thực tế được phép gọi.
+- Với gateway bên thứ ba (ví dụ endpoint chứa nhiều model DeepSeek/Qwen/GLM),
+  sau khi kiểm tra key hệ thống gọi `GET {base_url}/models` để import model catalog;
+  nếu gateway không có API này thì cho phép thêm model thủ công.
+- Ưu tiên adapter HTTP trực tiếp trước để có thể chạy cả provider chính thức và
+  OpenAI-compatible gateway mà không bị chặn bởi PHP 8.3 hoặc Laravel AI SDK.
+- Laravel AI SDK là lớp tích hợp bổ sung sau, không thay thế domain `AiImport`,
+  candidate, provenance, target adapter và settings của project.
+- Một provider/endpoint có thể có nhiều model. Không hard-code danh sách model trong
+  `config/ai-agent.php`; model được đồng bộ và quản lý trong database.
+- Text generation và image generation là hai capability độc lập. Model text-only
+  không được chọn cho thao tác tạo ảnh.
+
+### 16.2. Domain và database
+
+- [x] Tạo `ai_providers` cho endpoint/connection:
+  `name`, `kind` (`official`/`gateway`), `driver`, `base_url`, `api_key` encrypted,
+  `discovery_mode` (`fixed`/`models_endpoint`/`manual`), `is_active`, trạng thái
+  test, `last_synced_at`, `last_tested_at` và metadata an toàn.
+- [x] Tạo `ai_models` thuộc một provider:
+  `remote_model_id`, label, capability JSON, metadata, `is_enabled`,
+  `is_available`, `last_seen_at` và timestamps.
+- [x] Thêm unique constraint `(ai_provider_id, remote_model_id)`.
+- [x] Chưa tạo bảng `ai_model_usage` hoặc `ai_model_usage_daily`; thống kê request,
+  token và cost được hoãn cho một phase riêng, không thuộc catalog model hiện tại.
+- [x] Không xóa model đã từng được đồng bộ nhưng hiện không còn xuất hiện; đánh dấu
+  `is_available=false` để không phá provenance, AI run cũ hoặc default đang tham chiếu.
+- [x] Tạo bảng `settings` key-value có namespace/group, type, JSON value,
+  `updated_by` và unique `(group, key)`.
+- [x] Dùng `settings` cho default/fallback và thông số chung, ví dụ:
+  `ai.default_text_model_id`, `ai.default_image_model_id`,
+  `ai.fallback_text_model_id`, `ai.default_temperature`, `ai.request_timeout`.
+- [x] Không lưu API key vào bảng settings chung; provider key phải được encrypt,
+  hidden khỏi serialization và không xuất hiện trong log/API response.
+- [x] Có default typed trong `AiSettingsService`; deterministic provider vẫn chạy khi
+  chưa có provider thật.
+
+### 16.3. Provider contract và registry
+
+- [x] Giữ `AiProviderContract`/`ProviderRegistry` làm boundary text hiện tại và
+  chuyển registry sang đọc provider/model active từ database, có fallback config
+  cho môi trường chưa migrate.
+- [x] Tạo driver `openai-compatible` dùng `base_url` của provider cho các endpoint
+  `/chat/completions`; không viết adapter riêng cho từng model DeepSeek/Qwen/GLM
+  nếu payload/response tương thích OpenAI.
+- [x] Giữ native adapter cho Gemini hoặc provider chính thức có request/response
+  khác biệt; không ép mọi provider vào OpenAI-compatible nếu contract không tương thích.
+- [x] Định nghĩa preset driver/endpoint cho provider chính thức để không cho phép
+  request tùy ý từ giao diện; gateway mới được nhập `base_url` theo policy HTTPS/
+  allowlist.
+- [x] Tạo `AiImageProviderContract` và registry capability riêng cho image generation;
+  không dùng text provider để giả định rằng model có thể tạo ảnh.
+- [x] Chuẩn hóa response về canonical output hiện tại và giữ `provider_id`,
+  `remote_model_id`, driver, prompt/schema version trong provenance.
+- [x] Bổ sung `ModelResolver`/`AiSettingsService` với thứ tự:
+  model request override → default theo capability → fallback → lỗi cấu hình rõ ràng.
+- [x] Resolve provider/model ngay khi tạo run và lưu snapshot vào `ai_imports.input_json`;
+  queue không đọc lại default setting đã thay đổi sau khi job được xếp hàng.
+
+### 16.4. Đồng bộ model và kiểm tra kết nối
+
+- [x] API test connection server-side, có timeout/connection timeout, kiểm tra HTTPS,
+  không trả API key về browser.
+- [x] Test model không tự chặn theo capability trước khi gọi provider; lỗi model,
+  quyền hoặc endpoint được nhận từ upstream và hiển thị an toàn cho quản trị viên.
+- [x] Với provider `discovery_mode=models_endpoint`, sync model qua
+  `GET {base_url}/models` với Bearer token; chuẩn hóa cả trường hợp `base_url` đã
+  có hoặc chưa có hậu tố `/v1`, tránh ghép URL thành `/v1/v1/models`.
+- [x] Với provider chính thức, giữ catalog preset tối thiểu
+  hoặc gọi endpoint model chính thức khi provider hỗ trợ; việc sync chỉ cập nhật
+  model được key nhìn thấy, không biến catalog công khai thành quyền truy cập.
+- [x] Chuẩn hóa `data[].id`, `owned_by`, capability metadata nếu endpoint có trả;
+  cho phép admin chỉnh capability thủ công khi API chỉ trả model ID.
+- [x] Cho phép thêm model thủ công với provider không hỗ trợ `/models`.
+- [x] Không dùng catalog public làm nguồn quyền truy cập cuối cùng; `/models` với
+  key thực tế là nguồn authoritative cho model mà key đó được phép gọi.
+- [x] Nếu `/models` thành công nhưng model thiếu metadata capability, gán capability
+  ở trạng thái `unknown` và yêu cầu admin xác nhận trước khi dùng làm model ảnh;
+  không suy đoán chỉ từ tên `vision`, `image` hoặc model family.
+- [x] Có nút resync thủ công và job sync định kỳ tùy chọn; sync lỗi không được làm
+  mất danh sách model đang dùng.
+
+### 16.5. Admin UI — Settings → AI Providers
+
+- [x] Thêm navigation và page quản lý provider/endpoint.
+- [x] Form tạo/sửa provider theo hai chế độ:
+  provider chính thức (chọn preset, nhập API key) hoặc gateway (nhập driver,
+  base URL, API key); có active/inactive, test connection và rotate key.
+- [x] Hiển thị discovery mode rõ ràng: tự động đồng bộ `/models` hoặc thêm model
+  thủ công khi endpoint không cung cấp catalog.
+- [x] Hiển thị provider theo dạng expandable list với số model, thời điểm sync và
+  trạng thái kết nối.
+- [x] Hiển thị model thuộc provider với search, active/available, remote model ID
+  và thao tác test kết nối; capability không còn là cột thao tác trong catalog.
+- [x] Thêm hai selector mặc định riêng:
+  `Default text model` và `Default image model`; chỉ hiển thị model đúng capability.
+- [x] Thêm selector fallback và các thông số chung có type/validation rõ ràng.
+- [x] API chỉ trả masked key/metadata public; frontend không tự gửi key trực tiếp
+  tới provider.
+- [x] Dùng permission riêng `ai_settings.manage` cho provider/settings và activity log
+  cho thao tác thêm, sửa, test, sync, rotate hoặc disable; không mở rộng quyền settings chung.
+
+### 16.6. Nối vào luồng Post/AI Agent
+
+- [x] Nếu request không truyền model, AI Agent dùng `ai.default_text_model_id`.
+- [x] Dialog Post vẫn cho phép override provider/model cho một run; override không
+  thay đổi default toàn hệ thống.
+- [x] Nút `Tạo ảnh AI` trong field media dùng `ai.default_image_model_id` khi không
+  có model override và chỉ cho chọn model có `image_generation`.
+- [x] Tách image generation thành job/candidate asset riêng; content candidate vẫn
+  hoàn tất nếu image provider không có hoặc tạo ảnh thất bại.
+- [x] Ảnh tạo ra phải qua Media Library, preview và Apply trước khi attach vào Post;
+  không tự publish hoặc tự ghi đè field khi chưa có xác nhận.
+- [x] Post Save tiếp tục ghi `ai_run_id`, `ai_fields` và provenance provider/model
+  đã resolve; không tin identity do frontend tự gửi.
+
+### 16.7. Bảo mật, retry và kiểm thử
+
+- [x] Mã hóa API key ở database, dùng hidden/encrypted cast, không log request header
+  hoặc payload chứa secret.
+- [x] Validate provider URL (HTTPS, host allowlist/egress policy, chặn localhost và
+  private network trong môi trường production) trước khi test hoặc gọi outbound.
+- [x] Dùng timeout, retry/backoff có giới hạn cho 429/5xx/connection failure; không
+  retry lỗi validation hoặc malformed schema.
+- [x] Bổ sung `Http::fake()` cho OpenAI-compatible, Gemini, `/models`, timeout,
+  unauthorized, rate-limit và malformed output.
+- [x] Feature tests cho provider CRUD, permission, encrypted key, sync model,
+  default resolver, model capability và không lộ secret.
+- [x] Frontend tests cho provider/model selector, default fallback, unavailable model,
+  test/sync loading-error-success và image model filtering.
+- [ ] Staging test bằng key thật cho ít nhất một text provider và một image provider;
+  kiểm tra queue worker, provenance, quota, timeout và cleanup asset.
+
+### 16.8. Definition of Done
+
+- [ ] Admin thêm được provider chính thức bằng API key và test connection thành công (chờ key/staging).
+- [x] Admin thêm được một OpenAI-compatible gateway, test connection và import được
+  nhiều model từ `/models` bằng HTTP fake; gateway không có `/models` vẫn dùng được bằng model thủ công.
+- [x] Provider có nhiều model được sync, hiển thị và enable/disable riêng từng model.
+- [x] Model mặc định text/image được lưu trong settings và được dùng khi request không
+  chỉ định model.
+- [x] Request chỉ được chọn model đúng capability; model không khả dụng trả lỗi rõ ràng.
+- [ ] AI Agent chạy thật qua key server-side và vẫn giữ structured output/provenance (adapter đã sẵn sàng, chưa chạy key thật).
+- [x] Image generation là optional, không làm content run thất bại khi image provider lỗi.
+- [x] Không có API key thật trong frontend response, log, test fixture hoặc Git;
+  test fixture chỉ dùng key giả và response chỉ trả `has_api_key`.
+- [x] Deterministic fallback và route legacy vẫn hoạt động khi chưa cấu hình provider thật.
+- [~] Backend/frontend tests, lint và build đạt; staging smoke test còn chờ key thật.
+
+### 16.9. Thứ tự triển khai đề xuất
+
+1. Chốt preset driver chính thức và contract gateway; thêm migration/model
+   `ai_providers`, `ai_models`, `settings` cùng encrypted secret boundary.
+2. `AiSettingsService`, `ModelResolver`, database-backed `ProviderRegistry` và
+   snapshot provider/model lúc tạo run.
+3. Test connection provider chính thức; sau đó làm OpenAI-compatible driver,
+   normalize base URL và sync `/models`/manual model.
+4. API CRUD/sync/test và permission; chưa nối UI trước khi API contract ổn định.
+5. Admin Settings UI, navigation, provider onboarding và selector default text/image.
+6. Nối default/override vào Post AI Agent; kiểm tra capability trước khi dispatch.
+7. Image provider contract/job, candidate asset và nút tạo ảnh trong Post Media field.
+8. Security, tests, quota/retry và staging smoke test với ít nhất một provider chính
+   thức và một gateway nhiều model.
+9. Sau khi PHP 8.3 sẵn sàng, đánh giá `LaravelAiSdkProvider` như adapter bổ sung,
+   không thay đổi domain/session/candidate/provenance đã ổn định.

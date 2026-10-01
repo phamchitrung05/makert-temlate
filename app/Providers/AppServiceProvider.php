@@ -12,7 +12,9 @@ use App\Models\ResourceVersion;
 use App\Models\Tag;
 use App\Models\Technology;
 use App\Models\User;
+use App\Services\Ai\Contracts\AiImageProviderContract;
 use App\Services\Ai\Contracts\AiProviderContract;
+use App\Services\Ai\HttpAiImageProvider;
 use App\Services\Ai\Registries\PromptRegistry;
 use App\Services\Ai\Registries\ProviderRegistry;
 use App\Services\Ai\Registries\SchemaRegistry;
@@ -61,6 +63,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(AiProviderContract::class, StructuredAiProvider::class);
+        $this->app->bind(AiImageProviderContract::class, HttpAiImageProvider::class);
         $this->app->singleton(PromptRegistry::class);
         $this->app->singleton(ProviderRegistry::class);
         $this->app->singleton(TargetRegistry::class);

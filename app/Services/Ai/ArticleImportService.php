@@ -120,7 +120,8 @@ class ArticleImportService
             $thumbnail['alt_text'] = (string) $draft['thumbnail_alt_text'];
         }
         $thumbnailRequested = $requestedFields === [] || in_array('thumbnail', $requestedFields, true);
-        if ($thumbnailRequested && ($input['generate_thumbnail'] ?? true) && ($thumbnail['source_url'] ?? null) && $this->uploader && $import->exists) {
+        if ($thumbnailRequested && ($input['generate_thumbnail'] ?? true) && ($input['thumbnail_mode'] ?? 'auto') !== 'generate'
+            && ($thumbnail['source_url'] ?? null) && $this->uploader && $import->exists) {
             $this->progress($import, 'thumbnail', 86);
             $asset = $this->createThumbnail($fetcher, (string) $thumbnail['source_url'], (string) $title, (int) $import->created_by, (string) ($thumbnail['alt_text'] ?? $title));
             if ($asset) {
@@ -150,10 +151,14 @@ class ArticleImportService
     }
 
     /**
+     * =====================================================================
+     * CHỨC NĂNG: Trích draft deterministic gồm content/SEO/taxonomy/thumbnail source.
+     * =====================================================================
      * INPUT: URL, metadata title/description, HTML đã extract.
-     * OUTPUT: draft deterministic gồm content/SEO/taxonomy/thumbnail source.
+     * OUTPUT: draft deterministic.
      * SIDE EFFECT: không ghi database hoặc gọi provider.
-     * EXCEPTION/TRANSACTION: không mở transaction; không ném lỗi nghiệp vụ.
+     * EXCEPTION/TRANSACTION: không ném lỗi nghiệp vụ; không mở transaction.
+     * =====================================================================
      */
     private function fallbackDraft(string $url, string $title, string $description, string $content, string $html): array
     {
@@ -172,14 +177,16 @@ class ArticleImportService
     }
 
     /**
-     * Dựng source HTML an toàn từ text inline để dùng chung extractor/sanitizer.
-     *
-     * Input: text do admin gửi và AiImport hiện tại.
-     * Output: source map tương thích ArticleSourceFetcher::fetch(), không gọi HTTP.
-     * Side effect: không ghi database; chỉ escape nội dung trong memory.
-     * Exception/transaction: ném AiImportException nếu text rỗng; không transaction.
+     * =====================================================================
+     * CHỨC NĂNG: Dựng source HTML an toàn từ text inline dùng chung extractor/sanitizer.
+     * =====================================================================
+     * INPUT: text do admin gửi và AiImport hiện tại.
+     * OUTPUT: source map tương thích ArticleSourceFetcher::fetch(), không gọi HTTP.
+     * SIDE EFFECT: không ghi database; chỉ escape nội dung trong memory.
+     * EXCEPTION/TRANSACTION: AiImportException nếu text rỗng; không transaction.
      *
      * @return array{url:string,html:string,content_type:string}
+     * =====================================================================
      */
     private function inlineSource(string $text, AiImport $import): array
     {
@@ -202,11 +209,14 @@ class ArticleImportService
     }
 
     /**
-     * Giữ field không được chọn từ parent khi regenerate từng phần.
-     *
-     * Input: draft parent, draft mới và field selection allowlist.
-     * Output: draft mới chỉ thay nhóm field được yêu cầu; không mutate input.
-     * Side effect: không gọi database/provider; thumbnail được xử lý ở caller.
+     * =====================================================================
+     * CHỨC NĂNG: Giữ field không được chọn từ parent khi regenerate từng phần.
+     * =====================================================================
+     * INPUT: draft parent, draft mới và field selection allowlist.
+     * OUTPUT: draft mới chỉ thay nhóm field được yêu cầu; không mutate input.
+     * SIDE EFFECT: không gọi database/provider; thumbnail được xử lý ở caller.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
      */
     private function mergeRequestedFields(array $parent, array $fresh, array $fields): array
     {
@@ -233,10 +243,14 @@ class ArticleImportService
     }
 
     /**
+     * =====================================================================
+     * CHỨC NĂNG: Cập nhật progress và dừng pipeline khi import bị hủy.
+     * =====================================================================
      * INPUT: AiImport và step/progress mới.
      * OUTPUT: không trả giá trị.
      * SIDE EFFECT: cập nhật lifecycle và dừng pipeline nếu import đã bị hủy.
      * EXCEPTION/TRANSACTION: ném AiImportException(CANCELLED); không mở transaction.
+     * =====================================================================
      */
     private function progress(AiImport $import, string $step, int $progress): void
     {
@@ -249,10 +263,14 @@ class ArticleImportService
     }
 
     /**
+     * =====================================================================
+     * CHỨC NĂNG: Trích title an toàn từ HTML nguồn.
+     * =====================================================================
      * INPUT: HTML nguồn không tin cậy.
      * OUTPUT: title đã decode entity hoặc chuỗi rỗng.
-     * SIDE EFFECT: không có.
-     * EXCEPTION/TRANSACTION: không mở transaction; regex không ném lỗi nghiệp vụ.
+     * SIDE EFFECT: chỉ xử lý trong memory.
+     * EXCEPTION/TRANSACTION: regex không ném lỗi nghiệp vụ; không transaction.
+     * =====================================================================
      */
     private function title(string $html): string
     {
@@ -262,10 +280,14 @@ class ArticleImportService
     }
 
     /**
+     * =====================================================================
+     * CHỨC NĂNG: Trích metadata meta/property từ HTML nguồn.
+     * =====================================================================
      * INPUT: HTML nguồn và tên meta/property cần đọc.
      * OUTPUT: giá trị metadata đã decode hoặc chuỗi rỗng.
-     * SIDE EFFECT: không có.
-     * EXCEPTION/TRANSACTION: không mở transaction.
+     * SIDE EFFECT: chỉ xử lý trong memory.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
      */
     private function meta(string $html, string $name): string
     {
@@ -276,10 +298,14 @@ class ArticleImportService
     }
 
     /**
+     * =====================================================================
+     * CHỨC NĂNG: Lọc article HTML tối giản từ source đã fetch.
+     * =====================================================================
      * INPUT: HTML nguồn đã fetch.
-     * OUTPUT: article HTML tối giản, bỏ script/style/nav/ads/tracking.
+     * OUTPUT: article HTML bỏ script/style/nav/ads/tracking.
      * SIDE EFFECT: chỉ tạo DOM trong memory.
-     * EXCEPTION/TRANSACTION: không mở transaction; lỗi parse trả content rỗng.
+     * EXCEPTION/TRANSACTION: lỗi parse trả content rỗng; không mở transaction.
+     * =====================================================================
      */
     private function extract(string $html): string
     {
@@ -319,10 +345,14 @@ class ArticleImportService
     }
 
     /**
+     * =====================================================================
+     * CHỨC NĂNG: Sanitize HTML theo tag/attribute allowlist.
+     * =====================================================================
      * INPUT: HTML từ nguồn hoặc provider.
-     * OUTPUT: HTML an toàn giữ tag/attribute được allowlist.
+     * OUTPUT: HTML an toàn.
      * SIDE EFFECT: không ghi database.
-     * EXCEPTION/TRANSACTION: không mở transaction; DOM parse lỗi được xử lý an toàn.
+     * EXCEPTION/TRANSACTION: DOM parse lỗi được xử lý an toàn; không transaction.
+     * =====================================================================
      */
     private function sanitize(string $html): string
     {
@@ -330,8 +360,13 @@ class ArticleImportService
         libxml_use_internal_errors(true);
         $document->loadHTML('<?xml encoding="UTF-8"><div>'.$html.'</div>', LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
         libxml_clear_errors();
-        // Keep semantic article markup, code examples and simple data tables;
-        // attributes remain allowlisted below so copied HTML cannot execute JS.
+        /**
+         * =====================================================================
+         * GHI CHÚ: Giữ semantic markup, code example và bảng dữ liệu đơn giản.
+         * =====================================================================
+         * Attributes vẫn allowlist bên dưới để HTML sao chép không chạy JavaScript.
+         * =====================================================================
+         */
         $allowed = [
             'html', 'body', 'div', 'p', 'h1', 'h2', 'h3', 'h4', 'ul', 'ol', 'li',
             'blockquote', 'strong', 'em', 'a', 'br', 'hr', 'pre', 'code', 'span',
@@ -368,10 +403,14 @@ class ArticleImportService
     }
 
     /**
+     * =====================================================================
+     * CHỨC NĂNG: Chuẩn hóa danh sách ID taxonomy từ draft.
+     * =====================================================================
      * INPUT: danh sách ID provider gợi ý và class taxonomy allowlist.
      * OUTPUT: ID integer tồn tại, distinct và giữ thứ tự.
      * SIDE EFFECT: truy vấn read-only model taxonomy.
-     * EXCEPTION/TRANSACTION: không mở transaction; query exception truyền lên caller.
+     * EXCEPTION/TRANSACTION: query exception truyền lên caller; không transaction.
+     * =====================================================================
      */
     private function existingIds(mixed $ids, string $model): array
     {
@@ -381,13 +420,15 @@ class ArticleImportService
     }
 
     /**
-     * Chọn provider từ registry bằng input đã được controller allowlist.
-     *
-     * Input: input_json provider/model.
-     * Output: provider contract; fallback về provider mặc định khi test legacy.
-     * Exception: AiImportException nếu key provider bị giả mạo hoặc adapter lỗi.
-     *
-     * @param array<string, mixed> $input
+     * =====================================================================
+     * CHỨC NĂNG: Chọn provider từ registry bằng input đã được allowlist.
+     * =====================================================================
+     * INPUT: input_json provider/model.
+     * OUTPUT: provider contract; fallback về provider mặc định khi test legacy.
+     * SIDE EFFECT: không gọi provider trong bước resolve.
+     * EXCEPTION/TRANSACTION: AiImportException nếu key provider bị giả mạo hoặc adapter lỗi; không mở transaction.
+     * =====================================================================
+     * @param  array<string, mixed>  $input
      */
     private function providerFor(array $input): AiProviderContract
     {
@@ -396,9 +437,11 @@ class ArticleImportService
         }
 
         try {
-            $provider = $this->providers->resolve((string) $input['provider']);
+            $provider = ! empty($input['ai_connection'])
+                ? $this->providers->resolveForRun((array) $input['ai_connection'])
+                : $this->providers->resolve((string) $input['provider']);
             if (method_exists($provider, 'withModel')) {
-                $provider->withModel(isset($input['model']) ? (string) $input['model'] : null);
+                $provider = $provider->withModel(isset($input['model']) ? (string) $input['model'] : null);
             }
 
             return $provider;
@@ -408,11 +451,15 @@ class ArticleImportService
     }
 
     /**
+     * =====================================================================
+     * CHỨC NĂNG: Tải, chuyển đổi và lưu thumbnail từ source image.
+     * =====================================================================
      * INPUT: fetcher, source image URL, title/alt và actor admin.
      * OUTPUT: MediaAsset public đã upload hoặc null nếu ảnh không hợp lệ.
      * SIDE EFFECT: download ảnh, tạo file tạm và gọi UploadMediaAssetAction.
      * EXCEPTION/TRANSACTION: lỗi fetch/validation được ghi nhận rồi trả null;
      *   action media tự quản lý transaction/security boundary.
+     * =====================================================================
      */
     private function createThumbnail(ArticleSourceFetcher $fetcher, string $url, string $title, int $actorId, string $altText): ?\App\Models\MediaAsset
     {

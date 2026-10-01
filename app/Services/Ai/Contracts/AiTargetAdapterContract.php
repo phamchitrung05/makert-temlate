@@ -22,24 +22,40 @@ namespace App\Services\Ai\Contracts;
 interface AiTargetAdapterContract
 {
     /**
-     * INPUT: không có. OUTPUT: target key ổn định.
-     * SIDE EFFECT: không có. EXCEPTION/TRANSACTION: không có.
+     * =====================================================================
+     * CHỨC NĂNG: Trả target key ổn định.
+     * =====================================================================
+     * INPUT: không có.
+     * OUTPUT: target key ổn định.
+     * SIDE EFFECT: không có.
+     * EXCEPTION/TRANSACTION: không có; không mở transaction.
+     * =====================================================================
      */
     public function key(): string;
 
     /**
-     * INPUT: canonical outputs. OUTPUT: preview domain.
-     * SIDE EFFECT: không ghi database. EXCEPTION/TRANSACTION: validation exception; không mở transaction.
-     *
+     * =====================================================================
+     * CHỨC NĂNG: Chuyển canonical output thành preview domain.
+     * =====================================================================
+     * INPUT: canonical outputs.
+     * OUTPUT: preview domain.
+     * SIDE EFFECT: không ghi database.
+     * EXCEPTION/TRANSACTION: validation exception; không mở transaction.
+     * =====================================================================
      * @param  array<string, mixed>  $outputs
      * @return array<string, mixed>
      */
     public function toPreview(array $outputs): array;
 
     /**
-     * INPUT: outputs và fields chọn. OUTPUT: payload cho domain Action.
-     * SIDE EFFECT: không ghi database. EXCEPTION/TRANSACTION: validation exception; không mở transaction.
-     *
+     * =====================================================================
+     * CHỨC NĂNG: Chuyển output và field chọn thành payload domain.
+     * =====================================================================
+     * INPUT: outputs và fields chọn.
+     * OUTPUT: payload cho domain Action.
+     * SIDE EFFECT: không ghi database.
+     * EXCEPTION/TRANSACTION: validation exception; không mở transaction.
+     * =====================================================================
      * @param  array<string, mixed>  $outputs
      * @param  list<string>  $fields
      * @return array<string, mixed>

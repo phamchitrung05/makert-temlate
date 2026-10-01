@@ -24,7 +24,16 @@ const seoMap = {
   og_title: 'ogTitle', og_description: 'ogDescription',
 }
 
-/** Input: canonical output và field selection. Output: payload partial cho PostForm. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: payload partial cho PostForm.
+ * =====================================================================
+ * INPUT: canonical output và field selection.
+ * OUTPUT: payload partial cho PostForm.
+ * SIDE EFFECT: Không ghi database hoặc gọi provider.
+ * EXCEPTION/TRANSACTION: Không mở transaction.
+ * =====================================================================
+ */
 export function toPostPayload(output = {}, fields = []) {
   const payload = {}
   const seo = {}
@@ -49,7 +58,16 @@ export function toPostPayload(output = {}, fields = []) {
   return payload
 }
 
-/** Input: form hiện tại/payload partial. Output: object form mới giữ field không chọn. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: object form mới giữ field không chọn.
+ * =====================================================================
+ * INPUT: form hiện tại/payload partial.
+ * OUTPUT: object form mới giữ field không chọn.
+ * SIDE EFFECT: Không ghi database hoặc gọi provider.
+ * EXCEPTION/TRANSACTION: Không mở transaction.
+ * =====================================================================
+ */
 export function mergePostCandidate(form, payload) {
   return {
     ...form,
@@ -60,7 +78,16 @@ export function mergePostCandidate(form, payload) {
   }
 }
 
-/** Input: form và payload partial. Output: field labels có giá trị khác cần ghi đè. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: field labels có giá trị khác cần ghi đè.
+ * =====================================================================
+ * INPUT: form và payload partial.
+ * OUTPUT: field labels có giá trị khác cần ghi đè.
+ * SIDE EFFECT: Không ghi database hoặc gọi provider.
+ * EXCEPTION/TRANSACTION: Không mở transaction.
+ * =====================================================================
+ */
 export function overwrittenFields(form, payload) {
   const fields = []
 
@@ -74,4 +101,72 @@ export function overwrittenFields(form, payload) {
   })
 
   return fields
+}
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Gộp lineage nhiều AI run mà không làm mất field trước đó
+ * =====================================================================
+ * INPUT: lineage hiện tại, lineage mới và payload vừa apply.
+ * OUTPUT: danh sách run/field không overlap, kèm snapshot để loại bỏ khi sửa tay.
+ * SIDE EFFECT: chỉ tạo object mới; không gọi API hoặc mutate form.
+ * EXCEPTION/TRANSACTION: không mở transaction.
+ * =====================================================================
+ */
+export function mergeAiLineage(current = [], incoming = null, payload = {}) {
+  if (!incoming?.runId || !incoming.fields?.length)
+    return Array.isArray(current) ? current : []
+
+  const fields = [...new Set(incoming.fields)]
+
+  const next = (Array.isArray(current) ? current : []).map(run => ({
+    ...run, fields: (run.fields ?? []).filter(field => !fields.includes(field)),
+    snapshot: { ...(run.snapshot ?? {}) },
+  })).filter(run => run.fields.length)
+
+  const own = next.find(run => run.runId === incoming.runId)
+  const snapshot = Object.fromEntries(fields.map(field => [field, lineageValue(field, payload)]))
+
+  if (own) {
+    own.fields = [...new Set([...own.fields, ...fields])]
+    Object.assign(own.snapshot, snapshot)
+  } else next.push({ runId: incoming.runId, fields, snapshot })
+
+  return next
+}
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: runs still equal to applied values.
+ * =====================================================================
+ * INPUT: lineage/snapshot and current form.
+ * OUTPUT: runs still equal to applied values.
+ * SIDE EFFECT: Không ghi database hoặc gọi provider.
+ * EXCEPTION/TRANSACTION: Không mở transaction.
+ * =====================================================================
+ */
+export function activeAiLineage(lineage = [], form = {}) {
+  return (Array.isArray(lineage) ? lineage : []).map(run => ({
+    run_id: run.runId,
+    fields: (run.fields ?? []).filter(field => run.snapshot?.[field] === undefined
+      || run.snapshot[field] === lineageValue(field, form)),
+  })).filter(run => run.fields.length)
+}
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: primitive snapshot without retaining reactive object references.
+ * =====================================================================
+ * INPUT: canonical group/form.
+ * OUTPUT: primitive snapshot without retaining reactive object references.
+ * SIDE EFFECT: Không ghi database hoặc gọi provider.
+ * EXCEPTION/TRANSACTION: Không mở transaction.
+ * =====================================================================
+ */
+function lineageValue(field, form) {
+  if (field === 'thumbnail') return form.thumbnail?.id ?? null
+  if (field === 'taxonomy') return JSON.stringify([form.categories ?? [], form.tags ?? []])
+  if (field === 'seo') return JSON.stringify(form.seo ?? {})
+
+  return form[field]
 }

@@ -4,15 +4,35 @@
  * CÁC HÀM/METHOD TRONG FILE: unwrap(), normalize(), toPayload(),
  * list(), show(), create(), update(), remove().
  * INPUT/OUTPUT CỦA CLASS (tổng thể): state form/ID/query -> payload API hoặc Post.
- * AI lineage được gửi dưới dạng ai_run_id/ai_fields; provider/model chỉ do backend resolve.
+ * AI lineage nhiều run được gửi dưới dạng ai_runs; khóa legacy vẫn được giữ cho
+ * client cũ. Provider/model chỉ do backend resolve.
  * =====================================================================
  */
 import { $api } from '@/utils/api'
+/* eslint-disable camelcase -- Request fields follow the Laravel API contract. */
 
-/** Input: response API. Output: data đã bỏ envelope. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Bỏ envelope response Post
+ * =====================================================================
+ * INPUT: Response API dạng success/data hoặc payload trực tiếp.
+ * OUTPUT: Data bên trong envelope.
+ * SIDE EFFECT: Hàm thuần; không gọi API hoặc thay đổi input.
+ * EXCEPTION/TRANSACTION: Không tự xử lý lỗi API.
+ * =====================================================================
+ */
 const unwrap = response => response?.success && 'data' in response ? response.data : response
 
-/** Input: Post có thể thiếu media. Output: shape ổn định cho form. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Chuẩn hóa Post cho form kể cả khi thiếu media/taxonomy
+ * =====================================================================
+ * INPUT: Post nullable từ API.
+ * OUTPUT: Shape có thumbnail/content_images/categories/tags ổn định.
+ * SIDE EFFECT: Tạo object mới; không mutate Post đầu vào.
+ * EXCEPTION/TRANSACTION: Không gọi API hoặc mở transaction.
+ * =====================================================================
+ */
 const normalize = post => post ? {
   ...post,
   media: {
@@ -23,7 +43,16 @@ const normalize = post => post ? {
   tags: Array.isArray(post.tags) ? post.tags : [],
 } : null
 
-/** Input: form state. Output: whitelist thuộc tính backend, không gửi score/slug preview. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Chuyển form sang payload whitelist của Post API
+ * =====================================================================
+ * INPUT: Form state gồm SEO, media và lineage các run AI.
+ * OUTPUT: Payload backend; không gửi score/slug preview hoặc provider identity.
+ * SIDE EFFECT: Hàm thuần; sao chép các mảng field lineage.
+ * EXCEPTION/TRANSACTION: Không gọi API; validation do backend đảm nhiệm.
+ * =====================================================================
+ */
 const toPayload = payload => ({
   title: payload.title,
   content: payload.content,
@@ -54,20 +83,50 @@ const toPayload = payload => ({
     'ai_run_id': payload.aiProvenance.runId,
     'ai_fields': Array.isArray(payload.aiProvenance.fields) ? [...payload.aiProvenance.fields] : [],
   } : {}),
+  ...(Array.isArray(payload.aiRuns) && payload.aiRuns.length ? {
+    'ai_runs': payload.aiRuns.map(run => ({ run_id: run.run_id, fields: [...(run.fields ?? [])] })),
+  } : {}),
 })
 
 export const postService = {
-  /** Input: URL/options. Output: structured draft returned by AI import API. */
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Xếp hàng tạo nội dung bằng AI
+   * =====================================================================
+   * INPUT: URL/text và options provider/model/prompt.
+   * OUTPUT: Job queued hoặc run trùng idempotent để tiếp tục polling.
+   * SIDE EFFECT: Gọi POST Admin API; backend ghi run và dispatch job.
+   * EXCEPTION/TRANSACTION: Lỗi API truyền lên caller; không gọi provider từ browser.
+   * =====================================================================
+   */
   async aiImport(payload) {
     return unwrap(await $api('/admin/posts/ai/import', { method: 'POST', body: payload }))
   },
 
-  /** Input: job UUID. Output: current progress/result for polling. */
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Đọc tiến trình của AI import
+   * =====================================================================
+   * INPUT: Job UUID thuộc admin hiện tại.
+   * OUTPUT: Status, progress và result khi ready.
+   * SIDE EFFECT: Gọi GET Admin API; không ghi Post.
+   * EXCEPTION/TRANSACTION: Lỗi API truyền lên caller.
+   * =====================================================================
+   */
   async aiImportStatus(jobId) {
     return unwrap(await $api(`/admin/posts/ai/import/${jobId}`))
   },
 
-  /** Input: query phân trang. Output: items và tổng số bài. */
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Tải danh sách Post có phân trang
+   * =====================================================================
+   * INPUT: Query filters và pagination tùy chọn.
+   * OUTPUT: Items, tổng số và pagination.
+   * SIDE EFFECT: Gọi GET Admin API.
+   * EXCEPTION/TRANSACTION: Lỗi API truyền lên caller.
+   * =====================================================================
+   */
   async list(params = {}) {
     const response = await $api('/admin/posts', { query: params })
     const payload = unwrap(response)
@@ -79,27 +138,72 @@ export const postService = {
     }
   },
 
-  /** Input: ID. Output: Post chuẩn hóa; lỗi API truyền về caller. */
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Tải một Post và chuẩn hóa dữ liệu form
+   * =====================================================================
+   * INPUT: Post ID.
+   * OUTPUT: Post đã normalize.
+   * SIDE EFFECT: Gọi GET Admin API.
+   * EXCEPTION/TRANSACTION: Lỗi API truyền lên caller.
+   * =====================================================================
+   */
   async show(id) {
     return normalize(unwrap(await $api(`/admin/posts/${id}`)))
   },
 
-  /** Input: form. Output: Post đã lưu cùng slug thực tế. */
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Lưu Post mới từ form đã chọn
+   * =====================================================================
+   * INPUT: Form gồm nội dung/media/SEO và AI lineage.
+   * OUTPUT: Post đã lưu, gồm slug/backend metadata.
+   * SIDE EFFECT: Gọi POST Admin API; backend quản lý transaction và provenance.
+   * EXCEPTION/TRANSACTION: Lỗi validation/permission/API truyền lên caller.
+   * =====================================================================
+   */
   async create(payload) {
     return normalize(unwrap(await $api('/admin/posts', { method: 'POST', body: toPayload(payload) })))
   },
 
-  /** Input: ID/form. Output: Post sau cập nhật. */
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Lưu thay đổi Post bằng payload whitelist
+   * =====================================================================
+   * INPUT: Post ID và form state.
+   * OUTPUT: Post sau cập nhật đã normalize.
+   * SIDE EFFECT: Gọi PUT Admin API; backend quản lý transaction và provenance.
+   * EXCEPTION/TRANSACTION: Lỗi validation/permission/API truyền lên caller.
+   * =====================================================================
+   */
   async update(id, payload) {
     return normalize(unwrap(await $api(`/admin/posts/${id}`, { method: 'PUT', body: toPayload(payload) })))
   },
 
-  /** Input: ID. Output: request xóa Post, backend quản lý detach media. */
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Yêu cầu xóa Post và để backend quản lý media usage
+   * =====================================================================
+   * INPUT: Post ID.
+   * OUTPUT: Response xóa từ Admin API.
+   * SIDE EFFECT: Gọi DELETE Admin API.
+   * EXCEPTION/TRANSACTION: Lỗi API truyền lên caller; browser không xóa file media trực tiếp.
+   * =====================================================================
+   */
   async remove(id) {
     return $api(`/admin/posts/${id}`, { method: 'DELETE' })
   },
 
-  /** Input: taxonomy type và query. Output: danh sách item taxonomy chuẩn hóa. */
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Tải các lựa chọn taxonomy cho Post
+   * =====================================================================
+   * INPUT: Taxonomy type và query.
+   * OUTPUT: Danh sách item ID/name.
+   * SIDE EFFECT: Gọi GET Admin API.
+   * EXCEPTION/TRANSACTION: Lỗi API truyền lên caller.
+   * =====================================================================
+   */
   async taxonomy(type, params = {}) {
     const response = await $api(`/admin/${type}`, { query: { ['per_page']: 100, ...params } })
     const payload = unwrap(response)

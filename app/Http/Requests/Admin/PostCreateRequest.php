@@ -15,16 +15,34 @@ use Illuminate\Validation\Rule;
  */
 class PostCreateRequest extends FormRequest
 {
-    use \App\Http\Requests\Admin\Concerns\ValidatesPostSeo;
     use \App\Http\Requests\Admin\Concerns\ValidatesAiProvenance;
+    use \App\Http\Requests\Admin\Concerns\ValidatesPostSeo;
 
-    /** Input: request đã qua middleware posts.manage. Output: cho phép validation. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Ủy quyền validation sau middleware posts.manage
+     * =====================================================================
+     * INPUT: Request đã qua xác thực/permission ở route.
+     * OUTPUT: true để Laravel thực hiện validation.
+     * SIDE EFFECT: Không ghi database hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: Không mở transaction; authorization thực tế do middleware route bảo vệ.
+     * =====================================================================
+     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /** Input: không có. Output: rules create; điểm SEO không chặn lưu. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Khai báo rules tạo Post, media, SEO và AI lineage
+     * =====================================================================
+     * INPUT: Không có đối số; dùng rules từ các trait dùng chung.
+     * OUTPUT: Mảng rules; title bắt buộc, điểm SEO không chặn lưu.
+     * SIDE EFFECT: Chỉ tạo rules; Laravel có thể query DB khi kiểm tra exists.
+     * EXCEPTION/TRANSACTION: Validation lỗi trả 422; không mở transaction.
+     * =====================================================================
+     */
     public function rules(): array
     {
         return [

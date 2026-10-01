@@ -5,7 +5,16 @@ namespace App\Http\Requests\Admin;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-/** Validate payload cập nhật Resource Version và media fields. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Validate payload cập nhật Resource Version và media fields.
+ * =====================================================================
+ * INPUT: Không có.
+ * OUTPUT: Không trả dữ liệu.
+ * SIDE EFFECT: Không ghi database hoặc gọi provider.
+ * EXCEPTION/TRANSACTION: Không mở transaction.
+ * =====================================================================
+ */
 class ResourceVersionUpdateRequest extends FormRequest
 {
     public function authorize(): bool

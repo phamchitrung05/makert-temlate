@@ -41,6 +41,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('ai-import:cleanup')->daily()->withoutOverlapping(30);
+        if (config('ai-providers.sync_enabled', false)) {
+            $schedule->command('ai-providers:sync-models')->hourly()->withoutOverlapping(60);
+        }
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([

@@ -85,6 +85,13 @@ export default [
     ],
   },
   {
+    title: 'AI Settings',
+    icon: { icon: 'tabler-brain' },
+    to: { path: '/settings/ai-providers' },
+    action: 'manage',
+    subject: 'ai_settings',
+  },
+  {
     title: 'Academy',
     icon: { icon: 'tabler-school' },
     children: [

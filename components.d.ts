@@ -14,6 +14,7 @@ declare module 'vue' {
     AddPaymentMethodDialog: typeof import('./resources/js/components/dialogs/AddPaymentMethodDialog.vue')['default']
     AiAgentCandidatePreview: typeof import('./resources/js/components/ai/AiAgentCandidatePreview.vue')['default']
     AiAgentDialog: typeof import('./resources/js/components/ai/AiAgentDialog.vue')['default']
+    AiImageGenerationDialog: typeof import('./resources/js/components/ai/AiImageGenerationDialog.vue')['default']
     AppAutocomplete: typeof import('./resources/js/@core/components/app-form-elements/AppAutocomplete.vue')['default']
     AppBarSearch: typeof import('./resources/js/@core/components/AppBarSearch.vue')['default']
     AppCardActions: typeof import('./resources/js/@core/components/cards/AppCardActions.vue')['default']

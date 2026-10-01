@@ -34,20 +34,56 @@ const fields = computed(() => Object.entries(props.candidate?.outputs ?? props.c
   value: field && typeof field === 'object' && 'value' in field ? field.value : field,
 })))
 
-/** Input: candidate provider key. Output: public capability metadata an toàn. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Tìm metadata provider từ capability allowlist
+ * =====================================================================
+ * INPUT: Provider key của candidate và provider options public.
+ * OUTPUT: Label/logo đã được backend cho phép hoặc null.
+ * SIDE EFFECT: Computed chỉ đọc props; không gọi API.
+ * EXCEPTION/TRANSACTION: Không dùng metadata tùy ý từ nội dung AI.
+ * =====================================================================
+ */
 const providerMeta = computed(() => props.providers.find(item => item.key === props.candidate?.provider) ?? null)
 
-/** Input: candidate provenance. Output: prompt/source metadata để review. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Chuẩn hóa prompt và nguồn để review candidate
+ * =====================================================================
+ * INPUT: Provenance của candidate.
+ * OUTPUT: Prompt key, version và source URL.
+ * SIDE EFFECT: Computed chỉ đọc props.
+ * EXCEPTION/TRANSACTION: Không gọi API hoặc ghi database.
+ * =====================================================================
+ */
 const provenance = computed(() => ({
   prompt: props.candidate?.prompt_key || props.candidate?.promptKey,
   version: props.candidate?.prompt_version || props.candidate?.promptVersion,
   source: props.candidate?.source?.url || props.candidate?.source_url,
 }))
 
-/** Input: field key/check state. Output: danh sách field mới qua emit. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Thay đổi danh sách field được chọn qua event
+ * =====================================================================
+ * INPUT: Field key và trạng thái checked.
+ * OUTPUT: Event update:selectedFields với danh sách distinct.
+ * SIDE EFFECT: Emit lên parent; không mutate props.
+ * EXCEPTION/TRANSACTION: Không gọi API hoặc ghi Post.
+ * =====================================================================
+ */
 const toggleField = (key, checked) => emit('update:selectedFields', checked ? [...new Set([...props.selectedFields, key])] : props.selectedFields.filter(field => field !== key))
 
-/** Input: giá trị output. Output: text an toàn, không chạy HTML/script. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Chuyển giá trị AI thành text hiển thị an toàn
+ * =====================================================================
+ * INPUT: String hoặc JSON-compatible output.
+ * OUTPUT: Text hoặc JSON formatted; không thực thi HTML/script.
+ * SIDE EFFECT: Hàm thuần; template hiển thị bằng text interpolation.
+ * EXCEPTION/TRANSACTION: Giá trị API phải JSON-serializable.
+ * =====================================================================
+ */
 const displayValue = value => typeof value === 'string' ? value : JSON.stringify(value, null, 2)
 </script>
 

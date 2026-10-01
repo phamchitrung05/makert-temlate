@@ -37,7 +37,16 @@ class AiImport extends Model
         'session_id', 'parent_id', 'operation', 'applied_target_id', 'applied_fields',
     ];
 
-    /** Input: không có. Output: danh sách cast thuộc tính model. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Khai báo cast cho state/result/input của AI run.
+     * =====================================================================
+     * INPUT: không có.
+     * OUTPUT: enum/date/JSON cast của model.
+     * SIDE EFFECT: Không ghi database hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
     protected function casts(): array
     {
         return [
@@ -53,19 +62,46 @@ class AiImport extends Model
         ];
     }
 
-    /** Input: không có. Output: quan hệ User tạo import. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Trả quan hệ actor tạo run.
+     * =====================================================================
+     * INPUT: model hiện tại.
+     * OUTPUT: BelongsTo User.
+     * SIDE EFFECT: Không ghi database hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    /** Input: import session. Output: sibling/descendant candidate runs. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Trả các run cùng session hoặc hậu duệ của run hiện tại.
+     * =====================================================================
+     * INPUT: import session.
+     * OUTPUT: quan hệ candidate AiImport.
+     * SIDE EFFECT: Không ghi database hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
     public function candidates(): HasMany
     {
         return $this->hasMany(self::class, 'session_id', 'session_id')->where($this->getKeyName(), '!=', $this->getKey());
     }
 
-    /** Input: step/progress pipeline. Output: persisted polling state. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Ghi trạng thái tiến trình để polling nhất quán.
+     * =====================================================================
+     * INPUT: step/progress pipeline.
+     * OUTPUT: persisted polling state.
+     * SIDE EFFECT: ghi lifecycle AiImport; không gọi provider.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
     public function advance(string $step, int $progress): void
     {
         if ($this->status === 'cancelled') {
@@ -80,7 +116,16 @@ class AiImport extends Model
         ])->save();
     }
 
-    /** Input: current model identity. Output: true when cancellation was requested. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm tra run đã được yêu cầu hủy hay chưa.
+     * =====================================================================
+     * INPUT: model identity hiện tại.
+     * OUTPUT: boolean cancellation state.
+     * SIDE EFFECT: Chỉ đọc thuộc tính model.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
     public function isCancelled(): bool
     {
         return $this->fresh()?->status === 'cancelled';

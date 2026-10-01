@@ -2,9 +2,6 @@
 
 namespace App\Services\Ai;
 
-use App\Exceptions\AiImportException;
-use Illuminate\Support\Facades\Http;
-
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Adapter Google Gemini trả structured JSON.
@@ -26,69 +23,79 @@ use Illuminate\Support\Facades\Http;
  */
 final class GeminiProvider extends AbstractStructuredAiProvider
 {
-    /** Input: Không có. Output: true khi có API key. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: true khi có API key.
+     * =====================================================================
+     * INPUT: Không có.
+     * OUTPUT: true khi có API key.
+     * SIDE EFFECT: Không ghi database hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
     public function configured(): bool
     {
-        return (string) config('ai-import.gemini.key') !== '';
-    }
-
-    /** Input: Không có. Output: provider key gemini. */
-    public function providerName(): string
-    {
-        return 'gemini';
-    }
-
-    /** Input: Không có. Output: model request hoặc model mặc định. */
-    public function modelName(): string
-    {
-        return $this->requestedModel() ?: (string) config('ai-import.gemini.model', 'gemini-3.6-flash');
+        return $this->connection() !== null || (string) config('ai-import.gemini.key') !== '';
     }
 
     /**
-     * Gửi context tới Gemini generateContent.
-     *
-     * Input: context canonical từ AbstractStructuredAiProvider.
-     * Output: response JSON; lỗi quota/server được đánh dấu retryable.
-     *
+     * =====================================================================
+     * CHỨC NĂNG: provider key gemini.
+     * =====================================================================
+     * INPUT: Không có.
+     * OUTPUT: provider key gemini.
+     * SIDE EFFECT: Không ghi database hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
+    public function providerName(): string
+    {
+        return $this->connection()?->snapshot['provider'] ?? 'gemini';
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: model request hoặc model mặc định.
+     * =====================================================================
+     * INPUT: Không có.
+     * OUTPUT: model request hoặc model mặc định.
+     * SIDE EFFECT: Không ghi database hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
+    public function modelName(): string
+    {
+        return $this->requestedModel() ?: (string) ($this->connection()?->snapshot['model'] ?? config('ai-import.gemini.model', 'gemini-3.6-flash'));
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Gửi context tới Gemini generateContent.
+     * =====================================================================
+     * INPUT: context canonical từ AbstractStructuredAiProvider.
+     * OUTPUT: response JSON; retryability tuân theo boundary POST của AiProviderClient.
+     * SIDE EFFECT: gọi Gemini qua AiProviderClient; không ghi domain database.
+     * EXCEPTION/TRANSACTION: AiImportException cho HTTP lỗi; không mở transaction.
+     * =====================================================================
      * @param  array<string, mixed>  $input
      */
     protected function requestPayload(array $input): mixed
     {
-        $endpoint = rtrim((string) config('ai-import.gemini.endpoint'), '/').'/models/'.rawurlencode((string) $input['model']).':generateContent';
-        $response = Http::connectTimeout((int) config('ai-import.connect_timeout', 5))
-            ->timeout((int) config('ai-import.timeout', 12))
-            ->withHeaders(['x-goog-api-key' => (string) config('ai-import.gemini.key')])
-            ->acceptJson()
-            ->post($endpoint, [
-                'contents' => [[
-                    'role' => 'user',
-                    'parts' => [[
-                        'text' => $input['instructions']."\n".json_encode([
-                            'title' => $input['title'],
-                            'content_html' => $input['content_html'],
-                            'language' => $input['language'],
-                            'rewrite_style' => $input['rewrite_style'],
-                            'additional_instructions' => $input['user_instructions'],
-                            'prompt_key' => $input['prompt_key'],
-                            'prompt_version' => $input['prompt_version'],
-                            'schema_version' => $input['schema_version'],
-                        ], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
-                    ]],
-                ]],
-                'generationConfig' => [
-                    'temperature' => (float) config('ai-import.gemini.temperature', 0.2),
-                    'responseMimeType' => 'application/json',
-                ],
-            ]);
+        $payload = [
+            'contents' => [['role' => 'user', 'parts' => [['text' => $input['instructions']."\n".$this->canonicalInput($input)]]]],
+            'generationConfig' => [
+                'temperature' => (float) ($this->connection()?->snapshot['temperature'] ?? config('ai-import.gemini.temperature', 0.2)),
+                'responseMimeType' => 'application/json',
+            ],
+        ];
+        $connection = $this->connection() ?? new AiConnection([
+            'driver' => 'gemini', 'provider' => 'gemini',
+            'base_url' => (string) config('ai-import.gemini.endpoint'),
+            'model' => $input['model'], 'timeout' => (int) config('ai-import.timeout', 12),
+        ], (string) config('ai-import.gemini.key'));
 
-        if (! $response->successful()) {
-            throw new AiImportException(
-                'Gemini trả HTTP '.$response->status().'.',
-                'AI_PROVIDER_HTTP_'.$response->status(),
-                $response->status() === 429 || $response->serverError(),
-            );
-        }
-
-        return $response->json();
+        return app(AiProviderClient::class)->send(
+            $connection, 'POST', 'models/'.rawurlencode((string) $input['model']).':generateContent', $payload,
+        );
     }
 }

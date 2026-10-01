@@ -34,22 +34,33 @@ use Illuminate\Validation\ValidationException;
  */
 final class AiProvenanceService
 {
-    /** @var list<string> Field AI được phép lineage vào Post. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Danh sách field Post được phép ghi provenance AI
+     * =====================================================================
+     * INPUT: field name từ FormRequest/adapter.
+     * OUTPUT: allowlist dùng chung cho normalizeFields().
+     * SIDE EFFECT: chỉ đọc hằng số; không ghi database hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: field ngoài allowlist bị ValidationException ở service.
+     * =====================================================================
+     * @var list<string>
+     */
     private const FIELDS = ['title', 'excerpt', 'content', 'seo', 'taxonomy', 'thumbnail'];
 
     /**
-     * Xác minh candidate và ghi provenance cho các field Post đã lưu.
-     *
-     * Input: actor ID, Post đã create/update, run UUID nullable, field allowlist
+     * =====================================================================
+     * CHỨC NĂNG: Xác minh candidate và ghi provenance cho các field Post đã lưu.
+     * =====================================================================
+     * INPUT: actor ID, Post đã create/update, run UUID nullable, field allowlist
      * và map giá trị sau khi domain Action đã chuẩn hóa.
-     * Output: không trả giá trị; AiImport được đánh dấu applied và audit rows
-     * được insert theo từng field.
-     * Side effect: query/insert/update database; không gọi provider.
-     * Exception/transaction: ValidationException nếu run không thuộc actor,
-     * chưa ready, hết hạn hoặc field không nằm trong contract.
+     * OUTPUT: AiImport được đánh dấu applied và audit rows theo từng field.
+     * SIDE EFFECT: query/insert/update database; không gọi provider.
+     * EXCEPTION/TRANSACTION: ValidationException nếu run không thuộc actor,
+     * chưa ready, hết hạn hoặc field không nằm trong contract; transaction thuộc caller.
      *
      * @param  array<int, string>  $fields
      * @param  array<string, mixed>  $values
+     * =====================================================================
      */
     public function recordPost(int $actorId, Post $post, ?string $runId, array $fields, array $values): void
     {
@@ -61,9 +72,69 @@ final class AiProvenanceService
             throw ValidationException::withMessages(['ai_run_id' => 'AI run là bắt buộc khi gửi ai_fields.']);
         }
 
-        $fields = $this->normalizeFields($fields);
-        $import = $this->candidate($actorId, $runId);
-        $result = (array) $import->result_json;
+        $this->recordPostRuns($actorId, $post, [['run_id' => $runId, 'fields' => $fields]], $values);
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Ghi provenance từ nhiều run độc lập theo từng field
+     * =====================================================================
+     * INPUT: nhóm run_id/fields, Post đã lưu và giá trị canonical hiện tại.
+     * OUTPUT: audit rows và applied metadata cho từng AiImport.
+     * SIDE EFFECT: đọc/ghi ai_imports và ai_provenances trong transaction caller.
+     * EXCEPTION/TRANSACTION: ValidationException khi overlap, ownership, expiry
+     * hoặc image asset không khớp; service không mở transaction riêng.
+     * =====================================================================
+     *
+     * @param  array<int, array{run_id:string, fields:array<int,string>}>  $runs
+     */
+    public function recordPostRuns(int $actorId, Post $post, array $runs, array $values): void
+    {
+        if ($runs === []) {
+            return;
+        }
+        $owners = [];
+        foreach ($runs as $run) {
+            $runId = filled($run['run_id'] ?? null) ? (string) $run['run_id'] : null;
+            if ($runId === null) {
+                throw ValidationException::withMessages(['ai_runs' => 'Mỗi nhóm provenance phải có run ID.']);
+            }
+            $fields = $this->normalizeFields((array) ($run['fields'] ?? []));
+            foreach ($fields as $field) {
+                if (isset($owners[$field]) && $owners[$field] !== $runId) {
+                    throw ValidationException::withMessages(['ai_runs' => "Field {$field} chỉ được gắn với một run."]);
+                }
+                $owners[$field] = $runId;
+            }
+            $import = $this->candidate($actorId, $runId);
+            $result = (array) $import->result_json;
+            if ($import->operation === 'image' && array_diff($fields, ['thumbnail']) !== []) {
+                throw ValidationException::withMessages(['ai_runs' => 'Image run chỉ được ghi provenance cho thumbnail.']);
+            }
+            if (in_array('thumbnail', $fields, true)) {
+                $expected = data_get($result, 'draft.thumbnail.media_asset_id')
+                    ?? data_get($result, 'image.media_asset_id');
+                $actual = data_get($values, 'media.thumbnail_id', $values['thumbnail_id'] ?? null);
+                if (! $expected || (string) $expected !== (string) $actual) {
+                    throw ValidationException::withMessages(['ai_runs' => 'Thumbnail phải là asset đã được tạo bởi image run.']);
+                }
+            }
+            $this->writeRunProvenance($actorId, $post, $import, $fields, $values, $result);
+        }
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Ghi audit theo field và cập nhật applied metadata của run
+     * =====================================================================
+     * INPUT: Run/fields đã xác minh, Post và map giá trị canonical.
+     * OUTPUT: Audit rows chứa identity từ server và value hash.
+     * SIDE EFFECT: Insert ai_provenances; cập nhật applied_target_id/applied_fields của run.
+     * EXCEPTION/TRANSACTION: Không tự mở transaction; caller chịu trách nhiệm rollback đồng bộ với Post.
+     * =====================================================================
+     */
+    private function writeRunProvenance(int $actorId, Post $post, AiImport $import, array $fields, array $values, array $result): void
+    {
         $provider = (string) ($result['provider'] ?? $import->provider ?? 'deterministic');
         $model = isset($result['model']) ? (string) $result['model'] : data_get($import->input_json, 'model');
         $promptKey = isset($result['prompt_key']) ? (string) $result['prompt_key'] : data_get($import->input_json, 'prompt_key');
@@ -91,16 +162,17 @@ final class AiProvenanceService
     }
 
     /**
-     * Chuẩn hóa và giới hạn field lineage.
-     *
-     * Input: danh sách field từ request đã qua FormRequest hoặc adapter.
-     * Output: danh sách string distinct giữ nguyên thứ tự.
-     * Side effect: không có.
-     * Exception/transaction: ValidationException nếu field không hợp lệ;
-     * không mở transaction.
+     * =====================================================================
+     * CHỨC NĂNG: Chuẩn hóa và giới hạn field lineage.
+     * =====================================================================
+     * INPUT: danh sách field từ FormRequest hoặc adapter.
+     * OUTPUT: danh sách string distinct giữ nguyên thứ tự.
+     * SIDE EFFECT: Không ghi database hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: ValidationException nếu field không hợp lệ; không transaction.
      *
      * @param  array<int, mixed>  $fields
      * @return list<string>
+     * =====================================================================
      */
     private function normalizeFields(array $fields): array
     {
@@ -116,13 +188,15 @@ final class AiProvenanceService
     }
 
     /**
-     * Lấy run ready thuộc đúng actor và còn hạn sử dụng.
-     *
-     * Input: actor ID và UUID run.
-     * Output: AiImport đã load result/input metadata.
-     * Side effect: một truy vấn read-only.
-     * Exception/transaction: ValidationException nếu không tìm thấy candidate
-     * hợp lệ; không tiết lộ run của actor khác.
+     * =====================================================================
+     * CHỨC NĂNG: Lấy run ready thuộc đúng actor và còn hạn sử dụng.
+     * =====================================================================
+     * INPUT: actor ID và UUID run.
+     * OUTPUT: AiImport đã load result/input metadata.
+     * SIDE EFFECT: một truy vấn read-only.
+     * EXCEPTION/TRANSACTION: ValidationException nếu không tìm thấy candidate hợp lệ;
+     * không tiết lộ run của actor khác; không mở transaction.
+     * =====================================================================
      */
     private function candidate(int $actorId, string $runId): AiImport
     {
@@ -142,11 +216,14 @@ final class AiProvenanceService
     }
 
     /**
-     * Lấy giá trị canonical tương ứng với field để audit hash.
-     *
-     * Input: field allowlist và payload Post đã chuẩn hóa.
-     * Output: scalar/array đại diện giá trị field tại thời điểm lưu.
-     * Side effect: không mutate payload và không truy vấn database.
+     * =====================================================================
+     * CHỨC NĂNG: Lấy giá trị canonical tương ứng với field để audit hash.
+     * =====================================================================
+     * INPUT: field allowlist và payload Post đã chuẩn hóa.
+     * OUTPUT: scalar/array đại diện giá trị field tại thời điểm lưu.
+     * SIDE EFFECT: không mutate payload và không truy vấn database.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
      */
     private function valueForField(string $field, array $values): mixed
     {
@@ -164,11 +241,14 @@ final class AiProvenanceService
     }
 
     /**
-     * Tạo SHA-256 ổn định thay vì lưu lại nội dung AI đầy đủ trong audit.
-     *
-     * Input: giá trị scalar hoặc nested array của field.
-     * Output: chuỗi hash 64 ký tự.
-     * Side effect: không có.
+     * =====================================================================
+     * CHỨC NĂNG: Tạo SHA-256 ổn định thay vì lưu nội dung AI đầy đủ trong audit.
+     * =====================================================================
+     * INPUT: giá trị scalar hoặc nested array của field.
+     * OUTPUT: chuỗi hash 64 ký tự.
+     * SIDE EFFECT: Không ghi database hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
      */
     private function valueHash(mixed $value): string
     {

@@ -9,7 +9,9 @@
  * =====================================================================
  */
 
+use App\Http\Controllers\Admin\AiImageGenerationController;
 use App\Http\Controllers\Admin\AiImportController;
+use App\Http\Controllers\Admin\AiProviderController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\MediaAssetController;
 use App\Http\Controllers\Admin\PostController;
@@ -166,6 +168,35 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
             Route::get('/posts/{post}', [PostController::class, 'show'])->whereNumber('post');
             Route::put('/posts/{post}', [PostController::class, 'update'])->whereNumber('post');
             Route::delete('/posts/{post}', [PostController::class, 'destroy'])->whereNumber('post');
+        });
+
+        /**
+         * =====================================================================
+     * GHI CHÚ: AI connection/model catalog là system setting; API key và default
+         * không được mở bằng permission quản lý Post.
+         * =====================================================================
+         */
+        Route::middleware('permission:ai_settings.manage,admin')->prefix('settings/ai')->group(function (): void {
+            Route::get('/', [AiProviderController::class, 'index']);
+            Route::get('/settings', [AiProviderController::class, 'settings']);
+            Route::put('/settings', [AiProviderController::class, 'updateSettings']);
+            Route::post('/providers', [AiProviderController::class, 'store']);
+            Route::put('/providers/{provider}', [AiProviderController::class, 'update'])->whereNumber('provider');
+            Route::post('/providers/{provider}/disable', [AiProviderController::class, 'disable'])->whereNumber('provider');
+            Route::post('/providers/{provider}/test', [AiProviderController::class, 'test'])
+                ->whereNumber('provider')->middleware('throttle:6,1');
+            Route::post('/providers/{provider}/sync', [AiProviderController::class, 'sync'])
+                ->whereNumber('provider')->middleware('throttle:6,1');
+            Route::post('/providers/{provider}/models', [AiProviderController::class, 'storeModel'])->whereNumber('provider');
+            Route::put('/providers/{provider}/models/{model}', [AiProviderController::class, 'updateModel'])
+                ->whereNumber(['provider', 'model']);
+        });
+
+        Route::middleware('permission:posts.manage,admin')->prefix('ai-image')->group(function (): void {
+            Route::get('/generations/{aiImport}', [AiImageGenerationController::class, 'show'])
+                ->whereUuid('aiImport')->middleware('permission:media.view,admin');
+            Route::post('/generations', [AiImageGenerationController::class, 'store'])
+                ->middleware(['permission:media.upload,admin', 'throttle:12,1']);
         });
     });
 

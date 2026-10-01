@@ -11,7 +11,16 @@ namespace App\Http\Requests\Admin\Concerns;
  */
 trait ValidatesPostSeo
 {
-    /** Input: không có. Output: rules; ngưỡng chấm SEO không phải lỗi lưu. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Gom validation SEO dùng chung cho create/update Post
+     * =====================================================================
+     * INPUT: Không có đối số.
+     * OUTPUT: Mảng rules excerpt/SEO; không đưa điểm SEO vào validation.
+     * SIDE EFFECT: Không ghi database hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
     protected function seoRules(): array
     {
         return [

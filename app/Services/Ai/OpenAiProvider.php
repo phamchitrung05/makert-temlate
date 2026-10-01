@@ -2,9 +2,6 @@
 
 namespace App\Services\Ai;
 
-use App\Exceptions\AiImportException;
-use Illuminate\Support\Facades\Http;
-
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Adapter OpenAI Chat Completions trả structured JSON.
@@ -26,65 +23,79 @@ use Illuminate\Support\Facades\Http;
  */
 final class OpenAiProvider extends AbstractStructuredAiProvider
 {
-    /** Input: Không có. Output: true khi có API key và provider bật. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: true khi có API key và provider bật.
+     * =====================================================================
+     * INPUT: Không có.
+     * OUTPUT: true khi có API key và provider bật.
+     * SIDE EFFECT: Không ghi database hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
     public function configured(): bool
     {
-        return (string) config('ai-import.openai.key') !== '';
-    }
-
-    /** Input: Không có. Output: provider key openai. */
-    public function providerName(): string
-    {
-        return 'openai';
-    }
-
-    /** Input: Không có. Output: model request hoặc model mặc định. */
-    public function modelName(): string
-    {
-        return $this->requestedModel() ?: (string) config('ai-import.openai.model', 'gpt-4o-mini');
+        return $this->connection() !== null || (string) config('ai-import.openai.key') !== '';
     }
 
     /**
-     * Gửi prompt tới OpenAI với response_format JSON object.
-     *
-     * Input: context canonical từ AbstractStructuredAiProvider.
-     * Output: response JSON; lỗi 429/5xx có thể retry.
-     *
+     * =====================================================================
+     * CHỨC NĂNG: provider key openai.
+     * =====================================================================
+     * INPUT: Không có.
+     * OUTPUT: provider key openai.
+     * SIDE EFFECT: Không ghi database hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
+    public function providerName(): string
+    {
+        return $this->connection()?->snapshot['provider'] ?? 'openai';
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: model request hoặc model mặc định.
+     * =====================================================================
+     * INPUT: Không có.
+     * OUTPUT: model request hoặc model mặc định.
+     * SIDE EFFECT: Không ghi database hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
+    public function modelName(): string
+    {
+        return $this->requestedModel() ?: (string) ($this->connection()?->snapshot['model'] ?? config('ai-import.openai.model', 'gpt-4o-mini'));
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Gửi prompt tới OpenAI với response_format JSON object.
+     * =====================================================================
+     * INPUT: context canonical từ AbstractStructuredAiProvider.
+     * OUTPUT: response JSON; retryability tuân theo boundary POST của AiProviderClient.
+     * SIDE EFFECT: gọi OpenAI qua AiProviderClient; không ghi domain database.
+     * EXCEPTION/TRANSACTION: AiImportException cho HTTP lỗi; không mở transaction.
+     * =====================================================================
      * @param  array<string, mixed>  $input
      */
     protected function requestPayload(array $input): mixed
     {
-        $response = Http::connectTimeout((int) config('ai-import.connect_timeout', 5))
-            ->timeout((int) config('ai-import.timeout', 12))
-            ->withToken((string) config('ai-import.openai.key'))
-            ->acceptJson()
-            ->post((string) config('ai-import.openai.endpoint'), [
-                'model' => $input['model'],
-                'temperature' => (float) config('ai-import.openai.temperature', 0.2),
-                'response_format' => ['type' => 'json_object'],
-                'messages' => [
-                    ['role' => 'system', 'content' => $input['instructions']],
-                    ['role' => 'user', 'content' => json_encode([
-                        'title' => $input['title'],
-                        'content_html' => $input['content_html'],
-                        'language' => $input['language'],
-                        'rewrite_style' => $input['rewrite_style'],
-                        'additional_instructions' => $input['user_instructions'],
-                        'prompt_key' => $input['prompt_key'],
-                        'prompt_version' => $input['prompt_version'],
-                        'schema_version' => $input['schema_version'],
-                    ], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)],
-                ],
-            ]);
+        $payload = [
+            'model' => $input['model'],
+            'temperature' => (float) ($this->connection()?->snapshot['temperature'] ?? config('ai-import.openai.temperature', 0.2)),
+            'response_format' => ['type' => 'json_object'],
+            'messages' => [
+                ['role' => 'system', 'content' => $input['instructions']],
+                ['role' => 'user', 'content' => $this->canonicalInput($input)],
+            ],
+        ];
+        $connection = $this->connection() ?? new AiConnection([
+            'driver' => 'openai', 'provider' => 'openai',
+            'base_url' => preg_replace('#/chat/completions/?$#', '', (string) config('ai-import.openai.endpoint')),
+            'model' => $input['model'], 'timeout' => (int) config('ai-import.timeout', 12),
+        ], (string) config('ai-import.openai.key'));
 
-        if (! $response->successful()) {
-            throw new AiImportException(
-                'OpenAI trả HTTP '.$response->status().'.',
-                'AI_PROVIDER_HTTP_'.$response->status(),
-                $response->status() === 429 || $response->serverError(),
-            );
-        }
-
-        return $response->json();
+        return app(AiProviderClient::class)->send($connection, 'POST', 'chat/completions', $payload);
     }
 }

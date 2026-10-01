@@ -32,8 +32,14 @@ class AiCandidateApiTest extends TestCase
     use UsesIsolatedDatabase;
 
     /**
-     * INPUT: PHPUnit lifecycle. OUTPUT: isolated schema and seeded permissions.
-     * SIDE EFFECT: reset database and queue-related state. EXCEPTION/TRANSACTION: test setup only.
+     * =====================================================================
+     * CHỨC NĂNG: Chuẩn bị schema và quyền trong database test cô lập
+     * =====================================================================
+     * INPUT: PHPUnit lifecycle.
+     * OUTPUT: Schema test và permission seed.
+     * SIDE EFFECT: Tạo database test; không tác động dữ liệu ứng dụng thật.
+     * EXCEPTION/TRANSACTION: Chỉ test setup; cleanup trong tearDown.
+     * =====================================================================
      */
     protected function setUp(): void
     {
@@ -43,8 +49,14 @@ class AiCandidateApiTest extends TestCase
     }
 
     /**
-     * INPUT: PHPUnit lifecycle. OUTPUT: resources released.
-     * SIDE EFFECT: teardown isolated database. EXCEPTION/TRANSACTION: test cleanup only.
+     * =====================================================================
+     * CHỨC NĂNG: Giải phóng tài nguyên database sau test
+     * =====================================================================
+     * INPUT: PHPUnit lifecycle.
+     * OUTPUT: Database connection/test schema được dọn.
+     * SIDE EFFECT: Dọn database test cô lập rồi gọi parent teardown.
+     * EXCEPTION/TRANSACTION: Chỉ test cleanup; không tác động production.
+     * =====================================================================
      */
     protected function tearDown(): void
     {
@@ -52,7 +64,16 @@ class AiCandidateApiTest extends TestCase
         parent::tearDown();
     }
 
-    /** Input: user permission. Output: personal admin token. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Tạo admin token có posts.manage cho test candidate
+     * =====================================================================
+     * INPUT: Fixture user active.
+     * OUTPUT: Personal token chỉ dùng trong test.
+     * SIDE EFFECT: Ghi user/permission/token trong DB test và xóa permission cache.
+     * EXCEPTION/TRANSACTION: Không gọi AI thật; DB test được dọn sau test.
+     * =====================================================================
+     */
     private function token(): string
     {
         $user = User::factory()->create(['status' => 'active']);
@@ -63,7 +84,16 @@ class AiCandidateApiTest extends TestCase
         return $user->createToken('ai-candidate-test', ['admin'])->plainTextToken;
     }
 
-    /** Input: ready import. Output: immutable child candidate in same session. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm chứng regenerate không ghi đè candidate gốc
+     * =====================================================================
+     * INPUT: Run ready thuộc actor và instructions override.
+     * OUTPUT: Child run cùng session; result của parent không đổi.
+     * SIDE EFFECT: Gọi API nội bộ/Queue fake và ghi run trong DB test.
+     * EXCEPTION/TRANSACTION: Không gọi AI thật; DB test được dọn sau test.
+     * =====================================================================
+     */
     public function test_regenerate_preserves_original_candidate(): void
     {
         Queue::fake();
@@ -83,8 +113,14 @@ class AiCandidateApiTest extends TestCase
     }
 
     /**
-     * Input: regenerate chỉ field title. Output: title mới nhưng content parent giữ nguyên.
-     * Side effect: child run đọc lại source; không mutate result_json của candidate gốc.
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm chứng chỉ field được chọn bị thay khi regenerate
+     * =====================================================================
+     * INPUT: Parent ready và source HTML từ HTTP fake; chỉ chọn title.
+     * OUTPUT: Title mới, content giữ theo parent, result parent không đổi.
+     * SIDE EFFECT: Child run đọc source qua HTTP fake; dùng deterministic provider.
+     * EXCEPTION/TRANSACTION: Không gọi AI thật; DB test được dọn sau test.
+     * =====================================================================
      */
     public function test_regenerate_selected_field_preserves_unselected_parent_fields(): void
     {
@@ -125,7 +161,16 @@ class AiCandidateApiTest extends TestCase
         $this->assertSame('Tiêu đề cũ', data_get($parent->fresh()->result_json, 'draft.title'));
     }
 
-    /** Input: failed import. Output: same run requeued, not a duplicate candidate. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm chứng retry kỹ thuật giữ nguyên run UUID
+     * =====================================================================
+     * INPUT: Run failed và Queue fake.
+     * OUTPUT: Một run duy nhất được requeue; không tạo candidate trùng.
+     * SIDE EFFECT: Gọi API nội bộ và cập nhật run trong DB test.
+     * EXCEPTION/TRANSACTION: Không gọi AI thật; DB test được dọn sau test.
+     * =====================================================================
+     */
     public function test_retry_reuses_failed_run(): void
     {
         Queue::fake();
@@ -183,9 +228,14 @@ class AiCandidateApiTest extends TestCase
     }
 
     /**
-     * Input: Post hiện có và chỉ chọn field title.
-     * Output: title đổi, content cũ giữ nguyên; provenance chỉ ghi field đã chọn.
-     * Side effect: update Post trong transaction và không tạo slug từ client.
+     * =====================================================================
+     * CHỨC NĂNG: Áp dụng field title mà không ghi đè content hiện có
+     * =====================================================================
+     * INPUT: Post hiện có, candidate ready và chỉ chọn field title.
+     * OUTPUT: title đổi, content cũ giữ nguyên; provenance chỉ ghi field đã chọn.
+     * SIDE EFFECT: update Post trong transaction và không tạo slug từ client.
+     * EXCEPTION/TRANSACTION: rollback nếu candidate/field không hợp lệ.
+     * =====================================================================
      */
     public function test_apply_selected_fields_does_not_overwrite_unselected_fields(): void
     {
@@ -282,5 +332,41 @@ class AiCandidateApiTest extends TestCase
         ]);
         $this->assertSame($post->id, $import->fresh()->applied_target_id);
         $this->assertSame(['title', 'content'], $import->fresh()->applied_fields);
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Giữ lineage content và thumbnail từ hai run riêng
+     * =====================================================================
+     * INPUT: hai run ready cùng actor và ai_runs không overlap field.
+     * OUTPUT: một Post có provenance đúng owner theo field.
+     * SIDE EFFECT: tạo post/audit trong transaction; không gọi provider thật.
+     * EXCEPTION/TRANSACTION: overlap hoặc image asset mismatch bị rollback.
+     * =====================================================================
+     */
+    public function test_post_create_accepts_multiple_non_overlapping_ai_runs(): void
+    {
+        Queue::fake();
+        $token = $this->token();
+        $runIds = [];
+        foreach (['content-run', 'seo-run'] as $slug) {
+            $this->withToken($token)->postJson('/api/admin/posts/ai/import', ['url' => 'https://example.test/'.$slug])->assertStatus(202);
+            $run = AiImport::query()->latest('created_at')->firstOrFail();
+            $runIds[] = $run->id;
+            $run->update([
+                'status' => 'ready', 'result_json' => ['provider' => 'deterministic', 'model' => 'deterministic', 'draft' => []],
+            ]);
+        }
+
+        $this->withToken($token)->postJson('/api/admin/posts', [
+            'title' => 'Multi run', 'content' => '<p>Content</p>', 'status' => 'draft',
+            'ai_runs' => [
+                ['run_id' => $runIds[0], 'fields' => ['content']],
+                ['run_id' => $runIds[1], 'fields' => ['seo']],
+            ],
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('ai_provenances', ['run_id' => $runIds[0], 'field' => 'content']);
+        $this->assertDatabaseHas('ai_provenances', ['run_id' => $runIds[1], 'field' => 'seo']);
     }
 }

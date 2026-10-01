@@ -55,5 +55,8 @@ return [
 
         // Settings: quản lý cấu hình hệ thống.
         'settings' => ['manage'],
+
+        // AI Settings: quản lý provider, model catalog và thông số AI.
+        'ai_settings' => ['manage'],
     ],
 ];

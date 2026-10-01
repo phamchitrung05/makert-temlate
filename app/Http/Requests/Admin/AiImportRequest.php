@@ -27,11 +27,14 @@ use Illuminate\Foundation\Http\FormRequest;
 class AiImportRequest extends FormRequest
 {
     /**
-     * Chuẩn hóa contract AI Agent generic về field import Post hiện tại.
-     *
-     * Input: payload có thể dùng input.type/url/text và output_language.
-     * Output: request có url/text/language/generate_thumbnail top-level.
-     * Side effect: merge dữ liệu vào request bag trước validation; không ghi DB.
+     * =====================================================================
+     * CHỨC NĂNG: Chuẩn hóa contract AI Agent generic về field import Post.
+     * =====================================================================
+     * INPUT: payload có thể dùng input.type/url/text và output_language.
+     * OUTPUT: request có url/text/language/generate_thumbnail top-level.
+     * SIDE EFFECT: merge dữ liệu vào request bag trước validation; không ghi DB.
+     * EXCEPTION/TRANSACTION: không ném lỗi nghiệp vụ; FormRequest rules xử lý validation.
+     * =====================================================================
      */
     protected function prepareForValidation(): void
     {
@@ -91,7 +94,11 @@ class AiImportRequest extends FormRequest
             'prompt_key' => ['nullable', 'string', 'max:120'],
             'instructions' => ['nullable', 'string', 'max:4000'],
             'provider' => ['nullable', 'string', 'max:80'],
-            'model' => ['nullable', 'string', 'max:120'],
+            'model' => ['nullable', 'string', 'max:190'],
+            'model_id' => ['nullable', 'integer', 'min:1'],
+            'image_provider' => ['nullable', 'string', 'max:80'],
+            'image_model' => ['nullable', 'string', 'max:190'],
+            'image_model_id' => ['nullable', 'integer', 'min:1'],
             'requested_outputs' => ['sometimes', 'array'],
             'requested_outputs.*' => ['string', 'distinct', 'in:title,excerpt,content,seo,taxonomy,thumbnail'],
         ];

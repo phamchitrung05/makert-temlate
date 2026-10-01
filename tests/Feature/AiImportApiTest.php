@@ -31,8 +31,14 @@ class AiImportApiTest extends TestCase
     use UsesIsolatedDatabase;
 
     /**
-     * INPUT: PHPUnit lifecycle. OUTPUT: isolated schema and seeded permissions.
-     * SIDE EFFECT: reset database and permission cache. EXCEPTION/TRANSACTION: test setup only.
+     * =====================================================================
+     * CHỨC NĂNG: Khởi tạo database và permission cô lập cho test AI import.
+     * =====================================================================
+     * INPUT: PHPUnit lifecycle.
+     * OUTPUT: schema cô lập và permission đã seed.
+     * SIDE EFFECT: reset database và permission cache.
+     * EXCEPTION/TRANSACTION: chỉ setup test; không gọi provider thật.
+     * =====================================================================
      */
     protected function setUp(): void
     {
@@ -42,8 +48,14 @@ class AiImportApiTest extends TestCase
     }
 
     /**
-     * INPUT: PHPUnit lifecycle. OUTPUT: resources released.
-     * SIDE EFFECT: teardown isolated database. EXCEPTION/TRANSACTION: test cleanup only.
+     * =====================================================================
+     * CHỨC NĂNG: Giải phóng database cô lập sau test AI import.
+     * =====================================================================
+     * INPUT: PHPUnit lifecycle.
+     * OUTPUT: tài nguyên test được giải phóng.
+     * SIDE EFFECT: dọn database cô lập.
+     * EXCEPTION/TRANSACTION: chỉ cleanup test; không gọi provider thật.
+     * =====================================================================
      */
     protected function tearDown(): void
     {
@@ -52,8 +64,14 @@ class AiImportApiTest extends TestCase
     }
 
     /**
-     * INPUT: không có. OUTPUT: personal Sanctum token có posts.manage.
-     * SIDE EFFECT: tạo user test và flush permission cache. EXCEPTION/TRANSACTION: test DB cô lập.
+     * =====================================================================
+     * CHỨC NĂNG: Tạo Sanctum token với quyền quản lý Post cho test.
+     * =====================================================================
+     * INPUT: không có.
+     * OUTPUT: personal Sanctum token có posts.manage.
+     * SIDE EFFECT: tạo user test và flush permission cache.
+     * EXCEPTION/TRANSACTION: dùng database cô lập; không gọi provider thật.
+     * =====================================================================
      */
     private function token(): string
     {
@@ -66,8 +84,14 @@ class AiImportApiTest extends TestCase
     }
 
     /**
-     * INPUT: URL/options import. OUTPUT: assertion 202 và job queued.
-     * SIDE EFFECT: fake queue, ghi AiImport test. EXCEPTION/TRANSACTION: không gọi provider thật.
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm chứng import lưu options và dispatch queue.
+     * =====================================================================
+     * INPUT: URL/options import.
+     * OUTPUT: assertion 202 và job queued.
+     * SIDE EFFECT: fake queue, ghi AiImport test.
+     * EXCEPTION/TRANSACTION: dùng database cô lập; không gọi provider thật.
+     * =====================================================================
      */
     public function test_store_queues_import_and_persists_options(): void
     {
@@ -82,8 +106,14 @@ class AiImportApiTest extends TestCase
     }
 
     /**
-     * INPUT: UUID import của user khác. OUTPUT: assertion ownership 404.
-     * SIDE EFFECT: fake queue và database test. EXCEPTION/TRANSACTION: không gọi provider thật.
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm chứng status import chỉ được đọc bởi owner.
+     * =====================================================================
+     * INPUT: UUID import của user khác.
+     * OUTPUT: assertion ownership 404.
+     * SIDE EFFECT: fake queue và database test.
+     * EXCEPTION/TRANSACTION: dùng database cô lập; không gọi provider thật.
+     * =====================================================================
      */
     public function test_import_status_is_private_to_creator(): void
     {
@@ -100,9 +130,14 @@ class AiImportApiTest extends TestCase
     }
 
     /**
-     * Input: target Post và quyền AI của admin. Output: capability từ registry,
-     * không lộ endpoint/API key và chỉ trả provider/model đã allowlist.
-     * Side effect: chỉ đọc config; không tạo job hoặc gọi provider.
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm chứng capabilities được resolve và redact từ registry.
+     * =====================================================================
+     * INPUT: target Post và quyền AI của admin.
+     * OUTPUT: capabilities không lộ endpoint/API key, chỉ chứa provider/model allowlist.
+     * SIDE EFFECT: chỉ đọc config; không tạo job hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: dùng database cô lập; không gọi provider thật.
+     * =====================================================================
      */
     public function test_capabilities_are_resolved_from_registries(): void
     {
@@ -120,8 +155,14 @@ class AiImportApiTest extends TestCase
     }
 
     /**
-     * Input: provider/model/prompt không nằm allowlist. Output: validation 422.
-     * Side effect: không tạo AiImport hoặc dispatch queue.
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm chứng provider/model/prompt phải nằm trong allowlist.
+     * =====================================================================
+     * INPUT: provider/model/prompt không nằm allowlist.
+     * OUTPUT: validation 422.
+     * SIDE EFFECT: không tạo AiImport hoặc dispatch queue.
+     * EXCEPTION/TRANSACTION: validation ở HTTP boundary; dùng database cô lập.
+     * =====================================================================
      */
     public function test_store_rejects_provider_model_and_prompt_outside_allowlist(): void
     {
@@ -144,8 +185,14 @@ class AiImportApiTest extends TestCase
     }
 
     /**
-     * Input: text inline thay cho URL. Output: queued run có source_type=text.
-     * Side effect: lưu source_text và dispatch đúng một job, không gọi HTTP.
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm chứng import hỗ trợ nguồn text inline.
+     * =====================================================================
+     * INPUT: text inline thay cho URL.
+     * OUTPUT: queued run có source_type=text.
+     * SIDE EFFECT: lưu source_text và dispatch job qua Queue fake; không gọi HTTP.
+     * EXCEPTION/TRANSACTION: dùng database cô lập; không gọi provider thật.
+     * =====================================================================
      */
     public function test_store_accepts_inline_text_source(): void
     {
@@ -167,8 +214,14 @@ class AiImportApiTest extends TestCase
     }
 
     /**
-     * Input: contract session generic từ aiAgentService. Output: cùng AiImport queued.
-     * Side effect: chuẩn hóa nested input ở FormRequest và không cần legacy fallback.
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm chứng session endpoint chuẩn hóa nested input.
+     * =====================================================================
+     * INPUT: contract session generic từ aiAgentService.
+     * OUTPUT: AiImport queued tương thích pipeline hiện tại.
+     * SIDE EFFECT: chuẩn hóa input ở FormRequest, lưu run và dispatch qua Queue fake.
+     * EXCEPTION/TRANSACTION: dùng database cô lập; không gọi provider thật.
+     * =====================================================================
      */
     public function test_generic_session_endpoint_normalizes_nested_input(): void
     {
@@ -193,9 +246,14 @@ class AiImportApiTest extends TestCase
     }
 
     /**
-     * Input: import đang chạy và request cancel của chính owner.
-     * Output: lifecycle chuyển cancelled; worker nhận job cũ không chạy pipeline lại.
-     * Side effect: cập nhật status/error code, không gọi provider hoặc source fetcher.
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm chứng cancelled là trạng thái terminal của worker.
+     * =====================================================================
+     * INPUT: import đang chạy và request cancel của chính owner.
+     * OUTPUT: lifecycle cancelled; worker nhận job cũ không chạy pipeline lại.
+     * SIDE EFFECT: cập nhật status/error code, không gọi provider hoặc source fetcher.
+     * EXCEPTION/TRANSACTION: dùng database cô lập và mock service.
+     * =====================================================================
      */
     public function test_cancelled_import_is_terminal_for_queued_worker(): void
     {
@@ -221,9 +279,14 @@ class AiImportApiTest extends TestCase
     }
 
     /**
-     * Input: candidate đã quá expires_at.
-     * Output: scheduler command xóa candidate hết hạn.
-     * Side effect: dọn AiImport qua command chính thức, không gọi provider.
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm chứng cleanup command dọn candidate hết hạn.
+     * =====================================================================
+     * INPUT: candidate đã quá expires_at.
+     * OUTPUT: scheduler command xóa candidate hết hạn.
+     * SIDE EFFECT: dọn AiImport qua command chính thức, không gọi provider.
+     * EXCEPTION/TRANSACTION: chỉ xóa fixture trong database test cô lập.
+     * =====================================================================
      */
     public function test_cleanup_command_removes_expired_import(): void
     {

@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\AiImport;
-use App\Models\MediaAsset;
+use App\Services\Ai\AiRunAssetCleaner;
 use Illuminate\Console\Command;
 
 /**
@@ -54,11 +54,7 @@ class CleanupAiImportsCommand extends Command
             });
         })->chunkById(100, function ($imports) use (&$count): void {
             foreach ($imports as $import) {
-                $assetId = data_get($import->result_json, 'draft.thumbnail.media_asset_id');
-                if ($assetId && ($asset = MediaAsset::query()->find($assetId)) && ! $asset->usages()->exists()) {
-                    $asset->clearMediaCollection('library');
-                    $asset->delete();
-                }
+                app(AiRunAssetCleaner::class)->cleanup($import);
                 $import->delete();
                 $count++;
             }

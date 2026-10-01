@@ -22,16 +22,26 @@ namespace App\Services\Ai\Contracts;
 interface AiProviderContract
 {
     /**
-     * INPUT: không có. OUTPUT: provider đã đủ cấu hình.
-     * SIDE EFFECT: đọc config. EXCEPTION/TRANSACTION: không có.
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm tra provider đã đủ cấu hình.
+     * =====================================================================
+     * INPUT: không có.
+     * OUTPUT: provider đã đủ cấu hình.
+     * SIDE EFFECT: đọc config.
+     * EXCEPTION/TRANSACTION: không có; không mở transaction.
+     * =====================================================================
      */
     public function configured(): bool;
 
     /**
+     * =====================================================================
+     * CHỨC NĂNG: Sinh output canonical từ nội dung nguồn.
+     * =====================================================================
      * INPUT: title, content, language, style, prompt và instruction.
-     * OUTPUT: mảng canonical fields. SIDE EFFECT: có thể gọi API bên ngoài.
+     * OUTPUT: mảng canonical fields.
+     * SIDE EFFECT: có thể gọi API bên ngoài.
      * EXCEPTION/TRANSACTION: provider exception; không mở transaction.
-     *
+     * =====================================================================
      * @return array<string, mixed>
      */
     public function generate(
@@ -44,14 +54,26 @@ interface AiProviderContract
     ): array;
 
     /**
-     * INPUT: không có. OUTPUT: provider key cho provenance.
-     * SIDE EFFECT: đọc config. EXCEPTION/TRANSACTION: không có.
+     * =====================================================================
+     * CHỨC NĂNG: Trả provider key cho provenance.
+     * =====================================================================
+     * INPUT: không có.
+     * OUTPUT: provider key cho provenance.
+     * SIDE EFFECT: đọc config.
+     * EXCEPTION/TRANSACTION: không có; không mở transaction.
+     * =====================================================================
      */
     public function providerName(): string;
 
     /**
-     * INPUT: không có. OUTPUT: model key cho audit.
-     * SIDE EFFECT: đọc config. EXCEPTION/TRANSACTION: không có.
+     * =====================================================================
+     * CHỨC NĂNG: Trả model key cho audit.
+     * =====================================================================
+     * INPUT: không có.
+     * OUTPUT: model key cho audit.
+     * SIDE EFFECT: đọc config.
+     * EXCEPTION/TRANSACTION: không có; không mở transaction.
+     * =====================================================================
      */
     public function modelName(): string;
 }

@@ -33,24 +33,78 @@ abstract class AbstractStructuredAiProvider implements AiProviderContract
 {
     private ?string $requestedModel = null;
 
+    private ?AiConnection $connection = null;
+
     /**
-     * Chọn model từ request sau khi controller đã kiểm tra allowlist.
-     *
-     * Input: model key hoặc null.
-     * Output: chính provider instance để chain; không gọi network.
+     * =====================================================================
+     * CHỨC NĂNG: Chọn model từ request sau khi controller đã kiểm tra allowlist.
+     * =====================================================================
+     * INPUT: model key hoặc null.
+     * OUTPUT: chính provider instance để chain; không gọi network.
+     * SIDE EFFECT: clone provider state; không ghi database.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
      */
     public function withModel(?string $model): static
     {
-        $this->requestedModel = $model ?: null;
+        $instance = clone $this;
+        $instance->requestedModel = $model ?: null;
 
-        return $this;
+        return $instance;
     }
 
     /**
-     * Trả model override đã được controller allowlist.
-     *
-     * Input: Không có.
-     * Output: model override hoặc null; chỉ đọc state provider.
+     * =====================================================================
+     * CHỨC NĂNG: Bind a server-side run snapshot; the API key never enters the queue payload.
+     * =====================================================================
+     * INPUT: AiConnection server-side đã được resolver kiểm tra.
+     * OUTPUT: clone adapter với connection immutable riêng cho run.
+     * SIDE EFFECT: Không ghi database hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
+    public function withConnection(AiConnection $connection): static
+    {
+        $instance = clone $this;
+        $instance->connection = $connection;
+
+        return $instance;
+    }
+
+    protected function connection(): ?AiConnection
+    {
+        return $this->connection;
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: canonical source JSON for every adapter.
+     * =====================================================================
+     * INPUT: structured prompt context.
+     * OUTPUT: canonical source JSON for every adapter.
+     * SIDE EFFECT: Không ghi database hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
+    protected function canonicalInput(array $input): string
+    {
+        return json_encode([
+            'title' => $input['title'], 'content_html' => $input['content_html'],
+            'language' => $input['language'], 'rewrite_style' => $input['rewrite_style'],
+            'additional_instructions' => $input['user_instructions'], 'prompt_key' => $input['prompt_key'],
+            'prompt_version' => $input['prompt_version'], 'schema_version' => $input['schema_version'],
+        ], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Trả model override đã được controller allowlist.
+     * =====================================================================
+     * INPUT: Không có.
+     * OUTPUT: model override hoặc null; chỉ đọc state provider.
+     * SIDE EFFECT: Không ghi database hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
      */
     protected function requestedModel(): ?string
     {
@@ -58,12 +112,16 @@ abstract class AbstractStructuredAiProvider implements AiProviderContract
     }
 
     /**
-     * Tạo structured output và chuẩn hóa thành canonical fields.
-     *
-     * Input: title, content, language, style, prompt key, instruction.
-     * Output: mảng field allowlist; transport lỗi được chuyển thành exception.
+     * =====================================================================
+     * CHỨC NĂNG: Tạo structured output và chuẩn hóa thành canonical fields.
+     * =====================================================================
+     * INPUT: title, content, language, style, prompt key, instruction.
+     * OUTPUT: mảng field allowlist; transport lỗi được chuyển thành exception.
+     * SIDE EFFECT: có thể gọi provider HTTP; không ghi domain database.
+     * EXCEPTION/TRANSACTION: AiImportException khi transport/schema lỗi; không transaction.
      *
      * @return array<string, mixed>
+     * =====================================================================
      */
     public function generate(
         string $title,
@@ -100,10 +158,14 @@ abstract class AbstractStructuredAiProvider implements AiProviderContract
     }
 
     /**
-     * Bóc output JSON từ response provider kiểu data/output/choices.
-     *
-     * Input: mixed payload từ transport.
-     * Output: array JSON; lỗi malformed output ném AiImportException.
+     * =====================================================================
+     * CHỨC NĂNG: Bóc output JSON từ response provider kiểu data/output/choices.
+     * =====================================================================
+     * INPUT: mixed payload từ transport.
+     * OUTPUT: array JSON; lỗi malformed output ném AiImportException.
+     * SIDE EFFECT: chỉ normalize payload trong memory.
+     * EXCEPTION/TRANSACTION: AiImportException khi response/refusal không hợp lệ; không transaction.
+     * =====================================================================
      */
     protected function normalizePayload(mixed $payload): array
     {
@@ -131,10 +193,14 @@ abstract class AbstractStructuredAiProvider implements AiProviderContract
     }
 
     /**
-     * Kiểm tra canonical output, loại field ngoài schema và sai kiểu.
-     *
-     * Input: array output đã parse.
-     * Output: array canonical fields an toàn cho ArticleImportService.
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm tra canonical output, loại field ngoài schema và sai kiểu.
+     * =====================================================================
+     * INPUT: array output đã parse.
+     * OUTPUT: array canonical fields an toàn cho ArticleImportService.
+     * SIDE EFFECT: chỉ đọc schema và tạo array mới.
+     * EXCEPTION/TRANSACTION: AiImportException khi field/type không hợp lệ; không transaction.
+     * =====================================================================
      */
     protected function validatePayload(array $payload): array
     {
@@ -166,12 +232,16 @@ abstract class AbstractStructuredAiProvider implements AiProviderContract
     }
 
     /**
-     * Gửi request theo giao thức riêng của provider.
-     *
-     * Input: context đã có prompt/schema/model.
-     * Output: raw response payload; lỗi HTTP phải ném AiImportException.
+     * =====================================================================
+     * CHỨC NĂNG: Gửi request theo giao thức riêng của provider.
+     * =====================================================================
+     * INPUT: context đã có prompt/schema/model.
+     * OUTPUT: raw response payload; lỗi HTTP phải ném AiImportException.
+     * SIDE EFFECT: gọi transport của provider.
+     * EXCEPTION/TRANSACTION: Provider exception; không mở transaction.
      *
      * @param  array<string, mixed>  $input
+     * =====================================================================
      */
     abstract protected function requestPayload(array $input): mixed;
 }

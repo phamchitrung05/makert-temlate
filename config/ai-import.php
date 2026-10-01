@@ -19,7 +19,7 @@ return [
     'model' => env('AI_IMPORT_MODEL', 'default'),
     'timeout' => (int) env('AI_IMPORT_TIMEOUT', 12),
     'connect_timeout' => (int) env('AI_IMPORT_CONNECT_TIMEOUT', 5),
-    'job_timeout' => (int) env('AI_IMPORT_JOB_TIMEOUT', 120),
+    'job_timeout' => (int) env('AI_IMPORT_JOB_TIMEOUT', 180),
     'max_redirects' => (int) env('AI_IMPORT_MAX_REDIRECTS', 3),
     'max_html_bytes' => (int) env('AI_IMPORT_MAX_HTML_BYTES', 5242880),
     'max_image_bytes' => (int) env('AI_IMPORT_MAX_IMAGE_BYTES', 10485760),

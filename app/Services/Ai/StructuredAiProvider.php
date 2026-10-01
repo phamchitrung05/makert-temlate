@@ -27,10 +27,14 @@ use Illuminate\Support\Facades\Http;
 class StructuredAiProvider extends AbstractStructuredAiProvider
 {
     /**
-     * Kiểm tra endpoint và key đã cấu hình.
-     *
-     * Input: Không có.
-     * Output: bool; chỉ đọc config.
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm tra endpoint và key đã cấu hình.
+     * =====================================================================
+     * INPUT: Không có.
+     * OUTPUT: bool; chỉ đọc config.
+     * SIDE EFFECT: không gọi network hoặc ghi database.
+     * EXCEPTION/TRANSACTION: không có; không mở transaction.
+     * =====================================================================
      */
     public function configured(): bool
     {
@@ -38,10 +42,14 @@ class StructuredAiProvider extends AbstractStructuredAiProvider
     }
 
     /**
-     * Trả provider key dùng cho provenance.
-     *
-     * Input: Không có.
-     * Output: http-json hoặc deterministic.
+     * =====================================================================
+     * CHỨC NĂNG: Trả provider key dùng cho provenance.
+     * =====================================================================
+     * INPUT: Không có.
+     * OUTPUT: http-json hoặc deterministic.
+     * SIDE EFFECT: chỉ đọc config.
+     * EXCEPTION/TRANSACTION: không có; không mở transaction.
+     * =====================================================================
      */
     public function providerName(): string
     {
@@ -49,22 +57,31 @@ class StructuredAiProvider extends AbstractStructuredAiProvider
     }
 
     /**
-     * Trả model config dùng cho audit.
-     *
-     * Input: Không có.
-     * Output: model string.
+     * =====================================================================
+     * CHỨC NĂNG: Trả model config dùng cho audit.
+     * =====================================================================
+     * INPUT: Không có.
+     * OUTPUT: model string.
+     * SIDE EFFECT: chỉ đọc config.
+     * EXCEPTION/TRANSACTION: không có; không mở transaction.
+     * =====================================================================
      */
     public function modelName(): string
     {
-        return $this->configured() ? ($this->requestedModel() ?: (string) config('ai-import.model', 'default')) : 'deterministic';
+        return $this->configured()
+            ? ($this->requestedModel() ?: (string) config('ai-import.model', 'default'))
+            : 'deterministic';
     }
 
     /**
-     * Gửi context structured tới endpoint JSON tương thích.
-     *
-     * Input: context prompt/schema/model từ lớp cha.
-     * Output: JSON decoded; lỗi HTTP 429/5xx được đánh dấu retryable.
-     *
+     * =====================================================================
+     * CHỨC NĂNG: Gửi context structured tới endpoint JSON tương thích.
+     * =====================================================================
+     * INPUT: context prompt/schema/model từ lớp cha.
+     * OUTPUT: JSON decoded; lỗi HTTP 429/5xx được đánh dấu retryable.
+     * SIDE EFFECT: gọi endpoint AI server-side; không ghi domain database.
+     * EXCEPTION/TRANSACTION: AiImportException cho HTTP lỗi; không mở transaction.
+     * =====================================================================
      * @param  array<string, mixed>  $input
      */
     protected function requestPayload(array $input): mixed

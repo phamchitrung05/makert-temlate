@@ -6,7 +6,16 @@ use App\Enums\ResourceVersionStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-/** Validate payload tạo Resource Version và media fields. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Validate payload tạo Resource Version và media fields.
+ * =====================================================================
+ * INPUT: Không có.
+ * OUTPUT: Không trả dữ liệu.
+ * SIDE EFFECT: Không ghi database hoặc gọi provider.
+ * EXCEPTION/TRANSACTION: Không mở transaction.
+ * =====================================================================
+ */
 class ResourceVersionCreateRequest extends FormRequest
 {
     public function authorize(): bool

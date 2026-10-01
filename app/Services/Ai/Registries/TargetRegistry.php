@@ -25,10 +25,30 @@ use InvalidArgumentException;
  */
 final class TargetRegistry
 {
-    /** INPUT: container. OUTPUT: registry instance. SIDE EFFECT: giữ dependency. EXCEPTION/TRANSACTION: không có. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: registry instance.
+     * =====================================================================
+     * INPUT: container.
+     * OUTPUT: registry instance.
+     * SIDE EFFECT: giữ dependency.
+     * EXCEPTION/TRANSACTION: không có.
+     * =====================================================================
+     */
     public function __construct(private readonly Container $container) {}
 
-    /** INPUT: target key. OUTPUT: capability. SIDE EFFECT: đọc config. EXCEPTION/TRANSACTION: InvalidArgumentException; không transaction. @return array<string, mixed> */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Resolve metadata target đã allowlist.
+     * =====================================================================
+     * INPUT: target key.
+     * OUTPUT: capability metadata.
+     * SIDE EFFECT: đọc config; không gọi provider.
+     * EXCEPTION/TRANSACTION: InvalidArgumentException; không mở transaction.
+     *
+     * @return array<string, mixed>
+     * =====================================================================
+     */
     public function get(string $key): array
     {
         $target = config("ai-agent.targets.{$key}");
@@ -39,7 +59,16 @@ final class TargetRegistry
         return $target + ['key' => $key];
     }
 
-    /** INPUT: target key. OUTPUT: target adapter. SIDE EFFECT: resolve container. EXCEPTION/TRANSACTION: InvalidArgumentException; không transaction. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: target adapter.
+     * =====================================================================
+     * INPUT: target key.
+     * OUTPUT: target adapter.
+     * SIDE EFFECT: resolve container.
+     * EXCEPTION/TRANSACTION: InvalidArgumentException; không transaction.
+     * =====================================================================
+     */
     public function adapter(string $key): AiTargetAdapterContract
     {
         $class = $this->get($key)['adapter'] ?? null;
@@ -50,7 +79,18 @@ final class TargetRegistry
         return $this->container->make($class);
     }
 
-    /** INPUT: không có. OUTPUT: target đang bật. SIDE EFFECT: đọc config. EXCEPTION/TRANSACTION: không có. @return array<string, array<string, mixed>> */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Trả toàn bộ target đang bật.
+     * =====================================================================
+     * INPUT: không có.
+     * OUTPUT: target metadata theo key.
+     * SIDE EFFECT: đọc config; không gọi provider.
+     * EXCEPTION/TRANSACTION: không có; không mở transaction.
+     *
+     * @return array<string, array<string, mixed>>
+     * =====================================================================
+     */
     public function all(): array
     {
         return collect((array) config('ai-agent.targets', []))

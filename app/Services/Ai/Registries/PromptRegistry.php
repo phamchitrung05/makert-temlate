@@ -23,13 +23,27 @@ use InvalidArgumentException;
  */
 final class PromptRegistry
 {
-    /** INPUT: không có. OUTPUT: registry instance. SIDE EFFECT: không có. EXCEPTION/TRANSACTION: không có. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: registry instance.
+     * =====================================================================
+     * INPUT: không có.
+     * OUTPUT: registry instance.
+     * SIDE EFFECT: không có.
+     * EXCEPTION/TRANSACTION: không có.
+     * =====================================================================
+     */
     public function __construct() {}
 
     /**
-     * INPUT: prompt key, target, operation. OUTPUT: metadata prompt hợp lệ.
-     * SIDE EFFECT: chỉ đọc config. EXCEPTION/TRANSACTION: InvalidArgumentException; không transaction.
-     *
+     * =====================================================================
+     * CHỨC NĂNG: Lấy prompt metadata sau khi kiểm tra allowlist.
+     * =====================================================================
+     * INPUT: prompt key, target, operation.
+     * OUTPUT: metadata prompt hợp lệ.
+     * SIDE EFFECT: chỉ đọc config.
+     * EXCEPTION/TRANSACTION: InvalidArgumentException khi không hợp lệ; không mở transaction.
+     * =====================================================================
      * @return array<string, mixed>
      */
     public function get(string $key, ?string $target = null, ?string $operation = null): array
@@ -50,18 +64,20 @@ final class PromptRegistry
     }
 
     /**
-     * Chọn prompt theo thứ tự manual -> rule -> fallback allowlist.
-     *
-     * Input: prompt key tùy chọn, target/operation và context nguồn.
-     * Output: prompt metadata có key và selection mode; không gọi model AI.
-     * Side effect: chỉ đọc config.
-     * Exception/transaction: InvalidArgumentException khi key/registry không hợp lệ; không transaction.
+     * =====================================================================
+     * CHỨC NĂNG: Chọn prompt theo manual -> rule -> fallback allowlist.
+     * =====================================================================
+     * INPUT: prompt key tùy chọn, target/operation và context nguồn.
+     * OUTPUT: prompt metadata có key và selection mode; không gọi model AI.
+     * SIDE EFFECT: chỉ đọc config.
+     * EXCEPTION/TRANSACTION: InvalidArgumentException khi key/registry không hợp lệ; không transaction.
+     * =====================================================================
      *
      * Rule là map key/value đơn giản trong config, ví dụ `source_type => text`.
      * Khi nhiều prompt cùng khớp, priority cao hơn được chọn rồi mới đến key
      * alphabetic; deterministic fallback giữ kết quả ổn định giữa các worker.
      *
-     * @param array<string, scalar|null> $context
+     * @param  array<string, scalar|null>  $context
      * @return array<string, mixed>
      */
     public function select(
@@ -110,7 +126,18 @@ final class PromptRegistry
             ->first() + ['selection' => $ruleMatches->isNotEmpty() ? 'rule' : 'fallback'];
     }
 
-    /** INPUT: không có. OUTPUT: toàn bộ prompt metadata. SIDE EFFECT: đọc config. EXCEPTION/TRANSACTION: không có. @return array<string, array<string, mixed>> */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Trả toàn bộ prompt metadata đang allowlist.
+     * =====================================================================
+     * INPUT: không có.
+     * OUTPUT: prompt metadata theo key.
+     * SIDE EFFECT: đọc config; không gọi provider.
+     * EXCEPTION/TRANSACTION: không có; không mở transaction.
+     *
+     * @return array<string, array<string, mixed>>
+     * =====================================================================
+     */
     public function all(): array
     {
         return (array) config('ai-agent.prompts', []);

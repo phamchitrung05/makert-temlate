@@ -372,6 +372,12 @@
     "useMediaAssetManager": true,
     "mergePostCandidate": true,
     "overwrittenFields": true,
-    "toPostPayload": true
+    "toPostPayload": true,
+    "useAiProviderSettings": true,
+    "activeAiLineage": true,
+    "findProvider": true,
+    "mergeAiLineage": true,
+    "normalizeProvider": true,
+    "providerModels": true
   }
 }

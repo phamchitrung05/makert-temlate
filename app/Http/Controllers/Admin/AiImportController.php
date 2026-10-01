@@ -4,16 +4,18 @@ namespace App\Http\Controllers\Admin;
 
 use App\Actions\Posts\CreatePostAction;
 use App\Actions\Posts\UpdatePostAction;
+use App\Enums\AiCapability;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AiCandidateApplyRequest;
 use App\Http\Requests\Admin\AiImportRequest;
 use App\Http\Responses\BaseResponse;
-use App\Jobs\ProcessAiImportJob;
 use App\Models\AiImport;
-use App\Models\MediaAsset;
 use App\Models\Post;
-use App\Services\Ai\ArticleSourceFetcher;
 use App\Services\Ai\AiProvenanceService;
+use App\Services\Ai\AiRunAssetCleaner;
+use App\Services\Ai\AiRunService;
+use App\Services\Ai\ArticleSourceFetcher;
+use App\Services\Ai\ModelResolver;
 use App\Services\Ai\Registries\PromptRegistry;
 use App\Services\Ai\Registries\ProviderRegistry;
 use App\Services\Ai\Registries\SchemaRegistry;
@@ -21,7 +23,6 @@ use App\Services\Ai\Registries\TargetRegistry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 /**
  * =====================================================================
@@ -35,6 +36,7 @@ use Illuminate\Support\Str;
  * AUTHORIZATION: route permission posts.manage và kiểm tra owner bản ghi.
  * EXCEPTION/TRANSACTION: apply() dùng transaction + lock trong Post Actions;
  * candidate chỉ được apply khi ready và không tin provider/model từ client.
+ * =====================================================================
  */
 class AiImportController extends Controller
 {
@@ -96,44 +98,64 @@ class AiImportController extends Controller
             'outputs' => array_values($targetConfig['outputs'] ?? []),
             'prompts' => $promptItems,
             'schemas' => $schemaItems,
-            'providers' => $providers->publicOptions(),
+            'providers' => $providers->publicOptions(AiCapability::Text),
+            'image_providers' => $providers->publicOptions(AiCapability::Image),
         ], 'Capability AI của target.');
     }
 
-    /** Input: URL/options đã validate. Output: 202 job queued hoặc job trùng idempotent. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Tạo tác vụ nội dung với snapshot model và ảnh tùy chọn
+     * =====================================================================
+     * INPUT: URL/text cùng các lựa chọn đã được AiImportRequest kiểm tra.
+     * OUTPUT: 202 chứa job queued hoặc job trùng trong cửa sổ idempotency.
+     * SIDE EFFECT: Đọc defaults; AiRunService ghi run và dispatch queue, không gọi model tại HTTP request.
+     * EXCEPTION/TRANSACTION: ValidationException khi lựa chọn không hợp lệ; quota/idempotency và transaction do AiRunService quản lý.
+     * =====================================================================
+     */
     public function store(
         AiImportRequest $request,
         ArticleSourceFetcher $fetcher,
-        ProviderRegistry $providers,
+        ModelResolver $resolver,
         PromptRegistry $prompts,
-    ): JsonResponse
-    {
+        AiRunService $runs,
+    ): JsonResponse {
         if (! config('ai-import.enabled', true)) {
             return BaseResponse::error('AI import đang tắt.', 503);
         }
         $userId = (int) $request->user()->getKey();
-        if (AiImport::query()->where('created_by', $userId)->where('created_at', '>=', now()->subHour())->count() >= config('ai-import.quota_per_hour', 20)) {
-            return BaseResponse::error('Bạn đã đạt giới hạn import trong giờ này.', 429);
-        }
         $data = $request->validated();
         $sourceType = filled($data['text'] ?? null) ? 'text' : 'url';
         $normalizedUrl = $sourceType === 'url'
             ? $fetcher->validateUrl((string) $data['url'])
             : null;
-        $providerKey = (string) ($data['provider'] ?? config('ai-import.provider', 'deterministic'));
-        try {
-            $provider = $providers->get($providerKey);
-        } catch (\InvalidArgumentException) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'provider' => 'Provider chưa được cấu hình hoặc không nằm trong allowlist.',
-            ]);
+        $connection = $resolver->resolve(AiCapability::Text, array_filter([
+            'provider' => $data['provider'] ?? null,
+            'model' => $data['model'] ?? null,
+            'model_id' => $data['model_id'] ?? null,
+        ], static fn (mixed $value): bool => filled($value)));
+        $imageConnection = null;
+        if (($data['thumbnail_mode'] ?? 'auto') === 'generate' && ($data['generate_thumbnail'] ?? true)
+            && $request->user()->can('media.upload')) {
+            try {
+                $imageConnection = $resolver->resolve(AiCapability::Image, array_filter([
+                    'provider' => $data['image_provider'] ?? null,
+                    'model' => $data['image_model'] ?? null,
+                    'model_id' => $data['image_model_id'] ?? null,
+                ], static fn (mixed $value): bool => filled($value)));
+            } catch (\Illuminate\Validation\ValidationException) {
+                /**
+                 * =================================================================
+                 * GHI CHÚ: Ảnh là capability tùy chọn; content run vẫn hợp lệ.
+                 * =================================================================
+                 * Không ghi secret vào input khi image model chưa resolve được.
+                 * =================================================================
+                 */
+                $imageConnection = null;
+            }
         }
-        $model = (string) ($data['model'] ?? ($provider['models'][0] ?? 'default'));
-        if (! in_array($model, $provider['models'] ?? [], true)) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'model' => 'Model không nằm trong allowlist của provider đã chọn.',
-            ]);
-        }
+        $providerKey = (string) $connection['provider'];
+        $model = (string) ($connection['model'] ?? 'default');
         try {
             $prompt = $prompts->select(
                 isset($data['prompt_key']) ? (string) $data['prompt_key'] : null,
@@ -157,28 +179,40 @@ class AiImportController extends Controller
             'instructions' => $data['instructions'] ?? '',
             'provider' => $providerKey,
             'model' => $model,
+            'model_id' => $connection['model_id'] ?? null,
+            /**
+             * =================================================================
+             * GHI CHÚ: Snapshot identity không chứa API key.
+             * =================================================================
+             * Worker resolve key mã hóa lại theo provider_id khi chạy queue.
+             * =================================================================
+             */
+            'ai_connection' => $connection,
+            'image_connection' => $imageConnection,
         ];
         $sourceHashValue = $sourceType === 'text' ? trim((string) $data['text']) : (string) $normalizedUrl;
         $hash = hash('sha256', $sourceType.'|'.$sourceHashValue.'|'.json_encode($input, JSON_UNESCAPED_UNICODE).'|'.config('ai-import.prompt_version', 'v1'));
-        $existing = AiImport::query()->where('created_by', $userId)->where('source_hash', $hash)->where('created_at', '>=', now()->subMinutes(config('ai-import.idempotency_window_minutes', 30)))->latest()->first();
-        if ($existing) {
-            return BaseResponse::success($this->payload($existing), 'Import đã tồn tại.', 202);
-        }
-        $import = AiImport::query()->create([
-            'id' => (string) Str::uuid(), 'created_by' => $userId,
+        $import = $runs->create($userId, [
             'source_url' => $sourceType === 'url' ? $data['url'] : '',
             'source_text' => $sourceType === 'text' ? trim((string) $data['text']) : null,
             'normalized_url' => $normalizedUrl, 'source_hash' => $hash, 'status' => 'queued',
             'current_step' => 'queued', 'progress' => 0, 'input_json' => $input,
             'provider' => $providerKey, 'prompt_version' => config('ai-import.prompt_version', 'v1'),
         ]);
-        $import->forceFill(['session_id' => $import->id])->save();
-        ProcessAiImportJob::dispatch($import->id);
 
         return BaseResponse::success($this->payload($import), 'Đã xếp hàng import bài viết.', 202);
     }
 
-    /** Input: UUID job của admin. Output: progress/result sau ownership check. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Đọc tiến trình và kết quả của tác vụ thuộc admin hiện tại
+     * =====================================================================
+     * INPUT: Request xác thực và AiImport route-bound.
+     * OUTPUT: Status, progress và candidate qua public payload.
+     * SIDE EFFECT: Chỉ đọc lại bản ghi; không ghi DB hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: Abort 404 nếu không phải owner; không mở transaction.
+     * =====================================================================
+     */
     public function show(Request $request, AiImport $aiImport): JsonResponse
     {
         $this->ensureOwner($request, $aiImport);
@@ -186,10 +220,20 @@ class AiImportController extends Controller
         return BaseResponse::success($this->payload($aiImport->fresh()), 'Trạng thái import.');
     }
 
-    /** Input: job đã terminal. Output: reset về queued và dispatch lại. */
-    public function regenerate(Request $request, AiImport $aiImport, ProviderRegistry $providers, PromptRegistry $prompts): JsonResponse
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Tạo candidate mới từ nguồn cũ, giữ nguyên lịch sử run
+     * =====================================================================
+     * INPUT: Run đã terminal, prompt/model/fields override tùy chọn.
+     * OUTPUT: 202 chứa child run mới trong cùng session.
+     * SIDE EFFECT: AiRunService ghi child run và dispatch queue; không ghi đè candidate cũ.
+     * EXCEPTION/TRANSACTION: Abort 404/409/422 hoặc ValidationException; quota/transaction do AiRunService quản lý.
+     * =====================================================================
+     */
+    public function regenerate(Request $request, AiImport $aiImport, PromptRegistry $prompts, ModelResolver $resolver, AiRunService $runs): JsonResponse
     {
         $this->ensureOwner($request, $aiImport);
+        abort_if($aiImport->operation === 'image', 422, 'Tạo candidate ảnh mới qua tác vụ tạo ảnh.');
         if (in_array($aiImport->status, ['queued', 'fetching', 'extracting', 'rewriting', 'seo', 'thumbnail'], true)) {
             return BaseResponse::error('Import đang được xử lý.', 409);
         }
@@ -197,23 +241,25 @@ class AiImportController extends Controller
             'prompt_key' => ['sometimes', 'string', 'max:120'],
             'instructions' => ['sometimes', 'string', 'max:4000'],
             'provider' => ['sometimes', 'nullable', 'string', 'max:80'],
-            'model' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'model' => ['sometimes', 'nullable', 'string', 'max:190'],
+            'model_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'fields' => ['sometimes', 'array'],
             'fields.*' => ['string', 'distinct', 'in:title,excerpt,content,seo,taxonomy,thumbnail'],
         ]);
         $currentInput = (array) $aiImport->input_json;
-        $providerKey = (string) ($options['provider'] ?? ($currentInput['provider'] ?? config('ai-import.provider', 'deterministic')));
-        if (array_key_exists('provider', $options) || array_key_exists('model', $options)) {
-            try {
-                $provider = $providers->get($providerKey);
-            } catch (\InvalidArgumentException) {
-                throw \Illuminate\Validation\ValidationException::withMessages(['provider' => 'Provider chưa được cấu hình.']);
-            }
-            $model = $options['model'] ?? ($currentInput['model'] ?? null);
-            if (! empty($model) && ! in_array($model, $provider['models'] ?? [], true)) {
-                throw \Illuminate\Validation\ValidationException::withMessages(['model' => 'Model không nằm trong allowlist.']);
-            }
+        $hasModelOverride = array_key_exists('provider', $options)
+            || array_key_exists('model', $options)
+            || array_key_exists('model_id', $options);
+        $selection = $hasModelOverride
+            ? array_intersect_key($options, array_flip(['provider', 'model', 'model_id']))
+            : array_intersect_key($currentInput, array_flip(['provider', 'model', 'model_id']));
+        if (! array_key_exists('provider', $options) && filled($options['model'] ?? null)
+            && ! filled($options['model_id'] ?? null)) {
+            $selection['provider'] = $currentInput['provider'] ?? null;
         }
+        $connection = ! $hasModelOverride && ! empty($currentInput['ai_connection'])
+            ? (array) $currentInput['ai_connection']
+            : $resolver->resolve(AiCapability::Text, array_filter($selection, static fn (mixed $value): bool => filled($value)));
         if (array_key_exists('prompt_key', $options)) {
             try {
                 $prompts->get((string) $options['prompt_key'], 'post', 'create');
@@ -221,31 +267,38 @@ class AiImportController extends Controller
                 throw \Illuminate\Validation\ValidationException::withMessages(['prompt_key' => 'Prompt không nằm trong allowlist của Post.']);
             }
         }
-        $child = $aiImport->replicate(['id', 'created_at', 'updated_at']);
-        $child->id = (string) Str::uuid();
-        $child->session_id = $aiImport->session_id ?: $aiImport->id;
-        $child->parent_id = $aiImport->id;
-        $child->operation = 'regenerate';
-        $child->status = 'queued';
-        $child->current_step = 'queued';
-        $child->progress = 0;
-        $child->result_json = null;
-        $child->error_code = null;
-        $child->error_message = null;
-        $child->completed_at = null;
-        $child->applied_target_id = null;
-        $child->applied_fields = null;
-        $child->input_json = array_replace((array) $aiImport->input_json, array_filter($options, fn ($value) => $value !== null));
-        $child->save();
-        ProcessAiImportJob::dispatch($child->id);
+        $childInput = array_replace((array) $aiImport->input_json, array_filter($options, fn ($value) => $value !== null));
+        $childInput['provider'] = $connection['provider'];
+        $childInput['model'] = $connection['model'] ?? null;
+        $childInput['model_id'] = $connection['model_id'] ?? null;
+        $childInput['ai_connection'] = $connection;
+        $child = $runs->create((int) $request->user()->getKey(), [
+            'session_id' => $aiImport->session_id ?: $aiImport->id, 'parent_id' => $aiImport->id,
+            'operation' => 'regenerate', 'source_url' => $aiImport->source_url,
+            'source_text' => $aiImport->source_text, 'source_hash' => $aiImport->source_hash,
+            'normalized_url' => $aiImport->normalized_url, 'input_json' => $childInput,
+            'provider' => $connection['provider'], 'prompt_version' => $aiImport->prompt_version,
+        ], true);
 
         return BaseResponse::success($this->payload($child->fresh()), 'Đã xếp hàng tạo candidate mới.', 202);
     }
 
-    /** Input: run failed/cancelled. Output: cùng candidate được retry kỹ thuật, không tạo run mới. */
-    public function retry(Request $request, AiImport $aiImport): JsonResponse
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Đưa lại run lỗi vào queue mà không tạo candidate mới
+     * =====================================================================
+     * INPUT: Run failed/cancelled/expired thuộc actor; image run cần media.upload.
+     * OUTPUT: Run hiện tại đã reset trạng thái queued.
+     * SIDE EFFECT: Cập nhật lifecycle/errors rồi dispatch job theo operation.
+     * EXCEPTION/TRANSACTION: Abort 403/404 hoặc trả 409 khi run chưa terminal; không mở transaction tổng.
+     * =====================================================================
+     */
+    public function retry(Request $request, AiImport $aiImport, AiRunService $runs): JsonResponse
     {
         $this->ensureOwner($request, $aiImport);
+        if ($aiImport->operation === 'image') {
+            abort_unless($request->user()->can('media.upload'), 403);
+        }
         if (! in_array($aiImport->status, ['failed', 'cancelled', 'expired'], true)) {
             return BaseResponse::error('Chỉ có thể retry run đã kết thúc lỗi.', 409);
         }
@@ -253,22 +306,42 @@ class AiImportController extends Controller
             'status' => 'queued', 'current_step' => 'queued', 'progress' => 0,
             'error_code' => null, 'error_message' => null, 'completed_at' => null,
         ])->save();
-        ProcessAiImportJob::dispatch($aiImport->id);
+        $runs->dispatch($aiImport);
 
         return BaseResponse::success($this->payload($aiImport->fresh()), 'Đã xếp hàng retry run.');
     }
 
-    /** Input: candidate đã ready. Output: mọi candidate trong cùng session để compare. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Liệt kê candidate nội dung trong cùng session để so sánh
+     * =====================================================================
+     * INPUT: Run thuộc actor dùng để xác định session.
+     * OUTPUT: Danh sách candidate không bao gồm image run.
+     * SIDE EFFECT: Chỉ query ai_imports; không gọi model.
+     * EXCEPTION/TRANSACTION: Abort 404 nếu không phải owner; không mở transaction.
+     * =====================================================================
+     */
     public function candidates(Request $request, AiImport $aiImport): JsonResponse
     {
         $this->ensureOwner($request, $aiImport);
         $sessionId = $aiImport->session_id ?: $aiImport->id;
-        $items = AiImport::query()->where('session_id', $sessionId)->orWhereKey($sessionId)->latest()->get();
+        $items = AiImport::query()->where(function ($query) use ($sessionId): void {
+            $query->where('session_id', $sessionId)->orWhereKey($sessionId);
+        })->where('operation', '!=', 'image')->latest()->get();
 
         return BaseResponse::success($items->map(fn (AiImport $item): array => $this->payload($item))->values()->all(), 'Danh sách candidate.');
     }
 
-    /** Input: fields/target tùy chọn. Output: Post draft được apply và provenance theo field. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Áp dụng field được chọn vào Post draft và ghi provenance
+     * =====================================================================
+     * INPUT: Run ready, fields whitelist, target_id và expected_updated_at tùy chọn.
+     * OUTPUT: Post ID, các field đã áp dụng và metadata nguồn AI.
+     * SIDE EFFECT: Ghi Post/media/SEO và provenance qua domain actions; không gọi model.
+     * EXCEPTION/TRANSACTION: DB transaction bao toàn bộ apply; abort 409 khi candidate/target không còn hợp lệ.
+     * =====================================================================
+     */
     public function apply(AiCandidateApplyRequest $request, AiImport $aiImport, TargetRegistry $targets, CreatePostAction $create, UpdatePostAction $update, AiProvenanceService $provenance): JsonResponse
     {
         $this->ensureOwner($request, $aiImport);
@@ -292,7 +365,16 @@ class AiImportController extends Controller
         return BaseResponse::success(['post_id' => $post->getKey(), 'fields' => $data['fields'], 'provenance' => data_get($aiImport->fresh()->result_json, 'provider')], 'Đã áp dụng candidate vào Post draft.');
     }
 
-    /** Input: job đang chạy. Output: cancelled và cleanup thumbnail tạm. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Hủy tác vụ đang chạy và dọn asset tạm chưa được dùng
+     * =====================================================================
+     * INPUT: AiImport route-bound thuộc actor.
+     * OUTPUT: Payload cancelled hoặc trạng thái terminal hiện tại.
+     * SIDE EFFECT: Dọn thumbnail chưa có usage và cập nhật lifecycle; không hủy HTTP provider đã gửi.
+     * EXCEPTION/TRANSACTION: Abort 404 khi ownership không khớp; không mở transaction tổng.
+     * =====================================================================
+     */
     public function cancel(Request $request, AiImport $aiImport): JsonResponse
     {
         $this->ensureOwner($request, $aiImport);
@@ -305,7 +387,16 @@ class AiImportController extends Controller
         return BaseResponse::success($this->payload($aiImport->fresh()), 'Đã hủy import.');
     }
 
-    /** Input: job của admin. Output: xóa job và asset thumbnail chưa attach. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Xóa run của actor và dọn thumbnail chưa attach
+     * =====================================================================
+     * INPUT: AiImport route-bound thuộc actor.
+     * OUTPUT: Response thành công không có payload.
+     * SIDE EFFECT: Dọn asset chưa có usage rồi xóa bản ghi run; không gọi provider.
+     * EXCEPTION/TRANSACTION: Abort 404 khi ownership không khớp; lỗi lưu trữ/DB truyền lên caller.
+     * =====================================================================
+     */
     public function destroy(Request $request, AiImport $aiImport): JsonResponse
     {
         $this->ensureOwner($request, $aiImport);
@@ -366,10 +457,6 @@ class AiImportController extends Controller
      */
     private function cleanupThumbnail(AiImport $import): void
     {
-        $id = data_get($import->result_json, 'draft.thumbnail.media_asset_id');
-        if ($id && ($asset = MediaAsset::query()->find($id)) && ! $asset->usages()->exists()) {
-            $asset->clearMediaCollection('library');
-            $asset->delete();
-        }
+        app(AiRunAssetCleaner::class)->cleanup($import);
     }
 }

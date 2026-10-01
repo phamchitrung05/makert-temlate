@@ -10,6 +10,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -81,6 +82,7 @@ class ProcessAiImportJob implements ShouldQueue
                 'expires_at' => now()->addDays((int) config('ai-import.retention_days', 2)),
                 'error_code' => null, 'error_message' => null,
             ]);
+            $this->queueOptionalImage($import->fresh());
         } catch (AiImportException $exception) {
             $import->refresh();
             if ($exception->errorCode === 'CANCELLED' || $import->status === 'cancelled') {
@@ -96,8 +98,11 @@ class ProcessAiImportJob implements ShouldQueue
             }
             throw $exception;
         } catch (Throwable $exception) {
-            $import->update(['error_code' => 'AI_IMPORT_FAILED', 'error_message' => Str::limit($exception->getMessage(), 500)]);
-            throw $exception;
+            report($exception);
+            $import->update([
+                'status' => 'failed', 'current_step' => 'failed',
+                'error_code' => 'AI_IMPORT_FAILED', 'error_message' => 'Tác vụ AI thất bại do lỗi hệ thống.',
+            ]);
         }
     }
 
@@ -115,7 +120,55 @@ class ProcessAiImportJob implements ShouldQueue
     {
         AiImport::query()->whereKey($this->importId)->whereNotIn('status', ['ready', 'cancelled'])->update([
             'status' => 'failed', 'current_step' => 'failed', 'error_code' => $exception instanceof AiImportException ? $exception->errorCode : 'AI_IMPORT_FAILED',
-            'error_message' => Str::limit($exception?->getMessage() ?: 'Import thất bại.', 500),
+            'error_message' => $exception instanceof AiImportException
+                ? Str::limit($exception->getMessage(), 500) : 'Tác vụ AI thất bại do lỗi hệ thống.',
         ]);
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Tách image run tùy chọn sau khi content run đã ready
+     * =====================================================================
+     * INPUT: text import ready có image snapshot immutable hoặc null.
+     * OUTPUT: không trả giá trị; child image job được queue riêng.
+     * SIDE EFFECT: tạo AiImport operation=image và dispatch worker; parent không fail.
+     * EXCEPTION/TRANSACTION: lỗi tạo child chỉ ghi error parent, không retry text/provider.
+     * =====================================================================
+     */
+    private function queueOptionalImage(?AiImport $import): void
+    {
+        if (! $import || ($import->input_json['thumbnail_mode'] ?? 'auto') !== 'generate'
+            || empty($import->input_json['image_connection'])) {
+            return;
+        }
+        try {
+            $input = (array) $import->input_json;
+            $draft = (array) data_get($import->result_json, 'draft', []);
+            $child = DB::transaction(function () use ($import, $input, $draft): AiImport {
+                $child = AiImport::query()->create([
+                    'id' => (string) Str::uuid(), 'created_by' => $import->created_by,
+                    'source_url' => '', 'source_hash' => hash('sha256', 'image|'.$import->id),
+                    'status' => 'queued', 'current_step' => 'queued', 'progress' => 0,
+                    'input_json' => [
+                        'prompt' => (string) ($draft['thumbnail_prompt'] ?? $draft['title'] ?? 'Tạo ảnh đại diện'),
+                        'title' => (string) ($draft['title'] ?? 'AI generated image'),
+                        'alt_text' => (string) ($draft['thumbnail']['alt_text'] ?? $draft['title'] ?? ''),
+                        'ai_connection' => $input['image_connection'],
+                    ],
+                    'provider' => data_get($input, 'image_connection.provider'),
+                    'prompt_version' => 'image-v1', 'session_id' => $import->session_id ?: $import->id,
+                    'parent_id' => $import->id, 'operation' => 'image',
+                ]);
+
+                return $child;
+            });
+            ProcessAiImageGenerationJob::dispatch($child->id);
+            $result = (array) $import->result_json;
+            $result['image_job_id'] = $child->id;
+            $import->update(['result_json' => $result]);
+        } catch (Throwable $exception) {
+            report($exception);
+            $import->update(['error_code' => 'AI_IMAGE_QUEUE_FAILED', 'error_message' => 'Không thể xếp hàng tạo ảnh tự động; nội dung vẫn sẵn sàng.']);
+        }
     }
 }
