@@ -11,6 +11,7 @@ use App\Models\Category;
 use App\Models\Tag;
 use App\Services\Ai\Contracts\AiProviderContract;
 use App\Services\Ai\Registries\PromptRegistry;
+use App\Services\Ai\Registries\ProviderRegistry;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 
@@ -24,7 +25,8 @@ use Illuminate\Support\Str;
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - __construct(), run(), fallbackDraft(), progress(), title(), meta().
- * - extract(), sanitize(), existingIds(), createThumbnail().
+ * - extract(), sanitize(), inlineSource(), mergeRequestedFields(), existingIds(),
+ *   createThumbnail(), providerFor().
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : AiImport cùng URL/options, provider contract và uploader media tùy chọn.
@@ -50,6 +52,7 @@ class ArticleImportService
         private readonly AiProviderContract $provider,
         private readonly ?ArticleSourceFetcher $fetcher = null,
         private readonly ?UploadMediaAssetAction $uploader = null,
+        private readonly ?ProviderRegistry $providers = null,
     ) {}
 
     /**
@@ -68,9 +71,13 @@ class ArticleImportService
     public function run(AiImport $import): array
     {
         $fetcher = $this->fetcher ?? new ArticleSourceFetcher;
-        $url = $fetcher->validateUrl((string) $import->source_url);
+        $input = is_array($import->input_json) ? $import->input_json : [];
+        $sourceType = (string) ($input['source_type'] ?? (filled($import->source_url) ? 'url' : 'text'));
+        $url = $sourceType === 'text' ? '' : $fetcher->validateUrl((string) $import->source_url);
         $this->progress($import, 'fetching', 15);
-        $source = $fetcher->fetch($url);
+        $source = $sourceType === 'text'
+            ? $this->inlineSource((string) $import->source_text, $import)
+            : $fetcher->fetch($url);
         $this->progress($import, 'extracting', 35);
 
         $html = $source['html'];
@@ -81,13 +88,18 @@ class ArticleImportService
             throw new AiImportException('Không tìm thấy nội dung bài viết trong URL.', 'SOURCE_EMPTY');
         }
 
-        $input = is_array($import->input_json) ? $import->input_json : [];
-        $promptKey = (string) ($input['prompt_key'] ?? 'post.create.from_url');
-        $prompt = (new PromptRegistry)->get($promptKey, 'post', 'create');
+        $provider = $this->providerFor($input);
+        $prompt = (new PromptRegistry)->select(
+            isset($input['prompt_key']) ? (string) $input['prompt_key'] : null,
+            'post',
+            'create',
+            ['source_type' => $sourceType, 'language' => (string) ($input['language'] ?? 'vi')],
+        );
+        $promptKey = (string) $prompt['key'];
         $this->progress($import, 'rewriting', 55);
         $draft = $this->fallbackDraft($url, $title, $description, $content, $html);
-        if ($this->provider->configured()) {
-            $draft = array_replace($draft, $this->provider->generate($title, $content, (string) ($input['language'] ?? 'vi'), (string) ($input['rewrite_style'] ?? 'informative'), $promptKey, (string) ($input['instructions'] ?? '')));
+        if ($provider->configured()) {
+            $draft = array_replace($draft, $provider->generate($title, $content, (string) ($input['language'] ?? 'vi'), (string) ($input['rewrite_style'] ?? 'informative'), $promptKey, (string) ($input['instructions'] ?? '')));
             $draft['content_html'] = $this->sanitize((string) ($draft['content_html'] ?? $draft['content'] ?? ''));
             $draft['content'] = $draft['content_html'];
         }
@@ -96,12 +108,19 @@ class ArticleImportService
         $draft['category_ids'] = $draft['suggested_category_ids'];
         $draft['tag_ids'] = $draft['suggested_tag_ids'];
 
+        $requestedFields = array_values(array_unique(array_map('strval', (array) ($input['fields'] ?? []))));
+        if ($requestedFields !== [] && $import->parent_id) {
+            $parentDraft = (array) data_get(AiImport::query()->find($import->parent_id)?->result_json, 'draft', []);
+            $draft = $this->mergeRequestedFields($parentDraft, $draft, $requestedFields);
+        }
+
         $this->progress($import, 'seo', 72);
         $thumbnail = $draft['thumbnail'];
         if (! empty($draft['thumbnail_alt_text'])) {
             $thumbnail['alt_text'] = (string) $draft['thumbnail_alt_text'];
         }
-        if (($input['generate_thumbnail'] ?? true) && ($thumbnail['source_url'] ?? null) && $this->uploader && $import->exists) {
+        $thumbnailRequested = $requestedFields === [] || in_array('thumbnail', $requestedFields, true);
+        if ($thumbnailRequested && ($input['generate_thumbnail'] ?? true) && ($thumbnail['source_url'] ?? null) && $this->uploader && $import->exists) {
             $this->progress($import, 'thumbnail', 86);
             $asset = $this->createThumbnail($fetcher, (string) $thumbnail['source_url'], (string) $title, (int) $import->created_by, (string) ($thumbnail['alt_text'] ?? $title));
             if ($asset) {
@@ -121,11 +140,12 @@ class ArticleImportService
         return [
             'source' => ['url' => $source['url'], 'title' => $title, 'canonical_url' => $this->meta($html, 'canonical') ?: $source['url']],
             'draft' => $draft,
-            'provider' => $this->provider->providerName(),
-            'model' => $this->provider->modelName(),
+            'provider' => $provider->providerName(),
+            'model' => $provider->modelName(),
             'prompt_key' => $promptKey,
             'prompt_version' => (string) $prompt['version'],
             'schema_version' => (string) $prompt['schema'],
+            'requested_fields' => $requestedFields,
         ];
     }
 
@@ -149,6 +169,67 @@ class ArticleImportService
             'suggested_category_ids' => [], 'suggested_tag_ids' => [], 'thumbnail_prompt' => $title,
             'thumbnail' => ['media_asset_id' => null, 'source_url' => $this->meta($html, 'og:image'), 'alt_text' => $title],
         ];
+    }
+
+    /**
+     * Dựng source HTML an toàn từ text inline để dùng chung extractor/sanitizer.
+     *
+     * Input: text do admin gửi và AiImport hiện tại.
+     * Output: source map tương thích ArticleSourceFetcher::fetch(), không gọi HTTP.
+     * Side effect: không ghi database; chỉ escape nội dung trong memory.
+     * Exception/transaction: ném AiImportException nếu text rỗng; không transaction.
+     *
+     * @return array{url:string,html:string,content_type:string}
+     */
+    private function inlineSource(string $text, AiImport $import): array
+    {
+        $text = trim($text);
+        if ($text === '') {
+            throw new AiImportException('Nội dung nguồn không được để trống.', 'SOURCE_EMPTY');
+        }
+
+        $title = trim((string) (preg_split('/\R/u', $text)[0] ?? ''));
+        $paragraphs = preg_split('/\R{2,}/u', $text) ?: [$text];
+        $html = '<html><head><title>'.e(Str::limit($title ?: 'Bài viết mới', 255, '')).'</title></head><body><article>'.collect($paragraphs)
+            ->map(fn (string $paragraph): string => '<p>'.nl2br(e(trim($paragraph))).'</p>')
+            ->implode('').'</article></body></html>';
+
+        return [
+            'url' => 'inline://'.$import->getKey(),
+            'html' => $html,
+            'content_type' => 'text/plain',
+        ];
+    }
+
+    /**
+     * Giữ field không được chọn từ parent khi regenerate từng phần.
+     *
+     * Input: draft parent, draft mới và field selection allowlist.
+     * Output: draft mới chỉ thay nhóm field được yêu cầu; không mutate input.
+     * Side effect: không gọi database/provider; thumbnail được xử lý ở caller.
+     */
+    private function mergeRequestedFields(array $parent, array $fresh, array $fields): array
+    {
+        $merged = array_replace($fresh, $parent);
+        foreach ($fields as $field) {
+            match ($field) {
+                'content' => $merged = array_replace($merged, [
+                    'content_html' => $fresh['content_html'] ?? $fresh['content'] ?? $parent['content_html'] ?? '',
+                    'content' => $fresh['content'] ?? $fresh['content_html'] ?? $parent['content'] ?? '',
+                ]),
+                'seo' => $merged = array_replace($merged, array_intersect_key($fresh, array_flip([
+                    'focus_keyword', 'seo_title', 'seo_description', 'canonical_url',
+                    'robots_index', 'robots_follow', 'og_title', 'og_description',
+                ]))),
+                'taxonomy' => $merged = array_replace($merged, array_intersect_key($fresh, array_flip([
+                    'suggested_category_ids', 'suggested_tag_ids', 'category_ids', 'tag_ids',
+                ]))),
+                'thumbnail' => $merged['thumbnail'] = $fresh['thumbnail'] ?? ($parent['thumbnail'] ?? []),
+                default => $merged[$field] = $fresh[$field] ?? ($parent[$field] ?? null),
+            };
+        }
+
+        return $merged;
     }
 
     /**
@@ -297,6 +378,33 @@ class ArticleImportService
         $ids = collect(is_array($ids) ? $ids : [])->map(fn ($id) => is_numeric($id) ? (int) $id : null)->filter(fn ($id) => $id > 0)->unique()->values();
 
         return $ids->isEmpty() ? [] : $model::query()->whereKey($ids->all())->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
+    }
+
+    /**
+     * Chọn provider từ registry bằng input đã được controller allowlist.
+     *
+     * Input: input_json provider/model.
+     * Output: provider contract; fallback về provider mặc định khi test legacy.
+     * Exception: AiImportException nếu key provider bị giả mạo hoặc adapter lỗi.
+     *
+     * @param array<string, mixed> $input
+     */
+    private function providerFor(array $input): AiProviderContract
+    {
+        if (! $this->providers || empty($input['provider'])) {
+            return $this->provider;
+        }
+
+        try {
+            $provider = $this->providers->resolve((string) $input['provider']);
+            if (method_exists($provider, 'withModel')) {
+                $provider->withModel(isset($input['model']) ? (string) $input['model'] : null);
+            }
+
+            return $provider;
+        } catch (\Throwable $exception) {
+            throw new AiImportException('Provider AI không được phép sử dụng.', 'AI_PROVIDER_NOT_ALLOWED');
+        }
     }
 
     /**

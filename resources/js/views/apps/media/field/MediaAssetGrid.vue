@@ -12,7 +12,7 @@
   - isSelected()/canSelect(): xác định trạng thái chọn
 
   INPUT/OUTPUT CỦA COMPONENT (tổng thể):
-  - INPUT : assets, selected assets, loading, multiple và capability.
+  - INPUT : assets, selected assets, multiple và capability.
   - OUTPUT: emit toggle/retry cho MediaLibraryDialog.
   =====================================================================
 -->
@@ -32,10 +32,6 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  loading: {
-    type: Boolean,
-    default: false,
-  },
   canSelect: {
     type: Boolean,
     default: true,
@@ -48,14 +44,19 @@ const props = defineProps({
 
 const emit = defineEmits(['toggle', 'retry'])
 
+/** Input: selected asset list. Output: Set ID để lookup O(1). */
 const selectedIds = computed(() => new Set(props.selectedAssets.map(asset => asset.id)))
 
+/** Input: asset. Output: file metadata hoặc object rỗng. */
 const fileOf = asset => asset?.file ?? {}
 
+/** Input: asset. Output: preview URL public hoặc null. */
 const previewOf = asset => fileOf(asset).preview_url || fileOf(asset).url || null
 
+/** Input: asset. Output: true khi asset đang được chọn. */
 const isSelected = asset => selectedIds.value.has(asset.id)
 
+/** Input: status backend. Output: nhãn và màu Vuetify. */
 const resolveStatus = status => ({
   pending: { text: 'Pending', color: 'warning' },
   processing: { text: 'Processing', color: 'warning' },
@@ -66,10 +67,12 @@ const resolveStatus = status => ({
   failed: { text: 'Failed', color: 'error' },
 }[status] ?? { text: status || 'Unknown', color: 'default' })
 
+/** Input: asset. Output: true khi policy UI cho phép chọn. */
 const canSelect = asset => {
   return props.canSelect && !(asset.kind === 'archive' && fileOf(asset).scan_status !== 'clean')
 }
 
+/** Input: asset. Output: hướng dẫn accessibility cho card. */
 const selectionHint = asset => {
   if (!props.canSelect)
     return 'Bạn không có quyền attach media.'
@@ -80,12 +83,16 @@ const selectionHint = asset => {
   return props.multiple ? 'Chọn asset này' : 'Chọn asset'
 }
 
-const shouldShowStatus = status => Boolean(status) && !['pending', 'ready', 'clean'].includes(status)
+/** Input: status API. Output: ẩn trạng thái mặc định clean/pending khỏi card. */
+const shouldShowStatus = status => Boolean(status) && !['clean', 'pending'].includes(status)
 
+/** Input: asset. Output: true khi cần hiển thị scan status. */
 const shouldShowScanStatus = asset => shouldShowStatus(fileOf(asset).scan_status)
 
+/** Input: asset. Output: true khi cần hiển thị conversion status. */
 const shouldShowConversionStatus = asset => shouldShowStatus(fileOf(asset).conversion_status)
 
+/** Input: keyboard event/card asset. Output: emit toggle khi Enter/Space hợp lệ. */
 const handleKeydown = (event, asset) => {
   if (!canSelect(asset) || !['Enter', ' '].includes(event.key))
     return
@@ -97,14 +104,6 @@ const handleKeydown = (event, asset) => {
 
 <template>
   <div class="media-asset-grid">
-    <VProgressLinear
-      v-if="props.loading"
-      indeterminate
-      color="primary"
-      class="mb-4"
-      aria-label="Loading media assets"
-    />
-
     <VRow
       v-if="props.assets.length"
       role="listbox"
@@ -133,8 +132,9 @@ const handleKeydown = (event, asset) => {
             <VImg
               v-if="previewOf(asset) && asset.kind === 'image'"
               :src="previewOf(asset)"
-              height="148"
-              cover
+              height="100%"
+              contain
+              class="media-asset-card__image"
               alt=""
             />
             <VIcon
@@ -198,7 +198,7 @@ const handleKeydown = (event, asset) => {
 .media-asset-card {
   cursor: pointer;
   background: rgb(var(--v-theme-surface));
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border: 2px solid rgba(var(--v-border-color), var(--v-border-opacity));
   box-shadow: 0 2px 6px rgba(var(--v-theme-on-surface), 0.08);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -209,7 +209,7 @@ const handleKeydown = (event, asset) => {
 }
 
 .media-asset-card--selected {
-  border: 2px solid rgb(var(--v-theme-primary));
+  border-color: rgb(var(--v-theme-primary));
   box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 0.14), 0 2px 6px rgba(var(--v-theme-on-surface), 0.08);
 }
 
@@ -221,11 +221,18 @@ const handleKeydown = (event, asset) => {
 .media-asset-card__preview {
   position: relative;
   display: flex;
-  min-block-size: 148px;
+  inline-size: 100%;
+  aspect-ratio: 1 / 1;
+  min-block-size: 0;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: rgb(var(--v-theme-grey-200));
+  background: rgb(var(--v-theme-grey-100));
+}
+
+.media-asset-card__preview :deep(.media-asset-card__image) {
+  inline-size: 100%;
+  block-size: 100%;
 }
 
 .media-asset-card__check {

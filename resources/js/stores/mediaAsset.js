@@ -13,10 +13,11 @@
  * - uploadMediaAsset(): upload có progress
  * - updateMediaAsset()/attachMediaAsset()/detachMediaAsset(): mutation
  * - reorderMediaAssets()/deleteMediaAsset()/retryMediaAsset(): workflow
- * - downloadMediaAsset(): lấy URL/temporary URL
+ * - applyListResponse()/runMutation()/mutateUsage(): helper đồng bộ state
+ * - downloadMediaAsset()/downloadFile(): lấy payload hoặc tải file
  * - clearError()/clearSelection()/reset(): dọn state
  *
- * INPUT/OUTPUT CỦA FILE (tổng thể):
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : query, asset id, File, metadata và usage payload
  * - OUTPUT: state readonly, action Promise và lỗi request
  * =====================================================================
@@ -32,6 +33,7 @@ const defaultFilters = () => ({
   kind: null,
   field: null,
   visibility: null,
+  owner: null,
   scan_status: null,
   conversion_status: null,
   sort: 'created_at',
@@ -54,9 +56,13 @@ export const useMediaAssetStore = defineStore('mediaAsset', () => {
   const filters = reactive(defaultFilters())
   const pagination = shallowRef(defaultPagination())
   const isLoading = shallowRef(false)
+  const isDetailLoading = shallowRef(false)
   const isMutating = shallowRef(false)
   const uploadProgress = shallowRef(0)
   const error = shallowRef(null)
+  const detailError = shallowRef(null)
+  let listRevision = 0
+  let detailRevision = 0
 
   const list = computed(() => items.value)
   const detail = computed(() => selectedAsset.value)
@@ -68,6 +74,7 @@ export const useMediaAssetStore = defineStore('mediaAsset', () => {
     per_page: pagination.value.per_page,
   }))
 
+  /** Input: response list mới nhất. Output: đồng bộ list và pagination. */
   const applyListResponse = response => {
     items.value = response?.items ?? []
     itemsLength.value = response?.itemsLength ?? 0
@@ -81,13 +88,20 @@ export const useMediaAssetStore = defineStore('mediaAsset', () => {
     return response
   }
 
+  /** Input: filter/page. Output: response mới nhất; bỏ qua response stale. */
   const fetchMediaAssets = async (params = {}) => {
+    const revision = ++listRevision
+
     isLoading.value = true
     error.value = null
 
     try {
       const nextParams = { ...query.value, ...params }
+
+      Object.assign(filters, Object.fromEntries(Object.entries(nextParams).filter(([key]) => key in defaultFilters())))
+
       const response = await mediaAssetService.list(nextParams)
+      if (revision !== listRevision) return null
 
       if (params.page)
         pagination.value = { ...pagination.value, current_page: params.page }
@@ -97,45 +111,58 @@ export const useMediaAssetStore = defineStore('mediaAsset', () => {
       return applyListResponse(response)
     }
     catch (requestError) {
-      error.value = requestError
+      if (revision === listRevision) error.value = requestError
 
       return null
     }
     finally {
-      isLoading.value = false
+      if (revision === listRevision) isLoading.value = false
     }
   }
 
-  const fetchMediaAsset = async id => {
-    isLoading.value = true
-    error.value = null
+  /** Input: ID và fallback list item. Output: detail mới nhất, không làm co panel. */
+  const fetchMediaAsset = async (id, fallback = null) => {
+    const revision = ++detailRevision
+    if (!id) {
+      selectedAsset.value = null
+      isDetailLoading.value = false
+      detailError.value = null
+
+      return null
+    }
+    if (fallback) selectedAsset.value = fallback
+    isDetailLoading.value = true
+    detailError.value = null
 
     try {
-      selectedAsset.value = await mediaAssetService.show(id)
+      const response = await mediaAssetService.show(id)
+      if (revision !== detailRevision) return null
+      selectedAsset.value = response
 
       return selectedAsset.value
     }
     catch (requestError) {
-      error.value = requestError
+      if (revision === detailRevision) detailError.value = requestError
 
       return null
     }
     finally {
-      isLoading.value = false
+      if (revision === detailRevision) isDetailLoading.value = false
     }
   }
 
-  const runMutation = async callback => {
+  /** Input: mutation callback và option asset-response. Output: response hoặc throw lỗi. */
+  const runMutation = async (callback, assetResponse = true) => {
     isMutating.value = true
     error.value = null
 
     try {
       const response = await callback()
 
-      if (response?.id)
+      if (assetResponse && response?.id)
         selectedAsset.value = response
 
-      if (response?.id) {
+      if (assetResponse && response?.id) {
         const index = items.value.findIndex(item => item.id === response.id)
 
         if (index >= 0) {
@@ -157,15 +184,18 @@ export const useMediaAssetStore = defineStore('mediaAsset', () => {
     }
   }
 
+  /** Input: filter mới. Output: state query mới và reset page về 1. */
   const setFilters = (nextFilters = {}) => {
     Object.assign(filters, nextFilters)
     pagination.value = { ...pagination.value, current_page: 1 }
   }
 
+  /** Input: pagination partial. Output: pagination state mới. */
   const setPagination = nextPagination => {
     pagination.value = { ...pagination.value, ...nextPagination }
   }
 
+  /** Input: multipart payload. Output: asset vừa upload và progress; throw lỗi API. */
   const uploadMediaAsset = async payload => {
     isMutating.value = true
     error.value = null
@@ -195,11 +225,39 @@ export const useMediaAssetStore = defineStore('mediaAsset', () => {
     }
   }
 
+  /** Input: ID/metadata. Output: asset cập nhật và đồng bộ list/detail. */
   const updateMediaAsset = (id, payload) => runMutation(() => mediaAssetService.update(id, payload))
-  const attachMediaAsset = (id, payload) => runMutation(() => mediaAssetService.attach(id, payload))
-  const detachMediaAsset = (id, usageId) => runMutation(() => mediaAssetService.detach(id, usageId))
-  const reorderMediaAssets = payload => runMutation(() => mediaAssetService.reorder(payload))
 
+
+  /** Input: asset ID và callback usage. Output: refresh asset sau response usage/204. */
+  const mutateUsage = (id, callback) => runMutation(async () => {
+    const response = await callback()
+    const asset = await mediaAssetService.show(id)
+    if (selectedAsset.value?.id === id) selectedAsset.value = asset
+    items.value = items.value.map(item => item.id === id ? asset : item)
+
+    return response
+  }, false)
+
+  /** Input: asset/payload. Output: usage được attach và asset được refresh. */
+  const attachMediaAsset = (id, payload) => mutateUsage(id, () => mediaAssetService.attach(id, payload))
+
+  /** Input: asset/usage. Output: detach rồi refresh asset, hỗ trợ HTTP 204. */
+  const detachMediaAsset = (id, usageId) => mutateUsage(id, () => mediaAssetService.detach(id, usageId))
+
+
+  /** Input: group usage. Output: reorder rồi refresh detail/list hiện tại. */
+  const reorderMediaAssets = payload => runMutation(async () => {
+    const response = await mediaAssetService.reorder(payload)
+    if (selectedAsset.value?.id) selectedAsset.value = await mediaAssetService.show(selectedAsset.value.id)
+    const refreshed = await mediaAssetService.list(query.value)
+
+    applyListResponse(refreshed)
+
+    return response
+  }, false)
+
+  /** Input: asset ID. Output: xóa item khỏi state sau HTTP thành công. */
   const deleteMediaAsset = async id => {
     await runMutation(() => mediaAssetService.remove(id))
     items.value = items.value.filter(item => item.id !== id)
@@ -208,27 +266,43 @@ export const useMediaAssetStore = defineStore('mediaAsset', () => {
       selectedAsset.value = null
   }
 
+  /** Input: asset ID. Output: asset pending do backend trả sau retry. */
   const retryMediaAsset = id => runMutation(() => mediaAssetService.retry(id))
-  const downloadMediaAsset = id => runMutation(() => mediaAssetService.download(id))
 
+  /** Input: asset ID. Output: URL download payload không làm thay đổi detail. */
+  const downloadMediaAsset = id => runMutation(() => mediaAssetService.download(id), false)
+
+  /** Input: asset. Output: download private/public qua service. */
+  const downloadFile = asset => runMutation(() => mediaAssetService.downloadFile(asset), false)
+
+  /** Input: Không có. Output: bỏ lỗi request hiện tại. */
   const clearError = () => {
     error.value = null
   }
 
+  /** Input: Không có. Output: bỏ chọn asset và vô hiệu hóa response detail cũ. */
   const clearSelection = () => {
+    detailRevision++
     selectedAsset.value = null
+    isDetailLoading.value = false
+    detailError.value = null
   }
 
+  /** Input: Không có. Output: khôi phục state mặc định và vô hiệu hóa request cũ. */
   const reset = () => {
+    listRevision++
+    detailRevision++
     items.value = []
     itemsLength.value = 0
     selectedAsset.value = null
     Object.assign(filters, defaultFilters())
     pagination.value = defaultPagination()
     isLoading.value = false
+    isDetailLoading.value = false
     isMutating.value = false
     uploadProgress.value = 0
     error.value = null
+    detailError.value = null
   }
 
   // Aliases giữ tên ngắn, dễ dùng trong picker và tương thích convention cũ.
@@ -241,9 +315,11 @@ export const useMediaAssetStore = defineStore('mediaAsset', () => {
     filters: readonly(filters),
     pagination: readonly(pagination),
     isLoading: readonly(isLoading),
+    isDetailLoading: readonly(isDetailLoading),
     isMutating: readonly(isMutating),
     uploadProgress: readonly(uploadProgress),
     error: readonly(error),
+    detailError: readonly(detailError),
     hasItems,
     query,
     fetchMediaAssets,
@@ -258,6 +334,7 @@ export const useMediaAssetStore = defineStore('mediaAsset', () => {
     deleteMediaAsset,
     retryMediaAsset,
     downloadMediaAsset,
+    downloadFile,
     clearError,
     clearSelection,
     reset,

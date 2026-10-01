@@ -3,7 +3,7 @@
  * =====================================================================
  * CHỨC NĂNG FILE: API client AI Agent dùng chung cho mọi tài nguyên.
  * CÁC HÀM/METHOD TRONG FILE: unwrap(), fallbackCapabilities(),
- * capabilities(), createSession(), status(), regenerate(), cancel(),
+ * capabilities(), createSession(), status(), regenerate(), retry(), cancel(),
  * applyCandidate().
  * INPUT/OUTPUT CỦA CLASS (tổng thể): target/capability/request -> session,
  * candidate hoặc lỗi API chuẩn hóa; không chứa logic nghiệp vụ của Post.
@@ -13,6 +13,11 @@ import { $api } from '@/utils/api'
 
 /** Input: response API. Output: payload bên trong envelope success/data. */
 const unwrap = response => response?.success && 'data' in response ? response.data : response
+
+/** Input: lỗi $api. Output: true chỉ khi route generic chưa tồn tại. */
+const isMissingRoute = error => [404, 405].includes(Number(
+  error?.status ?? error?.statusCode ?? error?.response?.status ?? error?.data?.status,
+))
 
 /**
  * Input: target type cần dùng khi backend chưa cung cấp capability.
@@ -54,17 +59,21 @@ export const aiAgentService = {
       return unwrap(await $api('/admin/ai-agent/sessions', { method: 'POST', body: payload }))
     }
     catch (error) {
-      if (payload.target_type !== 'post' || !payload.input?.url)
+      if (!isMissingRoute(error) || payload.target_type !== 'post' || (!payload.input?.url && !payload.input?.text))
         throw error
+
+      const legacyPayload = {
+        language: payload.output_language ?? 'vi',
+        generate_thumbnail: payload.requested_outputs?.includes('thumbnail') ?? false,
+        instructions: payload.instructions,
+        ...(payload.input.url ? { url: payload.input.url } : { text: payload.input.text }),
+        ...(payload.provider ? { provider: payload.provider } : {}),
+        ...(payload.model ? { model: payload.model } : {}),
+      }
 
       return unwrap(await $api('/admin/posts/ai/import', {
         method: 'POST',
-        body: {
-          url: payload.input.url,
-          language: payload.output_language ?? 'vi',
-          generate_thumbnail: payload.requested_outputs?.includes('thumbnail') ?? false,
-          instructions: payload.instructions,
-        },
+        body: legacyPayload,
       }))
     }
   },
@@ -75,7 +84,7 @@ export const aiAgentService = {
       return unwrap(await $api(`/admin/ai-agent/sessions/${sessionId}`))
     }
     catch (error) {
-      if (targetType !== 'post')
+      if (!isMissingRoute(error) || targetType !== 'post')
         throw error
 
       return unwrap(await $api(`/admin/posts/ai/import/${sessionId}`))
@@ -87,11 +96,25 @@ export const aiAgentService = {
     try {
       return unwrap(await $api(`/admin/ai-agent/sessions/${sessionId}/regenerate`, { method: 'POST', body: payload }))
     }
-    catch {
+    catch (error) {
+      if (!isMissingRoute(error)) throw error
+
       return unwrap(await $api(`/admin/posts/ai/import/${sessionId}/regenerate`, {
         method: 'POST',
         body: payload,
       }))
+    }
+  },
+
+  /** Input: session/job id lỗi. Output: run được đưa lại vào queue. */
+  async retry(sessionId) {
+    try {
+      return unwrap(await $api(`/admin/ai-agent/sessions/${sessionId}/retry`, { method: 'POST' }))
+    }
+    catch (error) {
+      if (!isMissingRoute(error)) throw error
+
+      return unwrap(await $api(`/admin/posts/ai/import/${sessionId}/retry`, { method: 'POST' }))
     }
   },
 
@@ -101,6 +124,8 @@ export const aiAgentService = {
       return unwrap(await $api(`/admin/ai-agent/sessions/${sessionId}/cancel`, { method: 'POST' }))
     }
     catch (error) {
+      if (!isMissingRoute(error)) throw error
+
       return unwrap(await $api(`/admin/posts/ai/import/${sessionId}/cancel`, { method: 'POST' }))
     }
   },
@@ -111,6 +136,8 @@ export const aiAgentService = {
       return unwrap(await $api(`/admin/ai-agent/candidates/${candidateId}/apply`, { method: 'POST', body: payload }))
     }
     catch (error) {
+      if (!isMissingRoute(error)) throw error
+
       return unwrap(await $api(`/admin/posts/ai/import/${candidateId}/apply`, { method: 'POST', body: payload }))
     }
   },

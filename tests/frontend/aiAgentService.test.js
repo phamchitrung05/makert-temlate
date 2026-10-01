@@ -37,7 +37,7 @@ describe('aiAgentService', () => {
   })
 
   it('falls back to the legacy Post import endpoint when the generic session API is unavailable', async () => {
-    const genericError = new Error('not implemented')
+    const genericError = Object.assign(new Error('not implemented'), { status: 404 })
 
     apiMocks.$api
       .mockRejectedValueOnce(genericError)
@@ -71,6 +71,40 @@ describe('aiAgentService', () => {
       target_type: 'resource',
       input: { type: 'text', text: 'Documentation' },
     })).rejects.toBe(genericError)
+  })
+
+  it('maps inline text to the legacy endpoint when generic routes are missing', async () => {
+    apiMocks.$api
+      .mockRejectedValueOnce(Object.assign(new Error('not implemented'), { status: 404 }))
+      .mockResolvedValueOnce({ success: true, data: { job_id: 'text-job', status: 'queued' } })
+
+    await expect(aiAgentService.createSession({
+      target_type: 'post',
+      output_language: 'vi',
+      requested_outputs: ['title'],
+      input: { type: 'text', text: 'Nội dung inline' },
+    })).resolves.toMatchObject({ job_id: 'text-job' })
+
+    expect(apiMocks.$api).toHaveBeenNthCalledWith(2, '/admin/posts/ai/import', {
+      method: 'POST',
+      body: {
+        text: 'Nội dung inline',
+        language: 'vi',
+        generate_thumbnail: false,
+      },
+    })
+  })
+
+  it('does not fallback after a validation or quota response', async () => {
+    const validationError = Object.assign(new Error('invalid provider'), { status: 422 })
+
+    apiMocks.$api.mockRejectedValue(validationError)
+
+    await expect(aiAgentService.createSession({
+      target_type: 'post',
+      input: { type: 'url', url: 'https://example.test/article' },
+    })).rejects.toBe(validationError)
+    expect(apiMocks.$api).toHaveBeenCalledTimes(1)
   })
 
   it('provides a safe UI fallback while the target capability endpoint is unavailable', () => {

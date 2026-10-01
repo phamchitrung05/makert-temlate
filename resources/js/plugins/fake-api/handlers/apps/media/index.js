@@ -12,9 +12,9 @@
  * CÁC HÀM/METHOD TRONG FILE:
  * - parseBody()/toAsset(): đọc body và định hình response asset
  * - buildPagination(): tạo metadata phân trang
- * - findAsset()/nextId(): truy cập dataset trong memory
+ * - findAsset()/findUsage()/nextId()/nextUsageId(): truy cập dataset trong memory
  * - validationError(): tạo response lỗi cùng envelope Laravel
- * - handlerAppsMedia: xử lý list/detail/upload/mutation/download
+ * - handlerAppsMedia: xử lý list/detail/upload/usage/mutation/download
  *
  * INPUT/OUTPUT CỦA FILE (tổng thể):
  * - INPUT : request HTTP từ mediaAssetService.
@@ -64,12 +64,28 @@ const buildPagination = (page, perPage, total, requestUrl) => ({
 const findAsset = id => db.mediaAssets.find(asset => asset.id === Number(id))
 
 /**
+ * Tìm usage thuộc một asset trong dataset fake.
+ *
+ * Input: asset và usage id từ route.
+ * Output: usage hoặc undefined khi không thuộc asset.
+ */
+const findUsage = (asset, id) => asset?.usages?.find(usage => usage.id === Number(id))
+
+/**
  * Tạo id mới cho asset và media item fake.
  *
  * Input: không có.
  * Output: số nguyên lớn hơn mọi id hiện tại.
  */
 const nextId = () => Math.max(0, ...db.mediaAssets.map(asset => asset.id)) + 1
+
+/**
+ * Tạo id usage tăng dần trên toàn bộ dataset fake.
+ *
+ * Input: không có.
+ * Output: số nguyên usage id mới.
+ */
+const nextUsageId = () => Math.max(0, ...db.mediaAssets.flatMap(asset => asset.usages?.map(usage => usage.id) ?? [])) + 1
 
 /**
  * Định hình asset trước khi trả response, giữ contract list/detail nhất quán.
@@ -180,6 +196,97 @@ export const handlerAppsMedia = [
       success: true,
       message: 'Chi tiết media asset giả lập.',
       data: toAsset(asset),
+      errors: [],
+      meta: {},
+    })
+  }),
+
+  http.post('/api/admin/media-assets/:mediaAsset/usages', async ({ params, request }) => {
+    const asset = findAsset(params.mediaAsset)
+
+    if (!asset)
+      return validationError({ media_asset: ['Không tìm thấy file.'] }, 404)
+
+    const payload = await parseBody(request)
+    const field = String(payload.field ?? '')
+    const linkableType = String(payload.linkable_type ?? '')
+    const linkableId = Number(payload.linkable_id)
+
+    if (!field || !linkableType || !Number.isInteger(linkableId) || linkableId < 1)
+      return validationError({ field: ['Usage cần field, linkable_type và linkable_id hợp lệ.'] })
+
+    const duplicate = asset.usages?.some(usage => (
+      usage.field === field
+      && usage.linkable_type === linkableType
+      && Number(usage.linkable_id) === linkableId
+    ))
+
+    if (duplicate)
+      return validationError({ field: ['Usage đã tồn tại trong dữ liệu giả lập.'] })
+
+    const usage = {
+      id: nextUsageId(),
+      media_asset_id: asset.id,
+      linkable_type: linkableType,
+      linkable_id: linkableId,
+      field,
+      sort_order: payload.sort_order == null ? null : Number(payload.sort_order),
+    }
+
+    asset.usages = [...(asset.usages ?? []), usage]
+    touchAsset(asset)
+
+    return HttpResponse.json({
+      success: true,
+      message: 'Attach usage giả lập thành công.',
+      data: usage,
+      errors: [],
+      meta: {},
+    }, { status: 201 })
+  }),
+
+  http.delete('/api/admin/media-assets/:mediaAsset/usages/:usage', ({ params }) => {
+    const asset = findAsset(params.mediaAsset)
+
+    if (!asset)
+      return validationError({ media_asset: ['Không tìm thấy file.'] }, 404)
+
+    const usage = findUsage(asset, params.usage)
+    if (!usage)
+      return validationError({ usage: ['Không tìm thấy usage thuộc asset.'] }, 404)
+
+    asset.usages = asset.usages.filter(item => item.id !== usage.id)
+    touchAsset(asset)
+
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.post('/api/admin/media-assets/usages/reorder', async ({ request }) => {
+    const payload = await parseBody(request)
+    const field = String(payload.field ?? '')
+    const linkableType = String(payload.linkable_type ?? '')
+    const linkableId = Number(payload.linkable_id)
+    const usageIds = Array.isArray(payload.usage_ids) ? payload.usage_ids.map(Number) : []
+
+    const usages = db.mediaAssets.flatMap(asset => asset.usages ?? []).filter(usage => (
+      usage.field === field
+      && usage.linkable_type === linkableType
+      && Number(usage.linkable_id) === linkableId
+    ))
+
+    if (!field || !linkableType || !Number.isInteger(linkableId) || !usageIds.length || usages.length !== usageIds.length)
+      return validationError({ usage_ids: ['Thứ tự usage không hợp lệ.'] })
+
+    const usageById = new Map(usages.map(usage => [usage.id, usage]))
+    if (usageIds.some(id => !usageById.has(id)) || new Set(usageIds).size !== usageIds.length)
+      return validationError({ usage_ids: ['Danh sách usage không thuộc cùng field.'] })
+
+    usageIds.forEach((id, index) => { usageById.get(id).sort_order = index })
+
+    return HttpResponse.json({
+      success: true,
+      message: 'Reorder usage giả lập thành công.',
+      data: usageIds.map(id => usageById.get(id)),
       errors: [],
       meta: {},
     })

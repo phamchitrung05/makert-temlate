@@ -33,6 +33,7 @@ export const createSeo = (model = {}) => {
     ogTitle: nested?.og_title ?? nested?.ogTitle ?? '',
     ogDescription: nested?.og_description ?? nested?.ogDescription ?? '',
     ogImageId: nested?.og_image_id ?? nested?.ogImageId ?? null,
+    ogImage: nested?.og_image ?? nested?.ogImage ?? model?.og_image ?? null,
   }
 }
 

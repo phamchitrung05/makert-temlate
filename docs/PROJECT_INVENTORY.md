@@ -117,24 +117,25 @@ docs/                      Plans, handoff notes and this inventory
 - Frontend service/store: `resources/js/services/mediaAsset.js`, `resources/js/stores/mediaAsset.js`
 - File page: `resources/js/pages/apps/media/file/index.vue`
 - Asset page: `resources/js/pages/apps/media/media-asset/index.vue`
-- Media Asset giữ bố cục ba cột gốc; `useMediaAssetManager.js` đang quản lý list/detail/mutation riêng, chống response cũ và giữ panel ổn định khi đổi item. Search/filter/sort/pagination chạy server-side. Download hỗ trợ JSON URL và stream private. Các nhóm bên trái lọc kind, không phải thư mục DB; chưa có Trash/restore API.
-- Technical debt: chuyển Media Asset page sang `useMediaAssetStore` để File page, picker và Asset page dùng chung một source of truth; không lưu File/Blob nhị phân trong Pinia.
+- Media Asset giữ bố cục ba cột gốc; `useMediaAssetStore` quản lý list/detail/mutation và giữ panel ổn định khi đổi item. Search/filter/sort/pagination chạy server-side. Download hỗ trợ JSON URL và stream private. Các nhóm bên trái lọc kind, không phải thư mục DB; chưa có Trash/restore API.
+- File page, picker và Asset page đã dùng chung `useMediaAssetStore`; không lưu File/Blob nhị phân trong Pinia. Browser/staging với storage thật còn pending.
 - Picker: `resources/js/views/apps/media/field/MediaLibraryDialog.vue`, `MediaAssetField.vue`
 
 ### AI import
 
-- Implemented boundary: `ai_imports` persistence, admin job API, queue job, extractor/sanitizer, provider adapter, registry/target adapter and Post form AI dialog.
+- Implemented boundary: `ai_imports` persistence, generic session/admin job API, queue job, extractor/sanitizer, OpenAI/Gemini HTTP provider adapters, registry/target adapter and Post form AI dialog.
 - Main files: `app/Models/AiImport.php`, `app/Models/AiProvenance.php`, `app/Jobs/ProcessAiImportJob.php`, `app/Services/Ai/ArticleImportService.php`, `app/Services/Ai/StructuredAiProvider.php`, `app/Services/Ai/Contracts/`, `app/Services/Ai/Registries/`, `app/Services/Ai/Targets/PostAiAdapter.php`, `app/Http/Controllers/Admin/AiImportController.php`, `config/ai-import.php`, `config/ai-agent.php`.
 - Frontend files: `resources/js/components/ai/`, `resources/js/services/aiAgent.js`,
   `resources/js/stores/aiAgent.js` và `resources/js/views/apps/blog/post/dialog/CreateWithAiDialog.vue`.
 - Candidate có session/parent lineage, regenerate khác retry kỹ thuật, apply toàn bộ
   hoặc từng field và ghi provenance. Candidate không tạo Post/slug trước khi Apply.
-- The provider is optional/configurable; without credentials the deterministic sanitizer/extractor returns a safe draft and source thumbnail URL.
+- The provider is optional/configurable; without credentials the deterministic sanitizer/extractor returns a safe draft and source thumbnail URL. Inline text input shares the same queue and candidate lifecycle.
 - Thumbnail asset creation and actual rewrite quality depend on configured provider/media pipeline; no provider credential is committed to the repository.
 - API keys stay server-side and are configured through environment/config.
 - AI result is a draft preview; it must not auto-create/publish a Post without user action.
 - Laravel AI SDK chưa bật vì môi trường hiện tại PHP 8.2; cần PHP 8.3 trước khi
-  cài provider SDK tương thích.
+  cài provider SDK tương thích. HTTP OpenAI/Gemini adapters đã hoạt động qua
+  `ProviderRegistry` và không đưa secret xuống browser.
 
 ## 5. API route map
 
@@ -157,6 +158,10 @@ All admin routes are under `/api/admin`, protected by Sanctum admin middleware a
 - `DELETE /api/admin/posts/{post}`
 - `POST /api/admin/slugs/preview`
 - `GET /api/admin/ai-agent/capabilities/{target}`
+- `POST|GET /api/admin/ai-agent/sessions`, `/api/admin/ai-agent/sessions/{id}`
+- `POST /api/admin/ai-agent/sessions/{id}/regenerate|retry|cancel`
+- `GET /api/admin/ai-agent/sessions/{id}/candidates`
+- `POST /api/admin/ai-agent/candidates/{id}/apply`
 - `POST|GET /api/admin/posts/ai/import`, `/api/admin/posts/ai/import/{id}`
 - `POST /api/admin/posts/ai/import/{id}/regenerate`
 - `POST /api/admin/posts/ai/import/{id}/retry`
@@ -240,7 +245,10 @@ npm run lint
   `AI_IMPORT_MAX_REDIRECTS`, `AI_IMPORT_MAX_HTML_BYTES`,
   `AI_IMPORT_MAX_IMAGE_BYTES`, `AI_IMPORT_PROMPT_VERSION`,
   `AI_IMPORT_RETENTION_DAYS`, `AI_IMPORT_QUOTA_PER_HOUR` và
-  `AI_IMPORT_IDEMPOTENCY_WINDOW_MINUTES`.
+-  `AI_IMPORT_IDEMPOTENCY_WINDOW_MINUTES`. OpenAI/Gemini adapters additionally
+  dùng `AI_OPENAI_KEY`, `AI_OPENAI_ENDPOINT`, `AI_OPENAI_MODEL`,
+  `AI_OPENAI_TEMPERATURE`, `AI_GEMINI_KEY`, `AI_GEMINI_ENDPOINT`,
+  `AI_GEMINI_MODEL` và `AI_GEMINI_TEMPERATURE`.
 - Media conversion/size/disk policy: `config/media-assets.php`, `config/media-library.php`, `config/filesystems.php`.
 
 ## 10. How future AI should use this file
@@ -259,4 +267,4 @@ npm run lint
 | 2026-09-30 | Created central project inventory | `docs/PROJECT_INVENTORY.md` | `git diff --check` |
 | 2026-09-30 | Implemented Post taxonomy, Media UI integration and AI import vertical slice | Post, Media, AI | Backend 96 tests/539 assertions; frontend 59 tests; build pass |
 | 2026-09-30 | Restored original Media Asset layout, removed folder counters and stabilized item selection | Media Asset UI/composable | Targeted Media tests and build pass |
-| 2026-09-30 | Unified AI Content Agent registry, candidate lineage, provenance and capability-driven dialog; synchronized plan documents | `app/Services/Ai`, `resources/js/components/ai`, `docs/PLAN_POST_MEDIA_AI_INTEGRATION.md` | Backend 112 tests/600 assertions; frontend 64 tests; build pass |
+| 2026-09-30 | Unified AI Content Agent registry, candidate lineage, provenance, HTTP providers and capability-driven dialog; synchronized plan documents | `app/Services/Ai`, `resources/js/components/ai`, `docs/PLAN_POST_MEDIA_AI_INTEGRATION.md` | Backend 127 tests/670 assertions; frontend 75 tests; ESLint/build pass |

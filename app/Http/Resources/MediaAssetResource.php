@@ -22,7 +22,8 @@ use Throwable;
  * - media(): lấy media item trong collection library
  * - filePayload(): tạo metadata file không lộ storage path
  * - publicUrl(): lấy URL public và nuốt lỗi driver không hỗ trợ URL
- * - previewUrl(): lấy URL conversion thumb nếu đã sẵn sàng
+ * - previewUrl(): lấy URL conversion featured/thumb nếu đã sẵn sàng
+ * - conversionUrl(): lấy URL conversion canonical khi file đã sẵn sàng
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : MediaAsset có thể eager load media, createdBy và usages
@@ -116,6 +117,12 @@ class MediaAssetResource extends JsonResource
             'preview_url' => $this->isPublicAsset()
                 ? $this->previewUrl($media)
                 : null,
+            'featured_url' => $this->isPublicAsset()
+                ? $this->conversionUrl($media, 'featured')
+                : null,
+            'og_url' => $this->isPublicAsset()
+                ? $this->conversionUrl($media, 'og')
+                : null,
         ];
     }
 
@@ -146,12 +153,26 @@ class MediaAssetResource extends JsonResource
      */
     private function previewUrl(\Spatie\MediaLibrary\MediaCollections\Models\Media $media): ?string
     {
-        if (! $media->hasGeneratedConversion('thumb')) {
+        return $this->conversionUrl($media, 'featured')
+            ?? $this->conversionUrl($media, 'thumb');
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Lấy URL conversion canonical đã sẵn sàng
+     * =====================================================================
+     *
+     * INPUT: media Spatie và tên conversion đã allowlist trong model.
+     * OUTPUT: string|null; không để lộ lỗi driver hoặc URL khi file chưa xong.
+     */
+    private function conversionUrl(\Spatie\MediaLibrary\MediaCollections\Models\Media $media, string $conversion): ?string
+    {
+        if (! $media->hasGeneratedConversion($conversion)) {
             return null;
         }
 
         try {
-            return $media->getUrl('thumb');
+            return $media->getUrl($conversion);
         } catch (Throwable) {
             return null;
         }

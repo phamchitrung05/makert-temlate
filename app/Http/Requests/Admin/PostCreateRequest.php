@@ -16,6 +16,7 @@ use Illuminate\Validation\Rule;
 class PostCreateRequest extends FormRequest
 {
     use \App\Http\Requests\Admin\Concerns\ValidatesPostSeo;
+    use \App\Http\Requests\Admin\Concerns\ValidatesAiProvenance;
 
     /** Input: request đã qua middleware posts.manage. Output: cho phép validation. */
     public function authorize(): bool
@@ -28,6 +29,7 @@ class PostCreateRequest extends FormRequest
     {
         return [
             ...$this->seoRules(),
+            ...$this->aiProvenanceRules(),
             'title' => ['required', 'string', 'max:255'],
             'content' => ['nullable', 'string'],
             'status' => ['sometimes', 'string', Rule::in(PostStatus::values())],

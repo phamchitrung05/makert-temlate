@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -34,7 +35,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * - scopeWithVisibility(): lọc theo visibility
  * - mediaDisk(): chọn disk theo visibility
  * - registerMediaCollections(): đăng ký collection library
- * - registerMediaConversions(): đăng ký conversion thumb/web cho image
+ * - registerMediaConversions(): đăng ký conversion preview và ảnh canonical
  * - getActivitylogOptions(): cấu hình audit log media
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
@@ -186,7 +187,8 @@ class MediaAsset extends Model implements HasMedia
      * - $media: media item đang được xử lý, có thể null khi package khởi tạo
      *
      * OUTPUT:
-     * - Không trả giá trị; image asset có conversion `thumb` và `web`
+     * - Không trả giá trị; image asset có conversion legacy `thumb`/`web` và
+     *   canonical `featured`/`og` theo config/media-assets.php
      *
      * EXCEPTION/TRANSACTION:
      * - Không mở transaction; conversion được Spatie xử lý đồng bộ hoặc qua queue
@@ -207,6 +209,49 @@ class MediaAsset extends Model implements HasMedia
             ->width(1600)
             ->height(1200)
             ->performOnCollections('library');
+
+        $this->registerCanonicalImageConversion('featured');
+        $this->registerCanonicalImageConversion('og');
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Đăng ký một profile ảnh canonical có crop và format ổn định
+     * =====================================================================
+     *
+     * INPUT:
+     * - $name: key `featured` hoặc `og` trong config media-assets
+     *
+     * OUTPUT:
+     * - Không trả giá trị; Media Library nhận conversion crop đúng kích thước
+     *   và format public contract.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Bỏ qua profile thiếu hoặc kích thước không hợp lệ; không mở transaction.
+     */
+    private function registerCanonicalImageConversion(string $name): void
+    {
+        $profile = config("media-assets.image_conversions.{$name}", []);
+        $width = (int) ($profile['width'] ?? 0);
+        $height = (int) ($profile['height'] ?? 0);
+
+        if ($width < 1 || $height < 1) {
+            return;
+        }
+
+        $conversion = $this->addMediaConversion($name)
+            ->fit(Fit::Crop, $width, $height)
+            ->performOnCollections('library');
+
+        $format = strtolower((string) ($profile['format'] ?? 'webp'));
+        if (in_array($format, ['jpg', 'jpeg', 'png', 'webp', 'avif'], true)) {
+            $conversion->format($format);
+        }
+
+        $quality = (int) ($profile['quality'] ?? 0);
+        if ($quality >= 1 && $quality <= 100) {
+            $conversion->quality($quality);
+        }
     }
 
     /**

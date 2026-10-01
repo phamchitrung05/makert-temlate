@@ -41,6 +41,24 @@ class ArticleImportServiceTest extends TestCase
     }
 
     /**
+     * INPUT: text inline không có URL. OUTPUT: cùng canonical draft deterministic.
+     * SIDE EFFECT: không gửi HTTP; extractor dùng source map trong memory.
+     */
+    public function test_extracts_deterministic_draft_from_inline_text(): void
+    {
+        Http::fake();
+
+        $result = (new ArticleImportService(new StructuredAiProvider))->run(new AiImport([
+            'source_text' => "Tiêu đề inline\n\nNội dung nhập tay.",
+            'input_json' => ['source_type' => 'text'],
+        ]));
+
+        $this->assertSame('Tiêu đề inline', $result['draft']['title']);
+        $this->assertStringContainsString('Nội dung nhập tay.', $result['draft']['content']);
+        Http::assertNothingSent();
+    }
+
+    /**
      * INPUT: localhost URL. OUTPUT: URL security exception.
      * SIDE EFFECT: assert no HTTP request. EXCEPTION/TRANSACTION: no transaction.
      */

@@ -15,8 +15,8 @@ use Tests\TestCase;
  * CHỨC NĂNG FILE: Test registry AI và allowlist độc lập với provider thật.
  * =====================================================================
  *
- * CÁC HÀM/METHOD TRONG FILE: các test resolve/reject prompt, target, provider
- * và parse config boolean.
+ * CÁC HÀM/METHOD TRONG FILE: các test resolve/select/reject prompt, target,
+ * provider và parse config boolean.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : cấu hình target/provider/prompt/schema.
  * - OUTPUT: registry an toàn, đúng version và không lộ secret.
@@ -42,6 +42,23 @@ class AiRegistriesTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         app(PromptRegistry::class)->get('post.create.from_url', 'sound', 'create');
+    }
+
+    /** Manual prompt luôn thắng rule; auto text chọn đúng prompt có rule nguồn. */
+    public function test_select_prefers_manual_then_source_rule(): void
+    {
+        $registry = app(PromptRegistry::class);
+
+        $manual = $registry->select('post.create.from_url', 'post', 'create', ['source_type' => 'text']);
+        $text = $registry->select(null, 'post', 'create', ['source_type' => 'text']);
+        $url = $registry->select(null, 'post', 'create', ['source_type' => 'url']);
+
+        $this->assertSame('post.create.from_url', $manual['key']);
+        $this->assertSame('manual', $manual['selection']);
+        $this->assertSame('post.create.from_text', $text['key']);
+        $this->assertSame('rule', $text['selection']);
+        $this->assertSame('post.create.from_url', $url['key']);
+        $this->assertSame('rule', $url['selection']);
     }
 
     /** Target chưa triển khai không được public như capability đang hoạt động. */

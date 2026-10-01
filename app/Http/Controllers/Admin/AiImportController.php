@@ -10,10 +10,10 @@ use App\Http\Requests\Admin\AiImportRequest;
 use App\Http\Responses\BaseResponse;
 use App\Jobs\ProcessAiImportJob;
 use App\Models\AiImport;
-use App\Models\AiProvenance;
 use App\Models\MediaAsset;
 use App\Models\Post;
 use App\Services\Ai\ArticleSourceFetcher;
+use App\Services\Ai\AiProvenanceService;
 use App\Services\Ai\Registries\PromptRegistry;
 use App\Services\Ai\Registries\ProviderRegistry;
 use App\Services\Ai\Registries\SchemaRegistry;
@@ -101,7 +101,12 @@ class AiImportController extends Controller
     }
 
     /** Input: URL/options đã validate. Output: 202 job queued hoặc job trùng idempotent. */
-    public function store(AiImportRequest $request, ArticleSourceFetcher $fetcher): JsonResponse
+    public function store(
+        AiImportRequest $request,
+        ArticleSourceFetcher $fetcher,
+        ProviderRegistry $providers,
+        PromptRegistry $prompts,
+    ): JsonResponse
     {
         if (! config('ai-import.enabled', true)) {
             return BaseResponse::error('AI import đang tắt.', 503);
@@ -111,25 +116,61 @@ class AiImportController extends Controller
             return BaseResponse::error('Bạn đã đạt giới hạn import trong giờ này.', 429);
         }
         $data = $request->validated();
-        $normalizedUrl = $fetcher->validateUrl((string) $data['url']);
+        $sourceType = filled($data['text'] ?? null) ? 'text' : 'url';
+        $normalizedUrl = $sourceType === 'url'
+            ? $fetcher->validateUrl((string) $data['url'])
+            : null;
+        $providerKey = (string) ($data['provider'] ?? config('ai-import.provider', 'deterministic'));
+        try {
+            $provider = $providers->get($providerKey);
+        } catch (\InvalidArgumentException) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'provider' => 'Provider chưa được cấu hình hoặc không nằm trong allowlist.',
+            ]);
+        }
+        $model = (string) ($data['model'] ?? ($provider['models'][0] ?? 'default'));
+        if (! in_array($model, $provider['models'] ?? [], true)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'model' => 'Model không nằm trong allowlist của provider đã chọn.',
+            ]);
+        }
+        try {
+            $prompt = $prompts->select(
+                isset($data['prompt_key']) ? (string) $data['prompt_key'] : null,
+                'post',
+                'create',
+                ['source_type' => $sourceType, 'language' => (string) ($data['language'] ?? 'vi')],
+            );
+        } catch (\InvalidArgumentException) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'prompt_key' => 'Prompt không nằm trong allowlist của Post.',
+            ]);
+        }
+        $promptKey = (string) $prompt['key'];
         $input = [
+            'source_type' => $sourceType,
             'language' => $data['language'] ?? 'vi',
             'rewrite_style' => $data['rewrite_style'] ?? 'informative',
             'generate_thumbnail' => (bool) ($data['generate_thumbnail'] ?? true),
             'thumbnail_mode' => $data['thumbnail_mode'] ?? 'auto',
-            'prompt_key' => $data['prompt_key'] ?? 'post.create.from_url',
+            'prompt_key' => $promptKey,
             'instructions' => $data['instructions'] ?? '',
+            'provider' => $providerKey,
+            'model' => $model,
         ];
-        $hash = hash('sha256', $normalizedUrl.'|'.json_encode($input, JSON_UNESCAPED_UNICODE).'|'.config('ai-import.prompt_version', 'v1'));
+        $sourceHashValue = $sourceType === 'text' ? trim((string) $data['text']) : (string) $normalizedUrl;
+        $hash = hash('sha256', $sourceType.'|'.$sourceHashValue.'|'.json_encode($input, JSON_UNESCAPED_UNICODE).'|'.config('ai-import.prompt_version', 'v1'));
         $existing = AiImport::query()->where('created_by', $userId)->where('source_hash', $hash)->where('created_at', '>=', now()->subMinutes(config('ai-import.idempotency_window_minutes', 30)))->latest()->first();
         if ($existing) {
             return BaseResponse::success($this->payload($existing), 'Import đã tồn tại.', 202);
         }
         $import = AiImport::query()->create([
-            'id' => (string) Str::uuid(), 'created_by' => $userId, 'source_url' => $data['url'],
+            'id' => (string) Str::uuid(), 'created_by' => $userId,
+            'source_url' => $sourceType === 'url' ? $data['url'] : '',
+            'source_text' => $sourceType === 'text' ? trim((string) $data['text']) : null,
             'normalized_url' => $normalizedUrl, 'source_hash' => $hash, 'status' => 'queued',
             'current_step' => 'queued', 'progress' => 0, 'input_json' => $input,
-            'provider' => config('ai-import.provider'), 'prompt_version' => config('ai-import.prompt_version', 'v1'),
+            'provider' => $providerKey, 'prompt_version' => config('ai-import.prompt_version', 'v1'),
         ]);
         $import->forceFill(['session_id' => $import->id])->save();
         ProcessAiImportJob::dispatch($import->id);
@@ -146,7 +187,7 @@ class AiImportController extends Controller
     }
 
     /** Input: job đã terminal. Output: reset về queued và dispatch lại. */
-    public function regenerate(Request $request, AiImport $aiImport): JsonResponse
+    public function regenerate(Request $request, AiImport $aiImport, ProviderRegistry $providers, PromptRegistry $prompts): JsonResponse
     {
         $this->ensureOwner($request, $aiImport);
         if (in_array($aiImport->status, ['queued', 'fetching', 'extracting', 'rewriting', 'seo', 'thumbnail'], true)) {
@@ -155,7 +196,31 @@ class AiImportController extends Controller
         $options = $request->validate([
             'prompt_key' => ['sometimes', 'string', 'max:120'],
             'instructions' => ['sometimes', 'string', 'max:4000'],
+            'provider' => ['sometimes', 'nullable', 'string', 'max:80'],
+            'model' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'fields' => ['sometimes', 'array'],
+            'fields.*' => ['string', 'distinct', 'in:title,excerpt,content,seo,taxonomy,thumbnail'],
         ]);
+        $currentInput = (array) $aiImport->input_json;
+        $providerKey = (string) ($options['provider'] ?? ($currentInput['provider'] ?? config('ai-import.provider', 'deterministic')));
+        if (array_key_exists('provider', $options) || array_key_exists('model', $options)) {
+            try {
+                $provider = $providers->get($providerKey);
+            } catch (\InvalidArgumentException) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['provider' => 'Provider chưa được cấu hình.']);
+            }
+            $model = $options['model'] ?? ($currentInput['model'] ?? null);
+            if (! empty($model) && ! in_array($model, $provider['models'] ?? [], true)) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['model' => 'Model không nằm trong allowlist.']);
+            }
+        }
+        if (array_key_exists('prompt_key', $options)) {
+            try {
+                $prompts->get((string) $options['prompt_key'], 'post', 'create');
+            } catch (\InvalidArgumentException) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['prompt_key' => 'Prompt không nằm trong allowlist của Post.']);
+            }
+        }
         $child = $aiImport->replicate(['id', 'created_at', 'updated_at']);
         $child->id = (string) Str::uuid();
         $child->session_id = $aiImport->session_id ?: $aiImport->id;
@@ -170,7 +235,7 @@ class AiImportController extends Controller
         $child->completed_at = null;
         $child->applied_target_id = null;
         $child->applied_fields = null;
-        $child->input_json = array_replace((array) $aiImport->input_json, $options);
+        $child->input_json = array_replace((array) $aiImport->input_json, array_filter($options, fn ($value) => $value !== null));
         $child->save();
         ProcessAiImportJob::dispatch($child->id);
 
@@ -204,7 +269,7 @@ class AiImportController extends Controller
     }
 
     /** Input: fields/target tùy chọn. Output: Post draft được apply và provenance theo field. */
-    public function apply(AiCandidateApplyRequest $request, AiImport $aiImport, TargetRegistry $targets, CreatePostAction $create, UpdatePostAction $update): JsonResponse
+    public function apply(AiCandidateApplyRequest $request, AiImport $aiImport, TargetRegistry $targets, CreatePostAction $create, UpdatePostAction $update, AiProvenanceService $provenance): JsonResponse
     {
         $this->ensureOwner($request, $aiImport);
         abort_unless($aiImport->status === 'ready', 409, 'Candidate chưa sẵn sàng.');
@@ -213,21 +278,13 @@ class AiImportController extends Controller
         $outputs = (array) data_get($aiImport->result_json, 'draft', []);
         $payload = $adapter->toApplyPayload($outputs, $data['fields']);
         $actorId = (int) $request->user()->getKey();
-        $post = DB::transaction(function () use ($data, $payload, $outputs, $aiImport, $create, $update, $actorId): Post {
+        $post = DB::transaction(function () use ($data, $payload, $aiImport, $create, $update, $provenance, $actorId): Post {
             $target = ! empty($data['target_id']) ? Post::query()->findOrFail($data['target_id']) : null;
             if ($target && ! empty($data['expected_updated_at']) && (string) $target->updated_at !== (string) $data['expected_updated_at']) {
                 abort(409, 'Post đã thay đổi, hãy tải lại trước khi áp dụng candidate.');
             }
             $post = $target ? $update->handle($target, array_merge($payload, ['status' => 'draft']), $actorId) : $create->handle(array_merge($payload, ['status' => 'draft']), $actorId);
-            $aiImport->forceFill(['applied_target_id' => $post->getKey(), 'applied_fields' => $data['fields']])->save();
-            foreach ($data['fields'] as $field) {
-                AiProvenance::query()->create([
-                    'target_type' => Post::class, 'target_id' => $post->getKey(), 'field' => $field,
-                    'run_id' => $aiImport->id, 'provider' => (string) data_get($aiImport->result_json, 'provider', 'deterministic'),
-                    'model' => data_get($aiImport->result_json, 'model'), 'prompt_key' => data_get($aiImport->result_json, 'prompt_key'),
-                    'prompt_version' => data_get($aiImport->result_json, 'prompt_version'), 'value_hash' => hash('sha256', json_encode($payload[$field] ?? $outputs[$field] ?? null, JSON_UNESCAPED_UNICODE)), 'applied_by' => $actorId,
-                ]);
-            }
+            $provenance->recordPost($actorId, $post, (string) $aiImport->getKey(), $data['fields'], $payload);
 
             return $post;
         });
@@ -273,6 +330,8 @@ class AiImportController extends Controller
         return [
             'job_id' => $import->id, 'status' => $import->status, 'current_step' => $import->current_step,
             'progress' => (int) $import->progress, 'error_code' => $import->error_code,
+            'source_type' => data_get($import->input_json, 'source_type', filled($import->source_url) ? 'url' : 'text'),
+            'source_url' => data_get($import->input_json, 'source_type') === 'text' ? null : $import->source_url,
             'error' => $import->error_message, 'session_id' => $import->session_id ?: $import->id,
             'parent_id' => $import->parent_id, 'operation' => $import->operation,
             'applied_target_id' => $import->applied_target_id, 'applied_fields' => $import->applied_fields,

@@ -151,6 +151,7 @@ const compactQuery = params => Object.fromEntries(
  * Output: payload đã bỏ envelope BaseResponse.
  */
 export const mediaAssetService = {
+  /** Input: filter/sort/pagination. Output: list và pagination đã unwrap. */
   async list(params = {}) {
     const response = await $api('/admin/media-assets', { query: compactQuery(params) })
     const payload = unwrapApiResponse(response) || {}
@@ -162,12 +163,14 @@ export const mediaAssetService = {
     }
   },
 
+  /** Input: asset ID. Output: detail asset đã unwrap. */
   async show(id) {
     const response = await $api(`/admin/media-assets/${id}`)
 
     return unwrapApiResponse(response)
   },
 
+  /** Input: multipart metadata và File. Output: asset upload đã unwrap. */
   async upload(payload, onProgress) {
     const response = await uploadWithProgress(
       '/admin/media-assets',
@@ -178,6 +181,7 @@ export const mediaAssetService = {
     return unwrapApiResponse(response)
   },
 
+  /** Input: asset ID và metadata. Output: asset sau PATCH. */
   async update(id, payload) {
     const response = await $api(`/admin/media-assets/${id}`, {
       method: 'PATCH',
@@ -187,6 +191,7 @@ export const mediaAssetService = {
     return unwrapApiResponse(response)
   },
 
+  /** Input: asset ID và usage payload. Output: usage mới đã unwrap. */
   async attach(id, payload) {
     const response = await $api(`/admin/media-assets/${id}/usages`, {
       method: 'POST',
@@ -196,6 +201,7 @@ export const mediaAssetService = {
     return unwrapApiResponse(response)
   },
 
+  /** Input: asset ID và usage ID. Output: response detach/204 đã unwrap. */
   async detach(id, usageId) {
     const response = await $api(`/admin/media-assets/${id}/usages/${usageId}`, {
       method: 'DELETE',
@@ -204,6 +210,7 @@ export const mediaAssetService = {
     return unwrapApiResponse(response)
   },
 
+  /** Input: field/linkable và usage IDs. Output: usage sau reorder. */
   async reorder(payload) {
     const response = await $api('/admin/media-assets/usages/reorder', {
       method: 'POST',
@@ -213,22 +220,52 @@ export const mediaAssetService = {
     return unwrapApiResponse(response)
   },
 
+  /** Input: asset ID. Output: response soft-delete/204 đã unwrap. */
   async remove(id) {
     const response = await $api(`/admin/media-assets/${id}`, { method: 'DELETE' })
 
     return unwrapApiResponse(response)
   },
 
+  /** Input: asset ID. Output: asset pending sau retry. */
   async retry(id) {
     const response = await $api(`/admin/media-assets/${id}/retry`, { method: 'POST' })
 
     return unwrapApiResponse(response)
   },
 
+  /** Input: asset ID. Output: public/temporary download payload. */
   async download(id) {
     const response = await $api(`/admin/media-assets/${id}/download`)
 
     return unwrapApiResponse(response)
+  },
+
+  /**
+   * Tải private stream hoặc URL JSON bằng cùng client có Bearer token.
+   *
+   * Input: asset cần tải.
+   * Output: mở URL tải hoặc tạo browser download; lỗi HTTP truyền lên caller.
+   */
+  async downloadFile(asset) {
+    const response = await $api.raw(`/admin/media-assets/${asset.id}/download`, { responseType: 'blob' })
+    const blob = response._data
+    if (response.headers.get('content-type')?.includes('application/json')) {
+      const data = unwrapApiResponse(JSON.parse(await blob.text()))
+      const url = data?.url ?? data?.temporary_url ?? data?.download_url
+
+      if (!url) throw new Error('API không trả URL tải xuống.')
+      window.open(url, '_blank', 'noopener,noreferrer')
+
+      return
+    }
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = url
+    link.download = asset.file?.original_name || asset.title
+    link.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
   },
 }
 

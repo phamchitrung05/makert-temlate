@@ -1,13 +1,13 @@
 <!--
   =====================================================================
   CHỨC NĂNG FILE: Gom SEO Analysis/Settings/Preview vào ba tab ở cột nội dung.
-  CÁC HÀM/METHOD TRONG FILE: Không có; activeTab điều khiển hiển thị bằng v-show.
+  CÁC HÀM/METHOD TRONG FILE: Không có method; socialImage computed chọn ảnh OG/fallback.
   INPUT/OUTPUT CỦA CLASS (tổng thể): SEO model/analysis/title/excerpt/thumbnail -> v-model SEO.
   Panel giữ mounted để đổi tab không mất dữ liệu hoặc bỏ qua validation form.
   =====================================================================
 -->
 <script setup>
-import { shallowRef, useId } from 'vue'
+import { computed, shallowRef, useId } from 'vue'
 import PostSeoAnalysis from './PostSeoAnalysis.vue'
 import PostSeoSettings from './PostSeoSettings.vue'
 import PostSeoPreview from './PostSeoPreview.vue'
@@ -22,6 +22,7 @@ const props = defineProps({
 const seo = defineModel({ type: Object, required: true })
 const activeTab = shallowRef('analysis')
 const tabsId = useId()
+const socialImage = computed(() => seo.value.ogImage || props.thumbnail)
 
 const tabs = [
   { value: 'analysis', label: 'Phân tích', icon: 'tabler-chart-bar' },
@@ -89,7 +90,7 @@ const tabs = [
     >
       <PostSeoPreview
         :analysis="props.analysis"
-        :thumbnail="props.thumbnail"
+        :thumbnail="socialImage"
         class="mb-0 elevation-0"
       />
     </div>

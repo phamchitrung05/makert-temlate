@@ -210,12 +210,12 @@ Quy tắc áp dụng cho Vue:
 - Đợt 2 — Resource và taxonomy: `DONE`. Backend, admin table/form, service/store, fake CRUD frontend và toàn bộ exit criteria đã hoàn thành; Resource Version và Media Library tiếp tục được hoàn tất trong Đợt 3.
 - Đợt 3 — Media và version: `DONE`. Task 1–10 của Media Library (domain, usage, upload security pipeline, API/authorization, frontend service/store, màn hình `Media > File`, Media Picker UI, tích hợp Resource/Post/Resource Version, frontend tests và acceptance/security) đã `DONE`.
 - Đợt 4 — Admin Dashboard và Blog Admin: `IN PROGRESS`. Post CRUD, taxonomy,
-  SEO metadata, editor/media integration, server pagination/search và AI Content
-  Agent foundation đã có; còn workflow review/publish đầy đủ, revision, backend
-  sanitization, status filter và browser/staging verification.
+  SEO metadata, editor/media integration, server pagination/search, status filter
+  và AI Content Agent foundation đã có; còn workflow review/publish đầy đủ,
+  revision, backend sanitization và browser/staging verification.
 - Giao diện public: đang được hoàn thiện ở luồng riêng. Luồng công việc hiện tại không xây public UI; chỉ chuẩn bị contract/API để tích hợp sau khi Admin Dashboard hoàn tất.
-- Đợt gần nhất đã hoàn thành: Resource dùng `resource.cover`/`resource.preview`; Resource Version dùng package archive private với scan clean gate và documentation document; Post dùng thumbnail/content images riêng, taxonomy/SEO round-trip và dialog AI giữ hierarchy cũ. Upload đã có acceptance cho MIME/executable/path traversal/symlink/archive limit, private download và queue retry idempotency. Update/replace/delete đều đồng bộ usage trong transaction. Backend 112 tests/600 assertions, frontend Vitest 64 tests, Pint, ESLint, production build và `git diff --check` đều đạt (build còn cảnh báo PNG cũ resolve lúc runtime).
-- Cập nhật 2026-09-30: AI Agent có registry/adapter/candidate lineage, regenerate/retry/apply chọn lọc và capability endpoint; GPT/Gemini thật, logo provenance và browser/staging vẫn pending.
+- Đợt gần nhất đã hoàn thành: Resource dùng `resource.cover`/`resource.preview`; Resource Version dùng package archive private với scan clean gate và documentation document; Post dùng thumbnail/content images riêng, taxonomy/SEO round-trip, status filter và dialog AI giữ hierarchy cũ. Upload đã có acceptance cho MIME/executable/path traversal/symlink/archive limit, private download và queue retry idempotency. Update/replace/delete đều đồng bộ usage trong transaction. Backend 127 tests/670 assertions, frontend Vitest 75 tests, ESLint JavaScript/Vue, targeted Pint, production build và `git diff --check` đều đạt; Pint toàn repo còn baseline lỗi line-ending/style ở file legacy.
+- Cập nhật 2026-09-30: AI Agent có registry/adapter/candidate lineage, regenerate/retry/apply chọn lọc, capability endpoint, adapter HTTP OpenAI/Gemini, text input và logo/provenance theo provider; Laravel AI SDK, Resource/Sound adapter, file input và browser/staging vẫn pending.
 
 ## 2. Phạm vi theo giai đoạn
 
@@ -1182,8 +1182,9 @@ Chi tiết contract, registry, migration, candidate/provenance và danh sách en
   Apply mới tạo Post draft/slug và ghi provenance.
 - [x] Dialog AI dùng chung; `CreateWithAiDialog` giữ hierarchy giao diện cũ và
   chỉ bổ sung field/capability cần thiết.
-- [ ] Adapter GPT/Gemini thật, logo provider/model, Resource/Sound adapter, file
-  input và browser/staging test.
+- [x] Adapter HTTP OpenAI/Gemini, logo provider/model và metadata provenance đã
+  hoạt động qua provider registry/capability backend.
+- [ ] Laravel AI SDK, Resource/Sound adapter, file input và browser/staging test.
 
 ### Đợt 5 — Tích hợp public catalog, blog và legal
 
@@ -1515,10 +1516,12 @@ lifecycle phức tạp như Resource vào một CRUD base quá chung.
   lineage, regenerate/retry/apply và provenance theo field.
 - [x] Ghi nhận capability endpoint và frontend AI dialog/service/store; dialog
   Post vẫn dùng hierarchy cũ, chỉ bổ sung các field cần thiết.
-- [x] Đồng bộ mốc kiểm thử: backend 112 tests/600 assertions, frontend 64 tests,
-  Pint, ESLint phạm vi thay đổi và production build đều đạt.
-- [ ] Laravel AI SDK/GPT/Gemini thật (môi trường hiện tại PHP 8.2, SDK yêu cầu
-  PHP 8.3), logo provider, Resource/Sound adapter và browser/staging test.
+- [x] Đồng bộ mốc kiểm thử: backend 127 tests/670 assertions, frontend 75 tests,
+  ESLint JavaScript/Vue, targeted Pint và production build đều đạt.
+- [x] Adapter HTTP OpenAI/Gemini, logo provider/model và provenance đã được tích
+  hợp vào AI Agent.
+- [ ] Laravel AI SDK (môi trường hiện tại PHP 8.2, SDK yêu cầu PHP 8.3),
+  Resource/Sound adapter, file input và browser/staging test.
 
 ## 16. Tài liệu tham khảo
 

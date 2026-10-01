@@ -28,6 +28,7 @@ enum MediaAssetField: string
 {
     case PostThumbnail = 'post.thumbnail';
     case PostContentImages = 'post.content_images';
+    case PostOgImage = 'post.og_image';
     case ResourceCover = 'resource.cover';
     case ResourcePreview = 'resource.preview';
     case ResourceVersionPackage = 'resource_version.package';
@@ -59,6 +60,7 @@ enum MediaAssetField: string
         return [
             'post.thumbnail' => 'Post thumbnail',
             'post.content_images' => 'Post content images',
+            'post.og_image' => 'Post Open Graph image',
             'resource.cover' => 'Resource cover',
             'resource.preview' => 'Resource preview',
             'resource_version.package' => 'Resource package',
@@ -79,6 +81,7 @@ enum MediaAssetField: string
         return match ($this) {
             self::PostThumbnail,
             self::PostContentImages,
+            self::PostOgImage,
             self::ResourceCover,
             self::ResourcePreview => MediaAssetKind::Image,
             self::ResourceVersionPackage => MediaAssetKind::Archive,
@@ -101,6 +104,7 @@ enum MediaAssetField: string
             self::ResourcePreview,
             self::ResourceVersionDocumentation => true,
             self::PostThumbnail,
+            self::PostOgImage,
             self::ResourceCover,
             self::ResourceVersionPackage => false,
         };

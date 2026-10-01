@@ -50,10 +50,12 @@ const slugErrorMessage = (requestError, modelLabel) => {
 
   return 'Không tạo được slug do lỗi kết nối. Bỏ focus tiêu đề để thử lại; khi lưu backend sẽ kiểm tra lại.'
 }
+
 /**
  * Input: options chứa MaybeRef/MaybeRefOrGetter title/modelType/modelId.
  * Output: state readonly và actions preview/reset; request cũ bị vô hiệu khi input đổi.
  */
+
 export function useSlug({ title, modelType, modelId = null, modelLabel = null } = {}) {
   const slugStore = useSlugStore()
   const titleRef = toRef(title ?? '')

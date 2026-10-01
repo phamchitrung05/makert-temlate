@@ -417,10 +417,10 @@ UI có thể dựng skeleton, nhưng không đánh dấu tích hợp hoàn thàn
   để `MediaLibraryDialog` và `MediaAssetGrid` dùng cùng hierarchy project.
 - [x] Sửa context field/kind khi mở picker để detail và test không mất metadata
   (`resource.cover`, `image`, v.v.).
-- [x] Media Asset page tiếp tục gọi API thật qua adapter hiện tại; không đưa lại
-  mock data vào production flow.
-- [x] Kiểm chứng sau lượt tích hợp: backend 112 tests/600 assertions, frontend
-  64 tests và production build đạt; warning `section-title-icon.png` là asset
-  legacy đã có trước.
-- [ ] Hợp nhất `useMediaAssetManager` về `useMediaAssetStore` và bổ sung browser/
-  staging test với storage thật.
+- [x] Media Asset page gọi API thật trực tiếp qua `useMediaAssetStore`; không đưa
+  lại mock data vào production flow.
+- [x] Kiểm chứng sau lượt tích hợp: backend 127 tests/670 assertions, frontend
+  75 tests, ESLint JavaScript/Vue, targeted Pint và production build đạt; warning
+  `section-title-icon.png` là asset legacy đã có trước.
+- [x] Hợp nhất `useMediaAssetManager` về `useMediaAssetStore`; browser/staging test
+  với queue worker và storage thật còn pending.

@@ -369,6 +369,9 @@
     "createSeo": true,
     "useSlug": true,
     "wordsOf": true,
-    "useMediaAssetManager": true
+    "useMediaAssetManager": true,
+    "mergePostCandidate": true,
+    "overwrittenFields": true,
+    "toPostPayload": true
   }
 }

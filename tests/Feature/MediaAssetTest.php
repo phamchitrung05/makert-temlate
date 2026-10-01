@@ -54,6 +54,18 @@ class MediaAssetTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
         Config::set('media-library.asset_disks.public', 'media_public');
         Config::set('media-library.asset_disks.private', 'media_private');
+        Config::set('media-assets.image_conversions.featured', [
+            'width' => 1200,
+            'height' => 675,
+            'format' => 'webp',
+            'quality' => 85,
+        ]);
+        Config::set('media-assets.image_conversions.og', [
+            'width' => 1200,
+            'height' => 630,
+            'format' => 'webp',
+            'quality' => 85,
+        ]);
     }
 
     /**
@@ -112,11 +124,28 @@ class MediaAssetTest extends TestCase
 
         $image->registerAllMediaConversions();
         $conversions = $image->mediaConversions;
-        $this->assertCount(2, $conversions);
-        $this->assertSame(['thumb', 'web'], array_map(
+        $this->assertCount(4, $conversions);
+        $this->assertSame(['thumb', 'web', 'featured', 'og'], array_map(
             static fn ($conversion): string => $conversion->getName(),
             $conversions,
         ));
+
+        $this->assertSame(
+            ['width' => 1200, 'height' => 675, 'format' => 'webp'],
+            [
+                'width' => $conversions[2]->getManipulations()->getManipulationArgument('fit')[1] ?? null,
+                'height' => $conversions[2]->getManipulations()->getManipulationArgument('fit')[2] ?? null,
+                'format' => $conversions[2]->getManipulations()->getManipulationArgument('format')[0] ?? null,
+            ],
+        );
+        $this->assertSame(
+            ['width' => 1200, 'height' => 630, 'format' => 'webp'],
+            [
+                'width' => $conversions[3]->getManipulations()->getManipulationArgument('fit')[1] ?? null,
+                'height' => $conversions[3]->getManipulations()->getManipulationArgument('fit')[2] ?? null,
+                'format' => $conversions[3]->getManipulations()->getManipulationArgument('format')[0] ?? null,
+            ],
+        );
 
         $archive->registerAllMediaConversions();
         $this->assertCount(0, $archive->mediaConversions);

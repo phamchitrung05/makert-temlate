@@ -60,7 +60,9 @@ bundle Vue. Các biến giới hạn URL/job và quota có giá trị mặc đ�
 
 | Nhóm | Biến |
 | --- | --- |
-| Provider | `AI_IMPORT_ENABLED`, `AI_IMPORT_PROVIDER`, `AI_IMPORT_ENDPOINT`, `AI_IMPORT_KEY`, `AI_IMPORT_MODEL` |
+| Provider mặc định | `AI_IMPORT_ENABLED`, `AI_IMPORT_PROVIDER`, `AI_IMPORT_ENDPOINT`, `AI_IMPORT_KEY`, `AI_IMPORT_MODEL` |
+| OpenAI-compatible | `AI_OPENAI_KEY`, `AI_OPENAI_ENDPOINT`, `AI_OPENAI_MODEL`, `AI_OPENAI_TEMPERATURE` |
+| Gemini | `AI_GEMINI_KEY`, `AI_GEMINI_ENDPOINT`, `AI_GEMINI_MODEL`, `AI_GEMINI_TEMPERATURE` |
 | Timeout/retry | `AI_IMPORT_TIMEOUT`, `AI_IMPORT_CONNECT_TIMEOUT`, `AI_IMPORT_JOB_TIMEOUT`, `AI_IMPORT_MAX_REDIRECTS` |
 | Payload/file | `AI_IMPORT_MAX_HTML_BYTES`, `AI_IMPORT_MAX_IMAGE_BYTES`, `AI_IMPORT_USER_AGENT` |
 | Prompt/lifecycle | `AI_IMPORT_PROMPT_VERSION`, `AI_IMPORT_RETENTION_DAYS`, `AI_IMPORT_IDEMPOTENCY_WINDOW_MINUTES` |
@@ -69,6 +71,9 @@ bundle Vue. Các biến giới hạn URL/job và quota có giá trị mặc đ�
 Khi `AI_IMPORT_ENABLED=false`, provider/import bị tắt thật (không dùng cast
 boolean của chuỗi môi trường). Laravel AI SDK chưa được cài trong môi trường
 PHP 8.2 hiện tại; chỉ bật sau khi runtime đáp ứng PHP 8.3 và đã kiểm thử provider.
+Các API key chỉ đặt trong `.env` phía Laravel; không đưa vào `VITE_*`, response
+capability hoặc bundle Vue. Khi chưa điền key, deterministic provider vẫn là
+fallback an toàn cho local/test.
 
 ## Sanctum admin
 

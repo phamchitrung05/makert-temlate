@@ -13,7 +13,7 @@ use InvalidArgumentException;
  * không render hoặc gọi provider; nó chỉ đảm bảo task chỉ dùng prompt hợp lệ.
  *
  * CÁC HÀM/METHOD TRONG FILE:
- * - __construct(), get(), all().
+ * - __construct(), get(), select(), all().
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : prompt key, target và operation từ AI request.
@@ -47,6 +47,67 @@ final class PromptRegistry
         }
 
         return $prompt + ['key' => $key];
+    }
+
+    /**
+     * Chọn prompt theo thứ tự manual -> rule -> fallback allowlist.
+     *
+     * Input: prompt key tùy chọn, target/operation và context nguồn.
+     * Output: prompt metadata có key và selection mode; không gọi model AI.
+     * Side effect: chỉ đọc config.
+     * Exception/transaction: InvalidArgumentException khi key/registry không hợp lệ; không transaction.
+     *
+     * Rule là map key/value đơn giản trong config, ví dụ `source_type => text`.
+     * Khi nhiều prompt cùng khớp, priority cao hơn được chọn rồi mới đến key
+     * alphabetic; deterministic fallback giữ kết quả ổn định giữa các worker.
+     *
+     * @param array<string, scalar|null> $context
+     * @return array<string, mixed>
+     */
+    public function select(
+        ?string $requestedKey,
+        string $target,
+        string $operation,
+        array $context = [],
+    ): array {
+        if (filled($requestedKey)) {
+            return $this->get((string) $requestedKey, $target, $operation) + ['selection' => 'manual'];
+        }
+
+        $eligible = collect($this->all())
+            ->map(fn (array $prompt, string $key): array => $prompt + ['key' => $key])
+            ->filter(fn (array $prompt): bool => in_array($target, $prompt['allowed_targets'] ?? [], true))
+            ->filter(fn (array $prompt): bool => in_array($operation, $prompt['allowed_operations'] ?? [], true))
+            ->values();
+
+        if ($eligible->isEmpty()) {
+            throw new InvalidArgumentException("Không có prompt phù hợp target [{$target}] và operation [{$operation}].");
+        }
+
+        $ruleMatches = $eligible->filter(function (array $prompt) use ($context): bool {
+            $rules = (array) ($prompt['rules'] ?? []);
+            if ($rules === []) {
+                return false;
+            }
+
+            foreach ($rules as $key => $expected) {
+                if (! array_key_exists($key, $context) || (string) $context[$key] !== (string) $expected) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+
+        $pool = $ruleMatches->isNotEmpty() ? $ruleMatches : $eligible;
+
+        return $pool
+            ->sort(function (array $left, array $right): int {
+                $priority = ((int) ($right['priority'] ?? 0)) <=> ((int) ($left['priority'] ?? 0));
+
+                return $priority !== 0 ? $priority : strcmp((string) $left['key'], (string) $right['key']);
+            })
+            ->first() + ['selection' => $ruleMatches->isNotEmpty() ? 'rule' : 'fallback'];
     }
 
     /** INPUT: không có. OUTPUT: toàn bộ prompt metadata. SIDE EFFECT: đọc config. EXCEPTION/TRANSACTION: không có. @return array<string, array<string, mixed>> */

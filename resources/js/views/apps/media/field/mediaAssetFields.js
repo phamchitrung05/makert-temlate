@@ -28,6 +28,11 @@ export const mediaAssetFieldConfig = Object.freeze({
     kind: 'image',
     multiple: true,
   }),
+  'post.og_image': Object.freeze({
+    title: 'Post Open Graph image',
+    kind: 'image',
+    multiple: false,
+  }),
   'resource.cover': Object.freeze({
     title: 'Resource cover',
     kind: 'image',
@@ -50,8 +55,10 @@ export const mediaAssetFieldConfig = Object.freeze({
   }),
 })
 
+/** Input: field contract key. Output: immutable UI metadata hoặc null. */
 export const getMediaAssetFieldConfig = field => mediaAssetFieldConfig[field] ?? null
 
+/** Input: media kind. Output: accept attribute cho file input. */
 export const kindAccept = kind => ({
   image: 'image/*',
   document: '.pdf,.doc,.docx,.txt,.md',

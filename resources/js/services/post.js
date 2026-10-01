@@ -4,6 +4,7 @@
  * CÁC HÀM/METHOD TRONG FILE: unwrap(), normalize(), toPayload(),
  * list(), show(), create(), update(), remove().
  * INPUT/OUTPUT CỦA CLASS (tổng thể): state form/ID/query -> payload API hoặc Post.
+ * AI lineage được gửi dưới dạng ai_run_id/ai_fields; provider/model chỉ do backend resolve.
  * =====================================================================
  */
 import { $api } from '@/utils/api'
@@ -36,6 +37,7 @@ const toPayload = payload => ({
   'robots_follow': payload.seo?.robotsFollow,
   'og_title': payload.seo?.ogTitle,
   'og_description': payload.seo?.ogDescription,
+  'og_image_id': payload.seo?.ogImage?.id ?? payload.seo?.ogImageId ?? null,
   ['category_ids']: Array.isArray(payload.categories)
     ? payload.categories.map(category => typeof category === 'object' ? category.id : category).filter(Boolean)
     : [],
@@ -48,6 +50,10 @@ const toPayload = payload => ({
       ? payload.contentImages.map(asset => asset.id).filter(Boolean)
       : [],
   },
+  ...(payload.aiProvenance?.runId ? {
+    'ai_run_id': payload.aiProvenance.runId,
+    'ai_fields': Array.isArray(payload.aiProvenance.fields) ? [...payload.aiProvenance.fields] : [],
+  } : {}),
 })
 
 export const postService = {

@@ -29,10 +29,23 @@ const { items, totalItems, isLoading, error } = storeToRefs(store)
 const page = shallowRef(1)
 const itemsPerPage = shallowRef(15)
 const search = shallowRef('')
+const status = shallowRef(null)
 const isCreateWithAiDialogVisible = shallowRef(false)
 const errorMessage = computed(() => error.value?.data?.message || error.value?.response?._data?.message || 'Không thể tải bài viết.')
 
-watch([page, itemsPerPage, search], () => void store.fetchPosts({ page: page.value, 'per_page': itemsPerPage.value, search: search.value || undefined }), { immediate: true })
+/** Input: filter/page thay đổi. Output: tải lại Post bằng Pinia store. */
+const loadPosts = () => store.fetchPosts({
+  page: page.value,
+  'per_page': itemsPerPage.value,
+  search: search.value || undefined,
+  status: status.value || undefined,
+})
+
+watch([search, status, itemsPerPage], () => {
+  if (page.value !== 1) page.value = 1
+  else void loadPosts()
+})
+watch(page, () => void loadPosts(), { immediate: true })
 </script>
 
 <template>
@@ -65,11 +78,29 @@ watch([page, itemsPerPage, search], () => void store.fetchPosts({ page: page.val
     <CreateWithAiDialog v-model="isCreateWithAiDialogVisible" />
     <VCard>
       <VCardText>
-        <AppTextField
-          v-model="search"
-          placeholder="Search posts"
-          clearable
-        />
+        <VRow>
+          <VCol
+            cols="12"
+            md="8"
+          >
+            <AppTextField
+              v-model="search"
+              placeholder="Search posts"
+              clearable
+            />
+          </VCol>
+          <VCol
+            cols="12"
+            md="4"
+          >
+            <AppSelect
+              v-model="status"
+              label="Status"
+              :items="[{ title: 'Draft', value: 'draft' }, { title: 'Published', value: 'published' }, { title: 'Archived', value: 'archived' }]"
+              clearable
+            />
+          </VCol>
+        </VRow>
       </VCardText>
       <VAlert
         v-if="error"

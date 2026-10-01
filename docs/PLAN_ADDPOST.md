@@ -109,8 +109,10 @@ Chưa có trang blog public. Metadata admin chưa tự xuất ra HTML public. Kh
 - [x] Chuyển Featured Image và Image Gallery sang cột phải cùng Post Settings.
 - [x] Chuyển engine SEO từ `postSeo.js` sang `resources/js/composables/seoMetadata.js` để dùng chung model.
 - [x] Đổi `usePostSlug.js` thành composable `useSlug.js`, nhận title/model type/model ID dạng reactive hoặc getter.
-- [x] Frontend 64 tests qua; ESLint/Pint qua; production build qua, TinyMCE runtime được tách thành chunk tải lười.
-- [x] Toàn bộ backend 112 tests / 600 assertions qua, gồm API đa model, phân quyền create/update, validation, collision, taxonomy và AI candidate/apply.
+- [x] Frontend 75 tests qua; ESLint JavaScript/Vue và targeted Pint cho file thay đổi
+  qua; production build qua, TinyMCE runtime được tách thành chunk tải lười.
+- [x] Toàn bộ backend 127 tests / 670 assertions qua, gồm API đa model, phân quyền
+  create/update, validation, collision, taxonomy và AI candidate/apply.
 - [x] Chủ dự án chọn dùng key Tiny Cloud; đã thêm chỗ nhập `VITE_TINYMCE_API_KEY` vào `.env` và hướng dẫn trong `.env.example`. Để `VITE_TINYMCE_LICENSE_KEY` trống khi dùng Cloud.
 - [ ] Chủ dự án điền key, khởi động lại Vite/build và kiểm thử TinyMCE trực tiếp trên trình duyệt. Chưa kiểm chứng key/domain thật.
 

@@ -8,6 +8,7 @@
   vẫn do store/service của caller quyết định.
 
   CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
+  - fileOf()/previewOf()/isSelected(): đọc metadata và selection.
   - categories, selectedPreview*: computed cho sidebar/detail.
   - syncDetailDraft(): đồng bộ asset đang preview vào draft metadata.
   - selectCategory(), handleToggle(), saveDetailDraft(), copyFileUrl().
@@ -179,10 +180,13 @@ const categories = computed(() => [
   },
 ])
 
+/** Input: asset. Output: file metadata hoặc object rỗng. */
 const fileOf = asset => asset?.file ?? {}
 
+/** Input: asset. Output: preview URL public hoặc null. */
 const previewOf = asset => fileOf(asset).preview_url || fileOf(asset).url || null
 
+/** Input: asset. Output: true khi asset nằm trong selection hiện tại. */
 const isSelected = asset => props.selectedAssets.some(selected => selected.id === asset.id)
 
 const selectedPreviewFile = computed(() => fileOf(props.previewAsset))
@@ -215,6 +219,7 @@ const selectedPreviewDimensions = computed(() => {
   return width && height ? `${width} × ${height}` : '—'
 })
 
+/** Input: status backend. Output: nhãn hiển thị Title Case. */
 const formatStatus = status => status
   ? status.replaceAll('_', ' ').replace(/\b\w/g, character => character.toUpperCase())
   : '—'
@@ -244,6 +249,7 @@ const hasDetailChanges = computed(() => (
   || detailDraft.description !== savedDetailDraft.value.description
 ))
 
+/** Input: asset preview mới. Output: đồng bộ draft metadata local. */
 const syncDetailDraft = asset => {
   detailDraft.altText = asset?.alt_text || ''
   detailDraft.caption = asset?.caption || ''
@@ -253,6 +259,7 @@ const syncDetailDraft = asset => {
 
 watch(() => props.previewAsset, syncDetailDraft, { immediate: true })
 
+/** Input: category sidebar. Output: cập nhật kind filter nếu không bị khóa. */
 const selectCategory = category => {
   if (props.kindLocked && category.value !== props.effectiveKind)
     return
@@ -260,11 +267,13 @@ const selectCategory = category => {
   selectedKind.value = category.value
 }
 
+/** Input: asset card. Output: emit preview và toggle lên dialog cha. */
 const handleToggle = asset => {
   emit('update:previewAsset', asset)
   emit('toggle', asset)
 }
 
+/** Input: không có. Output: lưu draft metadata local qua event cha khi cần. */
 const saveDetailDraft = () => {
   if (!props.previewAsset || !hasDetailChanges.value)
     return
@@ -272,6 +281,7 @@ const saveDetailDraft = () => {
   savedDetailDraft.value = { ...detailDraft }
 }
 
+/** Input: không có. Output: copy URL preview vào clipboard nếu được phép. */
 const copyFileUrl = async () => {
   if (!selectedPreviewFileUrl.value || selectedPreviewFileUrl.value === '—')
     return
@@ -279,6 +289,7 @@ const copyFileUrl = async () => {
   await navigator.clipboard?.writeText(selectedPreviewFileUrl.value)
 }
 
+/** Input: không có. Output: mở input file khi upload capability hợp lệ. */
 const openFilePicker = () => {
   if (!props.canUpload || props.isMutating)
     return
@@ -286,6 +297,7 @@ const openFilePicker = () => {
   uploadInput.value?.click()
 }
 
+/** Input: change event của input file. Output: emit multipart upload payload. */
 const handleUploadInput = event => {
   const file = event.target.files?.[0]
 
@@ -566,7 +578,6 @@ const handleUploadInput = event => {
               :assets="props.assets"
               :selected-assets="props.selectedAssets"
               :multiple="props.multiple"
-              :loading="props.isLoading"
               :can-select="props.canAttach"
               :can-retry="props.canRetry"
               @toggle="handleToggle"
@@ -975,7 +986,7 @@ const handleUploadInput = event => {
 .media-main-column {
   display: flex;
   flex-direction: column;
-  background-color: rgba(var(--v-theme-on-surface), 0.06);
+  background-color: rgb(var(--v-theme-surface));
 }
 
 .media-filters {
@@ -1046,7 +1057,7 @@ const handleUploadInput = event => {
 .media-items-scroll {
   flex: 1 1 auto;
   min-block-size: 0;
-  background-color: rgba(var(--v-theme-on-surface), 0.06);
+  background-color: rgb(var(--v-theme-surface));
 }
 
 @media (max-width: 959.98px) {

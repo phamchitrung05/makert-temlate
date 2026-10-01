@@ -2,7 +2,7 @@
  * =====================================================================
  * CHỨC NĂNG FILE: Pinia state cho AI Agent session/candidate dùng chung.
  * CÁC HÀM/METHOD TRONG FILE: loadCapabilities(), start(), poll(),
- * regenerate(), cancel(), apply().
+ * regenerate(), retry(), cancel(), apply().
  * INPUT/OUTPUT CỦA CLASS (tổng thể): request AI -> state readonly và các
  * action điều phối API; UI không tự quản lý polling hoặc retry.
  * =====================================================================
@@ -17,14 +17,16 @@ export const useAiAgentStore = defineStore('aiAgent', () => {
   const candidates = shallowRef([])
   const isLoading = shallowRef(false)
   const error = shallowRef(null)
-  const isRunning = computed(() => ['queued', 'running', 'processing'].includes(session.value?.status))
+  const isRunning = computed(() => ['queued', 'running', 'processing', 'fetching', 'extracting', 'rewriting', 'seo', 'thumbnail'].includes(session.value?.status))
 
+  /** Input: target key. Output: capability allowlist được lưu vào state. */
   const loadCapabilities = async targetType => {
     capabilities.value = await aiAgentService.capabilities(targetType)
 
     return capabilities.value
   }
 
+  /** Input: request target/input/provider. Output: session queued từ API. */
   const start = async request => {
     isLoading.value = true
     error.value = null
@@ -43,6 +45,7 @@ export const useAiAgentStore = defineStore('aiAgent', () => {
     }
   }
 
+  /** Input: session ID và target. Output: lifecycle/candidate mới nhất. */
   const poll = async (sessionId, targetType) => {
     session.value = await aiAgentService.status(sessionId, targetType)
     syncCandidates(session.value)
@@ -70,6 +73,26 @@ export const useAiAgentStore = defineStore('aiAgent', () => {
     }
   }
 
+  /** Input: session/job lỗi. Output: trạng thái queue sau retry kỹ thuật. */
+  const retry = async sessionId => {
+    isLoading.value = true
+    error.value = null
+    try {
+      session.value = await aiAgentService.retry(sessionId)
+      syncCandidates(session.value)
+
+      return session.value
+    }
+    catch (requestError) {
+      error.value = requestError
+      throw requestError
+    }
+    finally {
+      isLoading.value = false
+    }
+  }
+
+  /** Input: session/job ID. Output: session cancelled hoặc terminal. */
   const cancel = async sessionId => {
     const response = await aiAgentService.cancel(sessionId)
 
@@ -78,14 +101,20 @@ export const useAiAgentStore = defineStore('aiAgent', () => {
     return response
   }
 
+  /** Input: candidate ID và field target. Output: resource đã apply từ API. */
   const apply = async (candidateId, payload) => aiAgentService.applyCandidate(candidateId, payload)
 
+  /** Input: response session/run. Output: merge candidate lineage theo ID. */
   const syncCandidates = value => {
-    const next = Array.isArray(value?.candidates) ? value.candidates : value?.candidate ? [value.candidate] : value?.draft ? [{ id: value.id ?? value.job_id, outputs: value.draft, provider: value.provider, model: value.model }] : []
+    const next = Array.isArray(value?.candidates) ? value.candidates : value?.candidate ? [value.candidate] : value?.draft ? [{ id: value.id ?? value.job_id, outputs: value.draft, provider: value.provider, model: value.model, ['prompt_key']: value['prompt_key'], ['prompt_version']: value['prompt_version'], source: value.source }] : []
 
-    candidates.value = next
+    const byId = new Map(candidates.value.map(candidate => [candidate.id, candidate]))
+
+    next.forEach(candidate => byId.set(candidate.id, candidate))
+    candidates.value = [...byId.values()]
   }
 
+  /** Input: không có. Output: xóa session/candidate/error trong state. */
   const reset = () => {
     session.value = null
     candidates.value = []
@@ -103,6 +132,7 @@ export const useAiAgentStore = defineStore('aiAgent', () => {
     start,
     poll,
     regenerate,
+    retry,
     cancel,
     apply,
     reset,

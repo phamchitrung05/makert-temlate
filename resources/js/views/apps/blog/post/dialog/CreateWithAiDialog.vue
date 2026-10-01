@@ -12,8 +12,10 @@
   - load(): tải capability và reset field theo target Post.
   - run(): tạo session AI từ URL/text và bắt đầu polling.
   - poll(): cập nhật progress/candidate theo trạng thái backend.
-  - apply(): emit field được chọn cho PostForm.
+  - apply(): emit field được chọn và lineage run cho PostForm.
   - cancel(): hủy session đang chạy và dừng polling.
+  - retryRun(): retry kỹ thuật run lỗi, không tạo candidate lineage mới.
+  - progressSteps(): ánh xạ lifecycle backend thành các bước hiển thị.
   - watcher visible: khởi tạo/dọn polling theo vòng đời dialog.
 
   INPUT/OUTPUT CỦA COMPONENT (tổng thể):
@@ -29,6 +31,7 @@ import { useAiAgentStore } from '@/stores/aiAgent'
 import AiAgentCandidatePreview from '@/components/ai/AiAgentCandidatePreview.vue'
 import ArticleSourcePreviewCard from './ArticleSourcePreviewCard.vue'
 import AiImportProgressCard from './AiImportProgressCard.vue'
+import { toPostPayload } from '@/composables/aiCandidate'
 
 const props = defineProps({ targetId: { type: [Number, String], default: null } })
 const emit = defineEmits(['apply', 'applied'])
@@ -51,6 +54,29 @@ const sessionId = computed(() => store.session?.id ?? store.session?.session_id 
 const prompts = computed(() => (capability.value.prompts ?? []).map(item => typeof item === 'string' ? { key: item, label: item } : item))
 const providers = computed(() => capability.value.providers ?? [])
 const models = computed(() => providers.value.find(item => item.key === form.provider)?.models ?? [])
+
+const progressSteps = computed(() => {
+  const current = store.session?.current_step || store.session?.status || 'queued'
+  const order = ['queued', 'fetching', 'extracting', 'rewriting', 'seo', 'thumbnail', 'ready']
+  const currentIndex = Math.max(0, order.indexOf(current))
+
+  const labels = {
+    queued: ['Xếp hàng', 'Đang chờ worker xử lý'],
+    fetching: ['Đọc nguồn', 'Tải dữ liệu URL an toàn'],
+    extracting: ['Trích xuất', 'Lọc nội dung và metadata'],
+    rewriting: ['Tạo nội dung', 'Provider tạo structured candidate'],
+    seo: ['Tối ưu SEO', 'Kiểm tra field và taxonomy'],
+    thumbnail: ['Xử lý ảnh', 'Chuẩn bị thumbnail nguồn'],
+    ready: ['Hoàn tất', 'Candidate sẵn sàng review'],
+  }
+
+  return order.map((id, index) => ({
+    id: index + 1,
+    title: labels[id][0],
+    subtitle: labels[id][1],
+    status: current === id ? 'processing' : index < currentIndex || current === 'ready' && id === 'ready' ? 'done' : 'pending',
+  }))
+})
 
 const stepperItems = [
   { title: 'Nhập nguồn', subtitle: 'URL hoặc nội dung nguồn' },
@@ -92,16 +118,21 @@ const load = async () => {
 
 const buildRequest = () => ({ target_type: 'post', target_id: props.targetId, operation: 'create', input: { type: form.inputType, ...(form.inputType === 'url' ? { url: form.inputValue } : { text: form.inputValue }) }, output_language: form.language, instructions: form.instructions, selection_mode: form.selectionMode, prompt_key: form.selectionMode === 'manual' ? form.promptKey : null, provider: form.provider, model: form.model || null, requested_outputs: form.outputs })
 
-const stop = () => { clearTimeout(timer); polling.value = false }
+let pollGeneration = 0
+const stop = () => { clearTimeout(timer); pollGeneration++; polling.value = false }
 
 const poll = async response => {
   const id = response?.id ?? response?.session_id ?? response?.job_id
   if (!id || ['ready', 'completed', 'succeeded'].includes(response.status)) return
   polling.value = true
 
+  const generation = ++pollGeneration
+
   const tick = async () => {
+    if (generation !== pollGeneration) return
     try {
       const result = await store.poll(id, 'post')
+      if (generation !== pollGeneration) return
       if (['ready', 'completed', 'succeeded', 'failed', 'cancelled', 'expired'].includes(result?.status)) { polling.value = false; currentStep.value = result.status === 'ready' || result.status === 'completed' || result.status === 'succeeded' ? 3 : 2
 
         return }
@@ -123,47 +154,19 @@ const run = async () => {
 
 /**
  * Input: output canonical và danh sách field người dùng chọn.
- * Output: payload đúng shape PostForm; không tự lưu hoặc tạo slug.
+ * Output: payload đúng shape PostForm kèm run/field provenance; không tự lưu
+ * hoặc tạo slug.
  */
-const toPostPayload = (output, fields) => {
-  const payload = {}
-  const seo = {}
-
-  const seoMap = {
-    focus_keyword: 'focusKeyword', seo_title: 'title', seo_description: 'description',
-    canonical_url: 'canonicalUrl', robots_index: 'robotsIndex', robots_follow: 'robotsFollow',
-    og_title: 'ogTitle', og_description: 'ogDescription',
-  }
-
-  fields.forEach(key => {
-    const value = output[key]?.value ?? output[key]
-
-    if (key === 'content' || key === 'content_html') {
-      payload.content = output.content_html?.value ?? output.content_html ?? value
-    }
-    else if (key === 'seo' || key in seoMap) {
-      if (key === 'seo' && value && typeof value === 'object') Object.assign(seo, value)
-      else seo[seoMap[key]] = value
-    }
-    else if (key === 'taxonomy') {
-      payload.categories = output.category_ids ?? output.suggested_category_ids ?? []
-      payload.tags = output.tag_ids ?? output.suggested_tag_ids ?? []
-    }
-    else if (key === 'category_ids' || key === 'suggested_category_ids') payload.categories = value
-    else if (key === 'tag_ids' || key === 'suggested_tag_ids') payload.tags = value
-    else payload[key] = value
-  })
-
-  if (Object.keys(seo).length) payload.seo = seo
-
-  return payload
-}
-
 const apply = () => {
   if (!candidate.value || !selectedFields.value.length) return
   const output = candidate.value.outputs ?? candidate.value.draft ?? {}
+  const fields = selectedFields.value.filter(key => key in output || ['content', 'seo', 'taxonomy'].includes(key))
+  if (!fields.length) return
 
-  emit('apply', toPostPayload(output, selectedFields.value.filter(key => key in output || ['content', 'seo', 'taxonomy'].includes(key))))
+  emit('apply', toPostPayload(output, fields), {
+    runId: candidate.value.id ?? sessionId.value,
+    fields,
+  })
   visible.value = false
 }
 
@@ -173,7 +176,23 @@ const regenerate = async () => {
   catch (error) { message.value = error?.data?.message || error.message }
 }
 
-const cancel = async () => { if (sessionId.value) await store.cancel(sessionId.value); stop() }
+/** Input: session/job terminal lỗi. Output: run được queue lại và polling tiếp. */
+const retryRun = async () => {
+  if (!sessionId.value || busy.value) return
+  message.value = ''
+  try { await poll(await store.retry(sessionId.value)) }
+  catch (error) { message.value = error?.data?.message || error.message }
+}
+
+/** Input: session đang chạy. Output: request cancel best-effort và dừng polling. */
+const cancel = async () => {
+  try {
+    if (sessionId.value) await store.cancel(sessionId.value)
+  }
+  finally {
+    stop()
+  }
+}
 
 /** Input: không có. Output: đổi ngôn ngữ nguồn/đích theo UI cũ. */
 const swapLanguages = () => { const value = sourceLanguage.value
@@ -408,14 +427,17 @@ onBeforeUnmount(stop)
               cols="12"
               md="6"
             >
-              <ArticleSourcePreviewCard :source-url="form.inputValue" />
+              <ArticleSourcePreviewCard
+                :source-value="form.inputValue"
+                :source-type="form.inputType"
+              />
             </VCol>
             <VCol
               cols="12"
               md="6"
             >
               <AiImportProgressCard
-                :steps="[]"
+                :steps="progressSteps"
                 :elapsed-time="store.session?.elapsed_time || '00:00:00'"
               />
             </VCol>
@@ -432,6 +454,7 @@ onBeforeUnmount(stop)
             v-if="candidate"
             v-model:selected-fields="selectedFields"
             :candidate="candidate"
+            :providers="providers"
           />
         </VCardText>
         <VDivider />
@@ -459,6 +482,15 @@ onBeforeUnmount(stop)
             @click="regenerate"
           >
             Tạo lại
+          </VBtn>
+          <VBtn
+            v-if="['failed', 'cancelled', 'expired'].includes(store.session?.status)"
+            variant="tonal"
+            color="warning"
+            :disabled="busy"
+            @click="retryRun"
+          >
+            Thử lại
           </VBtn>
           <VBtn
             v-if="candidate"

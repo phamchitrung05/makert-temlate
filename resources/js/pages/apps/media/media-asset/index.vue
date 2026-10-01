@@ -4,19 +4,24 @@
   =====================================================================
 
   Khôi phục bố cục ba cột nguyên bản và dùng dữ liệu thật từ Media Asset API.
-  CÁC HÀM/COMPUTED TRONG FILE:
-  - displayFile(): map API sang card; selectFile(): tải detail.
-  - handleUpload/handleUpdate/handleDelete(): mutation API.
-  - toggleFileSelection(): checkbox; resetDemoView(): refresh API.
-  - fileTags()/formatUploadDate(): định dạng metadata cho panel cũ.
-  - syncStateFromRoute/syncRouteQuery(): đồng bộ filter URL.
-  - updateItemsPerPage/updateMediaScrollbars(): pagination và scrollbar.
+  CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
+  - routeQueryValue()/parsePositiveInteger()/categoryRoute(): chuẩn hóa route.
+  - displayFile()/formatStatus()/formatUploadDate(): map metadata card/panel.
+  - selectedPreview*/copySelectedFileUrl(): dữ liệu panel chi tiết bên phải.
+  - load()/select()/mutate()/upload()/remove()/update()/retry()/download():
+  điều phối Pinia store cho list/detail/mutation.
+  - handleUpload/handleUpdate/handleDelete(): event từ dialog.
+  - toggleFileSelection()/resetDemoView()/selectFile(): thao tác UI local.
+  - syncStateFromRoute()/syncRouteQuery()/queriesEqual(): đồng bộ URL filter.
+  - updateItemsPerPage()/updateMediaScrollbars(): pagination/layout.
   INPUT/OUTPUT CỦA COMPONENT (tổng thể):
   - INPUT : thao tác filter, category, view mode, pagination và chọn file.
-  - OUTPUT: giao diện Media Asset tại /apps/media/media-asset.
+  - OUTPUT: giao diện Media Asset tại /apps/media/media-asset; state dùng
+  trực tiếp useMediaAssetStore làm source of truth.
   =====================================================================
 -->
 <script setup>
+/* eslint-disable camelcase -- Laravel query keys preserve snake_case contract. */
 import {
   computed,
   nextTick,
@@ -25,7 +30,8 @@ import {
   useTemplateRef,
   watch,
 } from 'vue'
-import { useMediaAssetManager } from '@/composables/useMediaAssetManager'
+import { storeToRefs } from 'pinia'
+import { useMediaAssetStore } from '@/stores/mediaAsset'
 import MediaAssetUploadDialog from '@/views/apps/media/MediaAssetUploadDialog.vue'
 import MediaAssetDetails from '@/views/apps/media/MediaAssetDetails.vue'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
@@ -66,22 +72,41 @@ const sortByValue = {
   size: 'Kích thước',
 }
 
+const scanStatusOptions = [
+  { title: 'Scan: tất cả', value: null },
+  { title: 'Scan: pending', value: 'pending' },
+  { title: 'Scan: clean', value: 'clean' },
+  { title: 'Scan: error', value: 'error' },
+]
+
+const conversionStatusOptions = [
+  { title: 'Conversion: tất cả', value: null },
+  { title: 'Conversion: pending', value: 'pending' },
+  { title: 'Conversion: ready', value: 'ready' },
+  { title: 'Conversion: failed', value: 'failed' },
+]
+
+/** Input: query key. Output: scalar route value hoặc undefined. */
 const routeQueryValue = key => {
   const value = route.query[key]
 
   return Array.isArray(value) ? value[0] : value
 }
 
+/** Input: query value/fallback. Output: số nguyên dương hợp lệ. */
 const parsePositiveInteger = (value, fallback) => {
   const parsed = Number.parseInt(value, 10)
 
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
 }
 
+
 const search = shallowRef(routeQueryValue('q') ?? '')
 const folderFilter = shallowRef(folderFilterByValue[routeQueryValue('type')] ?? folderFilterOptions[0].label)
 const sortBy = shallowRef(sortByValue[routeQueryValue('sort')] ?? sortByValue.newest)
 const viewMode = shallowRef(['grid', 'list'].includes(routeQueryValue('view')) ? routeQueryValue('view') : 'grid')
+const scanStatus = shallowRef(routeQueryValue('scan') || null)
+const conversionStatus = shallowRef(routeQueryValue('conversion') || null)
 const page = shallowRef(parsePositiveInteger(routeQueryValue('page'), 1))
 const initialItemsPerPage = parsePositiveInteger(routeQueryValue('perPage'), 12)
 const itemsPerPage = shallowRef([12, 24, 48].includes(initialItemsPerPage) ? initialItemsPerPage : 12)
@@ -102,6 +127,7 @@ const categories = [
 const activeCategory = computed(() => categories.find(category => category.slug === route.params.folder) ?? categories[0])
 const selectedCategory = computed(() => activeCategory.value.name)
 
+/** Input: category slug. Output: route object giữ query hiện tại. */
 const categoryRoute = slug => {
   const query = { ...route.query }
 
@@ -138,12 +164,62 @@ const apiQuery = computed(() => ({
     || (folderFilterByLabel[folderFilter.value] === 'all' ? undefined : folderFilterByLabel[folderFilter.value]),
   sort: sortBy.value === 'Tên A-Z' ? 'title' : 'created_at',
   direction: ['Cũ nhất', 'Tên A-Z'].includes(sortBy.value) ? 'asc' : 'desc',
+  ['scan_status']: scanStatus.value || undefined,
+  ['conversion_status']: conversionStatus.value || undefined,
   page: page.value,
   'per_page': itemsPerPage.value,
 }))
 
-const manager = useMediaAssetManager(apiQuery)
-const { items, total, selected, loading, busy, progress, error } = manager
+const mediaStore = useMediaAssetStore()
+
+const {
+  items,
+  itemsLength: total,
+  selectedAsset: selected,
+  isLoading: loading,
+  isMutating: busy,
+  uploadProgress: progress,
+  error: requestError,
+} = storeToRefs(mediaStore)
+
+const error = computed(() => requestError.value?.data?.message || requestError.value?.message || '')
+
+/** Input: không có. Output: tải list theo query hiện tại từ Pinia store. */
+const load = () => mediaStore.fetchMediaAssets(apiQuery.value)
+
+/** Input: asset ID và fallback card. Output: detail từ Pinia store. */
+const select = (id, fallback = null) => mediaStore.fetchMediaAsset(id, fallback)
+
+/** Input: mutation store. Output: boolean UI và list được refresh sau thành công. */
+const mutate = async callback => {
+  if (busy.value) return false
+  try {
+    await callback()
+    await load()
+
+    return true
+  }
+  catch {
+    return false
+  }
+}
+
+/** Input: upload payload. Output: upload asset và đồng bộ list. */
+const upload = payload => mutate(() => mediaStore.uploadMediaAsset(payload))
+
+/** Input: asset ID. Output: asset bị xóa và list được đồng bộ. */
+const remove = id => mutate(() => mediaStore.deleteMediaAsset(id))
+
+/** Input: asset ID/metadata. Output: asset được cập nhật. */
+const update = (id, payload) => mutate(() => mediaStore.updateMediaAsset(id, payload))
+
+/** Input: asset ID. Output: asset được đưa lại vào queue xử lý. */
+const retry = id => mutate(() => mediaStore.retryMediaAsset(id))
+
+/** Input: asset. Output: stream/temporary URL qua service backend. */
+const download = asset => mutate(() => mediaStore.downloadFile(asset))
+
+watch(apiQuery, load, { immediate: true, deep: true })
 
 /** Input: API asset. Output: metadata tương thích card/panel cũ, không tạo dữ liệu mẫu. */
 const displayFile = asset => {
@@ -168,6 +244,39 @@ const displayFile = asset => {
 const selectedFile = computed(() => displayFile(selected.value))
 const isTrashView = computed(() => Boolean(activeCategory.value.isTrash))
 
+const selectedPreviewFile = computed(() => selectedFile.value?.file ?? {})
+
+const selectedPreviewImageUrl = computed(() => {
+  if (selectedFile.value?.type !== 'image')
+    return null
+
+  return selectedPreviewFile.value.preview_url || selectedPreviewFile.value.url || null
+})
+
+const selectedPreviewFileUrl = computed(() => selectedPreviewFile.value.url || selectedPreviewFile.value.preview_url || '—')
+const selectedPreviewMimeType = computed(() => selectedPreviewFile.value.mime_type || '—')
+const selectedPreviewVisibility = computed(() => selectedFile.value?.visibility || '—')
+const selectedPreviewScanStatusValue = computed(() => selectedPreviewFile.value.scan_status || null)
+const selectedPreviewConversionStatusValue = computed(() => selectedPreviewFile.value.conversion_status || null)
+
+const selectedPreviewHasScanStatus = computed(() => (
+  selectedPreviewScanStatusValue.value
+  && !['clean', 'pending', 'ready'].includes(selectedPreviewScanStatusValue.value)
+))
+
+const selectedPreviewHasConversionStatus = computed(() => (
+  selectedPreviewConversionStatusValue.value
+  && !['pending', 'ready'].includes(selectedPreviewConversionStatusValue.value)
+))
+
+/** Input: status API. Output: nhãn status dạng dễ đọc trong panel chi tiết. */
+const formatStatus = status => status
+  ? status.replaceAll('_', ' ').replace(/\b\w/g, character => character.toUpperCase())
+  : '—'
+
+const selectedPreviewScanStatus = computed(() => formatStatus(selectedPreviewScanStatusValue.value))
+const selectedPreviewConversionStatus = computed(() => formatStatus(selectedPreviewConversionStatusValue.value))
+
 const filteredFiles = computed(() => {
   if (isTrashView.value)
     return []
@@ -180,22 +289,7 @@ const filteredFiles = computed(() => {
 })
 
 const checkedIds = shallowRef([])
-const closeDetails = () => manager.select(null)
-
-/**
- * Tạo danh sách chip metadata thật theo hình thức khu vực "Thẻ" của giao diện cũ.
- *
- * Input: selectedFile lấy từ API.
- * Output: mảng nhãn usage; nếu chưa được sử dụng thì hiển thị visibility và kind.
- */
-const fileTags = computed(() => {
-  const usages = selectedFile.value?.usages?.map(usage => usage.field).filter(Boolean) ?? []
-
-  if (usages.length)
-    return usages
-
-  return [selectedFile.value?.visibility, selectedFile.value?.kind].filter(Boolean)
-})
+const closeDetails = () => mediaStore.clearSelection()
 
 /**
  * Định dạng ngày tải lên theo locale tiếng Việt cho panel thông tin.
@@ -207,23 +301,32 @@ const formatUploadDate = value => value
   ? new Intl.DateTimeFormat('vi-VN', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(value))
   : '—'
 
+/** Input: URL public của asset đang chọn. Output: sao chép URL nếu trình duyệt hỗ trợ. */
+const copySelectedFileUrl = async () => {
+  if (!selectedPreviewFileUrl.value || selectedPreviewFileUrl.value === '—')
+    return
+
+  await navigator.clipboard?.writeText(selectedPreviewFileUrl.value)
+}
+
 const handleUpload = async payload => {
-  if (await manager.upload({ ...payload, file: Array.isArray(payload.file) ? payload.file[0] : payload.file }))
+  if (await upload({ ...payload, file: Array.isArray(payload.file) ? payload.file[0] : payload.file }))
     uploadVisible.value = false
 }
 
 const handleUpdate = async payload => {
-  if (await manager.update(payload.id, payload.data))
+  if (await update(payload.id, payload.data))
     detailsVisible.value = false
 }
 
 const handleDelete = async () => {
   if (selected.value && window.confirm(`Xóa "${selected.value.title}"?`))
-    await manager.remove(selected.value.id)
+    await remove(selected.value.id)
 }
 
-const routeQueryKeys = ['q', 'type', 'sort', 'page', 'perPage', 'view']
+const routeQueryKeys = ['q', 'type', 'sort', 'page', 'perPage', 'view', 'scan', 'conversion']
 
+/** Input: route query value. Output: chuỗi chuẩn để so sánh. */
 const normalizedQueryValue = value => {
   if (Array.isArray(value))
     return value.join(',')
@@ -231,17 +334,21 @@ const normalizedQueryValue = value => {
   return value == null ? undefined : String(value)
 }
 
+/** Input: hai route query. Output: true nếu cùng giá trị hiển thị. */
 const queriesEqual = (firstQuery, secondQuery) => {
   const keys = new Set([...Object.keys(firstQuery), ...Object.keys(secondQuery)])
 
   return [...keys].every(key => normalizedQueryValue(firstQuery[key]) === normalizedQueryValue(secondQuery[key]))
 }
 
+/** Input: route hiện tại. Output: đồng bộ filter local từ URL. */
 const syncStateFromRoute = () => {
   const nextSearch = routeQueryValue('q') ?? ''
   const nextFolderFilter = folderFilterByValue[routeQueryValue('type')] ?? folderFilterOptions[0].label
   const nextSortBy = sortByValue[routeQueryValue('sort')] ?? sortByValue.newest
   const nextViewMode = ['grid', 'list'].includes(routeQueryValue('view')) ? routeQueryValue('view') : 'grid'
+  const nextScanStatus = scanStatusOptions.some(item => item.value === routeQueryValue('scan')) ? routeQueryValue('scan') : null
+  const nextConversionStatus = conversionStatusOptions.some(item => item.value === routeQueryValue('conversion')) ? routeQueryValue('conversion') : null
   const nextPage = parsePositiveInteger(routeQueryValue('page'), 1)
   const nextItemsPerPageValue = parsePositiveInteger(routeQueryValue('perPage'), 12)
 
@@ -249,10 +356,13 @@ const syncStateFromRoute = () => {
   folderFilter.value = nextFolderFilter
   sortBy.value = nextSortBy
   viewMode.value = nextViewMode
+  scanStatus.value = nextScanStatus
+  conversionStatus.value = nextConversionStatus
   page.value = nextPage
   itemsPerPage.value = [12, 24, 48].includes(nextItemsPerPageValue) ? nextItemsPerPageValue : 12
 }
 
+/** Input: filter local. Output: cập nhật URL không reload trang. */
 const syncRouteQuery = () => {
   const query = { ...route.query }
 
@@ -270,6 +380,10 @@ const syncRouteQuery = () => {
     query.perPage = String(itemsPerPage.value)
   if (viewMode.value !== 'grid')
     query.view = viewMode.value
+  if (scanStatus.value)
+    query.scan = scanStatus.value
+  if (conversionStatus.value)
+    query.conversion = conversionStatus.value
 
   if (queriesEqual(query, route.query))
     return
@@ -282,7 +396,7 @@ const syncRouteQuery = () => {
 }
 
 watch(
-  () => [route.query.q, route.query.type, route.query.sort, route.query.page, route.query.perPage, route.query.view],
+  () => [route.query.q, route.query.type, route.query.sort, route.query.page, route.query.perPage, route.query.view, route.query.scan, route.query.conversion],
   () => {
     syncStateFromRoute()
     syncRouteQuery()
@@ -291,7 +405,7 @@ watch(
 )
 
 watch(
-  [search, folderFilter, sortBy, viewMode, page, itemsPerPage],
+  [search, folderFilter, sortBy, viewMode, page, itemsPerPage, scanStatus, conversionStatus],
   syncRouteQuery,
 )
 
@@ -309,9 +423,10 @@ watch(filteredFiles, files => {
   }
 
   if (!selected.value || !files.some(file => file.id === selected.value.id))
-    void manager.select(files[0].id, files[0])
+    void select(files[0].id, files[0])
 }, { immediate: true })
 
+/** Input: DOM sau render. Output: cập nhật scrollbar layout. */
 const updateMediaScrollbars = async () => {
   await nextTick()
   filesScrollbar.value?.ps?.update()
@@ -326,6 +441,7 @@ watch(
 
 onMounted(updateMediaScrollbars)
 
+/** Input: pagination state. Output: chuỗi range cho toolbar. */
 const displayedRange = computed(() => {
   if (!visibleTotal.value) return '0 - 0 của 0 tệp'
   const start = (page.value - 1) * itemsPerPage.value + 1
@@ -334,7 +450,7 @@ const displayedRange = computed(() => {
 })
 
 /** Input: asset card. Output: chi tiết tải từ API. */
-const selectFile = file => manager.select(file.id, file)
+const selectFile = file => select(file.id, file)
 
 
 /** Input: file. Output: chọn checkbox local, không tự attach usage. */
@@ -346,7 +462,7 @@ const toggleFileSelection = file => {
 
 
 /** Input: không có. Output: refresh dữ liệu mà giữ filter hiện tại. */
-const resetDemoView = () => manager.load()
+const resetDemoView = () => load()
 
 /** Input: không có. Output: mở dialog upload thật. */
 const showUploadNotice = () => { uploadVisible.value = true }
@@ -354,6 +470,7 @@ const showUploadNotice = () => { uploadVisible.value = true }
 /** Input: không có. Output: báo rõ API hiện chưa có nghiệp vụ tạo thư mục. */
 const showFolderNotice = () => { folderNoticeVisible.value = true }
 
+/** Input: page size UI. Output: page size mới và reset page đầu. */
 const updateItemsPerPage = value => {
   itemsPerPage.value = Number(value)
   page.value = 1
@@ -517,8 +634,34 @@ const updateItemsPerPage = value => {
               />
             </VCol>
             <VCol
-              cols="12"
+              cols="6"
               sm="2"
+            >
+              <VSelect
+                v-model="scanStatus"
+                :items="scanStatusOptions"
+                item-title="title"
+                item-value="value"
+                variant="outlined"
+                hide-details
+              />
+            </VCol>
+            <VCol
+              cols="6"
+              sm="2"
+            >
+              <VSelect
+                v-model="conversionStatus"
+                :items="conversionStatusOptions"
+                item-title="title"
+                item-value="value"
+                variant="outlined"
+                hide-details
+              />
+            </VCol>
+            <VCol
+              cols="12"
+              sm="1"
               class="text-end"
             >
               <VBtnToggle
@@ -593,7 +736,8 @@ const updateItemsPerPage = value => {
                   rounded="lg"
                   variant="outlined"
                   :class="{ 'border-primary': selectedFile?.id === file.id }"
-                  class="file-card position-relative"
+                  class="file-card media-asset-tile position-relative"
+                  :aria-label="file.name"
                   @click="selectFile(file)"
                 >
                   <div class="d-flex justify-space-between position-absolute w-100 px-2 pt-2 file-card__actions">
@@ -604,7 +748,7 @@ const updateItemsPerPage = value => {
                       @click.stop="toggleFileSelection(file)"
                     />
                     <VBtn
-                      icon="mdi-dots-vertical"
+                      icon="tabler-dots-vertical"
                       size="x-small"
                       variant="text"
                       aria-label="Thông tin file"
@@ -612,35 +756,21 @@ const updateItemsPerPage = value => {
                     />
                   </div>
 
-                  <VImg
-                    v-if="file.thumbnail"
-                    :src="file.thumbnail"
-                    height="120"
-                    :cover="file.thumbnailMode === 'cover'"
-                    class="bg-grey-lighten-2"
-                    alt=""
-                  />
-                  <div
-                    v-else
-                    class="d-flex align-center justify-center bg-grey-lighten-3"
-                    style="height: 120px;"
-                  >
+                  <div class="media-asset-tile__preview">
+                    <VImg
+                      v-if="file.thumbnail"
+                      :src="file.thumbnail"
+                      contain
+                      class="media-asset-tile__image"
+                      alt=""
+                    />
                     <VIcon
-                      size="40"
-                      :color="file.type === 'document' ? 'red' : 'blue'"
-                    >
-                      {{ file.type === 'document' ? 'mdi-file-pdf-box' : 'mdi-file-document-outline' }}
-                    </VIcon>
+                      v-else
+                      icon="tabler-file"
+                      size="48"
+                      color="primary"
+                    />
                   </div>
-
-                  <VCardText class="pa-2">
-                    <div class="text-truncate text-caption font-weight-medium">
-                      {{ file.name }}
-                    </div>
-                    <div class="text-caption text-medium-emphasis">
-                      {{ file.ext }} • {{ file.size }}
-                    </div>
-                  </VCardText>
                 </VCard>
               </VCol>
             </VRow>
@@ -722,10 +852,12 @@ const updateItemsPerPage = value => {
           rounded="lg"
           elevation="0"
           border
-          class="pa-4 h-100 media-manager__panel rounded-s-0"
+          class="pa-5 h-100 d-flex flex-column media-manager__panel media-details-panel rounded-s-0"
         >
-          <div class="d-flex justify-space-between align-center mb-3">
-            <span class="font-weight-bold text-subtitle-1">Thông tin tệp</span>
+          <div class="d-flex justify-space-between align-center mb-3 flex-shrink-0">
+            <VCardTitle class="px-0 py-0 text-subtitle-2">
+              Preview
+            </VCardTitle>
             <div class="d-flex align-center">
               <VBtn
                 icon="tabler-edit"
@@ -742,10 +874,10 @@ const updateItemsPerPage = value => {
                 variant="text"
                 aria-label="Xử lý lại tệp"
                 :disabled="busy"
-                @click="manager.retry(selectedFile.id)"
+                @click="retry(selectedFile.id)"
               />
               <VBtn
-                icon="mdi-close"
+                icon="tabler-x"
                 size="x-small"
                 variant="text"
                 aria-label="Đóng thông tin tệp"
@@ -754,76 +886,229 @@ const updateItemsPerPage = value => {
             </div>
           </div>
 
-          <VImg
-            v-if="selectedFile.thumbnail"
-            :src="selectedFile.thumbnail"
-            height="180"
-            rounded="lg"
-            :cover="selectedFile.thumbnailMode === 'cover'"
-            class="mb-3"
-            alt=""
-          />
-
-          <div class="text-subtitle-2 font-weight-bold text-truncate">
-            {{ selectedFile.name }}
-          </div>
-          <div class="text-caption text-medium-emphasis mb-4">
-            {{ selectedFile.ext }} • {{ selectedFile.size }}
-          </div>
-
-          <div class="text-caption mb-3">
-            <div class="d-flex justify-space-between py-1 border-b">
-              <span class="text-medium-emphasis">Loại tệp:</span>
-              <span>{{ selectedFile.typeLabel }}</span>
-            </div>
-            <div class="d-flex justify-space-between py-1 border-b">
-              <span class="text-medium-emphasis">Kích thước:</span>
-              <span>{{ selectedFile.resolution }}</span>
-            </div>
-            <div class="d-flex justify-space-between py-1 border-b">
-              <span class="text-medium-emphasis">Dung lượng:</span>
-              <span>{{ selectedFile.size }}</span>
-            </div>
-            <div class="d-flex justify-space-between py-1 border-b">
-              <span class="text-medium-emphasis">Ngày tải lên:</span>
-              <span>{{ formatUploadDate(selectedFile.created_at) }}</span>
-            </div>
-            <div class="d-flex justify-space-between py-1">
-              <span class="text-medium-emphasis">Thư mục:</span>
-              <span>{{ selectedFile.typeLabel?.replace(/ \(.*/, '') }}</span>
-            </div>
-          </div>
-
-          <div class="text-caption font-weight-bold mb-2">
-            Thẻ
-          </div>
-          <div class="d-flex flex-wrap gap-1 mb-4">
-            <VChip
-              v-for="tag in fileTags"
-              :key="tag"
-              size="x-small"
-              color="primary"
-              variant="tonal"
-              class="me-1"
+          <PerfectScrollbar
+            class="media-details-scroll"
+            :options="{ wheelPropagation: false, suppressScrollX: true }"
+          >
+            <VImg
+              v-if="selectedPreviewImageUrl"
+              :src="selectedPreviewImageUrl"
+              height="160"
+              contain
+              rounded="lg"
+              class="border mb-3 bg-grey-lighten-3"
+              alt=""
+            />
+            <VSheet
+              v-else
+              height="160"
+              rounded="lg"
+              border
+              class="d-flex align-center justify-center mb-3 bg-grey-lighten-3"
             >
-              {{ tag }}
-            </VChip>
-          </div>
-          <div class="d-flex gap-2">
+              <VIcon
+                :icon="selectedFile.type === 'video' ? 'tabler-video' : selectedFile.type === 'archive' ? 'tabler-file-zip' : 'tabler-file-text'"
+                size="52"
+                color="primary"
+              />
+            </VSheet>
+
+            <div class="media-preview-heading mb-3">
+              <div class="media-preview-title text-subtitle-1 font-weight-bold">
+                {{ selectedFile.name }}
+              </div>
+              <div class="text-caption text-medium-emphasis">
+                {{ selectedFile.ext }} · {{ selectedFile.size }}
+              </div>
+            </div>
+
+            <AppTextField
+              label="Alt Text"
+              :model-value="selectedFile.alt_text || '—'"
+              readonly
+              class="mb-3"
+            />
+            <AppTextField
+              label="File URL"
+              :model-value="selectedPreviewFileUrl"
+              readonly
+              class="mb-3"
+            >
+              <template #append-inner>
+                <VBtn
+                  icon="tabler-copy"
+                  size="x-small"
+                  variant="text"
+                  color="primary"
+                  aria-label="Copy file URL"
+                  :disabled="selectedPreviewFileUrl === '—'"
+                  @click="copySelectedFileUrl"
+                />
+              </template>
+            </AppTextField>
+
+            <VList
+              density="compact"
+              class="media-info-list pa-0 bg-transparent"
+            >
+              <VListSubheader class="px-0 text-caption text-medium-emphasis">
+                File information
+              </VListSubheader>
+              <VListItem
+                title="Type"
+                class="media-info-row px-0"
+              >
+                <template #prepend>
+                  <VIcon
+                    icon="tabler-file-type"
+                    size="18"
+                    class="me-2"
+                  />
+                </template>
+                <template #append>
+                  <span class="media-info-value text-body-2 text-medium-emphasis">
+                    {{ selectedFile.type }}
+                  </span>
+                </template>
+              </VListItem>
+              <VListItem
+                title="MIME type"
+                class="media-info-row px-0"
+              >
+                <template #prepend>
+                  <VIcon
+                    icon="tabler-file-description"
+                    size="18"
+                    class="me-2"
+                  />
+                </template>
+                <template #append>
+                  <span class="media-info-value text-body-2 text-medium-emphasis">
+                    {{ selectedPreviewMimeType }}
+                  </span>
+                </template>
+              </VListItem>
+              <VListItem
+                title="Visibility"
+                class="media-info-row px-0"
+              >
+                <template #prepend>
+                  <VIcon
+                    icon="tabler-eye"
+                    size="18"
+                    class="me-2"
+                  />
+                </template>
+                <template #append>
+                  <span class="media-info-value text-body-2 text-medium-emphasis">
+                    {{ selectedPreviewVisibility }}
+                  </span>
+                </template>
+              </VListItem>
+              <VListItem
+                title="Dimensions"
+                class="media-info-row px-0"
+              >
+                <template #prepend>
+                  <VIcon
+                    icon="tabler-aspect-ratio"
+                    size="18"
+                    class="me-2"
+                  />
+                </template>
+                <template #append>
+                  <span class="media-info-value text-body-2 text-medium-emphasis">
+                    {{ selectedFile.resolution }}
+                  </span>
+                </template>
+              </VListItem>
+              <VListItem
+                title="File size"
+                class="media-info-row px-0"
+              >
+                <template #prepend>
+                  <VIcon
+                    icon="tabler-file-zip"
+                    size="18"
+                    class="me-2"
+                  />
+                </template>
+                <template #append>
+                  <span class="media-info-value text-body-2 text-medium-emphasis">
+                    {{ selectedFile.size }}
+                  </span>
+                </template>
+              </VListItem>
+              <VListItem
+                v-if="selectedPreviewHasScanStatus"
+                title="Scan status"
+                class="media-info-row px-0"
+              >
+                <template #prepend>
+                  <VIcon
+                    icon="tabler-shield-check"
+                    size="18"
+                    class="me-2"
+                  />
+                </template>
+                <template #append>
+                  <span class="media-info-value text-body-2 text-medium-emphasis">
+                    {{ selectedPreviewScanStatus }}
+                  </span>
+                </template>
+              </VListItem>
+              <VListItem
+                v-if="selectedPreviewHasConversionStatus"
+                title="Conversion status"
+                class="media-info-row px-0"
+              >
+                <template #prepend>
+                  <VIcon
+                    icon="tabler-arrows-converge"
+                    size="18"
+                    class="me-2"
+                  />
+                </template>
+                <template #append>
+                  <span class="media-info-value text-body-2 text-medium-emphasis">
+                    {{ selectedPreviewConversionStatus }}
+                  </span>
+                </template>
+              </VListItem>
+              <VListItem
+                title="Uploaded Date"
+                class="media-info-row px-0"
+              >
+                <template #prepend>
+                  <VIcon
+                    icon="tabler-calendar"
+                    size="18"
+                    class="me-2"
+                  />
+                </template>
+                <template #append>
+                  <span class="media-info-value text-body-2 text-medium-emphasis">
+                    {{ formatUploadDate(selectedFile.created_at) }}
+                  </span>
+                </template>
+              </VListItem>
+            </VList>
+          </PerfectScrollbar>
+          <div class="d-flex gap-2 mt-4 flex-shrink-0">
             <VBtn
               color="primary"
               class="flex-grow-1 text-none"
               prepend-icon="tabler-download"
               density="comfortable"
               :disabled="busy"
-              @click="manager.download(selected)"
+              @click="download(selected)"
             >
               Tải xuống
             </VBtn>
             <VBtn
               color="error"
               variant="tonal"
-              class="flex-grow-1 text-none ms-2"
+              class="flex-grow-1 text-none"
               prepend-icon="tabler-trash"
               density="comfortable"
               :disabled="busy"
@@ -973,6 +1258,12 @@ const updateItemsPerPage = value => {
     min-block-size: auto;
   }
 
+  .media-details-scroll {
+    flex: 0 0 auto;
+    block-size: auto;
+    min-block-size: auto;
+  }
+
   .media-manager__panel {
     border-radius: 0 !important;
   }
@@ -1004,6 +1295,89 @@ const updateItemsPerPage = value => {
     align-items: center !important;
     padding-block: 0 !important;
   }
+}
+
+.media-asset-tile {
+  overflow: hidden;
+  background: rgb(var(--v-theme-surface));
+}
+
+.media-asset-tile__preview {
+  position: relative;
+  display: flex;
+  inline-size: 100%;
+  aspect-ratio: 1 / 1;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: rgb(var(--v-theme-grey-100));
+}
+
+.media-asset-tile__preview :deep(.media-asset-tile__image) {
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.media-details-panel {
+  min-block-size: 0;
+  overflow: hidden;
+  background: rgb(var(--v-theme-surface));
+}
+
+.media-details-scroll {
+  flex: 1 1 auto;
+  min-block-size: 0;
+}
+
+.media-preview-heading {
+  min-inline-size: 0;
+}
+
+.media-preview-title {
+  display: block;
+  max-block-size: 3em;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.media-info-list {
+  overflow: visible;
+}
+
+.media-info-row {
+  min-block-size: 40px !important;
+  border-block-end: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.media-info-row:last-child {
+  border-block-end: 0;
+}
+
+.media-info-row :deep(.v-list-item__content) {
+  min-inline-size: 0;
+}
+
+.media-info-row :deep(.v-list-item-title) {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.media-info-row :deep(.v-list-item__append) {
+  min-inline-size: 0;
+  margin-inline-start: 0.5rem;
+  flex: 0 1 auto;
+}
+
+.media-info-value {
+  display: block;
+  overflow: hidden;
+  text-align: end;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .file-card {

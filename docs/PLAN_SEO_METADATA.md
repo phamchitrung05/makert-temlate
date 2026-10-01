@@ -188,7 +188,8 @@ Checklist phải:
 - [x] Chuyển utility SEO sang `composables/seoMetadata.js`; hỗ trợ field title/description/media khác nhau giữa các model.
 - [x] Chuẩn hóa preview slug thành `composables/useSlug.js`, không còn logic Post-specific trong component.
 - [x] Baseline trước lượt AI/Media: backend 96 tests, 539 assertions; frontend: 59 tests.
-- [x] Cập nhật sau tích hợp AI/Media: backend 112 tests, 600 assertions; frontend
-  64 tests; candidate apply giữ nguyên field SEO không được chọn.
-- [x] ESLint file thay đổi, Pint và production build đã chạy đạt.
+- [x] Cập nhật sau tích hợp AI/Media: backend 127 tests, 670 assertions; frontend
+  75 tests; candidate apply giữ nguyên field SEO không được chọn.
+- [x] ESLint JavaScript/Vue, targeted Pint cho file thay đổi và production build
+  đã chạy đạt; Pint toàn repo còn baseline lỗi legacy.
 - [ ] Chưa triển khai trang public SEO, sitemap, structured data và trang quản lý role.

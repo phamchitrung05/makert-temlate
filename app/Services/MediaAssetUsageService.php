@@ -389,7 +389,7 @@ class MediaAssetUsageService
             ]);
         }
 
-        if (in_array($field, [MediaAssetField::PostThumbnail, MediaAssetField::PostContentImages], true)
+        if (in_array($field, [MediaAssetField::PostThumbnail, MediaAssetField::PostContentImages, MediaAssetField::PostOgImage], true)
             && $asset->visibility !== MediaAssetVisibility::Public) {
             throw ValidationException::withMessages([
                 'media_asset_id' => 'Ảnh bài viết phải có visibility public.',

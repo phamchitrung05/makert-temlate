@@ -30,7 +30,7 @@ class AiImport extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'created_by', 'source_url', 'normalized_url', 'source_hash', 'status',
+        'created_by', 'source_url', 'source_text', 'normalized_url', 'source_hash', 'status',
         'current_step', 'progress', 'input_json', 'source_meta_json', 'result_json',
         'error_code', 'error_message', 'provider', 'prompt_version', 'started_at',
         'completed_at', 'expires_at',

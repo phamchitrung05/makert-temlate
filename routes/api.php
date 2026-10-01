@@ -145,6 +145,14 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
         Route::middleware('permission:posts.manage,admin')->group(function (): void {
             Route::get('/ai-agent/capabilities/{target}', [AiImportController::class, 'capabilities'])
                 ->whereIn('target', ['post', 'resource', 'sound']);
+            Route::post('/ai-agent/sessions', [AiImportController::class, 'store']);
+            Route::get('/ai-agent/sessions/{aiImport}', [AiImportController::class, 'show'])->whereUuid('aiImport');
+            Route::post('/ai-agent/sessions/{aiImport}/regenerate', [AiImportController::class, 'regenerate'])->whereUuid('aiImport');
+            Route::post('/ai-agent/sessions/{aiImport}/retry', [AiImportController::class, 'retry'])->whereUuid('aiImport');
+            Route::get('/ai-agent/sessions/{aiImport}/candidates', [AiImportController::class, 'candidates'])->whereUuid('aiImport');
+            Route::post('/ai-agent/sessions/{aiImport}/cancel', [AiImportController::class, 'cancel'])->whereUuid('aiImport');
+            Route::delete('/ai-agent/sessions/{aiImport}', [AiImportController::class, 'destroy'])->whereUuid('aiImport');
+            Route::post('/ai-agent/candidates/{aiImport}/apply', [AiImportController::class, 'apply'])->whereUuid('aiImport');
             Route::post('/posts/ai/import', [AiImportController::class, 'store']);
             Route::get('/posts/ai/import/{aiImport}', [AiImportController::class, 'show'])->whereUuid('aiImport');
             Route::post('/posts/ai/import/{aiImport}/regenerate', [AiImportController::class, 'regenerate'])->whereUuid('aiImport');

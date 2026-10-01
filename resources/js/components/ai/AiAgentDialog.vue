@@ -312,6 +312,7 @@ onBeforeUnmount(stopPolling)
           <AiAgentCandidatePreview
             v-model:selected-fields="selectedFields"
             :candidate="currentCandidate"
+            :providers="providers"
           />
           <p class="text-caption mt-3">
             Chỉ các field được chọn mới được áp dụng. Hãy kiểm tra trước khi xác nhận thay nội dung hiện tại.

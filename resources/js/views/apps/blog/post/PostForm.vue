@@ -15,12 +15,12 @@
   - createPostOptions(): tạo state mặc định cho nhóm tùy chọn bài viết
   - sync(): đồng bộ Post prop vào form state
   - submit(): validate và emit payload với trạng thái được chọn
-  - applyAiContent(): áp dụng candidate field từ AI Agent vào form cục bộ
+  - applyAiContent()/commitAiContent(): áp dụng candidate và giữ lineage run
   - watcher props.post: cập nhật form khi API tải xong Post
 
   INPUT/OUTPUT CỦA COMPONENT (tổng thể):
   - INPUT : post, loading, saving và error từ page/store
-  - OUTPUT: emit submit payload title/content/status/media/SEO hoặc emit discard
+  - OUTPUT: emit submit payload title/content/status/media/SEO và provenance hoặc emit discard
   =====================================================================
 -->
 <script setup>
@@ -33,6 +33,7 @@ import CreateWithAiDialog from './dialog/CreateWithAiDialog.vue'
 import { buildContentUrl, createSeo } from '../../../../composables/seoMetadata'
 import { useSeoMetadata } from '../../../../composables/useSeoMetadata'
 import { useSlug } from '../../../../composables/useSlug'
+import { mergePostCandidate, overwrittenFields } from '@/composables/aiCandidate'
 
 const props = defineProps({
   post: { type: Object, default: null },
@@ -44,6 +45,10 @@ const props = defineProps({
 const emit = defineEmits(['submit', 'discard'])
 const formRef = shallowRef()
 const aiDialog = shallowRef(false)
+const pendingAiPayload = shallowRef(null)
+const pendingAiProvenance = shallowRef(null)
+const overwriteDialog = shallowRef(false)
+const overwritten = shallowRef([])
 
 /** Input: không có. Output: option preview mới, chưa lưu backend. */
 const createPostOptions = () => [
@@ -65,6 +70,7 @@ const form = reactive({
   options: createPostOptions(),
   thumbnail: null,
   contentImages: [],
+  aiProvenance: null,
 })
 
 const isEditing = computed(() => Boolean(props.post?.id))
@@ -112,6 +118,7 @@ const sync = post => {
   form.options = createPostOptions()
   form.thumbnail = post?.media?.thumbnail ?? null
   form.contentImages = Array.isArray(post?.media?.content_images) ? post.media.content_images : []
+  form.aiProvenance = null
   resetSlug(post)
 }
 
@@ -143,17 +150,40 @@ const submit = async (status = form.status) => {
     tags: [...form.tags],
     thumbnail: form.thumbnail,
     contentImages: form.contentImages,
+    aiProvenance: form.aiProvenance ? {
+      runId: form.aiProvenance.runId,
+      fields: [...(form.aiProvenance.fields ?? [])],
+    } : null,
   })
 }
 
-/** Input: candidate fields từ AI Agent. Output: cập nhật form cục bộ, chưa lưu. */
-const applyAiContent = payload => {
-  form.title = payload.title ?? form.title
-  form.content = payload.content ?? form.content
-  form.excerpt = payload.excerpt ?? form.excerpt
-  if (payload.seo) form.seo = createSeo(payload.seo)
-  if (Array.isArray(payload.categories)) form.categories = [...payload.categories]
-  if (Array.isArray(payload.tags)) form.tags = [...payload.tags]
+/**
+ * Input: candidate fields và lineage metadata từ AI Agent.
+ * Output: cập nhật pending payload cục bộ, chưa lưu backend.
+ * Side effect: mở xác nhận nếu payload sẽ ghi đè dữ liệu hiện tại.
+ */
+const applyAiContent = (payload, provenance = null) => {
+  pendingAiPayload.value = payload
+  pendingAiProvenance.value = provenance
+  overwritten.value = overwrittenFields(form, payload)
+  if (overwritten.value.length) overwriteDialog.value = true
+  else commitAiContent()
+}
+
+/**
+ * Input: pending payload/provenance sau khi admin xác nhận.
+ * Output: merge field được chọn vào form và đóng dialog.
+ * Side effect: form giữ aiProvenance để postService gửi run/field lên API.
+ */
+const commitAiContent = () => {
+  if (pendingAiPayload.value) Object.assign(form, mergePostCandidate(form, pendingAiPayload.value))
+  form.aiProvenance = pendingAiProvenance.value ? {
+    runId: pendingAiProvenance.value.runId,
+    fields: [...(pendingAiProvenance.value.fields ?? [])],
+  } : null
+  pendingAiPayload.value = null
+  pendingAiProvenance.value = null
+  overwriteDialog.value = false
 }
 </script>
 
@@ -229,6 +259,32 @@ const applyAiContent = payload => {
       :target-id="props.post?.id"
       @apply="applyAiContent"
     />
+    <VDialog
+      v-model="overwriteDialog"
+      max-width="480"
+    >
+      <VCard title="Xác nhận ghi đè nội dung">
+        <VCardText>
+          Các field đã có dữ liệu sẽ được thay bằng candidate AI: {{ overwritten.join(', ') }}.
+          Những field không chọn vẫn được giữ nguyên.
+        </VCardText>
+        <VCardActions>
+          <VSpacer />
+          <VBtn
+            variant="text"
+            @click="overwriteDialog = false; pendingAiPayload = null; pendingAiProvenance = null"
+          >
+            Giữ dữ liệu hiện tại
+          </VBtn>
+          <VBtn
+            color="primary"
+            @click="commitAiContent"
+          >
+            Áp dụng
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
 
     <VForm
       ref="formRef"

@@ -14,6 +14,7 @@ use Illuminate\Foundation\Http\FormRequest;
  * kiểm tra DNS/IP và redirect ở runtime.
  *
  * CÁC HÀM/METHOD TRONG FILE:
+ * - prepareForValidation(): chuẩn hóa payload generic session về Post import.
  * - authorize(): xác nhận route middleware đã kiểm tra permission.
  * - rules(): whitelist URL, ngôn ngữ, prompt và thumbnail options.
  *
@@ -25,6 +26,32 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class AiImportRequest extends FormRequest
 {
+    /**
+     * Chuẩn hóa contract AI Agent generic về field import Post hiện tại.
+     *
+     * Input: payload có thể dùng input.type/url/text và output_language.
+     * Output: request có url/text/language/generate_thumbnail top-level.
+     * Side effect: merge dữ liệu vào request bag trước validation; không ghi DB.
+     */
+    protected function prepareForValidation(): void
+    {
+        $input = is_array($this->input('input')) ? $this->input('input') : [];
+        $outputs = (array) $this->input('requested_outputs', []);
+
+        $normalized = [
+            'url' => $this->input('url', $input['url'] ?? null),
+            'text' => $this->input('text', $input['text'] ?? null),
+            'language' => $this->input('language', $this->input('output_language')),
+        ];
+        if ($this->has('generate_thumbnail')) {
+            $normalized['generate_thumbnail'] = $this->boolean('generate_thumbnail');
+        } elseif ($this->has('requested_outputs')) {
+            $normalized['generate_thumbnail'] = in_array('thumbnail', $outputs, true);
+        }
+
+        $this->merge($normalized);
+    }
+
     /**
      * =====================================================================
      * CHỨC NĂNG: Cho phép request đi qua middleware permission
@@ -53,13 +80,20 @@ class AiImportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'url' => ['required', 'url', 'max:2048'],
+            'target_type' => ['nullable', 'in:post'],
+            'operation' => ['nullable', 'in:create'],
+            'url' => ['nullable', 'url', 'max:2048', 'required_without:text'],
+            'text' => ['nullable', 'string', 'max:200000', 'required_without:url'],
             'language' => ['nullable', 'string', 'max:12'],
             'rewrite_style' => ['nullable', 'string', 'max:40'],
             'generate_thumbnail' => ['nullable', 'boolean'],
             'thumbnail_mode' => ['nullable', 'in:auto,source,generate'],
             'prompt_key' => ['nullable', 'string', 'max:120'],
             'instructions' => ['nullable', 'string', 'max:4000'],
+            'provider' => ['nullable', 'string', 'max:80'],
+            'model' => ['nullable', 'string', 'max:120'],
+            'requested_outputs' => ['sometimes', 'array'],
+            'requested_outputs.*' => ['string', 'distinct', 'in:title,excerpt,content,seo,taxonomy,thumbnail'],
         ];
     }
 }

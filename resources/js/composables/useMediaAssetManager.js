@@ -1,153 +1,79 @@
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Điều phối dữ liệu API cho giao diện Media Asset ba cột.
- * CÁC HÀM/METHOD TRONG FILE: useMediaAssetManager(), load(), select(),
- * mutate(), upload(), remove(), update(), retry(), download().
- * INPUT/OUTPUT CỦA CLASS (tổng thể): query reactive -> danh sách, chi tiết,
- * pagination và action API; response cũ không ghi đè state mới, item đang chọn
- * không bị xóa trong lúc tải detail để tránh layout giao diện co giãn.
+ * CHỨC NĂNG FILE: Điều phối màn hình Media Asset bằng Pinia store dùng chung.
+ * =====================================================================
+ *
+ * Composable giữ adapter UI mỏng cho layout ba cột; state và HTTP mutation
+ * thuộc useMediaAssetStore/mediaAssetService, không tạo source of truth thứ hai.
+ *
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - useMediaAssetManager(): nối query reactive với Pinia store.
+ * - load(): tải list qua store.
+ * - select(): tải hoặc bỏ chọn detail.
+ * - mutate(): chuẩn hóa mutation thành boolean cho UI.
+ * - upload()/remove()/update()/retry()/download(): workflow UI.
+ *
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : query reactive từ page.
+ * - OUTPUT: refs của store và action UI; không gọi HTTP trực tiếp.
  * =====================================================================
  */
-/* eslint-disable camelcase -- Contract Laravel dùng snake_case. */
-import { onScopeDispose, shallowRef, watch } from 'vue'
-import { mediaAssetService } from '@/services/mediaAsset'
-import { $api } from '@/utils/api'
+import { computed, watch } from 'vue'
+import { createPinia, getActivePinia, storeToRefs } from 'pinia'
+import { useMediaAssetStore } from '@/stores/mediaAsset'
 
-/** Input: computed query. Output: state/action API cô lập theo màn hình. */
+/** Input: query ref/computed. Output: state/action UI dựa trên Pinia. */
 export function useMediaAssetManager(query) {
-  const items = shallowRef([])
-  const total = shallowRef(0)
-  const selected = shallowRef(null)
-  const loading = shallowRef(false)
-  const busy = shallowRef(false)
-  const progress = shallowRef(0)
-  const error = shallowRef('')
-  let revision = 0
-  let detailRevision = 0
-  let disposed = false
+  // Route components already have an app Pinia. The isolated fallback keeps
+  // this composable testable without creating a second state implementation.
+  const store = useMediaAssetStore(getActivePinia() || createPinia())
 
-  /** Input: không có. Output: list mới nhất hoặc message lỗi. */
-  async function load() {
-    const current = ++revision
+  const {
+    items,
+    itemsLength: total,
+    selectedAsset: selected,
+    isLoading: loading,
+    isMutating: busy,
+    uploadProgress: progress,
+    error: requestError,
+  } = storeToRefs(store)
 
-    loading.value = true
-    error.value = ''
-    try {
-      const result = await mediaAssetService.list(query.value)
-      if (current !== revision || disposed) return
-      items.value = result.items
-      total.value = result.itemsLength
-    }
-    catch (failure) {
-      if (current === revision && !disposed) error.value = failure?.data?.message || failure.message
-    }
-    finally {
-      if (current === revision && !disposed) loading.value = false
-    }
-  }
+  const error = computed(() => requestError.value?.data?.message || requestError.value?.message || '')
 
-  /**
-   * Tải detail mới nhất nhưng giữ item tạm để panel không bị tháo khỏi DOM.
-   *
-   * Input: asset ID/null và fallback lấy từ list nếu người dùng vừa chọn item.
-   * Output: detail mới nhất; null đóng panel; response cũ bị bỏ qua.
-   */
-  async function select(id, fallback = null) {
-    const current = ++detailRevision
+  /** Input: không có. Output: list mới nhất từ store. */
+  const load = () => store.fetchMediaAssets(query.value)
 
-    if (!id) {
-      selected.value = null
+  /** Input: ID/fallback. Output: detail từ store; null bỏ chọn. */
+  const select = (id, fallback = null) => store.fetchMediaAsset(id, fallback)
 
-      return
-    }
-
-    if (fallback)
-      selected.value = fallback
-
-    try {
-      const asset = await mediaAssetService.show(id)
-      if (current === detailRevision && !disposed) selected.value = asset
-    }
-    catch (failure) {
-      if (current === detailRevision && !disposed) error.value = failure?.data?.message || failure.message
-    }
-  }
-
-  /** Input: callback mutation. Output: boolean thành công và refresh list. */
+  /** Input: mutation callback. Output: boolean thành công, refresh list sau mutation. */
   async function mutate(callback) {
     if (busy.value) return false
-    busy.value = true
-    error.value = ''
     try {
       await callback()
       await load()
 
       return true
     }
-    catch (failure) {
-      error.value = failure?.data?.message || failure.message
-
-      return false
-    }
-    finally { busy.value = false }
+    catch { return false }
   }
 
-  /** Input: multipart fields. Output: success; upload không tự attach usage. */
-  const upload = payload => mutate(async () => {
-    progress.value = 0
+  /** Input: payload file. Output: upload và chọn asset mới. */
+  const upload = payload => mutate(() => store.uploadMediaAsset(payload))
 
-    const asset = await mediaAssetService.upload(payload, value => { progress.value = value })
+  /** Input: asset ID. Output: xóa asset và bỏ chọn khi thành công. */
+  const remove = id => mutate(() => store.deleteMediaAsset(id))
 
-    await select(asset.id)
-  })
+  /** Input: ID/metadata. Output: cập nhật asset qua store. */
+  const update = (id, payload) => mutate(() => store.updateMediaAsset(id, payload))
 
-  /** Input: ID. Output: success; backend chặn xóa asset đang sử dụng. */
-  const remove = id => mutate(async () => {
-    await mediaAssetService.remove(id)
-    await select(null)
-  })
+  /** Input: ID. Output: đưa pipeline media vào queue retry. */
+  const retry = id => mutate(() => store.retryMediaAsset(id))
 
-  /** Input: ID/metadata. Output: success và detail mới. */
-  const update = (id, data) => mutate(async () => {
-    await mediaAssetService.update(id, data)
-    await select(id)
-  })
-
-  /** Input: ID. Output: success và trạng thái xử lý mới. */
-  const retry = id => mutate(async () => {
-    await mediaAssetService.retry(id)
-    await select(id)
-  })
-
-  /** Input: asset. Output: tải URL JSON hoặc stream binary với Bearer token. */
-  async function download(asset) {
-    error.value = ''
-    try {
-      const response = await $api.raw(`/admin/media-assets/${asset.id}/download`, { responseType: 'blob' })
-      const blob = response._data
-      if (response.headers.get('content-type')?.includes('application/json')) {
-        const result = JSON.parse(await blob.text())
-        const data = result.data ?? result
-        const url = data.url ?? data.temporary_url ?? data.download_url
-
-        if (!url) throw new Error('API không trả URL tải xuống.')
-        window.open(url, '_blank', 'noopener,noreferrer')
-
-        return
-      }
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-
-      link.href = url
-      link.download = asset.file?.original_name || asset.title
-      link.click()
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
-    }
-    catch (failure) { error.value = failure?.data?.message || failure.message }
-  }
+  /** Input: asset. Output: tải file qua store/service. */
+  const download = asset => mutate(() => store.downloadFile(asset))
 
   watch(query, load, { immediate: true })
-  onScopeDispose(() => { disposed = true; revision++; detailRevision++ })
 
   return { items, total, selected, loading, busy, progress, error, load, select, upload, remove, update, retry, download }
 }

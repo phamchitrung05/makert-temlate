@@ -2,8 +2,9 @@
 
 **Phiên bản:** 2.0 — hợp nhất AI Content Agent
 **Ngày:** 2026-09-30
-**Trạng thái:** Đã triển khai Phase 0–2 và phần lõi Phase 3–4; provider GPT/Gemini thật,
-logo provenance và browser/staging vẫn đang chờ hoàn tất
+**Trạng thái:** Đã triển khai end-to-end Post/Media và URL/text AI Agent; provider
+OpenAI/Gemini HTTP, candidate lineage, provenance và generic session đã hoạt động.
+Laravel AI SDK, file input, Resource/Sound adapter và browser/staging vẫn chờ điều kiện môi trường
 **Phạm vi:** Admin Post Add/Edit, Media File, Media Asset và AI Content Agent cho Post, Resource, Sound và các model tương lai
 
 ## 1. Mục tiêu
@@ -31,7 +32,7 @@ AI chỉ tạo candidate/bản nháp để người dùng review. Việc apply, 
 - `post/add/index.vue` đã gọi Post store cho create/update và load Post khi edit.
 - `resources/js/services/post.js` đã xử lý phần lớn payload Post, SEO và media.
 - `media/file/index.vue` đã dùng MediaAsset store/API thật.
-- `media/media-asset/index.vue` đã dùng API thật qua composable riêng; cần hợp nhất về `useMediaAssetStore` để có một source of truth.
+- `media/media-asset/index.vue` đã dùng trực tiếp `useMediaAssetStore` làm source of truth.
 - `PostSettingsSidebar.vue` đã tải Category/Tag từ API; các Post option vẫn là UI-only.
 - `CreateWithAiDialog` vẫn giữ hierarchy giao diện cũ (`#view-moi`) nhưng đã có capability,
   prompt/provider/model, polling, candidate, regenerate và apply chọn lọc.
@@ -151,10 +152,12 @@ Nếu chưa có yêu cầu lưu các field này, giữ chúng là UI-only và kh
 - [x] Chốt payload Post và response PostResource.
 - [x] Chốt quan hệ Post–Category và Post–Tag dựa trên pivot `categorizables`/`taggables` hiện có.
 - [x] Chốt các option hiện tại là UI-only, chưa persistence.
-- [ ] Chốt thumbnail canonical. Đề xuất featured `1200x675` WebP và OG `1200x630`.
-- [ ] Đối chiếu các conversion hiện tại (`thumb`/`web`) với kích thước mới và cập nhật nếu cần.
+- [x] Chốt thumbnail canonical: featured `1200x675` WebP và OG `1200x630` WebP.
+- [x] Đối chiếu các conversion hiện tại (`thumb`/`web`): giữ alias legacy để không
+  phá asset/UI cũ và bổ sung `featured`/`og` crop đúng kích thước trong config.
 - [x] Chốt ngôn ngữ AI mặc định là tiếng Việt.
-- [ ] Chốt provider/model AI và image generation.
+- [x] Chốt provider/model AI HTTP (OpenAI/Gemini/deterministic) và capability image nguồn;
+  image generation vẫn là adapter tùy chọn.
 - [x] Chốt giới hạn URL, timeout, số lần retry và quota theo admin; giá trị mặc định
   được đưa vào `config/ai-import.php` và `.env.example`.
 - [x] Chốt `Target Registry`, `Provider Registry`, `Prompt Registry` và `Schema Registry`.
@@ -177,7 +180,7 @@ Kết quả: API contract, danh sách migration, endpoint/permission matrix và 
 - [x] Bổ sung taxonomy vào `PostResource` và eager load trong index/show; options vẫn là UI-only.
 - [x] Giữ top-level SEO hiện tại để không phá test/API consumer.
 - [x] Bổ sung filter `search`, `category_id`, `tag_id` và pagination cho `/admin/posts`.
-- [ ] Bổ sung filter `status` ở API và UI danh sách Post.
+- [x] Bổ sung filter `status` ở API và UI danh sách Post.
 - [x] Kiểm tra permission create/update/delete theo permission Post hiện có.
 - [x] Giữ slug do backend quyết định; preview slug không giữ chỗ.
 
@@ -188,7 +191,7 @@ Kết quả: API contract, danh sách migration, endpoint/permission matrix và 
 - [x] Cho phép chọn nhiều category/tag bằng ID.
 - [x] Đồng bộ taxonomy khi mở Post edit; options vẫn reset vì là UI-only.
 - [x] Bổ sung taxonomy vào `PostForm` và `postService.toPayload()`.
-- [ ] Bổ sung `og_image_id` picker/payload riêng; hiện Featured Image vẫn là fallback.
+- [x] Bổ sung `og_image_id` picker/payload riêng; Featured Image chỉ là fallback khi SEO chưa có OG image.
 - [x] Hiển thị loading/error riêng cho taxonomy.
 - [x] Chặn double submit cho Save Draft/Publish; lỗi API hiện hiển thị ở mức form.
 - [x] Dùng response backend làm source of truth sau create/update.
@@ -215,23 +218,24 @@ Kết quả: API contract, danh sách migration, endpoint/permission matrix và 
 - [x] Hiển thị usage và lỗi permission.
 - [x] Reload/cập nhật list sau mutation.
 - [ ] Bổ sung owner/conversion filter nếu UI cần dùng.
-- [ ] Sửa store mutation semantics cho attach/detach/reorder không trả `id`.
+- [x] Sửa store mutation semantics cho attach/detach/reorder không giả định response có `id`;
+  detail/list được refresh sau mutation.
 
 ### `media/media-asset/index.vue`
 
 Màn hình đã bỏ dữ liệu demo và nối API thật. Hạng mục còn lại là chuyển state từ composable riêng sang Pinia dùng chung:
 
-- [ ] Hợp nhất page về `useMediaAssetStore` để dùng chung một source of truth
-  (hiện page dùng `useMediaAssetManager` làm adapter API tạm thời).
+- [x] Hợp nhất page về `useMediaAssetStore` để dùng chung một source of truth.
 - [x] Bỏ data giả; list/detail/mutation chính đã gọi Media API thật.
 - [x] Nối list với `GET /admin/media-assets`.
 - [x] Nối upload với `POST /admin/media-assets`.
 - [x] Nối detail với `GET /admin/media-assets/{id}`.
 - [x] Nối update metadata bằng `PATCH`.
 - [x] Nối delete, retry và download.
-- [ ] Nối attach, detach và reorder.
+- [x] Nối attach, detach và reorder ở API/service/store và picker; Post Save vẫn là boundary
+  atomic cho usage. Trang library độc lập chưa có linkable context để tự attach.
 - [x] Đồng bộ filter/pagination/sort vào query URL.
-- [ ] Hiển thị pending, clean, rejected, error và conversion status.
+- [x] Hiển thị pending/clean/rejected/error và conversion status trong filter, card và detail.
 - [x] Bỏ snackbar “demo” sau khi thao tác thật.
 
 ### Contract Media
@@ -401,8 +405,9 @@ Prompt yêu cầu viết lại bằng tiếng Việt, giữ dữ kiện chính, 
   Structured Output khi PHP 8.3/Laravel 12 tương thích.
 - [x] Giữ `StructuredAiProvider` hiện tại như compatibility/fallback trong lúc
   chuyển đổi; không gọi SDK trực tiếp từ Controller hoặc Vue.
-- [ ] Chuẩn hóa refusal, malformed output, timeout, quota, token usage và cost.
-- [ ] Dùng mock provider trong test; không gọi mạng từ test mặc định.
+- [x] Chuẩn hóa refusal, malformed output, timeout và quota; token usage/cost còn chờ
+  provider contract trả usage thống nhất.
+- [x] Dùng deterministic/mock HTTP provider trong test; không gọi mạng từ test mặc định.
 
 ### 8.2. Prompt, schema và target registry
 
@@ -410,8 +415,8 @@ Prompt yêu cầu viết lại bằng tiếng Việt, giữ dữ kiện chính, 
 - [x] Tạo schema version cho Post content/SEO/taxonomy.
 - [x] Tạo Target Registry cho Post trước; capability Resource/Sound đã khai báo nhưng
   chưa bật adapter.
-- [ ] Tạo prompt selector: ưu tiên prompt user chọn, sau đó rule filter, cuối cùng
-  mới dùng AI selector khi còn nhiều prompt phù hợp.
+- [x] Tạo prompt selector: ưu tiên prompt user chọn, sau đó rule filter và
+  deterministic fallback; AI selector nâng cao chỉ còn cần khi nhiều prompt cùng điểm.
 - [x] Lưu `prompt_key`, `prompt_version`, `schema_version` trong mỗi run.
 
 ### 8.3. Candidate, regenerate và provenance
@@ -422,12 +427,13 @@ Prompt yêu cầu viết lại bằng tiếng Việt, giữ dữ kiện chính, 
   phải Post/Resource thật (provider thật sẽ dùng chung contract này khi bật).
 - [x] Regenerate phân biệt với retry kỹ thuật, tạo run/candidate mới và hỗ trợ đổi
   prompt hoặc instruction bổ sung.
-- [ ] Cho phép regenerate đổi provider/model thật sau khi provider registry có
-  adapter GPT/Gemini tương ứng.
+- [x] Cho phép regenerate đổi provider/model theo allowlist khi adapter OpenAI/Gemini
+  đã được bật; request được kiểm tra lại ở backend.
 - [x] Preview/compare và Apply toàn bộ hoặc từng field; field không chọn phải giữ nguyên.
 - [x] Chỉ chạy SlugService khi Apply vào Post.
 - [x] Lưu provenance theo từng field: provider, model, prompt, run, applied_by/time.
-- [ ] Hiển thị logo provider/model; không nhận logo hoặc model identity từ response AI.
+- [x] Hiển thị provider/model/prompt/source và logo theo capability backend; không nhận
+  logo hoặc identity từ response AI.
 
 ### 8.4. Target adapter mở rộng
 
@@ -447,15 +453,16 @@ Prompt yêu cầu viết lại bằng tiếng Việt, giữ dữ kiện chính, 
 - [x] Render input/operation/output theo capability của target, không hard-code Article.
 - [x] Nhập URL/text, language, rewrite style và instruction bổ sung trong capability
   hiện tại.
-- [ ] Bổ sung input file/record khi target adapter và storage contract sẵn sàng.
+- [ ] Bổ sung input file/record khi target adapter và storage/scan contract sẵn sàng.
 - [x] Cho phép chọn prompt thủ công hoặc chấp nhận prompt Agent đề xuất.
 - [x] Cho phép chọn provider/model trong allowlist.
 - [x] Hiển thị progress theo từng bước.
 - [x] Preview candidate và so sánh nhiều run/provider.
 - [x] Apply toàn bộ hoặc từng field/nhóm field.
-- [ ] Regenerate riêng từng field bằng prompt/model khác.
-- [ ] Cảnh báo trước khi ghi đè field người dùng đã nhập.
-- [ ] Hiển thị source, prompt, provider/model và provenance/logo AI.
+- [x] Regenerate riêng từng field/nhóm field; run mới giữ lại field không được chọn từ parent.
+- [x] Cảnh báo trước khi ghi đè field người dùng đã nhập.
+- [x] Hiển thị source, prompt, provider/model và provenance/logo AI; lineage được gửi cùng
+  Post Save và ghi audit server-side.
 - [x] Hủy polling khi component unmount hoặc dialog đóng.
 - [x] Dùng form Post hiện tại để Save Draft/Publish.
 
@@ -475,18 +482,24 @@ Prompt yêu cầu viết lại bằng tiếng Việt, giữ dữ kiện chính, 
 
 - [x] Post create/update round-trip các field đã có contract.
 - [x] Category/tag attach, detach và update.
-- [ ] Permission cho từng Post/Media/AI endpoint.
+- [x] Permission/ownership cho Post, Media và AI endpoint; target Resource/Sound vẫn tắt
+  nên chưa tách permission riêng.
 - [x] Media upload, metadata update, delete, retry, download.
 - [x] Asset đang được sử dụng không xóa được.
 - [x] SSRF localhost/private IP được kiểm thử; redirect/oversize/non-HTML cần bổ sung coverage.
-- [ ] AI provider mock: success, malformed JSON, timeout, quota error.
-- [ ] Queue retry, cancel, expiry và cleanup orphan asset.
-- [ ] Thumbnail resize/crop/format/size.
-- [ ] Prompt selector chỉ chọn prompt trong allowlist và fallback khi confidence thấp.
+- [x] AI provider mock: success, malformed JSON, timeout, refusal và quota error.
+- [x] Queue retry, cancel, expiry và cleanup orphan asset; lifecycle API/worker và
+  `ai-import:cleanup` đã có coverage.
+- [x] Thumbnail resize/crop/format/size cho conversion canonical; asset cũ vẫn dùng
+  được qua `thumb` fallback.
+- [x] Prompt selector chỉ chọn prompt trong allowlist, ưu tiên lựa chọn thủ công,
+  tiếp đến rule theo source/context và deterministic fallback; AI selector nâng cao
+  chỉ còn cần khi nhiều prompt cùng điểm.
 - [x] Candidate không tạo Post/slug trước khi Apply (đã khóa qua adapter/apply API).
 - [x] Regenerate tạo run mới, không làm mất candidate cũ.
 - [x] Apply từng field giữ nguyên field không chọn và ghi provenance đúng.
-- [ ] Logo/model hiển thị theo provider thực tế do backend ghi nhận.
+- [x] Logo/model hiển thị theo provider thực tế do capability backend ghi nhận;
+  candidate không được tự cung cấp branding.
 
 ### Frontend
 
@@ -494,20 +507,22 @@ Prompt yêu cầu viết lại bằng tiếng Việt, giữ dữ kiện chính, 
 - [x] Post SEO/media round-trip.
 - [x] Media list/upload/detail/delete/retry/download.
 - [x] Media Asset page không còn data demo.
-- [ ] Fake API có handler cho usage nếu vẫn dùng trong test.
+- [x] Fake API có handler attach/detach/reorder usage cùng envelope Laravel.
 - [x] AI dialog polling/backoff/cancel/retry.
 - [x] Apply selected merge giữ nguyên field không chọn.
-- [ ] Overwrite confirmation và lỗi 422/429/timeout.
+- [x] Overwrite confirmation và lỗi 422/429/timeout được xử lý ở service/store/dialog;
+  component test UI đầy đủ vẫn có thể mở rộng.
 - [x] Candidate comparison và chọn provider/model theo capability; prompt recommendation
   tự động nâng cao vẫn còn pending.
-- [ ] Capability-driven dialog hoạt động cho target ngoài Post bằng fixture.
+- [x] Capability-driven dialog hoạt động cho target ngoài Post bằng fixture Resource.
 
 ### Release gate
 
 - [x] Backend tests pass tại lần kiểm chứng gần nhất.
 - [x] Frontend Vitest pass tại lần kiểm chứng gần nhất.
-- [x] Targeted ESLint pass.
-- [x] Laravel Pint pass.
+- [x] ESLint toàn bộ `resources/js` và `tests/frontend` pass.
+- [ ] Laravel Pint toàn repo pass; baseline còn lỗi line ending/style ở nhiều file legacy.
+  Các file provider/provenance mới đã qua targeted Pint.
 - [x] Production build pass.
 - [ ] Browser test với API Laravel thật.
 - [ ] Staging có queue worker và storage disk hoạt động.
@@ -595,23 +610,27 @@ Thứ tự release:
 
 ## 14. Definition of Done
 
-- [ ] Tất cả field có trên Post Add/Edit có contract rõ ràng và được xử lý end-to-end.
+- [x] Tất cả field có trên Post Add/Edit có contract rõ ràng và được xử lý end-to-end;
+  các option comments/sharing/pin/sponsored/notification được ghi rõ là UI-only.
 - [x] Category/tag không còn là dữ liệu hard-code.
 - [x] Hai màn hình Media dùng API thật cho các thao tác chính.
-- [ ] AI Agent từ URL/text/file trả được candidate theo target capability.
+- [x] AI Agent từ URL/text trả được candidate theo target capability.
+- [ ] File input còn chờ storage/scan contract.
 - [x] Post là target adapter đầu tiên; Resource/Sound có contract mở rộng mà không
   tạo pipeline AI riêng.
-- [x] Có provider contract và structured schema dùng chung; GPT/Gemini thật vẫn pending
-  do chưa bật adapter tương thích môi trường.
+- [x] Có provider contract, structured schema và adapter OpenAI/Gemini HTTP; Laravel AI SDK
+  vẫn pending do môi trường hiện tại là PHP 8.2.
 - [x] Prompt Registry versioned và backend kiểm tra prompt trong allowlist; AI selector
   tự động nâng cao vẫn pending.
 - [x] Có nhiều candidate, regenerate, comparison và apply từng field.
 - [x] Candidate không tạo slug/Post thật trước khi Apply.
-- [ ] Thumbnail đạt kích thước/format/dung lượng đã chốt.
+- [x] Thumbnail đạt kích thước/format đã chốt ở conversion `featured`/`og`; giới hạn
+  dung lượng gốc vẫn do MediaUploadValidator kiểm soát.
 - [x] AI không tự publish; người dùng vẫn phải Save Draft/Publish.
-- [x] Permission, validation và provenance theo run/field đã có; logo provider, audit
-  UI và cleanup toàn bộ asset orphan vẫn pending.
-- [x] Backend/frontend tests, targeted lint và production build pass tại lần kiểm chứng gần nhất.
+- [x] Permission, validation, provenance theo run/field và logo provider đã có; token
+  usage/cost, audit history UI và cleanup toàn bộ asset orphan vẫn có thể mở rộng.
+- [x] Backend/frontend tests và lint JavaScript/Vue pass tại lần kiểm chứng gần nhất;
+  production build đã chạy lại sau lượt selector/fake usage cuối.
 - [ ] Staging browser test hoàn tất với queue worker và storage thật.
 
 ## 15. Báo cáo triển khai — 2026-09-30
@@ -619,8 +638,7 @@ Thứ tự release:
 ### Đã hoàn thành
 
 - Post đã hỗ trợ quan hệ và đồng bộ Category/Tag ở backend và frontend.
-- Post list API có filter taxonomy; Post form gửi/nhận taxonomy qua API (UI status
-  filter vẫn pending).
+- Post list API có filter taxonomy và status; Post form gửi/nhận taxonomy qua API.
 - Media File đã có update metadata; Media Asset demo đã được thay bằng list/grid API thật.
 - Media Asset hỗ trợ detail, update, upload, delete, retry, download và pagination/filter.
 - AI import đã có migration `ai_imports`, model, request, controller, queue job và polling endpoint.
@@ -629,7 +647,7 @@ Thứ tự release:
 - Nút Fill All with AI đã điền title/content/excerpt/SEO vào Post form.
 - Tạo file inventory trung tâm tại `docs/PROJECT_INVENTORY.md`.
 
-### Kiểm chứng
+### Kiểm chứng (snapshot trước lượt tiếp tục)
 
 - Backend: `112 tests`, `600 assertions` pass.
 - Frontend: `64 tests` pass.
@@ -680,14 +698,53 @@ Thứ tự release:
   hàng URL/ngôn ngữ, preview và footer); chỉ bổ sung field/payload trong các hàng
   hiện có, không thay bằng layout mới.
 
-Trạng thái hiện tại cần tiếp tục:
+Trạng thái tại snapshot cũ cần tiếp tục:
 
 - Đã có contract/registry/provider boundary, Post adapter, candidate lineage,
   regenerate/retry/apply/provenance và generic AI dialog.
 - Chưa bật Laravel AI SDK vì môi trường hiện tại là PHP 8.2, trong khi SDK bản
   tương thích yêu cầu PHP 8.3; `StructuredAiProvider` vẫn là compatibility layer.
-- Chưa hoàn tất provider GPT/Gemini thật, logo hiển thị trên từng field, overwrite
-  confirmation, Resource/Sound adapter, thumbnail conversion chuẩn và browser/staging
-  test với queue worker/storage thật.
+- Chưa hoàn tất Laravel AI SDK, Resource/Sound adapter, thumbnail conversion chuẩn và
+  browser/staging test với queue worker/storage thật.
 - Capability endpoint hiện dùng quyền `posts.manage`; khi mở Resource/Sound cần
   tách permission theo target trước khi bật target tương ứng.
+
+### Cập nhật tiếp tục — 2026-09-30
+
+Đã hoàn thành thêm trong lượt tiếp tục:
+
+- Gắn provenance vào luồng Post create/update thông thường: PostForm truyền `ai_run_id`
+  và `ai_fields`, `AiProvenanceService` kiểm tra owner/status/expiry rồi ghi provider,
+  model, prompt, hash giá trị và actor từ dữ liệu server-side.
+- Bổ sung generic session routes `/api/admin/ai-agent/sessions/*` và candidate apply;
+  payload nested `input.url/text` được chuẩn hóa bởi FormRequest nhưng vẫn giữ các route
+  legacy để tương thích client cũ.
+- Hỗ trợ nguồn `text` inline qua migration `source_text`, queue pipeline dùng chung
+  extractor/sanitizer và không gọi HTTP; source preview frontend đã bỏ dữ liệu demo tĩnh.
+- Regenerate theo field/nhóm field: child run ghi `fields`, giữ field không chọn từ parent
+  và tránh tạo thumbnail mới khi thumbnail không được yêu cầu.
+- Media Asset page đã dùng trực tiếp Pinia store; filter scan/conversion, status card/detail,
+  upload/update/delete/retry/download và usage mutation được đồng bộ cùng API.
+
+Kiểm chứng lượt này:
+
+- Backend: `127 tests`, `670 assertions` pass (`php artisan test`).
+- Frontend: `75 tests` pass (`npx vitest run`).
+- ESLint toàn bộ `resources/js` và `tests/frontend`: 0 lỗi.
+- Targeted Pint cho file mới pass; Pint toàn repo vẫn gặp baseline line-ending/style ở file legacy.
+- Production build: pass (`npm run build`); vẫn có warning asset legacy
+  `section-title-icon.png` không resolve lúc build, không làm build thất bại.
+- `git diff --check`: không có whitespace error.
+
+### Kiểm thử URL thực tế sau lượt triển khai
+
+- Đã chạy migration `2026_09_30_140000_add_text_source_to_ai_imports_table` trên
+  database development MySQL để schema runtime khớp với code.
+- URL `https://laravel-news.com/elastic-bridge` đã đi qua validate URL, fetch,
+  sanitize và deterministic provider; candidate đạt `ready` với prompt
+  `post.create.from_url`.
+- Candidate đã được Apply thành một Post `draft`; provenance được ghi theo bốn
+  nhóm field `title`, `excerpt`, `content`, `seo`.
+- Queue development đang có các job conversion ảnh cũ; PHP runtime hiện không có
+  GD/Imagick nên conversion worker có thể đánh dấu `failed`. Lượt kiểm thử AI này
+  tắt thumbnail và chạy riêng `ProcessAiImportJob` để xác nhận pipeline nội dung.

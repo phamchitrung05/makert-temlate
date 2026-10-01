@@ -456,6 +456,8 @@ app/Services/Ai/Registries/             target/provider/prompt/schema registry
 app/Services/Ai/Targets/PostAiAdapter.php
 app/Services/Ai/ArticleImportService.php
 app/Services/Ai/StructuredAiProvider.php
+app/Services/Ai/OpenAiProvider.php       OpenAI-compatible Chat Completions
+app/Services/Ai/GeminiProvider.php       Gemini generateContent adapter
 app/Models/AiImport.php                 session/run/candidate lineage
 app/Models/AiProvenance.php             provenance theo field đã apply
 app/Http/Controllers/Admin/AiImportController.php
@@ -466,10 +468,11 @@ resources/js/components/ai/              dialog/preview dùng chung
 resources/js/views/apps/blog/post/dialog/CreateWithAiDialog.vue
 ```
 
-Capability được đọc từ `GET /api/admin/ai-agent/capabilities/{target}`. Post URL
-import dùng các route dưới `/api/admin/posts/ai/import`; candidate chưa tạo slug
-hoặc Post thật, chỉ thao tác Apply mới gọi Post Action/SlugService. API key luôn
-ở backend; deterministic provider là fallback khi chưa cấu hình provider thật.
+Capability được đọc từ `GET /api/admin/ai-agent/capabilities/{target}`. Generic
+session dùng `/api/admin/ai-agent/sessions/*`, còn các route dưới
+`/api/admin/posts/ai/import` được giữ để tương thích. Candidate chưa tạo slug hoặc
+Post thật, chỉ thao tác Apply mới gọi Post Action/SlugService. API key luôn ở
+backend; deterministic provider là fallback khi chưa cấu hình provider thật.
 
 Chi tiết trạng thái và việc còn lại nằm duy nhất trong
 `docs/PLAN_POST_MEDIA_AI_INTEGRATION.md`.

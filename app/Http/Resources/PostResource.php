@@ -10,7 +10,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Serialize Post, metadata SEO và media đã tải.
- * CÁC HÀM/METHOD TRONG FILE: toArray(): JSON; primarySlugFromLoadedRelation(): slug.
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - toArray(): serialize Post, SEO và media.
+ * - primarySlugFromLoadedRelation(): lấy slug primary từ relation đã load.
  * INPUT/OUTPUT CỦA CLASS (tổng thể): Post/request -> mảng JSON API.
  * =====================================================================
  */
@@ -34,6 +36,9 @@ class PostResource extends JsonResource
         $slug = $this->primarySlugFromLoadedRelation()?->slug;
         $service = app(SeoMetadataService::class);
         $seo = $service->raw($this->resource);
+        $ogImage = $this->resource->seoMetadata?->relationLoaded('ogImage')
+            ? $this->resource->seoMetadata?->ogImage
+            : null;
 
         return [
             'id' => $this->id,
@@ -50,6 +55,7 @@ class PostResource extends JsonResource
             'og_title' => $seo['og_title'],
             'og_description' => $seo['og_description'],
             'og_image_id' => $seo['og_image_id'],
+            'og_image' => $ogImage ? MediaAssetResource::make($ogImage) : null,
             'seo_metadata' => $seo,
             'seo_resolved' => $service->resolve($this->resource),
             'categories' => $this->whenLoaded('categories', fn () => $this->categories->map(fn ($category): array => [

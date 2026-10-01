@@ -5,6 +5,26 @@ use App\Enums\MediaAssetKind;
 return [
 
     /*
+     * Profile ảnh canonical dùng cho Post featured image và Open Graph.
+     * `thumb`/`web` cũ vẫn được giữ trong MediaAsset để asset hiện tại không
+     * mất URL; profile mới là nguồn chuẩn cho các consumer mới.
+     */
+    'image_conversions' => [
+        'featured' => [
+            'width' => (int) env('MEDIA_FEATURED_WIDTH', 1200),
+            'height' => (int) env('MEDIA_FEATURED_HEIGHT', 675),
+            'format' => env('MEDIA_FEATURED_FORMAT', 'webp'),
+            'quality' => (int) env('MEDIA_FEATURED_QUALITY', 85),
+        ],
+        'og' => [
+            'width' => (int) env('MEDIA_OG_WIDTH', 1200),
+            'height' => (int) env('MEDIA_OG_HEIGHT', 630),
+            'format' => env('MEDIA_OG_FORMAT', 'webp'),
+            'quality' => (int) env('MEDIA_OG_QUALITY', 85),
+        ],
+    ],
+
+    /*
      * Temporary upload luôn nằm trên private disk trước khi được attach vào
      * collection library. API Task 5 sẽ chỉ gọi action sau FormRequest.
      */

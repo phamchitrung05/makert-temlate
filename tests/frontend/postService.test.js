@@ -27,4 +27,17 @@ describe('Post API payload', () => {
     expect(result.media.content_images).toEqual([])
   })
 
+  it('sends only selected AI lineage metadata with the Post payload', async () => {
+    mocks.api.mockResolvedValue({ success: true, data: { id: 2 } })
+
+    await postService.create({
+      title: 'AI title', content: 'AI content', status: 'draft',
+      aiProvenance: { runId: 'run-uuid', fields: ['title', 'content'] },
+    })
+
+    const body = mocks.api.mock.calls[0][1].body
+
+    expect(body).toMatchObject({ 'ai_run_id': 'run-uuid', 'ai_fields': ['title', 'content'] })
+  })
+
 })

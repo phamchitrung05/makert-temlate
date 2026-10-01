@@ -1,4 +1,17 @@
 /* eslint-disable camelcase */
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Kiểm thử state và mutation của Media Asset Pinia store.
+ * =====================================================================
+ *
+ * CÁC HÀM/METHOD TRONG FILE: các test list/error/upload/update/retry và
+ * attach/detach usage không làm nhầm usage response thành MediaAsset.
+ *
+ * INPUT/OUTPUT CỦA FILE (tổng thể):
+ * - INPUT : response giả của mediaAssetService.
+ * - OUTPUT: state Pinia đúng sau query/mutation; không gọi HTTP thật.
+ * =====================================================================
+ */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
@@ -15,6 +28,7 @@ const serviceMocks = vi.hoisted(() => ({
     remove: vi.fn(),
     retry: vi.fn(),
     download: vi.fn(),
+    downloadFile: vi.fn(),
   },
 }))
 
@@ -52,6 +66,26 @@ describe('useMediaAssetStore', () => {
       page: 2,
       per_page: 12,
     }))
+  })
+
+  it('keeps list loading separate while a selected detail is loading', async () => {
+    let resolveDetail
+
+    serviceMocks.service.show.mockReturnValue(new Promise(resolve => { resolveDetail = resolve }))
+
+    const store = useMediaAssetStore()
+    const request = store.fetchMediaAsset(9, { id: 9, title: 'Ảnh đang chọn' })
+
+    expect(store.selectedAsset).toEqual({ id: 9, title: 'Ảnh đang chọn' })
+    expect(store.isLoading).toBe(false)
+    expect(store.isDetailLoading).toBe(true)
+
+    resolveDetail({ id: 9, title: 'Ảnh đầy đủ' })
+    await request
+
+    expect(store.selectedAsset).toEqual({ id: 9, title: 'Ảnh đầy đủ' })
+    expect(store.isLoading).toBe(false)
+    expect(store.isDetailLoading).toBe(false)
   })
 
   it('keeps request errors in state and supports clearing them', async () => {
@@ -107,5 +141,26 @@ describe('useMediaAssetStore', () => {
 
     expect(store.selectedAsset).toEqual(retried)
     expect(store.error).toBeNull()
+  })
+
+  it('refreshes the asset after attach and detach responses without asset IDs', async () => {
+    const store = useMediaAssetStore()
+    const initial = { id: 4, title: 'Cover', usages: [] }
+    const attached = { ...initial, usages: [{ id: 91, field: 'post.thumbnail' }] }
+
+    serviceMocks.service.show.mockResolvedValueOnce(initial).mockResolvedValueOnce(attached).mockResolvedValueOnce(initial)
+    serviceMocks.service.attach.mockResolvedValue({ id: 91, field: 'post.thumbnail' })
+    serviceMocks.service.detach.mockResolvedValue(null)
+
+    await store.fetchMediaAsset(4)
+    await store.attachMediaAsset(4, { field: 'post.thumbnail', linkable_type: 'post', linkable_id: 7 })
+
+    expect(store.selectedAsset).toEqual(attached)
+    expect(store.selectedAsset.id).toBe(4)
+
+    await store.detachMediaAsset(4, 91)
+
+    expect(store.selectedAsset).toEqual(initial)
+    expect(serviceMocks.service.detach).toHaveBeenCalledWith(4, 91)
   })
 })
