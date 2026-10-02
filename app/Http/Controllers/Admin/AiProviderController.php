@@ -50,6 +50,7 @@ final class AiProviderController extends Controller
                 'key' => $key, 'label' => $preset['label'] ?? $key, 'kind' => $preset['kind'] ?? 'custom',
                 'driver' => $preset['driver'] ?? $key, 'base_url' => $preset['base_url'] ?? null,
                 'image_supported' => (bool) ($preset['image_supported'] ?? false),
+                'request_timeout' => (int) config('ai-providers.request_timeout', 120),
             ])->values()->all(),
         ], 'Cấu hình AI.');
     }

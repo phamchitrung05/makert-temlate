@@ -63,10 +63,19 @@ bundle Vue. Các biến giới hạn URL/job và quota có giá trị mặc đ�
 | Provider mặc định | `AI_IMPORT_ENABLED`, `AI_IMPORT_PROVIDER`, `AI_IMPORT_ENDPOINT`, `AI_IMPORT_KEY`, `AI_IMPORT_MODEL` |
 | OpenAI-compatible | `AI_OPENAI_KEY`, `AI_OPENAI_ENDPOINT`, `AI_OPENAI_MODEL`, `AI_OPENAI_TEMPERATURE` |
 | Gemini | `AI_GEMINI_KEY`, `AI_GEMINI_ENDPOINT`, `AI_GEMINI_MODEL`, `AI_GEMINI_TEMPERATURE` |
-| Timeout/retry | `AI_IMPORT_TIMEOUT`, `AI_IMPORT_CONNECT_TIMEOUT`, `AI_IMPORT_JOB_TIMEOUT`, `AI_IMPORT_MAX_REDIRECTS` |
+| Timeout/retry | `AI_PROVIDER_REQUEST_TIMEOUT`, `AI_IMPORT_TIMEOUT`, `AI_IMPORT_CONNECT_TIMEOUT`, `AI_IMPORT_JOB_TIMEOUT`, `AI_IMPORT_MAX_REDIRECTS` |
 | Payload/file | `AI_IMPORT_MAX_HTML_BYTES`, `AI_IMPORT_MAX_IMAGE_BYTES`, `AI_IMPORT_USER_AGENT` |
 | Prompt/lifecycle | `AI_IMPORT_PROMPT_VERSION`, `AI_IMPORT_RETENTION_DAYS`, `AI_IMPORT_IDEMPOTENCY_WINDOW_MINUTES` |
 | Quota | `AI_IMPORT_QUOTA_PER_HOUR` |
+
+`config/ai-providers.php` có `request_timeout` làm mặc định cho provider mới,
+có thể override bằng `AI_PROVIDER_REQUEST_TIMEOUT`. Giá trị lưu riêng trong
+`ai_providers.request_timeout` được ưu tiên (5–600 giây). Provider hiện tại
+nhận 120 giây từ migration và có thể sửa bằng AI Settings. Thay đổi config trên
+môi trường dùng config cache cần cập nhật cache và restart worker.
+Database/Redis/Beanstalkd có `retry_after` tối thiểu 900 giây; job AI đọc thời gian
+chờ trong snapshot, cộng 120 giây cho xử lý nguồn/lưu kết quả. Kết nối TCP vẫn
+có giới hạn 5 giây; trường provider kiểm soát tổng thời gian chờ HTTP mỗi request.
 
 Khi `AI_IMPORT_ENABLED=false`, provider/import bị tắt thật (không dùng cast
 boolean của chuỗi môi trường). Laravel AI SDK chưa được cài trong môi trường

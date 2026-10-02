@@ -125,14 +125,15 @@ final class ProviderRegistry
      * =====================================================================
      * CHỨC NĂNG: Khôi phục connection, kiểm tra lại quyền chạy snapshot
      * =====================================================================
-     * INPUT: snapshot của run và capability đang thực thi.
+     * INPUT: snapshot/capability của run; refreshTimeout=true khi retry thủ công.
      * OUTPUT: AiConnection có secret chỉ nằm trong memory backend.
-     * SIDE EFFECT: đọc provider/model; key rotation được nhận ở lần chạy tiếp.
+     * SIDE EFFECT: đọc provider/model; key rotation được nhận ở lần chạy tiếp,
+     * timeout chỉ cập nhật theo provider khi caller yêu cầu retry thủ công.
      * EXCEPTION/TRANSACTION: InvalidArgumentException khi endpoint/identity hoặc
      * trạng thái/capability đã đổi; không tự chọn model thay thế hay mở transaction.
      * =====================================================================
      */
-    public function connectionForRun(array $snapshot, AiCapability $capability): AiConnection
+    public function connectionForRun(array $snapshot, AiCapability $capability, bool $refreshTimeout = false): AiConnection
     {
         $record = AiProvider::query()->with('models')->find((int) ($snapshot['provider_id'] ?? 0));
         if (! $record || ! $record->is_active || ! filled($record->api_key)
@@ -145,6 +146,10 @@ final class ProviderRegistry
         if (! $model || (string) $model->remote_model_id !== (string) ($snapshot['model'] ?? '')
             || ! $model->setRelation('provider', $record)->usableFor($capability)) {
             throw new InvalidArgumentException('AI model đã bị tắt, thay đổi hoặc không hỗ trợ tác vụ.');
+        }
+
+        if ($refreshTimeout) {
+            $snapshot['timeout'] = (int) $record->request_timeout;
         }
 
         return new AiConnection($snapshot, (string) $record->api_key);

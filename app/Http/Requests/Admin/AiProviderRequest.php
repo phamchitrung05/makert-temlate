@@ -50,6 +50,7 @@ final class AiProviderRequest extends FormRequest
             'base_url' => ['nullable', 'url:https', 'max:2048', 'required_if:driver,openai-compatible'],
             'api_key' => [$isUpdate ? 'nullable' : 'required', 'string', 'max:10000'],
             'discovery_mode' => ['nullable', Rule::in(['models_endpoint', 'manual'])],
+            'request_timeout' => ['sometimes', 'required', 'integer', 'between:5,600'],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

@@ -8,6 +8,8 @@ use App\Enums\AiCapability;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AiCandidateApplyRequest;
 use App\Http\Requests\Admin\AiImportRequest;
+use App\Http\Requests\Admin\AiSessionIndexRequest;
+use App\Http\Resources\AiSessionSummaryResource;
 use App\Http\Responses\BaseResponse;
 use App\Models\AiImport;
 use App\Models\Post;
@@ -28,7 +30,7 @@ use Illuminate\Support\Facades\DB;
  * =====================================================================
  * CHỨC NĂNG FILE: HTTP API tạo, polling, retry, hủy và dọn AI import.
  * =====================================================================
- * CÁC HÀM/METHOD: capabilities(), store(), show(), regenerate(), retry(),
+ * CÁC HÀM/METHOD: index(), capabilities(), store(), show(), regenerate(), retry(),
  * candidates(), apply(), cancel(), destroy(), payload(), ensureOwner(),
  * cleanupThumbnail().
  * INPUT: admin request URL/options hoặc UUID job; OUTPUT: envelope JSON.
@@ -40,6 +42,29 @@ use Illuminate\Support\Facades\DB;
  */
 class AiImportController extends Controller
 {
+    /**
+     * Đọc danh sách tác vụ tạo bài gốc còn hạn của chính admin hiện tại.
+     *
+     * Input: page/per_page đã validate, actor đã qua auth/posts.manage.
+     * Output: summary phân trang mới nhất trước; loại run ảnh và candidate con.
+     * Side effect: chỉ query DB, không eager load, không dispatch hoặc gọi AI.
+     * Exception/Transaction: không mở transaction; middleware kiểm tra quyền.
+     */
+    public function index(AiSessionIndexRequest $request): JsonResponse
+    {
+        $filters = $request->validated();
+        $paginator = AiImport::query()
+            ->where('created_by', $request->user()->getKey())
+            ->whereNull('parent_id')
+            ->where(fn ($query) => $query->whereNull('operation')->orWhere('operation', 'create'))
+            ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+            ->where('status', '!=', 'expired')
+            ->orderByDesc('created_at')->orderByDesc('id')
+            ->paginate((int) ($filters['per_page'] ?? 100), ['*'], 'page', (int) ($filters['page'] ?? 1));
+
+        return BaseResponse::paginated(AiSessionSummaryResource::collection($paginator), 'Danh sách tác vụ viết bài AI.');
+    }
+
     /**
      * =====================================================================
      * CHỨC NĂNG: Trả capability AI theo target cho dialog dùng chung
@@ -289,24 +314,43 @@ class AiImportController extends Controller
      * =====================================================================
      * INPUT: Run failed/cancelled/expired thuộc actor; image run cần media.upload.
      * OUTPUT: Run hiện tại đã reset trạng thái queued.
-     * SIDE EFFECT: Cập nhật lifecycle/errors rồi dispatch job theo operation.
-     * EXCEPTION/TRANSACTION: Abort 403/404 hoặc trả 409 khi run chưa terminal; không mở transaction tổng.
+     * SIDE EFFECT: Cập nhật timeout theo provider hiện tại, lifecycle/retention;
+     * giữ identity/input và dispatch đúng một job sau commit.
+     * EXCEPTION/TRANSACTION: Lock row trong transaction; 403/404/409 hoặc validation
+     * khi connection đã đổi/tắt; không gọi provider trong transaction.
      * =====================================================================
      */
-    public function retry(Request $request, AiImport $aiImport, AiRunService $runs): JsonResponse
+    public function retry(Request $request, AiImport $aiImport, AiRunService $runs, ProviderRegistry $providers): JsonResponse
     {
         $this->ensureOwner($request, $aiImport);
         if ($aiImport->operation === 'image') {
             abort_unless($request->user()->can('media.upload'), 403);
         }
-        if (! in_array($aiImport->status, ['failed', 'cancelled', 'expired'], true)) {
-            return BaseResponse::error('Chỉ có thể retry run đã kết thúc lỗi.', 409);
-        }
-        $aiImport->forceFill([
-            'status' => 'queued', 'current_step' => 'queued', 'progress' => 0,
-            'error_code' => null, 'error_message' => null, 'completed_at' => null,
-        ])->save();
-        $runs->dispatch($aiImport);
+        $aiImport = DB::transaction(function () use ($aiImport, $runs, $providers): AiImport {
+            $run = AiImport::query()->lockForUpdate()->findOrFail($aiImport->id);
+            abort_unless(in_array($run->status, ['failed', 'cancelled', 'expired'], true), 409, 'Chỉ có thể retry run đã kết thúc lỗi.');
+            $input = (array) $run->input_json;
+            foreach (['ai_connection', 'image_connection'] as $key) {
+                $snapshot = (array) ($input[$key] ?? []);
+                if (empty($snapshot['provider_id'])) {
+                    continue;
+                }
+                $capability = $key === 'image_connection' || $run->operation === 'image' ? AiCapability::Image : AiCapability::Text;
+                try {
+                    $input[$key] = $providers->connectionForRun($snapshot, $capability, true)->snapshot;
+                } catch (\InvalidArgumentException $exception) {
+                    throw \Illuminate\Validation\ValidationException::withMessages(['provider' => $exception->getMessage()]);
+                }
+            }
+            $run->forceFill([
+                'status' => 'queued', 'current_step' => 'queued', 'progress' => 0,
+                'input_json' => $input, 'error_code' => null, 'error_message' => null, 'completed_at' => null,
+                'expires_at' => now()->addDays((int) config('ai-import.retention_days', 2)),
+            ])->save();
+            DB::afterCommit(fn () => $runs->dispatch($run));
+
+            return $run;
+        });
 
         return BaseResponse::success($this->payload($aiImport->fresh()), 'Đã xếp hàng retry run.');
     }

@@ -5,6 +5,7 @@
  *
  * Menu dùng route name do file-based router sinh ra. Resource nằm trong
  * Ecommerce; Media là nhóm nghiệp vụ riêng để quản lý file dùng chung.
+ * Systerm AI tập trung Ai Content và AI Settings để quản lý nội dung/provider.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - Không có; file export một mảng cấu hình menu.
@@ -15,6 +16,19 @@
  * =====================================================================
  */
 export default [
+  { heading: 'Systerm AI' },
+  {
+    title: 'Ai Content',
+    icon: { icon: 'tabler-sparkles' },
+    to: 'ai-content',
+  },
+  {
+    title: 'AI Settings',
+    icon: { icon: 'tabler-brain' },
+    to: 'settings-ai-providers',
+    action: 'manage',
+    subject: 'ai_settings',
+  },
   { heading: 'Apps & Pages' },
   {
     title: 'Ecommerce',
@@ -83,13 +97,6 @@ export default [
       { title: 'File', to: 'apps-media-file' },
       { title: 'Media Asset', to: 'apps-media-media-asset' },
     ],
-  },
-  {
-    title: 'AI Settings',
-    icon: { icon: 'tabler-brain' },
-    to: { path: '/settings/ai-providers' },
-    action: 'manage',
-    subject: 'ai_settings',
   },
   {
     title: 'Academy',

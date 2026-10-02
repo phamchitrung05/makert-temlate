@@ -123,7 +123,7 @@ abstract class AbstractStructuredAiProvider implements AiProviderContract
      * EXCEPTION/TRANSACTION: AiImportException khi transport/schema lỗi; không transaction.
      *
      * @return array<string, mixed>
-     * =====================================================================
+     *                              =====================================================================
      */
     public function generate(
         string $title,
@@ -157,7 +157,7 @@ abstract class AbstractStructuredAiProvider implements AiProviderContract
                 'schema_version' => $prompt['schema'],
             ]);
         } catch (ConnectionException $exception) {
-            throw new AiImportException('AI provider kết nối thất bại hoặc quá thời gian.', 'AI_PROVIDER_TIMEOUT', true, $exception);
+            throw new AiImportException('AI provider mất kết nối hoặc hết thời gian chờ. Hãy kiểm tra trạng thái request rồi thử lại thủ công.', 'AI_PROVIDER_TIMEOUT', false, $exception);
         }
 
         return $this->validatePayload($this->normalizePayload($payload));
@@ -248,7 +248,7 @@ abstract class AbstractStructuredAiProvider implements AiProviderContract
      * EXCEPTION/TRANSACTION: Provider exception; không mở transaction.
      *
      * @param  array<string, mixed>  $input
-     * =====================================================================
+     *                                       =====================================================================
      */
     abstract protected function requestPayload(array $input): mixed;
 }

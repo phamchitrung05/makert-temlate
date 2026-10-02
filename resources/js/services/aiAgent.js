@@ -3,7 +3,7 @@
  * =====================================================================
  * CHỨC NĂNG FILE: API client AI Agent dùng chung cho mọi tài nguyên.
  * CÁC HÀM/METHOD TRONG FILE: unwrap(), fallbackCapabilities(),
- * capabilities(), createSession(), status(), regenerate(), retry(), cancel(),
+ * capabilities(), listSessions(), createSession(), status(), regenerate(), retry(), cancel(),
  * applyCandidate().
  * INPUT/OUTPUT CỦA CLASS (tổng thể): target/capability/request -> session,
  * candidate hoặc lỗi API chuẩn hóa; không chứa logic nghiệp vụ của Post.
@@ -67,6 +67,11 @@ const fallbackCapabilities = targetType => ({
 })
 
 export const aiAgentService = {
+  /** Input: page/per_page. Output: summary + meta; GET Admin API, không gọi provider. */
+  async listSessions(query = {}) {
+    return $api('/admin/ai-agent/sessions', { query })
+  },
+
   /**
    * =====================================================================
    * CHỨC NĂNG: Đọc capability target và fallback nếu route chưa tồn tại

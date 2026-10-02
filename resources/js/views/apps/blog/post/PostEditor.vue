@@ -2,7 +2,8 @@
   =====================================================================
   CHỨC NĂNG FILE: Bọc TinyMCE cho nội dung Post, giữ HTML đồng bộ với SEO.
   CÁC HÀM/METHOD TRONG FILE: onMounted(): tải runtime; editorReady(): kết thúc chờ;
-  editorFailed(): báo lỗi và giữ HTML; setup(): bắt lỗi tài nguyên;
+  editorFailed(): báo lỗi và giữ HTML; ensureEditable(): fallback khi editor bị khóa;
+  setup(): bắt lỗi tài nguyên và thay đổi trạng thái chỉnh sửa;
   onBeforeUnmount(): dọn bộ đếm thời gian.
   INPUT/OUTPUT CỦA CLASS (tổng thể): HTML/disabled/placeholder -> v-model HTML.
   Chỉ bật self-host khi chủ dự án cấu hình GPL rõ ràng, hoặc dùng Tiny Cloud key.
@@ -38,8 +39,11 @@ const editorOptions = shallowRef({
   'image_description': true,
   'content_style': 'body { font-family: sans-serif; font-size: 16px; } img { max-width: 100%; height: auto; }',
 
-  /** Input: instance TinyMCE. Output: bắt lỗi tài nguyên từ trước init. */
-  setup: editor => editor.on('SkinLoadError PluginLoadError ThemeLoadError ModelLoadError', editorFailed),
+  /** Input: instance TinyMCE. Output: bắt lỗi tài nguyên và editor chỉ đọc ngoài ý muốn. */
+  setup: editor => {
+    editor.on('SkinLoadError PluginLoadError ThemeLoadError ModelLoadError', editorFailed)
+    editor.on('SwitchMode DisabledStateChange', () => ensureEditable(editor))
+  },
 })
 
 /** Input: lỗi khởi tạo hoặc timeout. Output: giữ HTML trong textarea, dừng editor lỗi. */
@@ -49,10 +53,22 @@ const editorFailed = () => {
   ready.value = false
 }
 
-/** Input: TinyMCE đã init. Output: bỏ trạng thái chờ, dọn timeout. */
-const editorReady = () => {
+/** Input: editor TinyMCE. Output: giữ HTML trong textarea khi editor bị khóa ngoài props.disabled. */
+const ensureEditable = editor => {
+  if (disposed || props.disabled)
+    return
+  if (editor?.mode?.isReadOnly?.() || editor?.options?.get?.('disabled')) {
+    clearTimeout(initTimeout)
+    error.value = 'TinyMCE đang bị khóa chỉnh sửa. Kiểm tra cấu hình/key của editor; bạn có thể tiếp tục chỉnh sửa HTML bên dưới.'
+    ready.value = false
+  }
+}
+
+/** Input: sự kiện init và instance TinyMCE. Output: dọn timeout, kiểm tra khả năng chỉnh sửa. */
+const editorReady = (_event, editor) => {
   clearTimeout(initTimeout)
   initialized.value = true
+  ensureEditable(editor)
 }
 
 /** Input: cấu hình build. Output: tải runtime self-host khi được chọn; lỗi không làm mất nội dung. */
@@ -97,17 +113,19 @@ onBeforeUnmount(() => {
     >
       Đang tải TinyMCE…
     </p>
-    <Editor
-      v-if="ready"
-      v-model="content"
-      :api-key="apiKey"
-      :license-key="selfHosted ? licenseKey : undefined"
-      cloud-channel="8"
-      :init="editorOptions"
-      :disabled="props.disabled"
-      model-events="input change undo redo"
-      @init="editorReady"
-    />
+    <!-- Giữ DOM TinyMCE trong wrapper riêng để teardown không xóa anchor của fallback. -->
+    <div v-if="ready">
+      <Editor
+        v-model="content"
+        :api-key="apiKey"
+        :license-key="selfHosted ? licenseKey : undefined"
+        cloud-channel="8"
+        :init="editorOptions"
+        :disabled="props.disabled"
+        model-events="input change undo redo"
+        @init="editorReady"
+      />
+    </div>
     <AppTextarea
       v-else
       v-model="content"

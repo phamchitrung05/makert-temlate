@@ -19,6 +19,7 @@ declare global {
   const autoResetRef: typeof import('@vueuse/core')['autoResetRef']
   const avatarText: typeof import('./resources/js/@core/utils/formatters.js')['avatarText']
   const betweenValidator: typeof import('./resources/js/@core/utils/validators.js')['betweenValidator']
+  const buildAiContentRequest: typeof import('./resources/js/utils/aiContentInput.js')['buildAiContentRequest']
   const buildContentUrl: typeof import('./resources/js/composables/seoMetadata.js')['buildContentUrl']
   const computed: typeof import('vue')['computed']
   const computedAsync: typeof import('@vueuse/core')['computedAsync']
@@ -28,6 +29,7 @@ declare global {
   const confirmedValidator: typeof import('./resources/js/@core/utils/validators.js')['confirmedValidator']
   const controlledComputed: typeof import('@vueuse/core')['controlledComputed']
   const controlledRef: typeof import('@vueuse/core')['controlledRef']
+  const createAiContentSource: typeof import('./resources/js/utils/aiContentInput.js')['createAiContentSource']
   const createApp: typeof import('vue')['createApp']
   const createEventHook: typeof import('@vueuse/core')['createEventHook']
   const createGenericProjection: typeof import('@vueuse/math')['createGenericProjection']
@@ -53,6 +55,7 @@ declare global {
   const effectScope: typeof import('vue')['effectScope']
   const emailValidator: typeof import('./resources/js/@core/utils/validators.js')['emailValidator']
   const extendRef: typeof import('@vueuse/core')['extendRef']
+  const extractHtmlText: typeof import('./resources/js/utils/aiContentInput.js')['extractHtmlText']
   const findProvider: typeof import('./resources/js/utils/aiModelOptions.js')['findProvider']
   const formatDate: typeof import('./resources/js/@core/utils/formatters.js')['formatDate']
   const formatDateToMonthShort: typeof import('./resources/js/@core/utils/formatters.js')['formatDateToMonthShort']
@@ -171,6 +174,9 @@ declare global {
   const useAbility: typeof import('./resources/js/plugins/casl/composables/useAbility.js')['useAbility']
   const useAbs: typeof import('@vueuse/math')['useAbs']
   const useActiveElement: typeof import('@vueuse/core')['useActiveElement']
+  const useAiContentCatalog: typeof import('./resources/js/composables/useAiContentCatalog.js')['useAiContentCatalog']
+  const useAiContentGeneration: typeof import('./resources/js/composables/useAiContentGeneration.js')['useAiContentGeneration']
+  const useAiContentWorkspace: typeof import('./resources/js/composables/useAiContentWorkspace.js')['useAiContentWorkspace']
   const useAiProviderSettings: typeof import('./resources/js/composables/useAiProviderSettings.js')['useAiProviderSettings']
   const useAnimate: typeof import('@vueuse/core')['useAnimate']
   const useApi: typeof import('./resources/js/composables/useApi.js')['useApi']
@@ -354,6 +360,7 @@ declare global {
   const useWindowFocus: typeof import('@vueuse/core')['useWindowFocus']
   const useWindowScroll: typeof import('@vueuse/core')['useWindowScroll']
   const useWindowSize: typeof import('@vueuse/core')['useWindowSize']
+  const validateAiContentSource: typeof import('./resources/js/utils/aiContentInput.js')['validateAiContentSource']
   const watch: typeof import('vue')['watch']
   const watchArray: typeof import('@vueuse/core')['watchArray']
   const watchAtMost: typeof import('@vueuse/core')['watchAtMost']
@@ -397,6 +404,7 @@ declare module 'vue' {
     readonly autoResetRef: UnwrapRef<typeof import('@vueuse/core')['autoResetRef']>
     readonly avatarText: UnwrapRef<typeof import('./resources/js/@core/utils/formatters.js')['avatarText']>
     readonly betweenValidator: UnwrapRef<typeof import('./resources/js/@core/utils/validators.js')['betweenValidator']>
+    readonly buildAiContentRequest: UnwrapRef<typeof import('./resources/js/utils/aiContentInput.js')['buildAiContentRequest']>
     readonly buildContentUrl: UnwrapRef<typeof import('./resources/js/composables/seoMetadata.js')['buildContentUrl']>
     readonly computed: UnwrapRef<typeof import('vue')['computed']>
     readonly computedAsync: UnwrapRef<typeof import('@vueuse/core')['computedAsync']>
@@ -406,6 +414,7 @@ declare module 'vue' {
     readonly confirmedValidator: UnwrapRef<typeof import('./resources/js/@core/utils/validators.js')['confirmedValidator']>
     readonly controlledComputed: UnwrapRef<typeof import('@vueuse/core')['controlledComputed']>
     readonly controlledRef: UnwrapRef<typeof import('@vueuse/core')['controlledRef']>
+    readonly createAiContentSource: UnwrapRef<typeof import('./resources/js/utils/aiContentInput.js')['createAiContentSource']>
     readonly createApp: UnwrapRef<typeof import('vue')['createApp']>
     readonly createEventHook: UnwrapRef<typeof import('@vueuse/core')['createEventHook']>
     readonly createGenericProjection: UnwrapRef<typeof import('@vueuse/math')['createGenericProjection']>
@@ -431,6 +440,7 @@ declare module 'vue' {
     readonly effectScope: UnwrapRef<typeof import('vue')['effectScope']>
     readonly emailValidator: UnwrapRef<typeof import('./resources/js/@core/utils/validators.js')['emailValidator']>
     readonly extendRef: UnwrapRef<typeof import('@vueuse/core')['extendRef']>
+    readonly extractHtmlText: UnwrapRef<typeof import('./resources/js/utils/aiContentInput.js')['extractHtmlText']>
     readonly findProvider: UnwrapRef<typeof import('./resources/js/utils/aiModelOptions.js')['findProvider']>
     readonly formatDate: UnwrapRef<typeof import('./resources/js/@core/utils/formatters.js')['formatDate']>
     readonly formatDateToMonthShort: UnwrapRef<typeof import('./resources/js/@core/utils/formatters.js')['formatDateToMonthShort']>
@@ -549,6 +559,9 @@ declare module 'vue' {
     readonly useAbility: UnwrapRef<typeof import('./resources/js/plugins/casl/composables/useAbility.js')['useAbility']>
     readonly useAbs: UnwrapRef<typeof import('@vueuse/math')['useAbs']>
     readonly useActiveElement: UnwrapRef<typeof import('@vueuse/core')['useActiveElement']>
+    readonly useAiContentCatalog: UnwrapRef<typeof import('./resources/js/composables/useAiContentCatalog.js')['useAiContentCatalog']>
+    readonly useAiContentGeneration: UnwrapRef<typeof import('./resources/js/composables/useAiContentGeneration.js')['useAiContentGeneration']>
+    readonly useAiContentWorkspace: UnwrapRef<typeof import('./resources/js/composables/useAiContentWorkspace.js')['useAiContentWorkspace']>
     readonly useAiProviderSettings: UnwrapRef<typeof import('./resources/js/composables/useAiProviderSettings.js')['useAiProviderSettings']>
     readonly useAnimate: UnwrapRef<typeof import('@vueuse/core')['useAnimate']>
     readonly useApi: UnwrapRef<typeof import('./resources/js/composables/useApi.js')['useApi']>
@@ -732,6 +745,7 @@ declare module 'vue' {
     readonly useWindowFocus: UnwrapRef<typeof import('@vueuse/core')['useWindowFocus']>
     readonly useWindowScroll: UnwrapRef<typeof import('@vueuse/core')['useWindowScroll']>
     readonly useWindowSize: UnwrapRef<typeof import('@vueuse/core')['useWindowSize']>
+    readonly validateAiContentSource: UnwrapRef<typeof import('./resources/js/utils/aiContentInput.js')['validateAiContentSource']>
     readonly watch: UnwrapRef<typeof import('vue')['watch']>
     readonly watchArray: UnwrapRef<typeof import('@vueuse/core')['watchArray']>
     readonly watchAtMost: UnwrapRef<typeof import('@vueuse/core')['watchAtMost']>

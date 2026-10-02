@@ -214,7 +214,13 @@ Quy tắc áp dụng cho Vue:
   và AI Content Agent foundation đã có; còn workflow review/publish đầy đủ,
   revision, backend sanitization và browser/staging verification.
 - Giao diện public: đang được hoàn thiện ở luồng riêng. Luồng công việc hiện tại không xây public UI; chỉ chuẩn bị contract/API để tích hợp sau khi Admin Dashboard hoàn tất.
-- Đợt gần nhất đã hoàn thành: Resource dùng `resource.cover`/`resource.preview`; Resource Version dùng package archive private với scan clean gate và documentation document; Post dùng thumbnail/content images riêng, taxonomy/SEO round-trip, status filter và dialog AI giữ hierarchy cũ. Upload đã có acceptance cho MIME/executable/path traversal/symlink/archive limit, private download và queue retry idempotency. Update/replace/delete đều đồng bộ usage trong transaction. Backend 127 tests/670 assertions, frontend Vitest 75 tests, ESLint JavaScript/Vue, targeted Pint, production build và `git diff --check` đều đạt; Pint toàn repo còn baseline lỗi line-ending/style ở file legacy.
+- Đợt gần nhất đã hoàn thành: Timeout riêng cho provider AI (5–600 giây), mặc định provider mới đọc `config/ai-providers.php`; mất kết nối/hết hạn không tự gửi lại. Ai Content có nút thử lại thủ công, giữ UUID/input và nhận timeout mới nhất. Queue có ngân sách HTTP + xử lý, lease đủ dài. 46 backend tests/272 assertions, 38 frontend tests và production build đạt. Chi tiết: `docs/qa/AI_PROVIDER_TIMEOUT_2026-10-03.md`.
+- Đợt tạo bài trước đã hoàn thành: Ai Content có cột phải chuyên tạo bài Post mới, độc lập với danh sách. Nối nút tạo với session API hiện có; hỗ trợ URL/HTML/text/đề bài, validation capability, progress/error/polling cleanup. Danh sách đọc summary root còn hạn theo owner, bỏ dữ liệu mẫu; dialog chi tiết/duyệt bổ sung sau. 34 frontend tests và 11 backend tests/63 assertions đạt. Chi tiết: `docs/qa/AI_CONTENT_CREATE_2026-10-02.md`.
+- Đợt catalog trước đã hoàn thành: Chuyển AI Settings vào `Systerm AI` ở cả menu dọc/ngang; nối provider/model thật từ AI Settings vào các form Ai Content. Catalog dùng provider active/có key và model enabled/available, loading/error/retry. Chi tiết: `docs/qa/AI_CONTENT_CATALOG_2026-10-02.md`.
+- Đợt sửa sync đã hoàn thành: Sửa sync model `APIKEY.FUN`: gom IPv4/IPv6 public vào một rule cURL DNS thay vì ghi đè từng IP. UI đã đồng bộ 4 model; 22 backend tests/99 assertions đạt. Chi tiết: `docs/qa/AI_PROVIDER_SYNC_FIX_2026-10-02.md`.
+- Đợt giao diện Ai Content đã hoàn thành: Tối ưu `/admin/ai/content` bằng component/theme của project, icon Tabler và header giống Post. Tách danh sách, nguồn và editor; tái sử dụng PostEditor/PostSeoTabs/MediaAssetField. Dữ liệu mẫu và thao tác bản nháp chỉ lưu trong state cục bộ; tạo AI/lưu/xuất bản chưa kết nối backend. PostEditor chuyển về textarea HTML khi Tiny Cloud khóa chỉnh sửa, giữ nguyên nội dung và tôn trọng props disabled.
+- Kiểm chứng đợt tối ưu giao diện: 16 frontend tests cho editor/SEO/media, ESLint các file thay đổi, production build và `git diff --check` đạt; browser xác nhận chuyển editor về HTML, tìm kiếm, lọc trạng thái, tạo/chọn bản nháp và giữ chỉnh sửa cục bộ. Ảnh giao diện: `docs/qa/AI_CONTENT_UI_2026-10-02.png`.
+- Kết quả các đợt trước: Resource dùng `resource.cover`/`resource.preview`; Resource Version dùng package archive private với scan clean gate và documentation document; Post dùng thumbnail/content images riêng, taxonomy/SEO round-trip, status filter và dialog AI giữ hierarchy cũ. Upload đã có acceptance cho MIME/executable/path traversal/symlink/archive limit, private download và queue retry idempotency. Update/replace/delete đều đồng bộ usage trong transaction. Backend 127 tests/670 assertions, frontend Vitest 75 tests, ESLint JavaScript/Vue, targeted Pint, production build và `git diff --check` đều đạt; Pint toàn repo còn baseline lỗi line-ending/style ở file legacy.
 - Cập nhật 2026-09-30: AI Agent có registry/adapter/candidate lineage, regenerate/retry/apply chọn lọc, capability endpoint, adapter HTTP OpenAI/Gemini, text input và logo/provenance theo provider; Laravel AI SDK, Resource/Sound adapter, file input và browser/staging vẫn pending.
 
 ## 2. Phạm vi theo giai đoạn
@@ -1184,7 +1190,24 @@ Chi tiết contract, registry, migration, candidate/provenance và danh sách en
   chỉ bổ sung field/capability cần thiết.
 - [x] Adapter HTTP OpenAI/Gemini, logo provider/model và metadata provenance đã
   hoạt động qua provider registry/capability backend.
-- [ ] Laravel AI SDK, Resource/Sound adapter, file input và browser/staging test.
+- [x] Sửa DNS pinning cho host trả IPv4/IPv6: một rule cURL chứa các IP public;
+  đã kiểm chứng UI sync catalog `APIKEY.FUN` với 4 model bằng API thật.
+- [x] Thêm heading `Systerm AI`, mục `Ai Content` ở navigation và page admin
+  `/admin/ai/content` trống để bổ sung giao diện sau.
+- [x] Tối ưu giao diện Ai Content: header giống Post, icon Tabler, component
+  Vuetify/App dùng chung và bộ lọc cục bộ. Editor của bản giao diện đầu đã được
+  thay bằng form tạo mới theo yêu cầu; phần editor chi tiết thuộc dialog sau.
+- [x] Chuyển AI Settings vào Systerm AI trong cả menu dọc/ngang, giữ quyền manage.
+  Form URL/HTML/text/prompt của Ai Content tải provider/model từ catalog Admin API,
+  đồng bộ lựa chọn theo provider và hỗ trợ tải lại/lỗi/danh sách rỗng.
+- [x] Cột phải chuyên tạo bài Post mới; header reset nguồn không thêm bản ghi giả.
+  Nút Phân tích & Tạo content nối session API, chỉ bật với nguồn/model text hợp lệ;
+  URL/HTML/text/đề bài, progress/error, chống gửi trùng và cleanup polling.
+  Danh sách đọc summary theo owner qua GET sessions, giữ nguyên form khi bấm dòng.
+- [x] Provider có request_timeout 5–600 giây trên form/config; lỗi kết nối cần retry thủ công,
+  cập nhật timeout khi retry và đồng bộ timeout/lease queue cho text/image.
+- [ ] Dialog chi tiết/chỉnh sửa/duyệt Ai Content và lưu nháp dài hạn ngoài retention run.
+- [ ] Laravel AI SDK, Resource/Sound adapter, server file input và staging test.
 
 ### Đợt 5 — Tích hợp public catalog, blog và legal
 

@@ -477,6 +477,50 @@ backend; deterministic provider là fallback khi chưa cấu hình provider th�
 Chi tiết trạng thái và việc còn lại nằm duy nhất trong
 `docs/PLAN_POST_MEDIA_AI_INTEGRATION.md`.
 
+Trang `/admin/ai/content` có workspace giao diện riêng:
+
+```text
+resources/js/pages/ai/content/index.vue       header và điều phối hai cột
+resources/js/composables/useAiContentWorkspace.js  form tạo mới và danh sách session thật
+resources/js/composables/useAiContentCatalog.js    catalog AI Settings và lựa chọn model
+resources/js/composables/useAiContentGeneration.js create/polling/error và cleanup lifecycle
+resources/js/utils/aiContentInput.js              validation và URL/HTML/text/prompt -> API
+resources/js/views/ai/content/AiContentList.vue     tìm kiếm/trạng thái/phân trang
+resources/js/views/ai/content/AiContentSourceForm.vue  URL/HTML/text/prompt và tùy chọn
+resources/js/views/ai/content/AiContentCreateForm.vue form mới, nút tạo và tiến trình
+app/Http/Requests/Admin/AiSessionIndexRequest.php  validation phân trang summary
+app/Http/Resources/AiSessionSummaryResource.php    DTO summary không có body/input/credential
+```
+
+Workspace có cột phải luôn tạo bài **Post** mới; danh sách không bind nội dung
+vào form. Dialog chi tiết/chỉnh sửa/duyệt trên page này được bổ sung sau.
+Provider/model đọc từ `GET /api/admin/settings/ai`, dùng provider active/có key,
+model enabled/available; ưu tiên model text ban đầu và kiểm tra capability thật.
+Nút tạo có lý do validation, chống gửi trùng và progress/error/polling cleanup.
+URL dùng input URL; file HTML tối đa 5 MB được đọc bằng template DOM trơ và bỏ
+script/navigation để gửi text; nội dung nguồn/đề bài dùng input text (200.000 ký tự).
+Độ dài/ngôn ngữ/tiêu đề/SEO/rewrite được chuyển thành instructions. Thumbnail là
+ảnh lấy từ URL nguồn, không ngầm gọi thêm tác vụ tạo ảnh.
+`POST /api/admin/ai-agent/sessions` lưu run và queue, `GET /sessions/{id}` polling;
+`GET /sessions` phân trang summary root còn hạn của chính actor. Page đọc mọi trang,
+merge lifecycle mới vào list và không tự apply/publish Post. Các session vẫn theo
+retention của backend hiện tại (mặc định 2 ngày), chưa phải kho lưu bản nháp dài hạn.
+Menu dọc/ngang đều đặt AI Settings cùng Ai Content trong nhóm Systerm AI.
+
+Thời gian chờ AI được lưu ở `ai_providers.request_timeout` (5–600 giây) và chỉnh
+qua `AiProviderConnectionDialog.vue`. `config/ai-providers.php` có `request_timeout`
+đọc `AI_PROVIDER_REQUEST_TIMEOUT`, dùng làm mặc định trên form/API tạo provider mới;
+provider đã lưu được ưu tiên. Migration thêm cột cho provider hiện tại với 120 giây.
+`ModelResolver` chụp timeout riêng vào connection của text/image;
+`AiProviderCatalogService` dùng cùng giá trị cho test/discovery.
+`AiProviderClient` và adapter không tự retry ConnectionException.
+`POST /sessions/{id}/retry` khóa row, kiểm tra provider/model còn dùng được, giữ
+UUID/identity/input, cập nhật timeout và retention rồi dispatch sau commit.
+`useAiContentGeneration.retryRun()` nối nút Thử lại tác vụ; Cập nhật trạng thái
+chỉ đọc GET, không gửi lại request tạo nội dung. Job có timeout tối thiểu bằng HTTP
+cộng 120 giây xử lý; database/Redis/Beanstalkd có retry_after tối thiểu 900 giây.
+HTTP 429 và GET 5xx vẫn giữ chính sách retry có giới hạn hiện có.
+
 ### 4.6. Router và page
 
 - File dưới `resources/js/pages` tạo route tự động qua

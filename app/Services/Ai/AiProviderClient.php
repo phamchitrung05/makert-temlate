@@ -14,12 +14,16 @@ use Illuminate\Support\Facades\Http;
  * INPUT: connection server-side + payload.
  * OUTPUT: JSON hoặc lỗi domain an toàn.
  * SIDE EFFECT: HTTPS outbound có timeout, không redirect hay log body/key.
- * RETRY: GET transient có backoff; POST chỉ retry 429 vì timeout có thể đã tính phí.
+ * RETRY: GET chỉ retry HTTP 429/5xx; mất kết nối/quá hạn cần người dùng thử lại.
  * EXCEPTION/TRANSACTION: AiImportException an toàn; không mở transaction.
  * =====================================================================
  */
 final class AiProviderClient
 {
+    /**
+     * Input: Fetcher dùng chung để kiểm tra URL và chặn địa chỉ private.
+     * Output: Client giữ boundary kiểm tra URL; không gửi request hoặc ghi dữ liệu.
+     */
     public function __construct(private readonly ArticleSourceFetcher $fetcher) {}
 
     /**
@@ -59,7 +63,7 @@ final class AiProviderClient
      * =====================================================================
      * INPUT: connection, method/path và JSON/query.
      * OUTPUT: decoded JSON.
-     * SIDE EFFECT: một POST hoặc GET với retry có giới hạn; không persist secret.
+     * SIDE EFFECT: một POST hoặc GET có retry HTTP giới hạn; không retry mất kết nối, không persist secret.
      * EXCEPTION/TRANSACTION: lỗi auth/quota/schema không chứa upstream body/header; không transaction.
      * =====================================================================
      */
@@ -84,6 +88,8 @@ final class AiProviderClient
          * =====================================================================
          * GHI CHÚ: Pin DNS public cho request chứa credential.
          * =====================================================================
+         * Mỗi host:port có một rule chứa toàn bộ IP để cURL chọn IPv4/IPv6;
+         * rule riêng cho từng IP sẽ ghi đè DNS cache và chỉ còn IP cuối.
          * HTTP fake vẫn offline; host test không resolve sẽ không tạo socket.
          * =====================================================================
          */
@@ -105,24 +111,24 @@ final class AiProviderClient
             }
         }
         if ($addresses !== [] && defined('CURLOPT_RESOLVE')) {
-            $resolve = array_map(
+            $resolveAddresses = array_map(
                 static fn (string $ip): string => str_contains($ip, ':')
-                    ? $host.':443:['.$ip.']'
-                    : $host.':443:'.$ip,
+                    ? '['.$ip.']'
+                    : $ip,
                 $addresses,
             );
+            $resolve = [$host.':443:'.implode(',', $resolveAddresses)];
             $request = $request->withOptions(['curl' => [CURLOPT_RESOLVE => $resolve]]);
         }
 
         if ($method === 'GET') {
-            $request = $request->retry([200, 600], 0, fn ($exception): bool => $exception instanceof ConnectionException
-                || ($exception instanceof \Illuminate\Http\Client\RequestException
+            $request = $request->retry([200, 600], 0, fn ($exception): bool => ($exception instanceof \Illuminate\Http\Client\RequestException
                     && ($exception->response->status() === 429 || $exception->response->serverError())), false);
         }
         try {
             $response = $method === 'GET' ? $request->get($url, $data) : $request->post($url, $data);
         } catch (ConnectionException) {
-            throw new AiImportException('Provider không phản hồi. Hãy kiểm tra kết nối và trạng thái request trước khi thử lại.', 'AI_PROVIDER_TIMEOUT', $method === 'GET');
+            throw new AiImportException('Không kết nối được, kết nối bị ngắt hoặc đã hết thời gian chờ provider. Hãy kiểm tra trạng thái request ở provider rồi thử lại thủ công.', 'AI_PROVIDER_TIMEOUT');
         }
         if (! $response->successful()) {
             $message = match ($response->status()) {

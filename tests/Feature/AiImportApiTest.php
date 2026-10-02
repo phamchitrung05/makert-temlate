@@ -20,6 +20,7 @@ use Tests\UsesIsolatedDatabase;
  *
  * CÁC HÀM/METHOD TRONG FILE: setUp(), tearDown(), token() và test_* tạo/poll/cancel ownership.
  * - test_store_rejects_provider_model_and_prompt_outside_allowlist(): kiểm tra input AI.
+ * - test_session_list_*(): kiểm tra quyền, owner, phân trang và DTO summary an toàn.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : request admin URL/options.
  * - OUTPUT: assertion 202 queued, lifecycle payload và ownership boundary.
@@ -81,6 +82,65 @@ class AiImportApiTest extends TestCase
         Auth::forgetGuards();
 
         return $user->createToken('ai-import-test', ['admin'])->plainTextToken;
+    }
+
+    /** Input: collection không có quyền. Output: HTTP 401/403; DB cô lập, không gọi AI. */
+    public function test_session_list_requires_authenticated_post_manager(): void
+    {
+        $this->getJson('/api/admin/ai-agent/sessions')->assertUnauthorized();
+        $user = User::factory()->create(['status' => 'active']);
+        Auth::forgetGuards();
+        $this->withToken($user->createToken('list-test', ['admin'])->plainTextToken)
+            ->getJson('/api/admin/ai-agent/sessions')->assertForbidden();
+    }
+
+    /** Input: query sai. Output: validation 422; không truy vấn provider hoặc ghi run. */
+    public function test_session_list_validates_pagination(): void
+    {
+        $this->withToken($this->token())->getJson('/api/admin/ai-agent/sessions?page=0&per_page=101')
+            ->assertUnprocessable()->assertJsonValidationErrors(['page', 'per_page']);
+    }
+
+    /**
+     * Input: run gốc/con/ảnh/hết hạn và run của owner khác.
+     * Output: chỉ root còn hạn của owner, phân trang; không lộ body/input/URL query/key.
+     * Side effect: fake queue và SQLite cô lập; không gọi provider thật.
+     */
+    public function test_session_list_filters_owner_root_and_expiry_and_returns_safe_summaries(): void
+    {
+        Queue::fake();
+        $token = $this->token();
+        $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
+            'target_type' => 'post', 'operation' => 'create', 'input' => ['type' => 'text', 'text' => 'Private source content'],
+        ])->assertAccepted();
+        $root = AiImport::query()->firstOrFail();
+        $root->forceFill([
+            'status' => 'ready', 'source_url' => 'https://example.test/article?token=private-token',
+            'input_json' => ['source_type' => 'url', 'model' => 'text-model', 'api_key' => 'private-key'],
+            'result_json' => ['draft' => ['title' => 'Article title', 'content_html' => '<p>Private full article</p>']],
+        ])->save();
+        $second = $root->replicate();
+        $second->save();
+        $child = $root->replicate()->fill(['parent_id' => $root->id]);
+        $child->save();
+        $image = $root->replicate()->fill(['operation' => 'image']);
+        $image->save();
+        $expired = $root->replicate()->fill(['expires_at' => now()->subMinute()]);
+        $expired->save();
+        $other = $root->replicate()->fill(['created_by' => User::factory()->create(['status' => 'active'])->id]);
+        $other->save();
+
+        $response = $this->withToken($token)->getJson('/api/admin/ai-agent/sessions?per_page=1');
+        $response->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('meta.pagination.total', 2)
+            ->assertJsonPath('meta.pagination.last_page', 2)->assertJsonPath('data.0.title', 'Article title')
+            ->assertJsonPath('data.0.source_host', 'example.test');
+        $this->assertArrayNotHasKey('input_json', $response->json('data.0'));
+        $this->assertArrayNotHasKey('result_json', $response->json('data.0'));
+        $this->assertStringNotContainsString('private-key', $response->getContent());
+        $this->assertStringNotContainsString('private-token', $response->getContent());
+        $this->assertStringNotContainsString('Private full article', $response->getContent());
+        $this->withToken($token)->getJson('/api/admin/ai-agent/sessions?per_page=1&page=2')
+            ->assertOk()->assertJsonCount(1, 'data');
     }
 
     /**

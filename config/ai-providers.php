@@ -4,7 +4,9 @@
  * =====================================================================
  * CHỨC NĂNG FILE: Preset giao thức/endpoint và metadata model đã biết.
  * =====================================================================
- * INPUT: env egress/sync policy.
+ * CÁC HÀM/METHOD TRONG FILE: không có; trả mảng config.
+ * INPUT/OUTPUT CỦA FILE (tổng thể): env timeout/egress/sync -> preset và giới hạn.
+ * INPUT: env egress/sync policy và AI_PROVIDER_REQUEST_TIMEOUT (giây).
  * OUTPUT: preset public và giới hạn server-side.
  * SIDE EFFECT: Chỉ đọc config; không gọi provider.
  * EXCEPTION/TRANSACTION: Không mở transaction.
@@ -12,6 +14,8 @@
  * =====================================================================
  */
 return [
+    // Mặc định cho provider mới; giá trị đã lưu của từng provider được ưu tiên.
+    'request_timeout' => max(5, min(600, (int) env('AI_PROVIDER_REQUEST_TIMEOUT', 200))),
     'allowed_hosts' => array_values(array_filter(array_map('trim', explode(',', (string) env('AI_PROVIDER_ALLOWED_HOSTS', ''))))),
     'sync_enabled' => filter_var(env('AI_PROVIDER_SYNC_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
     'max_models' => 10000,

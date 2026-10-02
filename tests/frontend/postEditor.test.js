@@ -1,7 +1,7 @@
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Kiểm thử contract TinyMCE wrapper, cấu hình và fallback HTML.
- * CÁC HÀM/METHOD TRONG FILE: mountEditor(); các test v-model/disabled/loading/error.
+ * CÁC HÀM/METHOD TRONG FILE: mountEditor(); các test v-model/disabled/loading/error/readonly.
  * INPUT/OUTPUT CỦA CLASS (tổng thể): props/env giả lập -> assertions, không chạy editor thật.
  * =====================================================================
  */
@@ -93,6 +93,49 @@ describe('Post TinyMCE integration contract', () => {
     expect(editor.props('init')).not.toHaveProperty('skin')
     await vi.advanceTimersByTimeAsync(20001)
     expect(wrapper.text()).toContain('Không tải được TinyMCE')
+    expect(wrapper.get('[data-testid="fallback"]').element.value).toBe('<p>Hello world</p>')
+    wrapper.unmount()
+  })
+
+  it('preserves editable HTML when the Cloud editor is read-only at init', async () => {
+    vi.stubEnv('VITE_TINYMCE_API_KEY', 'test-api-key')
+
+    const wrapper = mountEditor()
+
+    await flushPromises()
+    wrapper.findComponent(TinyEditor).vm.$emit('init', {}, { mode: { isReadOnly: () => true } })
+    await flushPromises()
+    expect(wrapper.text()).toContain('TinyMCE đang bị khóa chỉnh sửa')
+    expect(wrapper.find('[data-testid="tinymce"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="fallback"]').element.value).toBe('<p>Hello world</p>')
+    expect(wrapper.get('[data-testid="fallback"]').element.disabled).toBe(false)
+    await wrapper.get('[data-testid="fallback"]').setValue('<p>Updated draft</p>')
+    expect(wrapper.emitted('update:modelValue').at(-1)[0]).toBe('<p>Updated draft</p>')
+    wrapper.unmount()
+  })
+
+  it.each(['SwitchMode DisabledStateChange'])('recovers HTML after an unexpected runtime lock and respects the disabled prop (%s)', async eventName => {
+    vi.stubEnv('VITE_TINYMCE_API_KEY', 'test-api-key')
+
+    const wrapper = mountEditor({ disabled: true })
+
+    await flushPromises()
+
+    const events = {}
+
+    const editor = {
+      on: (name, callback) => { events[name] = callback },
+      options: { get: () => true },
+    }
+
+    wrapper.findComponent(TinyEditor).props('init').setup(editor)
+    events[eventName]()
+    await flushPromises()
+    expect(wrapper.find('[data-testid="tinymce"]').exists()).toBe(true)
+    await wrapper.setProps({ disabled: false })
+    events[eventName]()
+    await flushPromises()
+    expect(wrapper.get('[data-testid="fallback"]').element.disabled).toBe(false)
     expect(wrapper.get('[data-testid="fallback"]').element.value).toBe('<p>Hello world</p>')
     wrapper.unmount()
   })

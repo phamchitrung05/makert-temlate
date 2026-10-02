@@ -5,6 +5,7 @@
  *
  * Menu ngang dùng cùng route name với vertical navigation. Resource nằm
  * trong Ecommerce; Media là nhóm nghiệp vụ riêng cho file dùng chung.
+ * Systerm AI tập trung Ai Content và AI Settings, dùng cùng route với menu dọc.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - Không có; file export một mảng cấu hình menu.
@@ -15,6 +16,20 @@
  * =====================================================================
  */
 export default [
+  {
+    title: 'Systerm AI',
+    icon: { icon: 'tabler-sparkles' },
+    children: [
+      { title: 'Ai Content', to: 'ai-content' },
+      {
+        title: 'AI Settings',
+        icon: { icon: 'tabler-brain' },
+        to: 'settings-ai-providers',
+        action: 'manage',
+        subject: 'ai_settings',
+      },
+    ],
+  },
   {
     title: 'Apps',
     icon: { icon: 'tabler-layout-grid-add' },
@@ -86,13 +101,6 @@ export default [
           { title: 'File', to: 'apps-media-file' },
           { title: 'Media Asset', to: 'apps-media-media-asset' },
         ],
-      },
-      {
-        title: 'AI Settings',
-        icon: { icon: 'tabler-brain' },
-        to: { path: '/settings/ai-providers' },
-        action: 'manage',
-        subject: 'ai_settings',
       },
       {
         title: 'Academy',

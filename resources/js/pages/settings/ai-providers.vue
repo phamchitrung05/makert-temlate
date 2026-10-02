@@ -1,3 +1,25 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: Trang Settings quản trị connection và catalog model.
+  =====================================================================
+  CÁC HÀM/METHOD TRONG FILE:
+  - providerModels(provider): lọc model theo tìm kiếm của từng provider.
+  - statusType(provider): chọn loại thông báo trạng thái kết nối.
+  - providerDescription(provider), providerIcon(provider), providerIconColor(provider): mô tả và biểu tượng provider.
+  - providerAvailabilityPercent(provider), providerAvailabilityLabel(provider): tính mức khả dụng của catalog.
+  - providerCapability(provider, capability), formatDate(value): kiểm tra capability và định dạng thời gian.
+  - perform(action, options): điều phối thao tác API, loading và feedback.
+  - refreshCatalog(), selectProvider(provider), clearNotice(): tải catalog, chọn provider và đóng thông báo.
+  - openNew(), editProvider(provider), saveProviderForm(payload): tạo/sửa connection provider.
+  - test(provider), sync(provider), disable(provider): kiểm tra, đồng bộ và tắt provider.
+  - openModel(provider, model), saveModelForm(payload), testModel(provider, model): thêm/sửa capability và test model.
+  INPUT/OUTPUT CỦA CLASS (tổng thể):
+  - INPUT: catalog provider/model từ composable và thao tác quản trị.
+  - OUTPUT: dialog tạo/sửa, catalog phản hồi và thông báo kết quả.
+  SIDE EFFECT: gọi composable API; không tự chứa HTTP hoặc API key.
+  EXCEPTION/TRANSACTION: page không mở transaction; API/error lifecycle do composable xử lý.
+  =====================================================================
+-->
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useAiProviderSettings } from '@/composables/useAiProviderSettings'
@@ -7,32 +29,11 @@ import AiProviderConnectionDialog from '@/views/settings/ai/AiProviderConnection
 
 definePage({ meta: { action: 'manage', subject: 'ai_settings' } })
 
-/**
- * =====================================================================
- * CHỨC NĂNG FILE: Trang Settings quản trị connection và catalog model.
- * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE:
- * - providerModels(provider): lọc model theo tìm kiếm của từng provider.
- * - statusType(provider): chọn loại thông báo trạng thái kết nối.
- * - providerDescription(provider), providerIcon(provider), providerIconColor(provider): mô tả và biểu tượng provider.
- * - providerAvailabilityPercent(provider), providerAvailabilityLabel(provider): tính mức khả dụng của catalog.
- * - providerCapability(provider, capability), formatDate(value): kiểm tra capability và định dạng thời gian.
- * - perform(action, options): điều phối thao tác API, loading và feedback.
- * - refreshCatalog(), selectProvider(provider), clearNotice(): tải catalog, chọn provider và đóng thông báo.
- * - openNew(), editProvider(provider), saveProviderForm(payload): tạo/sửa connection provider.
- * - test(provider), sync(provider), disable(provider): kiểm tra, đồng bộ và tắt provider.
- * - openModel(provider, model), saveModelForm(payload), testModel(provider, model): thêm/sửa capability và test model.
- * INPUT/OUTPUT CỦA CLASS (tổng thể):
- * - INPUT: catalog provider/model từ composable và thao tác quản trị.
- * - OUTPUT: dialog tạo/sửa, catalog phản hồi và thông báo kết quả.
- * SIDE EFFECT: gọi composable API; không tự chứa HTTP hoặc API key.
- * EXCEPTION/TRANSACTION: page không mở transaction; API/error lifecycle do composable xử lý.
- * =====================================================================
- */
 const { providers, presets, loading, saving, error, load, saveProvider, disableProvider, testProvider, syncProvider, saveModel } = useAiProviderSettings()
 const providerDialog = ref(false)
 const modelDialog = ref(false)
 const selectedProvider = ref(null)
+const editingProvider = ref(null)
 const selectedModel = ref(null)
 const modelTestStatuses = ref({})
 const snackbar = ref({ visible: false, message: '', color: alertColors.completed })
@@ -263,13 +264,14 @@ function clearNotice() {
  * CHỨC NĂNG: Mở dialog tạo provider mới
  * =====================================================================
  * INPUT: không có.
- * OUTPUT: dialog mở với provider/model selection rỗng.
- * SIDE EFFECT: reset selected provider và đổi state dialog.
+ * OUTPUT: dialog tạo mới độc lập với provider được chọn ở detail panel.
+ * SIDE EFFECT: reset editing provider và đổi state dialog sau khi catalog đã tải.
  * EXCEPTION/TRANSACTION: không gọi API hoặc mở transaction.
  * =====================================================================
  */
 function openNew() {
-  selectedProvider.value = null
+  if (loading.value || saving.value) return
+  editingProvider.value = null
   providerDialog.value = true
 }
 
@@ -285,6 +287,7 @@ function openNew() {
  */
 function editProvider(provider) {
   selectedProvider.value = provider
+  editingProvider.value = provider
   providerDialog.value = true
 }
 
@@ -299,7 +302,7 @@ function editProvider(provider) {
  * =====================================================================
  */
 function saveProviderForm(payload) {
-  return perform(() => saveProvider(payload, selectedProvider.value?.id), {
+  return perform(() => saveProvider(payload, editingProvider.value?.id), {
     message: 'Đã lưu provider.',
     after: savedProvider => {
       providerDialog.value = false
@@ -447,6 +450,7 @@ onMounted(() => refreshCatalog().catch(() => {}))
             </div>
             <VBtn
               prepend-icon="tabler-plus"
+              :disabled="loading || saving"
               @click="openNew"
             >
               Thêm provider
@@ -1030,6 +1034,13 @@ onMounted(() => refreshCatalog().catch(() => {}))
                     </VListItem>
                     <VListItem>
                       <template #prepend>
+                        <VIcon icon="tabler-clock" />
+                      </template>
+                      <VListItemTitle>Thời gian chờ</VListItemTitle>
+                      <VListItemSubtitle>{{ selectedProviderDetail.request_timeout }} giây · Thử lại thủ công khi mất kết nối</VListItemSubtitle>
+                    </VListItem>
+                    <VListItem>
+                      <template #prepend>
                         <VIcon icon="tabler-clock-check" />
                       </template>
                       <VListItemTitle>Last tested</VListItemTitle>
@@ -1137,7 +1148,7 @@ onMounted(() => refreshCatalog().catch(() => {}))
 
   <AiProviderConnectionDialog
     v-model="providerDialog"
-    :provider="selectedProvider"
+    :provider="editingProvider"
     :presets="presets"
     :saving="saving"
     @save="saveProviderForm"

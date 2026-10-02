@@ -18,8 +18,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class AiProvider extends Model
 {
+    protected $attributes = ['request_timeout' => 120];
+
     protected $fillable = [
-        'key', 'name', 'kind', 'driver', 'base_url', 'api_key', 'discovery_mode',
+        'key', 'name', 'kind', 'driver', 'base_url', 'api_key', 'discovery_mode', 'request_timeout',
         'is_active', 'test_status', 'test_message', 'last_tested_at', 'last_synced_at',
     ];
 
@@ -38,7 +40,7 @@ class AiProvider extends Model
     protected function casts(): array
     {
         return [
-            'api_key' => 'encrypted', 'is_active' => 'boolean',
+            'api_key' => 'encrypted', 'is_active' => 'boolean', 'request_timeout' => 'integer',
             'last_tested_at' => 'datetime', 'last_synced_at' => 'datetime',
         ];
     }

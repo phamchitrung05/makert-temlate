@@ -38,6 +38,7 @@ final class AiProviderResource extends JsonResource
             'driver' => $this->driver,
             'base_url' => $this->base_url,
             'discovery_mode' => $this->discovery_mode,
+            'request_timeout' => (int) $this->request_timeout,
             'is_active' => (bool) $this->is_active,
             'has_api_key' => filled($this->api_key),
             'test_status' => $this->test_status,

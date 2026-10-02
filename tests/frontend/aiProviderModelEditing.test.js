@@ -1,6 +1,7 @@
 /* eslint-disable camelcase -- Payload và fixture giữ field name của Laravel API. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import AiProvidersPage from '@/pages/settings/ai-providers.vue'
 import { passthroughStubs } from './testStubs'
 
@@ -134,6 +135,31 @@ describe('AI provider model editing', () => {
   })
 
   afterEach(() => wrapper?.unmount())
+
+  it('keeps creation separate from the selected detail provider and blocks opening before catalog loads', async () => {
+    let resolveCatalog
+    api.mockReturnValueOnce(new Promise(resolve => { resolveCatalog = resolve }))
+
+    const view = page()
+    const create = button(view, 'Thêm provider')
+
+    await nextTick()
+    expect(create.element.disabled).toBe(true)
+    resolveCatalog({ providers: [{ id: 1, name: 'Gateway', models: [] }], presets: [{ key: 'openai-compatible', request_timeout: 240 }] })
+    await flushPromises()
+    await create.trigger('click')
+
+    const dialog = view.findComponent({ name: 'AiProviderConnectionDialog' })
+
+    expect(dialog.props('modelValue')).toBe(true)
+    expect(dialog.props('provider')).toBeNull()
+    expect(view.text()).toContain('Gateway')
+    dialog.vm.$emit('save', { name: 'New gateway', driver: 'openai-compatible', request_timeout: 240 })
+    await flushPromises()
+    expect(api).toHaveBeenCalledWith('/admin/settings/ai/providers', {
+      method: 'POST', body: expect.objectContaining({ request_timeout: 240 }),
+    })
+  })
 
   it('loads existing capabilities and updates the selected model without creating a duplicate', async () => {
     const view = page()

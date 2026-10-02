@@ -1,18 +1,19 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: Dialog tạo/sửa connection AI với API key write-only
+  =====================================================================
+  CÁC HÀM/METHOD TRONG FILE: resetDraft(), selectedPreset/timeoutValid (computed), submit().
+  INPUT/OUTPUT CỦA CLASS (tổng thể): metadata/config -> draft và event lưu provider.
+  INPUT: provider hiện tại, preset driver, timeout 5–600 giây và key mới tùy chọn.
+  OUTPUT: event save chỉ chứa key khi admin nhập key mới.
+  SIDE EFFECT: chỉ đổi state dialog; không lưu key vào localStorage/API trực tiếp.
+  EXCEPTION/TRANSACTION: không mở transaction; validation server xử lý payload.
+  =====================================================================
+-->
 <script setup>
 /* eslint-disable camelcase -- Provider payload uses Laravel field names. */
 import { computed, ref, watch } from 'vue'
 
-/**
- * =====================================================================
- * CHỨC NĂNG FILE: Dialog tạo/sửa connection AI với API key write-only
- * =====================================================================
- * CÁC HÀM/METHOD: resetDraft(), selectedPreset(), submit().
- * INPUT: provider hiện tại, preset driver và key mới tùy chọn.
- * OUTPUT: event save chỉ chứa key khi admin nhập key mới.
- * SIDE EFFECT: chỉ đổi state dialog; không lưu key vào localStorage/API trực tiếp.
- * EXCEPTION/TRANSACTION: không mở transaction; validation server xử lý payload.
- * =====================================================================
- */
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   provider: { type: Object, default: null },
@@ -43,13 +44,16 @@ function resetDraft() {
   const preset = props.presets.find(item => item.key === driver)
 
   draft.value = props.provider
-    ? { name: props.provider.name, driver, base_url: props.provider.base_url, discovery_mode: props.provider.discovery_mode, is_active: props.provider.is_active, api_key: '' }
-    : { name: '', driver, base_url: preset?.base_url ?? '', discovery_mode: preset?.discovery_mode ?? 'models_endpoint', is_active: true, api_key: '' }
+    ? { name: props.provider.name, driver, base_url: props.provider.base_url, discovery_mode: props.provider.discovery_mode, request_timeout: props.provider.request_timeout ?? 120, is_active: props.provider.is_active, api_key: '' }
+    : { name: '', driver, base_url: preset?.base_url ?? '', discovery_mode: preset?.discovery_mode ?? 'models_endpoint', request_timeout: preset?.request_timeout ?? 120, is_active: true, api_key: '' }
 }
 
 watch(() => [props.modelValue, props.provider, props.presets], resetDraft, { immediate: true, deep: true })
 
 const selectedPreset = computed(() => props.presets.find(item => item.key === draft.value.driver))
+
+const timeoutValid = computed(() => Number.isInteger(Number(draft.value.request_timeout))
+  && Number(draft.value.request_timeout) >= 5 && Number(draft.value.request_timeout) <= 600)
 
 /**
  * =====================================================================
@@ -70,14 +74,15 @@ watch(() => draft.value.driver, (driver, previous) => {
  * =====================================================================
  * CHỨC NĂNG: Emit payload connection đã loại key rỗng
  * =====================================================================
- * INPUT: draft metadata và optional key mới.
- * OUTPUT: event save; edit không truyền key nếu admin để trống.
+ * INPUT: draft metadata, timeout nguyên 5–600 giây và optional key mới.
+ * OUTPUT: event save với timeout dạng số; không emit khi đang lưu hoặc timeout sai.
  * SIDE EFFECT: emit về page; không gọi API trực tiếp.
  * EXCEPTION/TRANSACTION: không mở transaction; validation server xử lý tiếp.
  * =====================================================================
  */
 function submit() {
-  const payload = { ...draft.value }
+  if (props.saving || !timeoutValid.value) return
+  const payload = { ...draft.value, request_timeout: Number(draft.value.request_timeout) }
   if (!payload.api_key) delete payload.api_key
   emit('save', payload)
 }
@@ -121,6 +126,19 @@ function submit() {
           :label="provider?.has_api_key ? 'API key mới (để trống để giữ key hiện tại)' : 'API key'"
           class="mb-4"
         />
+        <VTextField
+          v-model="draft.request_timeout"
+          type="number"
+          label="Thời gian chờ (giây)"
+          min="5"
+          max="600"
+          step="1"
+          prepend-inner-icon="tabler-clock"
+          hint="5–600 giây cho mỗi request. Mất kết nối hoặc hết thời gian chờ: thử lại thủ công."
+          persistent-hint
+          :error-messages="timeoutValid ? [] : ['Nhập số nguyên từ 5 đến 600 giây.']"
+          class="mb-4"
+        />
         <VSelect
           v-model="draft.discovery_mode"
           :items="[{ title: 'Đồng bộ từ /models', value: 'models_endpoint' }, { title: 'Nhập model thủ công', value: 'manual' }]"
@@ -143,6 +161,7 @@ function submit() {
         <VBtn
           color="primary"
           :loading="saving"
+          :disabled="saving || !timeoutValid"
           @click="submit"
         >
           Lưu connection

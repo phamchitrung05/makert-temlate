@@ -514,4 +514,155 @@ final class AiProviderSettingsApiTest extends TestCase
             'api_key' => 'offline-key', 'is_active' => true, 'discovery_mode' => 'manual',
         ], $overrides));
     }
+
+    /** Input: tạo/sửa provider và timeout sai. Output: default 120, lưu số giây, giữ khi bỏ field, 422 ngoài 5–600; DB cô lập. */
+    public function test_provider_timeout_can_be_saved_and_validated_without_changing_key(): void
+    {
+        config(['ai-providers.request_timeout' => 120]);
+        $token = $this->token();
+        $payload = ['name' => 'Timeout gateway', 'driver' => 'openai-compatible', 'base_url' => 'https://gateway.example/v1', 'api_key' => 'offline-key'];
+        $id = $this->withToken($token)->postJson('/api/admin/settings/ai/providers', $payload)
+            ->assertCreated()->assertJsonPath('data.request_timeout', 120)->json('data.id');
+        unset($payload['api_key']);
+        $url = '/api/admin/settings/ai/providers/'.$id;
+        $this->withToken($token)->putJson($url, $payload + ['request_timeout' => 600])
+            ->assertOk()->assertJsonPath('data.request_timeout', 600)->assertJsonPath('data.has_api_key', true);
+        $this->withToken($token)->putJson($url, $payload)->assertOk()->assertJsonPath('data.request_timeout', 600);
+        foreach ([4, 601, null, '', 5.5] as $invalid) {
+            $this->withToken($token)->putJson($url, $payload + ['request_timeout' => $invalid])
+                ->assertUnprocessable()->assertJsonValidationErrors('request_timeout');
+        }
+        $this->assertSame('offline-key', AiProvider::findOrFail($id)->api_key);
+    }
+
+    /** Input: timeout provider 360, global 5, hai capability. Output: text/image dùng 360 và job/lease đủ dài; không network thật. */
+    public function test_provider_timeout_overrides_global_for_text_image_and_catalog_calls(): void
+    {
+        $token = $this->token();
+        app(AiSettingsService::class)->update(['request_timeout' => 5], User::firstOrFail()->id);
+        $provider = $this->connection(['request_timeout' => 360, 'discovery_mode' => 'models_endpoint']);
+        $text = $provider->models()->create(['remote_model_id' => 'text-a', 'label' => 'Text', 'capabilities' => ['text_generation']]);
+        $image = $provider->models()->create(['remote_model_id' => 'image-a', 'label' => 'Image', 'capabilities' => ['image_generation']]);
+        foreach ([[$text, AiCapability::Text], [$image, AiCapability::Image]] as [$model, $capability]) {
+            $this->assertSame(360, app(ModelResolver::class)->resolve($capability, ['model_id' => $model->id])['timeout']);
+        }
+        $timeouts = [];
+        Http::fake(function ($request, $options) use (&$timeouts) {
+            $timeouts[] = $options['timeout'];
+
+            return Http::response(str_ends_with($request->url(), '/models')
+                ? ['data' => [['id' => 'text-a'], ['id' => 'image-a']]]
+                : ['choices' => [['message' => ['content' => 'OK']]]]);
+        });
+        $url = '/api/admin/settings/ai/providers/'.$provider->id;
+        $this->withToken($token)->postJson($url.'/test')->assertOk();
+        $this->withToken($token)->postJson($url.'/test', ['model_id' => $text->id])->assertOk();
+        $this->withToken($token)->postJson($url.'/sync')->assertOk();
+        $this->assertEquals([360, 360, 360], $timeouts);
+        foreach ([new ProcessAiImportJob('test', 600), new ProcessAiImageGenerationJob('test', 600)] as $job) {
+            $this->assertGreaterThan(600, $job->timeout);
+            foreach (['database', 'redis', 'beanstalkd'] as $driver) {
+                $this->assertGreaterThan($job->timeout, config('queue.connections.'.$driver.'.retry_after'));
+            }
+        }
+    }
+
+    /** Input: POST mất kết nối, timeout provider đổi trước retry. Output: failed sau một lần, chỉ requeue khi bấm, nhận timeout mới và chống retry trùng; fake HTTP/queue. */
+    public function test_connection_failure_waits_for_manual_retry_and_uses_latest_timeout(): void
+    {
+        Queue::fake();
+        $token = $this->token();
+        $provider = $this->connection(['request_timeout' => 120]);
+        $provider->models()->create(['remote_model_id' => 'text-a', 'label' => 'Text', 'capabilities' => ['text_generation']]);
+        $calls = 0;
+        $timeouts = [];
+        Http::fake(function ($request, $options) use (&$calls, &$timeouts) {
+            $calls++;
+            $timeouts[] = $options['timeout'];
+            if ($calls === 1) {
+                throw new \Illuminate\Http\Client\ConnectionException('Disconnected');
+            }
+
+            return Http::response(['choices' => [['message' => ['content' => json_encode(['title' => 'Retry content', 'content_html' => '<p>Ready</p>'])]]]]);
+        });
+        $id = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
+            'target_type' => 'post', 'operation' => 'create', 'provider' => $provider->key, 'model' => 'text-a',
+            'input' => ['type' => 'text', 'text' => 'Nội dung nguồn để kiểm tra timeout và kết nối lại thủ công.'],
+        ])->assertStatus(202)->json('data.job_id');
+        (new ProcessAiImportJob($id, 120))->handle(app(ArticleImportService::class));
+        $this->assertSame('failed', AiImport::findOrFail($id)->status);
+        $this->assertSame('AI_PROVIDER_TIMEOUT', AiImport::findOrFail($id)->error_code);
+        $this->assertSame(1, $calls);
+        Queue::assertPushed(ProcessAiImportJob::class, 1);
+        $originalInput = AiImport::findOrFail($id)->input_json;
+        $provider->update(['request_timeout' => 600]);
+        $url = '/api/admin/ai-agent/sessions/'.$id.'/retry';
+        $this->withToken($token)->postJson($url)->assertOk()->assertJsonPath('data.status', 'queued');
+        $input = AiImport::findOrFail($id)->input_json;
+        $this->assertSame(600, $input['ai_connection']['timeout']);
+        unset($input['ai_connection']['timeout'], $originalInput['ai_connection']['timeout']);
+        $this->assertSame($originalInput, $input);
+        Queue::assertPushed(ProcessAiImportJob::class, fn ($job): bool => $job->importId === $id && $job->timeout === 720);
+        $this->withToken($token)->postJson($url)->assertConflict();
+        Queue::assertPushed(ProcessAiImportJob::class, 2);
+        $this->assertSame(1, $calls);
+        (new ProcessAiImportJob($id, 600))->handle(app(ArticleImportService::class));
+        $this->assertSame('ready', AiImport::findOrFail($id)->status);
+        $this->assertEquals([120, 600], $timeouts);
+        $this->assertSame(1, AiImport::count());
+    }
+
+    /** Input: GET catalog hoặc POST image mất kết nối. Output: một HTTP attempt, image failed và catalog cũ còn nguyên; không tạo ảnh thật. */
+    public function test_catalog_and_image_connection_failures_do_not_reconnect_automatically(): void
+    {
+        $token = $this->token();
+        $provider = $this->connection(['request_timeout' => 300, 'discovery_mode' => 'models_endpoint']);
+        $model = $provider->models()->create(['remote_model_id' => 'image-a', 'label' => 'Image', 'capabilities' => ['image_generation']]);
+        $calls = 0;
+        Http::fake(function ($request, $options) use (&$calls) {
+            $calls++;
+            $this->assertEquals(300, $options['timeout']);
+            throw new \Illuminate\Http\Client\ConnectionException('Disconnected');
+        });
+        $this->withToken($token)->postJson('/api/admin/settings/ai/providers/'.$provider->id.'/sync')->assertUnprocessable();
+        $this->assertSame(1, $calls);
+        $this->assertTrue($model->fresh()->is_available);
+        $image = AiImport::create([
+            'created_by' => User::firstOrFail()->id, 'source_url' => '', 'source_hash' => hash('sha256', 'image-timeout'),
+            'status' => 'queued', 'operation' => 'image',
+            'input_json' => ['prompt' => 'Image', 'ai_connection' => app(ModelResolver::class)->resolve(AiCapability::Image, ['model_id' => $model->id])],
+        ]);
+        (new ProcessAiImageGenerationJob($image->id, 300))->handle(app(AiImageGenerationService::class), app(ProviderRegistry::class));
+        $this->assertSame(2, $calls);
+        $this->assertSame('failed', $image->fresh()->status);
+        $this->assertSame('AI_PROVIDER_TIMEOUT', $image->fresh()->error_code);
+    }
+
+    /** Input: failed run nhưng provider đã tắt. Output: từ chối retry, giữ lifecycle và không dispatch; DB/queue fake. */
+    public function test_manual_retry_rejects_disabled_connection_without_mutating_run(): void
+    {
+        Queue::fake();
+        $token = $this->token();
+        $provider = $this->connection();
+        $model = $provider->models()->create(['remote_model_id' => 'text-a', 'label' => 'Text', 'capabilities' => ['text_generation']]);
+        $run = AiImport::create([
+            'created_by' => User::firstOrFail()->id, 'source_url' => '', 'source_hash' => hash('sha256', 'disabled-retry'), 'status' => 'failed',
+            'input_json' => ['ai_connection' => app(ModelResolver::class)->resolve(AiCapability::Text, ['model_id' => $model->id])],
+        ]);
+        $provider->update(['is_active' => false]);
+        $this->withToken($token)->postJson('/api/admin/ai-agent/sessions/'.$run->id.'/retry')->assertUnprocessable();
+        $this->assertSame('failed', $run->fresh()->status);
+        Queue::assertNothingPushed();
+    }
+
+    /** Input: config timeout 240 và provider mới bỏ field. Output: catalog/form default 240 và record lưu 240; chỉ DB test. */
+    public function test_new_provider_and_form_use_configured_timeout_default(): void
+    {
+        config(['ai-providers.request_timeout' => 240]);
+        $token = $this->token();
+        $this->withToken($token)->getJson('/api/admin/settings/ai')->assertOk()->assertJsonPath('data.presets.0.request_timeout', 240);
+        $this->withToken($token)->postJson('/api/admin/settings/ai/providers', [
+            'name' => 'Configured default', 'driver' => 'openai-compatible', 'base_url' => 'https://gateway.example/v1', 'api_key' => 'offline-key',
+        ])->assertCreated()->assertJsonPath('data.request_timeout', 240);
+    }
 }

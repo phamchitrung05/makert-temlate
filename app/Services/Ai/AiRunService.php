@@ -76,17 +76,18 @@ final class AiRunService
      * CHỨC NĂNG: Dispatch job nội dung hoặc ảnh theo operation của run
      * =====================================================================
      * INPUT: AiImport đã được lưu.
-     * OUTPUT: Queue job mang UUID run, không mang API key.
+     * OUTPUT: Queue job mang UUID và ngân sách HTTP của run, không mang API key.
      * SIDE EFFECT: Dispatch ProcessAiImageGenerationJob hoặc ProcessAiImportJob.
      * EXCEPTION/TRANSACTION: Không mở transaction riêng; caller dispatch sau khi ghi run.
      * =====================================================================
      */
     public function dispatch(AiImport $import): void
     {
+        $requestTimeout = (int) data_get($import->input_json, 'ai_connection.timeout', 30);
         if ($import->operation === 'image') {
-            ProcessAiImageGenerationJob::dispatch($import->id);
+            ProcessAiImageGenerationJob::dispatch($import->id, $requestTimeout);
         } else {
-            ProcessAiImportJob::dispatch($import->id);
+            ProcessAiImportJob::dispatch($import->id, $requestTimeout);
         }
     }
 }

@@ -34,13 +34,21 @@ final class ProcessAiImageGenerationJob implements ShouldBeUnique, ShouldQueue
 
     public int $tries = 3;
 
-    public int $timeout = 180;
+    public int $timeout;
 
     public array $backoff = [10, 60, 180];
 
-    public int $uniqueFor = 300;
+    public int $uniqueFor;
 
-    public function __construct(public readonly string $importId) {}
+    /**
+     * Input: UUID image run và ngân sách HTTP trong snapshot.
+     * Output: job/unique lock đủ dài cho HTTP và lưu ảnh; không đọc DB/provider.
+     */
+    public function __construct(public readonly string $importId, int $requestTimeout = 30)
+    {
+        $this->timeout = max((int) config('ai-import.job_timeout', 180), $requestTimeout + 120);
+        $this->uniqueFor = $this->timeout * $this->tries + array_sum($this->backoff) + 60;
+    }
 
     /**
      * =====================================================================

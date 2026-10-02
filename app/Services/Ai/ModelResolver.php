@@ -92,7 +92,7 @@ final class ModelResolver
             'model' => $model->remote_model_id, 'capabilities' => $model->capabilities,
             'capability' => $capability?->value,
             'temperature' => (float) $settings['default_temperature'],
-            'timeout' => (int) $settings['request_timeout'],
+            'timeout' => (int) $model->provider->request_timeout,
         ];
     }
 

@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Exceptions\AiImportException;
 use App\Models\AiImport;
+use App\Services\Ai\AiRunService;
 use App\Services\Ai\ArticleImportService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -19,7 +20,7 @@ use Throwable;
  * CHỨC NĂNG FILE: Worker queue xử lý pipeline AI import có retry có kiểm soát.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE:
- * - __construct(), handle(), failed().
+ * - __construct(), handle(), failed(), queueOptionalImage().
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : UUID AiImport được dispatch từ controller/command.
@@ -42,15 +43,15 @@ class ProcessAiImportJob implements ShouldQueue
      * =====================================================================
      * CHỨC NĂNG: Khởi tạo job xử lý một AiImport
      * =====================================================================
-     * INPUT: UUID import cần xử lý.
-     * OUTPUT: job có timeout đọc từ config.
+     * INPUT: UUID import và thời gian chờ HTTP đã chụp trong snapshot.
+     * OUTPUT: job chờ đủ HTTP cộng 120 giây cho đọc nguồn/lưu kết quả.
      * SIDE EFFECT: không truy cập database/provider khi khởi tạo.
      * EXCEPTION/TRANSACTION: không mở transaction.
      * =====================================================================
      */
-    public function __construct(public readonly string $importId)
+    public function __construct(public readonly string $importId, int $requestTimeout = 30)
     {
-        $this->timeout = (int) config('ai-import.job_timeout', 120);
+        $this->timeout = max((int) config('ai-import.job_timeout', 180), $requestTimeout + 120);
     }
 
     /**
@@ -162,7 +163,7 @@ class ProcessAiImportJob implements ShouldQueue
 
                 return $child;
             });
-            ProcessAiImageGenerationJob::dispatch($child->id);
+            app(AiRunService::class)->dispatch($child);
             $result = (array) $import->result_json;
             $result['image_job_id'] = $child->id;
             $import->update(['result_json' => $result]);

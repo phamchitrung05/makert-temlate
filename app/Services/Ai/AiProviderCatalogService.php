@@ -66,6 +66,7 @@ final class AiProviderCatalogService
                 'name' => $data['name'], 'kind' => $preset['kind'], 'driver' => $driver,
                 'base_url' => $url, 'is_active' => $data['is_active'] ?? $provider->is_active ?? true,
                 'discovery_mode' => $data['discovery_mode'] ?? $provider->discovery_mode ?? 'models_endpoint',
+                'request_timeout' => $data['request_timeout'] ?? ($provider->exists ? $provider->request_timeout : config('ai-providers.request_timeout', 120)),
             ]);
             if (filled($data['api_key'] ?? null)) {
                 $provider->api_key = $data['api_key'];
@@ -137,7 +138,7 @@ final class AiProviderCatalogService
             throw new AiImportException('Provider đang dùng catalog thủ công; thêm model bằng model ID.', 'AI_DISCOVERY_MANUAL');
         }
         try {
-            return Cache::lock('ai-model-sync-'.$provider->id, 180)->block(1, function () use ($provider, $actorId): array {
+            return Cache::lock('ai-model-sync-'.$provider->id, max(180, (int) $provider->request_timeout * 3 + 60))->block(1, function () use ($provider, $actorId): array {
                 $fingerprint = [$provider->driver, rtrim((string) $provider->base_url, '/'), hash('sha256', (string) $provider->api_key)];
                 $items = $this->discover($provider);
 
@@ -198,7 +199,7 @@ final class AiProviderCatalogService
         try {
             $connection = new AiConnection([
                 'provider' => $provider->key, 'driver' => $provider->driver,
-                'base_url' => $provider->base_url, 'model' => $model?->remote_model_id, 'timeout' => 15,
+                'base_url' => $provider->base_url, 'model' => $model?->remote_model_id, 'timeout' => (int) $provider->request_timeout,
             ], $provider->api_key);
             if ($model) {
                 $path = $provider->driver === 'gemini' ? 'models/'.rawurlencode($model->remote_model_id).':generateContent' : 'chat/completions';
@@ -241,7 +242,7 @@ final class AiProviderCatalogService
     private function discover(AiProvider $provider): array
     {
         $connection = new AiConnection([
-            'driver' => $provider->driver, 'base_url' => $provider->base_url, 'timeout' => 15,
+            'driver' => $provider->driver, 'base_url' => $provider->base_url, 'timeout' => (int) $provider->request_timeout,
         ], $provider->api_key);
         $items = [];
         $pageToken = null;

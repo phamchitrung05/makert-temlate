@@ -148,6 +148,7 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
             Route::get('/ai-agent/capabilities/{target}', [AiImportController::class, 'capabilities'])
                 ->whereIn('target', ['post', 'resource', 'sound']);
             Route::post('/ai-agent/sessions', [AiImportController::class, 'store']);
+            Route::get('/ai-agent/sessions', [AiImportController::class, 'index']);
             Route::get('/ai-agent/sessions/{aiImport}', [AiImportController::class, 'show'])->whereUuid('aiImport');
             Route::post('/ai-agent/sessions/{aiImport}/regenerate', [AiImportController::class, 'regenerate'])->whereUuid('aiImport');
             Route::post('/ai-agent/sessions/{aiImport}/retry', [AiImportController::class, 'retry'])->whereUuid('aiImport');
@@ -172,7 +173,7 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
 
         /**
          * =====================================================================
-     * GHI CHÚ: AI connection/model catalog là system setting; API key và default
+         * GHI CHÚ: AI connection/model catalog là system setting; API key và default
          * không được mở bằng permission quản lý Post.
          * =====================================================================
          */

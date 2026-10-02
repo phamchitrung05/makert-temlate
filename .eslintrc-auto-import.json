@@ -378,6 +378,13 @@
     "findProvider": true,
     "mergeAiLineage": true,
     "normalizeProvider": true,
-    "providerModels": true
+    "providerModels": true,
+    "useAiContentWorkspace": true,
+    "useAiContentCatalog": true,
+    "buildAiContentRequest": true,
+    "createAiContentSource": true,
+    "extractHtmlText": true,
+    "useAiContentGeneration": true,
+    "validateAiContentSource": true
   }
 }
