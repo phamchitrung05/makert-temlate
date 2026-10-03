@@ -9,6 +9,7 @@
  * - useAiContentCatalog(): quản lý catalog và lựa chọn theo source ref của page.
  * - activeProviders/selectedProvider/catalog: options, capability và trạng thái tải.
  * - reconcileSelection(): giữ lựa chọn hợp lệ hoặc dùng default/option đầu tiên.
+ * - reconcileOutputs()/resetContentDefaults(): đồng bộ nhóm đầu ra từ config và defaults đã lưu.
  * - loadCatalog(): tải lại qua service chung và giữ lỗi để form hiển thị/retry.
  * - watcher catalog/source: loại lựa chọn không còn thuộc provider/catalog.
  *
@@ -35,10 +36,74 @@ export function useAiContentCatalog(source) {
   let targetVersion = 0
   const activeProviders = computed(() => providers.value.filter(provider => provider.is_active && provider.has_api_key))
   const selectedProvider = computed(() => activeProviders.value.find(provider => provider.key === source.value.provider))
+  const selectedTarget = computed(() => targets.value.find(target => target.key === source.value.targetType))
+
+  const outputDefinitions = computed(() => (selectedTarget.value?.output_options ?? [])
+    .filter(option => selectedTarget.value.outputs?.includes(option.value)))
+
+  const supportsSource = option => !option.source_types?.length || option.source_types.includes(source.value.type)
+
+  const outputOptions = computed(() => outputDefinitions.value.map(option => ({
+    ...option, props: { disabled: !supportsSource(option) },
+  })))
+
+  const contentDefaults = computed(() => ({ outputs: outputDefinitions.value
+    .filter(option => supportsSource(option)
+      && (option.value !== 'thumbnail' || settings.value.auto_thumbnail !== false)
+      && (option.value !== 'seo' || settings.value.auto_seo === true))
+    .map(option => option.value) }))
+
+  let outputsEdited = Array.isArray(source.value.outputs)
+  let applyingOutputs = false
+  let restrictedPreferences = new Set()
+
+  const sameOutputs = (left, right) => Array.isArray(left) && left.length === right.length
+    && left.every((value, index) => value === right[index])
+
+  watch(source, (value, previous) => {
+    if (applyingOutputs || sameOutputs(value.outputs, previous.outputs ?? [])) return
+    if (value.outputs === previous.outputs) return
+    outputsEdited = Array.isArray(value.outputs)
+    restrictedPreferences = new Set(outputDefinitions.value
+      .filter(option => option.source_types?.length && value.outputs?.includes(option.value))
+      .map(option => option.value))
+  }, { flush: 'sync' })
+
+  /** Input: target/source/settings mới. Output: chỉ giữ nhóm được config cho phép; không ghi đè lựa chọn người dùng. */
+  function reconcileOutputs() {
+    if (!selectedTarget.value || loading.value || targetsLoading.value) return
+    const current = source.value.outputs ?? []
+
+    for (const option of outputDefinitions.value) {
+      if (option.source_types?.length && current.includes(option.value)) restrictedPreferences.add(option.value)
+    }
+
+    const outputs = !outputsEdited || source.value.outputs === null ? contentDefaults.value.outputs
+      : outputDefinitions.value.filter(option => supportsSource(option)
+        && (current.includes(option.value) || restrictedPreferences.has(option.value)))
+        .map(option => option.value)
+
+    restrictedPreferences = new Set([...restrictedPreferences].filter(value => outputDefinitions.value.some(option => option.value === value)))
+    if (sameOutputs(source.value.outputs, outputs)) return
+    applyingOutputs = true
+    source.value = { ...source.value, outputs }
+    applyingOutputs = false
+  }
+
+  /** Input: thao tác tạo form mới. Output: áp dụng lại lựa chọn mặc định mới nhất từ config/settings. */
+  function resetContentDefaults() {
+    outputsEdited = false
+    restrictedPreferences.clear()
+    reconcileOutputs()
+  }
+
+  watch([selectedTarget, () => source.value.type, settings, loading, targetsLoading], reconcileOutputs, { flush: 'sync' })
 
   const catalog = computed(() => ({
     loading: loading.value || targetsLoading.value,
     error: error.value || targetsError.value,
+    contentDefaults: contentDefaults.value,
+    outputOptions: outputOptions.value,
     targetOptions: targets.value.map(target => ({ title: target.label, value: target.key, icon: target.icon, color: target.color })),
     providerOptions: activeProviders.value.map(provider => ({ title: provider.name, value: provider.key })),
     modelOptions: availableModels(selectedProvider.value).map(model => ({
@@ -103,5 +168,5 @@ export function useAiContentCatalog(source) {
 
   onScopeDispose(() => { targetVersion += 1 })
 
-  return { catalog, loadCatalog }
+  return { catalog, loadCatalog, resetContentDefaults }
 }

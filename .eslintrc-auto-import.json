@@ -387,6 +387,10 @@
     "useAiContentGeneration": true,
     "validateAiContentSource": true,
     "buildAiContentRegenerateRequest": true,
-    "useAiContentActions": true
+    "useAiContentActions": true,
+    "useAiContentSettings": true,
+    "formatAiError": true,
+    "isAiSuccess": true,
+    "useAiRunFeedback": true
   }
 }

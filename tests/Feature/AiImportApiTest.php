@@ -2,13 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Enums\MediaAssetVisibility;
 use App\Jobs\ProcessAiImportJob;
 use App\Models\AiImport;
+use App\Models\MediaAsset;
 use App\Models\User;
 use App\Services\Ai\ArticleImportService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Mockery;
 use Tests\TestCase;
 use Tests\UsesIsolatedDatabase;
@@ -143,6 +147,104 @@ class AiImportApiTest extends TestCase
             ->assertOk()->assertJsonCount(1, 'data');
     }
 
+    /** Saved thumbnails appear in lists and polling without querying each asset or conversion parent. */
+    public function test_session_thumbnails_are_loaded_in_batches_and_returned_in_polling(): void
+    {
+        Queue::fake();
+        Storage::fake('media_public');
+        $token = $this->token();
+        $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
+            'text' => 'Article source', 'provider' => 'deterministic', 'generate_thumbnail' => false,
+        ])->assertAccepted();
+        $root = AiImport::query()->sole();
+        $expected = [];
+
+        for ($index = 0; $index < 3; $index++) {
+            $asset = $this->thumbnailAsset($root->created_by);
+            $run = $index === 0 ? $root : $root->replicate()->fill(['parent_id' => $root->id, 'operation' => 'regenerate']);
+            $run->fill(['status' => 'ready', 'result_json' => ['draft' => [
+                'title' => 'Article '.$index,
+                'thumbnail' => ['media_asset_id' => $asset->id, 'source_url' => 'https://source.test/image?token=private-token'],
+            ]]]);
+            $run->save();
+            $expected[$run->id] = $asset;
+        }
+
+        foreach (['/api/admin/ai-agent/sessions', '/api/admin/ai-agent/sessions/'.$root->id.'/candidates'] as $endpoint) {
+            DB::enableQueryLog();
+            DB::flushQueryLog();
+            $response = $this->withToken($token)->getJson($endpoint)->assertOk()->assertJsonCount(3, 'data');
+            $queries = collect(DB::getQueryLog());
+            DB::disableQueryLog();
+
+            $mediaQueries = $queries->filter(fn (array $query): bool => str_contains($query['query'], 'from "media_assets"')
+                || str_contains($query['query'], 'from "media"'));
+            $this->assertCount(2, $mediaQueries, 'Media assets and files must each use one batch query, including conversion parents.');
+            $items = collect($response->json('data'))->keyBy($endpoint === '/api/admin/ai-agent/sessions' ? 'id' : 'job_id');
+            foreach ($expected as $id => $asset) {
+                $thumbnail = $items->get($id)['thumbnail'];
+                $this->assertSame($asset->id, $thumbnail['id']);
+                $this->assertSame('Article cover', $thumbnail['alt_text']);
+                $this->assertStringContainsString('cover.webp', $thumbnail['file']['url']);
+                $this->assertStringContainsString('thumb', $thumbnail['file']['preview_url']);
+                $this->assertArrayNotHasKey('disk', $thumbnail['file']);
+            }
+        }
+
+        $this->withToken($token)->getJson('/api/admin/ai-agent/sessions/'.$root->id)
+            ->assertOk()->assertJsonPath('data.thumbnail.id', $expected[$root->id]->id)
+            ->assertJsonPath('data.thumbnail.alt_text', 'Article cover');
+        $this->withToken($token)->getJson('/api/admin/ai-agent/sessions')
+            ->assertOk()->assertDontSee('private-token', false);
+    }
+
+    /** Missing/deleted assets return null, and private thumbnails never expose a storage URL. */
+    public function test_session_thumbnails_handle_missing_deleted_and_private_assets(): void
+    {
+        Queue::fake();
+        Storage::fake('media_public');
+        Storage::fake('media_private');
+        $token = $this->token();
+        $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
+            'text' => 'Article source', 'provider' => 'deterministic', 'generate_thumbnail' => false,
+        ])->assertAccepted();
+        $run = AiImport::query()->sole();
+        $deleted = $this->thumbnailAsset($run->created_by);
+        $deleted->delete();
+
+        foreach ([null, 999999, $deleted->id] as $assetId) {
+            $run->update(['result_json' => ['draft' => ['thumbnail' => ['media_asset_id' => $assetId]]]]);
+            $this->withToken($token)->getJson('/api/admin/ai-agent/sessions')
+                ->assertOk()->assertJsonPath('data.0.thumbnail', null);
+            $this->withToken($token)->getJson('/api/admin/ai-agent/sessions/'.$run->id)
+                ->assertOk()->assertJsonPath('data.thumbnail', null);
+        }
+
+        $private = $this->thumbnailAsset($run->created_by, MediaAssetVisibility::Private);
+        $run->update(['result_json' => ['draft' => ['thumbnail' => ['media_asset_id' => $private->id]]]]);
+        $this->withToken($token)->getJson('/api/admin/ai-agent/sessions')->assertOk()
+            ->assertJsonPath('data.0.thumbnail.id', $private->id)
+            ->assertJsonPath('data.0.thumbnail.file.url', null)
+            ->assertJsonPath('data.0.thumbnail.file.preview_url', null);
+    }
+
+    /** Persist file metadata for DTO/query tests; no real upload or image conversion is required. */
+    private function thumbnailAsset(int $ownerId, MediaAssetVisibility $visibility = MediaAssetVisibility::Public): MediaAsset
+    {
+        $asset = MediaAsset::factory()->image()->create([
+            'created_by' => $ownerId, 'visibility' => $visibility, 'alt_text' => 'Article cover',
+        ]);
+        $disk = $visibility === MediaAssetVisibility::Public ? 'media_public' : 'media_private';
+        $asset->media()->create([
+            'collection_name' => 'library', 'name' => 'cover', 'file_name' => 'cover.webp',
+            'mime_type' => 'image/webp', 'disk' => $disk, 'conversions_disk' => $disk,
+            'size' => 100, 'manipulations' => [], 'custom_properties' => [],
+            'generated_conversions' => ['thumb' => true], 'responsive_images' => [],
+        ]);
+
+        return $asset;
+    }
+
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng import lưu options và dispatch queue.
@@ -208,7 +310,7 @@ class AiImportApiTest extends TestCase
             ->assertJsonPath('data.target_type', 'post')
             ->assertJsonPath('data.prompts.0.key', 'post.create.from_url')
             ->assertJsonPath('data.schemas.0.key', 'post.content.v1');
-        $configuredKey = (string) config('ai-import.key');
+        $configuredKey = (string) config('ai-providers.connections.http-json.key');
         if ($configuredKey !== '') {
             $this->assertStringNotContainsString($configuredKey, $response->getContent());
         }

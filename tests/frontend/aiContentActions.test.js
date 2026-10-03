@@ -12,6 +12,7 @@ import { effectScope } from 'vue'
 import { useAiContentActions } from '@/composables/useAiContentActions'
 import { useAiContentWorkspace } from '@/composables/useAiContentWorkspace'
 import { buildAiContentRegenerateRequest, buildAiContentRequest, createAiContentSource } from '@/utils/aiContentInput'
+import { useAiRunFeedback } from '@/composables/useAiRunFeedback'
 
 const { service } = vi.hoisted(() => ({ service: {
   status: vi.fn(), updateCandidate: vi.fn(), regenerate: vi.fn(), removeSession: vi.fn(), listSessions: vi.fn(),
@@ -28,7 +29,9 @@ function state() {
 
     workspace.updateSession({ job_id: parent.id, target_type: 'sound', status: 'ready', draft: { title: parent.title } })
 
-    return { ...workspace, ...useAiContentActions(workspace) }
+    const feedback = useAiRunFeedback()
+
+    return { ...workspace, ...feedback, ...useAiContentActions({ ...workspace, onFeedback: feedback.observeRun }) }
   })
 }
 
@@ -36,6 +39,37 @@ beforeEach(() => { vi.resetAllMocks(); vi.useFakeTimers(); scope = effectScope()
 afterEach(() => { scope.stop(); vi.useRealTimers() })
 
 describe('AI Content actions', () => {
+  it('reports an immediately failed child without a queued success notice and preserves the parent', async () => {
+    const s = state()
+
+    service.regenerate.mockResolvedValue({ job_id: 'child', parent_id: parent.id, status: 'failed', error: 'AI trả nội dung rỗng' })
+    s.requestAction('regenerate', parent)
+    await s.confirmAction()
+    expect(s.notice.value).toEqual({ type: 'error', message: 'AI trả nội dung rỗng' })
+    expect(s.snackbar.value.visible).toBe(true)
+    expect(s.items.value.find(item => item.id === parent.id)).toMatchObject({ title: parent.title, status: 'review' })
+    expect(s.items.value.find(item => item.id === 'child').error).toBe('AI trả nội dung rỗng')
+    await vi.advanceTimersByTimeAsync(20000)
+    expect(service.status).not.toHaveBeenCalled()
+  })
+
+  it('keeps a child running after a GET failure and checks the same UUID manually without generating again', async () => {
+    const s = state()
+
+    service.regenerate.mockResolvedValue({ job_id: 'child', parent_id: parent.id, target_type: 'sound', status: 'queued' })
+    service.status.mockRejectedValueOnce(new Error('network'))
+    s.requestAction('regenerate', parent)
+    await s.confirmAction()
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(s.notice.value.type).toBe('warning')
+    expect(s.items.value.find(item => item.id === 'child').status).toBe('generating')
+    service.status.mockResolvedValue({ job_id: 'child', parent_id: parent.id, status: 'failed', error: 'AI thiếu tiêu đề' })
+    await s.resumeRun(s.items.value.find(item => item.id === 'child'))
+    expect(service.status).toHaveBeenLastCalledWith('child', 'sound')
+    expect(s.snackbar.value.visible).toBe(true)
+    expect(s.items.value.find(item => item.id === parent.id).title).toBe(parent.title)
+    expect(service.regenerate).toHaveBeenCalledOnce()
+  })
   it('builds separate regenerate groups and omits empty overrides', async () => {
     expect(buildAiContentRegenerateRequest({ fields: ['title', 'content_html', 'seo_title', 'focus_keyword', 'tag_ids', 'thumbnail_prompt'], prompt_key: null, provider: '', model_id: null }))
       .toEqual({ fields: ['title', 'content', 'seo', 'taxonomy', 'thumbnail'] })
@@ -134,5 +168,22 @@ describe('AI Content actions', () => {
     scope.stop()
     await vi.advanceTimersByTimeAsync(20000)
     expect(service.status).not.toHaveBeenCalled()
+  })
+
+  it('ignores a failed polling response after scope disposal', async () => {
+    const s = state()
+    let resolvePoll
+
+    service.regenerate.mockResolvedValue({ job_id: 'child', target_type: 'sound', status: 'queued' })
+    service.status.mockReturnValue(new Promise(resolve => { resolvePoll = resolve }))
+    s.requestAction('regenerate', parent)
+    await s.confirmAction()
+    await vi.advanceTimersByTimeAsync(1000)
+    scope.stop()
+    resolvePoll({ job_id: 'child', status: 'failed', error: 'Late failure' })
+    await Promise.resolve()
+    expect(s.snackbar.value.visible).toBe(false)
+    expect(s.items.value.find(item => item.id === 'child').status).toBe('generating')
+    expect(s.items.value.find(item => item.id === parent.id).title).toBe(parent.title)
   })
 })

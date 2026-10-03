@@ -1551,13 +1551,16 @@ lifecycle phức tạp như Resource vào một CRUD base quá chung.
 - [x] Cài `spatie/laravel-settings:^3.9`; schema chuẩn và `AiSettings` typed.
 - [x] Migration chuyển toàn bộ key/value, giữ bản lưu `legacy_settings`; seed chỉ thêm property còn thiếu.
 - [x] AI settings giữ API/validation/audit và refresh để worker đọc tuning mới.
-- [x] Thêm heading `SYSTERM SETTING` / `SETTING`, route trống để bổ sung giao diện sau.
+- [x] Thêm heading `SYSTERM SETTING` / `SETTING` và mở route `/admin/settings`.
+- [x] Dựng giao diện Settings 10 tab theo component/style của project; AI & Content đã nối dữ liệu thật, các tab còn lại còn fixture.
+- [x] AI & Content đọc/lưu chung API AI Settings và catalog model; bổ sung số từ khuyến nghị, system prompt, automation flags, defaults cho form tạo mới và test theo `docs/fix_1.md` mục 9.7.
 - [x] Catalog tài nguyên lấy từ `config/ai-agent.php`; Post/Resource/Sound tạo content qua queue với prompt riêng và quyền theo target.
+- [x] Chuẩn hóa ba config AI và thay bốn checkbox Tùy chọn AI bằng select nhiều tag từ `targets.*.outputs`/`output_definitions`; request, prompt và kết quả tuân theo nhóm đã chọn. Chi tiết ở `docs/fix_1.md` mục 9.8.
 - [x] Badge và action edit/remove/regenerate; dialog riêng, không thay form tạo mới.
 - [x] Edit kiểm tra version, ready/chưa apply/chưa hết hạn và sanitize HTML.
 - [x] Tạo lại toàn bài/nhóm field giữ parent, theo dõi child và hiện trong list sau reload.
 - [x] Đối chiếu `docs/fix_1.md`, giữ các mục chưa triển khai ở trạng thái pending.
-- [ ] Giao diện SETTING (người dùng sẽ bổ sung), apply domain Resource/Sound, tạo audio và lớp editorial `ai_content_drafts`.
+- [ ] Nối dữ liệu động cho các nhóm Settings còn lại theo `docs/fix_1.md` mục 9; apply domain Resource/Sound, tạo audio và lớp editorial `ai_content_drafts`.
 
 ## 16. Tài liệu tham khảo
 

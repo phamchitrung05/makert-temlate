@@ -25,6 +25,11 @@ use App\Enums\AiCapability;
  */
 final class GeminiProvider extends AbstractStructuredAiProvider
 {
+    protected function responseFormat(): string
+    {
+        return 'gemini';
+    }
+
     /**
      * =====================================================================
      * CHỨC NĂNG: true khi có API key.
@@ -37,7 +42,7 @@ final class GeminiProvider extends AbstractStructuredAiProvider
      */
     public function configured(): bool
     {
-        return $this->connection() !== null || (string) config('ai-import.gemini.key') !== '';
+        return $this->connection() !== null || (string) config('ai-providers.connections.gemini.key') !== '';
     }
 
     /**
@@ -67,7 +72,7 @@ final class GeminiProvider extends AbstractStructuredAiProvider
      */
     public function modelName(): string
     {
-        return $this->requestedModel() ?: (string) ($this->connection()?->snapshot['model'] ?? config('ai-import.gemini.model', 'gemini-3.6-flash'));
+        return $this->requestedModel() ?: (string) ($this->connection()?->snapshot['model'] ?? config('ai-providers.connections.gemini.model', 'gemini-3.6-flash'));
     }
 
     /**
@@ -79,6 +84,7 @@ final class GeminiProvider extends AbstractStructuredAiProvider
      * SIDE EFFECT: gọi Gemini qua AiProviderClient; không ghi domain database.
      * EXCEPTION/TRANSACTION: AiImportException cho HTTP lỗi; không mở transaction.
      * =====================================================================
+     *
      * @param  array<string, mixed>  $input
      */
     protected function requestPayload(array $input): mixed
@@ -86,7 +92,7 @@ final class GeminiProvider extends AbstractStructuredAiProvider
         $payload = [
             'contents' => [['role' => 'user', 'parts' => [['text' => $input['instructions']."\n".$this->canonicalInput($input)]]]],
             'generationConfig' => [
-                'temperature' => (float) ($this->connection()?->snapshot['temperature'] ?? config('ai-import.gemini.temperature', 0.2)),
+                'temperature' => (float) ($this->runSettings()['temperature'] ?? config('ai-providers.connections.gemini.temperature', 0.2)),
             ],
         ];
         if ($this->connection() === null || in_array(AiCapability::Structured->value, $this->connection()->snapshot['capabilities'] ?? [], true)) {
@@ -94,9 +100,9 @@ final class GeminiProvider extends AbstractStructuredAiProvider
         }
         $connection = $this->connection() ?? new AiConnection([
             'driver' => 'gemini', 'provider' => 'gemini',
-            'base_url' => (string) config('ai-import.gemini.endpoint'),
-            'model' => $input['model'], 'timeout' => (int) config('ai-import.timeout', 12),
-        ], (string) config('ai-import.gemini.key'));
+            'base_url' => (string) config('ai-providers.connections.gemini.endpoint'),
+            'model' => $input['model'], 'timeout' => (int) config('ai-providers.connections.gemini.timeout', 12),
+        ], (string) config('ai-providers.connections.gemini.key'));
 
         return app(AiProviderClient::class)->send(
             $connection, 'POST', 'models/'.rawurlencode((string) $input['model']).':generateContent', $payload,

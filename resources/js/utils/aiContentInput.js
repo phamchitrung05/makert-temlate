@@ -14,11 +14,12 @@
 const maxTextLength = 200000
 const maxFileBytes = 5 * 1024 * 1024
 
-/** Input: không có. Output: nguồn trống mới, không chia sẻ object giữa các form. */
-export const createAiContentSource = () => ({
+/** Input: nhóm đầu ra mặc định từ catalog. Output: nguồn mới; null chờ catalog khởi tạo lựa chọn. */
+export const createAiContentSource = (defaults = {}) => ({
   targetType: 'post', type: 'url', url: '', text: '', prompt: '', file: null,
   provider: '', model: '', language: 'vi', length: 'medium',
-  autoTitle: true, title: '', autoThumbnail: true, optimizeSeo: false, rewrite: false,
+  outputs: Array.isArray(defaults.outputs) ? [...defaults.outputs] : null,
+  title: '',
 })
 
 /** Input: nguồn/catalog. Output: thông báo validation hoặc chuỗi rỗng; hàm thuần. */
@@ -30,7 +31,12 @@ export function validateAiContentSource(source, catalog) {
   if (!source.provider || !catalog.selectedModel) return 'Chọn provider và model để viết bài.'
   if (!catalog.selectedModel.capabilities?.includes('text_generation'))
     return 'Model này không hỗ trợ viết nội dung. Chọn model có khả năng Text generation trong AI Settings.'
-  if (!source.autoTitle && !source.title.trim()) return 'Nhập tiêu đề hoặc bật tự động tạo tiêu đề.'
+  const availableOutputs = (catalog.outputOptions ?? []).filter(option => !option.props?.disabled).map(option => option.value)
+  const outputs = source.outputs ?? []
+
+  if (!outputs.length) return 'Chọn ít nhất một hạng mục AI sẽ tạo.'
+  if (outputs.some(output => !availableOutputs.includes(output))) return 'Chọn các hạng mục AI được hỗ trợ cho tài nguyên và nguồn này.'
+  if (!outputs.includes('title') && !source.title.trim()) return 'Nhập tiêu đề hoặc chọn hạng mục Tiêu đề để AI tạo.'
   if (source.title.length > 255) return 'Tiêu đề không được dài quá 255 ký tự.'
   if (source.type === 'url') {
     try {
@@ -72,6 +78,7 @@ export function extractHtmlText(html) {
 
 /** Input: nguồn và model đã validate. Output: payload Post create; đọc file, throw nếu nội dung rỗng/quá dài. */
 export async function buildAiContentRequest(source, model) {
+  const outputs = [...new Set(source.outputs ?? [])].filter(output => output !== 'thumbnail' || source.type === 'url')
   let input
   if (source.type === 'url') input = { type: 'url', url: source.url.trim() }
   else {
@@ -86,16 +93,18 @@ export async function buildAiContentRequest(source, model) {
   const instructions = [
     `Viết bài bằng ${source.language === 'en' ? 'tiếng Anh' : 'tiếng Việt'}, độ dài khoảng ${lengths[source.length] ?? lengths.medium}.`,
     source.type === 'prompt' ? 'Đầu vào là đề bài và yêu cầu viết, hãy phát triển thành một bài viết mới hoàn chỉnh.' : 'Bám sát nguồn, không bịa thông tin.',
-    source.autoTitle ? 'Tạo tiêu đề phù hợp với bài viết.' : `Dùng chính xác tiêu đề: ${source.title.trim()}`,
-    source.rewrite ? 'Diễn đạt lại nội dung bằng lời văn mới, giữ ý nghĩa gốc.' : '',
-    source.optimizeSeo ? 'Tối ưu tiêu đề, mô tả SEO và cấu trúc heading tự nhiên.' : '',
+    outputs.includes('title') ? 'Tạo tiêu đề phù hợp với bài viết.' : `Dùng chính xác tiêu đề: ${source.title.trim()}`,
+    outputs.includes('seo') ? 'Tối ưu tiêu đề, mô tả SEO và cấu trúc heading tự nhiên.' : '',
   ].filter(Boolean).join('\n')
+
+  if (!outputs.includes('title')) input.title = source.title.trim()
 
   return {
     target_type: source.targetType || 'post', operation: 'create', input, output_language: source.language,
     provider: source.provider, model: source.model, model_id: model.id, instructions,
-    requested_outputs: ['title', 'excerpt', 'content', 'seo', 'taxonomy', ...(source.autoThumbnail && source.type === 'url' ? ['thumbnail'] : [])],
-    generate_thumbnail: Boolean(source.autoThumbnail && source.type === 'url'), thumbnail_mode: 'source',
+    requested_outputs: outputs,
+    generate_seo: outputs.includes('seo'),
+    generate_thumbnail: outputs.includes('thumbnail') && source.type === 'url', thumbnail_mode: 'source',
   }
 }
 

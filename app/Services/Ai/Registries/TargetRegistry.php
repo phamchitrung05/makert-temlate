@@ -15,7 +15,7 @@ use InvalidArgumentException;
  * được resolve sau khi target đã được bật trong config, tránh gọi tùy ý class.
  *
  * CÁC HÀM/METHOD TRONG FILE:
- * - __construct(), get(), adapter(), all().
+ * - __construct(), get(), adapter(), all(), outputOptions().
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : target key và service container.
@@ -97,5 +97,19 @@ final class TargetRegistry
             ->filter(fn (array $target): bool => ($target['enabled'] ?? false) === true)
             ->map(fn (array $target, string $key): array => $target + ['key' => $key])
             ->all();
+    }
+
+    /** Nhãn select lấy từ config; chỉ trả nhóm đầu ra tài nguyên cho phép. */
+    public function outputOptions(string $key): array
+    {
+        $target = $this->get($key);
+        $definitions = (array) config('ai-agent.output_definitions', []);
+
+        return collect($target['outputs'] ?? [])
+            ->filter(fn (string $output): bool => isset($definitions[$output]))
+            ->map(fn (string $output): array => [
+                'value' => $output, 'title' => $definitions[$output]['label'] ?? $output,
+                'source_types' => array_values($definitions[$output]['source_types'] ?? []),
+            ])->values()->all();
     }
 }

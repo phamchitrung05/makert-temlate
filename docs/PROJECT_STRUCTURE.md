@@ -461,6 +461,9 @@ app/Services/Ai/GeminiProvider.php       Gemini generateContent adapter
 app/Models/AiImport.php                 session/run/candidate lineage
 app/Models/AiProvenance.php             provenance theo field đã apply
 app/Http/Controllers/Admin/AiImportController.php
+config/ai-agent.php                    target/output/prompt/schema
+config/ai-providers.php                driver/preset/adapter và connection môi trường
+config/ai-import.php                   giới hạn nguồn và lifecycle của pipeline
 database/migrations/*ai_import*         lifecycle và lineage fields
 resources/js/services/aiAgent.js
 resources/js/stores/aiAgent.js
@@ -473,6 +476,20 @@ session dùng `/api/admin/ai-agent/sessions/*`, còn các route dưới
 `/api/admin/posts/ai/import` được giữ để tương thích. Candidate chưa tạo slug hoặc
 Post thật, chỉ thao tác Apply mới gọi Post Action/SlugService. API key luôn ở
 backend; deterministic provider là fallback khi chưa cấu hình provider thật.
+
+`ai-agent.targets.<target>.outputs` là allowlist nhóm đầu ra của từng tài nguyên:
+`title`, `excerpt`, `content`, `seo`, `taxonomy`, `thumbnail` cho Post hiện tại.
+Nhãn hiển thị và ánh xạ field canonical thuộc `ai-agent.output_definitions`.
+Capability của target cung cấp danh sách này cho select nhiều lựa chọn dạng tag;
+frontend gửi nhóm đã chọn qua `requested_outputs`. Nhóm đầu ra mô tả dữ liệu AI
+được phép tạo, không phải toàn bộ cột của model domain hoặc các trường publish.
+
+Provider được khai báo tập trung trong `ai-providers`: `presets` chứa các driver
+AI Settings hỗ trợ, `internal` chứa adapter trích xuất/HTTP JSON và `connections`
+đọc cấu hình môi trường. `ProviderRegistry` resolve adapter từ định nghĩa driver
+chung, ưu tiên bản ghi database cùng key; không lấy credential từ `ai-agent` hoặc
+`ai-import`. Catalog public không trả API key/endpoint. `ai-import` giữ timeout
+nguồn/job, giới hạn payload, quota, retention và idempotency.
 
 Chi tiết trạng thái và việc còn lại nằm duy nhất trong
 `docs/PLAN_POST_MEDIA_AI_INTEGRATION.md`.
@@ -673,8 +690,9 @@ php artisan test
 - `database/migrations/2026_10_03_100000_migrate_settings_to_spatie.php` chuyển
   key/value sang group/name/payload/locked. `legacy_settings` giữ bản lưu cũ.
 - `database/settings/*`: property migration; không ghi đè giá trị đã chuyển.
-- `config/ai-agent.php` khai báo target label/icon/color/permission và hướng dẫn
-  nội dung. `PromptRegistry` tạo prompt URL/text dùng schema content chung.
+- `config/ai-agent.php` khai báo target label/icon/color/permission, đầu ra được
+  chọn, nhãn/field của từng nhóm và hướng dẫn nội dung. `PromptRegistry` tạo prompt
+  URL/text dùng schema content chung; provider/credential thuộc `ai-providers`.
   Thêm target văn bản mới bằng một khai báo trong config; apply vào model domain
   vẫn cần adapter/action riêng. Resource/Sound hiện chưa có domain apply/audio.
 - `GET /api/admin/ai-agent/targets`: catalog public, chỉ trả target actor có quyền.

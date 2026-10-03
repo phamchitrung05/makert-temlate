@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Http;
  * - requestPayload(): gửi HTTP JSON tới endpoint nội bộ.
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
- * - INPUT : config AI_IMPORT và context canonical từ lớp cha.
+ * - INPUT : connection HTTP JSON từ ai-providers và context canonical từ lớp cha.
  * - OUTPUT: raw JSON provider hoặc AiImportException retryable.
  * =====================================================================
  */
@@ -38,7 +38,8 @@ class StructuredAiProvider extends AbstractStructuredAiProvider
      */
     public function configured(): bool
     {
-        return (string) config('ai-import.endpoint') !== '' && (string) config('ai-import.key') !== '';
+        return (string) config('ai-providers.connections.http-json.endpoint') !== ''
+            && (string) config('ai-providers.connections.http-json.key') !== '';
     }
 
     /**
@@ -69,7 +70,7 @@ class StructuredAiProvider extends AbstractStructuredAiProvider
     public function modelName(): string
     {
         return $this->configured()
-            ? ($this->requestedModel() ?: (string) config('ai-import.model', 'default'))
+            ? ($this->requestedModel() ?: (string) config('ai-providers.connections.http-json.model', 'default'))
             : 'deterministic';
     }
 
@@ -82,16 +83,18 @@ class StructuredAiProvider extends AbstractStructuredAiProvider
      * SIDE EFFECT: gọi endpoint AI server-side; không ghi domain database.
      * EXCEPTION/TRANSACTION: AiImportException cho HTTP lỗi; không mở transaction.
      * =====================================================================
+     *
      * @param  array<string, mixed>  $input
      */
     protected function requestPayload(array $input): mixed
     {
         $response = Http::connectTimeout((int) config('ai-import.connect_timeout', 5))
-            ->timeout((int) config('ai-import.timeout', 12))
-            ->withToken((string) config('ai-import.key'))
+            ->timeout((int) config('ai-providers.connections.http-json.timeout', 12))
+            ->withToken((string) config('ai-providers.connections.http-json.key'))
             ->acceptJson()
-            ->post((string) config('ai-import.endpoint'), [
+            ->post((string) config('ai-providers.connections.http-json.endpoint'), [
                 'model' => $input['model'],
+                'temperature' => (float) ($this->runSettings()['temperature'] ?? config('ai-providers.connections.http-json.temperature', 0.2)),
                 'language' => $input['language'],
                 'response_format' => ['type' => 'json_object'],
                 'input' => $input,
@@ -105,6 +108,7 @@ class StructuredAiProvider extends AbstractStructuredAiProvider
             );
         }
 
-        return $response->json();
+        // Keep the JSON object/list distinction for the shared response parser.
+        return $response->body();
     }
 }

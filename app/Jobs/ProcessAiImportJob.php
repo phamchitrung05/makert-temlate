@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Exceptions\AiImportException;
 use App\Models\AiImport;
+use App\Services\Ai\AiResponseDiagnostics;
 use App\Services\Ai\AiRunService;
 use App\Services\Ai\ArticleImportService;
 use Illuminate\Bus\Queueable;
@@ -71,6 +72,9 @@ class ProcessAiImportJob implements ShouldQueue
         if (! $import || in_array($import->status, ['ready', 'failed', 'cancelled', 'expired'], true)) {
             return;
         }
+        $sourceMetadata = (array) $import->source_meta_json;
+        unset($sourceMetadata['ai_response']);
+        $import->update(['source_meta_json' => $sourceMetadata]);
         try {
             $result = $service->run($import);
             if ($import->fresh()?->status === 'cancelled') {
@@ -92,6 +96,14 @@ class ProcessAiImportJob implements ShouldQueue
                 return;
             }
             $import->update(['error_code' => $exception->errorCode, 'error_message' => Str::limit($exception->getMessage(), 500)]);
+            if ($exception->diagnostics !== []) {
+                $import->update(['source_meta_json' => array_replace((array) $import->source_meta_json, [
+                    'ai_response' => AiResponseDiagnostics::sanitize(array_replace(
+                        (array) data_get($import->source_meta_json, 'ai_response', []),
+                        $exception->diagnostics,
+                    )),
+                ])]);
+            }
             if (! $exception->retryable || $this->attempts() >= $this->tries) {
                 $import->update(['status' => 'failed', 'current_step' => 'failed']);
 
@@ -119,11 +131,24 @@ class ProcessAiImportJob implements ShouldQueue
      */
     public function failed(?Throwable $exception): void
     {
-        AiImport::query()->whereKey($this->importId)->whereNotIn('status', ['ready', 'cancelled'])->update([
+        $import = AiImport::query()->find($this->importId);
+        if (! $import || in_array($import->status, ['ready', 'cancelled'], true)) {
+            return;
+        }
+        $updates = [
             'status' => 'failed', 'current_step' => 'failed', 'error_code' => $exception instanceof AiImportException ? $exception->errorCode : 'AI_IMPORT_FAILED',
             'error_message' => $exception instanceof AiImportException
                 ? Str::limit($exception->getMessage(), 500) : 'Tác vụ AI thất bại do lỗi hệ thống.',
-        ]);
+        ];
+        if ($exception instanceof AiImportException && $exception->diagnostics !== []) {
+            $updates['source_meta_json'] = array_replace((array) $import->source_meta_json, [
+                'ai_response' => AiResponseDiagnostics::sanitize(array_replace(
+                    (array) data_get($import->source_meta_json, 'ai_response', []),
+                    $exception->diagnostics,
+                )),
+            ]);
+        }
+        $import->update($updates);
     }
 
     /**
@@ -138,7 +163,10 @@ class ProcessAiImportJob implements ShouldQueue
      */
     private function queueOptionalImage(?AiImport $import): void
     {
+        $requestedFields = (array) ($import?->input_json['fields'] ?? []);
         if (! $import || ($import->input_json['thumbnail_mode'] ?? 'auto') !== 'generate'
+            || ! ($import->input_json['generate_thumbnail'] ?? true)
+            || ($requestedFields !== [] && ! in_array('thumbnail', $requestedFields, true))
             || empty($import->input_json['image_connection'])) {
             return;
         }

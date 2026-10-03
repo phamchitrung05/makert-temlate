@@ -7,8 +7,6 @@ use App\Models\AiModel;
 use App\Models\AiProvider;
 use App\Services\Ai\AiConnection;
 use App\Services\Ai\Contracts\AiProviderContract;
-use App\Services\Ai\GeminiProvider;
-use App\Services\Ai\OpenAiProvider;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
@@ -18,7 +16,7 @@ use InvalidArgumentException;
  * CHỨC NĂNG FILE: Registry connection/model cho text, image và client legacy.
  * =====================================================================
  * CÁC HÀM/METHOD: get(), resolve(), resolveForRun(), connectionForRun(),
- * publicOptions(), modelOptions(), catalogAvailable().
+ * publicOptions(), configuredProvider(), modelOptions(), catalogAvailable().
  * INPUT: provider key, capability hoặc snapshot đã lưu khi tạo run.
  * OUTPUT: adapter/connection nội bộ hoặc metadata công khai không có key/endpoint.
  * SIDE EFFECT: đọc catalog/config và resolve container; không ghi DB/gọi HTTP.
@@ -67,12 +65,7 @@ final class ProviderRegistry
                 'models' => array_column($models, 'value'), 'model_options' => $models,
             ];
         }
-        $provider = config('ai-agent.providers.'.$key);
-        if (! is_array($provider) || ($provider['enabled'] ?? false) !== true) {
-            throw new InvalidArgumentException('AI provider chưa được cấu hình hoặc đã tắt.');
-        }
-
-        return $provider + ['key' => $key];
+        return $this->configuredProvider($key);
     }
 
     /**
@@ -89,7 +82,7 @@ final class ProviderRegistry
     {
         $metadata = $this->get($key);
         $class = isset($metadata['record'])
-            ? ($metadata['driver'] === 'gemini' ? GeminiProvider::class : OpenAiProvider::class)
+            ? config('ai-providers.presets.'.$metadata['driver'].'.adapter')
             : ($metadata['adapter'] ?? null);
         if (! is_string($class) || ! is_a($class, AiProviderContract::class, true)) {
             throw new InvalidArgumentException('AI provider chưa khai báo adapter hợp lệ.');
@@ -111,6 +104,9 @@ final class ProviderRegistry
     public function resolveForRun(array $snapshot): AiProviderContract
     {
         $provider = $this->resolve((string) ($snapshot['provider'] ?? ''));
+        if (method_exists($provider, 'withRunSettings')) {
+            $provider = $provider->withRunSettings($snapshot);
+        }
         if (! empty($snapshot['provider_id']) && method_exists($provider, 'withConnection')) {
             $provider = $provider->withConnection($this->connectionForRun($snapshot, AiCapability::Text));
         }
@@ -167,23 +163,27 @@ final class ProviderRegistry
      */
     public function publicOptions(AiCapability $capability = AiCapability::Text): array
     {
-        $catalog = $this->catalogAvailable()
-            ? AiProvider::query()->with('models')->where('is_active', true)->orderBy('name')->get()
-                ->map(function (AiProvider $provider) use ($capability): array {
-                    $models = $this->modelOptions($provider, $capability);
+        $records = $this->catalogAvailable()
+            ? AiProvider::query()->with('models')->orderBy('name')->get()
+            : collect();
+        $catalog = $records->filter(fn (AiProvider $provider): bool => $provider->is_active)
+            ->map(function (AiProvider $provider) use ($capability): array {
+                $models = $this->modelOptions($provider, $capability);
 
-                    return [
-                        'key' => $provider->key, 'label' => $provider->name, 'logo' => $provider->driver,
-                        'models' => array_column($models, 'value'), 'model_options' => $models,
-                    ];
-                })->all()
-            : [];
-        $environment = $capability === AiCapability::Image ? [] : collect((array) config('ai-agent.providers', []))
-            ->filter(fn (array $provider): bool => ($provider['enabled'] ?? false) === true)
-            ->map(fn (array $provider, string $key): array => [
-                'key' => $key, 'label' => $provider['label'] ?? $key, 'logo' => $provider['logo'] ?? null,
-                'models' => array_values($provider['models'] ?? []),
-                'model_options' => collect($provider['models'] ?? [])->map(fn (string $model): array => [
+                return [
+                    'key' => $provider->key, 'label' => $provider->name, 'logo' => $provider->driver,
+                    'models' => array_column($models, 'value'), 'model_options' => $models,
+                ];
+            })->values()->all();
+        // Bản ghi DB cùng key luôn thắng, kể cả khi bị tắt hoặc không có model hợp lệ.
+        $storedKeys = $records->pluck('key')->all();
+        $environment = $capability === AiCapability::Image ? [] : collect((array) config('ai-providers.connections', []))
+            ->filter(fn (array $connection, string $key): bool => ($connection['enabled'] ?? false) === true && ! in_array($key, $storedKeys, true))
+            ->map(fn (array $connection, string $key): array => $this->configuredProvider($key))
+            ->map(fn (array $provider): array => [
+                'key' => $provider['key'], 'label' => $provider['label'], 'logo' => $provider['logo'],
+                'models' => $provider['models'],
+                'model_options' => collect($provider['models'])->map(fn (string $model): array => [
                     'id' => null, 'value' => $model, 'label' => $model,
                     'capabilities' => [AiCapability::Text->value, AiCapability::Structured->value],
                 ])->values()->all(),
@@ -192,6 +192,24 @@ final class ProviderRegistry
         return collect(array_merge($catalog, $environment))
             ->filter(fn (array $provider): bool => $provider['models'] !== [])
             ->unique('key')->values()->all();
+    }
+
+    /** Resolve metadata từ driver; giữ thông số kết nối và API key ở config server-side. */
+    private function configuredProvider(string $key): array
+    {
+        $connection = config('ai-providers.connections.'.$key);
+        $driver = is_array($connection) ? (string) ($connection['driver'] ?? '') : '';
+        $definition = config('ai-providers.presets.'.$driver) ?? config('ai-providers.internal.'.$driver);
+        if (! is_array($connection) || ($connection['enabled'] ?? false) !== true || ! is_array($definition)) {
+            throw new InvalidArgumentException('AI provider chưa được cấu hình hoặc đã tắt.');
+        }
+
+        return [
+            'key' => $key, 'driver' => $driver,
+            'label' => $definition['label'] ?? $key, 'logo' => $definition['logo'] ?? null,
+            'adapter' => $definition['adapter'] ?? null,
+            'models' => filled($connection['model'] ?? null) ? [(string) $connection['model']] : [],
+        ];
     }
 
     /**

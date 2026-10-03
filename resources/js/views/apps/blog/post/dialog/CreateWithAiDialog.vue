@@ -42,11 +42,15 @@ import AiImportProgressCard from './AiImportProgressCard.vue'
 import { toPostPayload } from '@/composables/aiCandidate'
 import { findProvider, providerModels } from '@/utils/aiModelOptions'
 import { buildAiContentRegenerateRequest } from '@/utils/aiContentInput'
+import { formatAiError, isAiSuccess } from '@/utils/aiErrors'
+import { useAiRunFeedback } from '@/composables/useAiRunFeedback'
+import { getAlertColor } from '@/config/alertColors'
 
 const props = defineProps({ targetId: { type: [Number, String], default: null } })
 const emit = defineEmits(['apply', 'applied'])
 const visible = defineModel({ type: Boolean, default: false })
 const store = useAiAgentStore()
+const { snackbar, observeRun, setSnackbarVisible } = useAiRunFeedback()
 const currentStep = shallowRef(1)
 const selectedCandidateId = shallowRef(null)
 const selectedFields = shallowRef([])
@@ -61,9 +65,21 @@ const sourceLanguage = shallowRef('en')
 let timer
 let loadGeneration = 0
 let disposed = false
+const editedDefaultFields = new Set()
+let applyingDefaults = false
+
+for (const field of ['inputType', 'outputs']) {
+  watch(() => form[field], () => {
+    if (!applyingDefaults) editedDefaultFields.add(field)
+  }, { deep: true, flush: 'sync' })
+}
 
 const capability = computed(() => store.capabilities ?? {})
-const candidates = computed(() => store.candidates)
+
+const candidates = computed(() => store.candidates.filter(item => (!item.status || isAiSuccess(item))
+  && !(['failed', 'cancelled', 'expired'].includes(store.session?.status)
+    && String(item.id) === String(store.session?.job_id ?? store.session?.id))))
+
 const candidate = computed(() => candidates.value.find(item => String(item.id) === String(selectedCandidateId.value)) ?? candidates.value[0])
 const busy = computed(() => store.isLoading || polling.value || loadingCapabilities.value)
 const sessionId = computed(() => store.session?.job_id ?? store.session?.id ?? store.session?.session_id)
@@ -124,6 +140,7 @@ const stepperItems = [
  */
 const resetDialogState = () => {
   stop()
+  setSnackbarVisible(false)
   store.reset()
   currentStep.value = 1
   selectedCandidateId.value = null
@@ -133,10 +150,13 @@ const resetDialogState = () => {
   startedAt.value = null
   checkedAt.value = null
   sourceLanguage.value = 'en'
+  applyingDefaults = true
   Object.assign(form, {
     inputType: 'url', inputValue: '', language: 'vi', instructions: '',
     selectionMode: 'auto', promptKey: '', provider: '', model: '', outputs: [],
   })
+  applyingDefaults = false
+  editedDefaultFields.clear()
 }
 
 /** Input: dialog mở. Output: options mới nhất; bỏ qua response của lần mở cũ. */
@@ -149,19 +169,27 @@ const load = async () => {
     const result = await store.loadCapabilities('post')
     if (generation !== loadGeneration || !visible.value) return
 
-    form.inputType = result.input_types?.[0] ?? result.inputs?.[0] ?? 'url'
+    applyingDefaults = true
+    if (!editedDefaultFields.has('inputType'))
+      form.inputType = result.input_types?.[0] ?? result.inputs?.[0] ?? 'url'
 
     /**
      * =====================================================================
      * GHI CHÚ: Không chọn provider/model thì server resolve text model mặc định.
      * =====================================================================
      */
-    form.provider = ''
-    form.outputs = [...(result.outputs ?? [])]
+    if (!editedDefaultFields.has('outputs')) {
+      const defaults = result.content_defaults ?? {}
+
+      form.outputs = (result.outputs ?? []).filter(output =>
+        !(output === 'seo' && defaults.generate_seo === false)
+        && !(output === 'thumbnail' && defaults.generate_thumbnail === false))
+    }
+    applyingDefaults = false
   }
   catch (error) {
     if (generation !== loadGeneration) return
-    message.value = error?.data?.message || error.message || 'Không thể tải cấu hình AI.'
+    message.value = formatAiError(error, 'Không thể tải cấu hình AI.')
   }
   finally {
     if (generation === loadGeneration) loadingCapabilities.value = false
@@ -179,6 +207,8 @@ const buildRequest = () => ({
   ...(form.provider ? { provider: form.provider } : {}),
   ...(form.model ? { model: form.model } : {}),
   requested_outputs: form.outputs,
+  generate_thumbnail: form.outputs.includes('thumbnail'),
+  thumbnail_mode: 'auto',
 })
 
 let pollGeneration = 0
@@ -191,7 +221,8 @@ const finishPolling = result => {
   stop()
   pollingPaused.value = false
   currentStep.value = succeeded.includes(result.status) ? 3 : 2
-  message.value = succeeded.includes(result.status) ? '' : result.error || 'Tác vụ đã kết thúc trước khi tạo được nội dung.'
+  message.value = succeeded.includes(result.status) ? '' : formatAiError(result, 'Tác vụ đã kết thúc trước khi tạo được nội dung.', capability.value.output_options)
+  observeRun(result, 'Tác vụ đã kết thúc trước khi tạo được nội dung.', capability.value.output_options)
 }
 
 /**
@@ -210,6 +241,7 @@ const poll = async response => {
 
     return
   }
+  observeRun(response)
   message.value = ''
   pollingPaused.value = false
   polling.value = true
@@ -234,6 +266,7 @@ const poll = async response => {
 
         return
       }
+      observeRun(result)
       queuedAt = result?.status === 'queued' ? queuedAt ?? checkedAt.value : null
       if (queuedAt && checkedAt.value - queuedAt >= 60000 || checkedAt.value - pollStartedAt >= 300000) {
         stop()
@@ -251,7 +284,7 @@ const poll = async response => {
       if (generation !== pollGeneration) return
       stop()
       pollingPaused.value = true
-      message.value = error?.data?.message || error.message || 'Không thể kiểm tra tiến trình.'
+      message.value = formatAiError(error?.data, 'Chưa đọc được trạng thái. Tác vụ vẫn được lưu; bấm Kiểm tra tiến trình để kiểm tra lại.')
     }
   }
 
@@ -276,7 +309,7 @@ const run = async () => {
   }
   catch (error) {
     if (generation !== loadGeneration) return
-    message.value = error?.data?.message || error.message; currentStep.value = 1
+    message.value = formatAiError(error); currentStep.value = 1
   }
 }
 
@@ -315,14 +348,14 @@ const regenerate = async () => {
   startedAt.value = null
   checkedAt.value = null
   try {
-    const response = await store.regenerate(sessionId.value, buildAiContentRegenerateRequest({
+    const response = await store.regenerate(candidate.value?.id ?? sessionId.value, buildAiContentRegenerateRequest({
       fields: selectedFields.value, instructions: form.instructions,
       prompt_key: form.selectionMode === 'manual' ? form.promptKey : '', provider: form.provider, model: form.model,
     }))
 
     if (generation === loadGeneration) await poll(response)
   }
-  catch (error) { if (generation === loadGeneration) message.value = error?.data?.message || error.message }
+  catch (error) { if (generation === loadGeneration) message.value = formatAiError(error) }
 }
 
 /**
@@ -346,7 +379,7 @@ const retryRun = async () => {
     const response = await store.retry(sessionId.value)
     if (generation === loadGeneration) await poll(response)
   }
-  catch (error) { if (generation === loadGeneration) message.value = error?.data?.message || error.message }
+  catch (error) { if (generation === loadGeneration) message.value = formatAiError(error) }
 }
 
 /**
@@ -366,7 +399,7 @@ const cancel = async () => {
     if (sessionId.value) await store.cancel(sessionId.value)
     if (generation === loadGeneration) pollingPaused.value = false
   }
-  catch (error) { if (generation === loadGeneration) message.value = error?.data?.message || error.message || 'Không thể hủy tác vụ.' }
+  catch (error) { if (generation === loadGeneration) message.value = formatAiError(error, 'Không thể hủy tác vụ.') }
   finally {
     if (generation === loadGeneration) stop()
   }
@@ -388,7 +421,7 @@ const swapLanguages = () => { const value = sourceLanguage.value
 
 watch(visible, open => {
   if (open) load()
-  else { loadGeneration++; loadingCapabilities.value = false; stop() }
+  else { loadGeneration++; loadingCapabilities.value = false; setSnackbarVisible(false); stop() }
 }, { immediate: true })
 watch(() => form.provider, () => {
   if (!models.value.some(model => model.value === form.model)) form.model = ''
@@ -709,4 +742,21 @@ onBeforeUnmount(() => { disposed = true; loadGeneration++; stop() })
       </VCardActions>
     </VCard>
   </VDialog>
+  <VSnackbar
+    :model-value="snackbar.visible"
+    :color="getAlertColor(snackbar.type)"
+    location="top end"
+    :timeout="4000"
+    @update:model-value="setSnackbarVisible"
+  >
+    {{ snackbar.message }}
+    <template #actions>
+      <VBtn
+        icon="tabler-x"
+        size="small"
+        aria-label="Đóng thông báo AI"
+        @click="setSnackbarVisible(false)"
+      />
+    </template>
+  </VSnackbar>
 </template>

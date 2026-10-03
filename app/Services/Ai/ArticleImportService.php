@@ -8,8 +8,10 @@ use App\Enums\MediaAssetVisibility;
 use App\Exceptions\AiImportException;
 use App\Models\AiImport;
 use App\Models\Category;
+use App\Models\MediaAsset;
 use App\Models\Tag;
 use App\Services\Ai\Contracts\AiProviderContract;
+use App\Services\Ai\Contracts\AiResponseMetadataProvider;
 use App\Services\Ai\Registries\PromptRegistry;
 use App\Services\Ai\Registries\ProviderRegistry;
 use Illuminate\Http\UploadedFile;
@@ -53,6 +55,7 @@ class ArticleImportService
         private readonly ?ArticleSourceFetcher $fetcher = null,
         private readonly ?UploadMediaAssetAction $uploader = null,
         private readonly ?ProviderRegistry $providers = null,
+        private readonly ?AiOutputValidator $validator = null,
     ) {}
 
     /**
@@ -96,22 +99,77 @@ class ArticleImportService
             ['source_type' => $sourceType, 'language' => (string) ($input['language'] ?? 'vi')],
         );
         $promptKey = (string) $prompt['key'];
-        $this->progress($import, 'rewriting', 55);
-        $draft = $this->fallbackDraft($url, $title, $description, $content, $html);
-        if ($provider->configured()) {
-            $draft = array_replace($draft, $provider->generate($title, $content, (string) ($input['language'] ?? 'vi'), (string) ($input['rewrite_style'] ?? 'informative'), $promptKey, (string) ($input['instructions'] ?? '')));
-            $draft['content_html'] = $this->sanitize((string) ($draft['content_html'] ?? $draft['content'] ?? ''));
-            $draft['content'] = $draft['content_html'];
+        $requestedFields = array_values(array_unique(array_map('strval', (array) ($input['fields'] ?? $input['requested_outputs'] ?? []))));
+        $hasFieldSelection = $requestedFields !== [] || (array_key_exists('requested_outputs', $input) && ! $import->parent_id);
+        if ($hasFieldSelection && method_exists($provider, 'withOutputFields')) {
+            $provider = $provider->withOutputFields($requestedFields);
         }
+        $this->progress($import, 'rewriting', 55);
+        $draftTitle = filled($input['title'] ?? null) ? (string) $input['title'] : $title;
+        $draft = $this->fallbackDraft($url, $draftTitle, $description, $content, $html);
+        $sourceDraft = $draft;
+        if ($hasFieldSelection && $import->parent_id) {
+            $sourceThumbnail = $draft['thumbnail'];
+            $parentDraft = (array) data_get(AiImport::query()->find($import->parent_id)?->result_json, 'draft', []);
+            $draft = array_replace($draft, $parentDraft);
+            if (in_array('thumbnail', $requestedFields, true)) {
+                $draft['thumbnail'] = $sourceThumbnail;
+            }
+        }
+        $validator = $this->validator ?? new AiOutputValidator;
+        $validationGroups = $hasFieldSelection ? $requestedFields : null;
+        $needsTextGeneration = ! $hasFieldSelection || array_diff($requestedFields, ['thumbnail']) !== [];
+        $diagnostics = [
+            'requested_groups' => $hasFieldSelection ? $requestedFields : ['title', 'content'],
+            'schema_version' => (string) $prompt['schema'],
+            'stage' => 'source',
+        ];
+        $generationCalled = false;
+        try {
+            if ($needsTextGeneration && $provider->configured()) {
+                $diagnostics['stage'] = 'transport';
+                $generationCalled = true;
+                $generated = $provider->generate($draftTitle, $content, (string) ($input['language'] ?? 'vi'), (string) ($input['rewrite_style'] ?? 'informative'), $promptKey, (string) ($input['instructions'] ?? ''));
+                if ($provider instanceof AiResponseMetadataProvider) {
+                    $diagnostics = array_replace($diagnostics, $provider->responseMetadata());
+                }
+                // Source URLs and uploaded media are pipeline results, never model output.
+                unset($generated['thumbnail']);
+                $diagnostics['returned_fields'] = array_keys($generated);
+                $generated = $validator->validate($generated, $validationGroups, sanitizeContent: true);
+                $draft = $hasFieldSelection
+                    ? $this->mergeRequestedFields($draft, $generated, $requestedFields)
+                    : array_replace($draft, $generated);
+                $diagnostics['stage'] = 'ready';
+            } else {
+                $selectedProvider = (string) ($input['provider'] ?? data_get($input, 'ai_connection.provider')
+                    ?? data_get($input, 'ai_connection.driver') ?? $provider->providerName());
+                if ($needsTextGeneration && ($selectedProvider !== 'deterministic' || $provider->providerName() !== 'deterministic')) {
+                    throw new AiImportException('Provider AI đã chọn chưa có cấu hình hợp lệ.', 'AI_PROVIDER_NOT_CONFIGURED');
+                }
+                if ($needsTextGeneration && $hasFieldSelection) {
+                    $draft = $this->mergeRequestedFields($draft, $sourceDraft, $requestedFields);
+                }
+                $validator->validate($draft, $validationGroups, sanitizeContent: true);
+                $diagnostics['stage'] = $needsTextGeneration ? 'deterministic' : 'skipped';
+            }
+        } catch (AiImportException $exception) {
+            $providerMetadata = $generationCalled && $provider instanceof AiResponseMetadataProvider ? $provider->responseMetadata() : [];
+            $this->persistResponseMetadata($import, array_replace($diagnostics, $providerMetadata, $exception->diagnostics));
+            throw $exception;
+        }
+        $draft['content_html'] = $draft['content_html'] ?? $draft['content'];
+        $draft['content'] = $draft['content_html'];
+        $this->persistResponseMetadata($import, $diagnostics);
         $draft['suggested_category_ids'] = $this->existingIds($draft['suggested_category_ids'] ?? $draft['category_ids'] ?? [], Category::class);
         $draft['suggested_tag_ids'] = $this->existingIds($draft['suggested_tag_ids'] ?? $draft['tag_ids'] ?? [], Tag::class);
         $draft['category_ids'] = $draft['suggested_category_ids'];
         $draft['tag_ids'] = $draft['suggested_tag_ids'];
 
-        $requestedFields = array_values(array_unique(array_map('strval', (array) ($input['fields'] ?? []))));
-        if ($requestedFields !== [] && $import->parent_id) {
-            $parentDraft = (array) data_get(AiImport::query()->find($import->parent_id)?->result_json, 'draft', []);
-            $draft = $this->mergeRequestedFields($parentDraft, $draft, $requestedFields);
+        if (! $hasFieldSelection && ! ($input['generate_seo'] ?? true) && ! in_array('seo', $requestedFields, true)) {
+            foreach (['focus_keyword', 'seo_title', 'seo_description', 'og_title', 'og_description'] as $field) {
+                unset($draft[$field]);
+            }
         }
 
         $this->progress($import, 'seo', 72);
@@ -119,7 +177,7 @@ class ArticleImportService
         if (! empty($draft['thumbnail_alt_text'])) {
             $thumbnail['alt_text'] = (string) $draft['thumbnail_alt_text'];
         }
-        $thumbnailRequested = $requestedFields === [] || in_array('thumbnail', $requestedFields, true);
+        $thumbnailRequested = ! $hasFieldSelection || in_array('thumbnail', $requestedFields, true);
         if ($thumbnailRequested && ($input['generate_thumbnail'] ?? true) && ($input['thumbnail_mode'] ?? 'auto') !== 'generate'
             && ($thumbnail['source_url'] ?? null) && $this->uploader && $import->exists) {
             $this->progress($import, 'thumbnail', 86);
@@ -134,7 +192,7 @@ class ArticleImportService
         if ($import->exists) {
             $import->forceFill([
                 'normalized_url' => $source['url'],
-                'source_meta_json' => ['content_type' => $source['content_type'], 'title' => $title],
+                'source_meta_json' => array_replace((array) $import->source_meta_json, ['content_type' => $source['content_type'], 'title' => $title]),
             ])->save();
         }
 
@@ -148,6 +206,20 @@ class ArticleImportService
             'schema_version' => (string) $prompt['schema'],
             'requested_fields' => $requestedFields,
         ];
+    }
+
+    /** Keep response diagnostics separate from public candidate fields, including on validation failure. */
+    private function persistResponseMetadata(AiImport $import, array $diagnostics): void
+    {
+        if (! $import->exists) {
+            return;
+        }
+        $import->refresh();
+        $import->forceFill([
+            'source_meta_json' => array_replace((array) $import->source_meta_json, [
+                'ai_response' => AiResponseDiagnostics::sanitize($diagnostics),
+            ]),
+        ])->save();
     }
 
     /**
@@ -210,7 +282,7 @@ class ArticleImportService
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Giữ field không được chọn từ parent khi regenerate từng phần.
+     * CHỨC NĂNG: Giữ field không được chọn từ nguồn hoặc parent khi tạo từng phần.
      * =====================================================================
      * INPUT: draft parent, draft mới và field selection allowlist.
      * OUTPUT: draft mới chỉ thay nhóm field được yêu cầu; không mutate input.
@@ -220,25 +292,15 @@ class ArticleImportService
      */
     private function mergeRequestedFields(array $parent, array $fresh, array $fields): array
     {
-        $merged = array_replace($fresh, $parent);
-        foreach ($fields as $field) {
-            match ($field) {
-                'content' => $merged = array_replace($merged, [
-                    'content_html' => $fresh['content_html'] ?? $fresh['content'] ?? $parent['content_html'] ?? '',
-                    'content' => $fresh['content'] ?? $fresh['content_html'] ?? $parent['content'] ?? '',
-                ]),
-                'seo' => $merged = array_replace($merged, array_intersect_key($fresh, array_flip([
-                    'focus_keyword', 'seo_title', 'seo_description', 'canonical_url',
-                    'robots_index', 'robots_follow', 'og_title', 'og_description',
-                ]))),
-                'taxonomy' => $merged = array_replace($merged, array_intersect_key($fresh, array_flip([
-                    'suggested_category_ids', 'suggested_tag_ids', 'category_ids', 'tag_ids',
-                ]))),
-                'thumbnail' => $merged = array_replace($merged, array_intersect_key($fresh, array_flip([
-                    'thumbnail', 'thumbnail_prompt', 'thumbnail_alt_text',
-                ]))),
-                default => $merged[$field] = $fresh[$field] ?? ($parent[$field] ?? null),
-            };
+        $merged = $parent;
+        foreach ($fields as $group) {
+            $canonicalFields = (array) config('ai-agent.output_definitions.'.$group.'.fields', []);
+            $values = array_intersect_key($fresh, array_flip($canonicalFields));
+            if ($group === 'content' && (isset($fresh['content_html']) || isset($fresh['content']))) {
+                $values['content_html'] = $fresh['content_html'] ?? $fresh['content'];
+                $values['content'] = $values['content_html'];
+            }
+            $merged = array_replace($merged, $values);
         }
 
         return $merged;
@@ -392,7 +454,7 @@ class ArticleImportService
      */
     private function providerFor(array $input): AiProviderContract
     {
-        if (! $this->providers || empty($input['provider'])) {
+        if (! $this->providers || (empty($input['provider']) && empty($input['ai_connection']))) {
             return $this->provider;
         }
 
@@ -421,7 +483,7 @@ class ArticleImportService
      *   action media tự quản lý transaction/security boundary.
      * =====================================================================
      */
-    private function createThumbnail(ArticleSourceFetcher $fetcher, string $url, string $title, int $actorId, string $altText): ?\App\Models\MediaAsset
+    private function createThumbnail(ArticleSourceFetcher $fetcher, string $url, string $title, int $actorId, string $altText): ?MediaAsset
     {
         $path = null;
         $webpPath = null;

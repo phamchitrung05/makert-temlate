@@ -54,19 +54,36 @@ file `.env`; chỉ commit `.env.example` với giá trị mẫu không nhạy c�
 
 ## AI Content Agent
 
-AI chỉ được gọi từ backend; không đưa `AI_IMPORT_KEY` hoặc endpoint secret vào
-bundle Vue. Các biến giới hạn URL/job và quota có giá trị mặc định an toàn trong
+AI chỉ được gọi từ backend; không đưa API key hoặc endpoint secret vào bundle
+Vue. Ba file cấu hình có trách nhiệm riêng:
+
+| File | Nội dung |
+| --- | --- |
+| `config/ai-agent.php` | Target, quyền, các nhóm đầu ra được phép chọn (`targets.*.outputs`), nhãn nhóm (`output_definitions`), prompt và schema kết quả. Không lưu provider hoặc credential. |
+| `config/ai-providers.php` | Driver/preset/adapter, khả năng model, giới hạn đồng bộ, provider mặc định và `connections` lấy từ môi trường. |
+| `config/ai-import.php` | Bật/tắt pipeline, timeout đọc nguồn/job, giới hạn URL/HTML/ảnh, quota, retention và idempotency. Không lưu credential/model/provider. |
+
+Các tên biến môi trường đang dùng được giữ nguyên; chỉ nơi đọc cấu hình được
+chuyển về đúng file. Các biến giới hạn URL/job và quota có giá trị mặc định trong
 `.env.example`:
 
 | Nhóm | Biến |
 | --- | --- |
-| Provider mặc định | `AI_IMPORT_ENABLED`, `AI_IMPORT_PROVIDER`, `AI_IMPORT_ENDPOINT`, `AI_IMPORT_KEY`, `AI_IMPORT_MODEL` |
-| OpenAI-compatible | `AI_OPENAI_KEY`, `AI_OPENAI_ENDPOINT`, `AI_OPENAI_MODEL`, `AI_OPENAI_TEMPERATURE` |
-| Gemini | `AI_GEMINI_KEY`, `AI_GEMINI_ENDPOINT`, `AI_GEMINI_MODEL`, `AI_GEMINI_TEMPERATURE` |
+| Pipeline | `AI_IMPORT_ENABLED` |
+| Provider mặc định | `AI_IMPORT_PROVIDER` → `ai-providers.default_provider` |
+| HTTP JSON | `AI_IMPORT_ENDPOINT`, `AI_IMPORT_KEY`, `AI_IMPORT_MODEL` → `ai-providers.connections.http-json` |
+| OpenAI | `AI_OPENAI_KEY`, `AI_OPENAI_ENDPOINT`, `AI_OPENAI_MODEL`, `AI_OPENAI_TEMPERATURE` → `ai-providers.connections.openai` |
+| Gemini | `AI_GEMINI_KEY`, `AI_GEMINI_ENDPOINT`, `AI_GEMINI_MODEL`, `AI_GEMINI_TEMPERATURE` → `ai-providers.connections.gemini` |
 | Timeout/retry | `AI_PROVIDER_REQUEST_TIMEOUT`, `AI_IMPORT_TIMEOUT`, `AI_IMPORT_CONNECT_TIMEOUT`, `AI_IMPORT_JOB_TIMEOUT`, `AI_IMPORT_MAX_REDIRECTS` |
 | Payload/file | `AI_IMPORT_MAX_HTML_BYTES`, `AI_IMPORT_MAX_IMAGE_BYTES`, `AI_IMPORT_USER_AGENT` |
 | Prompt/lifecycle | `AI_IMPORT_PROMPT_VERSION`, `AI_IMPORT_RETENTION_DAYS`, `AI_IMPORT_IDEMPOTENCY_WINDOW_MINUTES` |
 | Quota | `AI_IMPORT_QUOTA_PER_HOUR` |
+
+Provider/API key/model chỉnh trong AI Settings được lưu ở database. Bản ghi
+`ai_providers` được ưu tiên so với `connections` cùng key; provider trong database
+bị tắt không tự quay về connection môi trường. API capability chỉ trả metadata
+đã lọc, không trả credential hoặc endpoint. Driver/preset dùng một định nghĩa
+adapter chung cho cả connection database và connection môi trường.
 
 `config/ai-providers.php` có `request_timeout` làm mặc định cho provider mới,
 có thể override bằng `AI_PROVIDER_REQUEST_TIMEOUT`. Giá trị lưu riêng trong
@@ -77,12 +94,13 @@ Database/Redis/Beanstalkd có `retry_after` tối thiểu 900 giây; job AI đ�
 chờ trong snapshot, cộng 120 giây cho xử lý nguồn/lưu kết quả. Kết nối TCP vẫn
 có giới hạn 5 giây; trường provider kiểm soát tổng thời gian chờ HTTP mỗi request.
 
-Khi `AI_IMPORT_ENABLED=false`, provider/import bị tắt thật (không dùng cast
+Khi `AI_IMPORT_ENABLED=false`, pipeline import bị tắt thật (không dùng cast
 boolean của chuỗi môi trường). Laravel AI SDK chưa được cài trong môi trường
 PHP 8.2 hiện tại; chỉ bật sau khi runtime đáp ứng PHP 8.3 và đã kiểm thử provider.
-Các API key chỉ đặt trong `.env` phía Laravel; không đưa vào `VITE_*`, response
-capability hoặc bundle Vue. Khi chưa điền key, deterministic provider vẫn là
-fallback an toàn cho local/test.
+API key được lưu mã hóa trong database khi chỉnh qua AI Settings hoặc lấy từ
+`.env` phía Laravel khi dùng connection môi trường; không đưa vào `VITE_*`,
+response capability hoặc bundle Vue. Provider `deterministic` trong `connections`
+được dùng cho local/test khi chọn chế độ trích xuất không gọi AI bên ngoài.
 
 ## Sanctum admin
 

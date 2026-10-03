@@ -51,6 +51,10 @@ final class AiSettingsRequest extends FormRequest
             'fallback_image_model_id' => ['nullable', 'integer', 'min:1'],
             'default_temperature' => ['nullable', 'numeric', 'min:0', 'max:2'],
             'request_timeout' => ['nullable', 'integer', 'min:5', 'max:120'],
+            'min_word_count' => ['sometimes', 'required', 'integer', 'min:0', 'max:10000'],
+            'default_system_prompt' => ['nullable', 'string', 'max:10000'],
+            'auto_thumbnail' => ['sometimes', 'required', 'boolean'],
+            'auto_seo' => ['sometimes', 'required', 'boolean'],
         ];
     }
 }

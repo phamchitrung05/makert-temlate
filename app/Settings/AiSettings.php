@@ -27,6 +27,14 @@ class AiSettings extends Settings
 
     public int $request_timeout;
 
+    public int $min_word_count;
+
+    public string $default_system_prompt;
+
+    public bool $auto_thumbnail;
+
+    public bool $auto_seo;
+
     /** Input: Không có. Output: tên nhóm settings ổn định; không ghi dữ liệu. */
     public static function group(): string
     {

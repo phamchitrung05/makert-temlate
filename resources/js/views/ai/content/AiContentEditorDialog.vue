@@ -36,14 +36,16 @@ const canSave = computed(() => !props.loading && !props.saving && props.session?
   <VDialog
     :model-value="Boolean(props.session)"
     max-width="1000"
+    scrollable
     :persistent="props.saving"
     @update:model-value="!$event && emit('close')"
   >
+    <DialogCloseBtn
+      :disabled="props.saving"
+      aria-label="Đóng chỉnh sửa content AI"
+      @click="emit('close')"
+    />
     <VCard title="Chỉnh sửa content AI">
-      <DialogCloseBtn
-        :disabled="props.saving"
-        @click="emit('close')"
-      />
       <VCardText>
         <VProgressLinear
           v-if="props.loading"
@@ -113,7 +115,7 @@ const canSave = computed(() => !props.loading && !props.saving && props.session?
           </VRow>
         </template>
       </VCardText>
-      <VCardText class="d-flex justify-end gap-3">
+      <VCardActions class="justify-end gap-3 pa-6">
         <VBtn
           variant="tonal"
           color="secondary"
@@ -123,6 +125,7 @@ const canSave = computed(() => !props.loading && !props.saving && props.session?
           Hủy
         </VBtn>
         <VBtn
+          variant="elevated"
           prepend-icon="tabler-device-floppy"
           :disabled="!canSave"
           :loading="props.saving"
@@ -130,7 +133,7 @@ const canSave = computed(() => !props.loading && !props.saving && props.session?
         >
           Lưu nội dung
         </VBtn>
-      </VCardText>
+      </VCardActions>
     </VCard>
   </VDialog>
 </template>

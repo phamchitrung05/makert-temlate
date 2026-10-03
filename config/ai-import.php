@@ -8,15 +8,12 @@
  * CÁC HÀM/METHOD TRONG FILE: Không có function; file chỉ trả mảng config.
  * INPUT/OUTPUT CỦA FILE (tổng thể):
  * - INPUT : biến môi trường `AI_IMPORT_*`, không chứa secret mặc định.
- * - OUTPUT: timeout, giới hạn payload, quota, retention và provider settings.
+ * - OUTPUT: timeout đọc nguồn/job, giới hạn payload, quota và retention.
+ * - Provider, model và kết nối từ .env được khai báo trong ai-providers.php.
  * - SIDE EFFECT: không gọi network; application code đọc qua `config()`.
  * =====================================================================
  */
 return [
-    'provider' => env('AI_IMPORT_PROVIDER', 'deterministic'),
-    'endpoint' => env('AI_IMPORT_ENDPOINT'),
-    'key' => env('AI_IMPORT_KEY'),
-    'model' => env('AI_IMPORT_MODEL', 'default'),
     'timeout' => (int) env('AI_IMPORT_TIMEOUT', 12),
     'connect_timeout' => (int) env('AI_IMPORT_CONNECT_TIMEOUT', 5),
     'job_timeout' => (int) env('AI_IMPORT_JOB_TIMEOUT', 180),
@@ -29,16 +26,4 @@ return [
     'quota_per_hour' => (int) env('AI_IMPORT_QUOTA_PER_HOUR', 20),
     'idempotency_window_minutes' => (int) env('AI_IMPORT_IDEMPOTENCY_WINDOW_MINUTES', 30),
     'enabled' => filter_var(env('AI_IMPORT_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
-    'openai' => [
-        'key' => env('AI_OPENAI_KEY'),
-        'endpoint' => env('AI_OPENAI_ENDPOINT', 'https://api.openai.com/v1/chat/completions'),
-        'model' => env('AI_OPENAI_MODEL', 'gpt-4o-mini'),
-        'temperature' => (float) env('AI_OPENAI_TEMPERATURE', 0.2),
-    ],
-    'gemini' => [
-        'key' => env('AI_GEMINI_KEY'),
-        'endpoint' => env('AI_GEMINI_ENDPOINT', 'https://generativelanguage.googleapis.com/v1beta'),
-        'model' => env('AI_GEMINI_MODEL', 'gemini-3.6-flash'),
-        'temperature' => (float) env('AI_GEMINI_TEMPERATURE', 0.2),
-    ],
 ];

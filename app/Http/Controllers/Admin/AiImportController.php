@@ -5,19 +5,24 @@ namespace App\Http\Controllers\Admin;
 use App\Actions\Posts\CreatePostAction;
 use App\Actions\Posts\UpdatePostAction;
 use App\Enums\AiCapability;
+use App\Enums\MediaAssetKind;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AiCandidateApplyRequest;
 use App\Http\Requests\Admin\AiCandidateUpdateRequest;
 use App\Http\Requests\Admin\AiImportRequest;
 use App\Http\Requests\Admin\AiSessionIndexRequest;
 use App\Http\Resources\AiSessionSummaryResource;
+use App\Http\Resources\MediaAssetResource;
 use App\Http\Responses\BaseResponse;
 use App\Models\AiImport;
+use App\Models\MediaAsset;
 use App\Models\Post;
 use App\Services\Ai\AiContentSanitizer;
 use App\Services\Ai\AiProvenanceService;
+use App\Services\Ai\AiResponseDiagnostics;
 use App\Services\Ai\AiRunAssetCleaner;
 use App\Services\Ai\AiRunService;
+use App\Services\Ai\AiSettingsService;
 use App\Services\Ai\ArticleSourceFetcher;
 use App\Services\Ai\ModelResolver;
 use App\Services\Ai\Registries\PromptRegistry;
@@ -26,7 +31,10 @@ use App\Services\Ai\Registries\SchemaRegistry;
 use App\Services\Ai\Registries\TargetRegistry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * =====================================================================
@@ -34,7 +42,7 @@ use Illuminate\Support\Facades\DB;
  * =====================================================================
  * CÁC HÀM/METHOD: index(), targets(), capabilities(), store(), show(), regenerate(), retry(), updateCandidate(),
  * candidates(), apply(), cancel(), destroy(), payload(), ensureOwner(),
- * cleanupThumbnail().
+ * loadThumbnails(), cleanupThumbnail().
  * INPUT: admin request URL/options hoặc UUID job; OUTPUT: envelope JSON.
  * SIDE EFFECT: tạo/dispatch queue job, cập nhật vòng đời và dọn thumbnail tạm.
  * INPUT/OUTPUT CỦA CLASS (tổng thể): request admin -> tác vụ/candidate an toàn.
@@ -50,7 +58,7 @@ class AiImportController extends Controller
      *
      * Input: page/per_page đã validate, actor đã qua auth/posts.manage.
      * Output: summary phân trang mới nhất trước; loại run ảnh và target không có quyền.
-     * Side effect: chỉ query DB, không eager load, không dispatch hoặc gọi AI.
+     * Side effect: query DB và tải thumbnail/media theo lô; không dispatch hoặc gọi AI.
      * Exception/Transaction: không mở transaction; middleware kiểm tra quyền.
      */
     public function index(AiSessionIndexRequest $request): JsonResponse
@@ -74,6 +82,8 @@ class AiImportController extends Controller
             ->orderByDesc('created_at')->orderByDesc('id')
             ->paginate((int) ($filters['per_page'] ?? 100), ['*'], 'page', (int) ($filters['page'] ?? 1));
 
+        $this->loadThumbnails($paginator->getCollection());
+
         return BaseResponse::paginated(AiSessionSummaryResource::collection($paginator), 'Danh sách tác vụ viết bài AI.');
     }
 
@@ -85,6 +95,8 @@ class AiImportController extends Controller
             ->map(fn (array $target): array => [
                 'key' => $target['key'], 'label' => $target['label'] ?? $target['key'],
                 'icon' => $target['icon'] ?? 'tabler-file-text', 'color' => $target['color'] ?? 'primary',
+                'outputs' => array_values($target['outputs'] ?? []),
+                'output_options' => $targets->outputOptions($target['key']),
             ])->values()->all();
         abort_if($items === [], 403);
 
@@ -108,6 +120,7 @@ class AiImportController extends Controller
         ProviderRegistry $providers,
         PromptRegistry $prompts,
         SchemaRegistry $schemas,
+        AiSettingsService $settings,
     ): JsonResponse {
         try {
             $targetConfig = $targets->get($target);
@@ -144,15 +157,24 @@ class AiImportController extends Controller
             ];
         })->all();
 
+        $contentSettings = $settings->all();
+
         return BaseResponse::success([
             'target_type' => $target,
             'operations' => array_values($targetConfig['operations'] ?? []),
             'input_types' => array_values($targetConfig['inputs'] ?? []),
             'outputs' => array_values($targetConfig['outputs'] ?? []),
+            'output_options' => $targets->outputOptions($target),
             'prompts' => $promptItems,
             'schemas' => $schemaItems,
             'providers' => $providers->publicOptions(AiCapability::Text),
             'image_providers' => $providers->publicOptions(AiCapability::Image),
+            'content_defaults' => [
+                'model_id' => $contentSettings['default_text_model_id'],
+                'generate_thumbnail' => $contentSettings['auto_thumbnail'],
+                'generate_seo' => $contentSettings['auto_seo'],
+                'min_word_count' => $contentSettings['min_word_count'],
+            ],
         ], 'Capability AI của target.');
     }
 
@@ -172,12 +194,16 @@ class AiImportController extends Controller
         ModelResolver $resolver,
         PromptRegistry $prompts,
         AiRunService $runs,
+        AiSettingsService $settings,
     ): JsonResponse {
         if (! config('ai-import.enabled', true)) {
             return BaseResponse::error('AI import đang tắt.', 503);
         }
         $userId = (int) $request->user()->getKey();
         $data = $request->validated();
+        $contentSettings = $settings->all();
+        $generateThumbnail = (bool) ($data['generate_thumbnail'] ?? $contentSettings['auto_thumbnail']);
+        $generateSeo = (bool) ($data['generate_seo'] ?? $contentSettings['auto_seo']);
         $targetType = (string) ($data['target_type'] ?? 'post');
         $sourceType = filled($data['text'] ?? null) ? 'text' : 'url';
         $normalizedUrl = $sourceType === 'url'
@@ -188,8 +214,9 @@ class AiImportController extends Controller
             'model' => $data['model'] ?? null,
             'model_id' => $data['model_id'] ?? null,
         ], static fn (mixed $value): bool => filled($value)));
+        $connection['generate_seo'] = $generateSeo;
         $imageConnection = null;
-        if (($data['thumbnail_mode'] ?? 'auto') === 'generate' && ($data['generate_thumbnail'] ?? true)
+        if (($data['thumbnail_mode'] ?? 'auto') === 'generate' && $generateThumbnail
             && $request->user()->can('media.upload')) {
             try {
                 $imageConnection = $resolver->resolve(AiCapability::Image, array_filter([
@@ -197,7 +224,7 @@ class AiImportController extends Controller
                     'model' => $data['image_model'] ?? null,
                     'model_id' => $data['image_model_id'] ?? null,
                 ], static fn (mixed $value): bool => filled($value)));
-            } catch (\Illuminate\Validation\ValidationException) {
+            } catch (ValidationException) {
                 /**
                  * =================================================================
                  * GHI CHÚ: Ảnh là capability tùy chọn; content run vẫn hợp lệ.
@@ -218,7 +245,7 @@ class AiImportController extends Controller
                 ['source_type' => $sourceType, 'language' => (string) ($data['language'] ?? 'vi')],
             );
         } catch (\InvalidArgumentException) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+            throw ValidationException::withMessages([
                 'prompt_key' => 'Prompt không nằm trong allowlist của tài nguyên đã chọn.',
             ]);
         }
@@ -228,7 +255,8 @@ class AiImportController extends Controller
             'source_type' => $sourceType,
             'language' => $data['language'] ?? 'vi',
             'rewrite_style' => $data['rewrite_style'] ?? 'informative',
-            'generate_thumbnail' => (bool) ($data['generate_thumbnail'] ?? true),
+            'generate_thumbnail' => $generateThumbnail,
+            'generate_seo' => $generateSeo,
             'thumbnail_mode' => $data['thumbnail_mode'] ?? 'auto',
             'prompt_key' => $promptKey,
             'instructions' => $data['instructions'] ?? '',
@@ -245,6 +273,13 @@ class AiImportController extends Controller
             'ai_connection' => $connection,
             'image_connection' => $imageConnection,
         ];
+        if (array_key_exists('requested_outputs', $data)) {
+            $input['requested_outputs'] = array_values($data['requested_outputs']);
+            $input['fields'] = $input['requested_outputs'];
+        }
+        if (filled($data['title'] ?? null)) {
+            $input['title'] = $data['title'];
+        }
         $sourceHashValue = $sourceType === 'text' ? trim((string) $data['text']) : (string) $normalizedUrl;
         $hash = hash('sha256', $sourceType.'|'.$sourceHashValue.'|'.json_encode($input, JSON_UNESCAPED_UNICODE).'|'.config('ai-import.prompt_version', 'v1'));
         $import = $runs->create($userId, [
@@ -299,7 +334,7 @@ class AiImportController extends Controller
             'model' => ['sometimes', 'nullable', 'string', 'max:190'],
             'model_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'fields' => ['sometimes', 'array'],
-            'fields.*' => ['string', 'distinct', 'in:title,excerpt,content,seo,taxonomy,thumbnail'],
+            'fields.*' => ['string', 'distinct', Rule::in((array) config('ai-agent.targets.'.($aiImport->input_json['target_type'] ?? 'post').'.outputs', []))],
         ]);
         $currentInput = (array) $aiImport->input_json;
         $options['fields'] = $options['fields'] ?? [];
@@ -321,14 +356,35 @@ class AiImportController extends Controller
             try {
                 $prompts->get((string) $options['prompt_key'], (string) ($currentInput['target_type'] ?? 'post'), 'create');
             } catch (\InvalidArgumentException) {
-                throw \Illuminate\Validation\ValidationException::withMessages(['prompt_key' => 'Prompt không hỗ trợ tài nguyên của bài này.']);
+                throw ValidationException::withMessages(['prompt_key' => 'Prompt không hỗ trợ tài nguyên của bài này.']);
             }
         }
         $childInput = array_replace((array) $aiImport->input_json, array_filter($options, fn ($value) => $value !== null));
         $childInput['provider'] = $connection['provider'];
         $childInput['model'] = $connection['model'] ?? null;
         $childInput['model_id'] = $connection['model_id'] ?? null;
+        $connection['generate_seo'] = (bool) ($currentInput['generate_seo'] ?? true);
         $childInput['ai_connection'] = $connection;
+        // An explicitly requested output takes priority over the original automatic defaults.
+        if (in_array('seo', $options['fields'], true)) {
+            $childInput['generate_seo'] = true;
+            $childInput['ai_connection']['generate_seo'] = true;
+        }
+        if (in_array('thumbnail', $options['fields'], true)) {
+            $childInput['generate_thumbnail'] = true;
+            if (($childInput['thumbnail_mode'] ?? 'auto') === 'generate') {
+                if (! $request->user()->can('media.upload')) {
+                    $childInput['image_connection'] = null;
+                } elseif (empty($childInput['image_connection'])) {
+                    try {
+                        $childInput['image_connection'] = $resolver->resolve(AiCapability::Image);
+                    } catch (ValidationException) {
+                        // Image generation is optional; keep the content candidate available.
+                        $childInput['image_connection'] = null;
+                    }
+                }
+            }
+        }
         $child = $runs->create((int) $request->user()->getKey(), [
             'session_id' => $aiImport->session_id ?: $aiImport->id, 'parent_id' => $aiImport->id,
             'operation' => 'regenerate', 'source_url' => $aiImport->source_url,
@@ -371,7 +427,7 @@ class AiImportController extends Controller
                 try {
                     $input[$key] = $providers->connectionForRun($snapshot, $capability, true)->snapshot;
                 } catch (\InvalidArgumentException $exception) {
-                    throw \Illuminate\Validation\ValidationException::withMessages(['provider' => $exception->getMessage()]);
+                    throw ValidationException::withMessages(['provider' => $exception->getMessage()]);
                 }
             }
             $run->forceFill([
@@ -393,7 +449,7 @@ class AiImportController extends Controller
      * =====================================================================
      * INPUT: Run thuộc actor dùng để xác định session.
      * OUTPUT: Danh sách candidate không bao gồm image run.
-     * SIDE EFFECT: Chỉ query ai_imports; không gọi model.
+     * SIDE EFFECT: Query ai_imports và tải thumbnail/media theo lô; không gọi model.
      * EXCEPTION/TRANSACTION: Abort 404 nếu không phải owner; không mở transaction.
      * =====================================================================
      */
@@ -402,9 +458,11 @@ class AiImportController extends Controller
         $this->ensureOwner($request, $aiImport);
         $sessionId = $aiImport->session_id ?: $aiImport->id;
         $items = AiImport::query()->where(function ($query) use ($sessionId): void {
-            $query->where('session_id', $sessionId)->orWhereKey($sessionId);
+            $query->where('session_id', $sessionId)->orWhere('id', $sessionId);
         })->where('created_by', $request->user()->getKey())
             ->where(fn ($query) => $query->whereNull('operation')->orWhere('operation', '!=', 'image'))->latest()->get();
+
+        $this->loadThumbnails($items);
 
         return BaseResponse::success($items->map(fn (AiImport $item): array => $this->payload($item))->values()->all(), 'Danh sách candidate.');
     }
@@ -429,7 +487,7 @@ class AiImportController extends Controller
             unset($data['expected_version']);
             $data['content_html'] = $sanitizer->sanitize($data['content_html']);
             if (trim(strip_tags($data['content_html'])) === '') {
-                throw \Illuminate\Validation\ValidationException::withMessages(['content_html' => 'Nội dung không được rỗng sau khi làm sạch HTML.']);
+                throw ValidationException::withMessages(['content_html' => 'Nội dung không được rỗng sau khi làm sạch HTML.']);
             }
             $data['content'] = $data['content_html'];
             $result['draft'] = array_replace($draft, $data);
@@ -525,25 +583,65 @@ class AiImportController extends Controller
      * =====================================================================
      * INPUT: AiImport đã qua ownership check hoặc record nội bộ.
      * OUTPUT: mảng public gồm status/progress/result; không lộ secret/path nội bộ.
-     * SIDE EFFECT: không ghi database; chỉ đọc model đã hydrate.
+     * SIDE EFFECT: đọc thumbnail/media nếu chưa tải; không ghi database.
      * EXCEPTION/TRANSACTION: không mở transaction.
      * =====================================================================
      */
     private function payload(AiImport $import): array
     {
+        if (! $import->relationLoaded('thumbnail')) {
+            $this->loadThumbnails(collect([$import]));
+        }
+        $thumbnail = $import->getRelation('thumbnail');
+        $result = array_intersect_key((array) $import->result_json, array_flip([
+            'source', 'draft', 'provider', 'model', 'prompt_key', 'prompt_version',
+            'schema_version', 'requested_fields', 'image', 'image_job_id',
+        ]));
+        if (! in_array($import->status, ['ready', 'completed', 'succeeded'], true)) {
+            unset($result['draft']);
+        }
+        $diagnostics = AiResponseDiagnostics::sanitize((array) data_get($import->source_meta_json, 'ai_response', []));
+
         return [
+            ...$result,
             'job_id' => $import->id, 'status' => $import->status, 'current_step' => $import->current_step,
             'progress' => (int) $import->progress, 'error_code' => $import->error_code,
             'source_type' => data_get($import->input_json, 'source_type', filled($import->source_url) ? 'url' : 'text'),
             'source_url' => data_get($import->input_json, 'source_type') === 'text' ? null : $import->source_url,
             'error' => $import->error_message, 'session_id' => $import->session_id ?: $import->id,
+            'validation_errors' => $import->status === 'failed' ? ($diagnostics['validation_errors'] ?? []) : [],
             'parent_id' => $import->parent_id, 'operation' => $import->operation,
             'target_type' => data_get($import->input_json, 'target_type', 'post'),
             'created_at' => $import->created_at?->toIso8601String(),
             'draft_version' => hash('sha256', json_encode(data_get($import->result_json, 'draft', []))),
             'applied_target_id' => $import->applied_target_id, 'applied_fields' => $import->applied_fields,
-            ...($import->result_json ?? []),
+            'thumbnail' => $thumbnail ? MediaAssetResource::make($thumbnail) : null,
         ];
+    }
+
+    /** Tải ảnh thumbnail và media theo lô; asset không tồn tại hoặc đã xóa trả null. */
+    private function loadThumbnails(Collection $imports): void
+    {
+        $unloaded = $imports->reject(fn (AiImport $import): bool => $import->relationLoaded('thumbnail'));
+        $assetIds = $unloaded
+            ->map(fn (AiImport $import): int => (int) data_get($import->result_json, 'draft.thumbnail.media_asset_id', 0))
+            ->filter(fn (int $id): bool => $id > 0)->unique()->values();
+        $assets = $assetIds->isEmpty()
+            ? collect()
+            : MediaAsset::query()->ofKind(MediaAssetKind::Image)->whereKey($assetIds)
+                ->with('media')->get()->keyBy('id');
+
+        // Spatie reads the parent model when resolving conversion URLs.
+        foreach ($assets as $asset) {
+            foreach ($asset->media as $media) {
+                $media->setRelation('model', $asset);
+            }
+        }
+
+        foreach ($unloaded as $import) {
+            $assetId = (int) data_get($import->result_json, 'draft.thumbnail.media_asset_id', 0);
+            $import->setRelation('thumbnail', $assets->get($assetId));
+        }
     }
 
     /**

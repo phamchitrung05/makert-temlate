@@ -46,12 +46,14 @@ class AiImportRequest extends FormRequest
         $normalized = [
             'url' => $this->input('url', $input['url'] ?? null),
             'text' => $this->input('text', $input['text'] ?? null),
+            'title' => $this->input('title', $input['title'] ?? null),
             'language' => $this->input('language', $this->input('output_language')),
         ];
-        if ($this->has('generate_thumbnail')) {
-            $normalized['generate_thumbnail'] = $this->boolean('generate_thumbnail');
-        } elseif ($this->has('requested_outputs')) {
+        if ($this->has('requested_outputs')) {
             $normalized['generate_thumbnail'] = in_array('thumbnail', $outputs, true);
+            $normalized['generate_seo'] = in_array('seo', $outputs, true);
+        } elseif ($this->has('generate_thumbnail')) {
+            $normalized['generate_thumbnail'] = $this->boolean('generate_thumbnail');
         }
 
         $this->merge($normalized);
@@ -92,9 +94,11 @@ class AiImportRequest extends FormRequest
             'operation' => ['nullable', 'in:create'],
             'url' => ['nullable', 'url', 'max:2048', 'required_without:text'],
             'text' => ['nullable', 'string', 'max:200000', 'required_without:url'],
+            'title' => ['nullable', 'string', 'max:255'],
             'language' => ['nullable', 'string', 'max:12'],
             'rewrite_style' => ['nullable', 'string', 'max:40'],
             'generate_thumbnail' => ['nullable', 'boolean'],
+            'generate_seo' => ['nullable', 'boolean'],
             'thumbnail_mode' => ['nullable', 'in:auto,source,generate'],
             'prompt_key' => ['nullable', 'string', 'max:120'],
             'instructions' => ['nullable', 'string', 'max:4000'],
@@ -104,8 +108,8 @@ class AiImportRequest extends FormRequest
             'image_provider' => ['nullable', 'string', 'max:80'],
             'image_model' => ['nullable', 'string', 'max:190'],
             'image_model_id' => ['nullable', 'integer', 'min:1'],
-            'requested_outputs' => ['sometimes', 'array'],
-            'requested_outputs.*' => ['string', 'distinct', 'in:title,excerpt,content,seo,taxonomy,thumbnail'],
+            'requested_outputs' => ['sometimes', 'array', 'min:1'],
+            'requested_outputs.*' => ['string', 'distinct', Rule::in((array) config('ai-agent.targets.'.($this->input('target_type') ?: 'post').'.outputs', []))],
         ];
     }
 }

@@ -41,6 +41,7 @@ async function renderCandidate() {
       stubs: {
         ...passthroughStubs(['VDialog', 'DialogCloseBtn', 'VCard', 'VCardItem', 'VCardTitle', 'VCardSubtitle', 'VCardText', 'VCardActions', 'VAvatar', 'VIcon', 'VSheet', 'VRow', 'VCol', 'VAlert', 'VDivider', 'VProgressLinear', 'AppStepper', 'AppTextField', 'AppSelect', 'AppTextarea', 'ArticleSourcePreviewCard', 'AiImportProgressCard']),
         VBtn: ButtonStub,
+        VSnackbar: true,
         AiAgentCandidatePreview: PreviewStub,
       },
     },

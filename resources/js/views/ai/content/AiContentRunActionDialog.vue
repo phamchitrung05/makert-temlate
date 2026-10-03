@@ -39,11 +39,12 @@ watch(() => props.action, () => { fields.value = []; instructions.value = '' })
     max-width="580"
     @update:model-value="!$event && emit('close')"
   >
+    <DialogCloseBtn
+      :disabled="props.busy"
+      aria-label="Đóng hộp thoại content AI"
+      @click="emit('close')"
+    />
     <VCard :title="removing ? 'Xóa content AI' : 'Tạo lại content AI'">
-      <DialogCloseBtn
-        :disabled="props.busy"
-        @click="emit('close')"
-      />
       <VCardText>
         <p class="font-weight-medium text-wrap">
           {{ props.action?.item.title }}

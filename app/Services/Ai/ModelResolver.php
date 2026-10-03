@@ -68,7 +68,7 @@ final class ModelResolver
             throw ValidationException::withMessages(['model_id' => 'Hãy cấu hình model mặc định hoặc fallback khả dụng cho tác vụ này.']);
         }
 
-        return $this->legacy($capability, ['provider' => config('ai-import.provider', 'deterministic')], $settings);
+        return $this->legacy($capability, ['provider' => config('ai-providers.default_provider', 'deterministic')], $settings);
     }
 
     /**
@@ -93,6 +93,8 @@ final class ModelResolver
             'capability' => $capability?->value,
             'temperature' => (float) $settings['default_temperature'],
             'timeout' => (int) $model->provider->request_timeout,
+            'system_prompt' => $settings['default_system_prompt'],
+            'min_word_count' => (int) $settings['min_word_count'],
         ];
     }
 
@@ -150,10 +152,12 @@ final class ModelResolver
 
         return [
             'provider_id' => null, 'provider' => $provider['key'], 'provider_label' => $provider['label'],
-            'driver' => $provider['key'], 'model_id' => null, 'model' => $modelId,
+            'driver' => $provider['driver'], 'model_id' => null, 'model' => $modelId,
             'capabilities' => [AiCapability::Text->value, AiCapability::Structured->value],
             'capability' => $capability->value,
             'temperature' => (float) $settings['default_temperature'], 'timeout' => (int) $settings['request_timeout'],
+            'system_prompt' => $settings['default_system_prompt'],
+            'min_word_count' => (int) $settings['min_word_count'],
         ];
     }
 }

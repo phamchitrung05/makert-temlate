@@ -14,6 +14,7 @@
 import { computed, onScopeDispose, shallowRef } from 'vue'
 import { aiAgentService } from '@/services/aiAgent'
 import { createAiContentSource } from '@/utils/aiContentInput'
+import { formatAiError, isAiSuccess } from '@/utils/aiErrors'
 
 /** Input: summary và bản ghi cũ tùy chọn. Output: dòng UI; không mutate DTO. */
 function toListItem(summary, previous) {
@@ -29,7 +30,11 @@ function toListItem(summary, previous) {
     targetType: summary.target_type ?? previous?.targetType ?? 'post',
     parentId: summary.parent_id ?? previous?.parentId ?? null,
     operation: summary.operation ?? previous?.operation ?? 'create',
-    title: summary.title || summary.draft?.title || previous?.title || (status === 'generating' ? 'Đang tạo bài viết…' : 'Bài viết AI'),
+    title: summary.title || (isAiSuccess(summary) ? summary.draft?.title : '') || previous?.title || (status === 'generating' ? 'Đang tạo bài viết…' : 'Bài viết AI'),
+    error: status === 'failed' ? formatAiError(summary) : '',
+    errorCode: summary.error_code ?? null,
+    validationErrors: summary.validation_errors ?? [],
+    thumbnail: summary.thumbnail === undefined ? previous?.thumbnail ?? null : summary.thumbnail,
     source: summary.source_host || previous?.source || (summary.source_type === 'url' ? 'Nguồn URL' : 'Nội dung văn bản'),
     date: date.toLocaleDateString('vi-VN'), time: date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
   }
@@ -98,9 +103,9 @@ export function useAiContentWorkspace() {
     liveItems.value = Object.fromEntries(Object.entries(liveItems.value).filter(([key]) => key !== id))
   }
 
-  /** Input: không có. Output: nguồn trống giữ provider/model; không thêm bản ghi giả vào list. */
-  function resetSource() {
-    source.value = { ...createAiContentSource(), targetType: source.value.targetType, provider: source.value.provider, model: source.value.model }
+  /** Input: lựa chọn tự động mặc định hiện tại. Output: nguồn trống giữ provider/model; không thêm bản ghi giả vào list. */
+  function resetSource(defaults = {}) {
+    source.value = { ...createAiContentSource(defaults), targetType: source.value.targetType, provider: source.value.provider, model: source.value.model }
   }
 
   onScopeDispose(() => { loadVersion += 1 })

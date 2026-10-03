@@ -27,20 +27,31 @@ import { useAiContentGeneration } from '@/composables/useAiContentGeneration'
 import { useAiContentActions } from '@/composables/useAiContentActions'
 import AiContentEditorDialog from '@/views/ai/content/AiContentEditorDialog.vue'
 import AiContentRunActionDialog from '@/views/ai/content/AiContentRunActionDialog.vue'
+import { useAiRunFeedback } from '@/composables/useAiRunFeedback'
+import { getAlertColor } from '@/config/alertColors'
+
+const { snackbar, observeRun, setSnackbarVisible } = useAiRunFeedback()
 
 const { items, source, listLoading, listError, loadItems, updateSession, removeItem, resetSource } = useAiContentWorkspace()
-const { catalog, loadCatalog } = useAiContentCatalog(source)
-const { generation, generate, retryRun, reset, resumePolling } = useAiContentGeneration(source, catalog, updateSession)
+const { catalog, loadCatalog, resetContentDefaults } = useAiContentCatalog(source)
+
+const onRunFeedback = (run, fallback, options = catalog.value.outputOptions) => observeRun(run, fallback, options)
+const { generation, generate, retryRun, reset, resumePolling } = useAiContentGeneration(source, catalog, updateSession, onRunFeedback)
 
 const { editor, editorLoading, editorSaving, editorError, action, actionBusy, actionError, notice, busyId,
-  openEditor, closeEditor, saveEditor, requestAction, closeAction, confirmAction } = useAiContentActions({ updateSession, removeItem })
+  openEditor, closeEditor, saveEditor, requestAction, closeAction, confirmAction, resumeRun } = useAiContentActions({
+  updateSession, removeItem, onFeedback: onRunFeedback, getOutputOptions: () => catalog.value.outputOptions,
+})
 
 onMounted(loadCatalog)
 onMounted(loadItems)
 
 /** Input: thao tác tạo mới. Output: reset form/thông báo, giữ list; không reset khi AI đang chạy. */
 function createNew() {
-  if (reset()) resetSource()
+  if (reset()) {
+    resetSource(catalog.value.contentDefaults)
+    resetContentDefaults()
+  }
 }
 </script>
 
@@ -68,13 +79,14 @@ function createNew() {
 
     <VAlert
       v-if="notice"
-      type="info"
+      :type="notice.type"
+      :color="getAlertColor(notice.type)"
       variant="tonal"
       class="mb-4"
       closable
-      @click:close="notice = ''"
+      @click:close="notice = null"
     >
-      {{ notice }}
+      {{ notice.message }}
     </VAlert>
     <VRow>
       <VCol
@@ -86,11 +98,13 @@ function createNew() {
           :loading="listLoading"
           :error="listError"
           :targets="catalog.targetOptions"
+          :output-options="catalog.outputOptions"
           :busy-id="busyId"
           @reload="loadItems"
           @edit="openEditor"
           @remove="requestAction('remove', $event)"
           @regenerate="requestAction('regenerate', $event)"
+          @refresh-status="resumeRun"
         />
       </VCol>
       <VCol
@@ -123,5 +137,22 @@ function createNew() {
       @confirm="confirmAction"
       @close="closeAction"
     />
+    <VSnackbar
+      :model-value="snackbar.visible"
+      :color="getAlertColor(snackbar.type)"
+      location="top end"
+      :timeout="4000"
+      @update:model-value="setSnackbarVisible"
+    >
+      {{ snackbar.message }}
+      <template #actions>
+        <VBtn
+          icon="tabler-x"
+          size="small"
+          aria-label="Đóng thông báo AI"
+          @click="setSnackbarVisible(false)"
+        />
+      </template>
+    </VSnackbar>
   </div>
 </template>

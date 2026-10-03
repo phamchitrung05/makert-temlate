@@ -11,8 +11,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, shallowRef } from 'vue'
 import { useAiContentCatalog } from '@/composables/useAiContentCatalog'
+import { useAiContentWorkspace } from '@/composables/useAiContentWorkspace'
+import { createAiContentSource } from '@/utils/aiContentInput'
 
 const { service, targets } = vi.hoisted(() => ({ service: { list: vi.fn() }, targets: vi.fn() }))
+const postOutputs = ['title', 'excerpt', 'content', 'seo', 'taxonomy', 'thumbnail']
+const outputOptions = postOutputs.map(value => ({ value, title: `Config: ${value}`, ...(value === 'thumbnail' ? { source_types: ['url'] } : {}) }))
+
+const targetFixture = () => [
+  { key: 'post', label: 'Post', outputs: postOutputs, output_options: outputOptions },
+  { key: 'resource', label: 'Resource', outputs: ['title', 'content', 'taxonomy'], output_options: outputOptions },
+  { key: 'sound', label: 'Sound', outputs: ['title', 'content', 'taxonomy'], output_options: outputOptions },
+]
 
 vi.mock('@/services/aiProviderSettings', () => ({ aiProviderSettingsService: service }))
 vi.mock('@/services/aiAgent', () => ({ aiAgentService: { targets } }))
@@ -41,7 +51,7 @@ let scope
 
 /** Input: lựa chọn ban đầu tùy chọn. Output: source ref và composable thuộc effect scope của test. */
 const createState = (selection = {}) => {
-  const source = shallowRef({ provider: '', model: '', prompt: 'Giữ nguồn của người dùng', ...selection })
+  const source = shallowRef({ ...createAiContentSource(), prompt: 'Giữ nguồn của người dùng', ...selection })
 
   return { source, ...scope.run(() => useAiContentCatalog(source)) }
 }
@@ -51,7 +61,7 @@ describe('Ai Content live catalog', () => {
     vi.resetAllMocks()
     scope = effectScope()
     service.list.mockResolvedValue(fixture())
-    targets.mockResolvedValue([{ key: 'post', label: 'Post' }, { key: 'resource', label: 'Resource' }, { key: 'sound', label: 'Sound' }])
+    targets.mockResolvedValue(targetFixture())
   })
   afterEach(() => scope.stop())
 
@@ -96,6 +106,87 @@ describe('Ai Content live catalog', () => {
     await state.loadCatalog()
     await nextTick()
     expect(state.source.value).toMatchObject({ provider: 'apikey', model: 'gpt-image-2.5' })
+  })
+
+  it('hydrates output groups from config and saved defaults, preserving explicit tags on reload', async () => {
+    service.list.mockResolvedValue({ ...fixture(), settings: { auto_thumbnail: false, auto_seo: true } })
+
+    const state = createState()
+
+    await state.loadCatalog()
+    expect(state.source.value.outputs).toEqual(['title', 'excerpt', 'content', 'seo', 'taxonomy'])
+    expect(state.catalog.value.outputOptions.map(option => option.title)).toEqual(outputOptions.map(option => option.title))
+    state.source.value = { ...state.source.value, outputs: ['title', 'thumbnail'] }
+    await state.loadCatalog()
+    expect(state.source.value.outputs).toEqual(['title', 'thumbnail'])
+  })
+
+  it('preserves explicit choices made before the catalog finishes, including toggling back', async () => {
+    let resolveLoad
+
+    service.list.mockReturnValueOnce(new Promise(resolve => { resolveLoad = resolve }))
+
+    const state = createState()
+    const pending = state.loadCatalog()
+
+    state.source.value = { ...state.source.value, outputs: ['title', 'seo'] }
+    state.source.value = { ...state.source.value, outputs: ['title', 'thumbnail'] }
+    resolveLoad({ ...fixture(), settings: { auto_thumbnail: false, auto_seo: true } })
+    await pending
+    expect(state.source.value.outputs).toEqual(['title', 'thumbnail'])
+    expect(state.catalog.value.contentDefaults).toEqual({ outputs: ['title', 'excerpt', 'content', 'seo', 'taxonomy'] })
+  })
+
+  it('resets a new form to saved defaults and allows later defaults to hydrate the untouched form', async () => {
+    service.list.mockResolvedValue({ ...fixture(), settings: { auto_thumbnail: false, auto_seo: true } })
+
+    const state = scope.run(() => {
+      const workspace = useAiContentWorkspace()
+
+      return { ...workspace, ...useAiContentCatalog(workspace.source) }
+    })
+
+    await state.loadCatalog()
+    await nextTick()
+    state.source.value = { ...state.source.value, prompt: 'Lựa chọn cũ', outputs: ['title', 'thumbnail'] }
+    state.resetSource(state.catalog.value.contentDefaults)
+    state.resetContentDefaults()
+    expect(state.source.value).toMatchObject({ prompt: '', provider: 'content', model: 'text-model', outputs: ['title', 'excerpt', 'content', 'seo', 'taxonomy'] })
+    service.list.mockResolvedValue({ ...fixture(), settings: { auto_thumbnail: true, auto_seo: false } })
+    await state.loadCatalog()
+    expect(state.source.value.outputs).toEqual(['title', 'excerpt', 'content', 'taxonomy', 'thumbnail'])
+  })
+
+  it('reconciles tags when switching target and remembers a URL thumbnail choice across source types', async () => {
+    const state = createState()
+
+    expect(state.source.value.outputs).toBeNull()
+    await state.loadCatalog()
+    state.source.value = { ...state.source.value, outputs: ['title', 'content', 'thumbnail'] }
+    state.source.value = { ...state.source.value, type: 'text' }
+    expect(state.source.value.outputs).toEqual(['title', 'content'])
+    expect(state.catalog.value.outputOptions.find(option => option.value === 'thumbnail').props.disabled).toBe(true)
+    state.source.value = { ...state.source.value, type: 'url' }
+    expect(state.source.value.outputs).toEqual(['title', 'content', 'thumbnail'])
+    state.source.value = { ...state.source.value, outputs: ['title', 'content'] }
+    state.source.value = { ...state.source.value, type: 'text' }
+    state.source.value = { ...state.source.value, type: 'url' }
+    expect(state.source.value.outputs).toEqual(['title', 'content'])
+    state.source.value = { ...state.source.value, outputs: ['title', 'excerpt', 'thumbnail'], targetType: 'resource' }
+    expect(state.source.value.outputs).toEqual(['title'])
+    expect(state.catalog.value.outputOptions.map(option => option.value)).toEqual(['title', 'content', 'taxonomy'])
+  })
+
+  it('accepts new output groups and labels supplied by config without a frontend allowlist', async () => {
+    targets.mockResolvedValue([{ key: 'post', label: 'Post', outputs: ['title', 'summary'], output_options: [
+      { value: 'title', title: 'Tiêu đề từ config' }, { value: 'summary', title: 'Tóm tắt từ config' },
+    ] }])
+
+    const state = createState()
+
+    await state.loadCatalog()
+    expect(state.source.value.outputs).toEqual(['title', 'summary'])
+    expect(state.catalog.value.outputOptions[1].title).toBe('Tóm tắt từ config')
   })
 
   it('prefers a known text model initially and exposes selected capability without changing an explicit image choice', async () => {

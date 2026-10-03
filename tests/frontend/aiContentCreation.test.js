@@ -13,14 +13,16 @@ import { effectScope, shallowRef } from 'vue'
 import { useAiContentWorkspace } from '@/composables/useAiContentWorkspace'
 import { useAiContentGeneration } from '@/composables/useAiContentGeneration'
 import { buildAiContentRequest, createAiContentSource, validateAiContentSource } from '@/utils/aiContentInput'
+import { useAiRunFeedback } from '@/composables/useAiRunFeedback'
 
 const { service } = vi.hoisted(() => ({ service: { createSession: vi.fn(), status: vi.fn(), listSessions: vi.fn(), retry: vi.fn() } }))
 
 vi.mock('@/services/aiAgent', () => ({ aiAgentService: service }))
 
 const textModel = { id: 30, capabilities: ['text_generation'] }
-const catalog = () => ({ loading: false, error: '', selectedModel: textModel })
-const validSource = () => ({ ...createAiContentSource(), type: 'prompt', prompt: 'Viết bài hướng dẫn Laravel', provider: 'content', model: 'text-model' })
+const outputKeys = ['title', 'excerpt', 'content', 'seo', 'taxonomy', 'thumbnail']
+const catalog = () => ({ loading: false, error: '', selectedModel: textModel, outputOptions: outputKeys.map(value => ({ value, title: value })) })
+const validSource = () => ({ ...createAiContentSource({ outputs: ['title', 'excerpt', 'content', 'taxonomy', 'thumbnail'] }), type: 'prompt', prompt: 'Viết bài hướng dẫn Laravel', provider: 'content', model: 'text-model' })
 let scope
 
 /** Input: không có. Output: composables thuộc scope test với source/catalog hợp lệ. */
@@ -30,7 +32,9 @@ function createState() {
 
     workspace.source.value = validSource()
 
-    return { ...workspace, ...useAiContentGeneration(workspace.source, shallowRef(catalog()), workspace.updateSession) }
+    const feedback = useAiRunFeedback()
+
+    return { ...workspace, ...feedback, ...useAiContentGeneration(workspace.source, shallowRef(catalog()), workspace.updateSession, feedback.observeRun) }
   })
 }
 
@@ -61,18 +65,43 @@ describe('Ai Content creation input', () => {
     const payload = await buildAiContentRequest({ ...validSource(), type: 'url', url: ' https://example.test/article ' }, textModel)
 
     expect(payload).toMatchObject({ target_type: 'post', operation: 'create', input: { type: 'url', url: 'https://example.test/article' }, model_id: 30, thumbnail_mode: 'source', generate_thumbnail: true })
+    expect(payload.requested_outputs).not.toContain('seo')
+    expect(payload.requested_outputs).toContain('thumbnail')
+  })
+
+  it('sends exactly the selected output tags with SEO and thumbnail flags derived from them', async () => {
+    const source = { ...validSource(), outputs: ['title', 'content'], type: 'url', url: 'https://example.test/article' }
+    const payload = await buildAiContentRequest(source, textModel)
+
+    expect(payload.requested_outputs).toEqual(['title', 'content'])
+    expect(payload).toMatchObject({ generate_thumbnail: false, generate_seo: false, thumbnail_mode: 'source' })
   })
 
   it('maps free writing to text and respects length/language/manual title/SEO', async () => {
-    const payload = await buildAiContentRequest({ ...validSource(), language: 'en', length: 'long', autoTitle: false, title: 'My title', optimizeSeo: true }, textModel)
+    const payload = await buildAiContentRequest({ ...validSource(), language: 'en', length: 'long', outputs: ['excerpt', 'content', 'seo'], title: 'My title' }, textModel)
 
-    expect(payload.input).toEqual({ type: 'text', text: 'Viết bài hướng dẫn Laravel' })
+    expect(payload.input).toEqual({ type: 'text', text: 'Viết bài hướng dẫn Laravel', title: 'My title' })
     expect(payload.instructions).toContain('đề bài')
     expect(payload.instructions).toContain('tiếng Anh')
     expect(payload.instructions).toContain('1.500–2.000')
     expect(payload.instructions).toContain('My title')
     expect(payload.instructions).toContain('SEO')
+    expect(payload.requested_outputs).toContain('seo')
     expect(payload.generate_thumbnail).toBe(false)
+    expect(payload.generate_seo).toBe(true)
+    expect(payload.requested_outputs).not.toContain('title')
+  })
+
+  it('requires selected supported outputs and a manual title when title generation is not selected', () => {
+    const source = validSource()
+
+    expect(validateAiContentSource({ ...source, outputs: [] }, catalog())).toContain('ít nhất một')
+    expect(validateAiContentSource({ ...source, outputs: ['unknown'] }, catalog())).toContain('được hỗ trợ')
+    expect(validateAiContentSource({ ...source, outputs: ['content'] }, catalog())).toContain('Nhập tiêu đề')
+    expect(validateAiContentSource({ ...source, outputs: ['content'], title: 'Manual title' }, catalog())).toBe('')
+    expect(validateAiContentSource({ ...source, outputs: ['title', 'thumbnail'] }, {
+      ...catalog(), outputOptions: [{ value: 'title' }, { value: 'thumbnail', props: { disabled: true } }],
+    })).toContain('được hỗ trợ')
   })
 
   it('extracts HTML article text without scripts or navigation and maps inline text', async () => {
@@ -92,6 +121,29 @@ describe('Ai Content creation input', () => {
 })
 
 describe('Ai Content generation lifecycle', () => {
+  it('shows a terminal error once, keeps the reason after list reload and ignores a failed draft', async () => {
+    const state = createState()
+
+    const failure = { job_id: 'one', status: 'failed', error_code: 'AI_PROVIDER_MISSING_FIELDS', error: 'AI thiếu nội dung',
+      validation_errors: [{ group: 'content', field: 'content_html', reason: 'missing' }], draft: { title: 'Invalid output' } }
+
+    service.createSession.mockResolvedValue(failure)
+    await state.generate()
+    expect(state.snackbar.value.visible).toBe(true)
+    expect(state.items.value[0]).toMatchObject({ status: 'failed', errorCode: 'AI_PROVIDER_MISSING_FIELDS' })
+    expect(state.items.value[0].title).not.toBe('Invalid output')
+    state.setSnackbarVisible(false)
+    service.status.mockResolvedValue(failure)
+    state.resumePolling()
+    await Promise.resolve()
+    expect(state.snackbar.value.visible).toBe(false)
+    service.listSessions.mockResolvedValue({ data: [{ ...failure, id: 'one', draft: undefined }], meta: { pagination: { last_page: 1 } } })
+    await state.loadItems()
+    expect(state.items.value[0].error).toContain('thiếu')
+    expect(state.items.value[0].validationErrors).toEqual(failure.validation_errors)
+    expect(state.snackbar.value.visible).toBe(false)
+    expect(service.createSession).toHaveBeenCalledOnce()
+  })
   it('waits for manual retry after failure and requeues the same run once', async () => {
     const state = createState()
 
@@ -225,5 +277,32 @@ describe('Ai Content generation lifecycle', () => {
     expect(state.items.value.find(item => item.id === 'one').title).toBe('Newest')
     expect(state.source.value.prompt).toBe('Viết bài hướng dẫn Laravel')
     expect(service.listSessions).toHaveBeenLastCalledWith({ page: 2, per_page: 100 })
+  })
+
+  it('shows saved thumbnails on initial load and updates them when a run completes', async () => {
+    const state = createState()
+    const thumbnail = { id: 19, alt_text: 'Laravel cover', file: { url: '/storage/19/cover.webp', preview_url: '/storage/19/conversions/cover-thumb.webp' } }
+
+    service.listSessions.mockResolvedValue({
+      data: [{ id: 'one', title: 'Laravel 14', status: 'ready', thumbnail }],
+      meta: { pagination: { last_page: 1 } },
+    })
+    await state.loadItems()
+    expect(state.items.value[0].thumbnail).toEqual(thumbnail)
+    state.updateSession({ job_id: 'two', status: 'queued', thumbnail: null })
+    expect(state.items.value.find(item => item.id === 'two').thumbnail).toBeNull()
+    state.updateSession({ job_id: 'two', status: 'ready', draft: { title: 'New article' }, thumbnail })
+    expect(state.items.value.find(item => item.id === 'two').thumbnail).toEqual(thumbnail)
+  })
+
+  it('preserves a thumbnail on partial updates and removes it when the server explicitly clears it', async () => {
+    const state = createState()
+    const thumbnail = { id: 19, file: { url: '/storage/19/cover.webp' } }
+
+    state.updateSession({ job_id: 'one', status: 'ready', draft: { title: 'Laravel 14' }, thumbnail })
+    state.updateSession({ job_id: 'one', status: 'ready', draft: { title: 'Edited title' } })
+    expect(state.items.value[0].thumbnail).toEqual(thumbnail)
+    state.updateSession({ job_id: 'one', status: 'ready', thumbnail: null })
+    expect(state.items.value[0].thumbnail).toBeNull()
   })
 })

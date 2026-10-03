@@ -18,9 +18,9 @@ const state = vi.hoisted(() => ({ store: null }))
 vi.mock('@/stores/aiAgent', () => ({ useAiAgentStore: () => state.store }))
 
 const SelectStub = {
-  props: ['modelValue', 'items', 'label', 'itemTitle', 'itemValue', 'disabled'],
+  props: { modelValue: [String, Array], items: Array, label: String, itemTitle: String, itemValue: String, disabled: Boolean, multiple: Boolean },
   emits: ['update:modelValue'],
-  template: `<label>{{ label }}<select :aria-label="label" :value="modelValue" :disabled="disabled" @change="$emit('update:modelValue', $event.target.value)"><option value="">Default</option><option v-for="item in items" :key="item[itemValue] ?? item" :value="item[itemValue] ?? item">{{ item[itemTitle] ?? item }}</option></select></label>`,
+  template: `<label>{{ label }}<select :aria-label="label" :disabled="disabled" :multiple="multiple" @change="$emit('update:modelValue', multiple ? [...$event.target.selectedOptions].map(option => option.value) : $event.target.value)"><option v-if="!multiple" value="" :selected="!modelValue">Default</option><option v-for="item in items" :key="item[itemValue] ?? item" :value="item[itemValue] ?? item" :selected="multiple ? modelValue.includes(item[itemValue] ?? item) : modelValue === (item[itemValue] ?? item)">{{ item[itemTitle] ?? item }}</option></select></label>`,
 }
 
 const TextStub = {
@@ -30,6 +30,7 @@ const TextStub = {
 
 const ProgressStub = { props: ['steps', 'elapsedTime'], template: '<div>{{ elapsedTime }}</div>' }
 const PreviewStub = { props: ['candidate'], template: '<div>Candidate</div>' }
+const SnackbarStub = { props: ['modelValue', 'color'], emits: ['update:modelValue'], template: '<div v-if="modelValue" role="alert"><slot /></div>' }
 let wrapper
 
 /** Input: không có. Output: dialog mở ngay lúc mount, đã tải options. */
@@ -43,6 +44,7 @@ async function render() {
         VBtn: { props: ['disabled'], template: '<button :disabled="disabled"><slot /></button>' },
         AppSelect: SelectStub, AppTextField: TextStub, AppTextarea: TextStub,
         AiImportProgressCard: ProgressStub, AiAgentCandidatePreview: PreviewStub,
+        VSnackbar: SnackbarStub,
       },
     },
   })
@@ -87,6 +89,52 @@ describe('Post AI options and polling', () => {
   })
   afterEach(() => { wrapper?.unmount(); vi.useRealTimers() })
 
+  it('shows field validation errors from HTTP 422 without starting another run', async () => {
+    await render()
+    state.store.start.mockRejectedValue({ data: { message: 'The given data was invalid.', errors: { model: ['Model đã tắt'] } } })
+    await wrapper.find('input[aria-label="Nội dung nguồn"]').setValue('Nguồn')
+    await button('Bắt đầu tạo').trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('Model đã tắt')
+    expect(wrapper.text()).not.toContain('The given data was invalid.')
+    expect(state.store.start).toHaveBeenCalledOnce()
+    expect(state.store.poll).not.toHaveBeenCalled()
+  })
+
+  it('reports an immediately failed child once and keeps the valid parent available for apply', async () => {
+    await render()
+    state.store.session = { job_id: 'parent', status: 'ready' }
+    state.store.candidates = [{ id: 'parent', status: 'ready', outputs: { title: 'Valid parent' } }]
+    state.store.regenerate.mockImplementation(async () => {
+      state.store.session = { job_id: 'child', parent_id: 'parent', status: 'failed', error: 'AI thiếu nội dung' }
+      state.store.candidates.push({ id: 'child', status: 'failed', outputs: { title: 'Invalid child' } })
+
+      return state.store.session
+    })
+    await flushPromises()
+    await button('Tạo lại').trigger('click')
+    await flushPromises()
+    expect(wrapper.findComponent(PreviewStub).props('candidate').id).toBe('parent')
+    expect(button('Áp dụng bản đã chọn').element.disabled).toBe(false)
+    expect(wrapper.findComponent(SnackbarStub).props('modelValue')).toBe(true)
+    wrapper.findComponent(SnackbarStub).vm.$emit('update:modelValue', false)
+    await flushPromises()
+    await button('Tạo lại').trigger('click')
+    await flushPromises()
+    expect(state.store.regenerate).toHaveBeenLastCalledWith('parent', { fields: ['title'] })
+    expect(wrapper.findComponent(SnackbarStub).props('modelValue')).toBe(false)
+    expect(state.store.poll).not.toHaveBeenCalled()
+  })
+
+  it('does not allow a failed draft without a valid parent to be previewed or applied', async () => {
+    await render()
+    state.store.session = { job_id: 'failed', status: 'failed' }
+    state.store.candidates = [{ id: 'failed', outputs: { title: 'Invalid output' } }]
+    await flushPromises()
+    expect(wrapper.findComponent(PreviewStub).exists()).toBe(false)
+    expect(button('Áp dụng bản đã chọn')).toBeUndefined()
+  })
+
   it('loads on mount and clears a stale model when changing provider', async () => {
     await render()
     expect(state.store.loadCapabilities).toHaveBeenCalledWith('post')
@@ -100,6 +148,55 @@ describe('Post AI options and polling', () => {
     await button('Bắt đầu tạo').trigger('click')
     expect(state.store.start).toHaveBeenCalledWith(expect.objectContaining({ provider: 'other' }))
     expect(state.store.start.mock.calls[0][0]).not.toHaveProperty('model')
+  })
+
+  it.each([
+    [false, false, ['title', 'content']],
+    [false, true, ['title', 'content', 'seo']],
+    [true, false, ['title', 'content', 'thumbnail']],
+    [true, true, ['title', 'content', 'seo', 'thumbnail']],
+  ])('hydrates saved thumbnail %s / SEO %s choices and keeps source thumbnail mode', async (thumbnail, seo, outputs) => {
+    state.store.loadCapabilities.mockImplementation(async () => {
+      const capabilities = {
+        input_types: ['url', 'text'], outputs: ['title', 'content', 'seo', 'thumbnail'],
+        content_defaults: { generate_thumbnail: thumbnail, generate_seo: seo },
+      }
+
+      state.store.capabilities = capabilities
+
+      return capabilities
+    })
+    await render()
+    expect(Array.from(select('Các phần cần tạo').element.selectedOptions).map(option => option.value)).toEqual(outputs)
+    await wrapper.find('input[aria-label="URL nguồn"]').setValue('https://example.test/article')
+    await button('Bắt đầu tạo').trigger('click')
+    expect(state.store.start).toHaveBeenCalledWith(expect.objectContaining({
+      requested_outputs: outputs, generate_thumbnail: thumbnail, thumbnail_mode: 'auto',
+    }))
+  })
+
+  it('honors explicit output choices and restores current saved defaults on reopening', async () => {
+    state.store.loadCapabilities.mockImplementation(async () => {
+      const capabilities = {
+        input_types: ['url'], outputs: ['title', 'content', 'seo', 'thumbnail'],
+        content_defaults: { generate_thumbnail: false, generate_seo: false },
+      }
+
+      state.store.capabilities = capabilities
+
+      return capabilities
+    })
+    await render()
+    await select('Các phần cần tạo').setValue(['title', 'content', 'seo', 'thumbnail'])
+    await wrapper.find('input[aria-label="URL nguồn"]').setValue('https://example.test/article')
+    await button('Bắt đầu tạo').trigger('click')
+    expect(state.store.start).toHaveBeenCalledWith(expect.objectContaining({
+      requested_outputs: ['title', 'content', 'seo', 'thumbnail'], generate_thumbnail: true,
+    }))
+    await wrapper.setProps({ modelValue: false })
+    await wrapper.setProps({ modelValue: true })
+    await flushPromises()
+    expect(Array.from(select('Các phần cần tạo').element.selectedOptions).map(option => option.value)).toEqual(['title', 'content'])
   })
 
   it('pauses a queue with no worker and resumes the same run without creating another', async () => {
@@ -181,10 +278,11 @@ describe('Post AI options and polling', () => {
     await flushPromises()
     await vi.advanceTimersByTimeAsync(800)
     await wrapper.setProps({ modelValue: false })
-    resolvePoll({ job_id: 'run', status: 'queued' })
+    resolvePoll({ job_id: 'run', status: 'failed', error: 'Late failure' })
     await flushPromises()
     await vi.advanceTimersByTimeAsync(10000)
     expect(state.store.poll).toHaveBeenCalledTimes(1)
+    expect(wrapper.findComponent(SnackbarStub).props('modelValue')).toBe(false)
   })
 
   it('does not start polling an old creation response after reopening the dialog', async () => {

@@ -2,6 +2,7 @@
 
 namespace App\Exceptions;
 
+use App\Services\Ai\AiResponseDiagnostics;
 use RuntimeException;
 
 /**
@@ -22,6 +23,8 @@ use RuntimeException;
  */
 class AiImportException extends RuntimeException
 {
+    public readonly array $diagnostics;
+
     /**
      * =====================================================================
      * CHỨC NĂNG: Khởi tạo lỗi AI có mã và chính sách retry
@@ -43,7 +46,9 @@ class AiImportException extends RuntimeException
         public readonly string $errorCode = 'AI_IMPORT_FAILED',
         public readonly bool $retryable = false,
         ?\Throwable $previous = null,
+        array $diagnostics = [],
     ) {
+        $this->diagnostics = AiResponseDiagnostics::sanitize($diagnostics);
         parent::__construct($message, 0, $previous);
     }
 }

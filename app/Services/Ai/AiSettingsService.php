@@ -40,6 +40,8 @@ final class AiSettingsService
             'default_text_model_id' => null, 'default_image_model_id' => null,
             'fallback_text_model_id' => null, 'fallback_image_model_id' => null,
             'default_temperature' => 0.2, 'request_timeout' => 30,
+            'min_word_count' => 0, 'default_system_prompt' => '',
+            'auto_thumbnail' => true, 'auto_seo' => true,
         ];
     }
 
@@ -97,12 +99,20 @@ final class AiSettingsService
          * Worker queue đọc được giá trị typed ổn định sau khi settings cập nhật.
          * =====================================================================
          */
-        foreach (['default_temperature', 'request_timeout'] as $key) {
+        foreach (['default_temperature', 'request_timeout', 'min_word_count'] as $key) {
             if (array_key_exists($key, $values)) {
                 $values[$key] = $key === 'default_temperature'
                     ? (float) ($values[$key] ?? $this->defaults()[$key])
                     : (int) ($values[$key] ?? $this->defaults()[$key]);
             }
+        }
+        foreach (['auto_thumbnail', 'auto_seo'] as $key) {
+            if (array_key_exists($key, $values)) {
+                $values[$key] = (bool) $values[$key];
+            }
+        }
+        if (array_key_exists('default_system_prompt', $values)) {
+            $values['default_system_prompt'] = (string) ($values['default_system_prompt'] ?? '');
         }
         DB::transaction(function () use ($values, $actorId): void {
             DB::table('settings')->where('group', AiSettings::group())->lockForUpdate()->get();

@@ -184,7 +184,7 @@ describe('AI provider model editing', () => {
       body: expect.objectContaining({ remote_model_id: 'model-a', capabilities: ['image_generation'] }),
     })
     expect(view.find('[role="dialog"]').exists()).toBe(false)
-    expect(view.text()).toContain('Đã lưu model.')
+    expect(view.get('[role="status"]').text()).toBe('Đã lưu model.')
   })
 
   it('resets the edit selection when adding a new model after cancelling', async () => {
@@ -250,5 +250,14 @@ describe('AI provider model editing', () => {
     expect(view.find('[aria-label="Test model thành công"]').exists()).toBe(true)
     expect(view.get('[role="status"]').text()).toBe('Model đã phản hồi.')
     expect(api.mock.calls.filter(([url]) => url === '/admin/settings/ai')).toHaveLength(1)
+  })
+
+  it('shows a catalog load error in the snackbar', async () => {
+    api.mockRejectedValueOnce({ data: { message: 'Không thể tải catalog AI.' } })
+
+    const view = page()
+
+    await flushPromises()
+    expect(view.get('[role="status"]').text()).toBe('Không thể tải catalog AI.')
   })
 })

@@ -2,8 +2,10 @@
 
 namespace Tests\Unit;
 
+use App\Exceptions\AiImportException;
 use App\Services\Ai\GeminiProvider;
 use App\Services\Ai\OpenAiProvider;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -39,18 +41,18 @@ class AiProviderAdapterTest extends TestCase
      */
     public function test_null_optional_fields_are_omitted_but_incorrect_types_are_rejected(): void
     {
-        Config::set('ai-import.openai.key', 'test-openai-key');
-        Config::set('ai-import.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
+        Config::set('ai-providers.connections.openai.key', 'test-openai-key');
+        Config::set('ai-providers.connections.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
         Http::fake(['https://api.openai.test/*' => Http::sequence()
-            ->push(['choices' => [['message' => ['content' => json_encode(['title' => 'Title', 'canonical_url' => null, 'thumbnail_prompt' => null, 'robots_index' => false, 'suggested_category_ids' => []])]]]])
-            ->push(['choices' => [['message' => ['content' => json_encode(['title' => ['value' => 'Title']])]]]]),
+            ->push(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => json_encode(['title' => 'Title', 'content_html' => '<p>Content</p>', 'canonical_url' => null, 'thumbnail_prompt' => null, 'robots_index' => false, 'suggested_category_ids' => []])]]]])
+            ->push(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => json_encode(['title' => ['value' => 'Title'], 'content_html' => '<p>Content</p>'])]]]]),
         ]);
-        $this->assertSame(['title' => 'Title', 'robots_index' => false, 'suggested_category_ids' => []], (new OpenAiProvider)->generate('Nguồn', '<p>Gốc</p>'));
+        $this->assertSame(['title' => 'Title', 'content_html' => '<p>Content</p>', 'robots_index' => false, 'suggested_category_ids' => [], 'content' => '<p>Content</p>'], (new OpenAiProvider)->generate('Nguồn', '<p>Gốc</p>'));
         Http::assertSent(fn ($request): bool => str_contains($request['messages'][0]['content'], 'flat JSON object'));
         try {
             (new OpenAiProvider)->generate('Nguồn', '<p>Gốc</p>');
             $this->fail('Không chấp nhận field text dạng object.');
-        } catch (\App\Exceptions\AiImportException $exception) {
+        } catch (AiImportException $exception) {
             $this->assertSame('AI_PROVIDER_SCHEMA', $exception->errorCode);
             $this->assertStringContainsString('title', $exception->getMessage());
         }
@@ -68,21 +70,22 @@ class AiProviderAdapterTest extends TestCase
      */
     public function test_openai_provider_maps_chat_json_output(): void
     {
-        Config::set('ai-import.openai.key', 'test-openai-key');
-        Config::set('ai-import.openai.model', 'gpt-test');
+        Config::set('ai-providers.connections.openai.key', 'test-openai-key');
+        Config::set('ai-providers.connections.openai.model', 'gpt-test');
         Http::fake(['https://api.openai.test/*' => Http::response([
             'choices' => [[
+                'finish_reason' => 'stop',
                 'message' => ['content' => json_encode(['title' => 'Tiêu đề', 'content_html' => '<p>Nội dung</p>'])],
             ]],
         ])]);
-        Config::set('ai-import.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
+        Config::set('ai-providers.connections.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
 
         $result = (new OpenAiProvider)->generate('Nguồn', '<p>Gốc</p>');
 
         $this->assertSame('Tiêu đề', $result['title']);
         $this->assertSame('<p>Nội dung</p>', $result['content_html']);
         Http::assertSent(fn ($request): bool => $request->hasHeader('Authorization', 'Bearer test-openai-key')
-            && $request['model'] === 'gpt-test');
+            && $request['model'] === 'gpt-test' && $request['tool_choice'] === 'none' && ! isset($request['tools']));
     }
 
     /**
@@ -97,11 +100,12 @@ class AiProviderAdapterTest extends TestCase
      */
     public function test_gemini_provider_maps_generate_content_output(): void
     {
-        Config::set('ai-import.gemini.key', 'test-gemini-key');
-        Config::set('ai-import.gemini.model', 'gemini-test');
-        Config::set('ai-import.gemini.endpoint', 'https://generativelanguage.test/v1beta');
+        Config::set('ai-providers.connections.gemini.key', 'test-gemini-key');
+        Config::set('ai-providers.connections.gemini.model', 'gemini-test');
+        Config::set('ai-providers.connections.gemini.endpoint', 'https://generativelanguage.test/v1beta');
         Http::fake(['https://generativelanguage.test/*' => Http::response([
             'candidates' => [[
+                'finishReason' => 'STOP',
                 'content' => [
                     'parts' => [
                         ['text' => json_encode(['seo_title' => 'SEO title'])],
@@ -110,7 +114,7 @@ class AiProviderAdapterTest extends TestCase
             ]],
         ])]);
 
-        $result = (new GeminiProvider)->generate('Nguồn', '<p>Gốc</p>');
+        $result = (new GeminiProvider)->withOutputFields(['seo'])->generate('Nguồn', '<p>Gốc</p>');
 
         $this->assertSame('SEO title', $result['seo_title']);
         Http::assertSent(fn ($request): bool => $request->hasHeader('x-goog-api-key', 'test-gemini-key')
@@ -129,10 +133,11 @@ class AiProviderAdapterTest extends TestCase
      */
     public function test_provider_rejects_malformed_json(): void
     {
-        Config::set('ai-import.openai.key', 'test-openai-key');
-        Config::set('ai-import.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
+        Config::set('ai-providers.connections.openai.key', 'test-openai-key');
+        Config::set('ai-providers.connections.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
         Http::fake(['https://api.openai.test/*' => Http::response([
             'choices' => [[
+                'finish_reason' => 'stop',
                 'message' => ['content' => 'not-json'],
             ]],
         ])]);
@@ -140,7 +145,7 @@ class AiProviderAdapterTest extends TestCase
         try {
             (new OpenAiProvider)->generate('Nguồn', '<p>Gốc</p>');
             $this->fail('Provider phải từ chối JSON sai định dạng.');
-        } catch (\App\Exceptions\AiImportException $exception) {
+        } catch (AiImportException $exception) {
             $this->assertSame('AI_PROVIDER_INVALID_JSON', $exception->errorCode);
             $this->assertFalse($exception->retryable);
         }
@@ -158,14 +163,14 @@ class AiProviderAdapterTest extends TestCase
      */
     public function test_provider_normalizes_connection_timeout(): void
     {
-        Config::set('ai-import.openai.key', 'test-openai-key');
-        Config::set('ai-import.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
-        Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('timeout'));
+        Config::set('ai-providers.connections.openai.key', 'test-openai-key');
+        Config::set('ai-providers.connections.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
+        Http::fake(fn () => throw new ConnectionException('timeout'));
 
         try {
             (new OpenAiProvider)->generate('Nguồn', '<p>Gốc</p>');
             $this->fail('Provider phải chuẩn hóa lỗi kết nối.');
-        } catch (\App\Exceptions\AiImportException $exception) {
+        } catch (AiImportException $exception) {
             $this->assertSame('AI_PROVIDER_TIMEOUT', $exception->errorCode);
             $this->assertFalse($exception->retryable);
         }
@@ -183,13 +188,13 @@ class AiProviderAdapterTest extends TestCase
      */
     public function test_provider_rejects_refusal_response(): void
     {
-        Config::set('ai-import.openai.key', 'test-openai-key');
+        Config::set('ai-providers.connections.openai.key', 'test-openai-key');
         Http::fake(['https://api.openai.test/*' => Http::response([
             'choices' => [[
                 'message' => ['refusal' => 'safety'],
             ]],
         ])]);
-        Config::set('ai-import.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
+        Config::set('ai-providers.connections.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
 
         $this->expectExceptionCode(0);
         $this->expectExceptionMessage('từ chối');
@@ -208,14 +213,14 @@ class AiProviderAdapterTest extends TestCase
      */
     public function test_provider_marks_quota_error_as_retryable(): void
     {
-        Config::set('ai-import.openai.key', 'test-openai-key');
+        Config::set('ai-providers.connections.openai.key', 'test-openai-key');
         Http::fake(['https://api.openai.test/*' => Http::response([], 429)]);
-        Config::set('ai-import.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
+        Config::set('ai-providers.connections.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
 
         try {
             (new OpenAiProvider)->generate('Nguồn', '<p>Gốc</p>');
             $this->fail('Provider phải ném lỗi quota.');
-        } catch (\App\Exceptions\AiImportException $exception) {
+        } catch (AiImportException $exception) {
             $this->assertTrue($exception->retryable);
             $this->assertSame('AI_PROVIDER_HTTP_429', $exception->errorCode);
         }

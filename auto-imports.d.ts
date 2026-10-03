@@ -58,6 +58,7 @@ declare global {
   const extendRef: typeof import('@vueuse/core')['extendRef']
   const extractHtmlText: typeof import('./resources/js/utils/aiContentInput.js')['extractHtmlText']
   const findProvider: typeof import('./resources/js/utils/aiModelOptions.js')['findProvider']
+  const formatAiError: typeof import('./resources/js/utils/aiErrors.js')['formatAiError']
   const formatDate: typeof import('./resources/js/@core/utils/formatters.js')['formatDate']
   const formatDateToMonthShort: typeof import('./resources/js/@core/utils/formatters.js')['formatDateToMonthShort']
   const getActivePinia: typeof import('pinia')['getActivePinia']
@@ -70,6 +71,7 @@ declare global {
   const inject: typeof import('vue')['inject']
   const injectLocal: typeof import('@vueuse/core')['injectLocal']
   const integerValidator: typeof import('./resources/js/@core/utils/validators.js')['integerValidator']
+  const isAiSuccess: typeof import('./resources/js/utils/aiErrors.js')['isAiSuccess']
   const isDefined: typeof import('@vueuse/core')['isDefined']
   const isEmpty: typeof import('./resources/js/@core/utils/helpers.js')['isEmpty']
   const isEmptyArray: typeof import('./resources/js/@core/utils/helpers.js')['isEmptyArray']
@@ -178,8 +180,10 @@ declare global {
   const useAiContentActions: typeof import('./resources/js/composables/useAiContentActions.js')['useAiContentActions']
   const useAiContentCatalog: typeof import('./resources/js/composables/useAiContentCatalog.js')['useAiContentCatalog']
   const useAiContentGeneration: typeof import('./resources/js/composables/useAiContentGeneration.js')['useAiContentGeneration']
+  const useAiContentSettings: typeof import('./resources/js/composables/useAiContentSettings.js')['useAiContentSettings']
   const useAiContentWorkspace: typeof import('./resources/js/composables/useAiContentWorkspace.js')['useAiContentWorkspace']
   const useAiProviderSettings: typeof import('./resources/js/composables/useAiProviderSettings.js')['useAiProviderSettings']
+  const useAiRunFeedback: typeof import('./resources/js/composables/useAiRunFeedback.js')['useAiRunFeedback']
   const useAnimate: typeof import('@vueuse/core')['useAnimate']
   const useApi: typeof import('./resources/js/composables/useApi.js')['useApi']
   const useArrayDifference: typeof import('@vueuse/core')['useArrayDifference']
@@ -445,6 +449,7 @@ declare module 'vue' {
     readonly extendRef: UnwrapRef<typeof import('@vueuse/core')['extendRef']>
     readonly extractHtmlText: UnwrapRef<typeof import('./resources/js/utils/aiContentInput.js')['extractHtmlText']>
     readonly findProvider: UnwrapRef<typeof import('./resources/js/utils/aiModelOptions.js')['findProvider']>
+    readonly formatAiError: UnwrapRef<typeof import('./resources/js/utils/aiErrors.js')['formatAiError']>
     readonly formatDate: UnwrapRef<typeof import('./resources/js/@core/utils/formatters.js')['formatDate']>
     readonly formatDateToMonthShort: UnwrapRef<typeof import('./resources/js/@core/utils/formatters.js')['formatDateToMonthShort']>
     readonly getActivePinia: UnwrapRef<typeof import('pinia')['getActivePinia']>
@@ -457,6 +462,7 @@ declare module 'vue' {
     readonly inject: UnwrapRef<typeof import('vue')['inject']>
     readonly injectLocal: UnwrapRef<typeof import('@vueuse/core')['injectLocal']>
     readonly integerValidator: UnwrapRef<typeof import('./resources/js/@core/utils/validators.js')['integerValidator']>
+    readonly isAiSuccess: UnwrapRef<typeof import('./resources/js/utils/aiErrors.js')['isAiSuccess']>
     readonly isDefined: UnwrapRef<typeof import('@vueuse/core')['isDefined']>
     readonly isEmpty: UnwrapRef<typeof import('./resources/js/@core/utils/helpers.js')['isEmpty']>
     readonly isEmptyArray: UnwrapRef<typeof import('./resources/js/@core/utils/helpers.js')['isEmptyArray']>
@@ -565,8 +571,10 @@ declare module 'vue' {
     readonly useAiContentActions: UnwrapRef<typeof import('./resources/js/composables/useAiContentActions.js')['useAiContentActions']>
     readonly useAiContentCatalog: UnwrapRef<typeof import('./resources/js/composables/useAiContentCatalog.js')['useAiContentCatalog']>
     readonly useAiContentGeneration: UnwrapRef<typeof import('./resources/js/composables/useAiContentGeneration.js')['useAiContentGeneration']>
+    readonly useAiContentSettings: UnwrapRef<typeof import('./resources/js/composables/useAiContentSettings.js')['useAiContentSettings']>
     readonly useAiContentWorkspace: UnwrapRef<typeof import('./resources/js/composables/useAiContentWorkspace.js')['useAiContentWorkspace']>
     readonly useAiProviderSettings: UnwrapRef<typeof import('./resources/js/composables/useAiProviderSettings.js')['useAiProviderSettings']>
+    readonly useAiRunFeedback: UnwrapRef<typeof import('./resources/js/composables/useAiRunFeedback.js')['useAiRunFeedback']>
     readonly useAnimate: UnwrapRef<typeof import('@vueuse/core')['useAnimate']>
     readonly useApi: UnwrapRef<typeof import('./resources/js/composables/useApi.js')['useApi']>
     readonly useArrayDifference: UnwrapRef<typeof import('@vueuse/core')['useArrayDifference']>

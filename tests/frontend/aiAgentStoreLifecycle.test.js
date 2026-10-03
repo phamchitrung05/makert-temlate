@@ -12,7 +12,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useAiAgentStore } from '@/stores/aiAgent'
 import { aiAgentService } from '@/services/aiAgent'
 
-vi.mock('@/services/aiAgent', () => ({ aiAgentService: { capabilities: vi.fn(), createSession: vi.fn(), status: vi.fn(), cancel: vi.fn() } }))
+vi.mock('@/services/aiAgent', () => ({ aiAgentService: { capabilities: vi.fn(), createSession: vi.fn(), status: vi.fn(), cancel: vi.fn(), regenerate: vi.fn(), retry: vi.fn() } }))
 
 /** Input: không có. Output: promise để mô phỏng response đến muộn. */
 function deferred() {
@@ -24,6 +24,36 @@ function deferred() {
 
 describe('AI Agent response lifecycle', () => {
   beforeEach(() => { setActivePinia(createPinia()); vi.resetAllMocks() })
+
+  it('keeps a successful parent when a failed child response contains an invalid draft', async () => {
+    const store = useAiAgentStore()
+
+    aiAgentService.createSession.mockResolvedValue({ job_id: 'parent', status: 'ready', draft: { title: 'Valid parent' } })
+    await store.start({})
+    aiAgentService.regenerate.mockResolvedValue({ job_id: 'child', parent_id: 'parent', status: 'failed', draft: { title: 'Invalid child' } })
+    await store.regenerate('parent', {})
+    expect(store.session.job_id).toBe('child')
+    expect(store.candidates).toHaveLength(1)
+    expect(store.candidates[0]).toMatchObject({ id: 'parent', status: 'ready', outputs: { title: 'Valid parent' } })
+    aiAgentService.status.mockResolvedValue({ job_id: 'child', status: 'failed', draft: { title: 'Still invalid' } })
+    await store.poll('child', 'post')
+    expect(store.candidates).toHaveLength(1)
+    expect(store.candidates[0].outputs.title).toBe('Valid parent')
+  })
+
+  it('only syncs successful run candidates and rejects a failed entry inside a successful response', async () => {
+    const store = useAiAgentStore()
+
+    aiAgentService.createSession.mockResolvedValue({ job_id: 'run', status: 'rewriting', draft: { title: 'Not ready' } })
+    await store.start({})
+    expect(store.candidates).toEqual([])
+    aiAgentService.status.mockResolvedValue({ job_id: 'run', status: 'ready', candidates: [
+      { id: 'run', outputs: { title: 'Valid' } }, { id: 'failed', status: 'failed', outputs: { title: 'Invalid' } },
+    ] })
+    await store.poll('run', 'post')
+    expect(store.candidates).toHaveLength(1)
+    expect(store.candidates[0].outputs.title).toBe('Valid')
+  })
 
   it('does not restore an old run after reset and a new creation', async () => {
     const oldResponse = deferred()

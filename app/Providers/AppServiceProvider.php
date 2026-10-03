@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Actions\Media\UploadMediaAssetAction;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\MediaAsset;
@@ -12,6 +13,9 @@ use App\Models\ResourceVersion;
 use App\Models\Tag;
 use App\Models\Technology;
 use App\Models\User;
+use App\Services\Ai\AiOutputValidator;
+use App\Services\Ai\ArticleImportService;
+use App\Services\Ai\ArticleSourceFetcher;
 use App\Services\Ai\Contracts\AiImageProviderContract;
 use App\Services\Ai\Contracts\AiProviderContract;
 use App\Services\Ai\HttpAiImageProvider;
@@ -68,6 +72,13 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(ProviderRegistry::class);
         $this->app->singleton(TargetRegistry::class);
         $this->app->singleton(SchemaRegistry::class);
+        $this->app->bind(ArticleImportService::class, fn ($app): ArticleImportService => new ArticleImportService(
+            $app->make(AiProviderContract::class),
+            $app->make(ArticleSourceFetcher::class),
+            $app->make(UploadMediaAssetAction::class),
+            $app->make(ProviderRegistry::class),
+            $app->make(AiOutputValidator::class),
+        ));
     }
 
     /**

@@ -13,11 +13,12 @@
 import { computed, onScopeDispose, shallowRef } from 'vue'
 import { aiAgentService } from '@/services/aiAgent'
 import { buildAiContentRequest, validateAiContentSource } from '@/utils/aiContentInput'
+import { formatAiError } from '@/utils/aiErrors'
 
 const terminalStatuses = ['ready', 'completed', 'succeeded', 'failed', 'cancelled', 'expired']
 
 /** Input: nguồn, catalog, callback lifecycle. Output: action/state page-scoped có cleanup timer. */
-export function useAiContentGeneration(source, catalog, onSession) {
+export function useAiContentGeneration(source, catalog, onSession, onFeedback = () => {}) {
   const submitting = shallowRef(false)
   const session = shallowRef(null)
   const error = shallowRef('')
@@ -41,7 +42,8 @@ export function useAiContentGeneration(source, catalog, onSession) {
   function acceptSession(value) {
     session.value = value
     onSession(value)
-    if (value.status === 'failed') error.value = value.error || 'AI không tạo được nội dung. Hãy kiểm tra provider/model và thử lại.'
+    onFeedback(value, 'AI không tạo được nội dung. Hãy kiểm tra provider/model và thử lại.', catalog.value.outputOptions)
+    if (value.status === 'failed') error.value = formatAiError(value, undefined, catalog.value.outputOptions)
     if (['cancelled', 'expired'].includes(value.status)) error.value = 'Tác vụ đã hủy hoặc hết hạn. Bạn có thể tạo lại.'
   }
 
@@ -95,8 +97,7 @@ export function useAiContentGeneration(source, catalog, onSession) {
       acceptSession(value)
     }
     catch (requestError) {
-      if (token === version) error.value = Object.values(requestError?.data?.errors ?? {}).flat()[0]
-        || requestError?.data?.message || requestError?.message || 'Không thể tạo bài AI. Hãy thử lại.'
+      if (token === version) error.value = formatAiError(requestError, 'Không thể tạo bài AI. Hãy thử lại.', catalog.value.outputOptions)
     }
     finally {
       if (token === version) {
@@ -123,8 +124,7 @@ export function useAiContentGeneration(source, catalog, onSession) {
       acceptSession(value)
     }
     catch (requestError) {
-      if (token === version) error.value = Object.values(requestError?.data?.errors ?? {}).flat()[0]
-        || requestError?.data?.message || requestError?.message || 'Chưa thể thử lại tác vụ AI.'
+      if (token === version) error.value = formatAiError(requestError, 'Chưa thể thử lại tác vụ AI.', catalog.value.outputOptions)
     }
     finally {
       if (token === version) {

@@ -15,7 +15,9 @@
   =====================================================================
 -->
 <script setup>
+/* eslint-disable camelcase -- Public error fields follow the Laravel API contract. */
 import { computed, shallowRef, watch } from 'vue'
+import { formatAiError } from '@/utils/aiErrors'
 
 const props = defineProps({
   items: { type: Array, required: true },
@@ -23,9 +25,10 @@ const props = defineProps({
   error: { type: String, default: '' },
   targets: { type: Array, default: () => [] },
   busyId: { type: String, default: null },
+  outputOptions: { type: Array, default: () => [] },
 })
 
-const emit = defineEmits(['reload', 'edit', 'remove', 'regenerate'])
+const emit = defineEmits(['reload', 'edit', 'remove', 'regenerate', 'refreshStatus'])
 const search = shallowRef('')
 const status = shallowRef('all')
 const page = shallowRef(1)
@@ -47,6 +50,8 @@ const headers = [
 
 const statusOptions = Object.fromEntries(statuses.map(item => [item.value, item]))
 const targetOptions = computed(() => Object.fromEntries(props.targets.map(target => [target.value, target])))
+
+const failureMessage = item => formatAiError({ error: item.error, validation_errors: item.validationErrors }, undefined, props.outputOptions)
 
 const statusTabs = computed(() => statuses.map(item => ({
   ...item,
@@ -140,9 +145,9 @@ watch(() => filteredItems.value.length, total => {
             variant="tonal"
           >
             <VImg
-              v-if="item.thumbnail?.file?.url"
-              :src="item.thumbnail.file.url"
-              alt=""
+              v-if="item.thumbnail?.file?.preview_url || item.thumbnail?.file?.url"
+              :src="item.thumbnail.file.preview_url || item.thumbnail.file.url"
+              :alt="item.thumbnail.alt_text || item.title"
               cover
             />
             <VIcon
@@ -177,6 +182,15 @@ watch(() => filteredItems.value.length, total => {
             </div>
             <div class="d-flex align-center gap-1 mt-2">
               <VBtn
+                v-if="item.status === 'generating'"
+                icon="tabler-refresh"
+                size="small"
+                variant="text"
+                :aria-label="`Kiểm tra tiến trình ${item.title}`"
+                title="Kiểm tra tiến trình"
+                @click="emit('refreshStatus', item)"
+              />
+              <VBtn
                 icon="tabler-edit"
                 size="small"
                 variant="text"
@@ -208,6 +222,13 @@ watch(() => filteredItems.value.length, total => {
                 v-if="item.parentId"
                 class="text-caption text-disabled ms-2"
               >Bản tạo lại</span>
+            </div>
+            <div
+              v-if="item.status === 'failed'"
+              class="text-caption text-error text-wrap mt-1"
+              role="status"
+            >
+              {{ failureMessage(item) }}
             </div>
           </div>
         </div>

@@ -25,6 +25,11 @@ use App\Enums\AiCapability;
  */
 final class OpenAiProvider extends AbstractStructuredAiProvider
 {
+    protected function responseFormat(): string
+    {
+        return 'openai';
+    }
+
     /**
      * =====================================================================
      * CHỨC NĂNG: true khi có API key và provider bật.
@@ -37,7 +42,7 @@ final class OpenAiProvider extends AbstractStructuredAiProvider
      */
     public function configured(): bool
     {
-        return $this->connection() !== null || (string) config('ai-import.openai.key') !== '';
+        return $this->connection() !== null || (string) config('ai-providers.connections.openai.key') !== '';
     }
 
     /**
@@ -67,7 +72,7 @@ final class OpenAiProvider extends AbstractStructuredAiProvider
      */
     public function modelName(): string
     {
-        return $this->requestedModel() ?: (string) ($this->connection()?->snapshot['model'] ?? config('ai-import.openai.model', 'gpt-4o-mini'));
+        return $this->requestedModel() ?: (string) ($this->connection()?->snapshot['model'] ?? config('ai-providers.connections.openai.model', 'gpt-4o-mini'));
     }
 
     /**
@@ -79,26 +84,30 @@ final class OpenAiProvider extends AbstractStructuredAiProvider
      * SIDE EFFECT: gọi OpenAI qua AiProviderClient; không ghi domain database.
      * EXCEPTION/TRANSACTION: AiImportException cho HTTP lỗi; không mở transaction.
      * =====================================================================
+     *
      * @param  array<string, mixed>  $input
      */
     protected function requestPayload(array $input): mixed
     {
         $payload = [
             'model' => $input['model'],
-            'temperature' => (float) ($this->connection()?->snapshot['temperature'] ?? config('ai-import.openai.temperature', 0.2)),
+            'temperature' => (float) ($this->runSettings()['temperature'] ?? config('ai-providers.connections.openai.temperature', 0.2)),
             'messages' => [
                 ['role' => 'system', 'content' => $input['instructions']],
                 ['role' => 'user', 'content' => $this->canonicalInput($input)],
             ],
         ];
+        if (($this->connection()?->snapshot['driver'] ?? 'openai') === 'openai') {
+            $payload['tool_choice'] = 'none';
+        }
         if ($this->connection() === null || in_array(AiCapability::Structured->value, $this->connection()->snapshot['capabilities'] ?? [], true)) {
             $payload['response_format'] = ['type' => 'json_object'];
         }
         $connection = $this->connection() ?? new AiConnection([
             'driver' => 'openai', 'provider' => 'openai',
-            'base_url' => preg_replace('#/chat/completions/?$#', '', (string) config('ai-import.openai.endpoint')),
-            'model' => $input['model'], 'timeout' => (int) config('ai-import.timeout', 12),
-        ], (string) config('ai-import.openai.key'));
+            'base_url' => preg_replace('#/chat/completions/?$#', '', (string) config('ai-providers.connections.openai.endpoint')),
+            'model' => $input['model'], 'timeout' => (int) config('ai-providers.connections.openai.timeout', 12),
+        ], (string) config('ai-providers.connections.openai.key'));
 
         return app(AiProviderClient::class)->send($connection, 'POST', 'chat/completions', $payload);
     }

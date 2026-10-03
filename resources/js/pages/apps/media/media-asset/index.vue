@@ -523,7 +523,6 @@ const updateItemsPerPage = value => {
       >
         <VCard
           rounded="lg"
-          elevation="0"
           border
           class="pa-2 h-100 d-flex flex-column media-manager__panel rounded-e-0"
         >
@@ -578,7 +577,6 @@ const updateItemsPerPage = value => {
         class="media-manager__column h-100"
       >
         <VCard
-          elevation="0"
           border
           class="pa-4 h-100 d-flex flex-column media-manager__panel rounded-0"
         >
@@ -850,7 +848,6 @@ const updateItemsPerPage = value => {
       >
         <VCard
           rounded="lg"
-          elevation="0"
           border
           class="pa-5 h-100 d-flex flex-column media-manager__panel media-details-panel rounded-s-0"
         >

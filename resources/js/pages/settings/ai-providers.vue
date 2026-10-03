@@ -9,7 +9,7 @@
   - providerAvailabilityPercent(provider), providerAvailabilityLabel(provider): tính mức khả dụng của catalog.
   - providerCapability(provider, capability), formatDate(value): kiểm tra capability và định dạng thời gian.
   - perform(action, options): điều phối thao tác API, loading và feedback.
-  - refreshCatalog(), selectProvider(provider), clearNotice(): tải catalog, chọn provider và đóng thông báo.
+  - refreshCatalog(), selectProvider(provider), showSnackbar(): tải catalog, chọn provider và hiển thị thông báo.
   - openNew(), editProvider(provider), saveProviderForm(payload): tạo/sửa connection provider.
   - test(provider), sync(provider), disable(provider): kiểm tra, đồng bộ và tắt provider.
   - openModel(provider, model), saveModelForm(payload), testModel(provider, model): thêm/sửa capability và test model.
@@ -37,10 +37,8 @@ const editingProvider = ref(null)
 const selectedModel = ref(null)
 const modelTestStatuses = ref({})
 const snackbar = ref({ visible: false, message: '', color: alertColors.completed })
-const notice = ref('')
 const busyId = ref(null)
 const modelSearch = ref({})
-const noticeType = ref('info')
 const searchQuery = ref('')
 const statusFilter = ref('all')
 const activeDetailTab = ref('overview')
@@ -96,8 +94,6 @@ const inactiveProviderCount = computed(() => providers.value.length - activeProv
 const availableModelCount = computed(() => providers.value.reduce((total, provider) => total + (provider.models ?? []).filter(model => model.is_enabled && model.is_available).length, 0))
 const totalModelCount = computed(() => providers.value.reduce((total, provider) => total + (provider.models ?? []).length, 0))
 const selectedProviderDetail = computed(() => providers.value.find(provider => provider.id === selectedProvider.value?.id) ?? null)
-
-const noticeColor = computed(() => getAlertColor(error.value ? 'error' : noticeType.value))
 
 const filteredProviders = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
@@ -187,25 +183,23 @@ const statCards = computed(() => [
  * CHỨC NĂNG: Điều phối feedback/loading chung cho thao tác settings.
  * =====================================================================
  * INPUT: API action và success callback cục bộ.
- * OUTPUT: notice nhất quán, không để spinner treo hoặc chạy chồng thao tác.
- * SIDE EFFECT: gọi composable API; cập nhật notice/dialog sau khi thành công.
+ * OUTPUT: snackbar nhất quán, không để spinner treo hoặc chạy chồng thao tác.
+ * SIDE EFFECT: gọi composable API; cập nhật snackbar/dialog sau khi thành công.
  * EXCEPTION/TRANSACTION: lỗi API hiển thị message an toàn; finally luôn dọn busyId.
  * =====================================================================
  */
 async function perform(action, { key, message, after } = {}) {
   if (busyId.value) return
   busyId.value = key ?? 'settings-save'
-  notice.value = ''
+  snackbar.value.visible = false
   try {
     const result = await action()
 
     await after?.(result)
-    noticeType.value = 'success'
-    notice.value = typeof message === 'function' ? message(result) : message ?? result?.message ?? 'Đã hoàn tất.'
+    showSnackbar(typeof message === 'function' ? message(result) : message ?? result?.message ?? 'Đã hoàn tất.')
   }
   catch (reason) {
-    noticeType.value = 'error'
-    notice.value = reason?.data?.message ?? reason?.message ?? 'Thao tác AI thất bại.'
+    showSnackbar(reason?.data?.message ?? reason?.message ?? 'Thao tác AI thất bại.', 'error')
   }
   finally {
     busyId.value = null
@@ -219,7 +213,7 @@ async function perform(action, { key, message, after } = {}) {
  * INPUT: catalog provider từ backend.
  * OUTPUT: danh sách mới và selected provider hợp lệ.
  * SIDE EFFECT: gọi composable load(); không chứa HTTP trực tiếp.
- * EXCEPTION/TRANSACTION: lỗi được ném lại để caller xử lý notice.
+ * EXCEPTION/TRANSACTION: lỗi được ném lại để caller hiển thị snackbar.
  * =====================================================================
  */
 async function refreshCatalog() {
@@ -246,17 +240,16 @@ function selectProvider(provider) {
 
 /**
  * =====================================================================
- * CHỨC NĂNG: Xóa thông báo cục bộ trên trang
+ * CHỨC NĂNG: Hiển thị thông báo bằng snackbar theo màu trạng thái chung
  * =====================================================================
- * INPUT: notice/error ref.
- * OUTPUT: alert được đóng mà không ảnh hưởng catalog.
- * SIDE EFFECT: reset feedback state; không gọi API.
+ * INPUT: nội dung và loại thông báo.
+ * OUTPUT: snackbar ở góc trên bên phải.
+ * SIDE EFFECT: cập nhật feedback state; không gọi API.
  * EXCEPTION/TRANSACTION: không mở transaction.
  * =====================================================================
  */
-function clearNotice() {
-  notice.value = ''
-  error.value = ''
+function showSnackbar(message, type = 'success') {
+  snackbar.value = { visible: true, message, color: getAlertColor(type) }
 }
 
 /**
@@ -296,7 +289,7 @@ function editProvider(provider) {
  * CHỨC NĂNG: Lưu provider và đóng dialog khi thành công
  * =====================================================================
  * INPUT: metadata và optional write-only api_key từ dialog.
- * OUTPUT: notice thành công hoặc lỗi an toàn.
+ * OUTPUT: snackbar thành công hoặc lỗi an toàn.
  * SIDE EFFECT: gọi composable, cập nhật catalog reactive và đóng dialog.
  * EXCEPTION/TRANSACTION: perform() luôn dọn busy state; lỗi API không bị nuốt.
  * =====================================================================
@@ -316,9 +309,9 @@ function saveProviderForm(payload) {
  * CHỨC NĂNG: Test connection provider
  * =====================================================================
  * INPUT: provider catalog item.
- * OUTPUT: notice test và catalog được reload.
+ * OUTPUT: snackbar test và catalog được reload.
  * SIDE EFFECT: gọi endpoint test server-side; không hiển thị key.
- * EXCEPTION/TRANSACTION: lỗi API hiển thị trong notice; perform() dọn busy state.
+ * EXCEPTION/TRANSACTION: lỗi API hiển thị trong snackbar; perform() dọn busy state.
  * =====================================================================
  */
 function test(provider) {
@@ -330,9 +323,9 @@ function test(provider) {
  * CHỨC NĂNG: Đồng bộ model catalog provider
  * =====================================================================
  * INPUT: provider catalog item.
- * OUTPUT: notice số model imported/unavailable.
+ * OUTPUT: snackbar số model imported/unavailable.
  * SIDE EFFECT: gọi endpoint sync server-side; backend giữ catalog cũ nếu sync lỗi.
- * EXCEPTION/TRANSACTION: lỗi API hiển thị trong notice; perform() dọn busy state.
+ * EXCEPTION/TRANSACTION: lỗi API hiển thị trong snackbar; perform() dọn busy state.
  * =====================================================================
  */
 function sync(provider) {
@@ -349,7 +342,7 @@ function sync(provider) {
  * INPUT: provider catalog item.
  * OUTPUT: provider inactive trong catalog.
  * SIDE EFFECT: hỏi xác nhận rồi gọi endpoint disable.
- * EXCEPTION/TRANSACTION: người dùng từ chối thì không gọi API; lỗi hiển thị trong notice.
+ * EXCEPTION/TRANSACTION: người dùng từ chối thì không gọi API; lỗi hiển thị trong snackbar.
  * =====================================================================
  */
 function disable(provider) {
@@ -379,9 +372,9 @@ function openModel(provider, model = null) {
  * CHỨC NĂNG: Thêm model thủ công hoặc lưu chỉnh sửa capability
  * =====================================================================
  * INPUT: model payload từ AiModelDialog và ID model đang chỉnh sửa nếu có.
- * OUTPUT: catalog reload và notice thành công; model cũ được cập nhật đúng ID.
+ * OUTPUT: catalog reload và snackbar thành công; model cũ được cập nhật đúng ID.
  * SIDE EFFECT: gọi composable model API, cập nhật catalog và đóng dialog.
- * EXCEPTION/TRANSACTION: lỗi validation/API hiển thị trong notice.
+ * EXCEPTION/TRANSACTION: lỗi validation/API hiển thị trong snackbar.
  * =====================================================================
  */
 function saveModelForm(payload) {
@@ -412,26 +405,18 @@ async function testModel(provider, model) {
     const result = await testProvider(provider.id, model.id)
 
     modelTestStatuses.value[model.id] = 'success'
-    snackbar.value = {
-      visible: true,
-      message: result?.message ?? `Model ${model.label || model.remote_model_id} đã phản hồi thành công.`,
-      color: alertColors.completed,
-    }
+    showSnackbar(result?.message ?? `Model ${model.label || model.remote_model_id} đã phản hồi thành công.`)
   }
   catch (reason) {
     modelTestStatuses.value[model.id] = 'failed'
-    snackbar.value = {
-      visible: true,
-      message: reason?.data?.message ?? reason?.message ?? 'Kiểm tra model thất bại.',
-      color: alertColors.danger,
-    }
+    showSnackbar(reason?.data?.message ?? reason?.message ?? 'Kiểm tra model thất bại.', 'error')
   }
   finally {
     busyId.value = null
   }
 }
 
-onMounted(() => refreshCatalog().catch(() => {}))
+onMounted(() => refreshCatalog().catch(() => showSnackbar(error.value || 'Không thể tải cấu hình AI.', 'error')))
 </script>
 
 <template>
@@ -456,21 +441,6 @@ onMounted(() => refreshCatalog().catch(() => {}))
               Thêm provider
             </VBtn>
           </div>
-        </VCol>
-
-        <VCol
-          v-if="notice || error"
-          cols="12"
-        >
-          <VAlert
-            :type="error ? 'error' : noticeType"
-            :color="noticeColor"
-            variant="tonal"
-            closable
-            @click:close="clearNotice"
-          >
-            {{ error || notice }}
-          </VAlert>
         </VCol>
 
         <VCol
@@ -1144,6 +1114,15 @@ onMounted(() => refreshCatalog().catch(() => {}))
     location="top end"
   >
     {{ snackbar.message }}
+    <template #actions>
+      <VBtn
+        icon="tabler-x"
+        variant="text"
+        size="small"
+        aria-label="Đóng thông báo"
+        @click="snackbar.visible = false"
+      />
+    </template>
   </VSnackbar>
 
   <AiProviderConnectionDialog

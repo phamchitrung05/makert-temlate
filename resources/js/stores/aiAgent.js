@@ -10,6 +10,7 @@
 import { computed, readonly, shallowRef } from 'vue'
 import { defineStore } from 'pinia'
 import { aiAgentService } from '@/services/aiAgent'
+import { isAiSuccess } from '@/utils/aiErrors'
 
 export const useAiAgentStore = defineStore('aiAgent', () => {
   const capabilities = shallowRef(null)
@@ -131,11 +132,13 @@ export const useAiAgentStore = defineStore('aiAgent', () => {
 
   /** Input: response session/run. Output: merge candidate lineage theo ID. */
   const syncCandidates = value => {
+    if (!isAiSuccess(value)) return
     const next = Array.isArray(value?.candidates) ? value.candidates : value?.candidate ? [value.candidate] : value?.draft ? [{ id: value.id ?? value.job_id, outputs: value.draft, provider: value.provider, model: value.model, ['prompt_key']: value['prompt_key'], ['prompt_version']: value['prompt_version'], source: value.source }] : []
 
     const byId = new Map(candidates.value.map(candidate => [candidate.id, candidate]))
 
-    next.forEach(candidate => byId.set(candidate.id, candidate))
+    next.filter(candidate => !candidate.status || isAiSuccess(candidate))
+      .forEach(candidate => byId.set(candidate.id, { ...candidate, status: candidate.status ?? value.status }))
     candidates.value = [...byId.values()]
   }
 

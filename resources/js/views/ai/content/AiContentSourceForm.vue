@@ -15,7 +15,7 @@
   =====================================================================
 -->
 <script setup>
-import { shallowRef } from 'vue'
+import { computed, shallowRef } from 'vue'
 
 const props = defineProps({
   catalog: { type: Object, required: true },
@@ -33,12 +33,7 @@ const inputTabs = [
   { value: 'prompt', title: 'Viết tự do', icon: 'tabler-pencil' },
 ]
 
-const optionChecks = [
-  { key: 'autoTitle', label: 'Tự động tạo tiêu đề' },
-  { key: 'autoThumbnail', label: 'Lấy thumbnail từ nguồn URL' },
-  { key: 'optimizeSeo', label: 'Tối ưu SEO' },
-  { key: 'rewrite', label: 'Viết lại nội dung nguồn' },
-]
+const generatesTitle = computed(() => source.value.outputs?.includes('title') ?? false)
 
 /** Input: key/value của field. Output: state mới; không mutate object của parent. */
 const update = (key, value) => { source.value = { ...source.value, [key]: value } }
@@ -219,27 +214,29 @@ const updateProvider = provider => {
                 @update:model-value="update('length', $event)"
               />
             </VCol>
-            <VCol
-              v-for="option in optionChecks"
-              :key="option.key"
-              cols="12"
-              sm="6"
-            >
-              <VCheckbox
-                :model-value="source[option.key]"
-                :label="option.label"
-                :disabled="props.disabled || (option.key === 'autoThumbnail' && source.type !== 'url')"
-                @update:model-value="update(option.key, $event)"
+            <VCol cols="12">
+              <AppSelect
+                id="ai-content-outputs"
+                :model-value="source.outputs ?? []"
+                :items="props.catalog.outputOptions ?? []"
+                :disabled="props.disabled || props.catalog.loading || !props.catalog.outputOptions?.length"
+                label="AI sẽ tạo"
+                aria-label="AI sẽ tạo"
+                placeholder="Chọn các hạng mục cần tạo"
+                multiple
+                chips
+                closable-chips
+                @update:model-value="update('outputs', $event)"
               />
             </VCol>
             <VCol
-              v-if="!source.autoTitle"
+              v-if="!generatesTitle && !props.catalog.loading"
               cols="12"
             >
               <AppTextField
                 :model-value="source.title"
                 :disabled="props.disabled"
-                label="Tiêu đề bài mới"
+                label="Tiêu đề tài nguyên"
                 maxlength="255"
                 placeholder="Tiêu đề AI sẽ sử dụng khi viết bài..."
                 @update:model-value="update('title', $event)"

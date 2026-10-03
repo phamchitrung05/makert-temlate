@@ -1,9 +1,5 @@
 <?php
 
-use App\Services\Ai\DeterministicAiProvider;
-use App\Services\Ai\GeminiProvider;
-use App\Services\Ai\OpenAiProvider;
-use App\Services\Ai\StructuredAiProvider;
 use App\Services\Ai\Targets\PostAiAdapter;
 
 /**
@@ -11,47 +7,65 @@ use App\Services\Ai\Targets\PostAiAdapter;
  * CHỨC NĂNG FILE: Cấu hình registry dùng chung cho AI Agent nội dung.
  * =====================================================================
  *
- * Đây là lớp khai báo capability, không thay thế config/ai-import.php đang
- * được pipeline Post sử dụng. Các giá trị nhạy cảm vẫn nằm trong .env.
+ * Khai báo tài nguyên, nhóm đầu ra, prompt và schema. Provider/kết nối thuộc
+ * ai-providers.php; giới hạn xử lý và vòng đời tác vụ thuộc ai-import.php.
  *
  * CÁC HÀM/METHOD TRONG FILE: Không có function; file chỉ trả mảng cấu hình.
  * INPUT/OUTPUT CỦA FILE (tổng thể):
- * - INPUT : biến môi trường provider/model và config Laravel.
- * - OUTPUT: registry metadata cho target/provider/prompt/schema.
+ * - INPUT : khai báo capability của từng tài nguyên.
+ * - OUTPUT: registry metadata cho target/output/prompt/schema.
  * - SIDE EFFECT: không gọi provider hoặc ghi database.
  * =====================================================================
  */
 return [
-    'providers' => [
-        'http-json' => [
-            'enabled' => filter_var(env('AI_IMPORT_ENABLED', true), FILTER_VALIDATE_BOOLEAN)
-                && (string) env('AI_IMPORT_ENDPOINT', '') !== ''
-                && (string) env('AI_IMPORT_KEY', '') !== '',
-            'label' => 'Configured AI endpoint',
-            'logo' => null,
-            'adapter' => StructuredAiProvider::class,
-            'models' => [env('AI_IMPORT_MODEL', 'default')],
+    'legacy_required_outputs' => ['title', 'content'],
+    'output_aliases' => ['content' => 'content_html', 'category_ids' => 'suggested_category_ids', 'tag_ids' => 'suggested_tag_ids'],
+    // Nhãn cho select và các trường canonical thuộc từng nhóm đầu ra.
+    'output_definitions' => [
+        'title' => [
+            'label' => 'Tiêu đề', 'fields' => ['title'], 'required' => ['title'],
+            'rules' => ['title' => ['type' => 'string', 'max' => 255]],
         ],
-        'deterministic' => [
-            'enabled' => true,
-            'label' => 'Deterministic extraction',
-            'logo' => null,
-            'adapter' => DeterministicAiProvider::class,
-            'models' => ['deterministic'],
+        'excerpt' => [
+            'label' => 'Mô tả ngắn', 'fields' => ['excerpt'], 'required' => ['excerpt'],
+            'rules' => ['excerpt' => ['type' => 'string', 'max' => 5000]],
         ],
-        'openai' => [
-            'enabled' => (string) env('AI_OPENAI_KEY', '') !== '',
-            'label' => 'OpenAI',
-            'logo' => 'openai',
-            'adapter' => OpenAiProvider::class,
-            'models' => [env('AI_OPENAI_MODEL', 'gpt-4o-mini')],
+        'content' => [
+            'label' => 'Nội dung', 'fields' => ['content_html', 'content'], 'required' => ['content_html'],
+            'rules' => ['content_html' => ['type' => 'string', 'max' => 200000, 'html' => true]],
         ],
-        'gemini' => [
-            'enabled' => (string) env('AI_GEMINI_KEY', '') !== '',
-            'label' => 'Google Gemini',
-            'logo' => 'gemini',
-            'adapter' => GeminiProvider::class,
-            'models' => [env('AI_GEMINI_MODEL', 'gemini-3.6-flash')],
+        'seo' => [
+            'label' => 'SEO',
+            'fields' => ['focus_keyword', 'seo_title', 'seo_description', 'canonical_url', 'robots_index', 'robots_follow', 'og_title', 'og_description'],
+            'minimum' => 1,
+            'rules' => [
+                'focus_keyword' => ['type' => 'string', 'max' => 255],
+                'seo_title' => ['type' => 'string', 'max' => 255],
+                'seo_description' => ['type' => 'string', 'max' => 5000],
+                'canonical_url' => ['type' => 'string', 'max' => 2048, 'url' => true],
+                'robots_index' => ['type' => 'boolean'], 'robots_follow' => ['type' => 'boolean'],
+                'og_title' => ['type' => 'string', 'max' => 255],
+                'og_description' => ['type' => 'string', 'max' => 5000],
+            ],
+        ],
+        'taxonomy' => [
+            'label' => 'Danh mục & tags',
+            'fields' => ['suggested_category_ids', 'suggested_tag_ids', 'category_ids', 'tag_ids'],
+            'minimum' => 1,
+            'rules' => [
+                'suggested_category_ids' => ['type' => 'integer_ids'],
+                'suggested_tag_ids' => ['type' => 'integer_ids'],
+            ],
+        ],
+        'thumbnail' => [
+            'label' => 'Thumbnail từ nguồn URL',
+            'fields' => ['thumbnail', 'thumbnail_prompt', 'thumbnail_alt_text'],
+            'source_types' => ['url'],
+            'source_owned_fields' => ['thumbnail'],
+            'rules' => [
+                'thumbnail_prompt' => ['type' => 'string', 'max' => 10000],
+                'thumbnail_alt_text' => ['type' => 'string', 'max' => 255],
+            ],
         ],
     ],
 
