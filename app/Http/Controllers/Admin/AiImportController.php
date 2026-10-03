@@ -7,12 +7,14 @@ use App\Actions\Posts\UpdatePostAction;
 use App\Enums\AiCapability;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AiCandidateApplyRequest;
+use App\Http\Requests\Admin\AiCandidateUpdateRequest;
 use App\Http\Requests\Admin\AiImportRequest;
 use App\Http\Requests\Admin\AiSessionIndexRequest;
 use App\Http\Resources\AiSessionSummaryResource;
 use App\Http\Responses\BaseResponse;
 use App\Models\AiImport;
 use App\Models\Post;
+use App\Services\Ai\AiContentSanitizer;
 use App\Services\Ai\AiProvenanceService;
 use App\Services\Ai\AiRunAssetCleaner;
 use App\Services\Ai\AiRunService;
@@ -30,12 +32,13 @@ use Illuminate\Support\Facades\DB;
  * =====================================================================
  * CHỨC NĂNG FILE: HTTP API tạo, polling, retry, hủy và dọn AI import.
  * =====================================================================
- * CÁC HÀM/METHOD: index(), capabilities(), store(), show(), regenerate(), retry(),
+ * CÁC HÀM/METHOD: index(), targets(), capabilities(), store(), show(), regenerate(), retry(), updateCandidate(),
  * candidates(), apply(), cancel(), destroy(), payload(), ensureOwner(),
  * cleanupThumbnail().
  * INPUT: admin request URL/options hoặc UUID job; OUTPUT: envelope JSON.
  * SIDE EFFECT: tạo/dispatch queue job, cập nhật vòng đời và dọn thumbnail tạm.
- * AUTHORIZATION: route permission posts.manage và kiểm tra owner bản ghi.
+ * INPUT/OUTPUT CỦA CLASS (tổng thể): request admin -> tác vụ/candidate an toàn.
+ * AUTHORIZATION: permission theo config target và kiểm tra owner bản ghi.
  * EXCEPTION/TRANSACTION: apply() dùng transaction + lock trong Post Actions;
  * candidate chỉ được apply khi ready và không tin provider/model từ client.
  * =====================================================================
@@ -43,26 +46,49 @@ use Illuminate\Support\Facades\DB;
 class AiImportController extends Controller
 {
     /**
-     * Đọc danh sách tác vụ tạo bài gốc còn hạn của chính admin hiện tại.
+     * Đọc danh sách tác vụ và candidate con còn hạn của chính admin hiện tại.
      *
      * Input: page/per_page đã validate, actor đã qua auth/posts.manage.
-     * Output: summary phân trang mới nhất trước; loại run ảnh và candidate con.
+     * Output: summary phân trang mới nhất trước; loại run ảnh và target không có quyền.
      * Side effect: chỉ query DB, không eager load, không dispatch hoặc gọi AI.
      * Exception/Transaction: không mở transaction; middleware kiểm tra quyền.
      */
     public function index(AiSessionIndexRequest $request): JsonResponse
     {
         $filters = $request->validated();
+        $allowedTargets = collect(app(TargetRegistry::class)->all())
+            ->filter(fn (array $target): bool => $request->user()->can($target['permission'] ?? 'posts.manage'))
+            ->keys()->all();
+        abort_if($allowedTargets === [], 403);
         $paginator = AiImport::query()
             ->where('created_by', $request->user()->getKey())
-            ->whereNull('parent_id')
-            ->where(fn ($query) => $query->whereNull('operation')->orWhere('operation', 'create'))
+            ->where(function ($query) use ($allowedTargets): void {
+                $query->whereIn('input_json->target_type', $allowedTargets);
+                if (in_array('post', $allowedTargets, true)) {
+                    $query->orWhereNull('input_json->target_type');
+                }
+            })
+            ->where(fn ($query) => $query->whereNull('operation')->orWhereIn('operation', ['create', 'regenerate']))
             ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
             ->where('status', '!=', 'expired')
             ->orderByDesc('created_at')->orderByDesc('id')
             ->paginate((int) ($filters['per_page'] ?? 100), ['*'], 'page', (int) ($filters['page'] ?? 1));
 
         return BaseResponse::paginated(AiSessionSummaryResource::collection($paginator), 'Danh sách tác vụ viết bài AI.');
+    }
+
+    /** Input: admin request. Output: tài nguyên từ config mà actor có quyền, không trả class nội bộ. */
+    public function targets(Request $request, TargetRegistry $targets): JsonResponse
+    {
+        $items = collect($targets->all())
+            ->filter(fn (array $target): bool => $request->user()->can($target['permission'] ?? 'posts.manage'))
+            ->map(fn (array $target): array => [
+                'key' => $target['key'], 'label' => $target['label'] ?? $target['key'],
+                'icon' => $target['icon'] ?? 'tabler-file-text', 'color' => $target['color'] ?? 'primary',
+            ])->values()->all();
+        abort_if($items === [], 403);
+
+        return BaseResponse::success($items, 'Tài nguyên AI được phép tạo.');
     }
 
     /**
@@ -76,6 +102,7 @@ class AiImportController extends Controller
      * =====================================================================
      */
     public function capabilities(
+        Request $request,
         string $target,
         TargetRegistry $targets,
         ProviderRegistry $providers,
@@ -87,6 +114,7 @@ class AiImportController extends Controller
         } catch (\InvalidArgumentException) {
             return BaseResponse::error('AI target chưa được bật.', 404);
         }
+        abort_unless($request->user()->can($targetConfig['permission'] ?? 'posts.manage'), 403);
 
         $promptItems = collect($prompts->all())
             ->map(function (array $prompt, string $key): array {
@@ -150,6 +178,7 @@ class AiImportController extends Controller
         }
         $userId = (int) $request->user()->getKey();
         $data = $request->validated();
+        $targetType = (string) ($data['target_type'] ?? 'post');
         $sourceType = filled($data['text'] ?? null) ? 'text' : 'url';
         $normalizedUrl = $sourceType === 'url'
             ? $fetcher->validateUrl((string) $data['url'])
@@ -184,17 +213,18 @@ class AiImportController extends Controller
         try {
             $prompt = $prompts->select(
                 isset($data['prompt_key']) ? (string) $data['prompt_key'] : null,
-                'post',
+                $targetType,
                 'create',
                 ['source_type' => $sourceType, 'language' => (string) ($data['language'] ?? 'vi')],
             );
         } catch (\InvalidArgumentException) {
             throw \Illuminate\Validation\ValidationException::withMessages([
-                'prompt_key' => 'Prompt không nằm trong allowlist của Post.',
+                'prompt_key' => 'Prompt không nằm trong allowlist của tài nguyên đã chọn.',
             ]);
         }
         $promptKey = (string) $prompt['key'];
         $input = [
+            'target_type' => $targetType,
             'source_type' => $sourceType,
             'language' => $data['language'] ?? 'vi',
             'rewrite_style' => $data['rewrite_style'] ?? 'informative',
@@ -263,8 +293,8 @@ class AiImportController extends Controller
             return BaseResponse::error('Import đang được xử lý.', 409);
         }
         $options = $request->validate([
-            'prompt_key' => ['sometimes', 'string', 'max:120'],
-            'instructions' => ['sometimes', 'string', 'max:4000'],
+            'prompt_key' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'instructions' => ['sometimes', 'nullable', 'string', 'max:4000'],
             'provider' => ['sometimes', 'nullable', 'string', 'max:80'],
             'model' => ['sometimes', 'nullable', 'string', 'max:190'],
             'model_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
@@ -272,9 +302,11 @@ class AiImportController extends Controller
             'fields.*' => ['string', 'distinct', 'in:title,excerpt,content,seo,taxonomy,thumbnail'],
         ]);
         $currentInput = (array) $aiImport->input_json;
-        $hasModelOverride = array_key_exists('provider', $options)
-            || array_key_exists('model', $options)
-            || array_key_exists('model_id', $options);
+        $options['fields'] = $options['fields'] ?? [];
+        $options = array_filter($options, static fn ($value): bool => $value !== null && $value !== '');
+        $hasModelOverride = filled($options['provider'] ?? null)
+            || filled($options['model'] ?? null)
+            || filled($options['model_id'] ?? null);
         $selection = $hasModelOverride
             ? array_intersect_key($options, array_flip(['provider', 'model', 'model_id']))
             : array_intersect_key($currentInput, array_flip(['provider', 'model', 'model_id']));
@@ -287,9 +319,9 @@ class AiImportController extends Controller
             : $resolver->resolve(AiCapability::Text, array_filter($selection, static fn (mixed $value): bool => filled($value)));
         if (array_key_exists('prompt_key', $options)) {
             try {
-                $prompts->get((string) $options['prompt_key'], 'post', 'create');
+                $prompts->get((string) $options['prompt_key'], (string) ($currentInput['target_type'] ?? 'post'), 'create');
             } catch (\InvalidArgumentException) {
-                throw \Illuminate\Validation\ValidationException::withMessages(['prompt_key' => 'Prompt không nằm trong allowlist của Post.']);
+                throw \Illuminate\Validation\ValidationException::withMessages(['prompt_key' => 'Prompt không hỗ trợ tài nguyên của bài này.']);
             }
         }
         $childInput = array_replace((array) $aiImport->input_json, array_filter($options, fn ($value) => $value !== null));
@@ -371,9 +403,44 @@ class AiImportController extends Controller
         $sessionId = $aiImport->session_id ?: $aiImport->id;
         $items = AiImport::query()->where(function ($query) use ($sessionId): void {
             $query->where('session_id', $sessionId)->orWhereKey($sessionId);
-        })->where('operation', '!=', 'image')->latest()->get();
+        })->where('created_by', $request->user()->getKey())
+            ->where(fn ($query) => $query->whereNull('operation')->orWhere('operation', '!=', 'image'))->latest()->get();
 
         return BaseResponse::success($items->map(fn (AiImport $item): array => $this->payload($item))->values()->all(), 'Danh sách candidate.');
+    }
+
+    /**
+     * Sửa candidate chưa apply, kiểm tra phiên bản và sanitize HTML tại backend.
+     * Input: title/content/excerpt/SEO và hash phiên bản từ GET detail.
+     * Output: candidate cập nhật; không ghi domain model hoặc gọi AI.
+     * Side effect: lock row, ghi result_json và audit trong cùng transaction.
+     */
+    public function updateCandidate(AiCandidateUpdateRequest $request, AiImport $aiImport, AiContentSanitizer $sanitizer): JsonResponse
+    {
+        $this->ensureOwner($request, $aiImport);
+        $data = $request->validated();
+        $run = DB::transaction(function () use ($aiImport, $data, $sanitizer, $request): AiImport {
+            $run = AiImport::query()->lockForUpdate()->findOrFail($aiImport->id);
+            abort_unless($run->status === 'ready' && ! $run->applied_target_id && $run->operation !== 'image', 409, 'Chỉ sửa candidate sẵn sàng chưa được áp dụng.');
+            abort_if($run->expires_at?->isPast(), 409, 'Candidate đã hết hạn.');
+            $result = (array) $run->result_json;
+            $draft = (array) ($result['draft'] ?? []);
+            abort_unless(hash_equals(hash('sha256', json_encode($draft)), $data['expected_version']), 409, 'Nội dung đã thay đổi. Hãy mở lại bài trước khi lưu.');
+            unset($data['expected_version']);
+            $data['content_html'] = $sanitizer->sanitize($data['content_html']);
+            if (trim(strip_tags($data['content_html'])) === '') {
+                throw \Illuminate\Validation\ValidationException::withMessages(['content_html' => 'Nội dung không được rỗng sau khi làm sạch HTML.']);
+            }
+            $data['content'] = $data['content_html'];
+            $result['draft'] = array_replace($draft, $data);
+            $run->update(['result_json' => $result]);
+            activity('ai-content')->causedBy($request->user())
+                ->withProperties(['candidate_id' => $run->id, 'fields' => array_keys($data)])->log('candidate.edited');
+
+            return $run;
+        });
+
+        return BaseResponse::success($this->payload($run), 'Đã lưu nội dung AI.');
     }
 
     /**
@@ -389,6 +456,7 @@ class AiImportController extends Controller
     public function apply(AiCandidateApplyRequest $request, AiImport $aiImport, TargetRegistry $targets, CreatePostAction $create, UpdatePostAction $update, AiProvenanceService $provenance): JsonResponse
     {
         $this->ensureOwner($request, $aiImport);
+        abort_unless(data_get($aiImport->input_json, 'target_type', 'post') === 'post', 422, 'Apply vào Post chỉ hỗ trợ candidate Post.');
         abort_unless($aiImport->status === 'ready', 409, 'Candidate chưa sẵn sàng.');
         $data = $request->validated();
         $adapter = $targets->adapter('post');
@@ -444,6 +512,7 @@ class AiImportController extends Controller
     public function destroy(Request $request, AiImport $aiImport): JsonResponse
     {
         $this->ensureOwner($request, $aiImport);
+        abort_if(in_array($aiImport->status, ['queued', 'fetching', 'extracting', 'rewriting', 'seo', 'thumbnail'], true), 409, 'Hãy đợi tác vụ kết thúc trước khi xóa.');
         $this->cleanupThumbnail($aiImport);
         $aiImport->delete();
 
@@ -469,6 +538,9 @@ class AiImportController extends Controller
             'source_url' => data_get($import->input_json, 'source_type') === 'text' ? null : $import->source_url,
             'error' => $import->error_message, 'session_id' => $import->session_id ?: $import->id,
             'parent_id' => $import->parent_id, 'operation' => $import->operation,
+            'target_type' => data_get($import->input_json, 'target_type', 'post'),
+            'created_at' => $import->created_at?->toIso8601String(),
+            'draft_version' => hash('sha256', json_encode(data_get($import->result_json, 'draft', []))),
             'applied_target_id' => $import->applied_target_id, 'applied_fields' => $import->applied_fields,
             ...($import->result_json ?? []),
         ];
@@ -487,6 +559,8 @@ class AiImportController extends Controller
     private function ensureOwner(Request $request, AiImport $import): void
     {
         abort_unless((int) $import->created_by === (int) $request->user()->getKey(), 404);
+        $target = (string) data_get($import->input_json, 'target_type', 'post');
+        abort_unless($request->user()->can(config('ai-agent.targets.'.$target.'.permission', 'posts.manage')), 403);
     }
 
     /**

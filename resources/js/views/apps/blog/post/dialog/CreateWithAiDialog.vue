@@ -41,6 +41,7 @@ import ArticleSourcePreviewCard from './ArticleSourcePreviewCard.vue'
 import AiImportProgressCard from './AiImportProgressCard.vue'
 import { toPostPayload } from '@/composables/aiCandidate'
 import { findProvider, providerModels } from '@/utils/aiModelOptions'
+import { buildAiContentRegenerateRequest } from '@/utils/aiContentInput'
 
 const props = defineProps({ targetId: { type: [Number, String], default: null } })
 const emit = defineEmits(['apply', 'applied'])
@@ -167,8 +168,18 @@ const load = async () => {
   }
 }
 
-/** Input: lựa chọn nguồn và provider. Output: request allowlist, null dùng default server. */
-const buildRequest = () => ({ target_type: 'post', target_id: props.targetId, operation: 'create', input: { type: form.inputType, ...(form.inputType === 'url' ? { url: form.inputValue } : { text: form.inputValue }) }, output_language: form.language, instructions: form.instructions, selection_mode: form.selectionMode, prompt_key: form.selectionMode === 'manual' ? form.promptKey : null, provider: form.provider || null, model: form.model || null, requested_outputs: form.outputs })
+/** Input: nguồn và provider. Output: payload create; bỏ optional trống để server dùng default. */
+const buildRequest = () => ({
+  target_type: 'post', operation: 'create',
+  ...(props.targetId ? { target_id: props.targetId } : {}),
+  input: { type: form.inputType, ...(form.inputType === 'url' ? { url: form.inputValue } : { text: form.inputValue }) },
+  output_language: form.language, selection_mode: form.selectionMode,
+  ...(form.instructions ? { instructions: form.instructions } : {}),
+  ...(form.selectionMode === 'manual' && form.promptKey ? { prompt_key: form.promptKey } : {}),
+  ...(form.provider ? { provider: form.provider } : {}),
+  ...(form.model ? { model: form.model } : {}),
+  requested_outputs: form.outputs,
+})
 
 let pollGeneration = 0
 
@@ -205,6 +216,7 @@ const poll = async response => {
 
   const pollStartedAt = Date.now()
   let queuedAt = response.status === 'queued' ? pollStartedAt : null
+  let pollAttempts = 0
 
   startedAt.value ??= pollStartedAt
   checkedAt.value = pollStartedAt
@@ -232,7 +244,8 @@ const poll = async response => {
 
         return
       }
-      timer = setTimeout(tick, result?.status === 'queued' ? 3000 : 1200)
+      pollAttempts += 1
+      timer = setTimeout(tick, Math.min((result?.status === 'queued' ? 3000 : 1200) + pollAttempts * 200, 5000))
     }
     catch (error) {
       if (generation !== pollGeneration) return
@@ -302,7 +315,11 @@ const regenerate = async () => {
   startedAt.value = null
   checkedAt.value = null
   try {
-    const response = await store.regenerate(sessionId.value, { ...buildRequest(), fields: selectedFields.value })
+    const response = await store.regenerate(sessionId.value, buildAiContentRegenerateRequest({
+      fields: selectedFields.value, instructions: form.instructions,
+      prompt_key: form.selectionMode === 'manual' ? form.promptKey : '', provider: form.provider, model: form.model,
+    }))
+
     if (generation === loadGeneration) await poll(response)
   }
   catch (error) { if (generation === loadGeneration) message.value = error?.data?.message || error.message }

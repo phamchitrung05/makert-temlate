@@ -665,6 +665,31 @@ php artisan test
 
 ## 9. Quy tắc cập nhật tài liệu
 
+### Cập nhật Settings / AI Content — 2026-10-03
+
+- `app/Settings/AiSettings.php`: settings nhóm `ai` có typed property của Spatie.
+- `config/settings.php`: repository database, cache tắt; `AiSettingsService` refresh
+  trước mỗi lần đọc/lưu để singleton của package không giữ tuning cũ trong worker.
+- `database/migrations/2026_10_03_100000_migrate_settings_to_spatie.php` chuyển
+  key/value sang group/name/payload/locked. `legacy_settings` giữ bản lưu cũ.
+- `database/settings/*`: property migration; không ghi đè giá trị đã chuyển.
+- `config/ai-agent.php` khai báo target label/icon/color/permission và hướng dẫn
+  nội dung. `PromptRegistry` tạo prompt URL/text dùng schema content chung.
+  Thêm target văn bản mới bằng một khai báo trong config; apply vào model domain
+  vẫn cần adapter/action riêng. Resource/Sound hiện chưa có domain apply/audio.
+- `GET /api/admin/ai-agent/targets`: catalog public, chỉ trả target actor có quyền.
+  Backend tạo run với `input_json.target_type`, mặc định Post cho record cũ.
+- `AiImportController` kiểm tra owner/quyền theo target; Post CRUD và Post API cũ
+  tiếp tục có middleware `posts.manage`. List trả cả create/regenerate còn hạn.
+- `AiContentSanitizer`: allowlist HTML dùng chung cho pipeline và editor.
+- `PATCH /api/admin/ai-agent/candidates/{id}`: title/content/excerpt/SEO có
+  `expected_version`; khóa row, từ chối stale/applied/expired/running, ghi audit.
+- `useAiContentActions` điều phối dialog edit/remove/regenerate và child polling.
+  `AiContentEditorDialog` dùng `PostEditor`; `AiContentRunActionDialog` xác nhận
+  xóa hoặc chọn nhóm field. Các action không thay nguồn của form tạo mới.
+- `resources/js/pages/settings/index.vue`: route `settings` trống, được dùng bởi
+  menu `SYSTERM SETTING` / `SETTING` ở cả navigation dọc và ngang.
+
 - `docs/PLAN.md`: cập nhật trạng thái, checklist và mốc tiến độ.
 - `docs/PROJECT_STRUCTURE.md`: cập nhật khi thêm boundary, thư mục kiến trúc,
   convention hoặc luồng dữ liệu mới.

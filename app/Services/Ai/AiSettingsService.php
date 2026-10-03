@@ -4,17 +4,18 @@ namespace App\Services\Ai;
 
 use App\Enums\AiCapability;
 use App\Models\AiModel;
-use App\Models\Setting;
 use App\Models\User;
+use App\Settings\AiSettings;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Read/write setting AI qua bảng key-value chung, không chứa secret.
+ * CHỨC NĂNG FILE: Đọc/lưu typed settings AI bằng Spatie, giữ validation và audit.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE: defaults(), all(), update().
+ * INPUT/OUTPUT CỦA CLASS (tổng thể): allowlisted values/actor -> settings typed.
  * INPUT: allowlisted typed values/actor ID.
  * OUTPUT: settings hiện tại.
  * SIDE EFFECT: update() atomic DB write và audit; không cache singleton để queue worker thấy setting mới.
@@ -62,16 +63,8 @@ final class AiSettingsService
             return $this->defaults();
         }
 
-        $values = Setting::query()->where('group', 'ai')
-            ->whereIn('key', array_keys($this->defaults()))->get(['key', 'type', 'value'])
-            ->mapWithKeys(fn (Setting $setting): array => [$setting->key => match ($setting->type) {
-                'integer' => $setting->value === null ? null : (int) $setting->value,
-                'float' => (float) $setting->value,
-                'boolean' => (bool) $setting->value,
-                default => $setting->value,
-            }])->all();
-
-        return array_replace($this->defaults(), $values);
+        // Spatie bind singleton; refresh bắt buộc để worker không giữ giá trị cũ.
+        return app(AiSettings::class)->refresh()->toArray();
     }
 
     /**
@@ -112,12 +105,8 @@ final class AiSettingsService
             }
         }
         DB::transaction(function () use ($values, $actorId): void {
-            foreach (array_intersect_key($values, $this->defaults()) as $key => $value) {
-                Setting::query()->updateOrCreate(['group' => 'ai', 'key' => $key], [
-                    'value' => $value, 'type' => $key === 'default_temperature' ? 'float' : 'integer',
-                    'updated_by' => $actorId,
-                ]);
-            }
+            DB::table('settings')->where('group', AiSettings::group())->lockForUpdate()->get();
+            app(AiSettings::class)->refresh()->fill($values)->save();
             $logger = activity('ai-settings')->withProperties(['keys' => array_keys($values)]);
             if ($actor = User::query()->find($actorId)) {
                 $logger->causedBy($actor);

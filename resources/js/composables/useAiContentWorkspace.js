@@ -4,7 +4,7 @@
  * CHỨC NĂNG FILE: State form tạo mới và danh sách tác vụ Ai Content độc lập.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE: toListItem(), useAiContentWorkspace(), loadItems(),
- * updateSession(), resetSource(), cleanup scope.
+ * updateSession(), removeItem(), resetSource(), cleanup scope.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : summary API và lifecycle tác vụ vừa tạo.
  * - OUTPUT: form nguồn mới và list reactive; không có bài đang chọn/đang sửa.
@@ -26,6 +26,9 @@ function toListItem(summary, previous) {
 
   return {
     id: summary.id ?? summary.job_id, status, createdAt,
+    targetType: summary.target_type ?? previous?.targetType ?? 'post',
+    parentId: summary.parent_id ?? previous?.parentId ?? null,
+    operation: summary.operation ?? previous?.operation ?? 'create',
     title: summary.title || summary.draft?.title || previous?.title || (status === 'generating' ? 'Đang tạo bài viết…' : 'Bài viết AI'),
     source: summary.source_host || previous?.source || (summary.source_type === 'url' ? 'Nguồn URL' : 'Nội dung văn bản'),
     date: date.toLocaleDateString('vi-VN'), time: date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
@@ -37,6 +40,7 @@ export function useAiContentWorkspace() {
   const source = shallowRef(createAiContentSource())
   const listedItems = shallowRef([])
   const liveItems = shallowRef({})
+  const removedIds = new Set()
   const listLoading = shallowRef(false)
   const listError = shallowRef('')
   let loadVersion = 0
@@ -46,7 +50,7 @@ export function useAiContentWorkspace() {
 
     Object.values(liveItems.value).forEach(item => records.set(item.id, item))
 
-    return [...records.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    return [...records.values()].filter(item => !removedIds.has(item.id)).sort((a, b) => b.createdAt.localeCompare(a.createdAt))
   })
 
   /** Input: mở trang/tải lại. Output: toàn bộ summary còn hạn, lỗi có thể retry; chỉ GET Admin API. */
@@ -81,17 +85,25 @@ export function useAiContentWorkspace() {
   /** Input: response create/poll. Output: upsert đúng tác vụ; không ảnh hưởng form nguồn. */
   function updateSession(session) {
     const id = session.job_id
+    if (removedIds.has(id)) return
     const previous = liveItems.value[id] ?? listedItems.value.find(item => item.id === id)
 
     liveItems.value = { ...liveItems.value, [id]: toListItem(session, previous) }
   }
 
+  /** Input: UUID đã xóa thành công. Output: bỏ item và chặn callback/GET cũ phục hồi item. */
+  function removeItem(id) {
+    removedIds.add(id)
+    listedItems.value = listedItems.value.filter(item => item.id !== id)
+    liveItems.value = Object.fromEntries(Object.entries(liveItems.value).filter(([key]) => key !== id))
+  }
+
   /** Input: không có. Output: nguồn trống giữ provider/model; không thêm bản ghi giả vào list. */
   function resetSource() {
-    source.value = { ...createAiContentSource(), provider: source.value.provider, model: source.value.model }
+    source.value = { ...createAiContentSource(), targetType: source.value.targetType, provider: source.value.provider, model: source.value.model }
   }
 
   onScopeDispose(() => { loadVersion += 1 })
 
-  return { source, items, listLoading, listError, loadItems, updateSession, resetSource }
+  return { source, items, listLoading, listError, loadItems, updateSession, removeItem, resetSource }
 }

@@ -144,9 +144,11 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
                 ->whereNumber('resourceVersion');
         });
 
-        Route::middleware('permission:posts.manage,admin')->group(function (): void {
+        // Quyền tài nguyên được đọc từ config và kiểm tra tại từng AI endpoint.
+        Route::group([], function (): void {
+            Route::get('/ai-agent/targets', [AiImportController::class, 'targets']);
             Route::get('/ai-agent/capabilities/{target}', [AiImportController::class, 'capabilities'])
-                ->whereIn('target', ['post', 'resource', 'sound']);
+                ->where('target', '[a-z][a-z0-9_-]*');
             Route::post('/ai-agent/sessions', [AiImportController::class, 'store']);
             Route::get('/ai-agent/sessions', [AiImportController::class, 'index']);
             Route::get('/ai-agent/sessions/{aiImport}', [AiImportController::class, 'show'])->whereUuid('aiImport');
@@ -155,7 +157,11 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
             Route::get('/ai-agent/sessions/{aiImport}/candidates', [AiImportController::class, 'candidates'])->whereUuid('aiImport');
             Route::post('/ai-agent/sessions/{aiImport}/cancel', [AiImportController::class, 'cancel'])->whereUuid('aiImport');
             Route::delete('/ai-agent/sessions/{aiImport}', [AiImportController::class, 'destroy'])->whereUuid('aiImport');
+            Route::patch('/ai-agent/candidates/{aiImport}', [AiImportController::class, 'updateCandidate'])->whereUuid('aiImport');
             Route::post('/ai-agent/candidates/{aiImport}/apply', [AiImportController::class, 'apply'])->whereUuid('aiImport');
+        });
+
+        Route::middleware('permission:posts.manage,admin')->group(function (): void {
             Route::post('/posts/ai/import', [AiImportController::class, 'store']);
             Route::get('/posts/ai/import/{aiImport}', [AiImportController::class, 'show'])->whereUuid('aiImport');
             Route::post('/posts/ai/import/{aiImport}/regenerate', [AiImportController::class, 'regenerate'])->whereUuid('aiImport');

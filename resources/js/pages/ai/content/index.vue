@@ -7,6 +7,7 @@
   CÁC HÀM/METHOD TRONG FILE:
   - useAiContentWorkspace()/useAiContentCatalog(): nguồn và catalog/list thật.
   - useAiContentGeneration(): tạo và polling, không tự apply bài vào Post.
+  - useAiContentActions(): dialog biên tập và action riêng từng candidate.
   - createNew(): reset nguồn khi không đang chạy tác vụ.
   - onMounted(): tải list và catalog độc lập.
 
@@ -23,10 +24,16 @@ import AiContentCreateForm from '@/views/ai/content/AiContentCreateForm.vue'
 import { useAiContentWorkspace } from '@/composables/useAiContentWorkspace'
 import { useAiContentCatalog } from '@/composables/useAiContentCatalog'
 import { useAiContentGeneration } from '@/composables/useAiContentGeneration'
+import { useAiContentActions } from '@/composables/useAiContentActions'
+import AiContentEditorDialog from '@/views/ai/content/AiContentEditorDialog.vue'
+import AiContentRunActionDialog from '@/views/ai/content/AiContentRunActionDialog.vue'
 
-const { items, source, listLoading, listError, loadItems, updateSession, resetSource } = useAiContentWorkspace()
+const { items, source, listLoading, listError, loadItems, updateSession, removeItem, resetSource } = useAiContentWorkspace()
 const { catalog, loadCatalog } = useAiContentCatalog(source)
 const { generation, generate, retryRun, reset, resumePolling } = useAiContentGeneration(source, catalog, updateSession)
+
+const { editor, editorLoading, editorSaving, editorError, action, actionBusy, actionError, notice, busyId,
+  openEditor, closeEditor, saveEditor, requestAction, closeAction, confirmAction } = useAiContentActions({ updateSession, removeItem })
 
 onMounted(loadCatalog)
 onMounted(loadItems)
@@ -59,6 +66,16 @@ function createNew() {
       </div>
     </div>
 
+    <VAlert
+      v-if="notice"
+      type="info"
+      variant="tonal"
+      class="mb-4"
+      closable
+      @click:close="notice = ''"
+    >
+      {{ notice }}
+    </VAlert>
     <VRow>
       <VCol
         cols="12"
@@ -68,7 +85,12 @@ function createNew() {
           :items="items"
           :loading="listLoading"
           :error="listError"
+          :targets="catalog.targetOptions"
+          :busy-id="busyId"
           @reload="loadItems"
+          @edit="openEditor"
+          @remove="requestAction('remove', $event)"
+          @regenerate="requestAction('regenerate', $event)"
         />
       </VCol>
       <VCol
@@ -86,5 +108,20 @@ function createNew() {
         />
       </VCol>
     </VRow>
+    <AiContentEditorDialog
+      :session="editor"
+      :loading="editorLoading"
+      :saving="editorSaving"
+      :error="editorError"
+      @save="saveEditor"
+      @close="closeEditor"
+    />
+    <AiContentRunActionDialog
+      :action="action"
+      :busy="actionBusy"
+      :error="actionError"
+      @confirm="confirmAction"
+      @close="closeAction"
+    />
   </div>
 </template>

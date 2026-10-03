@@ -103,6 +103,18 @@ external provider cần được giám sát bằng check riêng khi triển khai
 
 ## Production checklist
 
+### Spatie Laravel Settings
+
+Package `spatie/laravel-settings` 3.9.0 chạy trên PHP 8.2/Laravel 12 hiện tại.
+Sau `composer install`, chạy `php artisan migrate` để chuyển schema settings và
+thêm các property nhóm AI còn thiếu. Không publish migration tạo bảng mặc định
+của package vì project đã có migration chuyển bảng hiện tại. Bảng
+`legacy_settings` giữ giá trị/type/actor cũ để đối chiếu và rollback.
+Settings cache tắt; service refresh trước đọc/lưu. Restart worker sau deploy để
+worker nạp code/settings class mới. API key và thời gian chờ riêng của provider
+vẫn thuộc `ai_providers`; global defaults/fallback/temperature/legacy timeout
+thuộc `App\Settings\AiSettings`.
+
 - Đặt `APP_ENV=production`, `APP_DEBUG=false` và `VITE_ENABLE_MSW=false`.
 - Chạy `php artisan config:cache` sau khi nạp secret của môi trường.
 - Dùng HTTPS, rotate token/secret theo chính sách vận hành.

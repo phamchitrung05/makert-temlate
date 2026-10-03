@@ -103,7 +103,7 @@ class AiImportApiTest extends TestCase
 
     /**
      * Input: run gốc/con/ảnh/hết hạn và run của owner khác.
-     * Output: chỉ root còn hạn của owner, phân trang; không lộ body/input/URL query/key.
+     * Output: root/candidate con còn hạn của owner; không lộ body/input/URL query/key.
      * Side effect: fake queue và SQLite cô lập; không gọi provider thật.
      */
     public function test_session_list_filters_owner_root_and_expiry_and_returns_safe_summaries(): void
@@ -121,7 +121,7 @@ class AiImportApiTest extends TestCase
         ])->save();
         $second = $root->replicate();
         $second->save();
-        $child = $root->replicate()->fill(['parent_id' => $root->id]);
+        $child = $root->replicate()->fill(['parent_id' => $root->id, 'operation' => 'regenerate']);
         $child->save();
         $image = $root->replicate()->fill(['operation' => 'image']);
         $image->save();
@@ -131,8 +131,8 @@ class AiImportApiTest extends TestCase
         $other->save();
 
         $response = $this->withToken($token)->getJson('/api/admin/ai-agent/sessions?per_page=1');
-        $response->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('meta.pagination.total', 2)
-            ->assertJsonPath('meta.pagination.last_page', 2)->assertJsonPath('data.0.title', 'Article title')
+        $response->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('meta.pagination.total', 3)
+            ->assertJsonPath('meta.pagination.last_page', 3)->assertJsonPath('data.0.title', 'Article title')
             ->assertJsonPath('data.0.source_host', 'example.test');
         $this->assertArrayNotHasKey('input_json', $response->json('data.0'));
         $this->assertArrayNotHasKey('result_json', $response->json('data.0'));

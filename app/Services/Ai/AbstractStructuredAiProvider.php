@@ -137,7 +137,8 @@ abstract class AbstractStructuredAiProvider implements AiProviderContract
             return [];
         }
 
-        $prompt = (new PromptRegistry)->get($promptKey, 'post', 'create');
+        // Target đã được kiểm tra ở controller/pipeline; transport dùng schema của prompt được chọn.
+        $prompt = (new PromptRegistry)->get($promptKey, null, 'create');
         $schema = (new SchemaRegistry)->get($prompt['schema']);
         try {
             $payload = $this->requestPayload([

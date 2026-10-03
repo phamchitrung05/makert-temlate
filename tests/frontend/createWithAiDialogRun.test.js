@@ -98,7 +98,8 @@ describe('Post AI options and polling', () => {
     expect(select('Model').element.value).toBe('')
     await wrapper.find('input[aria-label="Nội dung nguồn"]').setValue('Nội dung')
     await button('Bắt đầu tạo').trigger('click')
-    expect(state.store.start).toHaveBeenCalledWith(expect.objectContaining({ provider: 'other', model: null }))
+    expect(state.store.start).toHaveBeenCalledWith(expect.objectContaining({ provider: 'other' }))
+    expect(state.store.start.mock.calls[0][0]).not.toHaveProperty('model')
   })
 
   it('pauses a queue with no worker and resumes the same run without creating another', async () => {
@@ -135,6 +136,7 @@ describe('Post AI options and polling', () => {
     await vi.advanceTimersByTimeAsync(800)
     await flushPromises()
     expect(state.store.poll).toHaveBeenCalledWith('child', 'post')
+    expect(state.store.regenerate).toHaveBeenCalledWith('run', { fields: ['title'] })
     expect(wrapper.findComponent(ProgressStub).props('steps').every(step => step.status === 'done')).toBe(true)
     await vi.advanceTimersByTimeAsync(6000)
     expect(state.store.poll).toHaveBeenCalledTimes(1)

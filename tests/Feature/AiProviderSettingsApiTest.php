@@ -169,7 +169,7 @@ final class AiProviderSettingsApiTest extends TestCase
         ])->assertCreated()->json('data');
         $this->withToken($token)->putJson('/api/admin/settings/ai/settings', ['default_image_model_id' => $model['id']])
             ->assertOk()->assertJsonPath('data.default_image_model_id', $model['id']);
-        $this->assertDatabaseHas('settings', ['group' => 'ai', 'key' => 'default_image_model_id']);
+        $this->assertDatabaseHas('settings', ['group' => 'ai', 'name' => 'default_image_model_id']);
     }
 
     /**

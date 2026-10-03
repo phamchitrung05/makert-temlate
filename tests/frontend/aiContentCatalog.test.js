@@ -12,9 +12,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, shallowRef } from 'vue'
 import { useAiContentCatalog } from '@/composables/useAiContentCatalog'
 
-const { service } = vi.hoisted(() => ({ service: { list: vi.fn() } }))
+const { service, targets } = vi.hoisted(() => ({ service: { list: vi.fn() }, targets: vi.fn() }))
 
 vi.mock('@/services/aiProviderSettings', () => ({ aiProviderSettingsService: service }))
+vi.mock('@/services/aiAgent', () => ({ aiAgentService: { targets } }))
 
 /** Input: không có. Output: catalog độc lập gồm provider ảnh, text và các option không khả dụng. */
 const fixture = () => ({
@@ -50,6 +51,7 @@ describe('Ai Content live catalog', () => {
     vi.resetAllMocks()
     scope = effectScope()
     service.list.mockResolvedValue(fixture())
+    targets.mockResolvedValue([{ key: 'post', label: 'Post' }, { key: 'resource', label: 'Resource' }, { key: 'sound', label: 'Sound' }])
   })
   afterEach(() => scope.stop())
 

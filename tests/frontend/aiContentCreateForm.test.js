@@ -24,7 +24,7 @@ function renderForm(generation = initial) {
     global: { stubs: {
       AiContentSourceForm: true, VCard: Passthrough, VCardItem: Passthrough,
       VCardText: Passthrough, VAlert: Passthrough, VProgressLinear: true, VBtn: Button,
-      VIcon: true, VAvatar: true,
+      VIcon: true, VAvatar: true, AppSelect: true,
     } },
   })
 }

@@ -1546,6 +1546,19 @@ lifecycle phức tạp như Resource vào một CRUD base quá chung.
 - [ ] Laravel AI SDK (môi trường hiện tại PHP 8.2, SDK yêu cầu PHP 8.3),
   Resource/Sound adapter, file input và browser/staging test.
 
+## 15.4 Settings và action AI Content — 2026-10-03
+
+- [x] Cài `spatie/laravel-settings:^3.9`; schema chuẩn và `AiSettings` typed.
+- [x] Migration chuyển toàn bộ key/value, giữ bản lưu `legacy_settings`; seed chỉ thêm property còn thiếu.
+- [x] AI settings giữ API/validation/audit và refresh để worker đọc tuning mới.
+- [x] Thêm heading `SYSTERM SETTING` / `SETTING`, route trống để bổ sung giao diện sau.
+- [x] Catalog tài nguyên lấy từ `config/ai-agent.php`; Post/Resource/Sound tạo content qua queue với prompt riêng và quyền theo target.
+- [x] Badge và action edit/remove/regenerate; dialog riêng, không thay form tạo mới.
+- [x] Edit kiểm tra version, ready/chưa apply/chưa hết hạn và sanitize HTML.
+- [x] Tạo lại toàn bài/nhóm field giữ parent, theo dõi child và hiện trong list sau reload.
+- [x] Đối chiếu `docs/fix_1.md`, giữ các mục chưa triển khai ở trạng thái pending.
+- [ ] Giao diện SETTING (người dùng sẽ bổ sung), apply domain Resource/Sound, tạo audio và lớp editorial `ai_content_drafts`.
+
 ## 16. Tài liệu tham khảo
 
 - Laravel authentication: https://laravel.com/docs/12.x/authentication
@@ -1554,5 +1567,6 @@ lifecycle phức tạp như Resource vào một CRUD base quá chung.
 - Spatie Permission: https://spatie.be/docs/laravel-permission
 - Spatie Media Library v11: https://spatie.be/docs/laravel-medialibrary/v11
 - Spatie Activity Log: https://spatie.be/docs/laravel-activitylog
+- Spatie Laravel Settings: https://github.com/spatie/laravel-settings
 - Vuetify 3: https://v3.vuetifyjs.com/en/
 - Vuetify server-side data table: https://vuetifyjs.com/en/components/data-tables/server-side-tables/

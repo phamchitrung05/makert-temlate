@@ -23,6 +23,8 @@ class AiSessionSummaryResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'target_type' => data_get($this->input_json, 'target_type', 'post'),
+            'parent_id' => $this->parent_id,
             'title' => mb_substr((string) data_get($this->result_json, 'draft.title', ''), 0, 255),
             'status' => $this->status,
             'progress' => (int) $this->progress,

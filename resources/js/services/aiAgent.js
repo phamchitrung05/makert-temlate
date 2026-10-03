@@ -4,7 +4,7 @@
  * CHỨC NĂNG FILE: API client AI Agent dùng chung cho mọi tài nguyên.
  * CÁC HÀM/METHOD TRONG FILE: unwrap(), fallbackCapabilities(),
  * capabilities(), listSessions(), createSession(), status(), regenerate(), retry(), cancel(),
- * applyCandidate().
+ * applyCandidate(), targets(), updateCandidate(), removeSession().
  * INPUT/OUTPUT CỦA CLASS (tổng thể): target/capability/request -> session,
  * candidate hoặc lỗi API chuẩn hóa; không chứa logic nghiệp vụ của Post.
  * =====================================================================
@@ -67,6 +67,21 @@ const fallbackCapabilities = targetType => ({
 })
 
 export const aiAgentService = {
+  /** Input: không có. Output: target catalog công khai từ config, GET admin API. */
+  async targets() {
+    return unwrap(await $api('/admin/ai-agent/targets'))
+  },
+
+  /** Input: UUID và field/version đã sửa. Output: candidate lưu; không gọi provider. */
+  async updateCandidate(id, payload) {
+    return unwrap(await $api(`/admin/ai-agent/candidates/${id}`, { method: 'PATCH', body: payload }))
+  },
+
+  /** Input: UUID. Output: xóa một candidate và asset không còn dùng; không xóa domain đã apply. */
+  async removeSession(id) {
+    return unwrap(await $api(`/admin/ai-agent/sessions/${id}`, { method: 'DELETE' }))
+  },
+
   /** Input: page/per_page. Output: summary + meta; GET Admin API, không gọi provider. */
   async listSessions(query = {}) {
     return $api('/admin/ai-agent/sessions', { query })

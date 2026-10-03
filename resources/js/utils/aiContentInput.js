@@ -4,7 +4,7 @@
  * CHỨC NĂNG FILE: Chuẩn hóa và kiểm tra nguồn của form tạo bài AI.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE: createAiContentSource(), validateAiContentSource(),
- * extractHtmlText(), buildAiContentRequest().
+ * extractHtmlText(), buildAiContentRequest(), buildAiContentRegenerateRequest().
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : URL/file HTML/text/đề bài và model catalog đã chọn.
  * - OUTPUT: lý do chưa thể tạo hoặc payload API; đọc file cục bộ khi gửi.
@@ -16,7 +16,7 @@ const maxFileBytes = 5 * 1024 * 1024
 
 /** Input: không có. Output: nguồn trống mới, không chia sẻ object giữa các form. */
 export const createAiContentSource = () => ({
-  type: 'url', url: '', text: '', prompt: '', file: null,
+  targetType: 'post', type: 'url', url: '', text: '', prompt: '', file: null,
   provider: '', model: '', language: 'vi', length: 'medium',
   autoTitle: true, title: '', autoThumbnail: true, optimizeSeo: false, rewrite: false,
 })
@@ -25,6 +25,8 @@ export const createAiContentSource = () => ({
 export function validateAiContentSource(source, catalog) {
   if (catalog.loading) return 'Đang tải provider và model…'
   if (catalog.error) return 'Không tải được model. Hãy tải lại catalog.'
+  if (catalog.targetOptions && !catalog.targetOptions.some(target => target.value === source.targetType))
+    return 'Chọn tài nguyên được phép tạo nội dung AI.'
   if (!source.provider || !catalog.selectedModel) return 'Chọn provider và model để viết bài.'
   if (!catalog.selectedModel.capabilities?.includes('text_generation'))
     return 'Model này không hỗ trợ viết nội dung. Chọn model có khả năng Text generation trong AI Settings.'
@@ -90,9 +92,32 @@ export async function buildAiContentRequest(source, model) {
   ].filter(Boolean).join('\n')
 
   return {
-    target_type: 'post', operation: 'create', input, output_language: source.language,
+    target_type: source.targetType || 'post', operation: 'create', input, output_language: source.language,
     provider: source.provider, model: source.model, model_id: model.id, instructions,
     requested_outputs: ['title', 'excerpt', 'content', 'seo', 'taxonomy', ...(source.autoThumbnail && source.type === 'url' ? ['thumbnail'] : [])],
     generate_thumbnail: Boolean(source.autoThumbnail && source.type === 'url'), thumbnail_mode: 'source',
   }
+}
+
+/** Input: nhóm field và override tùy chọn. Output: contract regenerate, bỏ các override trống; không chứa input create. */
+export function buildAiContentRegenerateRequest(options = {}) {
+  const allowed = ['title', 'excerpt', 'content', 'seo', 'taxonomy', 'thumbnail']
+
+  const groupFor = field => {
+    if (['content_html', 'description', 'documentation', 'lyrics'].includes(field)) return 'content'
+    if (['focus_keyword', 'seo_title', 'seo_description', 'canonical_url', 'robots_index', 'robots_follow', 'og_title', 'og_description'].includes(field)) return 'seo'
+    if (['suggested_category_ids', 'suggested_tag_ids', 'category_ids', 'tag_ids'].includes(field)) return 'taxonomy'
+    if (['thumbnail_prompt', 'thumbnail_alt_text', 'cover'].includes(field)) return 'thumbnail'
+
+    return field
+  }
+
+  const payload = { fields: [...new Set((options.fields ?? []).map(groupFor))].filter(field => allowed.includes(field)) }
+
+  for (const key of ['instructions', 'prompt_key', 'provider', 'model', 'model_id']) {
+    const value = options[key]
+    if (value !== null && value !== undefined && value !== '') payload[key] = value
+  }
+
+  return payload
 }

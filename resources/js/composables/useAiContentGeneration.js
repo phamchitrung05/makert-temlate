@@ -63,7 +63,7 @@ export function useAiContentGeneration(source, catalog, onSession) {
     pendingPollToken = token
     attempts += 1
     try {
-      const value = await aiAgentService.status(session.value.job_id, 'post')
+      const value = await aiAgentService.status(session.value.job_id, session.value.target_type ?? 'post')
       if (token !== version) return
       monitorMessage.value = ''
       acceptSession(value)

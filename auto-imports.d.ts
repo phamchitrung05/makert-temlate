@@ -19,6 +19,7 @@ declare global {
   const autoResetRef: typeof import('@vueuse/core')['autoResetRef']
   const avatarText: typeof import('./resources/js/@core/utils/formatters.js')['avatarText']
   const betweenValidator: typeof import('./resources/js/@core/utils/validators.js')['betweenValidator']
+  const buildAiContentRegenerateRequest: typeof import('./resources/js/utils/aiContentInput.js')['buildAiContentRegenerateRequest']
   const buildAiContentRequest: typeof import('./resources/js/utils/aiContentInput.js')['buildAiContentRequest']
   const buildContentUrl: typeof import('./resources/js/composables/seoMetadata.js')['buildContentUrl']
   const computed: typeof import('vue')['computed']
@@ -174,6 +175,7 @@ declare global {
   const useAbility: typeof import('./resources/js/plugins/casl/composables/useAbility.js')['useAbility']
   const useAbs: typeof import('@vueuse/math')['useAbs']
   const useActiveElement: typeof import('@vueuse/core')['useActiveElement']
+  const useAiContentActions: typeof import('./resources/js/composables/useAiContentActions.js')['useAiContentActions']
   const useAiContentCatalog: typeof import('./resources/js/composables/useAiContentCatalog.js')['useAiContentCatalog']
   const useAiContentGeneration: typeof import('./resources/js/composables/useAiContentGeneration.js')['useAiContentGeneration']
   const useAiContentWorkspace: typeof import('./resources/js/composables/useAiContentWorkspace.js')['useAiContentWorkspace']
@@ -404,6 +406,7 @@ declare module 'vue' {
     readonly autoResetRef: UnwrapRef<typeof import('@vueuse/core')['autoResetRef']>
     readonly avatarText: UnwrapRef<typeof import('./resources/js/@core/utils/formatters.js')['avatarText']>
     readonly betweenValidator: UnwrapRef<typeof import('./resources/js/@core/utils/validators.js')['betweenValidator']>
+    readonly buildAiContentRegenerateRequest: UnwrapRef<typeof import('./resources/js/utils/aiContentInput.js')['buildAiContentRegenerateRequest']>
     readonly buildAiContentRequest: UnwrapRef<typeof import('./resources/js/utils/aiContentInput.js')['buildAiContentRequest']>
     readonly buildContentUrl: UnwrapRef<typeof import('./resources/js/composables/seoMetadata.js')['buildContentUrl']>
     readonly computed: UnwrapRef<typeof import('vue')['computed']>
@@ -559,6 +562,7 @@ declare module 'vue' {
     readonly useAbility: UnwrapRef<typeof import('./resources/js/plugins/casl/composables/useAbility.js')['useAbility']>
     readonly useAbs: UnwrapRef<typeof import('@vueuse/math')['useAbs']>
     readonly useActiveElement: UnwrapRef<typeof import('@vueuse/core')['useActiveElement']>
+    readonly useAiContentActions: UnwrapRef<typeof import('./resources/js/composables/useAiContentActions.js')['useAiContentActions']>
     readonly useAiContentCatalog: UnwrapRef<typeof import('./resources/js/composables/useAiContentCatalog.js')['useAiContentCatalog']>
     readonly useAiContentGeneration: UnwrapRef<typeof import('./resources/js/composables/useAiContentGeneration.js')['useAiContentGeneration']>
     readonly useAiContentWorkspace: UnwrapRef<typeof import('./resources/js/composables/useAiContentWorkspace.js')['useAiContentWorkspace']>

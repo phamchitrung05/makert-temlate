@@ -28,6 +28,7 @@ import { computed, onBeforeUnmount, reactive, shallowRef, watch } from 'vue'
 import { useAiAgentStore } from '@/stores/aiAgent'
 import AiAgentCandidatePreview from './AiAgentCandidatePreview.vue'
 import { findProvider, providerModels } from '@/utils/aiModelOptions'
+import { buildAiContentRegenerateRequest } from '@/utils/aiContentInput'
 
 const props = defineProps({
   targetType: { type: String, required: true },
@@ -59,7 +60,7 @@ const models = computed(() => {
 const currentCandidate = computed(() => store.candidates.find(item => String(item.id) === String(selectedCandidateId.value)) ?? store.candidates[0] ?? null)
 const candidateItems = computed(() => store.candidates.map((item, index) => ({ title: `${index + 1}. ${item.model || item.provider || 'Candidate'}`, value: item.id })))
 const busy = computed(() => store.isLoading || polling.value)
-const sessionId = computed(() => store.session?.id ?? store.session?.session_id ?? store.session?.job_id)
+const sessionId = computed(() => store.session?.job_id ?? store.session?.id ?? store.session?.session_id)
 
 /**
  * =====================================================================
@@ -101,11 +102,15 @@ const load = async () => {
  * =====================================================================
  */
 const buildRequest = () => ({
-  target_type: props.targetType, target_id: props.targetId, operation: form.operation,
+  target_type: props.targetType, operation: form.operation,
+  ...(props.targetId ? { target_id: props.targetId } : {}),
   input: { type: form.inputType, ...(form.inputType === 'url' ? { url: form.inputValue } : { text: form.inputValue }) },
-  output_language: form.language, instructions: form.instructions, selection_mode: form.selectionMode,
-  prompt_key: form.selectionMode === 'manual' ? form.promptKey : null,
-  provider: form.provider || null, model: form.model || null, requested_outputs: form.outputs,
+  output_language: form.language, selection_mode: form.selectionMode,
+  ...(form.instructions ? { instructions: form.instructions } : {}),
+  ...(form.selectionMode === 'manual' && form.promptKey ? { prompt_key: form.promptKey } : {}),
+  ...(form.provider ? { provider: form.provider } : {}),
+  ...(form.model ? { model: form.model } : {}),
+  requested_outputs: form.outputs,
 })
 
 /**
@@ -135,7 +140,7 @@ const stopPolling = () => {
  * =====================================================================
  */
 const pollUntilDone = async response => {
-  const id = response?.id ?? response?.session_id ?? response?.job_id
+  const id = response?.job_id ?? response?.id ?? response?.session_id
   if (!id || ['ready', 'completed', 'succeeded', 'failed', 'cancelled', 'expired'].includes(response.status)) return
   const generation = ++pollingGeneration
 
@@ -196,7 +201,10 @@ const run = async () => {
  */
 const regenerate = async () => {
   if (!sessionId.value || busy.value) return
-  try { await pollUntilDone(await store.regenerate(sessionId.value, { ...buildRequest(), fields: selectedFields.value })) }
+  try { await pollUntilDone(await store.regenerate(sessionId.value, buildAiContentRegenerateRequest({
+    fields: selectedFields.value, instructions: form.instructions,
+    prompt_key: form.selectionMode === 'manual' ? form.promptKey : '', provider: form.provider, model: form.model,
+  }))) }
   catch (error) { message.value = error?.data?.message || error.message }
 }
 

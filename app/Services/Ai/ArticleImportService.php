@@ -91,7 +91,7 @@ class ArticleImportService
         $provider = $this->providerFor($input);
         $prompt = (new PromptRegistry)->select(
             isset($input['prompt_key']) ? (string) $input['prompt_key'] : null,
-            'post',
+            (string) ($input['target_type'] ?? 'post'),
             'create',
             ['source_type' => $sourceType, 'language' => (string) ($input['language'] ?? 'vi')],
         );
@@ -129,7 +129,7 @@ class ArticleImportService
             }
         }
         $draft['thumbnail'] = $thumbnail;
-        $this->progress($import, 'ready', 100);
+        // Chỉ job ghi ready cùng result_json; không cho editor/xóa thấy candidate chưa lưu xong.
 
         if ($import->exists) {
             $import->forceFill([
@@ -186,7 +186,7 @@ class ArticleImportService
      * EXCEPTION/TRANSACTION: AiImportException nếu text rỗng; không transaction.
      *
      * @return array{url:string,html:string,content_type:string}
-     * =====================================================================
+     *                                                           =====================================================================
      */
     private function inlineSource(string $text, AiImport $import): array
     {
@@ -234,7 +234,9 @@ class ArticleImportService
                 'taxonomy' => $merged = array_replace($merged, array_intersect_key($fresh, array_flip([
                     'suggested_category_ids', 'suggested_tag_ids', 'category_ids', 'tag_ids',
                 ]))),
-                'thumbnail' => $merged['thumbnail'] = $fresh['thumbnail'] ?? ($parent['thumbnail'] ?? []),
+                'thumbnail' => $merged = array_replace($merged, array_intersect_key($fresh, array_flip([
+                    'thumbnail', 'thumbnail_prompt', 'thumbnail_alt_text',
+                ]))),
                 default => $merged[$field] = $fresh[$field] ?? ($parent[$field] ?? null),
             };
         }
@@ -356,50 +358,7 @@ class ArticleImportService
      */
     private function sanitize(string $html): string
     {
-        $document = new \DOMDocument;
-        libxml_use_internal_errors(true);
-        $document->loadHTML('<?xml encoding="UTF-8"><div>'.$html.'</div>', LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
-        libxml_clear_errors();
-        /**
-         * =====================================================================
-         * GHI CHÚ: Giữ semantic markup, code example và bảng dữ liệu đơn giản.
-         * =====================================================================
-         * Attributes vẫn allowlist bên dưới để HTML sao chép không chạy JavaScript.
-         * =====================================================================
-         */
-        $allowed = [
-            'html', 'body', 'div', 'p', 'h1', 'h2', 'h3', 'h4', 'ul', 'ol', 'li',
-            'blockquote', 'strong', 'em', 'a', 'br', 'hr', 'pre', 'code', 'span',
-            'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td',
-        ];
-        foreach (iterator_to_array($document->getElementsByTagName('*')) as $node) {
-            if (! in_array(strtolower($node->nodeName), $allowed, true)) {
-                $node->parentNode?->removeChild($node);
-
-                continue;
-            }
-            $tag = strtolower($node->nodeName);
-            $safeAttributes = match ($tag) {
-                'a' => ['href', 'target', 'rel', 'title'],
-                'td', 'th' => ['colspan', 'rowspan', 'scope'],
-                default => [],
-            };
-            for ($i = $node->attributes->length - 1; $i >= 0; $i--) {
-                $attribute = $node->attributes->item($i);
-                if (! in_array(strtolower($attribute->name), $safeAttributes, true) || ($tag === 'a' && preg_match('/^(javascript|data|vbscript):/i', trim($attribute->value)))) {
-                    $node->removeAttributeNode($attribute);
-                }
-            }
-        }
-        $root = $document->getElementsByTagName('div')->item(0);
-        $output = '';
-        if ($root) {
-            foreach ($root->childNodes as $child) {
-                $output .= $document->saveHTML($child);
-            }
-        }
-
-        return trim($output);
+        return (new AiContentSanitizer)->sanitize($html);
     }
 
     /**
@@ -428,6 +387,7 @@ class ArticleImportService
      * SIDE EFFECT: không gọi provider trong bước resolve.
      * EXCEPTION/TRANSACTION: AiImportException nếu key provider bị giả mạo hoặc adapter lỗi; không mở transaction.
      * =====================================================================
+     *
      * @param  array<string, mixed>  $input
      */
     private function providerFor(array $input): AiProviderContract

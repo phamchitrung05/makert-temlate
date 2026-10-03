@@ -19,8 +19,9 @@
  * =====================================================================
  */
 /* eslint-disable camelcase -- Catalog fields follow the Laravel API contract. */
-import { computed, watch } from 'vue'
+import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 import { useAiProviderSettings } from './useAiProviderSettings'
+import { aiAgentService } from '@/services/aiAgent'
 
 /** Input: provider DTO. Output: model đã bật/khả dụng; không đoán capability từ tên. */
 const availableModels = provider => (provider?.models ?? []).filter(model => model.is_enabled && model.is_available)
@@ -28,12 +29,17 @@ const availableModels = provider => (provider?.models ?? []).filter(model => mod
 /** Input: source ref của page. Output: catalog và hàm tải lại; watcher cập nhật lựa chọn cục bộ. */
 export function useAiContentCatalog(source) {
   const { providers, settings, loading, error, load } = useAiProviderSettings()
+  const targets = shallowRef([])
+  const targetsLoading = shallowRef(false)
+  const targetsError = shallowRef('')
+  let targetVersion = 0
   const activeProviders = computed(() => providers.value.filter(provider => provider.is_active && provider.has_api_key))
   const selectedProvider = computed(() => activeProviders.value.find(provider => provider.key === source.value.provider))
 
   const catalog = computed(() => ({
-    loading: loading.value,
-    error: error.value,
+    loading: loading.value || targetsLoading.value,
+    error: error.value || targetsError.value,
+    targetOptions: targets.value.map(target => ({ title: target.label, value: target.key, icon: target.icon, color: target.color })),
     providerOptions: activeProviders.value.map(provider => ({ title: provider.name, value: provider.key })),
     modelOptions: availableModels(selectedProvider.value).map(model => ({
       title: model.label || model.remote_model_id,
@@ -75,13 +81,27 @@ export function useAiContentCatalog(source) {
 
   /** Input: mở page/tải lại. Output: catalog mới hoặc error để retry; không reject event handler. */
   async function loadCatalog() {
+    const version = ++targetVersion
+
+    targetsLoading.value = true
+    targetsError.value = ''
     try {
-      await load()
+      const results = await Promise.allSettled([load(), aiAgentService.targets()])
+      if (version !== targetVersion) return
+      if (results[1].status === 'fulfilled') {
+        targets.value = results[1].value
+        if (!targets.value.some(target => target.key === source.value.targetType))
+          source.value = { ...source.value, targetType: targets.value[0]?.key ?? '' }
+      }
+      else targetsError.value = 'Không tải được danh sách tài nguyên AI. Hãy tải lại.'
     }
     catch {
       // useAiProviderSettings đã lưu error; form hiển thị và cho phép tải lại.
     }
+    finally { if (version === targetVersion) targetsLoading.value = false }
   }
+
+  onScopeDispose(() => { targetVersion += 1 })
 
   return { catalog, loadCatalog }
 }

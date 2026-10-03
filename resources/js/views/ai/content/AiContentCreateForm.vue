@@ -50,6 +50,16 @@ const stepLabel = computed(() => steps[props.generation.session?.current_step] ?
         :disabled="props.generation.busy"
         class="ai-content-create__fields"
       >
+        <AppSelect
+          id="ai-content-target"
+          :model-value="source.targetType"
+          :items="props.catalog.targetOptions ?? []"
+          label="Tài nguyên sẽ tạo"
+          placeholder="Chọn tài nguyên"
+          :disabled="props.generation.busy || props.catalog.loading"
+          class="mb-4"
+          @update:model-value="source = { ...source, targetType: $event }"
+        />
         <AiContentSourceForm
           v-model="source"
           :catalog="props.catalog"

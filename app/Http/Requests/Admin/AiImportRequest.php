@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Services\Ai\Registries\TargetRegistry;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * =====================================================================
@@ -14,7 +16,7 @@ use Illuminate\Foundation\Http\FormRequest;
  * kiểm tra DNS/IP và redirect ở runtime.
  *
  * CÁC HÀM/METHOD TRONG FILE:
- * - prepareForValidation(): chuẩn hóa payload generic session về Post import.
+ * - prepareForValidation(): chuẩn hóa payload generic session về content import.
  * - authorize(): xác nhận route middleware đã kiểm tra permission.
  * - rules(): whitelist URL, ngôn ngữ, prompt và thumbnail options.
  *
@@ -57,17 +59,20 @@ class AiImportRequest extends FormRequest
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Cho phép request đi qua middleware permission
+     * CHỨC NĂNG: Kiểm tra permission của target khai báo trong config
      * =====================================================================
      * INPUT: request admin đã qua auth/ability/account status.
-     * OUTPUT: true để Laravel chạy rules.
+     * OUTPUT: true khi actor có quyền của target; target không tồn tại trả 422 qua rules.
      * SIDE EFFECT: không có.
      * EXCEPTION/TRANSACTION: không mở transaction; permission lỗi do middleware.
      * =====================================================================
      */
     public function authorize(): bool
     {
-        return true;
+        $key = (string) ($this->input('target_type') ?: 'post');
+        $target = app(TargetRegistry::class)->all()[$key] ?? null;
+
+        return ! $target || $this->user()?->can($target['permission'] ?? 'posts.manage');
     }
 
     /**
@@ -83,7 +88,7 @@ class AiImportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'target_type' => ['nullable', 'in:post'],
+            'target_type' => ['nullable', Rule::in(array_keys(app(TargetRegistry::class)->all()))],
             'operation' => ['nullable', 'in:create'],
             'url' => ['nullable', 'url', 'max:2048', 'required_without:text'],
             'text' => ['nullable', 'string', 'max:200000', 'required_without:url'],

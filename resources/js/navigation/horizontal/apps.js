@@ -6,6 +6,7 @@
  * Menu ngang dùng cùng route name với vertical navigation. Resource nằm
  * trong Ecommerce; Media là nhóm nghiệp vụ riêng cho file dùng chung.
  * Systerm AI tập trung Ai Content và AI Settings, dùng cùng route với menu dọc.
+ * SYSTERM SETTING chứa trang SETTING trống.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - Không có; file export một mảng cấu hình menu.
@@ -16,6 +17,11 @@
  * =====================================================================
  */
 export default [
+  {
+    title: 'SYSTERM SETTING',
+    icon: { icon: 'tabler-settings' },
+    children: [{ title: 'SETTING', to: 'settings' }],
+  },
   {
     title: 'Systerm AI',
     icon: { icon: 'tabler-sparkles' },

@@ -10,7 +10,7 @@
 
   INPUT/OUTPUT CỦA CLASS (tổng thể):
   - INPUT : items, loading và lỗi đọc danh sách từ page.
-  - OUTPUT: emit reload; bộ lọc chỉ thuộc component, không thay đổi form tạo mới.
+  - OUTPUT: emit reload/edit/remove/regenerate; không thay đổi form tạo mới.
   - SIDE EFFECT: không gọi API hoặc sửa items đầu vào.
   =====================================================================
 -->
@@ -21,9 +21,11 @@ const props = defineProps({
   items: { type: Array, required: true },
   loading: { type: Boolean, default: false },
   error: { type: String, default: '' },
+  targets: { type: Array, default: () => [] },
+  busyId: { type: String, default: null },
 })
 
-const emit = defineEmits(['reload'])
+const emit = defineEmits(['reload', 'edit', 'remove', 'regenerate'])
 const search = shallowRef('')
 const status = shallowRef('all')
 const page = shallowRef(1)
@@ -33,7 +35,7 @@ const statuses = [
   { value: 'all', title: 'Tất cả' },
   { value: 'generating', title: 'Đang tạo', color: 'primary' },
   { value: 'review', title: 'Chờ duyệt', color: 'warning' },
-  { value: 'applied', title: 'Đã đưa vào Post', color: 'success' },
+  { value: 'applied', title: 'Đã áp dụng', color: 'success' },
   { value: 'failed', title: 'Lỗi', color: 'error' },
   { value: 'cancelled', title: 'Đã hủy', color: 'secondary' },
   { value: 'expired', title: 'Hết hạn', color: 'secondary' },
@@ -44,6 +46,7 @@ const headers = [
 ]
 
 const statusOptions = Object.fromEntries(statuses.map(item => [item.value, item]))
+const targetOptions = computed(() => Object.fromEntries(props.targets.map(target => [target.value, target])))
 
 const statusTabs = computed(() => statuses.map(item => ({
   ...item,
@@ -144,7 +147,7 @@ watch(() => filteredItems.value.length, total => {
             />
             <VIcon
               v-else
-              icon="tabler-file-text"
+              :icon="targetOptions[item.targetType]?.icon ?? 'tabler-file-text'"
             />
           </VAvatar>
           <div class="ai-content-list__text">
@@ -157,6 +160,13 @@ watch(() => filteredItems.value.length, total => {
             <div class="d-flex flex-wrap align-center gap-2 mt-1">
               <VChip
                 size="x-small"
+                variant="tonal"
+                :color="targetOptions[item.targetType]?.color ?? 'primary'"
+              >
+                {{ targetOptions[item.targetType]?.title ?? item.targetType }}
+              </VChip>
+              <VChip
+                size="x-small"
                 :color="statusOptions[item.status]?.color"
               >
                 {{ statusOptions[item.status]?.title }}
@@ -164,6 +174,40 @@ watch(() => filteredItems.value.length, total => {
               <span class="text-caption text-disabled">
                 {{ item.date }} · {{ item.time }}
               </span>
+            </div>
+            <div class="d-flex align-center gap-1 mt-2">
+              <VBtn
+                icon="tabler-edit"
+                size="small"
+                variant="text"
+                :aria-label="`Chỉnh sửa ${item.title}`"
+                title="Chỉnh sửa"
+                :disabled="item.status !== 'review' || props.busyId === item.id"
+                @click="emit('edit', item)"
+              />
+              <VBtn
+                icon="tabler-refresh"
+                size="small"
+                variant="text"
+                :aria-label="`Tạo lại ${item.title}`"
+                title="Tạo lại"
+                :disabled="item.status === 'generating' || props.busyId === item.id"
+                @click="emit('regenerate', item)"
+              />
+              <VBtn
+                icon="tabler-trash"
+                size="small"
+                variant="text"
+                color="error"
+                :aria-label="`Xóa ${item.title}`"
+                title="Xóa"
+                :disabled="item.status === 'generating' || props.busyId === item.id"
+                @click="emit('remove', item)"
+              />
+              <span
+                v-if="item.parentId"
+                class="text-caption text-disabled ms-2"
+              >Bản tạo lại</span>
             </div>
           </div>
         </div>

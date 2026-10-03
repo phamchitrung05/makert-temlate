@@ -64,6 +64,7 @@ class AiRegistriesTest extends TestCase
     /** Target chưa triển khai không được public như capability đang hoạt động. */
     public function test_rejects_disabled_target(): void
     {
+        config(['ai-agent.targets.sound.enabled' => false]);
         $this->assertArrayHasKey('post', app(TargetRegistry::class)->all());
         $this->assertArrayNotHasKey('sound', app(TargetRegistry::class)->all());
         $this->expectException(InvalidArgumentException::class);

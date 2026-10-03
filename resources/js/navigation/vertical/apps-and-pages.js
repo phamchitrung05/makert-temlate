@@ -6,6 +6,7 @@
  * Menu dùng route name do file-based router sinh ra. Resource nằm trong
  * Ecommerce; Media là nhóm nghiệp vụ riêng để quản lý file dùng chung.
  * Systerm AI tập trung Ai Content và AI Settings để quản lý nội dung/provider.
+ * SYSTERM SETTING chứa trang SETTING trống.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - Không có; file export một mảng cấu hình menu.
@@ -16,6 +17,12 @@
  * =====================================================================
  */
 export default [
+  { heading: 'SYSTERM SETTING' },
+  {
+    title: 'SETTING',
+    icon: { icon: 'tabler-settings' },
+    to: 'settings',
+  },
   { heading: 'Systerm AI' },
   {
     title: 'Ai Content',

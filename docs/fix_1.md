@@ -1,7 +1,7 @@
 # FIX 1 — Ổn định AI Content và quy trình duyệt bài
 
 **Ngày lập:** 2026-10-02
-**Trạng thái:** Bản nháp chờ duyệt
+**Trạng thái:** Đã triển khai một phần; đối chiếu code và QA ngày 2026-10-03
 **Mục tiêu:** Gom các lỗi đã xác nhận trong lúc test, chốt một lần rồi triển khai đồng bộ.
 
 ## 1. Nguyên tắc đã thống nhất
@@ -35,14 +35,14 @@
 - [ ] AI chỉ đề xuất tên/chủ đề; backend tự ánh xạ sang taxonomy hiện có.
 - [ ] Tính similarity trên text đã normalize; exact copy phải fail hoặc chuyển `quality_failed`.
 - [ ] Kiểm tra đúng ngôn ngữ đầu ra.
-- [ ] Cho phép tạo lại toàn bài hoặc từng nhóm field sau khi sửa contract regenerate.
+- [x] Cho phép tạo lại toàn bài hoặc từng nhóm field sau khi sửa contract regenerate.
 
 ### C. Timeout, queue và realtime
 
-- [x] Đã tăng `request_timeout` trong settings lên 120 giây.
-- [x] `job_timeout = 180`, database queue `retry_after = 300`.
+- [x] Thời gian chờ riêng trong `ai_providers.request_timeout` (5–600 giây); provider cũ nhận 120 giây, provider mới lấy default từ config.
+- [x] Job timeout tối thiểu 180 giây và đủ HTTP + 120 giây; queue `retry_after` tối thiểu 900 giây.
 - [ ] Rà lại worker production để `--timeout < retry_after` và đủ lớn hơn request timeout.
-- [ ] Sửa frontend polling sang backoff thay vì gọi mỗi 1,2 giây liên tục.
+- [x] Sửa frontend polling sang backoff thay vì gọi mỗi 1,2 giây liên tục.
 - [ ] Broadcast event khi queued/processing/ready/failed.
 - [ ] Tích hợp Laravel Echo + Reverb; polling fallback khi WebSocket mất kết nối.
 - [ ] Cấu hình Supervisor/systemd/Docker cho `queue:work` và `reverb:start` trên VPS.
@@ -52,17 +52,17 @@
 - [ ] Sửa extractor: không xoá toàn bộ con khi trang bọc nội dung trong `<form>`.
 - [ ] Hỗ trợ `main`, `section`, `article` và lựa chọn container theo mật độ nội dung.
 - [ ] Loại menu/footer/ads/script/iframe nhưng giữ semantic HTML của bài.
-- [ ] Thêm nguồn file HTML upload và nội dung paste khi website chặn bot.
+- [x] Thêm nguồn file HTML và nội dung paste khi website chặn bot (file được đọc cục bộ, extract thành text rồi gửi backend).
 - [ ] Validate MIME, kích thước, encoding; file chỉ là dữ liệu, không thực thi script/instruction.
 - [ ] Hiển thị preview phần nguồn đã extract trước khi gửi AI.
 
 ### E. Regenerate và frontend contract
 
-- [ ] Tách payload builder cho create và regenerate.
-- [ ] Map output về sáu nhóm backend nhận: `title`, `excerpt`, `content`, `seo`, `taxonomy`, `thumbnail`.
-- [ ] Không gửi `prompt_key`, provider, model hoặc optional field khi giá trị rỗng/null.
-- [ ] Backend tương thích payload cũ có kiểm soát và chỉ coi giá trị đã điền là override.
-- [ ] Giữ parent candidate, tạo child run mới và theo dõi đúng `job_id`.
+- [x] Tách payload builder cho create và regenerate.
+- [x] Map output về sáu nhóm backend nhận: `title`, `excerpt`, `content`, `seo`, `taxonomy`, `thumbnail`.
+- [x] Không gửi `prompt_key`, provider, model hoặc optional field khi giá trị rỗng/null.
+- [x] Backend tương thích payload cũ có kiểm soát và chỉ coi giá trị đã điền là override.
+- [x] Giữ parent candidate, tạo child run mới và theo dõi đúng `job_id`.
 
 ### F. Provider authentication và 9Router local
 
@@ -94,9 +94,9 @@ Trang `AI Drafts` cần tối thiểu:
 
 - [ ] Danh sách đang xử lý, chờ duyệt, đã duyệt, từ chối và lỗi.
 - [ ] Xem nguồn và kết quả AI cạnh nhau; hiển thị similarity.
-- [ ] Chỉnh sửa candidate trước khi duyệt.
-- [ ] Tạo lại toàn bài hoặc từng phần.
-- [ ] Duyệt sang Post draft; lưu liên kết giữa AI draft và Post.
+- [x] Chỉnh sửa candidate trước khi duyệt.
+- [x] Tạo lại toàn bài hoặc từng phần.
+- [ ] Duyệt sang Post draft; lưu liên kết giữa AI draft và Post (API apply/provenance đã có; luồng duyệt trên trang riêng chưa triển khai).
 - [ ] Hiển thị provider/model, prompt version, thời gian, token và lỗi an toàn.
 - [ ] Không trộn trạng thái kỹ thuật với trạng thái biên tập.
 
@@ -147,3 +147,19 @@ Trang `AI Drafts` cần tối thiểu:
 - 9Router local tại `http://localhost:20128/v1` trả danh sách 148 model; endpoint `/models` đọc được không cần token ở thời điểm test.
 - Nhóm `ag` có 16 model: 12 model chat hoạt động, 3 alias trả thông báo Gemini 3.5 đã ngừng và 1 model trả HTTP 404.
 - Prompt kiểm tra chỉ một câu nhưng một số response báo hơn 2.000 prompt token, cho thấy có khả năng tầng router/provider tự chèn system prompt.
+
+## 8. Đối chiếu đợt Settings / AI Content — 2026-10-03
+
+- [x] Cài Spatie Laravel Settings 3.9.0, chuyển bảng key/value sang `group/name/payload/locked`, thêm `App\Settings\AiSettings` và settings migration.
+- [x] Giữ schema/dữ liệu cũ trong `legacy_settings`; validation capability, transaction, audit và refresh cho worker vẫn hoạt động.
+- [x] Heading `SYSTERM SETTING`, mục `SETTING`, trang `/admin/settings` để trống.
+- [x] Select Post/Resource/Sound từ `config/ai-agent.php`; backend nhận target, chọn prompt và kiểm tra quyền theo config.
+- [x] Badge tài nguyên và action sửa/xóa/tạo lại trong cột trái; form tạo mới bên phải độc lập.
+- [x] Dialog editor có version check, sanitize HTML; xóa chỉ candidate terminal và giữ domain đã apply.
+- [x] Regenerate giữ parent, tạo child, có trong danh sách sau reload; tạo lại toàn bài hoặc nhóm field.
+- [x] QA backend/frontend, lint/build và browser local; dữ liệu QA đã được dọn.
+
+Chưa đánh dấu xong các mục structured output/finish_reason, similarity, extractor,
+`ai_content_drafts`, approve/reject trên trang riêng, auth/9Router và Reverb/VPS.
+Resource/Sound ở đợt này tạo candidate văn bản; chưa apply sang Resource/Sound hoặc
+tạo file audio. Danh sách vẫn theo retention của `ai_imports` (mặc định 2 ngày).
