@@ -4,14 +4,16 @@ namespace App\Jobs;
 
 use App\Exceptions\AiImportException;
 use App\Models\AiImport;
-use App\Services\Ai\AiResponseDiagnostics;
-use App\Services\Ai\AiRunService;
-use App\Services\Ai\ArticleImportService;
+use App\Services\Ai\Content\ArticleImportService;
+use App\Services\Ai\Providers\Diagnostics\AiResponseDiagnostics;
+use App\Services\Ai\Runs\AiRunBudget;
+use App\Services\Ai\Runs\AiRunService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
@@ -21,7 +23,7 @@ use Throwable;
  * CHỨC NĂNG FILE: Worker queue xử lý pipeline AI import có retry có kiểm soát.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE:
- * - __construct(), handle(), failed(), queueOptionalImage().
+ * - __construct(), handle(), process(), failed(), queueOptionalImage().
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : UUID AiImport được dispatch từ controller/command.
@@ -29,6 +31,7 @@ use Throwable;
  * - SIDE EFFECT: gọi outbound provider, fetch nguồn và tạo thumbnail asset.
  * - EXCEPTION/TRANSACTION: queue retry tối đa 3 lần, backoff tăng dần; lỗi
  *   input/schema không retry và lifecycle được ghi terminal.
+ * =====================================================================
  */
 class ProcessAiImportJob implements ShouldQueue
 {
@@ -45,14 +48,14 @@ class ProcessAiImportJob implements ShouldQueue
      * CHỨC NĂNG: Khởi tạo job xử lý một AiImport
      * =====================================================================
      * INPUT: UUID import và thời gian chờ HTTP đã chụp trong snapshot.
-     * OUTPUT: job chờ đủ HTTP cộng 120 giây cho đọc nguồn/lưu kết quả.
+     * OUTPUT: job chờ đủ các lượt HTTP cộng 120 giây cho nguồn/media.
      * SIDE EFFECT: không truy cập database/provider khi khởi tạo.
      * EXCEPTION/TRANSACTION: không mở transaction.
      * =====================================================================
      */
-    public function __construct(public readonly string $importId, int $requestTimeout = 30)
+    public function __construct(public readonly string $importId, int $requestTimeout = 30, int $calls = 1)
     {
-        $this->timeout = max((int) config('ai-import.job_timeout', 180), $requestTimeout + 120);
+        $this->timeout = AiRunBudget::timeout($requestTimeout, $calls);
     }
 
     /**
@@ -68,51 +71,77 @@ class ProcessAiImportJob implements ShouldQueue
      */
     public function handle(ArticleImportService $service): void
     {
+        // Lock tồn tại suốt generation để queue redelivery không gọi trùng provider.
+        Cache::lock('ai-import-process-'.$this->importId, $this->timeout + 60)->get(fn () => $this->process($service));
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Xử lý run sau khi đã claim bằng lock độc quyền
+     * =====================================================================
+     * INPUT: service pipeline và UUID job đã khóa.
+     * OUTPUT: lifecycle/result được ghi khi tác vụ chưa bị hủy/hết hạn.
+     * SIDE EFFECT: gọi pipeline; checkpoint được lưu từng bước ngoài transaction HTTP.
+     * EXCEPTION/TRANSACTION: exception retryable giữ chính sách queue hiện tại.
+     * =====================================================================
+     */
+    private function process(ArticleImportService $service): void
+    {
         $import = AiImport::query()->find($this->importId);
         if (! $import || in_array($import->status, ['ready', 'failed', 'cancelled', 'expired'], true)) {
             return;
         }
         $sourceMetadata = (array) $import->source_meta_json;
-        unset($sourceMetadata['ai_response']);
+        unset($sourceMetadata['ai_response'], $sourceMetadata['article_pipeline']);
         $import->update(['source_meta_json' => $sourceMetadata]);
         try {
             $result = $service->run($import);
             if ($import->fresh()?->status === 'cancelled') {
                 return;
             }
-            $import->update([
+            $completion = (new AiImport)->forceFill([
                 'status' => 'ready', 'current_step' => 'ready', 'progress' => 100,
                 'result_json' => $result, 'provider' => $result['provider'],
                 'prompt_version' => $result['prompt_version'], 'completed_at' => now(),
                 'expires_at' => now()->addDays((int) config('ai-import.retention_days', 2)),
                 'error_code' => null, 'error_message' => null,
-            ]);
-            $this->queueOptionalImage($import->fresh());
+            ])->getAttributes();
+            $completed = AiImport::query()->whereKey($import->id)->whereNotIn('status', AiImport::TERMINAL_STATUSES)->update($completion);
+            if ($completed > 0) {
+                $this->queueOptionalImage($import->fresh());
+            }
         } catch (AiImportException $exception) {
-            $import->refresh();
-            if ($exception->errorCode === 'CANCELLED' || $import->status === 'cancelled') {
-                $import->update(['status' => 'cancelled', 'current_step' => 'cancelled', 'error_code' => 'CANCELLED', 'error_message' => $exception->getMessage()]);
+            $shouldRetry = DB::transaction(function () use ($exception): bool {
+                $run = AiImport::query()->lockForUpdate()->find($this->importId);
+                if (! $run || in_array($run->status, AiImport::TERMINAL_STATUSES, true)) {
+                    return false;
+                }
+                $updates = ['error_code' => $exception->errorCode, 'error_message' => Str::limit($exception->getMessage(), 500)];
+                if ($exception->diagnostics !== []) {
+                    $updates['source_meta_json'] = array_replace((array) $run->source_meta_json, [
+                        'ai_response' => AiResponseDiagnostics::sanitize(array_replace(
+                            (array) data_get($run->source_meta_json, 'ai_response', []),
+                            $exception->diagnostics,
+                        )),
+                    ]);
+                }
+                $retryable = $exception->retryable && $this->attempts() < $this->tries && $exception->errorCode !== 'CANCELLED';
+                if (! $retryable) {
+                    $status = match ($exception->errorCode) {
+                        'CANCELLED' => 'cancelled', 'EXPIRED' => 'expired', default => 'failed',
+                    };
+                    $updates += ['status' => $status, 'current_step' => $status, 'completed_at' => now()];
+                }
+                $run->update($updates);
 
-                return;
+                return $retryable;
+            });
+            if ($shouldRetry) {
+                throw $exception;
             }
-            $import->update(['error_code' => $exception->errorCode, 'error_message' => Str::limit($exception->getMessage(), 500)]);
-            if ($exception->diagnostics !== []) {
-                $import->update(['source_meta_json' => array_replace((array) $import->source_meta_json, [
-                    'ai_response' => AiResponseDiagnostics::sanitize(array_replace(
-                        (array) data_get($import->source_meta_json, 'ai_response', []),
-                        $exception->diagnostics,
-                    )),
-                ])]);
-            }
-            if (! $exception->retryable || $this->attempts() >= $this->tries) {
-                $import->update(['status' => 'failed', 'current_step' => 'failed']);
-
-                return;
-            }
-            throw $exception;
         } catch (Throwable $exception) {
             report($exception);
-            $import->update([
+            AiImport::query()->whereKey($import->id)->whereNotIn('status', AiImport::TERMINAL_STATUSES)->update([
                 'status' => 'failed', 'current_step' => 'failed',
                 'error_code' => 'AI_IMPORT_FAILED', 'error_message' => 'Tác vụ AI thất bại do lỗi hệ thống.',
             ]);
@@ -132,7 +161,7 @@ class ProcessAiImportJob implements ShouldQueue
     public function failed(?Throwable $exception): void
     {
         $import = AiImport::query()->find($this->importId);
-        if (! $import || in_array($import->status, ['ready', 'cancelled'], true)) {
+        if (! $import || in_array($import->status, AiImport::TERMINAL_STATUSES, true)) {
             return;
         }
         $updates = [
@@ -148,7 +177,9 @@ class ProcessAiImportJob implements ShouldQueue
                 )),
             ]);
         }
-        $import->update($updates);
+        $updates['completed_at'] = now();
+        AiImport::query()->whereKey($import->id)->whereNotIn('status', AiImport::TERMINAL_STATUSES)
+            ->update((new AiImport)->forceFill($updates)->getAttributes());
     }
 
     /**
@@ -157,7 +188,7 @@ class ProcessAiImportJob implements ShouldQueue
      * =====================================================================
      * INPUT: text import ready có image snapshot immutable hoặc null.
      * OUTPUT: không trả giá trị; child image job được queue riêng.
-     * SIDE EFFECT: tạo AiImport operation=image và dispatch worker; parent không fail.
+     * SIDE EFFECT: tạo child image/dispatch worker; lock và merge metadata không ghi đè edit parent.
      * EXCEPTION/TRANSACTION: lỗi tạo child chỉ ghi error parent, không retry text/provider.
      * =====================================================================
      */
@@ -192,9 +223,15 @@ class ProcessAiImportJob implements ShouldQueue
                 return $child;
             });
             app(AiRunService::class)->dispatch($child);
-            $result = (array) $import->result_json;
-            $result['image_job_id'] = $child->id;
-            $import->update(['result_json' => $result]);
+            DB::transaction(function () use ($import, $child): void {
+                $parent = AiImport::query()->lockForUpdate()->find($import->id);
+                if (! $parent) {
+                    return;
+                }
+                $result = (array) $parent->result_json;
+                $result['image_job_id'] = $child->id;
+                $parent->update(['result_json' => $result]);
+            });
         } catch (Throwable $exception) {
             report($exception);
             $import->update(['error_code' => 'AI_IMAGE_QUEUE_FAILED', 'error_message' => 'Không thể xếp hàng tạo ảnh tự động; nội dung vẫn sẵn sàng.']);

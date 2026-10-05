@@ -3,7 +3,7 @@
 namespace Tests\Unit;
 
 use App\Exceptions\AiImportException;
-use App\Services\Ai\AbstractStructuredAiProvider;
+use App\Services\Ai\Providers\Adapters\AbstractStructuredAiProvider;
 use Tests\TestCase;
 
 /** Exercise response parsing with in-memory transports, never a live generation request. */

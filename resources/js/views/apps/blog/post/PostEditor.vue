@@ -4,17 +4,37 @@
   CÁC HÀM/METHOD TRONG FILE: onMounted(): tải runtime; editorReady(): kết thúc chờ;
   editorFailed(): báo lỗi và giữ HTML; ensureEditable(): fallback khi editor bị khóa;
   setup(): bắt lỗi tài nguyên và thay đổi trạng thái chỉnh sửa;
-  onBeforeUnmount(): dọn bộ đếm thời gian.
-  INPUT/OUTPUT CỦA CLASS (tổng thể): HTML/disabled/placeholder -> v-model HTML.
+  fallbackCaret(): vị trí textarea; usePostInlineMedia(): picker/upload/ref/alt/caption;
+  onBeforeUnmount(): dọn bộ đếm thời gian và media scope.
+  INPUT/OUTPUT CỦA CLASS (tổng thể): HTML/disabled/placeholder -> HTML và media-busy;
+  chọn/upload từ editor, backend xác nhận MediaAsset ID/URL khi lưu.
   Chỉ bật self-host khi chủ dự án cấu hình GPL rõ ràng, hoặc dùng Tiny Cloud key.
   =====================================================================
 -->
 <script setup>
-import { onBeforeUnmount, onMounted, shallowRef } from 'vue'
+import { onBeforeUnmount, onMounted, reactive, shallowRef, useTemplateRef } from 'vue'
 import Editor from '@tinymce/tinymce-vue'
+import MediaLibraryDialog from '@/views/apps/media/field/MediaLibraryDialog.vue'
+import { usePostInlineMedia } from '@/composables/usePostInlineMedia'
 
 const props = defineProps({ disabled: { type: Boolean, default: false }, placeholder: { type: String, default: 'Start writing your post...' } })
+const emit = defineEmits(['mediaBusy'])
 const content = defineModel({ type: String, default: '' })
+const fallback = useTemplateRef('fallback')
+
+
+/**
+ * =====================================================================
+ * Input: textarea fallback hiện tại. Output: caret để chèn ảnh tại chỗ đang nhập.
+ * =====================================================================
+ */
+const fallbackCaret = () => {
+  const input = fallback.value?.$el?.querySelector?.('textarea')
+
+  return input ? { start: input.selectionStart, end: input.selectionEnd } : null
+}
+
+const media = reactive(usePostInlineMedia({ content, disabled: () => props.disabled, fallbackCaret, onBusy: value => emit('mediaBusy', value) }))
 const apiKey = import.meta.env.VITE_TINYMCE_API_KEY?.trim() || ''
 const licenseKey = import.meta.env.VITE_TINYMCE_LICENSE_KEY?.trim() || ''
 const selfHosted = licenseKey === 'gpl'
@@ -29,20 +49,31 @@ const editorOptions = shallowRef({
   height: 420,
   menubar: 'edit view insert format tools table',
   plugins: 'lists link image table code wordcount',
-  toolbar: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist | link image table | removeformat code',
+  toolbar: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist | link projectimage projectimageedit table | removeformat code',
   'block_formats': 'Paragraph=p; Heading 2=h2; Heading 3=h3; Heading 4=h4',
   placeholder: props.placeholder,
   promotion: false,
   'convert_urls': false,
-  'automatic_uploads': false,
-  'paste_data_images': false,
+  'automatic_uploads': true,
+  'paste_data_images': true,
+  'images_file_types': 'jpg,jpeg,png,gif,webp,avif',
+  'images_upload_handler': media.upload,
+  'extended_valid_elements': 'img[src|alt|title|width|height|class|style|data-media-asset-id],figure[class],figcaption[class]',
+  contextmenu: 'link table projectimageedit',
+  menu: { insert: { title: 'Insert', items: 'projectimage projectimageedit link table' } },
   'image_description': true,
   'content_style': 'body { font-family: sans-serif; font-size: 16px; } img { max-width: 100%; height: auto; }',
 
   /** Input: instance TinyMCE. Output: bắt lỗi tài nguyên và editor chỉ đọc ngoài ý muốn. */
   setup: editor => {
+    media.setEditor(editor)
     editor.on('SkinLoadError PluginLoadError ThemeLoadError ModelLoadError', editorFailed)
     editor.on('SwitchMode DisabledStateChange', () => ensureEditable(editor))
+    editor.on('change SetContent NodeChange input', media.annotate)
+    editor.ui?.registry?.addButton('projectimage', { icon: 'image', tooltip: 'Chọn/upload ảnh MediaLibrary', onAction: media.openLibrary })
+    editor.ui?.registry?.addButton('projectimageedit', { icon: 'edit-block', tooltip: 'Sửa mô tả và chú thích ảnh', onAction: media.editImage })
+    editor.ui?.registry?.addMenuItem('projectimage', { icon: 'image', text: 'Ảnh MediaLibrary', onAction: media.openLibrary })
+    editor.ui?.registry?.addMenuItem('projectimageedit', { icon: 'edit-block', text: 'Mô tả và chú thích ảnh', onAction: media.editImage })
   },
 })
 
@@ -51,6 +82,7 @@ const editorFailed = () => {
   clearTimeout(initTimeout)
   error.value = 'Không tải được TinyMCE. Kiểm tra kết nối/cấu hình và tải lại trang; nội dung HTML vẫn được giữ bên dưới.'
   ready.value = false
+  media.setEditor(null)
 }
 
 /** Input: editor TinyMCE. Output: giữ HTML trong textarea khi editor bị khóa ngoài props.disabled. */
@@ -61,6 +93,7 @@ const ensureEditable = editor => {
     clearTimeout(initTimeout)
     error.value = 'TinyMCE đang bị khóa chỉnh sửa. Kiểm tra cấu hình/key của editor; bạn có thể tiếp tục chỉnh sửa HTML bên dưới.'
     ready.value = false
+    media.setEditor(null)
   }
 }
 
@@ -68,6 +101,7 @@ const ensureEditable = editor => {
 const editorReady = (_event, editor) => {
   clearTimeout(initTimeout)
   initialized.value = true
+  media.setEditor(editor)
   ensureEditable(editor)
 }
 
@@ -128,11 +162,95 @@ onBeforeUnmount(() => {
     </div>
     <AppTextarea
       v-else
+      ref="fallback"
       v-model="content"
       label="Content (HTML)"
       :placeholder="props.placeholder"
       :disabled="props.disabled || (configured && !error)"
       rows="12"
     />
+    <VBtn
+      v-if="!ready"
+      variant="tonal"
+      prepend-icon="tabler-photo"
+      class="mt-3"
+      :disabled="props.disabled"
+      @click="media.openLibrary"
+    >
+      Chọn ảnh MediaLibrary
+    </VBtn>
+    <VAlert
+      v-if="media.error"
+      type="error"
+      variant="tonal"
+      class="mt-3"
+    >
+      {{ media.error }}
+    </VAlert>
+    <VAlert
+      v-if="media.busy && !media.libraryOpen && !media.detailsOpen"
+      type="info"
+      variant="tonal"
+      class="mt-3"
+    >
+      Ảnh đang upload hoặc còn URL tạm. Nội dung được giữ; chờ ảnh upload xong hoặc xóa ảnh tạm trước khi lưu.
+    </VAlert>
+    <MediaLibraryDialog
+      v-if="media.libraryOpen"
+      v-model:open="media.libraryOpen"
+      kind="image"
+      field="post.content_images"
+      visibility="public"
+      @select="media.selectAsset"
+    />
+    <VDialog
+      :model-value="media.detailsOpen"
+      max-width="560"
+      @update:model-value="!$event && media.closeDetails()"
+    >
+      <VCard title="Ảnh trong bài viết">
+        <VCardText>
+          <VImg
+            :src="media.selectedAsset?.file?.url"
+            max-height="200"
+            contain
+            class="mb-4"
+          />
+          <AppTextField
+            v-model="media.draft.alt"
+            label="Mô tả ảnh (alt)"
+            maxlength="1000"
+            class="mb-4"
+          />
+          <AppTextarea
+            v-model="media.draft.caption"
+            label="Chú thích dưới ảnh"
+            maxlength="2000"
+            rows="2"
+          />
+          <VAlert
+            v-if="media.error"
+            type="error"
+            variant="tonal"
+            class="mt-3"
+          >
+            {{ media.error }}
+          </VAlert>
+        </VCardText>
+        <VCardActions>
+          <VSpacer /><VBtn
+            variant="tonal"
+            @click="media.closeDetails"
+          >
+            Hủy
+          </VBtn><VBtn
+            :disabled="props.disabled"
+            @click="media.commit"
+          >
+            Lưu ảnh vào bài
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
   </div>
 </template>

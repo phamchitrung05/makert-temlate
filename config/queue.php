@@ -6,7 +6,7 @@
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE: không có; trả mảng config.
  * INPUT/OUTPUT CỦA FILE (tổng thể): biến môi trường -> config queue runtime.
- * SIDE EFFECT: Không gọi network/DB; retry_after tối thiểu 900 giây cho job AI.
+ * SIDE EFFECT: Không gọi network/DB; retry_after đủ ba HTTP AI tối đa 600 giây.
  * =====================================================================
  */
 return [
@@ -49,8 +49,8 @@ return [
             'connection' => env('DB_QUEUE_CONNECTION'),
             'table' => env('DB_QUEUE_TABLE', 'jobs'),
             'queue' => env('DB_QUEUE', 'default'),
-            // HTTP AI tối đa 600s + xử lý 120s; lease phải dài hơn job để tránh chạy trùng.
-            'retry_after' => max(900, (int) env('DB_QUEUE_RETRY_AFTER', 900), (int) env('AI_IMPORT_JOB_TIMEOUT', 180) + 60),
+            // Ba HTTP tối đa 600s + xử lý 120s; lease lớn hơn job để tránh chạy trùng.
+            'retry_after' => max(2000, (int) env('DB_QUEUE_RETRY_AFTER', 2000), (int) env('AI_IMPORT_JOB_TIMEOUT', 180) + 60),
             'after_commit' => false,
         ],
 
@@ -58,7 +58,7 @@ return [
             'driver' => 'beanstalkd',
             'host' => env('BEANSTALKD_QUEUE_HOST', 'localhost'),
             'queue' => env('BEANSTALKD_QUEUE', 'default'),
-            'retry_after' => max(900, (int) env('BEANSTALKD_QUEUE_RETRY_AFTER', 900), (int) env('AI_IMPORT_JOB_TIMEOUT', 180) + 60),
+            'retry_after' => max(2000, (int) env('BEANSTALKD_QUEUE_RETRY_AFTER', 2000), (int) env('AI_IMPORT_JOB_TIMEOUT', 180) + 60),
             'block_for' => 0,
             'after_commit' => false,
         ],
@@ -78,7 +78,7 @@ return [
             'driver' => 'redis',
             'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
             'queue' => env('REDIS_QUEUE', 'default'),
-            'retry_after' => max(900, (int) env('REDIS_QUEUE_RETRY_AFTER', 900), (int) env('AI_IMPORT_JOB_TIMEOUT', 180) + 60),
+            'retry_after' => max(2000, (int) env('REDIS_QUEUE_RETRY_AFTER', 2000), (int) env('AI_IMPORT_JOB_TIMEOUT', 180) + 60),
             'block_for' => null,
             'after_commit' => false,
         ],

@@ -2,8 +2,8 @@
 
 namespace Tests\Unit;
 
-use App\Services\Ai\AiConnection;
-use App\Services\Ai\HttpAiImageProvider;
+use App\Services\Ai\Providers\Transport\AiConnection;
+use App\Services\Ai\Images\Adapters\HttpAiImageProvider;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 

@@ -1,0 +1,240 @@
+{
+    "arm": "C",
+    "status": "failed",
+    "error_code": "AI_SOURCE_REFERENCE",
+    "final": null,
+    "quality_checks": [],
+    "cost": null,
+    "diagnostics": {
+        "stage": "validate",
+        "validation_errors": []
+    },
+    "calls": [
+        {
+            "task": "article.analysis-plan",
+            "output": {
+                "knowledge": {
+                    "facts": [
+                        {
+                            "id": "F01",
+                            "claim": "Nguồn là phần giới thiệu trong tài liệu Vue 3.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": ":::info You are reading the documentation for Vue 3!",
+                            "important": true
+                        },
+                        {
+                            "id": "F02",
+                            "claim": "Theo nguồn, hỗ trợ Vue 2 đã kết thúc vào ngày 31/12/2023; nguồn dẫn tới trang Vue 2 EOL để tìm hiểu thêm.",
+                            "source_block_ids": [
+                                "S004"
+                            ],
+                            "evidence": "<li>Vue 2 support has ended on <strong>Dec 31, 2023</strong>. Learn more about <a href=\"https://v2.vuejs.org/eol/\">Vue 2 EOL</a>.</li>",
+                            "important": true
+                        },
+                        {
+                            "id": "F03",
+                            "claim": "Nguồn giới thiệu Migration Guide dành cho người đang nâng cấp từ Vue 2.",
+                            "source_block_ids": [
+                                "S005"
+                            ],
+                            "evidence": "<li>Upgrading from Vue 2? Check out the <a href=\"https://v3-migration.vuejs.org/\">Migration Guide</a>.\n:::</li>",
+                            "important": true
+                        },
+                        {
+                            "id": "F04",
+                            "claim": "Vue được phát âm là /vjuː/, giống từ “view”, và là framework JavaScript để xây dựng giao diện người dùng.",
+                            "source_block_ids": [
+                                "S007"
+                            ],
+                            "evidence": "Vue (pronounced /vjuː/, like view) is a JavaScript framework for building user interfaces.",
+                            "important": true
+                        },
+                        {
+                            "id": "F05",
+                            "claim": "Vue dựa trên HTML, CSS và JavaScript tiêu chuẩn, cung cấp mô hình lập trình khai báo và dựa trên component. Nguồn mô tả mô hình này giúp phát triển hiệu quả giao diện với nhiều mức độ phức tạp, nhưng không đưa ra phép đo hiệu năng.",
+                            "source_block_ids": [
+                                "S007"
+                            ],
+                            "evidence": "It builds on top of standard HTML, CSS, and JavaScript and provides a declarative, component-based programming model that helps you efficiently develop user interfaces of any complexity.",
+                            "important": true
+                        },
+                        {
+                            "id": "F06",
+                            "claim": "Đoạn JavaScript thứ nhất nhập createApp từ vue, khai báo count có giá trị ban đầu là 0 trong data(), rồi gắn ứng dụng vào phần tử khớp bộ chọn #app.",
+                            "source_block_ids": [
+                                "S009"
+                            ],
+                            "evidence": "import { createApp } from 'vue'\n\ncreateApp({\n  data() {\n    return {\n      count: 0\n    }\n  }\n}).mount('#app')",
+                            "important": true
+                        },
+                        {
+                            "id": "F07",
+                            "claim": "Đoạn JavaScript thứ hai nhập createApp và ref từ vue, trả về count: ref(0) trong setup(), rồi gắn ứng dụng vào #app.",
+                            "source_block_ids": [
+                                "S010"
+                            ],
+                            "evidence": "import { createApp, ref } from 'vue'\n\ncreateApp({\n  setup() {\n    return {\n      count: ref(0)\n    }\n  }\n}).mount('#app')",
+                            "important": true
+                        },
+                        {
+                            "id": "F08",
+                            "claim": "Mẫu HTML chứa phần tử div có id là app và nút dùng @click=\"count++\" để tăng count khi nhấp; nội dung nút hiển thị count qua {{ count }}.",
+                            "source_block_ids": [
+                                "S011"
+                            ],
+                            "evidence": "<div id=\"app\">\n  <button @click=\"count++\">\n    Count is: {{ count }}\n  </button>\n</div>",
+                            "important": true
+                        },
+                        {
+                            "id": "F09",
+                            "claim": "Nguồn dùng ví dụ bộ đếm để minh họa hai tính năng cốt lõi của Vue: kết xuất khai báo và tính phản ứng.",
+                            "source_block_ids": [
+                                "S013",
+                                "S014",
+                                "S015"
+                            ],
+                            "evidence": "The above example demonstrates the two core features of Vue:\nDeclarative Rendering: Vue extends standard HTML with a template syntax that allows us to declaratively describe HTML output based on JavaScript state.\nReactivity: Vue automatically tracks JavaScript state changes and efficiently updates the DOM when changes happen.",
+                            "important": true
+                        },
+                        {
+                            "id": "F10",
+                            "claim": "Kết xuất khai báo: Vue mở rộng HTML tiêu chuẩn bằng cú pháp template để mô tả đầu ra HTML dựa trên trạng thái JavaScript.",
+                            "source_block_ids": [
+                                "S014"
+                            ],
+                            "evidence": "Declarative Rendering: Vue extends standard HTML with a template syntax that allows us to declaratively describe HTML output based on JavaScript state.",
+                            "important": true
+                        },
+                        {
+                            "id": "F11",
+                            "claim": "Tính phản ứng: theo nguồn, Vue tự động theo dõi thay đổi trạng thái JavaScript và cập nhật DOM hiệu quả khi có thay đổi.",
+                            "source_block_ids": [
+                                "S015"
+                            ],
+                            "evidence": "Reactivity: Vue automatically tracks JavaScript state changes and efficiently updates the DOM when changes happen.",
+                            "important": true
+                        },
+                        {
+                            "id": "F12",
+                            "claim": "Tài liệu giả định người đọc có kiến thức cơ bản về HTML, CSS và JavaScript; người hoàn toàn mới với phát triển frontend được khuyên học nền tảng trước khi bắt đầu với framework.",
+                            "source_block_ids": [
+                                "S017"
+                            ],
+                            "evidence": "The rest of the documentation assumes basic familiarity with HTML, CSS, and JavaScript. If you are totally new to frontend development, it might not be the best idea to jump right into a framework as your first step - grasp the basics and then come back!",
+                            "important": true
+                        },
+                        {
+                            "id": "F13",
+                            "claim": "Nguồn dẫn tới các bài tổng quan JavaScript, HTML và CSS trên MDN để người đọc tự kiểm tra kiến thức.",
+                            "source_block_ids": [
+                                "S017"
+                            ],
+                            "evidence": "You can check your knowledge level with these overviews for <a href=\"https://developer.mozilla.org/en-US/docs/Web/JavaScript/A_re-introduction_to_JavaScript\">JavaScript</a>, <a href=\"https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML\">HTML</a> and <a href=\"https://developer.mozilla.org/en-US/docs/Learn/CSS/First_steps\">CSS</a> if needed.",
+                            "important": true
+                        },
+                        {
+                            "id": "F14",
+                            "claim": "Kinh nghiệm với framework khác có ích nhưng không phải điều kiện bắt buộc để đọc tài liệu.",
+                            "source_block_ids": [
+                                "S017"
+                            ],
+                            "evidence": "Prior experience with other frameworks helps, but is not required.",
+                            "important": true
+                        },
+                        {
+                            "id": "F15",
+                            "claim": "Phần giới thiệu hướng tới việc giúp người đọc hiểu tổng quan về Vue; nguồn cho biết các chi tiết sẽ được trình bày ở những phần tiếp theo của tài liệu.",
+                            "source_block_ids": [
+                                "S016"
+                            ],
+                            "evidence": "We will cover every little detail in the rest of the documentation. For now, please read along so you can have a high-level understanding of what Vue offers.",
+                            "important": false
+                        }
+                    ],
+                    "terms": [
+                        "Vue 3",
+                        "Vue 2 EOL",
+                        "Migration Guide",
+                        "JavaScript",
+                        "HTML",
+                        "CSS",
+                        "component — thành phần giao diện",
+                        "Declarative Rendering — kết xuất khai báo",
+                        "Reactivity — tính phản ứng",
+                        "template — mẫu giao diện",
+                        "state — trạng thái",
+                        "DOM",
+                        "createApp",
+                        "data()",
+                        "setup()",
+                        "ref(0)",
+                        ".mount('#app')",
+                        "@click",
+                        "{{ count }}"
+                    ],
+                    "uncertainties": [
+                        "Nguồn không nêu phiên bản nhỏ hoặc phiên bản vá cụ thể của Vue 3.",
+                        "Nguồn không cung cấp hướng dẫn cài đặt, cấu hình công cụ hay môi trường chạy cho các đoạn mã; không trình bày chúng như một hướng dẫn thiết lập hoàn chỉnh.",
+                        "Hai đoạn JavaScript là các cách khai báo bộ đếm được đưa ra trong nguồn; không có căn cứ trong phần trích này để khuyến nghị cách nào tốt hơn.",
+                        "Mục “Result” không có nội dung kết quả hiển thị trong các khối nguồn; chỉ giải thích hành vi suy ra từ mã, không mô tả ảnh hoặc kết quả thử nghiệm.",
+                        "Các nhận định về phát triển giao diện và cập nhật DOM hiệu quả là mô tả của tài liệu, không phải benchmark hay so sánh hiệu năng.",
+                        "Nguồn chỉ dẫn liên kết EOL và Migration Guide, không cung cấp nội dung chi tiết của các trang đó; không suy diễn quy trình nâng cấp hoặc phạm vi hỗ trợ ngoài thông tin đã nêu.",
+                        "“footer: false”, các dấu ::: và ký hiệu neo tiêu đề là dấu định dạng của nguồn, không phải kiến thức Vue cần đưa vào bài giải thích."
+                    ]
+                },
+                "writing_plan": {
+                    "article_type": "Bài giải thích nhập môn dựa trên phần giới thiệu tài liệu Vue 3",
+                    "audience": "Người phát triển website, đặc biệt người mới tìm hiểu Vue đã có hoặc đang bổ sung kiến thức HTML, CSS và JavaScript.",
+                    "angle": "Giải thích Vue giải quyết việc xây dựng giao diện dựa trên trạng thái như thế nào qua ví dụ bộ đếm, đồng thời làm rõ phiên bản tài liệu và kiến thức cần có. Viết tiếng Việt tự nhiên, ngắn gọn theo lượng thông tin nguồn; không mở rộng thành hướng dẫn cài đặt hoặc bài so sánh framework.",
+                    "outline": [
+                        "Mở đầu trực tiếp: Vue là framework JavaScript xây dựng giao diện trên nền HTML, CSS và JavaScript, với mô hình khai báo và component. Nhắc cách phát âm ngắn gọn; xác định đây là tài liệu Vue 3 và phần này chỉ cung cấp cái nhìn tổng quan.",
+                        "Lưu ý phiên bản trong một đoạn ngắn: hỗ trợ Vue 2 kết thúc ngày 31/12/2023. Giữ liên kết Vue 2 EOL https://v2.vuejs.org/eol/ và Migration Guide https://v3-migration.vuejs.org/ cho người đang nâng cấp; không bổ sung các bước di chuyển chưa có trong nguồn.",
+                        "Minh họa bằng bộ đếm: giữ nguyên cả hai khối JavaScript S009, S010 và khối HTML S011, không dịch chuỗi trong code hoặc thay API. Giới thiệu chúng như hai cách khai báo ví dụ, không ghép thành một chương trình. Giải thích count bắt đầu từ 0, ứng dụng gắn vào #app, nhấp nút tăng count và {{ count }} hiển thị giá trị.",
+                        "Ngay sau ví dụ, giải thích ngắn hai tính năng cốt lõi: template mô tả HTML theo trạng thái là kết xuất khai báo; Vue theo dõi thay đổi trạng thái và cập nhật DOM là tính phản ứng. Gắn mỗi khái niệm với bộ đếm, tránh lặp lại định nghĩa hoặc thêm benchmark.",
+                        "Kết bằng điều kiện học: cần kiến thức cơ bản về HTML, CSS và JavaScript; người mới hoàn toàn nên học nền tảng trước, không bắt buộc từng dùng framework khác. Giữ ba liên kết kiểm tra kiến thức: JavaScript https://developer.mozilla.org/en-US/docs/Web/JavaScript/A_re-introduction_to_JavaScript, HTML https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML và CSS https://developer.mozilla.org/en-US/docs/Learn/CSS/First_steps. Dùng các đoạn ngắn và chỉ thêm tiêu đề phụ khi cần, không kéo dài thành nhiều mục ngoài nguồn."
+                    ],
+                    "coverage_fact_ids": [
+                        "F01",
+                        "F02",
+                        "F03",
+                        "F04",
+                        "F05",
+                        "F06",
+                        "F07",
+                        "F08",
+                        "F09",
+                        "F10",
+                        "F11",
+                        "F12",
+                        "F13",
+                        "F14",
+                        "F15"
+                    ]
+                }
+            },
+            "diagnostics": {
+                "response_id": "resp_04e4e87119b54aac016ac2929b965c87d0952b5d53b22fe8f5",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.analysis-plan.v1",
+                "usage": {
+                    "prompt_tokens": 3823,
+                    "completion_tokens": 2830,
+                    "total_tokens": 6653,
+                    "reasoning_tokens": 78
+                }
+            },
+            "latency_ms": 94689
+        }
+    ],
+    "latency_ms": 94690,
+    "input_sha256": "5efc19ad5d1fa48d5847d23c06c76382f1e1f89a9be490a94e975a77572093d5",
+    "source_sha256": "742c1f756538bef054460d2b80ca5dad9c583878e3cd05a5b80d5ab7a2538a0a",
+    "provider": "connection-97c6d404-7463-428e-8f17-8bd19c767885",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": null,
+    "total_tokens": 6653
+}

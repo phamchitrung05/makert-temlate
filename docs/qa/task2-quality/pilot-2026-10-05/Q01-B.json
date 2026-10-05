@@ -1,0 +1,87 @@
+{
+    "arm": "B",
+    "status": "ready",
+    "error_code": null,
+    "final": {
+        "title": "Reactivity Transform đã bị gỡ bỏ trong Vue 3.4",
+        "content_html": "<h1>Reactivity Transform</h1>\n<p>Reactivity Transform là một tính năng thử nghiệm đã bị gỡ bỏ trong bản phát hành Vue 3.4. Nếu đang sử dụng tính năng này, bạn cần lưu ý thay đổi đó. Phần giải thích về quyết định gỡ bỏ được trình bày trong <a href=\"https://github.com/vuejs/rfcs/discussions/369#discussioncomment-5059028\">thảo luận về lý do gỡ bỏ</a>.</p>\n<p>Nếu vẫn muốn tiếp tục sử dụng Reactivity Transform, bạn có thể dùng tính năng này thông qua plugin <a href=\"https://vue-macros.sxzz.moe/features/reactivity-transform.html\">Vue Macros</a>.</p>\n<p>Reactivity Transform chỉ dành cho Composition API và yêu cầu có bước build. Đây là điều kiện cần lưu ý khi cân nhắc sử dụng tính năng này.</p>"
+    },
+    "quality_checks": [
+        {
+            "check": "copy",
+            "status": "pass"
+        },
+        {
+            "check": "similarity",
+            "status": "pass",
+            "metric": 0.026,
+            "reason": "lexical_metric_not_style_score"
+        },
+        {
+            "check": "language",
+            "status": "pass",
+            "detected": "vi"
+        },
+        {
+            "check": "source_code_links",
+            "status": "pass"
+        },
+        {
+            "check": "important_numbers",
+            "status": "pass"
+        },
+        {
+            "check": "unanchored_numbers",
+            "status": "pass",
+            "count": 0,
+            "reason": "requires_editor_review"
+        },
+        {
+            "check": "semantic_grounding",
+            "status": "undetermined",
+            "reason": "source_anchors_are_not_external_fact_verification"
+        }
+    ],
+    "cost": null,
+    "calls": [
+        {
+            "task": "single_step",
+            "output": {
+                "title": "Reactivity Transform đã bị gỡ bỏ trong Vue 3.4",
+                "content_html": "<h1 id=\"reactivity-transform\">Reactivity Transform</h1>\n<p>Reactivity Transform là một tính năng thử nghiệm đã bị gỡ bỏ trong bản phát hành Vue 3.4. Nếu đang sử dụng tính năng này, bạn cần lưu ý thay đổi đó. Phần giải thích về quyết định gỡ bỏ được trình bày trong <a href=\"https://github.com/vuejs/rfcs/discussions/369#discussioncomment-5059028\">thảo luận về lý do gỡ bỏ</a>.</p>\n<p>Nếu vẫn muốn tiếp tục sử dụng Reactivity Transform, bạn có thể dùng tính năng này thông qua plugin <a href=\"https://vue-macros.sxzz.moe/features/reactivity-transform.html\">Vue Macros</a>.</p>\n<p>Reactivity Transform chỉ dành cho Composition API và yêu cầu có bước build. Đây là điều kiện cần lưu ý khi cân nhắc sử dụng tính năng này.</p>",
+                "content": "<h1 id=\"reactivity-transform\">Reactivity Transform</h1>\n<p>Reactivity Transform là một tính năng thử nghiệm đã bị gỡ bỏ trong bản phát hành Vue 3.4. Nếu đang sử dụng tính năng này, bạn cần lưu ý thay đổi đó. Phần giải thích về quyết định gỡ bỏ được trình bày trong <a href=\"https://github.com/vuejs/rfcs/discussions/369#discussioncomment-5059028\">thảo luận về lý do gỡ bỏ</a>.</p>\n<p>Nếu vẫn muốn tiếp tục sử dụng Reactivity Transform, bạn có thể dùng tính năng này thông qua plugin <a href=\"https://vue-macros.sxzz.moe/features/reactivity-transform.html\">Vue Macros</a>.</p>\n<p>Reactivity Transform chỉ dành cho Composition API và yêu cầu có bước build. Đây là điều kiện cần lưu ý khi cân nhắc sử dụng tính năng này.</p>"
+            },
+            "diagnostics": {
+                "response_id": "resp_0916ec2ef89227e2016ac2924091a487d0896f671ad93f46da",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "post.content.v1",
+                "requested_groups": [
+                    "title",
+                    "content"
+                ],
+                "returned_fields": [
+                    "title",
+                    "content_html"
+                ],
+                "usage": {
+                    "prompt_tokens": 963,
+                    "completion_tokens": 232,
+                    "total_tokens": 1195
+                }
+            },
+            "latency_ms": 10514
+        }
+    ],
+    "latency_ms": 10519,
+    "input_sha256": "0375ea2c3a16d77d6f3c11e8461c5d61d9cc0da66482387ed80bc4e021f02823",
+    "source_sha256": "d3d2b94deda13cb6fc027288a2da407a62f86f77895ba2037608d5d7069a89b3",
+    "provider": "connection-97c6d404-7463-428e-8f17-8bd19c767885",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Reactivity Transform đã bị gỡ bỏ trong Vue 3.4",
+        "content_html": "<h1>Reactivity Transform</h1>\n<p>Reactivity Transform là một tính năng thử nghiệm đã bị gỡ bỏ trong bản phát hành Vue 3.4. Nếu đang sử dụng tính năng này, bạn cần lưu ý thay đổi đó. Phần giải thích về quyết định gỡ bỏ được trình bày trong <a href=\"https://github.com/vuejs/rfcs/discussions/369#discussioncomment-5059028\">thảo luận về lý do gỡ bỏ</a>.</p>\n<p>Nếu vẫn muốn tiếp tục sử dụng Reactivity Transform, bạn có thể dùng tính năng này thông qua plugin <a href=\"https://vue-macros.sxzz.moe/features/reactivity-transform.html\">Vue Macros</a>.</p>\n<p>Reactivity Transform chỉ dành cho Composition API và yêu cầu có bước build. Đây là điều kiện cần lưu ý khi cân nhắc sử dụng tính năng này.</p>"
+    },
+    "total_tokens": 1195
+}

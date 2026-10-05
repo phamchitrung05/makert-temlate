@@ -2,7 +2,7 @@
 
 namespace App\Exceptions;
 
-use App\Services\Ai\AiResponseDiagnostics;
+use App\Services\Ai\Providers\Diagnostics\AiResponseDiagnostics;
 use RuntimeException;
 
 /**

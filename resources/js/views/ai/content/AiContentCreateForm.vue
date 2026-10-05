@@ -11,21 +11,21 @@
 <script setup>
 import { computed } from 'vue'
 import AiContentSourceForm from './AiContentSourceForm.vue'
+import AiPipelineReport from '@/views/ai/shared/AiPipelineReport.vue'
+import { pipelineStepLabel } from '@/utils/aiArticleOptions'
 
 const props = defineProps({
   catalog: { type: Object, required: true },
   generation: { type: Object, required: true },
 })
 
-const emit = defineEmits(['generate', 'retryRun', 'reloadCatalog', 'resumePolling'])
+const emit = defineEmits(['generate', 'retryRun', 'reloadCatalog', 'resumePolling', 'cancel'])
 const source = defineModel({ type: Object, required: true })
 
-const steps = {
-  queued: 'Đã xếp hàng, chờ worker xử lý', fetching: 'Đang đọc nguồn', extracting: 'Đang phân tích nguồn',
-  rewriting: 'AI đang viết bài', seo: 'Đang xử lý SEO', thumbnail: 'Đang xử lý thumbnail',
-}
-
-const stepLabel = computed(() => steps[props.generation.session?.current_step] ?? 'Đang tạo nội dung')
+// =====================================================================
+// Input: bước public. Output: đúng Analyze/Write/Edit/Validate và nhánh cũ.
+// =====================================================================
+const stepLabel = computed(() => pipelineStepLabel(props.generation.session?.current_step))
 </script>
 
 <template>
@@ -137,6 +137,17 @@ const stepLabel = computed(() => steps[props.generation.session?.current_step] ?
       </div>
       <div class="d-flex justify-end">
         <VBtn
+          v-if="props.generation.busy && props.generation.session"
+          color="error"
+          variant="tonal"
+          class="me-3"
+          :disabled="props.generation.cancelling"
+          :loading="props.generation.cancelling"
+          @click="emit('cancel')"
+        >
+          Hủy tác vụ
+        </VBtn>
+        <VBtn
           prepend-icon="tabler-wand"
           :disabled="!props.generation.canGenerate"
           :loading="props.generation.busy"
@@ -145,6 +156,7 @@ const stepLabel = computed(() => steps[props.generation.session?.current_step] ?
           Phân tích &amp; Tạo content
         </VBtn>
       </div>
+      <AiPipelineReport :session="props.generation.session" />
     </VCardText>
   </VCard>
 </template>

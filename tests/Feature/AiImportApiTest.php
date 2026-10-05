@@ -7,7 +7,7 @@ use App\Jobs\ProcessAiImportJob;
 use App\Models\AiImport;
 use App\Models\MediaAsset;
 use App\Models\User;
-use App\Services\Ai\ArticleImportService;
+use App\Services\Ai\Content\ArticleImportService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -19,16 +19,31 @@ use Tests\UsesIsolatedDatabase;
 
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Khóa contract HTTP và quyền của AI import queue API.
+ * CHỨC NĂNG FILE: Kiểm tạo/poll/hủy run và quyền truy cập với queue bất đồng bộ.
  * =====================================================================
- *
- * CÁC HÀM/METHOD TRONG FILE: setUp(), tearDown(), token() và test_* tạo/poll/cancel ownership.
- * - test_store_rejects_provider_model_and_prompt_outside_allowlist(): kiểm tra input AI.
- * - test_session_list_*(): kiểm tra quyền, owner, phân trang và DTO summary an toàn.
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - setUp().
+ * - tearDown().
+ * - token().
+ * - test_session_list_requires_authenticated_post_manager().
+ * - test_session_list_validates_pagination().
+ * - test_session_list_filters_owner_root_and_expiry_and_returns_safe_summaries().
+ * - test_session_thumbnails_are_loaded_in_batches_and_returned_in_polling().
+ * - test_session_thumbnails_handle_missing_deleted_and_private_assets().
+ * - thumbnailAsset().
+ * - test_store_queues_import_and_persists_options().
+ * - test_import_status_is_private_to_creator().
+ * - test_capabilities_are_resolved_from_registries().
+ * - test_store_rejects_provider_model_and_prompt_outside_allowlist().
+ * - test_store_accepts_inline_text_source().
+ * - test_generic_session_endpoint_normalizes_nested_input().
+ * - test_cancelled_import_is_terminal_for_queued_worker().
+ * - test_cleanup_command_removes_expired_import().
+ * =====================================================================
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
- * - INPUT : request admin URL/options.
- * - OUTPUT: assertion 202 queued, lifecycle payload và ownership boundary.
- * - SIDE EFFECT: database SQLite cô lập và fake queue; không gọi provider thật.
+ * - INPUT : fixtures/requests admin, HTTP và Queue fake, database test cô lập.
+ * - OUTPUT: assertions cho contract, snapshot, quyền và lỗi; không gọi AI thật.
+ * - SIDE EFFECT: tạo/sửa dữ liệu trong database test; không chỉnh dữ liệu ứng dụng.
  * =====================================================================
  */
 class AiImportApiTest extends TestCase
@@ -38,16 +53,19 @@ class AiImportApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Khởi tạo database và permission cô lập cho test AI import.
+
      * =====================================================================
      * INPUT: PHPUnit lifecycle.
      * OUTPUT: schema cô lập và permission đã seed.
      * SIDE EFFECT: reset database và permission cache.
      * EXCEPTION/TRANSACTION: chỉ setup test; không gọi provider thật.
+
      * =====================================================================
      */
     protected function setUp(): void
     {
         parent::setUp();
+        config()->set('queue.default', 'database');
         $this->useIsolatedDatabase();
         $this->seed(RolePermissionSeeder::class);
     }
@@ -55,11 +73,13 @@ class AiImportApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Giải phóng database cô lập sau test AI import.
+
      * =====================================================================
      * INPUT: PHPUnit lifecycle.
      * OUTPUT: tài nguyên test được giải phóng.
      * SIDE EFFECT: dọn database cô lập.
      * EXCEPTION/TRANSACTION: chỉ cleanup test; không gọi provider thật.
+
      * =====================================================================
      */
     protected function tearDown(): void
@@ -71,11 +91,13 @@ class AiImportApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Tạo Sanctum token với quyền quản lý Post cho test.
+
      * =====================================================================
      * INPUT: không có.
      * OUTPUT: personal Sanctum token có posts.manage.
      * SIDE EFFECT: tạo user test và flush permission cache.
      * EXCEPTION/TRANSACTION: dùng database cô lập; không gọi provider thật.
+
      * =====================================================================
      */
     private function token(): string
@@ -88,7 +110,11 @@ class AiImportApiTest extends TestCase
         return $user->createToken('ai-import-test', ['admin'])->plainTextToken;
     }
 
-    /** Input: collection không có quyền. Output: HTTP 401/403; DB cô lập, không gọi AI. */
+    /**
+     * =====================================================================
+     * Input: collection không có quyền. Output: HTTP 401/403; DB cô lập, không gọi AI.
+     * =====================================================================
+     */
     public function test_session_list_requires_authenticated_post_manager(): void
     {
         $this->getJson('/api/admin/ai-agent/sessions')->assertUnauthorized();
@@ -98,7 +124,11 @@ class AiImportApiTest extends TestCase
             ->getJson('/api/admin/ai-agent/sessions')->assertForbidden();
     }
 
-    /** Input: query sai. Output: validation 422; không truy vấn provider hoặc ghi run. */
+    /**
+     * =====================================================================
+     * Input: query sai. Output: validation 422; không truy vấn provider hoặc ghi run.
+     * =====================================================================
+     */
     public function test_session_list_validates_pagination(): void
     {
         $this->withToken($this->token())->getJson('/api/admin/ai-agent/sessions?page=0&per_page=101')
@@ -106,9 +136,12 @@ class AiImportApiTest extends TestCase
     }
 
     /**
+     * =====================================================================
      * Input: run gốc/con/ảnh/hết hạn và run của owner khác.
      * Output: root/candidate con còn hạn của owner; không lộ body/input/URL query/key.
      * Side effect: fake queue và SQLite cô lập; không gọi provider thật.
+
+     * =====================================================================
      */
     public function test_session_list_filters_owner_root_and_expiry_and_returns_safe_summaries(): void
     {
@@ -147,7 +180,11 @@ class AiImportApiTest extends TestCase
             ->assertOk()->assertJsonCount(1, 'data');
     }
 
-    /** Saved thumbnails appear in lists and polling without querying each asset or conversion parent. */
+    /**
+     * =====================================================================
+     * Saved thumbnails appear in lists and polling without querying each asset or conversion parent.
+     * =====================================================================
+     */
     public function test_session_thumbnails_are_loaded_in_batches_and_returned_in_polling(): void
     {
         Queue::fake();
@@ -198,7 +235,11 @@ class AiImportApiTest extends TestCase
             ->assertOk()->assertDontSee('private-token', false);
     }
 
-    /** Missing/deleted assets return null, and private thumbnails never expose a storage URL. */
+    /**
+     * =====================================================================
+     * Missing/deleted assets return null, and private thumbnails never expose a storage URL.
+     * =====================================================================
+     */
     public function test_session_thumbnails_handle_missing_deleted_and_private_assets(): void
     {
         Queue::fake();
@@ -228,7 +269,11 @@ class AiImportApiTest extends TestCase
             ->assertJsonPath('data.0.thumbnail.file.preview_url', null);
     }
 
-    /** Persist file metadata for DTO/query tests; no real upload or image conversion is required. */
+    /**
+     * =====================================================================
+     * Persist file metadata for DTO/query tests; no real upload or image conversion is required.
+     * =====================================================================
+     */
     private function thumbnailAsset(int $ownerId, MediaAssetVisibility $visibility = MediaAssetVisibility::Public): MediaAsset
     {
         $asset = MediaAsset::factory()->image()->create([
@@ -248,11 +293,13 @@ class AiImportApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng import lưu options và dispatch queue.
+
      * =====================================================================
      * INPUT: URL/options import.
      * OUTPUT: assertion 202 và job queued.
      * SIDE EFFECT: fake queue, ghi AiImport test.
      * EXCEPTION/TRANSACTION: dùng database cô lập; không gọi provider thật.
+
      * =====================================================================
      */
     public function test_store_queues_import_and_persists_options(): void
@@ -270,11 +317,13 @@ class AiImportApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng status import chỉ được đọc bởi owner.
+
      * =====================================================================
      * INPUT: UUID import của user khác.
      * OUTPUT: assertion ownership 404.
      * SIDE EFFECT: fake queue và database test.
      * EXCEPTION/TRANSACTION: dùng database cô lập; không gọi provider thật.
+
      * =====================================================================
      */
     public function test_import_status_is_private_to_creator(): void
@@ -294,11 +343,13 @@ class AiImportApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng capabilities được resolve và redact từ registry.
+
      * =====================================================================
      * INPUT: target Post và quyền AI của admin.
      * OUTPUT: capabilities không lộ endpoint/API key, chỉ chứa provider/model allowlist.
      * SIDE EFFECT: chỉ đọc config; không tạo job hoặc gọi provider.
      * EXCEPTION/TRANSACTION: dùng database cô lập; không gọi provider thật.
+
      * =====================================================================
      */
     public function test_capabilities_are_resolved_from_registries(): void
@@ -319,11 +370,13 @@ class AiImportApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng provider/model/prompt phải nằm trong allowlist.
+
      * =====================================================================
      * INPUT: provider/model/prompt không nằm allowlist.
      * OUTPUT: validation 422.
      * SIDE EFFECT: không tạo AiImport hoặc dispatch queue.
      * EXCEPTION/TRANSACTION: validation ở HTTP boundary; dùng database cô lập.
+
      * =====================================================================
      */
     public function test_store_rejects_provider_model_and_prompt_outside_allowlist(): void
@@ -349,11 +402,13 @@ class AiImportApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng import hỗ trợ nguồn text inline.
+
      * =====================================================================
      * INPUT: text inline thay cho URL.
      * OUTPUT: queued run có source_type=text.
      * SIDE EFFECT: lưu source_text và dispatch job qua Queue fake; không gọi HTTP.
      * EXCEPTION/TRANSACTION: dùng database cô lập; không gọi provider thật.
+
      * =====================================================================
      */
     public function test_store_accepts_inline_text_source(): void
@@ -378,11 +433,13 @@ class AiImportApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng session endpoint chuẩn hóa nested input.
+
      * =====================================================================
      * INPUT: contract session generic từ aiAgentService.
      * OUTPUT: AiImport queued tương thích pipeline hiện tại.
      * SIDE EFFECT: chuẩn hóa input ở FormRequest, lưu run và dispatch qua Queue fake.
      * EXCEPTION/TRANSACTION: dùng database cô lập; không gọi provider thật.
+
      * =====================================================================
      */
     public function test_generic_session_endpoint_normalizes_nested_input(): void
@@ -410,11 +467,13 @@ class AiImportApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng cancelled là trạng thái terminal của worker.
+
      * =====================================================================
      * INPUT: import đang chạy và request cancel của chính owner.
      * OUTPUT: lifecycle cancelled; worker nhận job cũ không chạy pipeline lại.
      * SIDE EFFECT: cập nhật status/error code, không gọi provider hoặc source fetcher.
      * EXCEPTION/TRANSACTION: dùng database cô lập và mock service.
+
      * =====================================================================
      */
     public function test_cancelled_import_is_terminal_for_queued_worker(): void
@@ -443,11 +502,13 @@ class AiImportApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng cleanup command dọn candidate hết hạn.
+
      * =====================================================================
      * INPUT: candidate đã quá expires_at.
      * OUTPUT: scheduler command xóa candidate hết hạn.
      * SIDE EFFECT: dọn AiImport qua command chính thức, không gọi provider.
      * EXCEPTION/TRANSACTION: chỉ xóa fixture trong database test cô lập.
+
      * =====================================================================
      */
     public function test_cleanup_command_removes_expired_import(): void

@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use App\Services\Ai\AiSettingsService;
+use App\Services\Ai\Settings\AiSettingsService;
 use App\Settings\AiSettings;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;

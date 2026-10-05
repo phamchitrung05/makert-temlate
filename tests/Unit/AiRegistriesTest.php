@@ -4,8 +4,8 @@ namespace Tests\Unit;
 
 use App\Models\AiProvider;
 use App\Services\Ai\Contracts\AiProviderContract;
-use App\Services\Ai\DeterministicAiProvider;
-use App\Services\Ai\OpenAiProvider;
+use App\Services\Ai\Providers\Adapters\DeterministicAiProvider;
+use App\Services\Ai\Providers\Adapters\OpenAiProvider;
 use App\Services\Ai\Registries\PromptRegistry;
 use App\Services\Ai\Registries\ProviderRegistry;
 use App\Services\Ai\Registries\SchemaRegistry;
@@ -16,35 +16,62 @@ use Tests\UsesIsolatedDatabase;
 
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Test registry AI và allowlist độc lập với provider thật.
+ * CHỨC NĂNG FILE: Regression registry target/provider/prompt/schema dùng chung.
  * =====================================================================
- *
- * CÁC HÀM/METHOD TRONG FILE: các test resolve/select/reject prompt, target,
- * provider và parse config boolean.
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - setUp().
+ * - tearDown().
+ * - test_resolves_versioned_prompt_and_schema().
+ * - test_rejects_prompt_for_another_target().
+ * - test_select_prefers_manual_then_source_rule().
+ * - test_rejects_disabled_target().
+ * - test_provider_boundary_is_bound_and_options_are_redacted().
+ * - test_provider_boolean_configuration_respects_false_string().
+ * - test_ai_configuration_keeps_provider_settings_out_of_agent_and_import().
+ * - test_environment_provider_resolves_shared_driver_metadata_and_adapter().
+ * - test_database_provider_takes_priority_and_resolves_the_configured_adapter().
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
- * - INPUT : cấu hình target/provider/prompt/schema.
- * - OUTPUT: registry an toàn, đúng version và không lộ secret.
- * - SIDE EFFECT: dùng database SQLite cô lập, không gọi mạng hoặc ghi dữ liệu thật.
- * - EXCEPTION/TRANSACTION: assertion bắt exception allowlist; không mở transaction.
+ * - INPUT : fixtures source/JSON và cấu hình test đã cô lập.
+ * - OUTPUT: assertions contract; không gọi AI thật hoặc ghi database development.
  * =====================================================================
  */
 class AiRegistriesTest extends TestCase
 {
     use UsesIsolatedDatabase;
 
+    /**
+     * =====================================================================
+     * INPUT: Không có; PHPUnit gọi trước mỗi ca.
+     * OUTPUT: Khởi tạo dependency/database test riêng; không thay dữ liệu development.
+     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * =====================================================================
+     */
     protected function setUp(): void
     {
         parent::setUp();
         $this->useIsolatedDatabase();
     }
 
+    /**
+     * =====================================================================
+     * INPUT: Không có; PHPUnit gọi sau mỗi ca.
+     * OUTPUT: Dọn dependency/connection test, không thay dữ liệu development.
+     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * =====================================================================
+     */
     protected function tearDown(): void
     {
         $this->tearDownIsolatedDatabase();
         parent::tearDown();
     }
 
-    /** Prompt key chứa dấu chấm phải được coi là key, không phải config path. */
+    /**
+     * =====================================================================
+     * INPUT: Fixture nguồn/output/cấu hình và dependencies fake của ca này.
+     * OUTPUT: Assertions contract/hành vi mong đợi; không gọi API AI thật.
+     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * =====================================================================
+     */
     public function test_resolves_versioned_prompt_and_schema(): void
     {
         $prompt = app(PromptRegistry::class)->get('post.create.from_url', 'post', 'create');
@@ -54,7 +81,13 @@ class AiRegistriesTest extends TestCase
         $this->assertContains('content_html', app(SchemaRegistry::class)->get($prompt['schema'])['fields']);
     }
 
-    /** Không cho target khác mượn prompt Post qua request giả mạo. */
+    /**
+     * =====================================================================
+     * INPUT: Fixture nguồn/output/cấu hình và dependencies fake của ca này.
+     * OUTPUT: Assertions contract/hành vi mong đợi; không gọi API AI thật.
+     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * =====================================================================
+     */
     public function test_rejects_prompt_for_another_target(): void
     {
         $this->expectException(InvalidArgumentException::class);
@@ -62,7 +95,13 @@ class AiRegistriesTest extends TestCase
         app(PromptRegistry::class)->get('post.create.from_url', 'sound', 'create');
     }
 
-    /** Manual prompt luôn thắng rule; auto text chọn đúng prompt có rule nguồn. */
+    /**
+     * =====================================================================
+     * INPUT: Fixture nguồn/output/cấu hình và dependencies fake của ca này.
+     * OUTPUT: Assertions contract/hành vi mong đợi; không gọi API AI thật.
+     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * =====================================================================
+     */
     public function test_select_prefers_manual_then_source_rule(): void
     {
         $registry = app(PromptRegistry::class);
@@ -79,7 +118,13 @@ class AiRegistriesTest extends TestCase
         $this->assertSame('rule', $url['selection']);
     }
 
-    /** Target chưa triển khai không được public như capability đang hoạt động. */
+    /**
+     * =====================================================================
+     * INPUT: Fixture nguồn/output/cấu hình và dependencies fake của ca này.
+     * OUTPUT: Assertions contract/hành vi mong đợi; không gọi API AI thật.
+     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * =====================================================================
+     */
     public function test_rejects_disabled_target(): void
     {
         config(['ai-agent.targets.sound.enabled' => false]);
@@ -90,7 +135,13 @@ class AiRegistriesTest extends TestCase
         app(TargetRegistry::class)->get('sound');
     }
 
-    /** Provider public metadata không được chứa key hoặc endpoint cấu hình. */
+    /**
+     * =====================================================================
+     * INPUT: Fixture nguồn/output/cấu hình và dependencies fake của ca này.
+     * OUTPUT: Assertions contract/hành vi mong đợi; không gọi API AI thật.
+     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * =====================================================================
+     */
     public function test_provider_boundary_is_bound_and_options_are_redacted(): void
     {
         config([
@@ -114,7 +165,13 @@ class AiRegistriesTest extends TestCase
         }
     }
 
-    /** Chuỗi `.env` false phải thật sự tắt provider, không bị ép thành true. */
+    /**
+     * =====================================================================
+     * INPUT: Fixture nguồn/output/cấu hình và dependencies fake của ca này.
+     * OUTPUT: Assertions contract/hành vi mong đợi; không gọi API AI thật.
+     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * =====================================================================
+     */
     public function test_provider_boolean_configuration_respects_false_string(): void
     {
         config(['ai-providers.connections.http-json.enabled' => filter_var('false', FILTER_VALIDATE_BOOLEAN)]);
@@ -124,7 +181,13 @@ class AiRegistriesTest extends TestCase
         $this->assertNotContains('http-json', array_column($options, 'key'));
     }
 
-    /** Target/output definitions, connection metadata and runtime limits have separate owners. */
+    /**
+     * =====================================================================
+     * INPUT: Fixture nguồn/output/cấu hình và dependencies fake của ca này.
+     * OUTPUT: Assertions contract/hành vi mong đợi; không gọi API AI thật.
+     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * =====================================================================
+     */
     public function test_ai_configuration_keeps_provider_settings_out_of_agent_and_import(): void
     {
         $agent = config('ai-agent');
@@ -136,7 +199,7 @@ class AiRegistriesTest extends TestCase
         }
         $this->assertArrayHasKey('job_timeout', $runtime);
         $this->assertSame(
-            ['title', 'excerpt', 'content', 'seo', 'taxonomy', 'thumbnail'],
+            ['title', 'excerpt', 'content', 'seo', 'thumbnail'],
             $agent['targets']['post']['outputs'],
         );
         foreach ($agent['targets']['post']['outputs'] as $output) {
@@ -147,7 +210,13 @@ class AiRegistriesTest extends TestCase
         $this->assertSame(DeterministicAiProvider::class, config('ai-providers.internal.deterministic.adapter'));
     }
 
-    /** Environment connections use shared driver metadata rather than a second adapter list. */
+    /**
+     * =====================================================================
+     * INPUT: Fixture nguồn/output/cấu hình và dependencies fake của ca này.
+     * OUTPUT: Assertions contract/hành vi mong đợi; không gọi API AI thật.
+     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * =====================================================================
+     */
     public function test_environment_provider_resolves_shared_driver_metadata_and_adapter(): void
     {
         config([
@@ -164,7 +233,13 @@ class AiRegistriesTest extends TestCase
         $this->assertInstanceOf(DeterministicAiProvider::class, $registry->resolve('test-connection'));
     }
 
-    /** A catalog record wins over an environment connection with the same public key. */
+    /**
+     * =====================================================================
+     * INPUT: Fixture nguồn/output/cấu hình và dependencies fake của ca này.
+     * OUTPUT: Assertions contract/hành vi mong đợi; không gọi API AI thật.
+     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * =====================================================================
+     */
     public function test_database_provider_takes_priority_and_resolves_the_configured_adapter(): void
     {
         config([

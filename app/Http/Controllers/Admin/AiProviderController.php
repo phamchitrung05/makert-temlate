@@ -12,8 +12,8 @@ use App\Http\Resources\AiProviderResource;
 use App\Http\Responses\BaseResponse;
 use App\Models\AiModel;
 use App\Models\AiProvider;
-use App\Services\Ai\AiProviderCatalogService;
-use App\Services\Ai\AiSettingsService;
+use App\Services\Ai\Providers\Catalog\AiProviderCatalogService;
+use App\Services\Ai\Settings\AiSettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -21,8 +21,9 @@ use Illuminate\Validation\ValidationException;
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: HTTP boundary cho Settings > AI Providers và model catalog.
- * CÁC HÀM/METHOD: index(), store(), update(), disable(), test(), sync(),
+ * CÁC HÀM/METHOD TRONG FILE: index(), store(), update(), disable(), test(), sync(),
  * storeModel(), updateModel(), settings(), updateSettings().
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * INPUT: FormRequest đã whitelist; OUTPUT: BaseResponse/Resource không chứa API key.
  * SIDE EFFECT: ghi encrypted key, gọi provider test/sync, audit qua service.
  * EXCEPTION/TRANSACTION: controller không giữ transaction qua outbound HTTP;

@@ -1,0 +1,5 @@
+﻿case_id,label,facts_errors_and_severity,naturalness_1_5,usefulness_1_5,structure_1_5,repetition_1_5,editing_minutes,coverage_notes,paired_preference,reviewer
+Q01,X,,,,,,,,,
+Q01,Y,,,,,,,,,
+Q13,X,,,,,,,,,
+Q13,Y,,,,,,,,,

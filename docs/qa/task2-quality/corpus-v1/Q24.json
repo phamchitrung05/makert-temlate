@@ -1,0 +1,180 @@
+{
+    "source_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/components/attrs.md",
+    "title": "Nguồn cho ca regenerate với ảnh",
+    "source_format": "html",
+    "version": "article.source.v1",
+    "content_html": "<hr>\n<h2>outline: deep</h2>\n<h1>Fallthrough Attributes {#fallthrough-attributes}</h1>\n<blockquote>\n<p>This page assumes you've already read the <a href=\"https://github.com/guide/essentials/component-basics\">Components Basics</a>. Read that first if you are new to components.</p>\n</blockquote>\n<h2>Attribute Inheritance {#attribute-inheritance}</h2>\n<p>A \"fallthrough attribute\" is an attribute or <code>v-on</code> event listener that is passed to a component, but is not explicitly declared in the receiving component's <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/components/props\">props</a> or <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/components/events#declaring-emitted-events\">emits</a>. Common examples of this include <code>class</code>, <code>style</code>, and <code>id</code> attributes.</p>\n<p>When a component renders a single root element, fallthrough attributes will be automatically added to the root element's attributes. For example, given a <code>&lt;MyButton&gt;</code> component with the following template:</p>\n<pre><code>&lt;!-- template of &lt;MyButton&gt; --&gt;\n&lt;button&gt;Click Me&lt;/button&gt;\n</code></pre>\n<p>And a parent using this component with:</p>\n<pre><code>&lt;MyButton class=\"large\" /&gt;\n</code></pre>\n<p>The final rendered DOM would be:</p>\n<pre><code>&lt;button class=\"large\"&gt;Click Me&lt;/button&gt;\n</code></pre>\n<p>Here, <code>&lt;MyButton&gt;</code> did not declare <code>class</code> as an accepted prop. Therefore, <code>class</code> is treated as a fallthrough attribute and automatically added to <code>&lt;MyButton&gt;</code>'s root element.</p>\n<h3><code>class</code> and <code>style</code> Merging {#class-and-style-merging}</h3>\n<p>If the child component's root element already has existing <code>class</code> or <code>style</code> attributes, it will be merged with the <code>class</code> and <code>style</code> values that are inherited from the parent. Suppose we change the template of <code>&lt;MyButton&gt;</code> in the previous example to:</p>\n<pre><code>&lt;!-- template of &lt;MyButton&gt; --&gt;\n&lt;button class=\"btn\"&gt;Click Me&lt;/button&gt;\n</code></pre>\n<p>Then the final rendered DOM would now become:</p>\n<pre><code>&lt;button class=\"btn large\"&gt;Click Me&lt;/button&gt;\n</code></pre>\n<h3><code>v-on</code> Listener Inheritance {#v-on-listener-inheritance}</h3>\n<p>The same rule applies to <code>v-on</code> event listeners:</p>\n<pre><code>&lt;MyButton @click=\"onClick\" /&gt;\n</code></pre>\n<p>The <code>click</code> listener will be added to the root element of <code>&lt;MyButton&gt;</code>, i.e. the native <code>&lt;button&gt;</code> element. When the native <code>&lt;button&gt;</code> is clicked, it will trigger the <code>onClick</code> method of the parent component. If the native <code>&lt;button&gt;</code> already has a <code>click</code> listener bound with <code>v-on</code>, then both listeners will trigger.</p>\n<h3>Nested Component Inheritance {#nested-component-inheritance}</h3>\n<p>If a component renders another component as its root node, for example, we refactored <code>&lt;MyButton&gt;</code> to render a <code>&lt;BaseButton&gt;</code> as its root:</p>\n<pre><code>&lt;!-- template of &lt;MyButton/&gt; that simply renders another component --&gt;\n&lt;BaseButton /&gt;\n</code></pre>\n<p>Then the fallthrough attributes received by <code>&lt;MyButton&gt;</code> will be automatically forwarded to <code>&lt;BaseButton&gt;</code>.</p>\n<p>Note that:</p>\n<ol>\n<li>\n<p>Forwarded attributes do not include any attributes that are declared as props, or <code>v-on</code> listeners of declared events by <code>&lt;MyButton&gt;</code> - in other words, the declared props and listeners have been \"consumed\" by <code>&lt;MyButton&gt;</code>.</p>\n</li>\n<li>\n<p>Forwarded attributes may be accepted as props by <code>&lt;BaseButton&gt;</code>, if declared by it.</p>\n</li>\n</ol>",
+    "blocks": [
+        {
+            "id": "S001",
+            "type": "h2",
+            "text": "outline: deep",
+            "html": "<h2>outline: deep</h2>"
+        },
+        {
+            "id": "S002",
+            "type": "h1",
+            "text": "Fallthrough Attributes {#fallthrough-attributes}",
+            "html": "<h1>Fallthrough Attributes {#fallthrough-attributes}</h1>"
+        },
+        {
+            "id": "S003",
+            "type": "blockquote",
+            "text": "This page assumes you've already read the Components Basics. Read that first if you are new to components.",
+            "html": "<blockquote>\n<p>This page assumes you've already read the <a href=\"https://github.com/guide/essentials/component-basics\">Components Basics</a>. Read that first if you are new to components.</p>\n</blockquote>"
+        },
+        {
+            "id": "S004",
+            "type": "h2",
+            "text": "Attribute Inheritance {#attribute-inheritance}",
+            "html": "<h2>Attribute Inheritance {#attribute-inheritance}</h2>"
+        },
+        {
+            "id": "S005",
+            "type": "p",
+            "text": "A \"fallthrough attribute\" is an attribute or v-on event listener that is passed to a component, but is not explicitly declared in the receiving component's props or emits. Common examples of this include class, style, and id attributes.",
+            "html": "<p>A \"fallthrough attribute\" is an attribute or <code>v-on</code> event listener that is passed to a component, but is not explicitly declared in the receiving component's <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/components/props\">props</a> or <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/components/events#declaring-emitted-events\">emits</a>. Common examples of this include <code>class</code>, <code>style</code>, and <code>id</code> attributes.</p>"
+        },
+        {
+            "id": "S006",
+            "type": "p",
+            "text": "When a component renders a single root element, fallthrough attributes will be automatically added to the root element's attributes. For example, given a <MyButton> component with the following template:",
+            "html": "<p>When a component renders a single root element, fallthrough attributes will be automatically added to the root element's attributes. For example, given a <code>&lt;MyButton&gt;</code> component with the following template:</p>"
+        },
+        {
+            "id": "S007",
+            "type": "pre",
+            "text": "<!-- template of <MyButton> -->\n<button>Click Me</button>",
+            "html": "<pre><code>&lt;!-- template of &lt;MyButton&gt; --&gt;\n&lt;button&gt;Click Me&lt;/button&gt;\n</code></pre>"
+        },
+        {
+            "id": "S008",
+            "type": "p",
+            "text": "And a parent using this component with:",
+            "html": "<p>And a parent using this component with:</p>"
+        },
+        {
+            "id": "S009",
+            "type": "pre",
+            "text": "<MyButton class=\"large\" />",
+            "html": "<pre><code>&lt;MyButton class=\"large\" /&gt;\n</code></pre>"
+        },
+        {
+            "id": "S010",
+            "type": "p",
+            "text": "The final rendered DOM would be:",
+            "html": "<p>The final rendered DOM would be:</p>"
+        },
+        {
+            "id": "S011",
+            "type": "pre",
+            "text": "<button class=\"large\">Click Me</button>",
+            "html": "<pre><code>&lt;button class=\"large\"&gt;Click Me&lt;/button&gt;\n</code></pre>"
+        },
+        {
+            "id": "S012",
+            "type": "p",
+            "text": "Here, <MyButton> did not declare class as an accepted prop. Therefore, class is treated as a fallthrough attribute and automatically added to <MyButton>'s root element.",
+            "html": "<p>Here, <code>&lt;MyButton&gt;</code> did not declare <code>class</code> as an accepted prop. Therefore, <code>class</code> is treated as a fallthrough attribute and automatically added to <code>&lt;MyButton&gt;</code>'s root element.</p>"
+        },
+        {
+            "id": "S013",
+            "type": "h3",
+            "text": "class and style Merging {#class-and-style-merging}",
+            "html": "<h3><code>class</code> and <code>style</code> Merging {#class-and-style-merging}</h3>"
+        },
+        {
+            "id": "S014",
+            "type": "p",
+            "text": "If the child component's root element already has existing class or style attributes, it will be merged with the class and style values that are inherited from the parent. Suppose we change the template of <MyButton> in the previous example to:",
+            "html": "<p>If the child component's root element already has existing <code>class</code> or <code>style</code> attributes, it will be merged with the <code>class</code> and <code>style</code> values that are inherited from the parent. Suppose we change the template of <code>&lt;MyButton&gt;</code> in the previous example to:</p>"
+        },
+        {
+            "id": "S015",
+            "type": "pre",
+            "text": "<!-- template of <MyButton> -->\n<button class=\"btn\">Click Me</button>",
+            "html": "<pre><code>&lt;!-- template of &lt;MyButton&gt; --&gt;\n&lt;button class=\"btn\"&gt;Click Me&lt;/button&gt;\n</code></pre>"
+        },
+        {
+            "id": "S016",
+            "type": "p",
+            "text": "Then the final rendered DOM would now become:",
+            "html": "<p>Then the final rendered DOM would now become:</p>"
+        },
+        {
+            "id": "S017",
+            "type": "pre",
+            "text": "<button class=\"btn large\">Click Me</button>",
+            "html": "<pre><code>&lt;button class=\"btn large\"&gt;Click Me&lt;/button&gt;\n</code></pre>"
+        },
+        {
+            "id": "S018",
+            "type": "h3",
+            "text": "v-on Listener Inheritance {#v-on-listener-inheritance}",
+            "html": "<h3><code>v-on</code> Listener Inheritance {#v-on-listener-inheritance}</h3>"
+        },
+        {
+            "id": "S019",
+            "type": "p",
+            "text": "The same rule applies to v-on event listeners:",
+            "html": "<p>The same rule applies to <code>v-on</code> event listeners:</p>"
+        },
+        {
+            "id": "S020",
+            "type": "pre",
+            "text": "<MyButton @click=\"onClick\" />",
+            "html": "<pre><code>&lt;MyButton @click=\"onClick\" /&gt;\n</code></pre>"
+        },
+        {
+            "id": "S021",
+            "type": "p",
+            "text": "The click listener will be added to the root element of <MyButton>, i.e. the native <button> element. When the native <button> is clicked, it will trigger the onClick method of the parent component. If the native <button> already has a click listener bound with v-on, then both listeners will trigger.",
+            "html": "<p>The <code>click</code> listener will be added to the root element of <code>&lt;MyButton&gt;</code>, i.e. the native <code>&lt;button&gt;</code> element. When the native <code>&lt;button&gt;</code> is clicked, it will trigger the <code>onClick</code> method of the parent component. If the native <code>&lt;button&gt;</code> already has a <code>click</code> listener bound with <code>v-on</code>, then both listeners will trigger.</p>"
+        },
+        {
+            "id": "S022",
+            "type": "h3",
+            "text": "Nested Component Inheritance {#nested-component-inheritance}",
+            "html": "<h3>Nested Component Inheritance {#nested-component-inheritance}</h3>"
+        },
+        {
+            "id": "S023",
+            "type": "p",
+            "text": "If a component renders another component as its root node, for example, we refactored <MyButton> to render a <BaseButton> as its root:",
+            "html": "<p>If a component renders another component as its root node, for example, we refactored <code>&lt;MyButton&gt;</code> to render a <code>&lt;BaseButton&gt;</code> as its root:</p>"
+        },
+        {
+            "id": "S024",
+            "type": "pre",
+            "text": "<!-- template of <MyButton/> that simply renders another component -->\n<BaseButton />",
+            "html": "<pre><code>&lt;!-- template of &lt;MyButton/&gt; that simply renders another component --&gt;\n&lt;BaseButton /&gt;\n</code></pre>"
+        },
+        {
+            "id": "S025",
+            "type": "p",
+            "text": "Then the fallthrough attributes received by <MyButton> will be automatically forwarded to <BaseButton>.",
+            "html": "<p>Then the fallthrough attributes received by <code>&lt;MyButton&gt;</code> will be automatically forwarded to <code>&lt;BaseButton&gt;</code>.</p>"
+        },
+        {
+            "id": "S026",
+            "type": "p",
+            "text": "Note that:",
+            "html": "<p>Note that:</p>"
+        },
+        {
+            "id": "S027",
+            "type": "li",
+            "text": "Forwarded attributes do not include any attributes that are declared as props, or v-on listeners of declared events by <MyButton> - in other words, the declared props and listeners have been \"consumed\" by <MyButton>.",
+            "html": "<li>\n<p>Forwarded attributes do not include any attributes that are declared as props, or <code>v-on</code> listeners of declared events by <code>&lt;MyButton&gt;</code> - in other words, the declared props and listeners have been \"consumed\" by <code>&lt;MyButton&gt;</code>.</p>\n</li>"
+        },
+        {
+            "id": "S028",
+            "type": "li",
+            "text": "Forwarded attributes may be accepted as props by <BaseButton>, if declared by it.",
+            "html": "<li>\n<p>Forwarded attributes may be accepted as props by <code>&lt;BaseButton&gt;</code>, if declared by it.</p>\n</li>"
+        }
+    ],
+    "source_images": [],
+    "fetched_at": "2026-10-04T17:47:33+00:00",
+    "hash": "a3cdf97be5bdaab7a3ced63cf882fac0e6307da00eca87ea0b3c8d27e28c289f"
+}

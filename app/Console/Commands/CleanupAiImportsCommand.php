@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\AiImport;
-use App\Services\Ai\AiRunAssetCleaner;
+use App\Services\Ai\Runs\AiRunAssetCleaner;
 use Illuminate\Console\Command;
 
 /**
@@ -50,7 +50,7 @@ class CleanupAiImportsCommand extends Command
         $count = 0;
         AiImport::query()->where(function ($query): void {
             $query->where('expires_at', '<', now())->orWhere(function ($nested): void {
-                $nested->whereIn('status', ['queued', 'fetching', 'extracting', 'rewriting', 'seo', 'thumbnail'])->where('created_at', '<', now()->subDays((int) config('ai-import.retention_days', 2)));
+                $nested->whereIn('status', AiImport::RUNNING_STATUSES)->where('created_at', '<', now()->subDays((int) config('ai-import.retention_days', 2)));
             });
         })->chunkById(100, function ($imports) use (&$count): void {
             foreach ($imports as $import) {

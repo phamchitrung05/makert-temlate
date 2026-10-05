@@ -10,6 +10,7 @@
  * - toPostPayload()/valueOf(): map output canonical sang PostForm payload.
  * - mergePostCandidate(): merge partial payload vào form state.
  * - overwrittenFields(): tìm field có dữ liệu cần xác nhận ghi đè.
+ * - mergeAiLineage()/activeAiLineage()/lineageValue(): giữ provenance từng nhóm khi form còn cùng giá trị.
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : canonical AI output, selected field keys và form hiện tại.
@@ -37,6 +38,16 @@ const seoMap = {
 export function toPostPayload(output = {}, fields = []) {
   const payload = {}
   const seo = {}
+
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Đọc giá trị canonical có hoặc không có envelope value.
+   * =====================================================================
+   * INPUT: key output trong candidate.
+   * OUTPUT: giá trị field hoặc undefined khi không tồn tại.
+   * SIDE EFFECT: hàm thuần; không suy ra taxonomy từ key suggested legacy.
+   * =====================================================================
+   */
   const valueOf = key => output[key]?.value ?? output[key]
 
   fields.forEach(key => {
@@ -45,11 +56,11 @@ export function toPostPayload(output = {}, fields = []) {
     else if (key === 'seo' && value && typeof value === 'object') Object.assign(seo, value)
     else if (key in seoMap) seo[seoMap[key]] = value
     else if (key === 'taxonomy') {
-      payload.categories = valueOf('category_ids') ?? valueOf('suggested_category_ids') ?? []
-      payload.tags = valueOf('tag_ids') ?? valueOf('suggested_tag_ids') ?? []
+      if (valueOf('category_ids') !== undefined) payload.categories = valueOf('category_ids')
+      if (valueOf('tag_ids') !== undefined) payload.tags = valueOf('tag_ids')
     }
-    else if (['category_ids', 'suggested_category_ids'].includes(key)) payload.categories = value
-    else if (['tag_ids', 'suggested_tag_ids'].includes(key)) payload.tags = value
+    else if (key === 'category_ids' && value !== undefined) payload.categories = value
+    else if (key === 'tag_ids' && value !== undefined) payload.tags = value
     else if (['title', 'excerpt'].includes(key)) payload[key] = value
     else if (key === 'thumbnail' && value?.asset) payload.thumbnail = value.asset
   })
@@ -137,10 +148,10 @@ export function mergeAiLineage(current = [], incoming = null, payload = {}) {
 
 /**
  * =====================================================================
- * CHỨC NĂNG: runs still equal to applied values.
+ * CHỨC NĂNG: Giữ lineage của nhóm chưa thay đổi sau khi áp dụng.
  * =====================================================================
- * INPUT: lineage/snapshot and current form.
- * OUTPUT: runs still equal to applied values.
+ * INPUT: lineage/snapshot và giá trị form hiện tại.
+ * OUTPUT: danh sách run có nhóm vẫn khớp giá trị đã áp dụng.
  * SIDE EFFECT: Không ghi database hoặc gọi provider.
  * EXCEPTION/TRANSACTION: Không mở transaction.
  * =====================================================================
@@ -155,10 +166,10 @@ export function activeAiLineage(lineage = [], form = {}) {
 
 /**
  * =====================================================================
- * CHỨC NĂNG: primitive snapshot without retaining reactive object references.
+ * CHỨC NĂNG: Tạo snapshot primitive cho một nhóm field.
  * =====================================================================
- * INPUT: canonical group/form.
- * OUTPUT: primitive snapshot without retaining reactive object references.
+ * INPUT: nhóm canonical và form.
+ * OUTPUT: giá trị primitive, không giữ tham chiếu object reactive.
  * SIDE EFFECT: Không ghi database hoặc gọi provider.
  * EXCEPTION/TRANSACTION: Không mở transaction.
  * =====================================================================

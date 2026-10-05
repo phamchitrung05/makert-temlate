@@ -1,0 +1,72 @@
+{
+    "source_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/best-practices/performance.md",
+    "title": "Hiệu năng và bối cảnh",
+    "source_format": "html",
+    "version": "article.source.v1",
+    "content_html": "<hr>\n<h2>outline: deep</h2>\n<h1>Performance {#performance}</h1>\n<h2>Overview {#overview}</h2>\n<p>Vue is designed to be performant for most common use cases without much need for manual optimizations. However, there are always challenging scenarios where extra fine-tuning is needed. In this section, we will discuss what you should pay attention to when it comes to performance in a Vue application.</p>\n<p>First, let's discuss the two major aspects of web performance:</p>\n<ul>\n<li>\n<p><strong>Page Load Performance</strong>: how fast the application shows content and becomes interactive on the initial visit. This is usually measured using web vital metrics like <a href=\"https://web.dev/lcp/\">Largest Contentful Paint (LCP)</a> and <a href=\"https://web.dev/articles/inp\">Interaction to Next Paint</a>.</p>\n</li>\n<li>\n<p><strong>Update Performance</strong>: how fast the application updates in response to user input. For example, how fast a list updates when the user types in a search box, or how fast the page switches when the user clicks a navigation link in a Single-Page Application (SPA).</p>\n</li>\n</ul>\n<p>While it would be ideal to maximize both, different frontend architectures tend to affect how easy it is to attain desired performance in these aspects. In addition, the type of application you are building greatly influences what you should prioritize in terms of performance. Therefore, the first step of ensuring optimal performance is picking the right architecture for the type of application you are building:</p>\n<ul>\n<li>\n<p>Consult <a href=\"https://github.com/guide/extras/ways-of-using-vue\">Ways of Using Vue</a> to see how you can leverage Vue in different ways.</p>\n</li>\n<li>\n<p>Jason Miller discusses the types of web applications and their respective ideal implementation / delivery in <a href=\"https://jasonformat.com/application-holotypes/\">Application Holotypes</a>.</p>\n</li>\n</ul>",
+    "blocks": [
+        {
+            "id": "S001",
+            "type": "h2",
+            "text": "outline: deep",
+            "html": "<h2>outline: deep</h2>"
+        },
+        {
+            "id": "S002",
+            "type": "h1",
+            "text": "Performance {#performance}",
+            "html": "<h1>Performance {#performance}</h1>"
+        },
+        {
+            "id": "S003",
+            "type": "h2",
+            "text": "Overview {#overview}",
+            "html": "<h2>Overview {#overview}</h2>"
+        },
+        {
+            "id": "S004",
+            "type": "p",
+            "text": "Vue is designed to be performant for most common use cases without much need for manual optimizations. However, there are always challenging scenarios where extra fine-tuning is needed. In this section, we will discuss what you should pay attention to when it comes to performance in a Vue application.",
+            "html": "<p>Vue is designed to be performant for most common use cases without much need for manual optimizations. However, there are always challenging scenarios where extra fine-tuning is needed. In this section, we will discuss what you should pay attention to when it comes to performance in a Vue application.</p>"
+        },
+        {
+            "id": "S005",
+            "type": "p",
+            "text": "First, let's discuss the two major aspects of web performance:",
+            "html": "<p>First, let's discuss the two major aspects of web performance:</p>"
+        },
+        {
+            "id": "S006",
+            "type": "li",
+            "text": "Page Load Performance: how fast the application shows content and becomes interactive on the initial visit. This is usually measured using web vital metrics like Largest Contentful Paint (LCP) and Interaction to Next Paint.",
+            "html": "<li>\n<p><strong>Page Load Performance</strong>: how fast the application shows content and becomes interactive on the initial visit. This is usually measured using web vital metrics like <a href=\"https://web.dev/lcp/\">Largest Contentful Paint (LCP)</a> and <a href=\"https://web.dev/articles/inp\">Interaction to Next Paint</a>.</p>\n</li>"
+        },
+        {
+            "id": "S007",
+            "type": "li",
+            "text": "Update Performance: how fast the application updates in response to user input. For example, how fast a list updates when the user types in a search box, or how fast the page switches when the user clicks a navigation link in a Single-Page Application (SPA).",
+            "html": "<li>\n<p><strong>Update Performance</strong>: how fast the application updates in response to user input. For example, how fast a list updates when the user types in a search box, or how fast the page switches when the user clicks a navigation link in a Single-Page Application (SPA).</p>\n</li>"
+        },
+        {
+            "id": "S008",
+            "type": "p",
+            "text": "While it would be ideal to maximize both, different frontend architectures tend to affect how easy it is to attain desired performance in these aspects. In addition, the type of application you are building greatly influences what you should prioritize in terms of performance. Therefore, the first step of ensuring optimal performance is picking the right architecture for the type of application you are building:",
+            "html": "<p>While it would be ideal to maximize both, different frontend architectures tend to affect how easy it is to attain desired performance in these aspects. In addition, the type of application you are building greatly influences what you should prioritize in terms of performance. Therefore, the first step of ensuring optimal performance is picking the right architecture for the type of application you are building:</p>"
+        },
+        {
+            "id": "S009",
+            "type": "li",
+            "text": "Consult Ways of Using Vue to see how you can leverage Vue in different ways.",
+            "html": "<li>\n<p>Consult <a href=\"https://github.com/guide/extras/ways-of-using-vue\">Ways of Using Vue</a> to see how you can leverage Vue in different ways.</p>\n</li>"
+        },
+        {
+            "id": "S010",
+            "type": "li",
+            "text": "Jason Miller discusses the types of web applications and their respective ideal implementation / delivery in Application Holotypes.",
+            "html": "<li>\n<p>Jason Miller discusses the types of web applications and their respective ideal implementation / delivery in <a href=\"https://jasonformat.com/application-holotypes/\">Application Holotypes</a>.</p>\n</li>"
+        }
+    ],
+    "source_images": [],
+    "fetched_at": "2026-10-04T17:47:20+00:00",
+    "hash": "7967a75715c267bef01db1f68ab475b066c1e399e4077c52310fbc900e9674c7"
+}

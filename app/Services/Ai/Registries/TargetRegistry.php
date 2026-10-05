@@ -47,7 +47,7 @@ final class TargetRegistry
      * EXCEPTION/TRANSACTION: InvalidArgumentException; không mở transaction.
      *
      * @return array<string, mixed>
-     * =====================================================================
+     *                              =====================================================================
      */
     public function get(string $key): array
     {
@@ -89,7 +89,7 @@ final class TargetRegistry
      * EXCEPTION/TRANSACTION: không có; không mở transaction.
      *
      * @return array<string, array<string, mixed>>
-     * =====================================================================
+     *                                             =====================================================================
      */
     public function all(): array
     {
@@ -99,7 +99,15 @@ final class TargetRegistry
             ->all();
     }
 
-    /** Nhãn select lấy từ config; chỉ trả nhóm đầu ra tài nguyên cho phép. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Trả lựa chọn nhóm AI theo target và config hiện tại
+     * =====================================================================
+     * INPUT: target key. OUTPUT: value/title/source_types đã allowlist, không AI taxonomy.
+     * SIDE EFFECT: chỉ đọc cấu hình; không gọi provider hoặc ghi DB.
+     * EXCEPTION/TRANSACTION: InvalidArgumentException khi target không hợp lệ.
+     * =====================================================================
+     */
     public function outputOptions(string $key): array
     {
         $target = $this->get($key);

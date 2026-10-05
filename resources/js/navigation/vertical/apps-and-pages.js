@@ -5,7 +5,8 @@
  *
  * Menu dùng route name do file-based router sinh ra. Resource nằm trong
  * Ecommerce; Media là nhóm nghiệp vụ riêng để quản lý file dùng chung.
- * Systerm AI tập trung Ai Content và AI Settings để quản lý nội dung/provider.
+ * Systerm AI tập trung Ai Content, Ai Prompt và AI Settings cho nội dung/mẫu/provider.
+ * Ai Prompt có List đọc mẫu đã lưu và Add phân tích bài tham khảo để tạo mẫu.
  * SYSTERM SETTING chứa trang SETTING trống.
  *
  * CÁC HÀM/METHOD TRONG FILE:
@@ -28,6 +29,16 @@ export default [
     title: 'Ai Content',
     icon: { icon: 'tabler-sparkles' },
     to: 'ai-content',
+  },
+  {
+    title: 'Ai Prompt',
+    icon: { icon: 'tabler-file-text' },
+    action: 'manage',
+    subject: 'ai_settings',
+    children: [
+      { title: 'List', to: 'ai-prompt-list', action: 'manage', subject: 'ai_settings' },
+      { title: 'Add', to: 'ai-prompt-add', action: 'manage', subject: 'ai_settings' },
+    ],
   },
   {
     title: 'AI Settings',

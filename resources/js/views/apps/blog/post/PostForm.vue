@@ -17,6 +17,7 @@
   - submit(): validate và emit payload với trạng thái được chọn
   - applyAiContent()/commitAiContent(): áp dụng candidate và giữ lineage run
   - watcher props.post: cập nhật form khi API tải xong Post
+  - mediaBusy: khóa lưu/publish trong lúc picker/upload hoặc còn URL ảnh tạm.
 
   INPUT/OUTPUT CỦA COMPONENT (tổng thể):
   - INPUT : post, loading, saving và error từ page/store
@@ -45,6 +46,7 @@ const props = defineProps({
 const emit = defineEmits(['submit', 'discard'])
 const formRef = shallowRef()
 const aiDialog = shallowRef(false)
+const mediaBusy = shallowRef(false)
 const pendingAiPayload = shallowRef(null)
 const pendingAiProvenance = shallowRef(null)
 const overwriteDialog = shallowRef(false)
@@ -148,6 +150,7 @@ watch(() => props.post, sync, { immediate: true })
  * =====================================================================
  */
 const submit = async (status = form.status) => {
+  if (mediaBusy.value || props.saving) return
   if (props.loading || props.saving)
     return
   form.status = status
@@ -244,7 +247,7 @@ const commitAiContent = () => {
           color="primary"
           prepend-icon="tabler-device-floppy"
           :loading="props.saving && form.status === 'draft'"
-          :disabled="props.loading || props.saving"
+          :disabled="props.loading || props.saving || mediaBusy"
           @click="submit('draft')"
         >
           Save as Draft
@@ -252,7 +255,7 @@ const commitAiContent = () => {
         <VBtn
           prepend-icon="tabler-send"
           :loading="props.saving && form.status === 'published'"
-          :disabled="props.loading || props.saving"
+          :disabled="props.loading || props.saving || mediaBusy"
           @click="submit('published')"
         >
           Publish
@@ -278,6 +281,8 @@ const commitAiContent = () => {
     <CreateWithAiDialog
       v-model="aiDialog"
       :target-id="props.post?.id"
+      :category-ids="form.categories"
+      :tag-ids="form.tags"
       @apply="applyAiContent"
     />
     <VDialog
@@ -329,6 +334,7 @@ const commitAiContent = () => {
             :slug-error="slugError"
             :content-analysis="contentAnalysis"
             :disabled="props.loading || props.saving"
+            @media-busy="mediaBusy = $event"
             @title-blur="generateSlug"
           />
           <PostSeoTabs

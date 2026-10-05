@@ -12,6 +12,9 @@
 use App\Http\Controllers\Admin\AiImageGenerationController;
 use App\Http\Controllers\Admin\AiImportController;
 use App\Http\Controllers\Admin\AiProviderController;
+use App\Http\Controllers\Admin\AiSourcePreviewController;
+use App\Http\Controllers\Admin\AiWritingProfileAnalysisController;
+use App\Http\Controllers\Admin\AiWritingProfileController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\MediaAssetController;
 use App\Http\Controllers\Admin\PostController;
@@ -147,6 +150,7 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
         // Quyền tài nguyên được đọc từ config và kiểm tra tại từng AI endpoint.
         Route::group([], function (): void {
             Route::get('/ai-agent/targets', [AiImportController::class, 'targets']);
+            Route::post('/ai-agent/source-preview', [AiSourcePreviewController::class, '__invoke'])->middleware('throttle:6,1');
             Route::get('/ai-agent/capabilities/{target}', [AiImportController::class, 'capabilities'])
                 ->where('target', '[a-z][a-z0-9_-]*');
             Route::post('/ai-agent/sessions', [AiImportController::class, 'store']);
@@ -175,6 +179,26 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
             Route::get('/posts/{post}', [PostController::class, 'show'])->whereNumber('post');
             Route::put('/posts/{post}', [PostController::class, 'update'])->whereNumber('post');
             Route::delete('/posts/{post}', [PostController::class, 'destroy'])->whereNumber('post');
+        });
+
+        /**
+         * =====================================================================
+         * CHỨC NĂNG: Options văn phong dùng quyền viết bài; CRUD/analysis dùng quyền Settings.
+         * =====================================================================
+         * INPUT: admin HTTP đã authenticated.
+         * OUTPUT: profile hoặc analysis preview; không tự lưu mẫu/Publish Post.
+         * =====================================================================
+         */
+        Route::get('/ai/writing-profiles/options', [AiWritingProfileController::class, 'options']);
+        Route::middleware('permission:ai_settings.manage,admin')->prefix('ai/writing-profiles')->group(function (): void {
+            Route::get('/', [AiWritingProfileController::class, 'index']);
+            Route::post('/', [AiWritingProfileController::class, 'store']);
+            Route::post('/analyses', [AiWritingProfileAnalysisController::class, 'store'])->middleware('throttle:6,1');
+            Route::get('/analyses/{analysis}', [AiWritingProfileAnalysisController::class, 'show'])->whereUuid('analysis');
+            Route::post('/analyses/{analysis}/cancel', [AiWritingProfileAnalysisController::class, 'cancel'])->whereUuid('analysis');
+            Route::get('/{profile}', [AiWritingProfileController::class, 'show'])->whereNumber('profile');
+            Route::put('/{profile}', [AiWritingProfileController::class, 'update'])->whereNumber('profile');
+            Route::delete('/{profile}', [AiWritingProfileController::class, 'destroy'])->whereNumber('profile');
         });
 
         /**

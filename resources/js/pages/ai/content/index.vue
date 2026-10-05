@@ -36,7 +36,7 @@ const { items, source, listLoading, listError, loadItems, updateSession, removeI
 const { catalog, loadCatalog, resetContentDefaults } = useAiContentCatalog(source)
 
 const onRunFeedback = (run, fallback, options = catalog.value.outputOptions) => observeRun(run, fallback, options)
-const { generation, generate, retryRun, reset, resumePolling } = useAiContentGeneration(source, catalog, updateSession, onRunFeedback)
+const { generation, generate, retryRun, reset, resumePolling, cancel } = useAiContentGeneration(source, catalog, updateSession, onRunFeedback)
 
 const { editor, editorLoading, editorSaving, editorError, action, actionBusy, actionError, notice, busyId,
   openEditor, closeEditor, saveEditor, requestAction, closeAction, confirmAction, resumeRun } = useAiContentActions({
@@ -105,6 +105,8 @@ function createNew() {
           @remove="requestAction('remove', $event)"
           @regenerate="requestAction('regenerate', $event)"
           @refresh-status="resumeRun"
+          @apply="requestAction('apply', $event)"
+          @cancel="requestAction('cancel', $event)"
         />
       </VCol>
       <VCol
@@ -119,6 +121,7 @@ function createNew() {
           @retry-run="retryRun"
           @resume-polling="resumePolling"
           @reload-catalog="loadCatalog"
+          @cancel="cancel"
         />
       </VCol>
     </VRow>
@@ -129,6 +132,7 @@ function createNew() {
       :error="editorError"
       @save="saveEditor"
       @close="closeEditor"
+      @reload="openEditor({ id: editor.job_id, status: 'review', targetType: editor.target_type })"
     />
     <AiContentRunActionDialog
       :action="action"

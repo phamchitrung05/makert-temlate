@@ -454,16 +454,28 @@ adapter; không tạo một pipeline riêng cho từng model:
 app/Services/Ai/Contracts/             provider/target contract
 app/Services/Ai/Registries/             target/provider/prompt/schema registry
 app/Services/Ai/Targets/PostAiAdapter.php
-app/Services/Ai/ArticleImportService.php
-app/Services/Ai/StructuredAiProvider.php
-app/Services/Ai/OpenAiProvider.php       OpenAI-compatible Chat Completions
-app/Services/Ai/GeminiProvider.php       Gemini generateContent adapter
+app/Services/Ai/Content/                source, sanitize, validate, import pipeline
+app/Services/Ai/Content/Agents/         Analyze + Plan, Write, Edit cho Post content
+app/Services/Ai/Content/Pipelines/      điều phối/checkpoint ba bước
+app/Services/Ai/Content/Prompts/        prompt và schema theo bước
+app/Services/Ai/Content/Quality/        evidence/references và quality gates
+app/Services/Ai/Data/                  request/response DTO độc lập target
+app/Services/Ai/WritingProfiles/       profile/version/snapshot/phân tích bài mẫu
+app/Services/Ai/Providers/Adapters/      structured provider adapters
+app/Services/Ai/Providers/Transport/     shared HTTP boundary and connections
+app/Services/Ai/Providers/Catalog/       provider/model catalog and resolver
+app/Services/Ai/Providers/Diagnostics/   response diagnostics and redaction
+app/Services/Ai/Images/                  image generation orchestration/adapters
+app/Services/Ai/Runs/                    run lifecycle and asset cleanup
+app/Services/Ai/Settings/                AI settings
+app/Services/Ai/Provenance/              field-level provenance
 app/Models/AiImport.php                 session/run/candidate lineage
 app/Models/AiProvenance.php             provenance theo field đã apply
 app/Http/Controllers/Admin/AiImportController.php
 config/ai-agent.php                    target/output/prompt/schema
 config/ai-providers.php                driver/preset/adapter và connection môi trường
 config/ai-import.php                   giới hạn nguồn và lifecycle của pipeline
+config/ai-content.php                  pipeline mode, prompt/version và budget/gates
 database/migrations/*ai_import*         lifecycle và lineage fields
 resources/js/services/aiAgent.js
 resources/js/stores/aiAgent.js
@@ -475,10 +487,10 @@ Capability được đọc từ `GET /api/admin/ai-agent/capabilities/{target}`.
 session dùng `/api/admin/ai-agent/sessions/*`, còn các route dưới
 `/api/admin/posts/ai/import` được giữ để tương thích. Candidate chưa tạo slug hoặc
 Post thật, chỉ thao tác Apply mới gọi Post Action/SlugService. API key luôn ở
-backend; deterministic provider là fallback khi chưa cấu hình provider thật.
+backend; deterministic chỉ chạy khi được chọn rõ ràng, provider cấu hình lỗi không tự fallback che lỗi.
 
 `ai-agent.targets.<target>.outputs` là allowlist nhóm đầu ra của từng tài nguyên:
-`title`, `excerpt`, `content`, `seo`, `taxonomy`, `thumbnail` cho Post hiện tại.
+`title`, `excerpt`, `content`, `seo`, `thumbnail` cho Post. Taxonomy do người dùng chọn thủ công; không thuộc generation schema/outputs.
 Nhãn hiển thị và ánh xạ field canonical thuộc `ai-agent.output_definitions`.
 Capability của target cung cấp danh sách này cho select nhiều lựa chọn dạng tag;
 frontend gửi nhóm đã chọn qua `requested_outputs`. Nhóm đầu ra mô tả dữ liệu AI

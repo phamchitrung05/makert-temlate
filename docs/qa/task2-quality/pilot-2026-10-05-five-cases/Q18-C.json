@@ -1,0 +1,323 @@
+{
+    "arm": "C",
+    "status": "failed",
+    "error_code": "AI_SOURCE_REFERENCE",
+    "final": null,
+    "quality_checks": [],
+    "cost": null,
+    "diagnostics": {
+        "stage": "validate",
+        "validation_errors": [
+            {
+                "group": "task",
+                "field": "task_output",
+                "reason": "unknown_fact_reference"
+            }
+        ]
+    },
+    "calls": [
+        {
+            "task": "article.analysis-plan",
+            "output": {
+                "knowledge": {
+                    "facts": [
+                        {
+                            "id": "F01",
+                            "claim": "Nguồn ghi nhận Ovation of the Seas cập cảng tại Việt Nam ngày 14/06/2016; đây là mốc lịch sử, không phải sự kiện mới.",
+                            "source_block_ids": [
+                                "S001"
+                            ],
+                            "evidence": "Ngày 14/06/2016 vừa qua, Star Travel hân hoan chào đón Ovation of the Seas - Siêu du thuyền 5 sao hiện đại và thông minh nhất thế giới cập cảng tại Việt Nam.",
+                            "important": true
+                        },
+                        {
+                            "id": "F02",
+                            "claim": "Theo nguồn, Ovation of the Seas thuộc dòng Quantum, cao 18 tầng, dài 347 mét, ngang 41 mét, có 2.090 phòng ngủ, sức chứa 4.905 khách và 1.500 nhân viên. Nguồn dùng cụm “tải trọng 168.666 tấn”, nhưng chưa làm rõ ý nghĩa kỹ thuật của số đo này.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Góp mặt vào bộ 3 du thuyền thông minh nhất thế giới dòng Quantum, Ovation of the Seas cao 18 tầng, chiều dài 347 mét, chiều ngang 41 mét, 2090 phòng ngủ, sức chứa 4905 khách, 1500 nhân viên, tải trọng 168.666 tấn.",
+                            "important": true
+                        },
+                        {
+                            "id": "F03",
+                            "claim": "Nguồn mô tả đài quan sát “Sao Bắc Đẩu” là cabin nối với cần trục, đưa khách lên độ cao hơn 90 mét so với mặt nước biển; cách diễn đạt “lướt nhẹ 360 độ” không đủ để kết luận cơ chế quay của cabin.",
+                            "source_block_ids": [
+                                "S005"
+                            ],
+                            "evidence": "Với hệ thống cabin nối với cần trục, bạn sẽ được đài quan sát “Sao Bắc Đẩu” di chuyển lên độ cao hơn 90 mét so với mặt nước biển. Như một cánh chim hải âu lướt nhẹ 360 độ trên biển, ngắm nhìn toàn cảnh đại dương xanh vĩ đại và ngoạn mục, bạn sẽ trở thành một nhà thám hiểm thực thụ đang chinh phục biển xanh rộng lớn.",
+                            "important": true
+                        },
+                        {
+                            "id": "F04",
+                            "claim": "Two70 được nguồn giới thiệu là khu ăn uống và giải trí có tầm nhìn 270 độ ra đại dương; ban ngày đón ánh sáng tự nhiên, buổi tối cửa sổ trở thành màn hình trình chiếu kết hợp âm thanh và ánh sáng.",
+                            "source_block_ids": [
+                                "S007"
+                            ],
+                            "evidence": "Căn phòng này là một khu ăn uống và giải trí phức hợp với tầm nhìn 270 độ đẹp ngoạn mục hướng ra đại dương. Ban ngày, ánh sáng mặt trời sẽ rọi vào sáng bừng cả căn phòng, khiến cho không gian ăn uống và trò chuyện trở nên thoáng đãng hơn bao giờ hết. Buổi tối, những cửa sổ tại Two70 biến thành màn hình trình chiếu cỡ lớn, kết hợp với hệ thống âm thanh ánh sáng trở thành một sân khấu hoành tráng phục vụ nhu cầu giải trí của du khách.",
+                            "important": true
+                        },
+                        {
+                            "id": "F05",
+                            "claim": "Nguồn nói tàu có Internet vệ tinh và ghi tốc độ “khoảng 4,26 km/giây”. Đây không phải đơn vị tốc độ truyền dữ liệu, nên không thể dùng số này để đánh giá chất lượng kết nối hoặc tự chuyển thành Mbps.",
+                            "source_block_ids": [
+                                "S009"
+                            ],
+                            "evidence": "Ovation of the Seas được trang bị công nghệ truy cập Internet siêu tốc bằng vệ tinh, có tốc độ khoảng 4,26 km/giây cho mọi ngóc ngách trên du thuyền.",
+                            "important": true
+                        },
+                        {
+                            "id": "F06",
+                            "claim": "Nguồn khẳng định mỗi hành khách được cấp WOWband để hỗ trợ check-in, check-out, mở cửa phòng và thanh toán sản phẩm hoặc dịch vụ trên tàu. Chưa có thông tin xác nhận phạm vi áp dụng, phí hoặc chính sách hiện nay.",
+                            "source_block_ids": [
+                                "S009"
+                            ],
+                            "evidence": "Đặc biệt hơn, mỗi hành khách trên du thuyền sẽ được cấp một “Vòng tay thông minh” mang tên WOWband, giúp du khách thực hiện các thao tác check-in, check-out một cách dễ dàng, cho phép người dùng mở cửa phòng và chi trả mọi thứ khi họ quyết định mua một sản phẩm hay dịch vụ trên du thuyền.",
+                            "important": true
+                        },
+                        {
+                            "id": "F07",
+                            "claim": "Tại quầy bar Bionic, nguồn mô tả khách chọn đồ uống qua máy tính bảng và hai robot pha chế với tốc độ hai ly mỗi phút; không nói rõ tốc độ này tính cho mỗi robot hay cả hai.",
+                            "source_block_ids": [
+                                "S011"
+                            ],
+                            "evidence": "Tại quầy bar Bionic, du khách chỉ cần chọn món thức uống yêu thích bằng cách chạm nhẹ vào chiếc máy tính bảng, hai chú robot với tốc độ pha chế hai ly mỗi phút sẽ ngay lập tức phục vụ du khách món đồ uống thơm ngon và độc đáo.",
+                            "important": true
+                        },
+                        {
+                            "id": "F08",
+                            "claim": "Nguồn giới thiệu Ripcord by iFly như trải nghiệm nâng người lên không trung và lơ lửng. Cụm “bay an toàn” là lời mô tả của nguồn, không phải căn cứ bảo đảm an toàn cho mọi hành khách.",
+                            "source_block_ids": [
+                                "S013"
+                            ],
+                            "evidence": "Nếu như “Sao Bắc Đẩu” chỉ như cánh chim hải âu lướt nhẹ trên mặt biển thì Ripcord by iFly với tính năng bay an toàn sẽ nâng bạn bay lên không trung, cảm giác như một chú đại bàng biển đầy dũng mãnh.",
+                            "important": true
+                        },
+                        {
+                            "id": "F09",
+                            "claim": "Nguồn liệt kê tại SeaPlex các hoạt động trượt băng nghệ thuật, bóng rổ, xe điện đụng và biểu diễn nhào lộn trên không, đồng thời nhấn mạnh trải nghiệm cho trẻ em. Danh sách này cần kiểm chứng, nhất là chi tiết trượt băng nghệ thuật.",
+                            "source_block_ids": [
+                                "S015"
+                            ],
+                            "evidence": "Với các trò giải trí vô cùng hấp dẫn: Trượt băng nghệ thuật, bóng rổ, xe điện đụng, biểu diễn nhào lộn trên không, SeaPlex thật sự trở thành khu giải trí trong nhà thu hút nhất trong chuyến hành trình khám phá Royal Caribbean – nơi các “nhà thám hiểm nhí” tha hồ vận động, nghịch ngợm trong không gian giải trí hiện đại bậc nhất.",
+                            "important": true
+                        },
+                        {
+                            "id": "F10",
+                            "claim": "Nguồn mô tả Loft Suite có hai tầng, ban công riêng hướng biển, màn hình LED 80-inch và piano; chưa chỉ rõ hạng suite nào có đầy đủ các trang bị này.",
+                            "source_block_ids": [
+                                "S017"
+                            ],
+                            "evidence": "Ovation of the Seas có loại phòng nghỉ cao cấp 2 tầng (Loft Suite) dành cho đối tượng khách thượng lưu. Phòng có 2 tầng và một ban công riêng hướng thẳng ra biển. Bên trong phòng còn được trang bị màn hình LED 80-inch và một chiếc piano.",
+                            "important": true
+                        },
+                        {
+                            "id": "F11",
+                            "claim": "Theo nguồn, một số phòng có ban công màn hình ảo hiển thị cảnh thực bên ngoài tàu; không nên đồng nhất tiện ích này với ban công vật lý hoặc suy rộng ra mọi phòng.",
+                            "source_block_ids": [
+                                "S017"
+                            ],
+                            "evidence": "Một số phòng nghỉ  được trang bị Ban công màn hình ảo giúp du khách có thể theo dõi toàn bộ quan cảnh đang diễn ra thật sự bên ngoài du thuyền.",
+                            "important": true
+                        },
+                        {
+                            "id": "F12",
+                            "claim": "Nguồn nêu tàu có 18 nhà hàng, trong đó có nhà hàng Ý được giới thiệu là do Jamie Oliver chỉ đạo. Chưa có căn cứ từ nguồn để xác nhận số lượng hiện nay hay Jamie Oliver trực tiếp hiện diện trên tàu.",
+                            "source_block_ids": [
+                                "S019"
+                            ],
+                            "evidence": "Có tất cả 18 nhà hàng độc đáo được mở trên không gian của du thuyền để đáp ứng nhu cầu ẩm thực của những thực khách khó tính. Đặc biệt nhất là sự có mặt của nhà hàng Ý sang trọng được chỉ đạo bởi đầu bếp trứ danh Jamie Oliver.",
+                            "important": true
+                        },
+                        {
+                            "id": "F13",
+                            "claim": "Tour lịch sử Singapore - Malaysia khởi hành 03/04/2017, kéo dài 4 ngày, có giá được nguồn gọi là trọn gói 19.000.000đ.",
+                            "source_block_ids": [
+                                "S021"
+                            ],
+                            "evidence": "Điểm đến: Singapore - Malaysia Ngày khởi hành: 03/04/17 Giá trọn gói: 19.000.000đ Số ngày đi: 4 ngày",
+                            "important": true
+                        },
+                        {
+                            "id": "F14",
+                            "claim": "Tour lịch sử Singapore - Malaysia khởi hành 10/04/2017, kéo dài 5 ngày, có giá được nguồn gọi là trọn gói 20.500.000đ.",
+                            "source_block_ids": [
+                                "S022"
+                            ],
+                            "evidence": "Điểm đến: Singapore - Malaysia  Ngày khởi hành: 10/04/17 Giá trọn gói: 20.500.000đ Số ngày đi: 5 ngày",
+                            "important": true
+                        },
+                        {
+                            "id": "F15",
+                            "claim": "Tour lịch sử Singapore – Thái Lan khởi hành 11/03/2017 hoặc 06/04/2017, kéo dài 5 ngày, có giá được nguồn gọi là trọn gói 20.900.000đ.",
+                            "source_block_ids": [
+                                "S023"
+                            ],
+                            "evidence": "Điểm đến: Singapore – Thái Lan Ngày khởi hành: 11/03/17, 06/04/17 Giá trọn gói: 20.900.000đ Số ngày đi: 5 ngày",
+                            "important": true
+                        },
+                        {
+                            "id": "F16",
+                            "claim": "Tour lịch sử Singapore - Malaysia khởi hành 15/03/2017, kéo dài 5 ngày, có giá được nguồn gọi là trọn gói 20.900.000đ.",
+                            "source_block_ids": [
+                                "S024"
+                            ],
+                            "evidence": "Điểm đến: Singapore - Malaysia Ngày khởi hành: 15/03/17 Giá trọn gói: 20.900.000đ Số ngày đi: 5 ngày",
+                            "important": true
+                        },
+                        {
+                            "id": "F17",
+                            "claim": "Tour lịch sử Singapore – Thái Lan - Malaysia khởi hành 06/03/2017, 19/03/2017 hoặc 29/03/2017, kéo dài 6 ngày, có giá được nguồn gọi là trọn gói 24.900.000đ.",
+                            "source_block_ids": [
+                                "S025"
+                            ],
+                            "evidence": "Điểm đến: Singapore – Thái Lan - Malaysia Ngày khởi hành: 06/03/17, 19/03/17, 29/03/17 Giá trọn gói: 24.900.000đ Số ngày: 6 ngày",
+                            "important": true
+                        },
+                        {
+                            "id": "F18",
+                            "claim": "Tour lịch sử Singapore – Malaysia - Thái Lan khởi hành 24/03/2017, kéo dài 6 ngày, có giá được nguồn gọi là trọn gói 25.500.000đ.",
+                            "source_block_ids": [
+                                "S026"
+                            ],
+                            "evidence": "Điểm đến: Singapore – Malaysia - Thái Lan Ngày khởi hành: 24/03/17 Giá trọn gói: 25.500.000đ Số ngày: 6 ngày",
+                            "important": true
+                        }
+                    ],
+                    "terms": [
+                        "Ovation of the Seas",
+                        "Royal Caribbean",
+                        "Quantum",
+                        "Đài quan sát “Sao Bắc Đẩu”",
+                        "Two70",
+                        "Internet vệ tinh",
+                        "WOWband",
+                        "check-in, check-out",
+                        "Bionic",
+                        "Ripcord by iFly",
+                        "SeaPlex",
+                        "Loft Suite",
+                        "Ban công màn hình ảo",
+                        "Jamie Oliver"
+                    ],
+                    "uncertainties": [
+                        "Nguồn chứa sự kiện năm 2016 và lịch tour tháng 3–4/2017. Thời điểm tiếp nhận nguồn năm 2026 không chứng minh nội dung đã được cập nhật.",
+                        "Các mô tả “5 sao”, “thông minh nhất thế giới”, “hiện đại nhất” và “lớn nhất trên biển” mang tính quảng bá; nguồn không cung cấp tiêu chí xếp hạng hay căn cứ so sánh.",
+                        "Không có xác minh độc lập cho thông số tàu, số nhân viên, số nhà hàng hoặc cấu hình tiện ích hiện tại. Khi sử dụng, cần gắn với thông tin của nguồn cũ.",
+                        "Cụm “tải trọng 168.666 tấn” chưa xác định rõ loại đại lượng; không tự chuyển thành trọng tải chở hàng, lượng choán nước hoặc dung tích đăng ký.",
+                        "Số “4,26 km/giây” không thể hiện tốc độ truyền dữ liệu Internet. Nguồn không cung cấp Mbps, độ trễ, phép đo hay điều kiện kiểm thử.",
+                        "Tên Two70 xuất hiện thành “Two700” ở một số đoạn văn bản; không coi số 0 cuối là một phiên bản sản phẩm riêng.",
+                        "Chưa rõ số “hai ly mỗi phút” tại Bionic tính cho từng robot hay toàn bộ hệ thống.",
+                        "Nguồn không nêu giới hạn tuổi, chiều cao, cân nặng, sức khỏe, lịch vận hành, yêu cầu đặt chỗ hoặc phí của các hoạt động; không thể suy ra mọi hành khách đều tham gia được hoặc tất cả đều miễn phí.",
+                        "Chi tiết trượt băng nghệ thuật tại SeaPlex và các trang bị LED 80-inch, piano trong Loft Suite cần đối chiếu theo khu vực và hạng phòng; không tự sửa bằng thông tin ngoài nguồn.",
+                        "Các giá tour không nêu đơn vị tính theo khách hay phòng, hạng phòng, thuế phí, dịch vụ bao gồm, visa, vận chuyển hoặc điều kiện hủy. Không diễn giải “trọn gói” thành bao gồm mọi chi phí.",
+                        "Lịch tour và giá năm 2017 chỉ có giá trị tham khảo lịch sử, không phải báo giá hay khả năng đặt chỗ hiện nay.",
+                        "Thông tin liên hệ trong nguồn chưa được xác minh còn hiệu lực. Chữ hiển thị của liên kết website khác đích liên kết; nếu tái sử dụng cần giữ đúng chữ và đích gốc, không âm thầm thay thế."
+                    ]
+                },
+                "writing_plan": {
+                    "article_type": "Bài giải thích trải nghiệm du thuyền dựa trên nguồn cũ, có lưu ý kiểm chứng",
+                    "audience": "Người tìm hiểu du thuyền, đặc biệt người mới muốn hiểu các tiện ích trên Ovation of the Seas và giới hạn của thông tin lịch sử",
+                    "angle": "Giới thiệu những trải nghiệm được nguồn mô tả trên Ovation of the Seas, đồng thời tách rõ thông tin năm 2016–2017 khỏi tình trạng hiện tại. Mở ngay bằng vấn đề nguồn đã cũ và số đo Internet không phù hợp, thay vì lặp lời quảng cáo. Không giả lập trải nghiệm thực tế hoặc tự bổ sung dữ liệu mới.",
+                    "outline": [
+                        "Tiêu đề định hướng: nêu Ovation of the Seas, các trải nghiệm nổi bật và giới hạn của nguồn 2016–2017; tránh khẳng định tàu hiện đại nhất hoặc các tiện ích vẫn giữ nguyên hiện nay.",
+                        "Mở bài ngắn: đặt mốc cập cảng Việt Nam ngày 14/06/2016 và lịch tour năm 2017 vào đúng bối cảnh lịch sử; chỉ ra rằng nguồn không phải hướng dẫn đặt chuyến hiện hành.",
+                        "Quy mô tàu: trình bày gọn các thông số dòng Quantum, 18 tầng, 347 × 41 mét, 2.090 phòng, 4.905 khách, 1.500 nhân viên; giữ nguyên số 168.666 tấn nhưng nói rõ nguồn gọi là “tải trọng”, chưa xác định đại lượng kỹ thuật.",
+                        "Không gian ngắm cảnh và giải trí: giải thích cabin “Sao Bắc Đẩu” cao hơn 90 mét và Two70 với tầm nhìn 270 độ, chuyển từ không gian ban ngày sang trình chiếu buổi tối; không suy diễn cơ chế quay 360 độ.",
+                        "Công nghệ phục vụ hành khách: nhóm Internet vệ tinh, WOWband và robot tại Bionic. Giữ nguyên số “4,26 km/giây” để chỉ ra giới hạn của nguồn, không sử dụng như benchmark; nêu chức năng WOWband và tốc độ hai ly mỗi phút kèm các điểm chưa rõ.",
+                        "Hoạt động vận động: giới thiệu Ripcord by iFly và danh sách hoạt động SeaPlex dưới dạng mô tả của nguồn; lưu ý chưa có điều kiện tham gia và chi tiết trượt băng cần kiểm chứng, không bảo đảm an toàn tuyệt đối.",
+                        "Phòng nghỉ và ẩm thực: phân biệt Loft Suite hai tầng, ban công riêng, trang bị được nguồn nêu với ban công màn hình ảo ở một số phòng; giới thiệu 18 nhà hàng và liên hệ Jamie Oliver theo nguồn, không suy rộng trang bị hoặc sự hiện diện của đầu bếp.",
+                        "Lịch tour tham khảo lịch sử: dùng bảng sáu dòng với điểm đến, ngày khởi hành, giá và thời lượng từ nguồn; giữ nguyên các ngày dạng /17 và toàn bộ mức giá, đặt nhãn rõ là lịch năm 2017. Không đổi thứ tự tên điểm đến hoặc gộp mất các mức giá khác nhau.",
+                        "Kết bài ngắn: tổng hợp những gì cần xác nhận trước khi đặt chuyến, gồm tiện ích hiện hành, điều kiện tham gia, cấu hình phòng, chi phí và nội dung gói tour. Không thêm lời chào bán hoặc thông tin liên hệ cũ như dữ liệu đã được xác minh. Độ dài dự kiến khoảng 900–1.200 từ gồm bảng, không kéo dài bằng các mô tả quảng bá lặp ý."
+                    ],
+                    "coverage_fact_ids": [
+                        "F01",
+                        "F02",
+                        "F03",
+                        "F04",
+                        "F05",
+                        "F06",
+                        "F07",
+                        "F08",
+                        "F09",
+                        "F10",
+                        "F11",
+                        "F12",
+                        "F13",
+                        "F14",
+                        "F15",
+                        "F16",
+                        "F17",
+                        "F18"
+                    ]
+                }
+            },
+            "diagnostics": {
+                "response_id": "resp_02ea0b365bc75fe2016ac29c325f8087d29a9a2b85c2d82876",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.analysis-plan.v1",
+                "usage": {
+                    "prompt_tokens": 8107,
+                    "completion_tokens": 4342,
+                    "total_tokens": 12449,
+                    "reasoning_tokens": 54
+                }
+            },
+            "latency_ms": 133269
+        },
+        {
+            "task": "article.writer",
+            "output": {
+                "draft": {
+                    "title": "Ovation of the Seas: những trải nghiệm nổi bật qua nguồn giới thiệu năm 2016–2017",
+                    "content_html": "<p>Ovation of the Seas được nguồn giới thiệu với nhiều tiện ích đáng chú ý, từ cabin ngắm biển trên cao đến robot pha chế cocktail. Tuy nhiên, đây là tài liệu gắn với mốc tàu cập cảng Việt Nam ngày <strong>14/06/2016</strong> và các lịch tour năm 2017, không phải thông tin đặt chuyến hiện hành. Một số chi tiết cũng cần đọc thận trọng, đặc biệt là tốc độ Internet được ghi bằng đơn vị “km/giây”.</p><p>Vì vậy, các mô tả dưới đây giúp hình dung trải nghiệm mà nguồn từng giới thiệu, nhưng không xác nhận rằng mọi tiện ích, trang bị hay chính sách vẫn áp dụng như cũ. Những cách gọi như “5 sao”, “thông minh nhất thế giới” hoặc “lớn nhất trên biển” là lời quảng bá trong tài liệu, không đi kèm tiêu chí so sánh.</p><h2>Quy mô tàu theo tài liệu cũ</h2><p>Nguồn xếp Ovation of the Seas vào dòng Quantum của Royal Caribbean và nêu các thông số: cao <strong>18 tầng</strong>, dài <strong>347 mét</strong>, ngang <strong>41 mét</strong>, có <strong>2.090 phòng ngủ</strong>, sức chứa <strong>4.905 khách</strong> và <strong>1.500 nhân viên</strong>. Đây là các số liệu được ghi trong nguồn cũ, không phải thông số vừa được kiểm chứng.</p><p>Tài liệu còn dùng cụm “tải trọng 168.666 tấn” nhưng không giải thích loại đại lượng kỹ thuật. Vì thế, không nên tự hiểu con số này là trọng tải chở hàng, lượng choán nước hoặc chuyển sang một cách gọi kỹ thuật khác.</p><h2>Ngắm biển từ trên cao và trong không gian Two70</h2><p>Đài quan sát “Sao Bắc Đẩu” được mô tả là một cabin gắn với cần trục, đưa hành khách lên độ cao <strong>hơn 90 mét so với mặt nước biển</strong>. Điểm hấp dẫn của trải nghiệm là góc nhìn rộng ra đại dương và con tàu. Nguồn dùng hình ảnh “lướt nhẹ 360 độ”, nhưng cách diễn đạt này không đủ để kết luận cabin tự quay trọn một vòng.</p><p>Trong khi đó, Two70 kết hợp không gian ăn uống và giải trí với <strong>tầm nhìn 270 độ</strong> hướng ra biển. Theo tài liệu, ban ngày khu vực này đón ánh sáng tự nhiên, phù hợp cho việc ăn uống và trò chuyện. Buổi tối, các cửa sổ trở thành màn hình trình chiếu lớn, kết hợp âm thanh và ánh sáng để phục vụ chương trình giải trí. Đây là hai cách ngắm biển khác nhau: một bên từ cabin trên cao, một bên trong không gian sinh hoạt trên tàu.</p><h2>Internet, vòng tay WOWband và robot pha chế</h2><p>Nguồn cho biết tàu có Internet vệ tinh, nhưng ghi tốc độ là <strong>“khoảng 4,26 km/giây”</strong>. Km/giây không phải đơn vị tốc độ truyền dữ liệu, nên số này không thể dùng để đánh giá khả năng truy cập Internet, xem video hoặc gọi trực tuyến. Cũng không có căn cứ để tự đổi nó thành Mbps; tài liệu không cung cấp tốc độ truyền dữ liệu, độ trễ hay điều kiện đo.</p><p>Về thao tác trên tàu, nguồn nói mỗi hành khách được cấp vòng tay thông minh <strong>WOWband</strong>, hỗ trợ check-in, check-out, mở cửa phòng và thanh toán sản phẩm hoặc dịch vụ. Đó là mô tả của chính sách trong tài liệu cũ. Nguồn chưa làm rõ phạm vi áp dụng, phí sử dụng hoặc việc mọi hành khách hiện nay có được cấp vòng tay hay không.</p><p>Tại quầy bar <strong>Bionic</strong>, khách được mô tả là chọn đồ uống trên máy tính bảng, sau đó hai robot thực hiện việc pha chế. Tốc độ nguồn đưa ra là <strong>hai ly mỗi phút</strong>, nhưng không nói rõ đây là năng suất của từng robot hay của cả hai. Con số này vì thế không nên được diễn giải thành thời gian chờ phục vụ cho mỗi khách.</p><h2>Ripcord by iFly và các hoạt động tại SeaPlex</h2><p><strong>Ripcord by iFly</strong> được giới thiệu như một trải nghiệm nâng người lên và tạo cảm giác lơ lửng trong không trung. Nguồn gọi đây là hoạt động “bay an toàn”, nhưng không nêu điều kiện tham gia. Cụm từ đó không phải bảo đảm an toàn cho mọi hành khách; tài liệu cũng thiếu thông tin về giới hạn tuổi, chiều cao, cân nặng, sức khỏe và yêu cầu đặt chỗ.</p><p>Với <strong>SeaPlex</strong>, nguồn nhấn mạnh không gian giải trí trong nhà và liệt kê trượt băng nghệ thuật, bóng rổ, xe điện đụng cùng biểu diễn nhào lộn trên không. Đây là danh sách cần đối chiếu trước khi lập kế hoạch, đặc biệt là chi tiết trượt băng nghệ thuật. Việc nguồn đề cập trẻ em cũng không có nghĩa mọi hoạt động đều phù hợp với mọi độ tuổi hoặc được bao gồm miễn phí trong chuyến đi.</p><h2>Phòng nghỉ và lựa chọn ăn uống</h2><p>Nguồn mô tả <strong>Loft Suite</strong> là loại phòng hai tầng, có ban công riêng hướng biển, màn hình <strong>LED 80-inch</strong> và một chiếc piano. Tuy nhiên, tài liệu không chỉ rõ hạng suite nào có đầy đủ các trang bị này. Khi chọn phòng, cần xác nhận cấu hình cụ thể thay vì coi đó là trang bị chung của tất cả Loft Suite.</p><p>Một số phòng khác được giới thiệu có <strong>ban công màn hình ảo</strong>, hiển thị cảnh thực bên ngoài tàu. Cần phân biệt tiện ích màn hình này với ban công vật lý: mô tả trong nguồn không cho thấy hành khách có thể bước ra ngoài từ những phòng đó, và cũng không áp dụng cho mọi phòng.</p><p>Về ẩm thực, tài liệu nêu <strong>18 nhà hàng</strong>, trong đó có một nhà hàng Ý được giới thiệu là do <strong>Jamie Oliver</strong> chỉ đạo. Thông tin này không xác nhận số lượng nhà hàng hiện nay, cũng không có nghĩa đầu bếp trực tiếp hiện diện trên tàu.</p><h2>Lịch tour và giá trong nguồn: chỉ để tham khảo lịch sử</h2><p>Toàn bộ ngày khởi hành dưới đây thuộc <strong>năm 2017</strong>. Bảng giữ nguyên cách ghi ngày, thứ tự điểm đến, mức giá và thời lượng của nguồn; đây không phải lịch còn mở bán hoặc báo giá hiện tại.</p><table><thead><tr><th>Điểm đến</th><th>Ngày khởi hành năm 2017</th><th>Giá được nguồn gọi là “trọn gói”</th><th>Thời lượng</th></tr></thead><tbody><tr><td>Singapore - Malaysia</td><td>03/04/17</td><td>19.000.000đ</td><td>4 ngày</td></tr><tr><td>Singapore - Malaysia</td><td>10/04/17</td><td>20.500.000đ</td><td>5 ngày</td></tr><tr><td>Singapore – Thái Lan</td><td>11/03/17, 06/04/17</td><td>20.900.000đ</td><td>5 ngày</td></tr><tr><td>Singapore - Malaysia</td><td>15/03/17</td><td>20.900.000đ</td><td>5 ngày</td></tr><tr><td>Singapore – Thái Lan - Malaysia</td><td>06/03/17, 19/03/17, 29/03/17</td><td>24.900.000đ</td><td>6 ngày</td></tr><tr><td>Singapore – Malaysia - Thái Lan</td><td>24/03/17</td><td>25.500.000đ</td><td>6 ngày</td></tr></tbody></table><p>Nguồn không nói rõ giá tính theo khách hay phòng, hạng phòng nào được áp dụng, thuế phí, visa, vận chuyển hoặc điều kiện hủy. Vì vậy, không thể hiểu chữ “trọn gói” là bao gồm mọi chi phí.</p><p>Tài liệu còn để lại email <a href=\"mailto:info@thegioidulich.com\" target=\"_blank\" rel=\"noopener noreferrer\">info@thegioidulich.com</a> và liên kết website có chữ hiển thị <a href=\"https://www.startravel.vn/\" target=\"_blank\" rel=\"noopener noreferrer\">www.thegioidulich.com</a>, nhưng đích liên kết là https://www.startravel.vn/. Các liên kết được giữ theo nguồn, chưa được xác minh còn hiệu lực.</p><p>Trước khi đặt chuyến, những điểm cần xác nhận là tiện ích đang vận hành, điều kiện và phí tham gia hoạt động, trang bị đúng hạng phòng, cùng danh mục dịch vụ bao gồm trong giá. Nguồn năm 2016–2017 hữu ích để hiểu những trải nghiệm từng được giới thiệu, nhưng không thay thế thông tin cụ thể của chuyến sắp đi.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04",
+                    "F05",
+                    "F06",
+                    "F07",
+                    "F08",
+                    "F09",
+                    "F10",
+                    "F11",
+                    "F12",
+                    "F13",
+                    "F14",
+                    "F15",
+                    "F16",
+                    "F17",
+                    "F18",
+                    "S029"
+                ],
+                "used_asset_ids": []
+            },
+            "diagnostics": {
+                "response_id": "resp_01fcfd9b4cf7e59a016ac29cb879dc87d0b7ce3b28055ab9c3",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.writer.v1",
+                "usage": {
+                    "prompt_tokens": 11174,
+                    "completion_tokens": 2308,
+                    "total_tokens": 13482,
+                    "reasoning_tokens": 83
+                }
+            },
+            "latency_ms": 74349
+        }
+    ],
+    "latency_ms": 207622,
+    "input_sha256": "8640a164cbf2ce2261867ef576d0a05ceaabed51b89f5f4eefe63ac5e3ab8573",
+    "source_sha256": "68d07a485c0aaf78267273e8efd28f0410a3f194c3006612282bcdd52defe6cc",
+    "provider": "connection-97c6d404-7463-428e-8f17-8bd19c767885",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": null,
+    "total_tokens": 25931
+}

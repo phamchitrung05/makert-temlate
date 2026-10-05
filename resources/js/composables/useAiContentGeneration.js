@@ -3,7 +3,7 @@
  * CHỨC NĂNG FILE: Tạo và theo dõi tác vụ viết bài AI của form Ai Content.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE: useAiContentGeneration(), acceptSession(),
- * schedulePoll(), poll(), generate(), retryRun(), reset(), resumePolling(), cleanup scope.
+ * schedulePoll(), poll(), generate(), retryRun(), cancel(), reset(), resumePolling(), cleanup scope.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : nguồn/catalog refs và callback cập nhật danh sách.
  * - OUTPUT: validation, tiến trình và lỗi reactive; ngăn gửi trùng/stale response.
@@ -17,9 +17,15 @@ import { formatAiError } from '@/utils/aiErrors'
 
 const terminalStatuses = ['ready', 'completed', 'succeeded', 'failed', 'cancelled', 'expired']
 
-/** Input: nguồn, catalog, callback lifecycle. Output: action/state page-scoped có cleanup timer. */
+/**
+ * =====================================================================
+ * Input: nguồn, catalog, callback lifecycle.
+ * Output: action/state page-scoped có cleanup timer.
+ * =====================================================================
+ */
 export function useAiContentGeneration(source, catalog, onSession, onFeedback = () => {}) {
   const submitting = shallowRef(false)
+  const cancelling = shallowRef(false)
   const session = shallowRef(null)
   const error = shallowRef('')
   const monitorMessage = shallowRef('')
@@ -35,10 +41,15 @@ export function useAiContentGeneration(source, catalog, onSession, onFeedback = 
 
   const generation = computed(() => ({
     busy: busy.value, canGenerate: canGenerate.value, canRetry: canRetry.value, blockedReason: blockedReason.value,
-    session: session.value, error: error.value, monitorMessage: monitorMessage.value,
+    session: session.value, error: error.value, monitorMessage: monitorMessage.value, cancelling: cancelling.value,
   }))
 
-  /** Input: lifecycle DTO. Output: session/list mới; lỗi terminal hiển thị cho người dùng. */
+  /**
+   * =====================================================================
+   * Input: lifecycle DTO.
+   * Output: session/list mới; lỗi terminal hiển thị cho người dùng.
+   * =====================================================================
+   */
   function acceptSession(value) {
     session.value = value
     onSession(value)
@@ -47,7 +58,12 @@ export function useAiContentGeneration(source, catalog, onSession, onFeedback = 
     if (['cancelled', 'expired'].includes(value.status)) error.value = 'Tác vụ đã hủy hoặc hết hạn. Bạn có thể tạo lại.'
   }
 
-  /** Input: version của run. Output: timer polling tối đa 120 lần; không chạy khi terminal. */
+  /**
+   * =====================================================================
+   * Input: version của run.
+   * Output: timer polling tối đa 120 lần; không chạy khi terminal.
+   * =====================================================================
+   */
   function schedulePoll(token) {
     clearTimeout(timer)
     if (!busy.value || token !== version) return
@@ -59,7 +75,12 @@ export function useAiContentGeneration(source, catalog, onSession, onFeedback = 
     timer = setTimeout(() => { void poll(token) }, Math.min(1000 + attempts * 500, 5000))
   }
 
-  /** Input: run version. Output: status mới hoặc thông báo mất kết nối; không gửi lại tác vụ AI. */
+  /**
+   * =====================================================================
+   * Input: run version.
+   * Output: status mới hoặc thông báo mất kết nối; không gửi lại tác vụ AI.
+   * =====================================================================
+   */
   async function poll(token) {
     if (token !== version || pendingPollToken === token || !session.value) return
     pendingPollToken = token
@@ -79,7 +100,12 @@ export function useAiContentGeneration(source, catalog, onSession, onFeedback = 
     }
   }
 
-  /** Input: thao tác tạo bài. Output: queued/progress/lỗi; snapshot input, chặn double submit, bỏ callback sau unmount. */
+  /**
+   * =====================================================================
+   * Input: thao tác tạo bài.
+   * Output: queued/progress/lỗi; snapshot input, chặn double submit, bỏ callback sau unmount.
+   * =====================================================================
+   */
   async function generate() {
     if (!canGenerate.value) return
     const token = ++version
@@ -107,7 +133,12 @@ export function useAiContentGeneration(source, catalog, onSession, onFeedback = 
     }
   }
 
-  /** Input: người dùng bấm thử lại run failed. Output: requeue UUID cũ, chặn gửi trùng và tiếp tục đọc status; không tự retry. */
+  /**
+   * =====================================================================
+   * Input: người dùng bấm thử lại run failed.
+   * Output: requeue UUID cũ, chặn gửi trùng và tiếp tục đọc status; không tự retry.
+   * =====================================================================
+   */
   async function retryRun() {
     if (!canRetry.value) return
     const token = ++version
@@ -134,7 +165,34 @@ export function useAiContentGeneration(source, catalog, onSession, onFeedback = 
     }
   }
 
-  /** Input: thao tác tạo mới khi không chạy. Output: xóa thông báo/session; giữ dữ liệu đã lưu trong list. */
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Hủy run theo thao tác người dùng, vẫn theo dõi trạng thái server.
+   * Input: UUID active. Output: terminal hoặc cảnh báo nếu cancel chưa xác định.
+   * SIDE EFFECT: POST một lần; request upstream đã gửi không thể thu hồi.
+   * =====================================================================
+   */
+  async function cancel() {
+    if (!session.value || !busy.value || cancelling.value) return
+    cancelling.value = true
+
+    const token = version
+    try {
+      const value = await aiAgentService.cancel(session.value.job_id)
+      if (token !== version) return
+      acceptSession(value)
+      if (terminalStatuses.includes(value.status)) clearTimeout(timer)
+    }
+    catch (reason) { if (token === version) monitorMessage.value = formatAiError(reason, 'Chưa xác nhận được hủy. Hãy cập nhật trạng thái trước thao tác tiếp theo.') }
+    finally { if (token === version) cancelling.value = false }
+  }
+
+  /**
+   * =====================================================================
+   * Input: thao tác tạo mới khi không chạy.
+   * Output: xóa thông báo/session; giữ dữ liệu đã lưu trong list.
+   * =====================================================================
+   */
   function reset() {
     if (busy.value) return false
     version += 1
@@ -146,7 +204,12 @@ export function useAiContentGeneration(source, catalog, onSession, onFeedback = 
     return true
   }
 
-  /** Input: thao tác cập nhật status sau mất kết nối/timeout. Output: GET status, không tạo lại run. */
+  /**
+   * =====================================================================
+   * Input: thao tác cập nhật status sau mất kết nối/timeout.
+   * Output: GET status, không tạo lại run.
+   * =====================================================================
+   */
   function resumePolling() {
     attempts = 0
     clearTimeout(timer)
@@ -155,5 +218,5 @@ export function useAiContentGeneration(source, catalog, onSession, onFeedback = 
 
   onScopeDispose(() => { version += 1; clearTimeout(timer) })
 
-  return { generation, generate, retryRun, reset, resumePolling }
+  return { generation, generate, retryRun, reset, resumePolling, cancel }
 }

@@ -21,8 +21,8 @@ describe('AI Post candidate mapping', () => {
       title: { value: 'Tiêu đề AI' },
       content_html: '<h2>Nội dung AI</h2>',
       seo_title: 'SEO AI',
-      suggested_category_ids: [2],
-      suggested_tag_ids: [3],
+      category_ids: [2],
+      tag_ids: [3],
       excerpt: 'Không chọn field này',
     }
 
@@ -33,6 +33,21 @@ describe('AI Post candidate mapping', () => {
       categories: [2],
       tags: [3],
     })
+  })
+
+  it('ignores legacy AI taxonomy suggestions even when their fields or group are selected', () => {
+    const output = { title: 'AI', suggested_category_ids: [2], suggested_tag_ids: [3] }
+    const payload = toPostPayload(output, ['title', 'taxonomy', 'suggested_category_ids', 'suggested_tag_ids'])
+
+    expect(payload).toEqual({ title: 'AI' })
+    expect(mergePostCandidate({ categories: [1], tags: [4] }, payload)).toMatchObject({ categories: [1], tags: [4] })
+  })
+
+  it('preserves the unprovided manual taxonomy and accepts explicit manual clearing', () => {
+    const payload = toPostPayload({ category_ids: [] }, ['taxonomy'])
+
+    expect(payload).toEqual({ categories: [] })
+    expect(mergePostCandidate({ categories: [1], tags: [4] }, payload)).toMatchObject({ categories: [], tags: [4] })
   })
 
   it('keeps unselected form fields while merging selected SEO values', () => {

@@ -1,0 +1,234 @@
+{
+    "arm": "C",
+    "status": "failed",
+    "error_code": "AI_QUALITY_GROUNDING",
+    "final": null,
+    "quality_checks": [],
+    "cost": null,
+    "diagnostics": {
+        "stage": "validate",
+        "validation_errors": [
+            {
+                "group": "content",
+                "field": "content_html",
+                "reason": "source_link_missing"
+            }
+        ]
+    },
+    "calls": [
+        {
+            "task": "article.analysis-plan",
+            "output": {
+                "knowledge": {
+                    "facts": [
+                        {
+                            "id": "F001",
+                            "claim": "Các tệp cấu hình của Laravel được lưu trong thư mục config; mỗi tùy chọn đều được tài liệu hóa để nhà phát triển có thể xem và làm quen với các lựa chọn sẵn có.",
+                            "source_block_ids": [
+                                "S010"
+                            ],
+                            "evidence": "All of the configuration files for the Laravel framework are stored in the config directory. Each option is documented, so feel free to look through the files and get familiar with the options available to you.",
+                            "important": true
+                        },
+                        {
+                            "id": "F002",
+                            "claim": "Tệp cấu hình Laravel cho phép thiết lập thông tin kết nối cơ sở dữ liệu, máy chủ thư, URL ứng dụng, khóa mã hóa và các giá trị cấu hình cốt lõi khác.",
+                            "source_block_ids": [
+                                "S011"
+                            ],
+                            "evidence": "These configuration files allow you to configure things like your database connection information, your mail server information, as well as various other core configuration values such as your application URL and encryption key.",
+                            "important": true
+                        },
+                        {
+                            "id": "F003",
+                            "claim": "Laravel có thể hiển thị tổng quan về cấu hình, driver và môi trường của ứng dụng thông qua lệnh Artisan about.",
+                            "source_block_ids": [
+                                "S013"
+                            ],
+                            "evidence": "Laravel can display an overview of your application's configuration, drivers, and environment via the about Artisan command.",
+                            "important": true
+                        },
+                        {
+                            "id": "F004",
+                            "claim": "Lệnh dùng để hiển thị tổng quan cấu hình, driver và môi trường của ứng dụng là php artisan about.",
+                            "source_block_ids": [
+                                "S014"
+                            ],
+                            "evidence": "php artisan about",
+                            "important": true
+                        },
+                        {
+                            "id": "F005",
+                            "claim": "Có thể lọc kết quả tổng quan để chỉ xem một phần cụ thể bằng tùy chọn --only.",
+                            "source_block_ids": [
+                                "S015"
+                            ],
+                            "evidence": "If you're only interested in a particular section of the application overview output, you may filter for that section using the --only option:",
+                            "important": true
+                        },
+                        {
+                            "id": "F006",
+                            "claim": "Ví dụ lọc riêng phần môi trường là php artisan about --only=environment.",
+                            "source_block_ids": [
+                                "S016"
+                            ],
+                            "evidence": "php artisan about --only=environment",
+                            "important": true
+                        },
+                        {
+                            "id": "F007",
+                            "claim": "Lệnh config:show Artisan cho phép xem chi tiết các giá trị trong một tệp cấu hình cụ thể.",
+                            "source_block_ids": [
+                                "S017"
+                            ],
+                            "evidence": "Or, to explore a specific configuration file's values in detail, you may use the config:show Artisan command:",
+                            "important": true
+                        },
+                        {
+                            "id": "F008",
+                            "claim": "Ví dụ xem chi tiết các giá trị của cấu hình database là php artisan config:show database.",
+                            "source_block_ids": [
+                                "S018"
+                            ],
+                            "evidence": "php artisan config:show database",
+                            "important": true
+                        }
+                    ],
+                    "terms": [
+                        "Laravel",
+                        "config",
+                        "Artisan",
+                        "about",
+                        "--only",
+                        "environment",
+                        "config:show",
+                        "database",
+                        "driver",
+                        "cấu hình ứng dụng",
+                        "thư mục cấu hình",
+                        "khóa mã hóa"
+                    ],
+                    "uncertainties": [
+                        "Nguồn được cung cấp mới bao phủ phần Introduction và các lệnh about, config:show; chưa có nội dung chi tiết về biến môi trường, truy xuất giá trị cấu hình, mã hóa tệp môi trường, bộ nhớ đệm, phát hành cấu hình, chế độ debug hoặc chế độ bảo trì.",
+                        "Nguồn không nêu phiên bản Laravel, nên không được suy đoán khả năng tương thích theo phiên bản.",
+                        "Nguồn không mô tả đầu ra cụ thể của các lệnh Artisan hoặc các tùy chọn khác ngoài --only."
+                    ]
+                },
+                "writing_plan": {
+                    "article_type": "Bài giải thích kỹ thuật ngắn",
+                    "audience": "Người phát triển website, đặc biệt là người mới làm quen với cấu hình Laravel",
+                    "angle": "Tập trung vào nơi lưu cấu hình Laravel và ba cách kiểm tra thông tin cấu hình bằng Artisan: xem tổng quan, lọc theo môi trường và xem chi tiết tệp database.",
+                    "outline": [
+                        "Tiêu đề dự kiến: Cấu hình Laravel và các lệnh Artisan để kiểm tra thiết lập ứng dụng.",
+                        "Mở bài nêu vấn đề: khi cần kiểm tra nhanh cấu hình, driver hoặc môi trường của ứng dụng, Laravel cung cấp các tệp trong thư mục config và các lệnh Artisan tương ứng.",
+                        "Giải thích vai trò của thư mục config, gồm các nhóm thiết lập như kết nối cơ sở dữ liệu, máy chủ thư, URL ứng dụng và khóa mã hóa.",
+                        "Trình bày lệnh php artisan about để xem tổng quan, sau đó nêu tùy chọn --only với ví dụ php artisan about --only=environment.",
+                        "Kết thúc bằng lệnh php artisan config:show database để xem chi tiết giá trị của một tệp cấu hình cụ thể; giữ nguyên cú pháp code và không mở rộng sang các phần chưa có trong nguồn."
+                    ],
+                    "coverage_fact_ids": [
+                        "F001",
+                        "F002",
+                        "F003",
+                        "F004",
+                        "F005",
+                        "F006",
+                        "F007",
+                        "F008"
+                    ]
+                }
+            },
+            "diagnostics": {
+                "response_id": "resp_067a642784f41f10016ac29b1be81887d08b6b699994601872",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.analysis-plan.v1",
+                "usage": {
+                    "prompt_tokens": 4283,
+                    "completion_tokens": 1282,
+                    "total_tokens": 5565,
+                    "reasoning_tokens": 265
+                }
+            },
+            "latency_ms": 57061
+        },
+        {
+            "task": "article.writer",
+            "output": {
+                "draft": {
+                    "title": "Cấu hình Laravel và các lệnh Artisan để kiểm tra thiết lập ứng dụng",
+                    "content_html": "<p>Khi cần kiểm tra nhanh thiết lập ứng dụng, Laravel cung cấp các tệp cấu hình trong thư mục <code>config</code> cùng một số lệnh Artisan để xem thông tin tổng quan hoặc giá trị chi tiết.</p><h2>Thư mục cấu hình của Laravel</h2><p>Tất cả tệp cấu hình của Laravel được lưu trong thư mục <code>config</code>. Mỗi tùy chọn đều được tài liệu hóa, vì vậy bạn có thể xem trực tiếp các tệp này để làm quen với những thiết lập có sẵn.</p><p>Các tệp cấu hình cho phép thiết lập nhiều thông tin quan trọng, chẳng hạn như thông tin kết nối cơ sở dữ liệu, máy chủ thư, URL ứng dụng, khóa mã hóa và những giá trị cấu hình cốt lõi khác.</p><h2>Xem tổng quan cấu hình bằng Artisan</h2><p>Laravel có thể hiển thị tổng quan về cấu hình, driver và môi trường của ứng dụng thông qua lệnh <code>about</code>:</p><pre><code>php artisan about</code></pre><p>Nếu chỉ quan tâm đến một phần cụ thể trong kết quả tổng quan, bạn có thể lọc kết quả bằng tùy chọn <code>--only</code>. Ví dụ, lệnh sau chỉ yêu cầu phần môi trường:</p><pre><code>php artisan about --only=environment</code></pre><h2>Xem chi tiết tệp cấu hình</h2><p>Để kiểm tra chi tiết các giá trị trong một tệp cấu hình cụ thể, hãy sử dụng lệnh Artisan <code>config:show</code>. Ví dụ, lệnh sau xem các giá trị của cấu hình <code>database</code>:</p><pre><code>php artisan config:show database</code></pre><p>Như vậy, thư mục <code>config</code> là nơi lưu các thiết lập của Laravel, còn các lệnh <code>about</code> và <code>config:show</code> giúp kiểm tra cấu hình trực tiếp từ dòng lệnh. Bạn có thể xem <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md\">tài liệu cấu hình Laravel</a> để đối chiếu nội dung nguồn.</p>"
+                },
+                "used_fact_ids": [
+                    "F001",
+                    "F002",
+                    "F003",
+                    "F004",
+                    "F005",
+                    "F006",
+                    "F007",
+                    "F008"
+                ],
+                "used_asset_ids": []
+            },
+            "diagnostics": {
+                "response_id": "resp_0839cfe2ec821983016ac29b57fbb887d0b004c247fde90d17",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.writer.v1",
+                "usage": {
+                    "prompt_tokens": 4529,
+                    "completion_tokens": 709,
+                    "total_tokens": 5238,
+                    "reasoning_tokens": 123
+                }
+            },
+            "latency_ms": 42416
+        },
+        {
+            "task": "article.editor",
+            "output": {
+                "final": {
+                    "title": "Cấu hình Laravel và các lệnh Artisan để kiểm tra thiết lập ứng dụng",
+                    "content_html": "<p>Khi cần kiểm tra cấu hình, driver hoặc môi trường của ứng dụng, Laravel cung cấp các tệp cấu hình trong thư mục <code>config</code> cùng các lệnh Artisan để xem thông tin tổng quan và giá trị chi tiết.</p><h2>Thư mục cấu hình của Laravel</h2><p>Tất cả tệp cấu hình của Laravel được lưu trong thư mục <code>config</code>. Mỗi tùy chọn đều được tài liệu hóa, vì vậy bạn có thể xem các tệp này để làm quen với những thiết lập sẵn có.</p><p>Các tệp cấu hình cho phép thiết lập nhiều thông tin quan trọng, chẳng hạn như thông tin kết nối cơ sở dữ liệu, máy chủ thư, URL ứng dụng, khóa mã hóa và các giá trị cấu hình cốt lõi khác.</p><h2>Xem tổng quan cấu hình bằng Artisan</h2><p>Laravel có thể hiển thị tổng quan về cấu hình, driver và môi trường của ứng dụng thông qua lệnh Artisan <code>about</code>:</p><pre><code>php artisan about</code></pre><p>Nếu chỉ muốn xem một phần cụ thể trong kết quả tổng quan, bạn có thể lọc bằng tùy chọn <code>--only</code>. Ví dụ sau lọc phần môi trường:</p><pre><code>php artisan about --only=environment</code></pre><h2>Xem chi tiết tệp cấu hình</h2><p>Để xem chi tiết các giá trị trong một tệp cấu hình cụ thể, hãy sử dụng lệnh Artisan <code>config:show</code>. Ví dụ sau hiển thị các giá trị của cấu hình <code>database</code>:</p><pre><code>php artisan config:show database</code></pre><p>Như vậy, thư mục <code>config</code> là nơi lưu các thiết lập của Laravel, còn <code>about</code> và <code>config:show</code> giúp kiểm tra thông tin cấu hình từ dòng lệnh. Bạn có thể xem <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md\">tài liệu cấu hình Laravel</a> để đối chiếu nội dung nguồn.</p>"
+                },
+                "used_fact_ids": [
+                    "F001",
+                    "F002",
+                    "F003",
+                    "F004",
+                    "F005",
+                    "F006",
+                    "F007",
+                    "F008"
+                ],
+                "issues": []
+            },
+            "diagnostics": {
+                "response_id": "resp_023f14c00e3222a4016ac29bd0a38887d095d37a7b9d58ce55",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.editor.v1",
+                "usage": {
+                    "prompt_tokens": 5145,
+                    "completion_tokens": 711,
+                    "total_tokens": 5856,
+                    "reasoning_tokens": 136
+                }
+            },
+            "latency_ms": 120623
+        }
+    ],
+    "latency_ms": 220104,
+    "input_sha256": "4578f14b1c14bf7f022de3d3dba1e859464c73deccd9b9406f6b8c4e31cd1b5d",
+    "source_sha256": "c12f5cd330f099dff7f19be96ce14d905ec8ce7db45e944b41bba5bbeeee170b",
+    "provider": "connection-97c6d404-7463-428e-8f17-8bd19c767885",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Cấu hình Laravel và các lệnh Artisan để kiểm tra thiết lập ứng dụng",
+        "content_html": "<p>Khi cần kiểm tra cấu hình, driver hoặc môi trường của ứng dụng, Laravel cung cấp các tệp cấu hình trong thư mục <code>config</code> cùng các lệnh Artisan để xem thông tin tổng quan và giá trị chi tiết.</p><h2>Thư mục cấu hình của Laravel</h2><p>Tất cả tệp cấu hình của Laravel được lưu trong thư mục <code>config</code>. Mỗi tùy chọn đều được tài liệu hóa, vì vậy bạn có thể xem các tệp này để làm quen với những thiết lập sẵn có.</p><p>Các tệp cấu hình cho phép thiết lập nhiều thông tin quan trọng, chẳng hạn như thông tin kết nối cơ sở dữ liệu, máy chủ thư, URL ứng dụng, khóa mã hóa và các giá trị cấu hình cốt lõi khác.</p><h2>Xem tổng quan cấu hình bằng Artisan</h2><p>Laravel có thể hiển thị tổng quan về cấu hình, driver và môi trường của ứng dụng thông qua lệnh Artisan <code>about</code>:</p><pre><code>php artisan about</code></pre><p>Nếu chỉ muốn xem một phần cụ thể trong kết quả tổng quan, bạn có thể lọc bằng tùy chọn <code>--only</code>. Ví dụ sau lọc phần môi trường:</p><pre><code>php artisan about --only=environment</code></pre><h2>Xem chi tiết tệp cấu hình</h2><p>Để xem chi tiết các giá trị trong một tệp cấu hình cụ thể, hãy sử dụng lệnh Artisan <code>config:show</code>. Ví dụ sau hiển thị các giá trị của cấu hình <code>database</code>:</p><pre><code>php artisan config:show database</code></pre><p>Như vậy, thư mục <code>config</code> là nơi lưu các thiết lập của Laravel, còn <code>about</code> và <code>config:show</code> giúp kiểm tra thông tin cấu hình từ dòng lệnh. Bạn có thể xem <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md\">tài liệu cấu hình Laravel</a> để đối chiếu nội dung nguồn.</p>"
+    },
+    "total_tokens": 16659
+}

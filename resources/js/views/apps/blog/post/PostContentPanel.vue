@@ -14,7 +14,7 @@
 
   INPUT/OUTPUT CỦA CLASS (tổng thể):
   - INPUT : v-model title/content/excerpt/options và slug preview
-  - OUTPUT: cập nhật các model, emit title-blur; sao chép permalink
+  - OUTPUT: cập nhật model, title-blur/media-busy; cha chặn lưu khi ảnh chưa xong.
   =====================================================================
 -->
 <script setup>
@@ -30,7 +30,7 @@ const props = defineProps({
   disabled: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['titleBlur'])
+const emit = defineEmits(['titleBlur', 'mediaBusy'])
 
 const title = defineModel('title', { type: String, default: '' })
 const content = defineModel('content', { type: String, default: '' })
@@ -177,6 +177,7 @@ const copyPermalink = async () => {
         v-model="content"
         placeholder="Start writing your post..."
         :disabled="props.disabled"
+        @media-busy="emit('mediaBusy', $event)"
       />
       <div
         v-else

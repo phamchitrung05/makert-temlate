@@ -17,18 +17,19 @@ use App\Http\Responses\BaseResponse;
 use App\Models\AiImport;
 use App\Models\MediaAsset;
 use App\Models\Post;
-use App\Services\Ai\AiContentSanitizer;
-use App\Services\Ai\AiProvenanceService;
-use App\Services\Ai\AiResponseDiagnostics;
-use App\Services\Ai\AiRunAssetCleaner;
-use App\Services\Ai\AiRunService;
-use App\Services\Ai\AiSettingsService;
-use App\Services\Ai\ArticleSourceFetcher;
-use App\Services\Ai\ModelResolver;
+use App\Services\Ai\Content\AiContentSanitizer;
+use App\Services\Ai\Content\ArticleSourceFetcher;
+use App\Services\Ai\Provenance\AiProvenanceService;
+use App\Services\Ai\Providers\Catalog\ModelResolver;
+use App\Services\Ai\Providers\Diagnostics\AiResponseDiagnostics;
 use App\Services\Ai\Registries\PromptRegistry;
 use App\Services\Ai\Registries\ProviderRegistry;
 use App\Services\Ai\Registries\SchemaRegistry;
 use App\Services\Ai\Registries\TargetRegistry;
+use App\Services\Ai\Runs\AiRunAssetCleaner;
+use App\Services\Ai\Runs\AiRunService;
+use App\Services\Ai\Settings\AiSettingsService;
+use App\Services\Media\ContentMediaReferenceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -40,7 +41,7 @@ use Illuminate\Validation\ValidationException;
  * =====================================================================
  * CHỨC NĂNG FILE: HTTP API tạo, polling, retry, hủy và dọn AI import.
  * =====================================================================
- * CÁC HÀM/METHOD: index(), targets(), capabilities(), store(), show(), regenerate(), retry(), updateCandidate(),
+ * CÁC HÀM/METHOD TRONG FILE: index(), targets(), capabilities(), store(), show(), regenerate(), retry(), updateCandidate(),
  * candidates(), apply(), cancel(), destroy(), payload(), ensureOwner(),
  * loadThumbnails(), cleanupThumbnail().
  * INPUT: admin request URL/options hoặc UUID job; OUTPUT: envelope JSON.
@@ -54,12 +55,16 @@ use Illuminate\Validation\ValidationException;
 class AiImportController extends Controller
 {
     /**
+     * =====================================================================
+     * CHỨC NĂNG: Đọc danh sách tác vụ thuộc admin hiện tại
+     * =====================================================================
      * Đọc danh sách tác vụ và candidate con còn hạn của chính admin hiện tại.
      *
      * Input: page/per_page đã validate, actor đã qua auth/posts.manage.
      * Output: summary phân trang mới nhất trước; loại run ảnh và target không có quyền.
      * Side effect: query DB và tải thumbnail/media theo lô; không dispatch hoặc gọi AI.
      * Exception/Transaction: không mở transaction; middleware kiểm tra quyền.
+     * =====================================================================
      */
     public function index(AiSessionIndexRequest $request): JsonResponse
     {
@@ -87,7 +92,14 @@ class AiImportController extends Controller
         return BaseResponse::paginated(AiSessionSummaryResource::collection($paginator), 'Danh sách tác vụ viết bài AI.');
     }
 
-    /** Input: admin request. Output: tài nguyên từ config mà actor có quyền, không trả class nội bộ. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Liệt kê target AI theo quyền của admin
+     * =====================================================================
+     * INPUT: request xác thực và registry. OUTPUT: JSON target/options public.
+     * SIDE EFFECT: chỉ đọc cấu hình; không gọi provider hoặc ghi DB.
+     * =====================================================================
+     */
     public function targets(Request $request, TargetRegistry $targets): JsonResponse
     {
         $items = collect($targets->all())
@@ -174,7 +186,11 @@ class AiImportController extends Controller
                 'generate_thumbnail' => $contentSettings['auto_thumbnail'],
                 'generate_seo' => $contentSettings['auto_seo'],
                 'min_word_count' => $contentSettings['min_word_count'],
+                'default_writing_profile_id' => $contentSettings['default_writing_profile_id'] ?? null,
             ],
+            'writing_profile_options_endpoint' => '/api/admin/ai/writing-profiles/options',
+            'writing_brief_fields' => ['audience', 'article_type', 'purpose', 'angle', 'length'],
+            'manual_taxonomy' => true,
         ], 'Capability AI của target.');
     }
 
@@ -205,7 +221,12 @@ class AiImportController extends Controller
         $generateThumbnail = (bool) ($data['generate_thumbnail'] ?? $contentSettings['auto_thumbnail']);
         $generateSeo = (bool) ($data['generate_seo'] ?? $contentSettings['auto_seo']);
         $targetType = (string) ($data['target_type'] ?? 'post');
-        $sourceType = filled($data['text'] ?? null) ? 'text' : 'url';
+        $sourceHtml = $request->hasFile('html_file') ? (string) $request->file('html_file')->getContent() : (string) ($data['html'] ?? '');
+        $encoding = (string) ($data['source_encoding'] ?? 'UTF-8');
+        if ($sourceHtml !== '' && $encoding !== 'UTF-8') {
+            $sourceHtml = mb_convert_encoding($sourceHtml, 'UTF-8', $encoding);
+        }
+        $sourceType = filled($data['text'] ?? null) || $sourceHtml !== '' ? 'text' : 'url';
         $normalizedUrl = $sourceType === 'url'
             ? $fetcher->validateUrl((string) $data['url'])
             : null;
@@ -253,6 +274,7 @@ class AiImportController extends Controller
         $input = [
             'target_type' => $targetType,
             'source_type' => $sourceType,
+            'source_format' => $sourceHtml !== '' ? 'html' : 'text',
             'language' => $data['language'] ?? 'vi',
             'rewrite_style' => $data['rewrite_style'] ?? 'informative',
             'generate_thumbnail' => $generateThumbnail,
@@ -260,6 +282,10 @@ class AiImportController extends Controller
             'thumbnail_mode' => $data['thumbnail_mode'] ?? 'auto',
             'prompt_key' => $promptKey,
             'instructions' => $data['instructions'] ?? '',
+            'writing_brief' => $data['writing_brief'] ?? [],
+            'writing_profile_id' => $data['writing_profile_id'] ?? null,
+            'category_ids' => $data['category_ids'] ?? [],
+            'tag_ids' => $data['tag_ids'] ?? [],
             'provider' => $providerKey,
             'model' => $model,
             'model_id' => $connection['model_id'] ?? null,
@@ -280,11 +306,12 @@ class AiImportController extends Controller
         if (filled($data['title'] ?? null)) {
             $input['title'] = $data['title'];
         }
-        $sourceHashValue = $sourceType === 'text' ? trim((string) $data['text']) : (string) $normalizedUrl;
+        $sourceText = $sourceHtml !== '' ? $sourceHtml : trim((string) ($data['text'] ?? ''));
+        $sourceHashValue = $sourceType === 'text' ? $sourceText : (string) $normalizedUrl;
         $hash = hash('sha256', $sourceType.'|'.$sourceHashValue.'|'.json_encode($input, JSON_UNESCAPED_UNICODE).'|'.config('ai-import.prompt_version', 'v1'));
         $import = $runs->create($userId, [
             'source_url' => $sourceType === 'url' ? $data['url'] : '',
-            'source_text' => $sourceType === 'text' ? trim((string) $data['text']) : null,
+            'source_text' => $sourceType === 'text' ? $sourceText : null,
             'normalized_url' => $normalizedUrl, 'source_hash' => $hash, 'status' => 'queued',
             'current_step' => 'queued', 'progress' => 0, 'input_json' => $input,
             'provider' => $providerKey, 'prompt_version' => config('ai-import.prompt_version', 'v1'),
@@ -316,20 +343,29 @@ class AiImportController extends Controller
      * =====================================================================
      * INPUT: Run đã terminal, prompt/model/fields override tùy chọn.
      * OUTPUT: 202 chứa child run mới trong cùng session.
-     * SIDE EFFECT: AiRunService ghi child run và dispatch queue; không ghi đè candidate cũ.
+     * SIDE EFFECT: Chụp parent dưới row lock; AiRunService ghi child và dispatch sau commit.
      * EXCEPTION/TRANSACTION: Abort 404/409/422 hoặc ValidationException; quota/transaction do AiRunService quản lý.
      * =====================================================================
      */
     public function regenerate(Request $request, AiImport $aiImport, PromptRegistry $prompts, ModelResolver $resolver, AiRunService $runs): JsonResponse
     {
+        $aiImport = DB::transaction(fn (): AiImport => AiImport::query()->lockForUpdate()->findOrFail($aiImport->id));
         $this->ensureOwner($request, $aiImport);
         abort_if($aiImport->operation === 'image', 422, 'Tạo candidate ảnh mới qua tác vụ tạo ảnh.');
-        if (in_array($aiImport->status, ['queued', 'fetching', 'extracting', 'rewriting', 'seo', 'thumbnail'], true)) {
+        if (in_array($aiImport->status, AiImport::RUNNING_STATUSES, true)) {
             return BaseResponse::error('Import đang được xử lý.', 409);
         }
         $options = $request->validate([
             'prompt_key' => ['sometimes', 'nullable', 'string', 'max:120'],
             'instructions' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'writing_profile_id' => ['sometimes', 'nullable', 'integer', 'min:1', 'exists:ai_writing_profiles,id'],
+            'writing_brief' => ['sometimes', 'array:audience,article_type,purpose,angle,length'],
+            'writing_brief.*' => ['nullable', 'string', 'max:1000'],
+            'category_ids' => ['sometimes', 'array', 'max:100'],
+            'category_ids.*' => ['integer', 'distinct', Rule::exists('categories', 'id')->where('status', 'active')->whereNull('deleted_at')],
+            'tag_ids' => ['sometimes', 'array', 'max:100'],
+            'tag_ids.*' => ['integer', 'distinct', Rule::exists('tags', 'id')->where('status', 'active')->whereNull('deleted_at')],
+            'refresh_source' => ['sometimes', 'boolean'],
             'provider' => ['sometimes', 'nullable', 'string', 'max:80'],
             'model' => ['sometimes', 'nullable', 'string', 'max:190'],
             'model_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
@@ -337,6 +373,8 @@ class AiImportController extends Controller
             'fields.*' => ['string', 'distinct', Rule::in((array) config('ai-agent.targets.'.($aiImport->input_json['target_type'] ?? 'post').'.outputs', []))],
         ]);
         $currentInput = (array) $aiImport->input_json;
+        $profileOverride = array_key_exists('writing_profile_id', $options);
+        $profileSelection = $options['writing_profile_id'] ?? null;
         $options['fields'] = $options['fields'] ?? [];
         $options = array_filter($options, static fn ($value): bool => $value !== null && $value !== '');
         $hasModelOverride = filled($options['provider'] ?? null)
@@ -360,6 +398,23 @@ class AiImportController extends Controller
             }
         }
         $childInput = array_replace((array) $aiImport->input_json, array_filter($options, fn ($value) => $value !== null));
+        $parentDraft = (array) data_get($aiImport->result_json, 'draft', []);
+        $childInput['parent_draft_snapshot'] = $parentDraft;
+        $manualTaxonomy = ($parentDraft['taxonomy_origin'] ?? null) === 'manual'
+            || ($currentInput['taxonomy_origin'] ?? null) === 'manual';
+        foreach (['category_ids', 'tag_ids'] as $taxonomyField) {
+            $childInput[$taxonomyField] = $options[$taxonomyField]
+                ?? ($manualTaxonomy ? ($parentDraft[$taxonomyField] ?? $currentInput[$taxonomyField] ?? []) : []);
+        }
+        $childInput['taxonomy_origin'] = 'manual';
+        if (! ($options['refresh_source'] ?? false) && ($aiImport->expires_at?->isPast()
+            || ($aiImport->status === 'ready' && isset($currentInput['pipeline_snapshot']) && ! data_get($aiImport->source_meta_json, 'article_source')))) {
+            throw ValidationException::withMessages(['refresh_source' => 'Snapshot nguồn đã hết hạn hoặc không còn. Gửi refresh_source=true để đọc lại nguồn.']);
+        }
+        if ($profileOverride) {
+            $childInput['writing_profile_id'] = $profileSelection;
+            unset($childInput['writing_profile_snapshot']);
+        }
         $childInput['provider'] = $connection['provider'];
         $childInput['model'] = $connection['model'] ?? null;
         $childInput['model_id'] = $connection['model_id'] ?? null;
@@ -390,6 +445,8 @@ class AiImportController extends Controller
             'operation' => 'regenerate', 'source_url' => $aiImport->source_url,
             'source_text' => $aiImport->source_text, 'source_hash' => $aiImport->source_hash,
             'normalized_url' => $aiImport->normalized_url, 'input_json' => $childInput,
+            'source_meta_json' => ! ($options['refresh_source'] ?? false) && data_get($aiImport->source_meta_json, 'article_source')
+                ? ['article_source' => data_get($aiImport->source_meta_json, 'article_source')] : [],
             'provider' => $connection['provider'], 'prompt_version' => $aiImport->prompt_version,
         ], true);
 
@@ -469,9 +526,13 @@ class AiImportController extends Controller
 
     /**
      * Sửa candidate chưa apply, kiểm tra phiên bản và sanitize HTML tại backend.
+     * =====================================================================
+     * CHỨC NĂNG: Sửa candidate với version lock và xác thực ảnh MediaLibrary
+     * =====================================================================
      * Input: title/content/excerpt/SEO và hash phiên bản từ GET detail.
      * Output: candidate cập nhật; không ghi domain model hoặc gọi AI.
      * Side effect: lock row, ghi result_json và audit trong cùng transaction.
+     * =====================================================================
      */
     public function updateCandidate(AiCandidateUpdateRequest $request, AiImport $aiImport, AiContentSanitizer $sanitizer): JsonResponse
     {
@@ -485,11 +546,16 @@ class AiImportController extends Controller
             $draft = (array) ($result['draft'] ?? []);
             abort_unless(hash_equals(hash('sha256', json_encode($draft)), $data['expected_version']), 409, 'Nội dung đã thay đổi. Hãy mở lại bài trước khi lưu.');
             unset($data['expected_version']);
+            app(ContentMediaReferenceService::class)->validate($data['content_html'], $request->user());
             $data['content_html'] = $sanitizer->sanitize($data['content_html']);
+            $data['content_image_ids'] = app(ContentMediaReferenceService::class)->validate($data['content_html'], $request->user());
             if (trim(strip_tags($data['content_html'])) === '') {
                 throw ValidationException::withMessages(['content_html' => 'Nội dung không được rỗng sau khi làm sạch HTML.']);
             }
             $data['content'] = $data['content_html'];
+            if (array_key_exists('category_ids', $data) || array_key_exists('tag_ids', $data)) {
+                $data['taxonomy_origin'] = 'manual';
+            }
             $result['draft'] = array_replace($draft, $data);
             $run->update(['result_json' => $result]);
             activity('ai-content')->causedBy($request->user())
@@ -505,7 +571,7 @@ class AiImportController extends Controller
      * =====================================================================
      * CHỨC NĂNG: Áp dụng field được chọn vào Post draft và ghi provenance
      * =====================================================================
-     * INPUT: Run ready, fields whitelist, target_id và expected_updated_at tùy chọn.
+     * INPUT: Run ready, fields whitelist, target_id, expected_version và expected_updated_at tùy chọn.
      * OUTPUT: Post ID, các field đã áp dụng và metadata nguồn AI.
      * SIDE EFFECT: Ghi Post/media/SEO và provenance qua domain actions; không gọi model.
      * EXCEPTION/TRANSACTION: DB transaction bao toàn bộ apply; abort 409 khi candidate/target không còn hợp lệ.
@@ -518,16 +584,31 @@ class AiImportController extends Controller
         abort_unless($aiImport->status === 'ready', 409, 'Candidate chưa sẵn sàng.');
         $data = $request->validated();
         $adapter = $targets->adapter('post');
-        $outputs = (array) data_get($aiImport->result_json, 'draft', []);
-        $payload = $adapter->toApplyPayload($outputs, $data['fields']);
+        $expectedVersion = $data['expected_version'] ?? hash('sha256', json_encode(data_get($aiImport->result_json, 'draft', [])));
         $actorId = (int) $request->user()->getKey();
-        $post = DB::transaction(function () use ($data, $payload, $aiImport, $create, $update, $provenance, $actorId): Post {
-            $target = ! empty($data['target_id']) ? Post::query()->findOrFail($data['target_id']) : null;
+        $post = DB::transaction(function () use ($data, $adapter, $expectedVersion, $aiImport, $create, $update, $provenance, $actorId): Post {
+            $run = AiImport::query()->lockForUpdate()->findOrFail($aiImport->id);
+            abort_unless($run->status === 'ready' && ! $run->expires_at?->isPast(), 409, 'Candidate chưa sẵn sàng hoặc đã hết hạn.');
+            $outputs = (array) data_get($run->result_json, 'draft', []);
+            abort_unless(hash_equals(hash('sha256', json_encode($outputs)), $expectedVersion), 409, 'Candidate đã thay đổi, hãy tải lại trước khi áp dụng.');
+            if (in_array('taxonomy', $data['fields'], true)) {
+                $explicitManual = array_key_exists('category_ids', $data) || array_key_exists('tag_ids', $data);
+                $manualOrigin = data_get($run->input_json, 'taxonomy_origin') === 'manual'
+                    || ($outputs['taxonomy_origin'] ?? null) === 'manual';
+                if (! $explicitManual && ! $manualOrigin) {
+                    throw ValidationException::withMessages(['category_ids' => 'Hãy chọn hoặc xác nhận taxonomy thủ công trước khi áp dụng candidate cũ.']);
+                }
+                foreach (['category_ids', 'tag_ids'] as $taxonomyField) {
+                    $outputs[$taxonomyField] = $data[$taxonomyField] ?? ($manualOrigin ? ($outputs[$taxonomyField] ?? data_get($run->input_json, $taxonomyField, [])) : []);
+                }
+            }
+            $payload = $adapter->toApplyPayload($outputs, $data['fields']);
+            $target = ! empty($data['target_id']) ? Post::query()->lockForUpdate()->findOrFail($data['target_id']) : null;
             if ($target && ! empty($data['expected_updated_at']) && (string) $target->updated_at !== (string) $data['expected_updated_at']) {
                 abort(409, 'Post đã thay đổi, hãy tải lại trước khi áp dụng candidate.');
             }
             $post = $target ? $update->handle($target, array_merge($payload, ['status' => 'draft']), $actorId) : $create->handle(array_merge($payload, ['status' => 'draft']), $actorId);
-            $provenance->recordPost($actorId, $post, (string) $aiImport->getKey(), $data['fields'], $payload);
+            $provenance->recordPost($actorId, $post, (string) $run->getKey(), $data['fields'], $payload);
 
             return $post;
         });
@@ -542,19 +623,25 @@ class AiImportController extends Controller
      * INPUT: AiImport route-bound thuộc actor.
      * OUTPUT: Payload cancelled hoặc trạng thái terminal hiện tại.
      * SIDE EFFECT: Dọn thumbnail chưa có usage và cập nhật lifecycle; không hủy HTTP provider đã gửi.
-     * EXCEPTION/TRANSACTION: Abort 404 khi ownership không khớp; không mở transaction tổng.
+     * EXCEPTION/TRANSACTION: Khóa row trước khi hủy; dọn asset sau transaction.
      * =====================================================================
      */
     public function cancel(Request $request, AiImport $aiImport): JsonResponse
     {
         $this->ensureOwner($request, $aiImport);
-        if (in_array($aiImport->status, ['ready', 'failed', 'expired', 'cancelled'], true)) {
-            return BaseResponse::success($this->payload($aiImport), 'Import đã kết thúc.');
-        }
-        $this->cleanupThumbnail($aiImport);
-        $aiImport->update(['status' => 'cancelled', 'current_step' => 'cancelled', 'error_code' => 'CANCELLED', 'error_message' => 'Import đã bị hủy.']);
+        $run = DB::transaction(function () use ($aiImport): AiImport {
+            $run = AiImport::query()->lockForUpdate()->findOrFail($aiImport->id);
+            if (! in_array($run->status, AiImport::TERMINAL_STATUSES, true)) {
+                $run->update(['status' => 'cancelled', 'current_step' => 'cancelled', 'error_code' => 'CANCELLED', 'error_message' => 'Import đã bị hủy.', 'completed_at' => now()]);
+            }
 
-        return BaseResponse::success($this->payload($aiImport->fresh()), 'Đã hủy import.');
+            return $run;
+        });
+        if ($run->status === 'cancelled') {
+            $this->cleanupThumbnail($run);
+        }
+
+        return BaseResponse::success($this->payload($run->fresh()), $run->status === 'cancelled' ? 'Đã hủy import.' : 'Import đã kết thúc.');
     }
 
     /**
@@ -570,7 +657,7 @@ class AiImportController extends Controller
     public function destroy(Request $request, AiImport $aiImport): JsonResponse
     {
         $this->ensureOwner($request, $aiImport);
-        abort_if(in_array($aiImport->status, ['queued', 'fetching', 'extracting', 'rewriting', 'seo', 'thumbnail'], true), 409, 'Hãy đợi tác vụ kết thúc trước khi xóa.');
+        abort_if(in_array($aiImport->status, AiImport::RUNNING_STATUSES, true), 409, 'Hãy đợi tác vụ kết thúc trước khi xóa.');
         $this->cleanupThumbnail($aiImport);
         $aiImport->delete();
 
@@ -601,10 +688,24 @@ class AiImportController extends Controller
             unset($result['draft']);
         }
         $diagnostics = AiResponseDiagnostics::sanitize((array) data_get($import->source_meta_json, 'ai_response', []));
+        $pipeline = (array) data_get($import->source_meta_json, 'article_pipeline', []);
+        $steps = $import->steps->map(fn ($step): array => [
+            'key' => $step->step_key, 'status' => $step->status, 'attempt' => $step->attempt,
+            'diagnostics' => AiResponseDiagnostics::sanitize((array) $step->diagnostics_json),
+            'started_at' => $step->started_at?->toIso8601String(), 'completed_at' => $step->completed_at?->toIso8601String(),
+        ])->values()->all();
 
         return [
             ...$result,
             'job_id' => $import->id, 'status' => $import->status, 'current_step' => $import->current_step,
+            'steps' => $steps,
+            // Allowlist dùng cả cho nhánh một lượt; không expose source/intermediate/raw response.
+            'response_diagnostics' => $diagnostics,
+            'quality_checks' => array_map(fn (array $check): array => array_intersect_key($check, array_flip(['check', 'status', 'reason', 'metric', 'detected', 'count'])), array_slice((array) ($pipeline['quality'] ?? []), 0, 20)),
+            'image_warnings' => array_values(array_intersect((array) ($pipeline['image_warnings'] ?? []), ['restored_unplaced_images'])),
+            'editor_warning_count' => max(0, min(100, (int) ($pipeline['editor_warning_count'] ?? 0))),
+            'writing_profile' => array_intersect_key((array) data_get($import->input_json, 'writing_profile_snapshot', []), array_flip(['id', 'name', 'version'])),
+            'source_format' => data_get($import->input_json, 'source_format', 'text'),
             'progress' => (int) $import->progress, 'error_code' => $import->error_code,
             'source_type' => data_get($import->input_json, 'source_type', filled($import->source_url) ? 'url' : 'text'),
             'source_url' => data_get($import->input_json, 'source_type') === 'text' ? null : $import->source_url,
@@ -619,7 +720,14 @@ class AiImportController extends Controller
         ];
     }
 
-    /** Tải ảnh thumbnail và media theo lô; asset không tồn tại hoặc đã xóa trả null. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Tải thumbnail và media theo lô cho public payload
+     * =====================================================================
+     * INPUT: collection AiImport. OUTPUT: relation thumbnail hoặc null.
+     * SIDE EFFECT: query asset/media; không tạo ảnh hoặc ghi DB.
+     * =====================================================================
+     */
     private function loadThumbnails(Collection $imports): void
     {
         $unloaded = $imports->reject(fn (AiImport $import): bool => $import->relationLoaded('thumbnail'));

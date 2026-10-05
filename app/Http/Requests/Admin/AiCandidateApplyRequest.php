@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * =====================================================================
@@ -55,8 +56,13 @@ class AiCandidateApplyRequest extends FormRequest
         return [
             'fields' => ['required', 'array', 'min:1'],
             'fields.*' => ['string', 'distinct', 'in:title,excerpt,content,seo,taxonomy,thumbnail'],
+            'category_ids' => ['sometimes', 'array', 'max:100'],
+            'category_ids.*' => ['integer', 'distinct', Rule::exists('categories', 'id')->where('status', 'active')->whereNull('deleted_at')],
+            'tag_ids' => ['sometimes', 'array', 'max:100'],
+            'tag_ids.*' => ['integer', 'distinct', Rule::exists('tags', 'id')->where('status', 'active')->whereNull('deleted_at')],
             'target_id' => ['nullable', 'integer', 'min:1'],
             'expected_updated_at' => ['nullable', 'date'],
+            'expected_version' => ['sometimes', 'string', 'size:64'],
         ];
     }
 }

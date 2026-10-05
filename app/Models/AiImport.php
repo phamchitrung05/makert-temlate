@@ -10,6 +10,8 @@ namespace App\Models;
  * CÁC HÀM/METHOD TRONG FILE:
  * - casts(): ép kiểu kết quả và thời hạn.
  * - createdBy(): liên kết quản trị viên khởi tạo import.
+ * - candidates(), steps(): liên kết candidate và checkpoint của run.
+ * - advance(), isCancelled(): cập nhật tiến độ an toàn khi run bị hủy.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : dữ liệu import và kết quả pipeline.
  * - OUTPUT: bản ghi AiImport cùng quan hệ người tạo.
@@ -24,6 +26,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class AiImport extends Model
 {
     use HasUuids;
+
+    public const RUNNING_STATUSES = ['queued', 'fetching', 'extracting', 'rewriting', 'analyzing', 'planning', 'writing', 'editing', 'validating', 'seo', 'thumbnail'];
+
+    public const TERMINAL_STATUSES = ['ready', 'failed', 'cancelled', 'expired'];
 
     public $incrementing = false;
 
@@ -94,6 +100,20 @@ class AiImport extends Model
 
     /**
      * =====================================================================
+     * CHỨC NĂNG: Trả checkpoint kỹ thuật theo đúng thứ tự tạo
+     * =====================================================================
+     * INPUT: UUID import hiện tại.
+     * OUTPUT: quan hệ HasMany AiImportStep.
+     * SIDE EFFECT: chỉ tạo truy vấn, không gọi provider hoặc ghi Post.
+     * =====================================================================
+     */
+    public function steps(): HasMany
+    {
+        return $this->hasMany(AiImportStep::class)->orderBy('id');
+    }
+
+    /**
+     * =====================================================================
      * CHỨC NĂNG: Ghi trạng thái tiến trình để polling nhất quán.
      * =====================================================================
      * INPUT: step/progress pipeline.
@@ -104,16 +124,22 @@ class AiImport extends Model
      */
     public function advance(string $step, int $progress): void
     {
-        if ($this->status === 'cancelled') {
+        if ($this->exists && $this->isCancelled()) {
             return;
         }
-
-        $this->forceFill([
+        $updates = [
             'status' => $step,
             'current_step' => $step,
             'progress' => max(0, min(100, $progress)),
             'started_at' => $this->started_at ?? now(),
-        ])->save();
+        ];
+        if ($this->exists) {
+            // Điều kiện trên DB giữ cancellation ngay cả khi request hủy đến sau lần đọc.
+            static::query()->whereKey($this->getKey())->whereNotIn('status', self::TERMINAL_STATUSES)->update($updates);
+            $this->refresh();
+        } else {
+            $this->forceFill($updates);
+        }
     }
 
     /**

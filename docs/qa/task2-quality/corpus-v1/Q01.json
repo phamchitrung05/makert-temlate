@@ -1,0 +1,36 @@
+{
+    "source_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/extras/reactivity-transform.md",
+    "title": "Tin thay đổi rất ngắn",
+    "source_format": "html",
+    "version": "article.source.v1",
+    "content_html": "<h1>Reactivity Transform {#reactivity-transform}</h1>\n<p>:::danger Removed Experimental Feature\nReactivity Transform was an experimental feature, and has been removed in the latest 3.4 release. Please read about <a href=\"https://github.com/vuejs/rfcs/discussions/369#discussioncomment-5059028\">the reasoning here</a>.</p>\n<p>If you still intend to use it, it is now available via the <a href=\"https://vue-macros.sxzz.moe/features/reactivity-transform.html\">Vue Macros</a> plugin.\n:::</p>\n<p>:::tip Composition-API-specific\nReactivity Transform is a Composition-API-specific feature and requires a build step.\n:::</p>",
+    "blocks": [
+        {
+            "id": "S001",
+            "type": "h1",
+            "text": "Reactivity Transform {#reactivity-transform}",
+            "html": "<h1>Reactivity Transform {#reactivity-transform}</h1>"
+        },
+        {
+            "id": "S002",
+            "type": "p",
+            "text": ":::danger Removed Experimental Feature\nReactivity Transform was an experimental feature, and has been removed in the latest 3.4 release. Please read about the reasoning here.",
+            "html": "<p>:::danger Removed Experimental Feature\nReactivity Transform was an experimental feature, and has been removed in the latest 3.4 release. Please read about <a href=\"https://github.com/vuejs/rfcs/discussions/369#discussioncomment-5059028\">the reasoning here</a>.</p>"
+        },
+        {
+            "id": "S003",
+            "type": "p",
+            "text": "If you still intend to use it, it is now available via the Vue Macros plugin.\n:::",
+            "html": "<p>If you still intend to use it, it is now available via the <a href=\"https://vue-macros.sxzz.moe/features/reactivity-transform.html\">Vue Macros</a> plugin.\n:::</p>"
+        },
+        {
+            "id": "S004",
+            "type": "p",
+            "text": ":::tip Composition-API-specific\nReactivity Transform is a Composition-API-specific feature and requires a build step.\n:::",
+            "html": "<p>:::tip Composition-API-specific\nReactivity Transform is a Composition-API-specific feature and requires a build step.\n:::</p>"
+        }
+    ],
+    "source_images": [],
+    "fetched_at": "2026-10-04T17:47:18+00:00",
+    "hash": "1e0dca3b2eff7b5115754e201d97c1d1b0363bd42fe51fe5556dd7786690f2f6"
+}

@@ -1,7 +1,7 @@
 # FIX 1 — Ổn định AI Content và quy trình duyệt bài
 
 **Ngày lập:** 2026-10-02
-**Trạng thái:** Đã triển khai một phần; audit lại code ngày 2026-10-03. Settings đã nối dữ liệu động cho AI & Content; chín tab còn lại vẫn dùng fixture. Tổng hợp phần chưa làm tại mục 10; browser QA cho các thay đổi mới và kiểm chứng VPS còn mở.
+**Trạng thái 2026-10-05:** Task 1 đã có regression/local smoke. Task 2 đã triển khai backend và sáu nhóm UI/API còn thiếu tại 12.23: văn phong/brief, raw HTML/preview, taxonomy thủ công, MediaLibrary trong editor, báo cáo từng bước và quản lý profile. Model thật, Apply Post draft và MySQL/cache đã kiểm trên localhost theo lựa chọn của người dùng; báo cáo 12.24. Corpus/pilot/gói chấm chất lượng đã có, nhưng chấm hai người đọc và nghiên cứu đầy đủ còn mở; toolbar TinyMCE thật chưa nghiệm thu do Tiny Cloud từ chối origin localhost. Phần Ai Prompt chưa API giữ minh họa rõ nhãn. VPS/Reverb, lớp duyệt riêng và Settings ngoài AI thuộc phần khác; toàn FIX 1 chưa hoàn tất.
 **Mục tiêu:** Gom các lỗi đã xác nhận trong lúc test, chốt một lần rồi triển khai đồng bộ.
 **Điều chỉnh phạm vi:** Bỏ nhóm Provider/9Router khỏi công việc FIX 1 theo yêu cầu ngày 2026-10-03.
 
@@ -14,6 +14,8 @@
 - Queue là bắt buộc. Reverb/Echo dùng cho realtime khi VPS có process manager.
 - Polling vẫn tồn tại làm phương án dự phòng khi WebSocket mất kết nối.
 - Nội dung URL, text và file HTML luôn là dữ liệu không tin cậy; phải extract và sanitize.
+- Danh mục và tag do người dùng chọn thủ công; AI không tạo, đề xuất hoặc tự ánh xạ taxonomy trong luồng mới.
+- Tạo nội dung đầy đủ theo Analyze + Plan → Write → Edit; mẫu văn phong do người dùng chọn hoặc dùng mặc định website. Chi tiết triển khai dự kiến ở task 2, mục 12.
 
 ## 2. Các vấn đề cần sửa
 
@@ -38,20 +40,32 @@ Chi tiết triển khai và bằng chứng kiểm thử của task này ở mụ
 
 ### B. Prompt và chất lượng nội dung
 
-Task 2 được đối chiếu lại sau khi hoàn thành task 1; kết quả audit và các điểm cần chốt ở mục 12. Chưa triển khai các gate chất lượng bên dưới.
+Task 2 được tổng hợp tại mục 12. Backend, Ai Prompt List/Add/CRUD và các form tạo bài/biên tập đã nối API. Báo cáo hoàn thiện và nghiệm thu localhost tại 12.24; chất lượng văn phong cần người đọc đánh giá và toolbar TinyMCE thật còn chờ cấu hình origin/license hợp lệ.
 
 - [x] Prompt yêu cầu giữ sự thật/code, coi nguồn là dữ liệu không tin cậy và dùng hướng dẫn theo target.
-- [ ] Hoàn thiện yêu cầu viết lại cách diễn đạt/cấu trúc, bảo toàn liên kết và trích dẫn; kiểm tra chất lượng kết quả thực tế.
-- [ ] Bỏ `suggested_category_ids` và `suggested_tag_ids` khỏi output AI.
-- [ ] AI chỉ đề xuất tên/chủ đề; backend tự ánh xạ sang taxonomy hiện có.
-- [ ] Tính similarity trên text đã normalize; exact copy phải fail hoặc chuyển `quality_failed`.
-- [ ] Kiểm tra đúng ngôn ngữ đầu ra.
+- [x] Tích hợp Analyze + Plan → Write → Edit cho tác vụ tạo `content`; kiểm source anchors, facts quan trọng, code, số liệu và liên kết. Semantic grounding toàn diện vẫn cần người biên tập kiểm.
+- [x] Tạo brief và prompt riêng từng bước; bố cục phù hợp nguồn, không áp một outline cố định.
+- [x] Bỏ taxonomy khỏi prompt/schema/alias/nhóm đầu ra AI; danh mục/tag chỉ nhận lựa chọn thủ công và được backend kiểm tra.
+- [x] Backend CRUD/version/enable/options/default mẫu văn phong và nhận brief/yêu cầu riêng qua API.
+- [x] Nối select văn phong/mặc định, brief/yêu cầu riêng ở AI Content, dialog Post và regenerate; inheritance/override rõ ràng. Xem 12.24.
+- [x] Quản lý mẫu từ List: sửa, xóa có xác nhận, bật/tắt, tạo thủ công và default; version conflict giữ bản sửa. Xem 12.24.
+- [x] Tạo mục `Ai Prompt` trong Systerm AI tại `/admin/ai/prompt`; custom theo theme project và nối API hiện có, phần chưa API có nhãn minh họa.
+- [x] API phân tích bài tham khảo qua queue → trả kết quả/evidence → lưu profile khi người dùng POST duyệt.
+- [x] Nối API dán bài/URL/file, xem/sửa/lưu mẫu hiện tại — tests/HTTP mock, lint/build và browser UI tại 12.19; phần chưa API giữ minh họa tĩnh, model thật chưa nghiệm thu.
+- [x] Tách Ai Prompt → List/Add; List dùng datatable tìm tên/phân trang/xem prompt đã lưu, Add giữ trang phân tích hiện tại; báo cáo 12.21.
+- [x] Add tự reset sau khi lưu thành công, có nút Văn phong mới và giữ bản khi lưu lỗi/chưa xác định; báo cáo 12.22.
+- [x] Nối hook MediaLibrary/upload và bảo toàn ID/URL/alt/caption qua save/regenerate/Apply; backend/composable và editor dự phòng đã kiểm. Browser toolbar TinyMCE thật còn chờ origin/license tại 12.24.
+- [x] Thêm gate output mới trước merge: exact-copy, similarity warning, language detector vi/en có trạng thái chưa rõ, code/link/số liệu và source references; không coi lexical metric là điểm văn phong hoặc fact verification bên ngoài.
+- [x] Backend lưu source/profile/prompt/schema/parent snapshot, checkpoint, timeout/lease, hủy/retry và safe step metadata.
+- [x] Hiển thị Analyze/Write/Edit/Validate, checkpoint/gates/profile/usage thật sau reload; nhánh ngắn dùng diagnostics một lượt. Xem 12.24.
+- [ ] So sánh chất lượng thực tế với luồng một lượt AI trên bộ bài mẫu, đo cả công biên tập, thời gian và token.
 - [x] Cho phép tạo lại toàn bài hoặc từng nhóm field sau khi sửa contract regenerate.
 
 ### C. Timeout, queue và realtime
 
 - [x] Thời gian chờ riêng trong `ai_providers.request_timeout` (5–600 giây); provider cũ nhận 120 giây, provider mới lấy default từ config.
-- [x] Job timeout tối thiểu 180 giây và đủ HTTP + 120 giây; queue `retry_after` tối thiểu 900 giây.
+- [x] Luồng một lượt hiện tại: job timeout tối thiểu 180 giây và đủ HTTP + 120 giây; queue `retry_after` tối thiểu 900 giây.
+- [x] Task 2: budget ba lượt HTTP tối đa 1920 giây, checkpoint, cancellation và queue `retry_after` tối thiểu 2000 giây. Cấu hình worker/SQS thực tế còn phải kiểm trên môi trường triển khai.
 - [ ] Rà lại worker production để `--timeout < retry_after` và đủ lớn hơn request timeout.
 - [x] Sửa frontend polling sang backoff thay vì gọi mỗi 1,2 giây liên tục.
 - [ ] Broadcast event khi queued/processing/ready/failed.
@@ -60,20 +74,23 @@ Task 2 được đối chiếu lại sau khi hoàn thành task 1; kết quả au
 
 ### D. Nguồn bài viết
 
-- [ ] Sửa extractor: không xoá toàn bộ con khi trang bọc nội dung trong `<form>`.
-- [ ] Mở rộng backend từ `article/body` sang `main/section/article` và lựa chọn container theo mật độ nội dung; frontend hiện chọn `article/main` đầu tiên.
+- [x] Backend extractor giữ phần bài trong `<form>`, chỉ loại các input/control.
+- [x] Backend chọn `main/section/article` theo mật độ nội dung; frontend upload HTML nguyên bản để người dùng nối sau.
 - [x] Backend loại script/style/nav/footer/iframe và sanitize HTML theo allowlist, giữ heading/list/code/table.
-- [ ] Hoàn thiện lọc ads/menu và bảo toàn nội dung trong semantic container; nguồn file hiện được chuyển thành text.
-- [x] Thêm nguồn file HTML và nội dung paste khi website chặn bot (file được đọc cục bộ, extract thành text rồi gửi backend).
+- [x] Gửi raw HTML/file tới extractor backend, lọc layout/boilerplate và bảo toàn nội dung trong semantic container; preview cho kiểm vùng chọn trước generation.
+- [x] Thêm file HTML, raw HTML và nội dung paste khi website chặn bot; file giữ byte/encoding để backend extract, không flatten trước khi gửi.
 - [x] File giới hạn `.html/.htm`, tối đa 5 MB; text tối đa 200.000 ký tự. Extract bằng DOM tách rời, không chèn nguồn vào trang để thực thi.
 - [x] URL fetcher kiểm tra Content-Type khi có header và giới hạn byte tải về.
-- [ ] Hoàn thiện validation MIME/encoding cho file HTML và xử lý encoding nguồn.
-- [ ] Hiển thị preview phần nguồn đã extract trước khi gửi AI.
+- [x] Backend validation MIME/encoding/byte budget cho raw HTML/file HTML; UTF-8 mặc định và encoding explicit.
+- [x] Nối raw HTML/file/encoding và preview ở AI Content cùng dialog Post; đổi văn phong/brief không làm mất preview nguồn. Xem 12.24.
+- [x] Snapshot block IDs, whitespace code/table/link/quote/metadata ảnh; resume nguồn cũ, refresh_source explicit và UI source-preview trước generation.
 
 ### E. Regenerate và frontend contract
 
 - [x] Tách payload builder cho create và regenerate.
-- [x] Map output về sáu nhóm backend nhận: `title`, `excerpt`, `content`, `seo`, `taxonomy`, `thumbnail`.
+- [x] Contract generation có `title`, `excerpt`, `content`, `seo`, `thumbnail`; `taxonomy` chỉ thuộc Apply thủ công.
+- [x] Task 2 bỏ taxonomy khỏi nhóm AI có thể chọn và alias legacy ở frontend/backend; giữ taxonomy thủ công của Post và kiểm snapshot cũ. Xem 12.9, tests tại 12.17.
+- [x] Chọn/xác nhận category/tag thủ công trong create/editor/regenerate/Apply; draft trả nhãn manual cùng IDs để không mất lựa chọn khi Save. Xem 12.24.
 - [x] Không gửi `prompt_key`, provider, model hoặc optional field khi giá trị rỗng/null.
 - [x] Backend tương thích payload cũ có kiểm soát và chỉ coi giá trị đã điền là override.
 - [x] Giữ parent candidate, tạo child run mới và theo dõi đúng `job_id`.
@@ -97,7 +114,7 @@ Trang `AI Drafts` là luồng dự kiến. Hiện trang `AI Content` dùng candi
 
 - [x] Danh sách hiển thị đang xử lý/chờ duyệt/đã áp dụng/lỗi/hủy/hết hạn; chờ duyệt và đã áp dụng hiện là trạng thái suy ra từ tác vụ.
 - [ ] Thêm `ai_content_drafts`, trạng thái duyệt/từ chối thực sự, người duyệt, lịch sử/lý do và chính sách lưu dài hạn độc lập với retention tác vụ.
-- [ ] Lưu snapshot nguồn đã extract; xem nguồn và kết quả AI cạnh nhau, hiển thị similarity.
+- [ ] Giao diện so sánh nguồn/kết quả và lưu nguồn dài hạn theo bản biên tập; source snapshot kỹ thuật tối thiểu cho pipeline/checkpoint thuộc task 2, mục 12.12.
 - [x] Chỉnh sửa candidate trước khi duyệt.
 - [x] Tạo lại toàn bài hoặc từng phần.
 - [x] API apply ép Post `status=draft` và lưu provenance/liên kết với tác vụ AI.
@@ -108,9 +125,9 @@ Trang `AI Drafts` là luồng dự kiến. Hiện trang `AI Content` dùng candi
 
 ## 4. Thứ tự triển khai phần còn lại sau audit
 
-1. Chốt contract response, prompt, similarity và chính sách lỗi/fallback.
-2. Sửa provider parser/validator, logging metadata và test adapter.
-3. Sửa extractor, validation MIME/encoding và preview nguồn; HTML file input và regenerate contract đã có.
+1. Task 1 parser/validator đã hoàn thành; giữ các kiểm tra đó khi mở rộng provider contract sang schema theo từng nhiệm vụ.
+2. Triển khai task 2 theo các đợt tại 12.14: taxonomy thủ công, nguồn/contract, profile, pipeline ba bước, checkpoint/gate, TinyMCE và đánh giá chất lượng.
+3. Hoàn thiện extractor, validation MIME/encoding và preview nguồn trong cùng đợt nguồn của task 2; HTML file input và regenerate contract đã có.
 4. Thêm migration/model/API cho `ai_content_drafts`, lưu dài hạn và thao tác approve/reject.
 5. Nối UI duyệt/từ chối, compare/similarity và metadata; editor/regenerate đã có.
 6. Hoàn thiện nhánh thumbnail generate nếu dùng model ảnh trong luồng AI Content/Post (xem 9.7).
@@ -122,6 +139,7 @@ Trang `AI Drafts` là luồng dự kiến. Hiện trang `AI Content` dùng candi
 - AI không được báo `ready` nếu thiếu/sai field bắt buộc của nhóm đầu ra đã chọn; title/content của nhóm không chọn có thể giữ từ nguồn hoặc candidate cha.
 - Response `tool_calls`, sai JSON, sai schema và timeout có mã lỗi riêng.
 - Bài exact-copy không được coi là kết quả AI hợp lệ.
+- Task 2 có brief riêng, profile được snapshot, ba bước cho nội dung đầy đủ, bảo toàn facts/code/ảnh và taxonomy thủ công; tiêu chí chi tiết tại 12.15.
 - URL, text và file HTML đều tạo được draft hoặc báo lỗi nguồn rõ ràng.
 - Regenerate tạo child candidate và không trả 422 do sai tên field.
 - Người dùng xem, sửa, duyệt hoặc từ chối bài AI trên trang riêng.
@@ -131,8 +149,8 @@ Trang `AI Drafts` là luồng dự kiến. Hiện trang `AI Content` dùng candi
 
 ## 6. Các điểm cần chốt khi duyệt plan
 
-- [ ] Ngưỡng similarity tối đa: đề xuất `<= 60%` hay mức khác?
-- [ ] Exact-copy sẽ fail ngay hay cho phép editor duyệt thủ công?
+- [ ] Hiệu chỉnh similarity theo loại bài/ngôn ngữ và ngoại lệ code/trích dẫn; `60%` là đề xuất cũ, chưa phải ngưỡng áp dụng. Không dùng similarity làm điểm chất lượng tổng thể.
+- [ ] Hiệu chỉnh gate exact-copy theo 12.13: mặc định dự kiến báo lỗi chất lượng khi sao chép phần văn xuôi đáng kể; chốt ngoại lệ đoạn ngắn, code và trích dẫn bằng bộ bài mẫu.
 - [x] Approve chỉ tạo Post draft, editor Publish sau; API apply hiện đã ép `status=draft`.
 - [ ] Có lưu raw response đã redaction trong thời gian ngắn để debug không?
 - [ ] Triển khai Reverb ngay đợt này hay sau khi đưa dự án lên VPS?
@@ -195,6 +213,8 @@ tạo file audio. Danh sách vẫn theo retention của `ai_imports` (mặc đ�
 | System Info | Version/disk hard-code | Endpoint read-only lấy PHP/Vue/Vuetify, DB, disk và queue health; không cho ghi từ UI |
 
 `AiSettings` hiện đã có API riêng và đang được worker dùng. Không tạo một đường ghi thứ hai cho provider/model; Settings page phải dùng chung service/composable với AI Providers.
+
+Task 2 quản lý mẫu văn phong tại Systerm AI → Ai Prompt; tab AI & Content dùng `default_writing_profile_id` (12.6–12.7). Backend CRUD/profile analysis/default profile setting đã có. Trang Ai Prompt đã custom theo theme và dùng dữ liệu minh họa; plan nối API, quản lý mẫu và các phần còn thiếu ở 12.18. Select mẫu mặc định trong Settings chưa nối giao diện.
 
 ### 9.3 API và quyền
 
@@ -259,15 +279,15 @@ tạo file audio. Danh sách vẫn theo retention của `ai_imports` (mặc đ�
 - [x] Kiểm thử config/registry, lựa chọn theo target, snapshot, lọc kết quả provider và giao diện select. Build production được cập nhật.
 - [ ] Browser QA select với tài khoản đăng nhập của người dùng.
 
-## 10. Tổng hợp phần còn lại — audit code 2026-10-03
+## 10. Tổng hợp phần còn lại — audit 2026-10-03, cập nhật plan 2026-10-04
 
 Các checkbox bên trên gồm cả task, tiêu chí và quyết định. Không cộng checkbox trống thành số task độc lập. Những nhóm chưa hoàn thành:
 
 | Nhóm | Phần còn thiếu | Tham chiếu |
 | --- | --- | --- |
 | Structured output | Tuning temperature và quyết định debug raw response ở đợt riêng. Task 1 đã xong code, diagnostics, regression, build, restart worker và browser smoke local với output được kiểm soát | 2A, 11.6 |
-| Chất lượng nội dung | Rewrite đầy đủ, similarity/exact-copy, kiểm ngôn ngữ, đề xuất tên/chủ đề và ánh xạ taxonomy thay cho AI trả ID; đã audit, chưa triển khai | 2B, 12 |
-| Extractor/nguồn | Giữ nội dung trong form, chọn container theo mật độ, lọc ads/menu, MIME/encoding và preview nguồn đã extract | 2D |
+| Task 2 — AI Content | Cập nhật 2026-10-05: backend và sáu nhóm UI/API đã triển khai, model/MySQL/Post draft kiểm trên localhost. Còn nghiệm thu toolbar TinyMCE theo origin/license và nghiên cứu chất lượng/corpus/người đọc | 2B, 12.24 |
+| Extractor/nguồn | Backend extractor/preview và Ai Prompt URL/file đã có; AI Content còn chuyển file HTML thành text, chưa nối raw HTML/preview; cần kiểm thêm layout lạ | 2D, 12.3, 12.8, 12.20, 12.23 |
 | Biên tập AI | `ai_content_drafts`, lưu dài hạn, approve/reject UI/API, lịch sử/lý do, so sánh nguồn/kết quả, metadata và lỗi từng tác vụ sau reload | 3 |
 | Thumbnail sinh bằng AI | Nối lựa chọn generate và kết quả ảnh vào thumbnail của candidate/Post; hiện luồng tạo bài chỉ lấy ảnh nguồn hoặc để trống | 9.7 |
 | Realtime/VPS | Broadcast, Echo/Reverb, process manager, worker/scheduler production và QA reboot/reconnect | 2C |
@@ -407,53 +427,629 @@ Request legacy không có selection giữ cách suy ra full-generation hiện t�
 
 Đợt browser QA này **không gửi HTTP generation tới provider AI thật**; output có kiểm soát dùng để xác nhận pipeline và UI. Task 1 đã hoàn thành triển khai, regression và local smoke trong phạm vi trên. Temperature vẫn lấy từ Settings/snapshot; tuning temperature `0` và lưu raw response debug chưa triển khai. Các task khác còn mở, toàn bộ FIX 1 chưa hoàn tất.
 
-## 12. Audit task 2 — Prompt và chất lượng nội dung
+## 12. Task 2 — Nâng chất lượng AI Content, văn phong và ảnh nội dung
 
-**Ngày kiểm tra:** 2026-10-03. **Trạng thái:** Đã kiểm tra code và chạy hai ca xác minh với HTTP fake; chưa triển khai task 2. Task này là nhóm Chất lượng nội dung ở mục 10 / mục 2B, tiếp sau task 1 structured output.
+**Audit ban đầu:** 2026-10-03. **Cập nhật tổng hợp:** 2026-10-04.
+**Trạng thái 2026-10-05:** Backend và sáu nhóm UI/API theo audit 12.23 đã triển khai, nghiệm thu trên localhost tại 12.24. Model thật, MySQL/cache và Post draft đã kiểm; Task 2 còn chấm chất lượng/corpus đầy đủ và browser toolbar TinyMCE bị khóa do origin. Không đánh dấu toàn Task 2 hoàn tất từ tests hoặc pilot. Các báo cáo 12.17–12.23 giữ lịch sử từng đợt.
 
-**Mục tiêu task 2:** Hoàn thiện prompt viết lại bài và bổ sung kiểm chứng chất lượng đầu ra trước khi báo thành công. Prompt mặc định hiện khá cơ bản: đúng ngôn ngữ, giữ sự thật/code, trả JSON và bố cục Post có mở bài/heading/kết luận. System prompt cùng yêu cầu số từ từ Settings được ghép thêm vào request; hiện chúng là hướng dẫn cho model, chưa có gate xác nhận bài đạt yêu cầu chất lượng.
+**Bước đầu đã làm — 2026-10-04:** mục `Ai Prompt` trên menu dọc/ngang thuộc Systerm AI, route `/admin/ai/prompt` (`ai-prompt`) và trang trống tại `resources/js/pages/ai/prompt/index.vue`. Giao diện sẽ do người dùng bổ sung sau; chưa có API/model/queue phân tích mẫu ở bước này.
 
-Task 2 bao gồm nâng yêu cầu diễn đạt/bố cục, bảo toàn thông tin/liên kết/trích dẫn, phát hiện sao chép, kiểm ngôn ngữ và ánh xạ danh mục/tag từ tên do AI đề xuất. Mỗi kiểm tra phải có kết quả và lý do rõ ràng; giữ nguyên quy trình candidate chờ duyệt, field không chọn và candidate cha khi regenerate lỗi.
+**Mục tiêu:** Tạo bài tiếng Việt tự nhiên, có ích và giữ đúng thông tin nguồn; tránh dịch từng câu, lặp ý và ép mọi bài theo cùng một bố cục. Người dùng kiểm soát văn phong, yêu cầu riêng, taxonomy và ảnh; kết quả vẫn là candidate để xem/sửa rồi Apply thành Post draft.
 
-**Giới hạn của kiểm chứng tự động:** Similarity thấp không chứng minh bài viết hay hoặc đúng sự thật. Metrics phát hiện lỗi cụ thể và hỗ trợ người biên tập; độ chính xác, sự đầy đủ, tính nhất quán và chất lượng diễn đạt vẫn cần đối chiếu nguồn và duyệt bài. Không coi JSON/schema hợp lệ hoặc vượt gate similarity là chứng nhận chất lượng tổng thể. Chưa đưa việc tra cứu nguồn bên ngoài hay một lượt AI chấm bài có phí vào phạm vi bắt buộc của task 2.
+Tài liệu tham khảo nằm tại `C:/Users/phamc/OneDrive/Máy tính/ai_article_pipeline_plan.md`. Mục 12 này là plan tích hợp vào project hiện tại: ưu tiên quyết định mới của người dùng, điều chỉnh kiến trúc theo code đã có và tách các ý tưởng V2 khỏi phần bắt buộc V1.
 
-### 12.1 Hiện trạng đã xác nhận
+### 12.1 Các quyết định và phạm vi V1
 
-| Hạng mục | Hiện trạng | Bằng chứng trong code |
+| Nội dung | Thiết kế trong plan |
+| --- | --- |
+| Luồng tạo nội dung đầy đủ | Ba lượt AI tuần tự: Analyze + Plan → Write → Edit; ban đầu dùng cùng provider/model đã chọn |
+| Vai trò của từng bước | Đọc hiểu/lập dàn ý, viết bản nháp, biên tập; mỗi bước có input/output/prompt/schema riêng |
+| Taxonomy | Category/Tag chọn thủ công; bỏ toàn bộ generation/đề xuất/ánh xạ taxonomy bởi AI |
+| Prompt | Quy tắc hệ thống theo bước + brief từng bài + profile + dữ liệu nguồn + contract đầu ra |
+| Văn phong | Select mẫu đã lưu hoặc mặc định website; textarea cho yêu cầu riêng. AI chọn cấu trúc phù hợp bài, không tự đổi profile |
+| Tạo mẫu từ bài tham khảo | Dán bài → AI phân tích → người dùng xem/sửa → Lưu database → dùng lại qua select |
+| Ảnh trong bài | Chọn/upload từ bên trong TinyMCE, tại vị trí con trỏ; tích hợp MediaLibrary và giữ tham chiếu asset khi lưu/regenerate |
+| Bảo toàn nguồn | Facts có source block ID/bằng chứng, giữ điều kiện, phiên bản, số liệu, code, bảng, link, quote và tham chiếu ảnh |
+| Vận hành | Dùng queue, transport, registry, Settings và `AiImport` hiện có; thêm snapshot/checkpoint/metadata cho từng bước |
+| Đầu ra nghiệp vụ | Chỉ field được chọn được cập nhật; Post Apply vẫn qua `PostAiAdapter` và ép `status=draft` |
+
+Ba bước là workflow cố định do backend điều phối. Các tên `AnalyzerPlannerAgent`, `WriterAgent`, `EditorAgent` chỉ là lớp đảm nhiệm một nhiệm vụ; không cần ba model riêng hoặc một framework agent tự quyết định công cụ và luồng chạy. Ba lượt AI cũng không tự bảo đảm bài hay hơn: cần đánh giá bằng bộ bài mẫu tại 12.15.
+
+### 12.2 Hiện trạng trước triển khai và phần cần kế thừa
+
+Luồng đang có, rút gọn theo code:
+
+```text
+Request URL / text / nội dung từ file HTML + options
+  → AiRunService tạo AiImport và snapshot cấu hình
+  → ProcessAiImportJob::handle()
+  → ArticleImportService::run()
+      → ArticleSourceFetcher::fetch() hoặc inlineSource()
+      → extract(): nội dung chính, lọc và sanitize
+      → PromptRegistry + ProviderRegistry chọn prompt/provider
+      → provider->generate() một lượt
+      → adapter chuẩn hóa response + AiOutputValidator
+      → mergeRequestedFields() với nguồn/candidate cha
+      → xử lý thumbnail → lưu result_json.draft → ready
+  → người dùng xem/sửa candidate
+  → AiImportController::apply()
+  → PostAiAdapter → action tạo/cập nhật Post draft + provenance
+```
+
+`PostAiAdapter` chuyển draft canonical sang field nghiệp vụ Post, kiểm tra/chuẩn bị payload cho action; nó không gọi model. Adapter provider như OpenAI/Gemini định dạng request theo API của model và chuẩn hóa response về contract hệ thống; nó không ghi Post hay quyết định taxonomy, slug, trạng thái xuất bản hoặc actor.
+
+| Hiện trạng cần xử lý | Bằng chứng/điểm sửa |
+| --- | --- |
+| Prompt cuối vẫn thiên về rewrite và bố cục chung; chỉ có một lượt generation | `Content/ArticleImportService.php`, `Registries/PromptRegistry.php`, `config/ai-agent.php` |
+| `generate(title, content, language, rewriteStyle, promptKey, instructions)` gắn với bài viết; adapter yêu cầu JSON phẳng theo field cuối | `Contracts/AiProviderContract.php`, `Providers/Adapters/AbstractStructuredAiProvider.php` |
+| Taxonomy còn trong prompt/schema/output và được lọc ID sau generation | `config/ai-agent.php`, adapter, `ArticleImportService`, `Targets/PostAiAdapter.php` và contract UI |
+| Sanitizer đã giữ heading/list/link/blockquote/code/table nhưng chưa cho phép `img/figure/figcaption`; extractor còn có thể mất thuộc tính ảnh và whitespace code | `Content/AiContentSanitizer.php`, `ArticleImportService::extract()` |
+| TinyMCE có công cụ ảnh nhưng chưa nối chọn/upload với MediaLibrary của project | `resources/js/views/apps/blog/post/PostEditor.vue`; editor được dùng ở Post và candidate AI |
+| Chưa có profile database, source checkpoint, similarity/language gate hay đối chiếu facts theo từng bước | Services, job, Settings và metadata hiện tại |
+
+**Bằng chứng audit ngày 2026-10-03:** chạy `OpenAiProvider` và `ArticleImportService` với HTTP fake có `finish_reason=stop`, chọn `content`: HTML exact-copy và output tiếng Anh khi yêu cầu `vi` đều được nhận. Không gửi generation thật, không ghi Post/Settings. Hai ca này cho thấy thiếu gate chất lượng; không phải lỗi của task 1. Đợt cập nhật plan ngày 2026-10-04 không chạy lại hai ca này.
+
+Giữ các kiểm tra của task 1: finish reason hợp lệ, không tool call/refusal, JSON/schema/kiểu dữ liệu đúng, field đã chọn không rỗng, diagnostics an toàn và không fallback che lỗi. Các đường tạo Resource/Sound vẫn phải tương thích; V1 nâng pipeline bài Post trước, không ép schema bài viết vào các target khác.
+
+### 12.3 Luồng mới từ nguồn đến Post
+
+```text
+1. Người dùng nhập nguồn và lựa chọn
+   URL / text / HTML + ngôn ngữ + model + nhóm field
+   + profile văn phong + yêu cầu riêng + taxonomy thủ công
+       ↓
+2. Backend validate, tạo AiImport, snapshot options/profile
+   Queue job lấy nguồn → extract → sanitize → source blocks/snapshot
+       ↓
+3. Analyze + Plan
+   ArticleKnowledge + WritingBrief/WritingPlan + source anchors
+       ↓
+4. Write
+   Dùng knowledge/plan/profile và nguồn có kiểm soát → bản nháp
+       ↓
+5. Edit
+   Biên tập diễn đạt và đối chiếu thông tin → output cuối
+       ↓
+6. Validate schema/field → khôi phục tham chiếu ảnh hợp lệ → sanitize
+   → quality gate trên output MỚI → merge field được chọn
+       ↓
+7. Xử lý thumbnail riêng → lưu result_json.draft → ready
+       ↓
+8. Người dùng xem/sửa trong editor, chèn ảnh trong TinyMCE
+   Backend validate HTML và đồng bộ media usage khi lưu
+       ↓
+9. Apply → PostAiAdapter → tạo/cập nhật Post draft + provenance
+   Editor kiểm tra và Publish theo luồng hiện có
+```
+
+**Chuẩn hóa nguồn:** bỏ header/footer/nav/ads/script và phần thừa nhưng giữ nội dung chính; không xóa bài chỉ vì nằm trong `<form>`. Chọn container phù hợp từ article/main/section/body theo nội dung, không mặc định lấy phần tử đầu tiên. Giữ đoạn văn, heading, list, code, bảng, link và quote dưới dạng block có ID ổn định; code giữ xuống dòng/thụt đầu dòng. Snapshot gồm nội dung, URL/canonical URL, thời điểm lấy, hash và các block cần dùng làm bằng chứng.
+
+Nguồn dài phải có budget rõ ràng: giữ các block liên quan và thông báo phần thiếu/chưa đọc; không cắt thầm code, điều kiện hoặc kết luận quan trọng để đủ token. V1 không mặc định thêm nhiều lượt tóm tắt/chunking AI; giới hạn input và lỗi nguồn quá lớn phải hiển thị rõ.
+
+**Nhánh rút gọn:** chỉ tạo title/excerpt/SEO thì dùng nhiệm vụ ngắn tương ứng, không bắt chạy đủ ba bước. Nếu chọn `content` cùng các field khác, output cuối chứa các field được yêu cầu trong cùng pipeline. Thumbnail-only không gọi AI text; deterministic không đi qua gate rewrite. Regenerate tạo child, giữ parent và chỉ thay nhóm được chọn; lỗi child không làm mất bản nháp cha hoặc dữ liệu nhập tay.
+
+### 12.4 Analyze + Plan, Write và Edit làm gì?
+
+| Bước | Input | Công việc | Output |
+| --- | --- | --- | --- |
+| Analyze + Plan | Source blocks, brief người dùng, profile snapshot, field được chọn | Hiểu chủ đề/facts/điều kiện; đánh dấu phần chưa rõ; chọn góc tiếp cận, loại bài, audience và outline nếu brief chưa xác định | Knowledge có bằng chứng + plan/coverage; chưa có bài hoàn chỉnh |
+| Write | Knowledge, plan, brief, profile và các đoạn nguồn cần kiểm tra | Viết mới bằng tiếng Việt tự nhiên; giải thích theo nhu cầu người đọc; giữ code/bảng/link/quote và điều kiện | Bản nháp cùng tham chiếu facts/assets cần giữ |
+| Edit | Bản nháp, knowledge, source anchors, brief/profile | Sửa dịch máy, lặp ý, sáo rỗng, nhịp câu, heading/bullet thừa; đối chiếu facts, số liệu, phiên bản, code và điều kiện | Bài cuối + metadata sửa/issue cần hiển thị an toàn |
+
+Analyzer phải phân biệt thông tin nguồn khẳng định, suy luận có điều kiện và phần chưa đủ dữ liệu. Facts có `source_block_ids` hoặc trích đoạn hỗ trợ ngay trong V1; không chờ V2 Fact Ledger mới giữ bằng chứng. Các trích đoạn và block ID phải được backend kiểm tra tồn tại. Điểm confidence do AI tự báo không chứng minh nhận xét đúng.
+
+Writer được xem source có kiểm soát, đặc biệt code/bảng/quote; không chỉ nhận một bản tóm tắt dễ mất chi tiết. Được thêm ví dụ giả định để giải thích khi ghi rõ là ví dụ, nhưng không tự tạo benchmark, tính năng/API, trải nghiệm cá nhân, phát ngôn hoặc kết luận mà nguồn không hỗ trợ. Profile bài mẫu chỉ cung cấp cách viết, không cung cấp facts cho bài mới.
+
+Editor là lượt biên tập theo dữ liệu đã cung cấp, không phải xác minh sự thật ngoài internet. Nếu nguồn sai/cũ, ba bước có thể vẫn giữ thông tin sai/cũ; tác vụ research/fact-check bên ngoài thuộc giai đoạn sau.
+
+**Ví dụ giả định — nguồn giới thiệu thư viện X phiên bản 2.0:**
+
+```text
+Nguồn: "Version 2.0 supports batch requests of up to 100 items.
+This feature requires a paid plan. The endpoint remains /v1/items."
+
+Analyze + Plan:
+- F1: batch tối đa 100 phần tử, bằng chứng block S03.
+- F2: cần gói trả phí, bằng chứng block S03.
+- F3: endpoint vẫn /v1/items, bằng chứng block S03.
+- Loại bài: tin cập nhật ngắn; góc viết: thay đổi và điều kiện sử dụng.
+- Không có dữ kiện về tốc độ hoặc khả năng dùng trên gói miễn phí.
+
+Write:
+"Thư viện X 2.0 cho phép gửi tối đa 100 phần tử trong một batch.
+Tính năng này yêu cầu gói trả phí; endpoint vẫn là /v1/items."
+
+Edit:
+- Giữ giới hạn 100 và điều kiện gói trả phí.
+- Loại câu "nhanh gấp 10 lần" nếu Writer tự thêm.
+- Không thêm mở bài dài hoặc kết luận chỉ lặp lại hai câu trên.
+```
+
+Bài hướng dẫn có thể cần từng bước/code/ảnh; bài so sánh cần tiêu chí và bằng chứng; tin ngắn có thể chỉ cần vài đoạn. AI chọn cấu trúc theo brief/nguồn, không tự thay yêu cầu người dùng.
+
+### 12.5 Prompt động và yêu cầu cho từng bài
+
+**Prompt hiện tại không chỉ lấy từ `targets.post.content_instructions`:** `PromptRegistry` chọn `ai-agent.prompts` và hướng dẫn theo target; adapter ghép thêm system prompt từ Settings/snapshot, số từ, lựa chọn field, SEO và schema. `instructions` nhập riêng được gửi trong context dưới dạng `additional_instructions`.
+
+Luồng mới tách prompt theo nhiệm vụ, dùng chung các nguyên tắc nhưng không nối một bộ yêu cầu viết bài cuối vào cả ba bước:
+
+```text
+Quy tắc nhiệm vụ + nguồn không tin cậy + bảo toàn thông tin
+  + WritingBrief của bài này
+  + profile/rules/đoạn minh họa đã duyệt
+  + input của bước hiện tại và nguồn liên quan
+  + schema đầu ra đúng nhiệm vụ
+```
+
+- **Quy tắc hệ thống:** an toàn nguồn, facts/attribution, field được phép, không tự quyết định business logic; version riêng từng prompt/schema.
+- **Brief từng bài:** ngôn ngữ, người đọc, mục tiêu, loại bài, góc tiếp cận, độ dài và yêu cầu riêng. Người dùng có thể chỉ nhập nguồn/profile; Analyzer suy luận các mục còn thiếu và lưu plan để kiểm tra.
+- **Văn phong:** hướng dẫn cách diễn đạt/nhịp câu/từ ngữ, không áp một outline cố định cho tất cả bài.
+- **Độ dài:** dùng mức khuyến nghị/range phù hợp nguồn; yêu cầu riêng có ưu tiên. Không kéo bài ngắn thành bài dài bằng lặp ý chỉ để đạt `min_word_count` cứng.
+- **Schema:** Analyzer trả knowledge/plan; Writer trả draft; Editor trả final; schema phân tích văn phong độc lập. Chỉ bước tạo final field cần contract Post tương ứng.
+
+Thứ tự ưu tiên: quy tắc hệ thống về dữ liệu/độ chính xác/contract → brief và yêu cầu rõ ràng của bài → profile đã chọn hoặc mặc định website. Nội dung nguồn và bài mẫu là dữ liệu, không được ghi đè chỉ dẫn hệ thống. Nếu yêu cầu riêng mâu thuẫn contract hoặc đòi thông tin không có căn cứ, phản ánh lỗi/issue rõ ràng thay vì bịa để đáp ứng.
+
+Mỗi run lưu prompt key/version, schema version và các input cần tái hiện theo từng bước. Settings `default_system_prompt` vẫn là hướng dẫn chung của website; không dùng nó làm nơi chứa danh sách profile hoặc toàn bộ prompt của mọi nhiệm vụ.
+
+### 12.6 UI chọn văn phong và tạo mẫu từ bài tham khảo
+
+**Khi tạo bài:** select `Văn phong` gồm `Dùng mặc định website` và các profile đã lưu đang bật; textarea `Yêu cầu riêng cho bài` là tùy chọn. Ngôn ngữ/model/nhóm field giữ theo form hiện có. Các tùy chọn audience/loại bài/độ dài có thể nằm trong phần nâng cao, không bắt người dùng điền nhiều select mới để tạo một bài.
+
+Muốn điều chỉnh cách viết cho riêng một bài, người dùng có thể viết tay trong textarea, ví dụ: “Viết ngắn, xưng hô trung tính, giải thích cho người mới, giữ nguyên code”. Muốn dùng lại cách viết đó nhiều lần thì tạo/sửa profile; form tạo bài không cần một ô nhập system prompt đầy đủ.
+
+**Khi quản lý mẫu:** đặt tại Systerm AI → Ai Prompt. Thiết kế gồm tạo thủ công, tạo từ bài tham khảo, xem/sửa/tắt và đặt mặc định; `AiSettings` giữ lựa chọn mặc định website. Admin quản lý rules; người viết chọn profile và thêm yêu cầu riêng. Hiện List/Add, phân tích/duyệt/lưu/đặt mặc định và xem prompt đã có tại 12.19–12.22; tạo thủ công và sửa/xóa/bật-tắt mọi mẫu từ List vẫn chờ UI. Luồng chọn lại profile trong form tạo bài còn mở ở 12.23.
+
+```text
+Tạo mẫu mới → Từ bài tham khảo
+  → nhập tên mẫu + dán bài
+  → bấm Phân tích văn phong → queue phân tích
+  → xem bản phân tích, trích đoạn làm bằng chứng và hướng dẫn tổng hợp
+  → sửa tên/mô tả/rules/hướng dẫn khi cần
+  → bấm Lưu mẫu → profile được lưu database
+  → xuất hiện trong select Văn phong khi tạo bài
+```
+
+AI phân tích giọng văn/cách xưng hô/mức cảm xúc, cách mở bài, nhịp câu, đoạn và chuyển ý, từ vựng/thuật ngữ, cách dùng heading/bullet/ví dụ/kết luận. Nhận xét có trích đoạn ngắn đúng từ bài; đặc điểm chưa đủ bằng chứng phải ghi chưa rõ, không biến thành quy tắc tuyệt đối. Bài mẫu ở ngôn ngữ khác được chuyển thành hướng dẫn viết tự nhiên trong ngôn ngữ đầu ra.
+
+Ví dụ contract rút gọn, chỉ minh họa thiết kế:
+
+```json
+{
+  "summary": "Trực tiếp, gần gũi, giải thích bằng tình huống cụ thể",
+  "rules": {
+    "tone": "Gần gũi, chuyên nghiệp",
+    "opening": "Đi thẳng vào vấn đề hoặc thay đổi chính",
+    "sentence_rhythm": "Phối hợp câu ngắn với câu giải thích vừa phải",
+    "structure_patterns": ["Heading khi đổi chủ đề", "Bullet cho các bước"],
+    "avoid": ["Mở bài sáo rỗng", "Kết luận chỉ lặp lại nội dung"]
+  },
+  "evidence": [
+    {
+      "feature": "opening",
+      "excerpt": "Trích đoạn có thật từ bài người dùng dán",
+      "explanation": "Mở bài nêu ngay vấn đề cần giải quyết"
+    }
+  ],
+  "style_instructions": "Hướng dẫn tổng hợp dựa trên đặc điểm có bằng chứng"
+}
+```
+
+Một lần phân tích tạo profile dùng nhiều lần; khi sinh bài với profile đã lưu không gọi lại AI phân tích văn phong. Đây là trích xuất và tái sử dụng hướng dẫn viết, không phải training/fine-tuning model. Thiết kế ban đầu nhận bài dán; URL/file đơn đã được nối theo yêu cầu tiếp theo tại 12.19–12.20. Nhiều bài mẫu và AI tự chọn profile vẫn để giai đoạn sau.
+
+### 12.7 Database, API và snapshot văn phong
+
+Bảng/field dưới đây mô tả thiết kế dữ liệu ban đầu. Migration/API đã được triển khai tại 12.17; contract hiện tại xem [API mẫu văn phong](AI_WRITING_PROFILES_API.md).
+
+| Dữ liệu | Nội dung dự kiến |
+| --- | --- |
+| `ai_writing_profiles` | `id`, `name`, `description`, `rules_json`, `evidence_json`, `style_instructions`, `version`, `origin`, `source_hash`, `analysis_metadata_json`, `is_enabled`, `created_by`, timestamps |
+| `analysis_metadata_json` | Provider/model thực dùng, prompt/schema version và thông tin phân tích an toàn |
+| `AiSettings.default_writing_profile_id` | Profile mặc định website; mở rộng service/API Settings hiện tại |
+| `ai_writing_profile_analyses` | Tác vụ phân tích: actor, reference text/hash, connection snapshot không secret, prompt/schema version, status, result, lỗi, timestamps và retention |
+| Profile snapshot trong article run | ID/version/rules/hướng dẫn và các ví dụ đã duyệt cần sử dụng; không chỉ lưu ID rồi đọc profile hiện tại ở từng bước |
+
+API dự kiến cung cấp CRUD/bật-tắt/profile options, tạo analysis run, đọc tiến độ/kết quả và lưu profile sau khi người dùng duyệt. Dùng quyền admin/AI hiện có phù hợp với quyền quản lý và quyền sử dụng; kiểm tra quyền ở backend. Validate schema, độ dài, trích đoạn phải có trong bài mẫu và optimistic version khi sửa.
+
+```text
+Analysis run: queued → analyzing → ready / failed / cancelled
+Profile đã lưu: enabled / disabled
+```
+
+Analysis run là tác vụ kỹ thuật độc lập, không phải candidate Post; dùng chung queue/transport/model resolver nhưng không đưa vào danh sách bài AI để Apply. Không tự lưu profile chỉ vì model phân tích thành công: người dùng phải xem/sửa và bấm Lưu. Bài tham khảo có thể hết hạn theo retention tác vụ; profile đã lưu tồn tại độc lập và giữ các trích đoạn đã duyệt.
+
+Sửa/tắt profile không thay đổi run đang chạy hoặc lịch sử. Run mới chỉ chọn profile đang bật. Regenerate mặc định giữ snapshot profile của parent; đổi profile là override rõ ràng. Không mang số liệu, tên sản phẩm, trải nghiệm hoặc kết luận trong bài mẫu sang facts của bài mới.
+
+### 12.8 Ảnh trong content và kết nối TinyMCE–MediaLibrary
+
+Ảnh inline thuộc nội dung bài, khác vai trò thumbnail. Người dùng chọn/upload ảnh ngay trong TinyMCE tại con trỏ; không phải mở thêm một media dialog độc lập bên ngoài editor hoặc chọn lại ảnh trong một gallery thứ hai.
+
+**Luồng V1:** tạo bài → sửa trong TinyMCE → nút ảnh cho chọn asset có sẵn hoặc upload qua MediaLibrary → editor chèn URL và asset ID → lưu candidate/Post → backend xác thực và đồng bộ usage. `PostEditor.vue` là điểm tích hợp chung để cả Post editor và AI candidate dùng cùng hành vi.
+
+1. Nối `file_picker_callback`/`images_upload_handler` hoặc hook tương đương của editor với API MediaLibrary hiện có; validate loại/kích thước/quyền upload bằng backend.
+2. Upload/chọn trả `MediaAsset` ID và URL, chèn `img` có tham chiếu ổn định, ví dụ `data-media-asset-id`, alt/caption người dùng có thể sửa. Cấu hình editor giữ thuộc tính tham chiếu này.
+3. Backend parse HTML khi lưu, kiểm quyền asset và URL khớp asset; không tin ID/URL từ HTML client. Đồng bộ vào contract media hiện có (`media.content_image_ids`/usage `post.content_images`) theo asset thực sự xuất hiện.
+4. Sanitize cho phép `img`, `figure`, `figcaption` và một tập thuộc tính an toàn; chặn event handler/URL nguy hiểm. File upload phải xong trước lưu; không lưu `blob:`/base64 tạm làm URL nội dung cuối.
+5. Di chuyển/xóa ảnh trong editor được phản ánh vào usage sau khi lưu; xóa tham chiếu không tự xóa file MediaAsset toàn cục. Cleaner không xóa asset đang được Post/candidate khác sử dụng.
+6. Thất bại upload/lưu phải hiển thị lỗi và giữ draft; reload, sửa candidate và Apply vẫn giữ ảnh đúng vị trí.
+
+**Regenerate nội dung đã có ảnh:** chuyển ảnh thành placeholder/ref ID được backend cung cấp trước khi gửi text AI. Writer/Editor chỉ giữ/đặt ref được phép; không tự tạo URL hoặc asset ID. Backend khôi phục HTML ảnh từ map đã xác thực, kiểm thiếu/ref không tồn tại và không để bước sanitize làm mất ảnh. Duy trì vị trí hợp lý theo block; người dùng vẫn có thể chỉnh/xóa trong TinyMCE.
+
+**Ảnh trong nguồn URL/HTML:** giữ metadata ảnh gắn với block ngữ cảnh, alt/caption, URL tương đối đã resolve và nguồn lazy-load/srcset khi có. Tách việc ghi nhận ảnh nguồn khỏi việc import file vào MediaLibrary; nếu import từ xa, dùng fetcher/validation/giới hạn hiện có. Chỉ có URL/alt không có nghĩa text model đã nhìn thấy nội dung ảnh. Hiểu screenshot/biểu đồ bằng pixel cần một bước vision riêng nếu triển khai sau.
+
+| Nguồn ảnh | Cách xử lý |
+| --- | --- |
+| Upload hoặc MediaLibrary | Bắt buộc V1: người dùng chọn trong TinyMCE, backend giữ asset reference và usage |
+| Ảnh sẵn trong candidate/Post | Bắt buộc V1: giữ qua sanitize/save/regenerate/Apply; không để AI phát minh ảnh |
+| Ảnh từ bài nguồn | Giữ metadata/ngữ cảnh; tự động lựa chọn và import toàn bộ ảnh nguồn là phần mở rộng, không mặc định làm ở V1 |
+| Ảnh sinh bằng AI | Có thể dùng `AiImageGenerationService` hiện tại cho minh họa sau; tự chèn ảnh AI trong content để giai đoạn sau |
+
+Bài hướng dẫn cần screenshot thật hoặc ảnh người dùng cung cấp; không sinh hình giả rồi coi đó là giao diện thật của sản phẩm. Nếu mở rộng AI đề xuất vị trí ảnh, AI chỉ trả kế hoạch/ref, backend chọn asset thật và người dùng kiểm tra. Luồng thumbnail generate tại 9.7 vẫn là việc riêng; không gộp thumbnail và inline image thành một field.
+
+### 12.9 Taxonomy hoàn toàn thủ công và tương thích dữ liệu cũ
+
+- Bỏ `suggested_category_ids`, `suggested_tag_ids`, taxonomy alias, taxonomy instructions/schema và nhóm `taxonomy` khỏi lựa chọn AI cho run mới. Cũng không thay bằng AI đề xuất tên/chủ đề rồi backend ánh xạ.
+- `category_ids/tag_ids` vẫn là field nghiệp vụ Post nhận từ người dùng; select category/tag dùng catalog hiện có. Backend kiểm tra tồn tại, trạng thái/quyền theo quy tắc Post. Không tự tạo taxonomy mới.
+- Khi regenerate, giữ lựa chọn taxonomy thủ công của parent hoặc override hợp lệ; không nhận bất kỳ taxonomy nào từ response model.
+- Khi Apply, lấy taxonomy đã được người dùng chọn/xác nhận; AI không quyết định slug, actor hoặc publish status. Slug tiếp tục do business action tạo; status vẫn `draft`.
+- Candidate/snapshot cũ vẫn đọc được theo version. Đề xuất AI cũ không mặc nhiên biến thành lựa chọn thủ công đã xác nhận; UI cần người dùng xác nhận/chọn khi Apply. Không sửa ngầm Post đã lưu hoặc dữ liệu lịch sử.
+- Run cũ đã queued phải có kế hoạch chuyển phiên bản rõ ràng: drain theo contract cũ hoặc đánh dấu yêu cầu tạo lại; không xử lý snapshot cũ bằng schema mới mà thiếu thông báo.
+
+Không có taxonomy resolver bằng tên trong task 2 mới. Category có phân cấp hoặc tên trùng được giải quyết bằng lựa chọn ID thủ công và validation nghiệp vụ hiện có.
+
+### 12.10 Nhóm Services/Ai theo chức năng và điểm tích hợp
+
+Các folder hiện có sau đợt nhóm file: `Content`, `Providers/Adapters`, `Providers/Catalog`, `Providers/Transport`, `Providers/Diagnostics`, `Images/Adapters`, `Runs`, `Settings`, `Provenance`, `Contracts`, `Registries`, `Targets`. Giữ cấu trúc này; không dựng thêm một cây `app/AI` với provider, queue và settings trùng lặp.
+
+Các file/folder mới dự kiến bổ sung vào hệ thống hiện tại:
+
+```text
+app/Services/Ai/
+  Content/
+    ArticleImportService.php         orchestration nguồn/merge/thumbnail hiện có
+    ArticleSourceFetcher.php         fetch và boundary nguồn hiện có
+    AiContentSanitizer.php            sanitizer hiện có, bổ sung inline image
+    AiOutputValidator.php            validator final hiện có
+    Pipelines/
+      ArticleGenerationPipeline.php  điều phối AnalyzePlan → Write → Edit
+    Agents/
+      AnalyzerPlannerAgent.php       đọc hiểu + lập kế hoạch
+      WriterAgent.php                viết bản nháp
+      EditorAgent.php                biên tập
+    Data/                            knowledge/brief/plan/source block DTO
+    Prompts/                         builder/template riêng theo nhiệm vụ
+    Quality/                         gate/metrics/bảo toàn nguồn
+  WritingProfiles/                   CRUD, phân tích bài mẫu, snapshot profile
+  Contracts/                         contract AI request/response theo task
+  Providers/
+    Adapters/                        format API và normalize response
+    Transport/                       AiProviderClient/AiConnection dùng lại
+    Catalog/                         catalog/ModelResolver dùng lại
+    Diagnostics/                     diagnostics dùng lại/mở rộng
+  Runs/                              snapshot, progress, checkpoint, cleanup
+  Targets/PostAiAdapter.php           candidate → Post, không gọi model
+```
+
+Sơ đồ trên là thiết kế folder ban đầu; pipeline/agents/provider DTO và WritingProfiles đã được triển khai tại 12.17 với đường dẫn thực tế trong repository. Controllers/FormRequests/Jobs/Models/migrations nằm ở thư mục Laravel tương ứng, không dồn vào Services. `ArticleImportService::run()` gọi pipeline cho nhánh có `content`; pipeline không tự ghi Post. Agents gọi provider contract dùng chung; transport không chứa luật viết bài. Template/schema đi qua registry/version hiện có thay vì có hai nguồn khai báo khác nhau.
+
+Khi triển khai application files, cập nhật namespace/import/config/tests và comment theo convention project; việc nhóm folder trước đó là phần đã làm, không tạo lại một đợt di chuyển toàn bộ file.
+
+### 12.11 Provider contract và structured output theo nhiệm vụ
+
+Đây là dependency phải làm trước pipeline: adapter hiện yêu cầu field bài viết dạng JSON phẳng nên không thể chỉ thêm prompt Analyzer rồi trả object lồng `knowledge/writing_plan` vào validator Post.
+
+Đề xuất contract task-neutral nhận request DTO gồm `task`, system instructions, input/context, schema, model/options và trả response DTO gồm output + diagnostics/usage. Giữ một bridge cho `generate()` và target cũ trong thời gian chuyển đổi. Provider adapter làm hai việc:
+
+1. Chuyển request chuẩn hệ thống sang format/API provider và gửi qua transport hiện có.
+2. Kiểm envelope/finish/refusal/tool call, parse response và chuyển về output/metadata chuẩn theo schema của nhiệm vụ.
+
+Validation nội dung của từng bước nằm ở schema/validator nhiệm vụ; validation Post cuối tiếp tục áp dụng field được chọn. Không để adapter tự chọn outline/profile hoặc thực hiện business action.
+
+| Nhiệm vụ | Schema dự kiến | Dữ liệu chính |
 | --- | --- | --- |
-| Prompt theo tài nguyên | Đã yêu cầu đúng ngôn ngữ, giữ sự thật/code, coi nguồn là dữ liệu không tin cậy; Post có mở bài/heading/kết luận. Chưa yêu cầu cụ thể viết lại cấu trúc/cách diễn đạt và giữ liên kết/trích dẫn; chưa đối chiếu chất lượng kết quả | `config/ai-agent.php:120,130`, `Registries/PromptRegistry.php:157` |
-| Bảo toàn HTML | Sanitizer giữ link an toàn, blockquote, code và table nếu AI trả về; chưa kiểm AI có bỏ liên kết, trích dẫn hoặc sửa code so với nguồn | `AiContentSanitizer.php:28–47`, `ArticleImportServiceTest.php:105` |
-| Danh mục và tag | AI vẫn được yêu cầu trả `suggested_category_ids/suggested_tag_ids`; context không cung cấp catalog taxonomy. Backend chỉ loại ID không tồn tại, chưa ánh xạ tên/chủ đề | `config/ai-agent.php:53–57,140–141`, `AbstractStructuredAiProvider.php:133–138,224–228`, `ArticleImportService.php:164–167,436–440` |
-| Similarity / exact-copy | Chưa có phép đo, cấu hình ngưỡng hoặc gate chặn sao chép. Task 1 kiểm schema, kiểu dữ liệu và nội dung không rỗng | `AiOutputValidator.php:43–104`, `ArticleImportService.php:139–143` |
-| Ngôn ngữ đầu ra | Ngôn ngữ được gửi trong prompt/context; chưa có detector hoặc gate kiểm kết quả. Request chỉ kiểm chuỗi tối đa 12 ký tự | `ArticleImportService.php:132`, `AbstractStructuredAiProvider.php:133–138`, `AiImportRequest.php:98` |
-| Errors / diagnostics / tests | Có thể dùng trạng thái `failed` và snackbar của task 1. Chưa có mã lỗi/metadata/tests cho similarity, sai ngôn ngữ hoặc ánh xạ taxonomy bằng tên | `AiResponseDiagnostics.php`, `ProcessAiImportJob.php`, `utils/aiErrors.js`, tests AI hiện có |
+| Analyze + Plan | `article.analysis-plan.v1` | Facts/evidence/source refs, thuật ngữ, uncertainties, brief/angle/outline/coverage |
+| Write | `article.writer.v1` | Draft field được chọn, refs facts/code/ảnh cần giữ |
+| Edit | `article.editor.v1` | Final field được chọn, vấn đề/sửa đổi được giới hạn và lưu riêng |
+| Phân tích văn phong | `writing-profile.analysis.v1` | Summary, rules, evidence, style instructions; không có payload Post |
+| Title/excerpt/SEO riêng | Schema theo nhiệm vụ/target | Chỉ field thực sự được yêu cầu |
 
-**Rủi ro taxonomy:** ID do AI đoán mà tình cờ tồn tại vẫn được nhận, dù không đúng chủ đề. ID không tồn tại bị lọc thành `[]` nhưng tác vụ vẫn có thể thành công. `existingIds()` chưa lọc taxonomy inactive. Category có phân cấp và tên có thể trùng; resolver mới không được tùy ý lấy bản ghi đầu tiên.
+Metadata/intermediate outputs không trộn vào `result_json.draft` public. Output final canonical vẫn phù hợp `PostAiAdapter`. Tăng prompt/schema version khi thay contract và snapshot version từng bước.
 
-### 12.2 Xác minh hành vi hiện tại
+Adapter hiện dùng JSON mode/MIME JSON ở các provider tương ứng; không coi đó là server đã cưỡng chế toàn bộ JSON Schema. Khi provider/model hỗ trợ schema thực sự thì gửi schema đúng capability; trường hợp không hỗ trợ dùng prompt + parse/validation chặt. Không giả định mọi model đều có cùng capability.
 
-Chạy `OpenAiProvider` và `ArticleImportService` thật với phản hồi `finish_reason=stop` từ HTTP fake, chọn riêng `content`:
+### 12.12 Queue, checkpoint, progress và retry
 
-- **Exact copy:** output giữ nguyên toàn bộ HTML nguồn; pipeline vẫn nhận kết quả hợp lệ.
-- **Sai ngôn ngữ:** yêu cầu `vi`, nguồn tiếng Việt, output chỉ chứa đoạn tiếng Anh; pipeline vẫn nhận kết quả hợp lệ.
+V1 dùng job hiện có điều phối ba bước tuần tự. Controller chỉ tạo/đọc/hủy tác vụ; không gọi pipeline ba lượt đồng bộ trong HTTP request. Chỉ tách job mỗi bước nếu budget hoặc vận hành thực tế cần; không dựng thêm queue framework.
 
-Hai ca xác minh dùng model `AiImport` chưa lưu, không ghi tác vụ/Post, không gửi request AI thật và không thay đổi Settings. Đây là bằng chứng thiếu gate chất lượng, không phải regression của task 1. Không chạy lại bộ test/build vì đợt audit chỉ cập nhật tài liệu.
+**Dữ liệu kỹ thuật cần lưu:**
 
-### 12.3 Các phần cần triển khai tiếp
+- Source snapshot/hash và block map sau extract, trước lượt Analyze; snapshot options/profile/model/settings.
+- Prompt key/version, schema version, input hash, provider/model thực dùng và output đã validate của từng bước.
+- Step status/attempt/start/end, usage/token, latency, checkpoint và lỗi an toàn theo allowlist.
+- Kết quả cuối trong `result_json.draft`; intermediate ở storage riêng/metadata bảo vệ. Có thể thêm `ai_import_steps` để lưu attempt/output/checkpoint thay vì phình public JSON; contract lưu trữ phải chốt ở đợt 1.
+- Chính sách retention/giới hạn kích thước cho source và step artifacts; không lưu API key/header xác thực hoặc raw response không kiểm soát.
 
-1. Hoàn thiện prompt: viết lại cách diễn đạt/cấu trúc, giữ sự thật, code, URL liên kết và attribution/trích dẫn. Tăng version khi thay contract; kiểm tra cả URL/text, Post/Resource/Sound và lựa chọn từng nhóm.
-2. Đổi output taxonomy generation mới sang danh sách tên/chủ đề có giới hạn. Backend ánh xạ taxonomy active, xử lý tên trùng/không khớp rõ ràng, không tự tạo taxonomy. Candidate vẫn trả `category_ids/tag_ids` do backend xác định để apply/UI hoạt động; giữ khả năng đọc candidate cũ và phân biệt schema của run đã xếp hàng.
-3. Thêm gate chất lượng **sau sanitize output mới, trước merge nguồn/parent và trước xử lý thumbnail**. Đo similarity với phần nguồn trong memory; không so sánh draft đã merge vì field không chọn vốn được giữ nguyên. Bỏ qua phép kiểm rewrite cho deterministic và thumbnail-only.
-4. Kiểm ngôn ngữ trên văn bản mới được AI tạo theo lựa chọn. Có trạng thái chưa xác định/bỏ qua cho nguồn quá ngắn, nhiều tên riêng hoặc code; không suy ra ngôn ngữ chỉ từ việc có/không có dấu tiếng Việt.
-5. Lưu metrics/lý do an toàn theo allowlist và dùng lỗi `failed` không retry cho quality gate. Bổ sung test normalize HTML/entity/Unicode/whitespace, sao chép, paraphrase, sai ngôn ngữ, code/trích dẫn, taxonomy tên trùng/inactive/không khớp, partial regenerate, giữ parent và lỗi sau reload.
+Snapshot kỹ thuật này thuộc task 2 để run có thể tái hiện/resume. Lưu nguồn lâu dài cùng bản biên tập, compare UI và `ai_content_drafts` vẫn thuộc mục 3; không mặc nhiên biến retention hai ngày của `ai_imports` thành nơi lưu bài lâu dài.
 
-**Các quyết định chưa chốt:** cách đo và ngưỡng similarity; `60%` ở mục 6 mới là đề xuất. Cần chốt exact-copy fail ngay hay đưa ra biên tập, và cách xử lý đoạn ngắn/code/trích dẫn để tránh lỗi sai. Chưa có quyết định mới được áp dụng trong đợt audit này.
+**Progress dự kiến:** `queued → fetching → extracting → analyzing/planning → writing → editing → validating → thumbnail nếu chọn → ready`, cùng terminal `failed/cancelled/expired`. Có thể giữ status kỹ thuật tổng quát và dùng `current_step` cho các bước; không thêm enum rời rạc chỉ ở frontend. Cập nhật chung controller cancel/remove/regenerate, cleanup, danh sách trạng thái đang chạy và UI/polling. Progress phản ánh bước đang chạy, không giả thành phần trăm token hoặc thời gian còn lại chính xác.
 
-Snapshot nguồn dài hạn và giao diện so sánh nguồn/kết quả thuộc mục 3; gate có thể dùng nguồn đã extract trong memory hiện nay. Regenerate URL hiện tải lại nguồn, nên chưa có bảo đảm nguồn giống thời điểm tạo candidate cha.
+**Timeout:** công thức hiện tại `max(job_timeout, requestTimeout + 120)` được thiết kế cho một request. Ba request tối đa 600 giây có thể vượt `retry_after=900`; phải tính tổng budget extract + ba bước + validate/media + margin, hoặc chia job. Bảo đảm request/step budget nằm trong job budget và worker/job timeout nhỏ hơn queue `retry_after` để tránh xử lý trùng. Cấu hình production/process manager vẫn cần kiểm chứng riêng tại 2C.
 
-### 12.4 Điểm tiếp tục trên máy ở nhà
+**Hủy/retry:** kiểm cancellation ở mỗi ranh giới bước, lưu checkpoint sau validate, tránh cập nhật `ready` hoặc tạo asset sau khi tác vụ đã hủy. Khóa/claim run và kiểm version để hai worker/attempt không ghi đè. Không giữ transaction DB mở xuyên qua HTTP provider.
 
-- Task 1 đã triển khai và kiểm thử; bằng chứng tại 11.6.
-- Task 2 đã audit và xác định phạm vi; code kiểm chất lượng chưa triển khai.
-- Bước tiếp theo: chốt quy tắc similarity/exact-copy và các ngoại lệ, rồi cụ thể hóa contract prompt/schema, taxonomy resolver, quality gate và ma trận test trước khi triển khai.
-- Dùng `docs/fix_1.md` làm nguồn theo dõi phần còn lại; các nhóm Settings ngoài AI, extractor, biên tập dài hạn và realtime/VPS vẫn mở.
+Resume chỉ dùng lại bước hoàn thành nếu source/profile/prompt/schema/options hashes khớp. Không fetch lại URL đang chạy rồi tiếp tục với nội dung khác. Regenerate mặc định dùng source snapshot của parent còn giữ được; nếu snapshot đã hết hạn thì yêu cầu lấy nguồn mới và tạo snapshot/run mới rõ ràng. Thay params/profile hoặc bắt đầu lại từ đầu tạo child/new run.
+
+Giữ chính sách timeout/provider error hiện có: không blind retry một request có thể đã tính phí. JSON/schema/quality error không tự lặp gọi model để che lỗi; cho retry thủ công có chủ ý. Nếu sau này thêm retry lỗi transient hoặc revision loop thì giới hạn attempt, ghi cost/usage và không chạy lại bước hợp lệ khi đủ điều kiện resume.
+
+### 12.13 Quality gate và giới hạn đánh giá tự động
+
+Gate chạy **sau validate/sanitize output AI mới, trước merge nguồn/parent và trước thumbnail**. Không chấm draft đã merge vì field không chọn vốn được giữ từ nguồn. Không áp rewrite gate cho deterministic, thumbnail-only, code/trích dẫn được giữ đúng hoặc nhiệm vụ ngắn không tương đương viết lại toàn bài.
+
+| Kiểm tra | Quy tắc V1 dự kiến |
+| --- | --- |
+| Contract | Kế thừa task 1, cộng schema/ref validity cho từng bước; selected final field phải đúng kiểu và không rỗng |
+| Sao chép | Normalize văn xuôi HTML/entity/Unicode/whitespace; exact-copy phần văn xuôi đáng kể báo lỗi chất lượng. Tách code/quote/tên riêng khỏi phần đánh giá; đoạn quá ngắn có trạng thái bỏ qua/chưa xác định |
+| Similarity | Metric hỗ trợ phát hiện sao chép trong cùng ngôn ngữ; hiệu chỉnh theo bộ bài mẫu. Không áp cứng `60%`, không dùng độ giống thấp làm mục tiêu của Writer |
+| Ngôn ngữ | Detector trên văn bản mới; xử lý đoạn ngắn/nhiều code/tên riêng là chưa xác định. Không suy ra chỉ từ việc có dấu tiếng Việt |
+| Bảo toàn nguồn | Kiểm source IDs/excerpt/coverage, dữ kiện số/phiên bản/điều kiện và code/link/quote quan trọng theo ledger tối thiểu; báo thiếu/khác với bằng chứng cụ thể |
+| HTML và ảnh | Whitelist an toàn, ref asset hợp lệ, link/quote/code/table không mất qua sanitize, ảnh không bị AI tự tạo URL |
+
+Không coi so khớp chuỗi/regex là kiểm chứng ngữ nghĩa hoàn chỉnh. Dịch khác ngôn ngữ có similarity thấp vẫn có thể rất máy móc. Editor/AI evaluator tự chấm không phải bằng chứng độc lập về tính đúng; facts có lỗi là lỗi riêng, không được giấu trong điểm tổng hợp tốt.
+
+Lưu kết quả từng kiểm tra `pass/fail/skipped/undetermined`, lý do, stage và metric an toàn để editor hiểu. Lỗi chặn dùng trạng thái kỹ thuật `failed` cùng mã quality/schema rõ ràng, không tạo trạng thái nghiệp vụ `quality_failed` riêng chưa được thống nhất. Những nhận xét văn phong chủ quan có thể là warning để người dùng biên tập, không tạo cổng chặn dựa trên một điểm AI tự chấm.
+
+Mã lỗi cụ thể, ngưỡng similarity/language, minimum prose length, danh sách ngoại lệ và mức độ chặn từng kiểm tra cần hiệu chỉnh bằng fixtures trước rollout. Quy tắc dự kiến cho exact-copy không cấm giữ nguyên code, trích dẫn hay thuật ngữ chính xác.
+
+### 12.14 Thứ tự triển khai task 2
+
+Các đợt dưới đây là thứ tự triển khai của thiết kế ban đầu, không phải danh sách tất cả việc đang thiếu. Backend đã có tại 12.17, Ai Prompt tại 12.19–12.22; trạng thái còn lại theo audit 12.23.
+
+| Đợt | Công việc | Kết quả kiểm tra được |
+| --- | --- | --- |
+| 1 — Contract và nguồn | Loại taxonomy AI; chốt source blocks/snapshot, brief, schema/DTO task-neutral và vị trí lưu step artifacts; nâng adapter có bridge tương thích | Không model response nào quyết định taxonomy; adapter xử lý được schema intermediate; nguồn giữ facts/code/ref |
+| 2 — Văn phong | CRUD/profile options/default setting; analysis run bài dán, preview/edit/save, permissions, version và snapshot | Dán bài tạo mẫu, lưu database, chọn lại khi tạo run; facts bài mẫu không sang bài mới |
+| 3 — Pipeline | AnalyzerPlanner, Writer, Editor, prompt từng bước và ArticleGenerationPipeline; nhánh title/excerpt/SEO/media-only và merge theo lựa chọn | Tạo nội dung bằng ba bước; field không chọn và parent giữ đúng; final qua adapter Post hiện có |
+| 4 — Vận hành | Checkpoint/attempt/progress, cancel/resume, hashes, timeout/retry_after, diagnostics/usage và cleanup | Không dùng lại checkpoint sai input hoặc chạy trùng; reload xem được tiến độ/lỗi từng bước |
+| 5 — Quality | Exact-copy/similarity/language/grounding/ref gates, ngoại lệ và lỗi/warning có lý do | Output mới được kiểm trước merge/thumbnail; không có fallback che selected field sai |
+| 6 — TinyMCE và media | Picker/upload trong editor, sanitizer ảnh, asset refs/usage, regenerate bảo toàn inline image | Chèn ảnh tại con trỏ, lưu/reload/Apply/regenerate giữ ảnh; không cần chọn lại ngoài editor |
+| 7 — Đánh giá và rollout | Bộ bài mẫu, so sánh một lượt/ba lượt, regression, browser QA; bật qua cấu hình rollout có theo dõi cost/latency | Có bằng chứng chất lượng và vận hành trước khi dùng mặc định |
+
+Budget/timeout/cancellation tối thiểu phải có cùng đợt 3 trước khi chạy ba request thật; đợt 4 hoàn thiện resume/quan sát và production checks. Gate contract/ref validity chạy ngay mỗi bước, không đợi đợt 5 mới validate intermediate. Bộ bài mẫu được chuẩn bị từ đợt 1 để không đánh giá chỉ bằng bài dễ.
+
+Luồng một lượt có thể được giữ như baseline/rollout option rõ ràng. Không âm thầm fallback sang luồng đó hoặc deterministic khi ba bước lỗi rồi báo thành công. Nếu ba bước không cải thiện đủ so với một lượt có brief/profile tốt thì điều chỉnh prompt/luồng trước khi chọn làm mặc định.
+
+### 12.15 Tiêu chí nghiệm thu và kiểm thử
+
+**Chức năng bắt buộc:**
+
+Các ô dưới đây phản ánh kết quả tới đợt 12.24. Tests backend/frontend kết hợp browser và model thật trên localhost; tiêu chí toolbar TinyMCE giữ mở khi chỉ kiểm được editor dự phòng. Nghiệm thu chất lượng bằng người đọc bên dưới vẫn mở.
+
+- [x] URL/text/HTML normalize, source snapshot/anchors, code/table/link/quote/form; fixture tests và file Ovation trên browser localhost.
+- [x] `content` chạy Analyze + Plan → Write → Edit; nhánh ngắn/thumbnail-only không gọi thừa. Ba bước và excerpt-only đã chạy model thật.
+- [x] Select profile/mặc định, brief/yêu cầu riêng và snapshot/version; regenerate giữ snapshot cũ, override rõ ràng.
+- [x] Phân tích văn phong thật từ nguồn tham khảo → 13 dẫn chứng → sửa/lưu → List/select; CRUD thủ công/quyền/version có regression.
+- [x] Không AI taxonomy; danh mục/tag thủ công giữ qua edit/regenerate/Apply vào Post #6, legacy/version được kiểm.
+- [ ] Chèn/upload ảnh trong TinyMCE dùng MediaLibrary, giữ asset ID/URL/alt/vị trí qua save/reload/Apply; regenerate không làm mất ảnh hoặc tạo URL giả.
+- [x] Gates kiểm output mới trước merge/thumbnail; ngoại lệ code/quote/đoạn ngắn và parent preservation có regression; lỗi thật hiện sau reload, không fallback che lỗi.
+- [x] Queue budget/cancel/checkpoint/resume/claim kiểm bằng tests và MySQL/cache probe; progress/usage sau reload. Windows hard-kill và production checks vẫn giới hạn tại 12.24/2C.
+- [x] Apply vào Post draft, actor/provenance/media usage đúng; regression Post/Resource/Sound đạt.
+
+**Regression cần có khi triển khai:** HTTP fake cho adapter từng schema/finish reason/refusal/tool calls/JSON lỗi; output từng bước sai schema/ref hoặc thiếu selected field; snapshot/hash/version; facts có số liệu/điều kiện/code/link/quote; prompt injection từ nguồn/bài mẫu; title/SEO-only và partial regenerate; profile CRUD/quyền/disable/concurrency; lifecycle cancel/timeout/resume; HTML ảnh/quyền asset/URL mismatch/usage/cleanup và UI TinyMCE. Automated tests không gửi request AI thật.
+
+**Đánh giá chất lượng:** chuẩn bị 20–30 nguồn cố định đại diện tin cập nhật, hướng dẫn có code/ảnh/bảng, so sánh và giải thích khái niệm; có nguồn ngắn/dài, tiếng Việt/ngoại ngữ và trường hợp nhiều điều kiện kỹ thuật. So sánh ba phương án cùng nguồn/brief: pipeline hiện tại một lượt, một lượt với brief/profile tốt, pipeline ba bước. Người đánh giá được đọc nguồn nhưng không biết phương án nào sinh bài.
+
+Chấm tự nhiên tiếng Việt, đúng/đủ facts và điều kiện, hữu ích với người đọc, lặp ý/bố cục, mức chỉnh sửa cần thiết; ghi riêng lỗi bịa/mất thông tin, thời gian và token/chi phí. Một bài trôi chảy nhưng sai điều kiện sử dụng không được coi là đạt nhờ điểm văn phong cao. Ghi rubric và kết quả, hiệu chỉnh threshold trên bộ này rồi mới quyết định rollout.
+
+Browser QA có đăng nhập cần kiểm tạo bài/profile, tiến độ từng bước, reload/lỗi/cancel/regenerate, chọn taxonomy thủ công, chèn/upload/di chuyển/xóa ảnh và Apply thành Post draft. Chạy test/lint/build phù hợp phần code thực sự thay đổi; không cần test/build cho riêng đợt cập nhật tài liệu này.
+
+### 12.16 Những phần để sau và điểm cần hiệu chỉnh
+
+**Không bắt buộc V1:** ResearchAgent/FactChecker tra cứu ngoài nguồn, AI QualityEvaluator và revision loop, Fact Ledger đầy đủ nhiều nguồn, SEO agent riêng, tự route model theo bước, tự chọn profile, phân tích nhiều bài mẫu, vision ảnh, tự import ảnh nguồn hoặc sinh/chèn ảnh AI trong bài. URL/file đơn cho Ai Prompt đã có theo 12.19–12.20. Khi mở rộng revision cần giới hạn lượt và tổng cost, không lặp đến khi model tự chấm đạt.
+
+**Cần hiệu chỉnh khi triển khai:** ngưỡng quality và ngoại lệ, source/token budget, retention step artifacts, tên schema/field/API cuối cùng, model và sampling phù hợp từng bước, timeout theo môi trường. Đây là thông số triển khai còn mở; không thay đổi quyết định taxonomy thủ công, profile do người dùng chọn và luồng draft.
+
+**Theo dõi ở phần khác của FIX 1:** `ai_content_drafts`/approve-reject/lưu dài hạn tại mục 3; thumbnail generate tại 9.7; Reverb/VPS tại 2C; chín tab Settings còn lại tại mục 9. Task 2 dùng chung hạ tầng, không coi các nhóm đó đã hoàn thành hoặc dựng workflow trùng lặp.
+
+**Điểm tiếp tục:** giữ bằng chứng Task 1 tại 11.6. Nội dung 12.1–12.16 mô tả thiết kế/tiêu chí; báo cáo backend ở 12.17, phạm vi nối API Ai Prompt ở 12.18 và báo cáo đợt nối ở 12.19. Những mô tả trang trống trong các mốc ban đầu là lịch sử trước khi custom UI.
+
+### 12.17 Báo cáo triển khai backend — 2026-10-04
+
+**Phạm vi đã chốt:** người dùng sẽ tự thêm giao diện Ai Prompt và UI mới; đợt này xây backend để giao diện chỉ cần kết nối API. Trang `/admin/ai/prompt` vẫn trống. Chỉnh frontend hiện có chỉ phục vụ tương thích status/contract, không dựng UI quản lý mẫu hoặc TinyMCE picker mới.
+
+| Nhóm | Backend đã làm | Phần còn mở |
+| --- | --- | --- |
+| Nguồn | URL/text/raw HTML/file HTML, MIME/encoding/byte budget; preview API; extractor giữ form content/code/table/link/quote; source blocks/hash/version | Giao diện upload HTML nguyên bản và preview |
+| Văn phong | CRUD/version/enable/default, options API, phân tích bài tham khảo qua queue với evidence, người dùng duyệt mới lưu, snapshot profile | Trang quản lý/phân tích và select/textarea |
+| Pipeline | `AiTaskRequest/Response`, provider `execute()`, AnalyzerPlanner/Writer/Editor, schema và source refs từng bước; title/SEO ngắn và Resource/Sound giữ nhánh phù hợp | QA provider thật và hiệu chỉnh prompt/threshold |
+| Taxonomy | Bỏ khỏi generation; ID active thủ công; edit/regenerate/Apply giữ lựa chọn, legacy AI cần chọn/xác nhận lại | Nối category/tag thủ công trong UI mới |
+| Queue | `ai_import_steps` có hash/output/diagnostics, resume chỉ checkpoint hợp lệ, source/profile/config/parent baseline bất biến; terminal updates có điều kiện; timeout/lease/cleanup | Worker/cache/SQS/process manager trên VPS |
+| Chất lượng | Schema/selected fields/source anchors/important facts, copy/language/code/link/numbers gates trước merge/media; warning và trạng thái chưa xác định công khai | Corpus nguồn thật và chấm mù chất lượng/ngữ nghĩa |
+| Ảnh/Apply | MediaLibrary ID/URL/quyền, content usage suy từ HTML, placeholder/ref giữ ảnh regenerate, bảo vệ ảnh được tham chiếu, lock khi attach/xóa; candidate và Post version check; Post vẫn draft/provenance | TinyMCE chọn/upload tại con trỏ và browser QA sau khi nối UI |
+
+Luồng mới:
+
+```text
+AiImportController::store → AiRunService::create (snapshot + queue)
+  → ProcessAiImportJob::handle → ArticleImportService::run
+  → fetch/inline → ArticleSourceExtractor → source snapshot
+  → ArticleGenerationPipeline::run
+      → AnalyzerPlannerAgent → provider::execute → schema/evidence → checkpoint
+      → WriterAgent → provider::execute → schema/references/selected fields → checkpoint
+      → EditorAgent → provider::execute → schema/important facts → checkpoint
+      → quality gates + khôi phục ảnh theo ID → final fields
+  → merge chỉ fields được chọn → thumbnail tùy chọn → ready candidate
+  → PATCH có expected_version → Apply có khóa/version
+  → PostAiAdapter → Create/UpdatePostAction → Post draft + provenance
+```
+
+API cho giao diện: [tạo bài/polling/regenerate/Apply](AI_ARTICLE_PIPELINE_API.md), [mẫu văn phong/phân tích bài tham khảo](AI_WRITING_PROFILES_API.md), [ảnh nội dung/MediaLibrary](TASK2_INLINE_MEDIA_API.md). Folder nghiệp vụ tách theo `Content/Agents`, `Content/Pipelines`, `Content/Prompts`, `Content/Quality`, `WritingProfiles`, `Runs`, `Providers`, `Images`; controller/FormRequest/resource/job/model theo Laravel. Comment file/method tiếng Việt có khung `===`, inventory và INPUT/OUTPUT.
+
+Đã migrate bốn migration mới vào MySQL local: profiles, analyses, default setting, step checkpoints; scheduler có cleanup analysis cùng cleanup run hiện có. Không gọi model trả phí khi regression. SQLite kiểm contract/policy khóa, không thay cho kiểm concurrency nhiều worker trên MySQL/Redis thực tế.
+
+**Kiểm chứng cuối:** lượt regression PHP đạt **213 tests / 1687 assertions**, chạy PHPUnit trực tiếp với GD để không bỏ ca thumbnail. Sau sửa bảo toàn ảnh của baseline, kiểm lại pipeline **34 tests / 237 assertions** và nhánh Settings/provider/thumbnail **28 tests / 298 assertions**, đều đạt; các lượt kiểm lại có test trùng, không cộng thành tổng ca duy nhất. Frontend toàn bộ **35 file / 206 tests** đạt. Pint scoped **62 file** và ESLint scoped đạt; production build thành công. Audit comment **80 file PHP ứng dụng, không thiếu header/inventory/method INPUT/OUTPUT**; comment file/hàm Vue/JS đã sửa cũng được cập nhật. Không chạy browser QA mới hoặc AI trả phí; warning từ component stub trong test/template build không phải bằng chứng UI đã nghiệm thu.
+
+**Chưa nghiệm thu chất lượng thực tế:** [protocol đánh giá](AI_ARTICLE_QUALITY_EVALUATION.md) mô tả A/B/C, 25 ca nguồn, rubric, công biên tập, token/latency/cost. Fixture tổng hợp offline dùng để kiểm kỹ thuật; chưa phải 25 nguồn thật đóng băng, chưa có chấm mù hoặc kết quả chứng minh ba bước viết hay hơn. UI mới, browser QA và rollout production còn mở; không đánh dấu toàn bộ Task 2/FIX 1 hoàn tất.
+
+### 12.18 Plan nối API Ai Prompt — 2026-10-04
+
+Đã lập [plan nối API Ai Prompt](PLAN_AI_PROMPT_API.md). Sau đó người dùng yêu cầu hoàn tất nối API cho trang hiện tại, giữ dữ liệu tĩnh ở những khối chưa có API và để trang danh sách văn phong sang đợt sau. **Mục 0 của plan thay thế phạm vi cũ ở mục 1–8**; bản thiết kế dài vẫn giữ để tham khảo cho đợt mở rộng. Đợt nối hiện tại không tạo endpoint hoặc migration mới.
+
+**Giao diện đã có:** page và các component nguồn/kết quả/insights được custom từ code người dùng đưa, giữ bố cục hai cột, theme Vuetify và icon Tabler. Editor dán dùng Tiptap hiện có; URL/file xem/sửa văn bản chuẩn riêng. Ô **Tên văn phong** phía trên ba tab nối `name` vào analysis/profile. QA tại [báo cáo UI](qa/AI_PROMPT_UI_2026-10-04.md) là bằng chứng của bản preview trước khi nối API; kiểm chứng mới theo dõi ở 12.19.
+
+**Luồng đã nối:** tên mẫu + dán bài/đọc TXT hoặc preview URL/HTML → POST analysis → GET polling → xem/sửa quy tắc và dẫn chứng → người dùng POST lưu profile → PUT sửa mẫu vừa lưu theo version → Settings partial đặt/gỡ mặc định. Phân tích văn phong dùng một request model; không chạy pipeline tạo bài ba bước ở trang này.
+
+**Tên văn phong:** do người dùng nhập, bắt buộc khi phân tích/lưu và tối đa 160 ký tự; không tự lấy tiêu đề bài hoặc để AI đặt tên. Tên được gửi thành `name` cho analysis, kế thừa vào form duyệt rồi cho sửa trước khi lưu profile. Đổi tên profile không làm thay snapshot tên của analysis.
+
+| Nhóm | Công việc theo phạm vi mới | Trạng thái |
+| --- | --- | --- |
+| API hiện có | Catalog/model, nguồn, POST analysis, GET detail/polling, POST cancel, resume UUID | Đã nối; kiểm lifecycle bằng HTTP mock |
+| Duyệt/lưu mẫu hiện tại | POST/PUT profile, GET version/recover save, Settings default partial, copy/export dữ liệu `ready` | Đã nối; regression đạt |
+| URL/HTML preview | Dùng `/ai-agent/source-preview` với `target_type=post` và `posts.manage`; dán/TXT dùng được chỉ với `ai_settings.manage` | Giữ quyền backend hiện có |
+| Lịch sử/nguồn cũ | GET list analysis và GET source chưa có | Giữ lịch sử minh họa; chưa đọc lại nguồn |
+| Điểm và các tab ngoài schema | Điểm/% văn phong/SEO/ảnh/tính độc đáo chưa có API | Giữ dữ liệu tĩnh, nhãn minh họa rõ |
+| Danh sách/quản lý văn phong | Trang hoặc dialog list/search/pagination/CRUD toàn bộ | Để sau theo yêu cầu người dùng |
+| API backend mở rộng | Preview riêng quyền AI, lịch sử/source, public source_hash, idempotency/migration | Để sau; không triển khai trong đợt này |
+| Kiểm chứng | Tests phù hợp, lint/build và browser QA sau nối API | Đạt phạm vi kỹ thuật tại 12.19; chưa gọi model thật |
+
+**Các quyết định:** giữ bố cục và các khối minh họa chưa API theo yêu cầu mới; gắn nhãn để không nhầm với summary/rules/evidence/style_instructions thật và không gửi chúng khi lưu/tải báo cáo thực. Nguồn đã gửi là snapshot trong bộ nhớ của lượt phân tích; ready chưa có nghĩa đã lưu mẫu. Session chỉ nhớ metadata UUID/hạn lưu/profile ID và cờ/tên của POST lưu bất định theo tài khoản/analysis, không lưu bài nguồn; resume GET detail không khôi phục bài mẫu. Mở UUID khác phải xác nhận bỏ form chưa lưu. POST không tự retry; kiểm tra POST profile bất định chỉ GET và giữ bản sửa, không tuyên bố server đã có idempotency. Select mẫu/brief ở form tạo bài vẫn là bước tiếp theo.
+
+- [x] Đối chiếu giao diện và backend, lập plan chi tiết nối API.
+- [x] Cập nhật phạm vi: dùng endpoint hiện có; thiếu API giữ tĩnh; danh sách văn phong để sau.
+- [x] Hoàn thiện kết nối và kiểm chứng phần hiện tại; báo cáo 12.19.
+- [x] Đợt nối tiếp: List/Add và datatable đã triển khai tại 12.21.
+- [ ] Đợt sau: sửa/xóa mọi mẫu từ danh sách, lịch sử/source và API backend mở rộng.
+- [ ] Nối tiếp select văn phong/brief và mẫu mặc định trong các form liên quan.
+
+### 12.19 Nối API Ai Prompt theo phạm vi mới — 2026-10-04
+
+**Trạng thái:** đã hoàn tất nối API hiện có và kiểm chứng phạm vi kỹ thuật. Phạm vi cập nhật theo yêu cầu “những mục nào chưa có API thì tạm thời để data tĩnh”; trang danh sách văn phong để sau. Tài liệu API hiện có: [mẫu văn phong](AI_WRITING_PROFILES_API.md); quyết định thay thế thiết kế cũ: [plan mục 0](PLAN_AI_PROMPT_API.md#0-phạm-vi-thay-thế-theo-yêu-cầu-mới-của-người-dùng). Toàn bộ Task 2/FIX 1 và chất lượng model thật vẫn chưa hoàn thành.
+
+| Phần đã nối | Hành vi và giới hạn |
+| --- | --- |
+| Service/composable | Tầng HTTP riêng; composable nguồn/catalog, analysis lifecycle và form/profile; page dùng props/models/emits với component |
+| Nguồn | Dán HTML chuyển text; TXT UTF-8 đọc local; URL/HTML dùng preview Post với quyền `posts.manage`; đổi lựa chọn hủy trạng thái đã đọc |
+| Phân tích | POST một lần theo click; poll GET backoff; cancel/resume GET bằng UUID; hiển thị lỗi field/queue/provider/owner/expiry |
+| Kết quả | Summary văn phong, rules, evidence và style instructions từ result thật; nguồn đã gửi tách khỏi nguồn đang sửa |
+| Lưu/sửa | Người dùng duyệt rồi POST; PUT mẫu vừa lưu cần version; xung đột giữ bản sửa và cho GET bản mới theo thao tác rõ ràng |
+| Mặc định | Settings partial chỉ field default; lưu mẫu thành công nhưng default lỗi được báo riêng |
+| Reload | Session metadata theo actor/UUID/profile ID và pending name khi POST lưu bất định; GET lại result/profile, không khôi phục raw source và không lưu nguồn vào storage |
+| Kiểm tra lưu bất định | GET profile nếu biết ID; nếu chưa có ID thì GET list một trang tối đa 100 theo tên, đối chiếu exact name + analysis ID. Một mẫu duy nhất mới ghi nhận ID/version; nhiều/không có mẫu hoặc còn trang khác giữ khóa POST, giữ bản sửa |
+| Copy/export | Clipboard/Markdown từ kết quả `ready` và bản đã duyệt/sửa; không đưa điểm hoặc nhận xét mock vào báo cáo thật |
+| Chưa API | Lịch sử list và điểm/%/SEO/ảnh/tính độc đáo giữ tĩnh, có nhãn minh họa; không thực hiện API giả |
+| Để sau | List/page/dialog quản lý tất cả văn phong; GET history/source và idempotency backend; select/brief form tạo bài |
+
+**Không thay backend:** không endpoint mới, không migration/bảng mới, không public source hash mới hoặc request key mới. Không mở quyền preview Post. Không tự retry mutation khi kết quả chưa rõ và không tự lưu profile sau analysis ready. Việc khóa gửi ở client chưa phải bảo đảm idempotency của server.
+
+**Kiểm chứng:** toàn frontend đạt **38 file / 238 tests**, gồm **32 tests Ai Prompt**: API 4, flow 20, UI 8. Scoped ESLint page/components/composables/service/utils và ba file test đạt. Production build đạt **31.40 giây**, còn warning asset `section-title-icon.png` đã có trước.
+
+Browser localhost xác nhận catalog thật, validation nguồn rỗng, nhập tên/dán bài 24 từ, tab URL/file, lịch sử minh họa và ô UUID. Viewport 390/1440 không tràn ngang sau khi layout ổn định; console không có lỗi. Báo cáo/screenshot: [QA nối API Ai Prompt](qa/AI_PROMPT_API_2026-10-04.md). Browser không gọi model hoặc mutation profile; lifecycle/result/save/version/default/recovery được kiểm bằng HTTP mock. Bằng chứng preview ở 12.18 và backend ở 12.17 là các mốc trước riêng biệt.
+
+**Giới hạn nghiệm thu:** không gọi model trả phí; chưa đánh giá chất lượng nhận xét văn phong với bài/model thật hoặc chạy luồng browser gọi model rồi lưu Post/profile thực. GET phục hồi POST lưu bất định là kiểm tra mẫu hiện tại, không triển khai trang danh sách. Manual resume UUID khác yêu cầu xác nhận bỏ form chưa lưu. Các kết quả trên không đánh dấu toàn bộ Task 2/FIX 1 đã xong.
+
+- [x] Chốt và ghi phạm vi mới; giữ hợp đồng backend đang có.
+- [x] Hoàn thiện wiring và kiểm chứng chức năng API bằng HTTP mock phù hợp.
+- [x] Ghi kết quả lint/build/browser QA sau khi chạy thực tế.
+- [ ] Nghiệm thu chất lượng phân tích văn phong với bài/model thật ở đợt riêng.
+
+### 12.20 Sửa chọn nhầm footer khi đọc HTML trong Ai Prompt — 2026-10-04
+
+**Đã tái hiện và sửa:** file Ovation người dùng cung cấp có bài trong `div#article-content`, footer dùng `div.footer/div.copyright/section`. Extractor cũ chỉ xét article/main/section và chọn section bản quyền, trả 303 ký tự footer. Bộ lọc dùng chung nay ưu tiên schema `articleBody` và nhãn body phổ biến, xét div prose khi fallback, giảm điểm vùng nhiều link, loại chrome dùng div/role và bỏ ứng viên rỗng. Giữ nội dung copyright nằm trong bài, form/code và sanitizer; không hardcode website hoặc gọi model để đọc nguồn.
+
+**Kiểm chứng:** extractor/import/pipeline đạt **38 tests / 242 assertions**; API Task 2 đạt **14 tests / 75 assertions**, gồm upload file HTML với bố cục lỗi; Pint scoped ba file đạt. File thật sau sửa có 5449 ký tự khi strip tags thay vì footer; upload trực tiếp qua Ai Prompt hiện **1117 từ**, đủ đầu/cuối và tám mục bài, không có `GPDKKD`. Browser chỉ đọc preview, không chạy AI/lưu mẫu. Báo cáo/screenshot: [QA nguồn HTML](qa/AI_PROMPT_SOURCE_2026-10-04.md).
+
+Nhận diện vẫn là heuristic cho các website/layout khác nhau; người dùng xem/sửa text preview trước khi phân tích. UI chọn vùng DOM/CSS selector thủ công hoặc cấu hình selector theo website chưa triển khai. Chỉ sửa backend/test trong đợt này; hợp đồng API và migration giữ nguyên.
+
+### 12.21 Ai Prompt List/Add và datatable mẫu văn phong — 2026-10-04
+
+**Đã hoàn tất theo yêu cầu mới:** Systerm AI → Ai Prompt có hai mục **List** và **Add** ở menu dọc/ngang. List tại `/admin/ai/prompt/list` đọc các profile đã được duyệt/lưu; Add tại `/admin/ai/prompt/add` dùng giao diện phân tích hiện tại. URL cũ `/admin/ai/prompt` redirect về List. Hai trang có nút điều hướng qua lại và cùng quyền `ai_settings.manage`.
+
+**Datatable:** GET `/api/admin/ai/writing-profiles` với `page`, `per_page`, `search` theo tên. Hiển thị tên/mô tả, nguồn `reference`/`manual`, bật/tắt, version, ngày cập nhật và nút mở prompt `style_instructions`. Tổng dòng lấy từ `meta.pagination.total`; số dòng 15/25/50/100, tìm kiếm debounce 300 ms và đưa về trang đầu. Có loading/lỗi/rỗng/tải lại; abort và sequence guard loại phản hồi cũ khi đổi query/rời trang. Nội dung prompt render text được escape. Cột không cho sort vì API hiện sắp theo tên/ID.
+
+**Kiến trúc/comment:** route List/Add ghép `AiPromptList`/`AiPromptCreate`; giao diện bảng/bộ lọc dùng props và `defineModel`, `useAiPromptList` quản lý GET/query, service giữ envelope phân trang. Luồng Add giữ nguồn/preview, queue/poll/cancel/resume, duyệt/lưu/version/default/copy/export và xác nhận form chưa lưu. File tạo/sửa có header, inventory và INPUT/OUTPUT tiếng Việt với dấu `===`. Dùng API và bảng hiện có, không thêm endpoint/migration.
+
+**Kiểm chứng:** frontend **39 file / 250 tests** đạt; Ai Prompt **4 file / 44 tests** gồm API 5, flow 20, UI Add 8, list 11. Các ca List kiểm tổng server, page/size/search/clear, race success/error, cleanup, danh sách thu nhỏ, lỗi/tải lại, prompt escape, liên kết Add và footer Vuetify thật. Sau sửa hiển thị khoảng dòng, kiểm lại 11 tests List đạt. ESLint scoped đạt; build cuối đạt **1 phút 4 giây**, 2857 modules, còn warning asset `section-title-icon.png` đã có trước.
+
+**Browser localhost:** đọc mẫu thật **Bài Viết Du Lịch**, mở prompt, tìm “Du Lịch”, từ khóa không có kết quả, xóa lọc/tải lại, chọn 25 dòng, List → Add → List và URL cũ → List. Add vẫn có tên/model/editor và ba tab nguồn. Desktop 1440 × 1000, mobile 390 × 844 không tràn ngang sau layout ổn định. Không ghi nhận console error; không gọi model hoặc tạo/sửa/xóa profile trong đợt QA này. Báo cáo và ảnh: [QA List/Add](qa/AI_PROMPT_LIST_2026-10-04.md).
+
+- [x] Tách route/menu List và Add, tương thích URL cũ.
+- [x] Nối datatable profile đã lưu bằng API thật, tìm tên/phân trang/xem prompt.
+- [x] Giữ luồng phân tích/duyệt/lưu hiện có ở Add và comment theo project.
+- [x] Kiểm tests, lint, build, browser và lưu ảnh giao diện.
+
+Phạm vi lần này hoàn tất List/Add; chỉnh sửa/xóa mọi mẫu từ List, lịch sử phân tích server và chất lượng model thật chưa thuộc đợt triển khai này. Toàn bộ Task 2/FIX 1 vẫn theo các hạng mục mở ở trên.
+
+### 12.22 Sửa Add tạo tiếp văn phong sau lưu — 2026-10-04
+
+**Nguyên nhân:** luồng lưu giữ profile/form và analysis UUID để sửa tiếp hoặc resume sau reload. Khi tách List/Add, chưa có bước làm trống Add, nên trang tiếp tục hiển thị dữ liệu cũ và nút Phân tích lại.
+
+**Đã sửa:** `profiles.save()` trả kết quả thành công/lỗi cho page; sau khi save và cập nhật mặc định thành công nếu được yêu cầu, `AiPromptCreate` reset nguồn/tên/model, analysis/result, form duyệt và UUID resume, hiện snackbar đã lưu rồi trả nút về Phân tích với AI. Giữ mẫu database, catalog/default và metadata ID profile của analysis lịch sử. Nút Văn phong mới cho phép bắt đầu lại từ kết quả đang mở; bản duyệt chưa lưu cần xác nhận trước khi bỏ.
+
+**Lỗi vẫn giữ bản:** validation/version conflict hoặc POST chưa rõ kết quả không làm trống. POST bất định khóa reset để kiểm tra trước; profile đã lưu nhưng default lỗi vẫn hiển thị bản đã lưu và lỗi riêng. GET resume 403/404/410 dừng resume/mở khóa tạo mới; lỗi mạng khi tác vụ còn chạy vẫn cho Kiểm tra lại. Reset dừng GET/timer và sequence guard bỏ response tới muộn; không gọi model hoặc xóa profile/analysis server.
+
+**Quy tắc và dẫn chứng:** rules là các đặc điểm cách viết người dùng duyệt để dùng lại; evidence gồm feature/trích đoạn thật/diễn giải giúp đối chiếu nhận định đó với bài mẫu. Backend kiểm trích đoạn có trong nguồn; UI cho sửa diễn giải hoặc bỏ dẫn chứng, giữ nguyên câu trích. Khi tạo bài mới, prompt nhận rules và style_instructions đã duyệt; evidence không được gửi sang bài mới. Ví dụ và giải thích trong [tài liệu API](AI_WRITING_PROFILES_API.md) và [QA tạo tiếp văn phong](qa/AI_PROMPT_NEW_PROFILE_2026-10-04.md).
+
+**Kiểm chứng:** toàn frontend **39 file / 258 tests** đạt; Ai Prompt **4 file / 52 tests** (API 5, flow 23, UI Add 13, list 11). Kiểm tạo/lưu hai mẫu liên tiếp bằng POST mới, reset/reload, response trễ, lỗi save/default và xác nhận bỏ bản chưa lưu qua HTTP mock. Scoped ESLint đạt; production build cuối **33.19 giây**, 2857 modules, còn warning asset `section-title-icon.png` đã có trước.
+
+**Browser localhost:** mở UUID cũ trả 403 do owner, thấy trạng thái Không có quyền truy cập và Văn phong mới được bật; bấm tạo mới rồi reload vẫn tên/editor trống, 0 từ, model mặc định và Phân tích với AI. Console không có error; có warning i18n menu hiện có. Không gọi model hoặc mutation profile từ browser; auto-reset sau lưu được kiểm bằng HTTP mock. Bằng chứng/ảnh: [QA tạo tiếp](qa/AI_PROMPT_NEW_PROFILE_2026-10-04.md).
+
+- [x] Tự chuẩn bị Add cho mẫu kế tiếp sau lưu thành công.
+- [x] Thêm Văn phong mới, bảo vệ bản chưa lưu và lỗi POST/default.
+- [x] Không khóa Add khi resume bị từ chối quyền/hết hạn.
+- [x] Cập nhật comment INPUT/OUTPUT/inventory với dấu `===`, tests và tài liệu.
+
+Chỉ sửa frontend và tài liệu, giữ backend/API/migration hiện có. CRUD mọi mẫu từ List, lịch sử server và nghiệm thu chất lượng model thật vẫn là các phần mở của Task 2.
+
+### 12.23 Rà soát phần còn lại của Task 2 sau List/Add/reset — 2026-10-04
+
+**Kết luận:** Task 2 chưa hoàn tất. Backend cốt lõi và luồng Ai Prompt hiện tại đã có; còn sáu nhóm giao diện/kết nối bắt buộc và hai nhóm nghiệm thu. Đợt này chỉ đọc plan/code/test/báo cáo và cập nhật tiến độ, không triển khai tính năng mới hoặc gọi model.
+
+**Đã triển khai:** Analyze + Plan → Write → Edit với prompt/schema riêng; nhánh ngắn/thumbnail-only và field merge; source snapshot/anchors; profile CRUD/options/default/version/snapshot; taxonomy AI bị loại; queue/checkpoint/cancel/retry/budget; quality gates; asset reference/usage/Apply draft ở backend. Ai Prompt có nguồn dán/URL/file, phân tích/duyệt/lưu/mặc định/copy/export, List tìm/phân trang/xem prompt và Add reset/tạo tiếp. Bằng chứng regression và browser theo 12.17, 12.19–12.22; không coi các mốc đó là nghiệm thu model thật.
+
+| Phần còn thiếu | Code/hành vi hiện tại | Việc cần hoàn thiện |
+| --- | --- | --- |
+| 1. Chọn văn phong và brief khi tạo bài | Không có `writing_profile_id`/`writing_brief` trong form AI Content và `CreateWithAiDialog`; backend/options đã có. Dialog Post có Yêu cầu bổ sung gửi `instructions`; AI Content tự ghép hướng dẫn độ dài/SEO | Select mẫu đang bật hoặc mặc định ở create/regenerate; nối yêu cầu riêng của AI Content và brief theo plan. Giữ ô yêu cầu riêng đã có ở dialog Post, áp dụng ưu tiên brief/profile và xử lý default/profile tắt |
+| 2. HTML nguyên bản và preview nguồn tạo bài | `aiContentInput::buildAiContentRequest()` gọi `extractHtmlText(await file.text())`, gửi `input.text`. Không có preview trước generation ở AI Content. Ai Prompt đã dùng preview backend | Gửi raw HTML hoặc `html_file` tới backend và hiển thị nguồn đã extract trước phân tích; giữ code/table/link/quote/metadata ảnh và xử lý lỗi encoding/budget. Đường file hiện tại có thể làm mất cấu trúc trước khi backend nhận nguồn |
+| 3. Taxonomy thủ công trong AI Content | Generation frontend/backend đã bỏ taxonomy; Post form có categories/tags. `AiContentEditorDialog` chỉ biên tập title/excerpt/content/SEO, form create chưa chọn category/tag | Nối selector và payload taxonomy thủ công cho create/edit/regenerate/Apply của AI Content, xác nhận candidate legacy khi cần; kiểm giữ lựa chọn qua các bước. Không khôi phục AI taxonomy |
+| 4. TinyMCE–MediaLibrary | `PostEditor.vue` có plugin image, nhưng không có picker/upload hook MediaLibrary và chưa cấu hình giữ asset ref. Backend lưu/usage/regenerate ảnh đã có | Chọn/upload ngay trong editor tại con trỏ, chèn URL + `data-media-asset-id`, sửa alt/caption, giữ ảnh qua save/reload/Apply/regenerate; lỗi upload giữ draft và chặn lưu URL tạm |
+| 5. Tiến độ và thông tin từng bước | Backend trả `analyzing/writing/editing/validating`, steps/diagnostics/quality_checks/profile/warnings. AI Content label và Post dialog progress vẫn ánh xạ `rewriting/seo` của luồng cũ; chưa render các metadata mới | Ánh xạ đúng Analyze/Write/Edit/Validate; hiển thị status/attempt/timestamps/lỗi/usage an toàn, profile/version, kết quả gates và cảnh báo ảnh sau reload. Không đưa raw nguồn/intermediate output vào public UI |
+| 6. Quản lý mọi profile đã lưu | List chỉ GET/search/page/xem prompt; Add bắt đầu bằng phân tích và duyệt mẫu. API GET detail/PUT/version/DELETE/manual profile đã có | Trang/dialog sửa mẫu theo ID, bật/tắt/xóa, tạo thủ công không bắt phân tích bài; xử lý version 409 và mặc định. Đây là phần UI chưa nối, không phải thiếu toàn bộ CRUD backend |
+
+**Hai nhóm chưa nghiệm thu:**
+
+- [ ] **Chất lượng và tuning:** chọn/freeze 20–30 bài thật (protocol hiện có 25 ca), chạy baseline một lượt/brief tốt/ba bước, chấm mù facts/tự nhiên/bố cục/công sửa, ghi token/latency/cost; hiệu chỉnh prompt, exact-copy/language/similarity/budget và quyết định rollout. 20 nguồn tổng hợp offline chỉ kiểm kỹ thuật, không chứng minh chất lượng viết. Xem [protocol](AI_ARTICLE_QUALITY_EVALUATION.md).
+- [ ] **Luồng thực tế và vận hành:** sau khi nối UI, browser đăng nhập kiểm profile → chọn khi tạo bài → ba bước → taxonomy/ảnh → sửa/regenerate → Apply Post draft, cùng reload/lỗi/hủy/retention. Kiểm provider thực và claim/checkpoint/cancellation/timeout trên MySQL/Redis nhiều worker; worker/cache/SQS/process manager production liên quan mục 2C vẫn chưa có bằng chứng nghiệm thu.
+
+**Giữ đúng phạm vi đã chốt:** lịch sử phân tích dạng danh sách server, điểm/%/SEO/ảnh/tính độc đáo của Ai Prompt còn minh họa vì thiếu API; theo yêu cầu 12.19 được giữ tĩnh ở đợt hiện tại, không coi đó là lỗi API hoặc số liệu model thật. Thêm history/source API là phần mở rộng tiếp theo. Vision/research/revision/multiple-reference/AI tự chọn profile vẫn thuộc V2. `ai_content_drafts`/approve-reject/lưu dài hạn thuộc mục 3; thumbnail AI thuộc 9.7; Reverb và các tab Settings ngoài AI thuộc phần khác của FIX 1.
+
+**Điều chỉnh plan:** sửa mô tả cũ còn ghi Ai Prompt chưa nối API, chưa có migration/class hoặc taxonomy generation chưa bỏ. Giữ các ô 12.15 ở trạng thái chưa nghiệm thu xuyên suốt; không đánh dấu toàn Task 2 hoàn tất chỉ từ backend tests. Không chạy lại test/build cho riêng việc cập nhật tài liệu.
+
+**Thứ tự đề xuất:** nối select văn phong/brief và nguồn raw HTML/preview → taxonomy thủ công và tiến độ/gates → TinyMCE–MediaLibrary → quản lý profile từ List → browser/model/corpus/runtime QA. Các nhóm giao diện có thể review độc lập; không tự triển khai thêm trong đợt audit này.
+
+### 12.24 Hoàn thiện triển khai và nghiệm thu localhost — 2026-10-05
+
+**Phạm vi:** theo yêu cầu hoàn thiện Task 2 và câu trả lời “Nghiệm thu trên localhost trước”, đã triển khai sáu nhóm còn thiếu ở 12.23. Dùng Laravel services/requests/jobs/resources và Vue 3 `script setup`, service/composable/component theo chức năng. File mới/sửa có comment tiếng Việt, inventory/Input/Output và dấu `===`. Không mở rộng sang Reverb/VPS, lớp duyệt riêng, V2 hoặc các API Ai Prompt được phép giữ minh họa.
+
+| Nhóm đã hoàn thiện | Kết quả |
+| --- | --- |
+| Văn phong/brief | Shared `AiWritingPreferences`, options service/composable, request whitelist; tích hợp AI Content/Post/regenerate, mặc định/inherit/override và brief rỗng rõ ràng. |
+| Nguồn | Raw HTML/file multipart/encoding, shared source preview và abort/race guard; giữ cấu trúc ở backend, không flatten file ở client. |
+| Taxonomy | Shared selector đầy đủ trang active, giữ ID mất để editor tự bỏ; create/edit/regenerate/Apply gửi lựa chọn thủ công, legacy confirmation và expected version. |
+| Editor/media | `usePostInlineMedia` nối MediaLibrary/upload ở bookmark, undo/alt/caption, URL/asset ref; khóa Save khi upload/URL tạm, giữ figure caption khi regenerate. Editor HTML dự phòng hoạt động khi Tiny Cloud khóa. |
+| Quan sát | `AiPipelineReport` đọc stages/checkpoint/profile/version/usage/gates/lỗi an toàn sau reload; diagnostics nhánh một lượt được public qua allowlist, không raw/intermediate/secret. |
+| Ai Prompt CRUD | List tạo thủ công/sửa/version/bật-tắt/xóa xác nhận/default; Add phân tích thật/lưu/reset; giữ form khi conflict/default lỗi/POST bất định. |
+
+**Các lỗi đã sửa khi QA:** preview reset vì object getter mới, dialog đọc action sau đóng, số liệu bị ghép giữa ô bảng, integer nhóm hàng nghìn bị hiểu sai, evidence markup thiếu hướng dẫn, caption mất qua regenerate, draft thiếu `taxonomy_origin=manual`, candidate Apply còn cho nhập không lưu được, checklist alt đếm trùng gallery/HTML và usage nhánh một lượt bị ẩn khi adapter chỉ trả `reported_model`. Mỗi lỗi có regression tương ứng; không nới gate để che output sai.
+
+**Browser/model:** file Ovation lấy phần bài chính 29 blocks/11 metadata ảnh. Mẫu tham khảo chọn phần giới thiệu/tám tiện ích, model thật trả 13 dẫn chứng; lưu QA profile #4 rồi Add trống để tạo tiếp. Chọn profile QA #3/v4 và brief tạo bài ba bước; upload asset #9, sửa/lưu/regen content giữ ID/URL/alt/caption. Excerpt-only chạy một call, giữ HTML/taxonomy cha; Apply vào Post **#6 draft**, đúng actor, Blog/tag và usage. Post #5 là QA trước sửa taxonomy, giữ riêng; không xuất bản.
+
+**Vận hành local:** MySQL/cache database probe xác nhận hai process cùng UUID chỉ thực thi service một lần, cancel không bị đổi về ready và resume dùng lại Analyze checkpoint. Fixture probe đã xóa theo đúng UUID/hash QA. Worker local nhận code mới và timeout/budget/lease phù hợp; không coi Windows thiếu pcntl là bằng chứng hard-kill Linux hoặc kiểm production.
+
+**Kiểm chứng:** toàn backend **299 tests/2078 assertions** đạt; API sau bổ sung diagnostics **14 tests/79 assertions** đạt. Toàn frontend cuối **42 files/289 tests** đạt; scoped ESLint/Pint/build đạt. Viewport mobile 390 × 844 không tràn chiều rộng trang, đã reset sau kiểm. Còn warning build asset có sẵn. Bằng chứng chi tiết, screenshots và proof JSON ở [QA localhost](qa/TASK2_LOCALHOST_2026-10-05.md); contract cập nhật ở [pipeline API](AI_ARTICLE_PIPELINE_API.md), [profile API](AI_WRITING_PROFILES_API.md) và [inline media](TASK2_INLINE_MEDIA_API.md).
+
+**Đánh giá đã chuẩn bị và chạy:** corpus v1 có 25 ca/24 nguồn đã freeze/hash/license/provenance. Prompt 2.0 pilot được giữ cùng lỗi; prompt **2.1** làm rõ evidence text và giữ request schema checkpoint 2.0. Pilot năm ca B/C cùng nguồn/model/profile có **19 call/97.837 token, 6 output qua gate và 4 bị chặn**; B ready 4/5, C ready 2/5. Các lỗi gồm thiếu/đổi link nguồn và fact ID không có trong Analyze. Gói chấm mù hai người đọc, CSV đủ rubric/facts/coverage/công sửa và harness budget/no-Apply đã có tại [QA chất lượng](qa/task2-quality/README.md). Chưa phục hồi toàn bộ request baseline A, chưa có bảng giá xác nhận để tính cost; không gán số giả.
+
+**Chưa hoàn tất nghiệm thu Task 2:**
+
+- [ ] TinyMCE toolbar thật: Tiny Cloud từ chối origin `http://127.0.0.1:8000`. Hook/backend/composable và fallback đã kiểm; cần origin hợp lệ hoặc owner chọn license self-hosted trước browser QA toolbar/chèn-di chuyển-xóa ảnh thật.
+- [ ] Chất lượng và rollout: pilot còn lỗi, corpus v1 thiếu coverage; cần owner/người đọc xác nhận nguồn/facts, hai người chấm, tuning tiếp và nghiên cứu đầy đủ theo 12.15. Gói review đã cụ thể; không dùng AI tự chấm để đóng tiêu chí người đọc hoặc kết luận ba bước tốt hơn một lượt.
+
+Sáu nhóm code/UI/API ở audit 12.23 đã có kết quả kiểm được. Hai điều kiện trên vẫn giữ mở rõ ràng; không đánh dấu toàn Task 2 hoặc toàn FIX 1 hoàn tất chỉ từ test/build hay các call model thành công.

@@ -123,8 +123,9 @@ docs/                      Plans, handoff notes and this inventory
 
 ### AI import
 
+- Task 2 backend: Post `content` dùng Analyze + Plan → Write → Edit qua generic task DTO/adapter; source/profile/config/parent baseline snapshot, `ai_import_steps` checkpoints và quality gates. `ai_writing_profiles`/analyses có CRUD/default/version/evidence và queue phân tích bài mẫu; taxonomy thủ công; inline media validate ID/URL/quyền/usage/retention. UI mới và đánh giá chất lượng provider/người đọc còn mở. Contracts: `docs/AI_ARTICLE_PIPELINE_API.md`, `docs/AI_WRITING_PROFILES_API.md`, `docs/TASK2_INLINE_MEDIA_API.md`.
 - Implemented boundary: `ai_imports` persistence, generic session/admin job API, queue job, extractor/sanitizer, OpenAI/Gemini HTTP provider adapters, registry/target adapter and Post form AI dialog.
-- Main files: `app/Models/AiImport.php`, `app/Models/AiProvenance.php`, `app/Jobs/ProcessAiImportJob.php`, `app/Services/Ai/ArticleImportService.php`, `app/Services/Ai/StructuredAiProvider.php`, `app/Services/Ai/Contracts/`, `app/Services/Ai/Registries/`, `app/Services/Ai/Targets/PostAiAdapter.php`, `app/Http/Controllers/Admin/AiImportController.php`, `config/ai-import.php`, `config/ai-agent.php`.
+- Main files: `app/Models/AiImport.php`, `app/Models/AiProvenance.php`, `app/Jobs/ProcessAiImportJob.php`, `app/Services/Ai/Content/ArticleImportService.php`, `app/Services/Ai/Providers/Adapters/StructuredAiProvider.php`, `app/Services/Ai/Contracts/`, `app/Services/Ai/Registries/`, `app/Services/Ai/Targets/PostAiAdapter.php`, `app/Http/Controllers/Admin/AiImportController.php`, `config/ai-import.php`, `config/ai-agent.php`.
 - Frontend files: `resources/js/components/ai/`, `resources/js/services/aiAgent.js`,
   `resources/js/stores/aiAgent.js` và `resources/js/views/apps/blog/post/dialog/CreateWithAiDialog.vue`.
 - Candidate có session/parent lineage, regenerate khác retry kỹ thuật, apply toàn bộ

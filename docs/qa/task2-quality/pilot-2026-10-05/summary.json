@@ -1,0 +1,65 @@
+{
+    "captured_at": "2026-10-04T17:51:58+00:00",
+    "manifest_sha256": "730195fcd5d6231c629a9cffa077220cecc154423ff6f3f9986d9132ead28740",
+    "baseline_A": "unavailable",
+    "human_review": "pending",
+    "actual_calls": 4,
+    "results": [
+        {
+            "arm": "B",
+            "status": "ready",
+            "error_code": null,
+            "cost": null,
+            "latency_ms": 10519,
+            "input_sha256": "0375ea2c3a16d77d6f3c11e8461c5d61d9cc0da66482387ed80bc4e021f02823",
+            "source_sha256": "d3d2b94deda13cb6fc027288a2da407a62f86f77895ba2037608d5d7069a89b3",
+            "provider": "connection-97c6d404-7463-428e-8f17-8bd19c767885",
+            "model": "gpt-6.1-sol",
+            "total_tokens": 1195,
+            "case_id": "Q01",
+            "calls": 1
+        },
+        {
+            "arm": "C",
+            "status": "failed",
+            "error_code": "AI_SOURCE_REFERENCE",
+            "cost": null,
+            "latency_ms": 35884,
+            "input_sha256": "5efc19ad5d1fa48d5847d23c06c76382f1e1f89a9be490a94e975a77572093d5",
+            "source_sha256": "d3d2b94deda13cb6fc027288a2da407a62f86f77895ba2037608d5d7069a89b3",
+            "provider": "connection-97c6d404-7463-428e-8f17-8bd19c767885",
+            "model": "gpt-6.1-sol",
+            "total_tokens": 3248,
+            "case_id": "Q01",
+            "calls": 1
+        },
+        {
+            "arm": "B",
+            "status": "ready",
+            "error_code": null,
+            "cost": null,
+            "latency_ms": 41180,
+            "input_sha256": "0375ea2c3a16d77d6f3c11e8461c5d61d9cc0da66482387ed80bc4e021f02823",
+            "source_sha256": "742c1f756538bef054460d2b80ca5dad9c583878e3cd05a5b80d5ab7a2538a0a",
+            "provider": "connection-97c6d404-7463-428e-8f17-8bd19c767885",
+            "model": "gpt-6.1-sol",
+            "total_tokens": 2670,
+            "case_id": "Q13",
+            "calls": 1
+        },
+        {
+            "arm": "C",
+            "status": "failed",
+            "error_code": "AI_SOURCE_REFERENCE",
+            "cost": null,
+            "latency_ms": 94690,
+            "input_sha256": "5efc19ad5d1fa48d5847d23c06c76382f1e1f89a9be490a94e975a77572093d5",
+            "source_sha256": "742c1f756538bef054460d2b80ca5dad9c583878e3cd05a5b80d5ab7a2538a0a",
+            "provider": "connection-97c6d404-7463-428e-8f17-8bd19c767885",
+            "model": "gpt-6.1-sol",
+            "total_tokens": 6653,
+            "case_id": "Q13",
+            "calls": 1
+        }
+    ]
+}

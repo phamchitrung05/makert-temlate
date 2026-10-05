@@ -7,9 +7,9 @@ use App\Enums\MediaAssetVisibility;
 use App\Models\AiImport;
 use App\Models\MediaAsset;
 use App\Models\User;
-use App\Services\Ai\ArticleImportService;
+use App\Services\Ai\Content\ArticleImportService;
 use App\Services\Ai\Contracts\AiProviderContract;
-use App\Services\Ai\DeterministicAiProvider;
+use App\Services\Ai\Providers\Adapters\DeterministicAiProvider;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -18,16 +18,40 @@ use Tests\TestCase;
 use Tests\UsesIsolatedDatabase;
 
 /**
- * Kiểm chứng container nối provider registry và uploader vào pipeline thumbnail.
- * HTTP, queue và storage được fake; database dùng SQLite in-memory cô lập.
+ * =====================================================================
+ * CHỨC NĂNG FILE: Kiểm provider registry/uploader và thumbnail qua baseline một lượt.
+ * =====================================================================
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - setUp().
+ * - tearDown().
+ * - test_container_resolved_import_creates_source_thumbnail().
+ * - test_disabled_thumbnail_does_not_download_or_create_media().
+ * - createImport().
+ * =====================================================================
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : fixtures/requests admin, HTTP và Queue fake, database test cô lập.
+ * - OUTPUT: assertions cho contract, snapshot, quyền và lỗi; không gọi AI thật.
+ * - SIDE EFFECT: tạo/sửa dữ liệu trong database test; không chỉnh dữ liệu ứng dụng.
+ * =====================================================================
  */
 class AiImportThumbnailTest extends TestCase
 {
     use UsesIsolatedDatabase;
 
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Khởi tạo fixtures và cấu hình test.
+     * INPUT: PHPUnit lifecycle hoặc tham số fixture của test.
+     * OUTPUT: state/fixture phục vụ test, không gọi model thật.
+
+     * =====================================================================
+     */
     protected function setUp(): void
     {
         parent::setUp();
+        // Fixtures một lượt kiểm riêng baseline được giữ để so sánh rollout.
+        config()->set('ai-content.pipeline', 'single_step');
+        config()->set('queue.default', 'database');
         $this->useIsolatedDatabase();
         Queue::fake();
         Storage::fake('media_public');
@@ -66,13 +90,25 @@ class AiImportThumbnailTest extends TestCase
         ]);
     }
 
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Dọn database và state sau test.
+     * INPUT: PHPUnit lifecycle hoặc tham số fixture của test.
+     * OUTPUT: state/fixture phục vụ test, không gọi model thật.
+
+     * =====================================================================
+     */
     protected function tearDown(): void
     {
         $this->tearDownIsolatedDatabase();
         parent::tearDown();
     }
 
-    /** Container-resolved service creates a public MediaAsset and exposes its ID in the draft. */
+    /**
+     * =====================================================================
+     * Container-resolved service creates a public MediaAsset and exposes its ID in the draft.
+     * =====================================================================
+     */
     public function test_container_resolved_import_creates_source_thumbnail(): void
     {
         $import = $this->createImport(generateThumbnail: true);
@@ -99,7 +135,11 @@ class AiImportThumbnailTest extends TestCase
         Http::assertSentCount(3);
     }
 
-    /** Explicitly disabling thumbnails leaves the source metadata without downloading/uploading an image. */
+    /**
+     * =====================================================================
+     * Explicitly disabling thumbnails leaves the source metadata without downloading/uploading an image.
+     * =====================================================================
+     */
     public function test_disabled_thumbnail_does_not_download_or_create_media(): void
     {
         $result = app(ArticleImportService::class)->run($this->createImport(generateThumbnail: false));
@@ -113,6 +153,14 @@ class AiImportThumbnailTest extends TestCase
         Http::assertSentCount(2);
     }
 
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Tạo fixture dùng riêng trong ca kiểm thử.
+     * INPUT: PHPUnit lifecycle hoặc tham số fixture của test.
+     * OUTPUT: state/fixture phục vụ test, không gọi model thật.
+
+     * =====================================================================
+     */
     private function createImport(bool $generateThumbnail): AiImport
     {
         return AiImport::query()->create([

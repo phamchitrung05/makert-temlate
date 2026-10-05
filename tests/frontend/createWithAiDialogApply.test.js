@@ -32,13 +32,22 @@ const PreviewStub = {
   template: '<div />',
 }
 
-/** Input: Không có. Output: Component với candidate giả đã ready. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Mở dialog có candidate AI giả đã ready.
+ * =====================================================================
+ * INPUT: store test đã reset.
+ * OUTPUT: wrapper với candidate chứa output nội dung và taxonomy legacy.
+ * SIDE EFFECT: mount Vue, cập nhật store mock; không gọi provider.
+ * =====================================================================
+ */
 async function renderCandidate() {
   const wrapper = mount(CreateWithAiDialog, {
     props: { modelValue: true },
     global: {
       mocks: { $vuetify: { display: { smAndDown: false } } },
       stubs: {
+        AiWritingPreferences: true, AiSourcePreview: true, AiPipelineReport: true,
         ...passthroughStubs(['VDialog', 'DialogCloseBtn', 'VCard', 'VCardItem', 'VCardTitle', 'VCardSubtitle', 'VCardText', 'VCardActions', 'VAvatar', 'VIcon', 'VSheet', 'VRow', 'VCol', 'VAlert', 'VDivider', 'VProgressLinear', 'AppStepper', 'AppTextField', 'AppSelect', 'AppTextarea', 'ArticleSourcePreviewCard', 'AiImportProgressCard']),
         VBtn: ButtonStub,
         VSnackbar: true,
@@ -61,7 +70,15 @@ async function renderCandidate() {
   return wrapper
 }
 
-/** Input: Component mounted. Output: Event Apply sau thao tác nhấn nút. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Nhấn nút áp dụng và đọc event trả về.
+ * =====================================================================
+ * INPUT: wrapper dialog đã mount.
+ * OUTPUT: event payload/provenance của lần Apply đầu.
+ * SIDE EFFECT: thao tác DOM giả lập; không lưu Post.
+ * =====================================================================
+ */
 async function apply(wrapper) {
   await wrapper.findAll('button').find(button => button.text() === 'Áp dụng bản đã chọn').trigger('click')
 
@@ -79,12 +96,29 @@ describe('CreateWithAiDialog provenance on Apply', () => {
 
     expect(payload).toEqual({
       title: 'Tiêu đề AI', content: '<p>Nội dung AI</p>', excerpt: 'Mô tả AI',
-      seo: { title: 'SEO AI', description: 'Mô tả SEO AI', focusKeyword: 'AI' }, categories: [2], tags: [3],
+      seo: { title: 'SEO AI', description: 'Mô tả SEO AI', focusKeyword: 'AI' },
     })
     expect(provenance.runId).toBe('run-text')
-    expect(provenance.fields).toHaveLength(5)
-    expect(new Set(provenance.fields)).toEqual(new Set(['title', 'content', 'excerpt', 'seo', 'taxonomy']))
+    expect(provenance.fields).toHaveLength(4)
+    expect(new Set(provenance.fields)).toEqual(new Set(['title', 'content', 'excerpt', 'seo']))
     expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([false])
+    wrapper.unmount()
+  })
+
+  it('does not select manual taxonomy automatically, but applies it when the admin explicitly selects the fields', async () => {
+    const wrapper = await renderCandidate()
+
+    state.store.candidates[0].outputs.category_ids = [7]
+    state.store.candidates[0].outputs.tag_ids = [8]
+    await flushPromises()
+    expect(wrapper.findComponent(PreviewStub).props('selectedFields')).not.toContain('category_ids')
+    expect(wrapper.findComponent(PreviewStub).props('selectedFields')).not.toContain('tag_ids')
+    wrapper.findComponent(PreviewStub).vm.$emit('update:selectedFields', ['category_ids', 'tag_ids'])
+    await flushPromises()
+    expect(await apply(wrapper)).toEqual([
+      { categories: [7], tags: [8] },
+      { runId: 'run-text', fields: ['taxonomy'] },
+    ])
     wrapper.unmount()
   })
 

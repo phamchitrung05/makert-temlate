@@ -9,8 +9,8 @@ use App\Http\Resources\MediaAssetResource;
 use App\Http\Responses\BaseResponse;
 use App\Models\AiImport;
 use App\Models\MediaAsset;
-use App\Services\Ai\AiRunService;
-use App\Services\Ai\ModelResolver;
+use App\Services\Ai\Providers\Catalog\ModelResolver;
+use App\Services\Ai\Runs\AiRunService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -20,6 +20,8 @@ use Illuminate\Validation\ValidationException;
  * CHỨC NĂNG FILE: API tạo/poll ảnh độc lập với luồng text Post.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE: store(), show().
+ * - payload(): trả trạng thái ảnh và asset qua envelope an toàn.
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * INPUT: request prompt/model và actor admin.
  * OUTPUT: AiImport/MediaAssetResource theo trạng thái queue.
  * SIDE EFFECT: ghi run metadata và dispatch image job.

@@ -8,11 +8,11 @@ use App\Jobs\ProcessAiImportJob;
 use App\Models\AiImport;
 use App\Models\AiProvider;
 use App\Models\User;
-use App\Services\Ai\AiImageGenerationService;
-use App\Services\Ai\AiSettingsService;
-use App\Services\Ai\ArticleImportService;
-use App\Services\Ai\ModelResolver;
+use App\Services\Ai\Content\ArticleImportService;
+use App\Services\Ai\Images\AiImageGenerationService;
+use App\Services\Ai\Providers\Catalog\ModelResolver;
 use App\Services\Ai\Registries\ProviderRegistry;
+use App\Services\Ai\Settings\AiSettingsService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
@@ -22,20 +22,37 @@ use Tests\UsesIsolatedDatabase;
 
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Khóa contract provider catalog, key redaction và defaults
+ * CHỨC NĂNG FILE: Kiểm catalog/settings/provider lifecycle với HTTP và queue fake.
  * =====================================================================
- *
- * Test dùng database cô lập và HTTP fake; không gọi endpoint AI thật.
- *
  * CÁC HÀM/METHOD TRONG FILE:
- * - setUp(), tearDown(), token(), connection(): quản lý fixture cô lập.
- * - test_*(): kiểm tra quyền, mã hóa key, catalog sync, model resolver và image run.
- *
+ * - setUp().
+ * - tearDown().
+ * - token().
+ * - test_text_capability_alone_is_visible_and_runs_without_native_json_mode().
+ * - test_provider_key_is_write_only_and_model_can_be_selected_as_image_default().
+ * - test_model_test_delegates_capability_validation_to_provider().
+ * - test_model_test_reports_upstream_errors_without_leaking_secrets().
+ * - test_sync_imports_models_without_deleting_stale_catalog().
+ * - test_image_generation_queues_a_separate_run().
+ * - test_ai_settings_requires_manage_permission().
+ * - test_key_rotation_preserves_key_when_omitted().
+ * - test_provider_url_rejects_unsafe_egress().
+ * - test_sync_failure_preserves_catalog_and_admin_capability().
+ * - test_resolver_defaults_fallback_and_snapshot_are_capability_aware().
+ * - test_incompatible_or_unavailable_model_is_rejected().
+ * - test_image_failure_does_not_fail_content_candidate().
+ * - connection().
+ * - test_provider_timeout_can_be_saved_and_validated_without_changing_key().
+ * - test_provider_timeout_overrides_global_for_text_image_and_catalog_calls().
+ * - test_connection_failure_waits_for_manual_retry_and_uses_latest_timeout().
+ * - test_catalog_and_image_connection_failures_do_not_reconnect_automatically().
+ * - test_manual_retry_rejects_disabled_connection_without_mutating_run().
+ * - test_new_provider_and_form_use_configured_timeout_default().
+ * =====================================================================
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
- * - INPUT: request admin và response HTTP giả lập.
- * - OUTPUT: assertions về security boundary, defaults và lifecycle AI.
- * - SIDE EFFECT: database test cô lập, Queue fake và HTTP fake.
- * - EXCEPTION/TRANSACTION: lỗi validation được assert; không gọi AI thật.
+ * - INPUT : fixtures/requests admin, HTTP và Queue fake, database test cô lập.
+ * - OUTPUT: assertions cho contract, snapshot, quyền và lỗi; không gọi AI thật.
+ * - SIDE EFFECT: tạo/sửa dữ liệu trong database test; không chỉnh dữ liệu ứng dụng.
  * =====================================================================
  */
 final class AiProviderSettingsApiTest extends TestCase
@@ -45,16 +62,21 @@ final class AiProviderSettingsApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Khởi tạo database và permission cô lập cho test settings AI.
+
      * =====================================================================
      * INPUT: PHPUnit lifecycle.
      * OUTPUT: Schema test và permission đã seed.
      * SIDE EFFECT: Reset database và permission cache.
      * EXCEPTION/TRANSACTION: Chỉ setup test; không gọi provider thật.
+
      * =====================================================================
      */
     protected function setUp(): void
     {
         parent::setUp();
+        // Fixtures một lượt kiểm riêng baseline được giữ để so sánh rollout.
+        config()->set('ai-content.pipeline', 'single_step');
+        config()->set('queue.default', 'database');
         $this->useIsolatedDatabase();
         $this->seed(RolePermissionSeeder::class);
     }
@@ -62,11 +84,13 @@ final class AiProviderSettingsApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Giải phóng database cô lập sau test settings AI.
+
      * =====================================================================
      * INPUT: PHPUnit lifecycle.
      * OUTPUT: Tài nguyên test được giải phóng.
      * SIDE EFFECT: Dọn database cô lập.
      * EXCEPTION/TRANSACTION: Chỉ cleanup test; không gọi provider thật.
+
      * =====================================================================
      */
     protected function tearDown(): void
@@ -78,11 +102,13 @@ final class AiProviderSettingsApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Tạo admin token với permission phục vụ test AI
+
      * =====================================================================
      * INPUT: Fixture user active và các quyền settings/posts/media.
      * OUTPUT: Plaintext token chỉ dùng trong test.
      * SIDE EFFECT: Ghi user/permission/token vào database test, xóa permission cache.
      * EXCEPTION/TRANSACTION: Database cô lập được dọn trong tearDown; không gọi AI thật.
+
      * =====================================================================
      */
     private function token(): string
@@ -96,9 +122,12 @@ final class AiProviderSettingsApiTest extends TestCase
     }
 
     /**
+     * =====================================================================
      * Input: Catalog có text-only, image-only, unknown và disabled models.
      * Output: Text-only hiển thị/chạy được; output sai JSON vẫn bị từ chối.
      * Side effect: Database cô lập, HTTP/queue fake; không gọi model thật.
+
+     * =====================================================================
      */
     public function test_text_capability_alone_is_visible_and_runs_without_native_json_mode(): void
     {
@@ -117,8 +146,8 @@ final class AiProviderSettingsApiTest extends TestCase
         $this->assertSame($text->id, $option['model_options'][0]['id']);
 
         Http::fake(['https://gateway.example/v1/chat/completions' => Http::sequence()
-            ->push(['choices' => [['message' => ['content' => json_encode(['title' => 'AI title', 'content_html' => '<p>AI content</p>'])]]]])
-            ->push(['choices' => [['message' => ['content' => 'not JSON']]]]),
+            ->push(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => json_encode(['title' => 'AI title', 'content_html' => '<p>AI content</p>'])]]]])
+            ->push(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => 'not JSON']]]]),
         ]);
         $request = [
             'target_type' => 'post', 'operation' => 'create',
@@ -145,11 +174,13 @@ final class AiProviderSettingsApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng key mã hóa/write-only và default ảnh
+
      * =====================================================================
      * INPUT: Provider/key giả, model có image_generation capability.
      * OUTPUT: Assertions xác nhận key không lộ và default_image_model_id được lưu.
      * SIDE EFFECT: Gọi API nội bộ, ghi fixtures và settings trong DB test.
      * EXCEPTION/TRANSACTION: Không gọi model thật; database cô lập được dọn trong tearDown.
+
      * =====================================================================
      */
     public function test_provider_key_is_write_only_and_model_can_be_selected_as_image_default(): void
@@ -175,11 +206,13 @@ final class AiProviderSettingsApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng test model không chặn trước theo capability.
+
      * =====================================================================
      * INPUT: image-only model và response thành công từ endpoint upstream.
      * OUTPUT: request test được gửi đến provider và trả success.
      * SIDE EFFECT: HTTP fake ghi nhận request; provider lưu trạng thái test.
      * EXCEPTION/TRANSACTION: Không gọi AI thật; lỗi tương thích thuộc upstream.
+
      * =====================================================================
      */
     public function test_model_test_delegates_capability_validation_to_provider(): void
@@ -187,7 +220,7 @@ final class AiProviderSettingsApiTest extends TestCase
         Http::preventStrayRequests();
         Http::fake([
             'https://gateway.example/v1/chat/completions' => Http::response([
-                'choices' => [['message' => ['content' => 'OK']]],
+                'choices' => [['finish_reason' => 'stop', 'message' => ['content' => 'OK']]],
             ]),
         ]);
         $token = $this->token();
@@ -209,11 +242,13 @@ final class AiProviderSettingsApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng test model trả lỗi upstream thay vì chặn capability.
+
      * =====================================================================
      * INPUT: image-only model và HTTP 403 từ provider.
      * OUTPUT: API trả lỗi quyền an toàn và provider có test_status failed.
      * SIDE EFFECT: Gọi HTTP fake; ghi trạng thái test trong database cô lập.
      * EXCEPTION/TRANSACTION: Không gọi AI thật hoặc lộ response chứa secret.
+
      * =====================================================================
      */
     public function test_model_test_reports_upstream_errors_without_leaking_secrets(): void
@@ -244,11 +279,13 @@ final class AiProviderSettingsApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng sync giữ model cũ dưới trạng thái unavailable
+
      * =====================================================================
      * INPUT: Catalog HTTP fake và một model remote không còn xuất hiện.
      * OUTPUT: Assertions model mới available, model stale vẫn tồn tại nhưng unavailable.
      * SIDE EFFECT: Gọi API sync qua HTTP fake; ghi catalog vào DB test.
      * EXCEPTION/TRANSACTION: Không kết nối gateway thật; DB test được dọn sau test.
+
      * =====================================================================
      */
     public function test_sync_imports_models_without_deleting_stale_catalog(): void
@@ -273,11 +310,13 @@ final class AiProviderSettingsApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng ảnh được xếp hàng thành run riêng không chứa key
+
      * =====================================================================
      * INPUT: Image-capable model và prompt; Queue fake.
      * OUTPUT: 202 chứa run snapshot không có API key và image job được dispatch.
      * SIDE EFFECT: Ghi image run vào DB test; job chỉ được ghi nhận bởi Queue fake.
      * EXCEPTION/TRANSACTION: Không tạo ảnh hoặc gọi endpoint AI thật.
+
      * =====================================================================
      */
     public function test_image_generation_queues_a_separate_run(): void
@@ -305,11 +344,13 @@ final class AiProviderSettingsApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng AI settings yêu cầu ai_settings.manage.
+
      * =====================================================================
      * INPUT: authenticated admin thiếu ai_settings.manage.
      * OUTPUT: AI settings bị chặn 403, không lộ catalog/key.
      * SIDE EFFECT: chỉ ghi fixture trong database test cô lập.
      * EXCEPTION/TRANSACTION: authorization được assert tại HTTP boundary.
+
      * =====================================================================
      */
     public function test_ai_settings_requires_manage_permission(): void
@@ -334,11 +375,13 @@ final class AiProviderSettingsApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng update provider giữ hoặc rotate key đúng contract.
+
      * =====================================================================
      * INPUT: edit provider không truyền key hoặc truyền key mới.
      * OUTPUT: giữ key cũ hoặc rotate encrypted key; response luôn write-only.
      * SIDE EFFECT: database test cô lập; không gọi provider thật.
      * EXCEPTION/TRANSACTION: database cô lập được dọn trong tearDown.
+
      * =====================================================================
      */
     public function test_key_rotation_preserves_key_when_omitted(): void
@@ -358,11 +401,13 @@ final class AiProviderSettingsApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng provider URL chặn outbound không an toàn.
+
      * =====================================================================
      * INPUT: HTTPS URL localhost/private/credential/query và HTTP URL.
      * OUTPUT: validation 422 trước khi HTTP outbound.
      * SIDE EFFECT: Http fake để đảm bảo không có network.
      * EXCEPTION/TRANSACTION: validation được assert tại HTTP boundary.
+
      * =====================================================================
      */
     public function test_provider_url_rejects_unsafe_egress(): void
@@ -381,11 +426,13 @@ final class AiProviderSettingsApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng sync thất bại giữ catalog và capability admin.
+
      * =====================================================================
      * INPUT: catalog malformed và model có capability do admin xác nhận.
      * OUTPUT: lỗi sync giữ state cũ; resync thành công vẫn giữ capability admin.
      * SIDE EFFECT: fake HTTPS và database test cô lập.
      * EXCEPTION/TRANSACTION: sync exception được assert qua response 422.
+
      * =====================================================================
      */
     public function test_sync_failure_preserves_catalog_and_admin_capability(): void
@@ -411,12 +458,14 @@ final class AiProviderSettingsApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng resolver default/fallback và snapshot theo capability.
+
      * =====================================================================
      * INPUT: default text/image, explicit override và model inactive.
      * OUTPUT: resolver ưu tiên override, dùng fallback khi default inactive;
      * snapshot không đổi khi settings được sửa sau đó.
      * SIDE EFFECT: database test cô lập; không gọi provider.
      * EXCEPTION/TRANSACTION: database cô lập được dọn trong tearDown.
+
      * =====================================================================
      */
     public function test_resolver_defaults_fallback_and_snapshot_are_capability_aware(): void
@@ -444,11 +493,13 @@ final class AiProviderSettingsApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng model sai capability hoặc unavailable bị từ chối.
+
      * =====================================================================
      * INPUT: text-only model chọn tạo ảnh/default ảnh hoặc model không available.
      * OUTPUT: validation 422, không queue sai capability.
      * SIDE EFFECT: database test và Queue fake; không gọi provider.
      * EXCEPTION/TRANSACTION: validation được assert tại HTTP boundary.
+
      * =====================================================================
      */
     public function test_incompatible_or_unavailable_model_is_rejected(): void
@@ -467,11 +518,13 @@ final class AiProviderSettingsApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng lỗi image child không làm hỏng content candidate.
+
      * =====================================================================
      * INPUT: upstream image 401 cho child run của content ready.
      * OUTPUT: image failed nhưng content vẫn ready; message không chứa provider body/key.
      * SIDE EFFECT: HTTP fake và database test; không tạo ảnh/upload thật.
      * EXCEPTION/TRANSACTION: provider exception được job chuyển thành failed an toàn.
+
      * =====================================================================
      */
     public function test_image_failure_does_not_fail_content_candidate(): void
@@ -499,11 +552,13 @@ final class AiProviderSettingsApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Tạo provider fixture với domain và key giả.
+
      * =====================================================================
      * INPUT: connection fixture overrides.
      * OUTPUT: provider dùng domain test, key giả mã hóa.
      * SIDE EFFECT: chỉ ghi database test cô lập.
      * EXCEPTION/TRANSACTION: database cô lập được dọn trong tearDown.
+
      * =====================================================================
      */
     private function connection(array $overrides = []): AiProvider
@@ -515,7 +570,11 @@ final class AiProviderSettingsApiTest extends TestCase
         ], $overrides));
     }
 
-    /** Input: tạo/sửa provider và timeout sai. Output: default 120, lưu số giây, giữ khi bỏ field, 422 ngoài 5–600; DB cô lập. */
+    /**
+     * =====================================================================
+     * Input: tạo/sửa provider và timeout sai. Output: default 120, lưu số giây, giữ khi bỏ field, 422 ngoài 5–600; DB cô lập.
+     * =====================================================================
+     */
     public function test_provider_timeout_can_be_saved_and_validated_without_changing_key(): void
     {
         config(['ai-providers.request_timeout' => 120]);
@@ -535,7 +594,11 @@ final class AiProviderSettingsApiTest extends TestCase
         $this->assertSame('offline-key', AiProvider::findOrFail($id)->api_key);
     }
 
-    /** Input: timeout provider 360, global 5, hai capability. Output: text/image dùng 360 và job/lease đủ dài; không network thật. */
+    /**
+     * =====================================================================
+     * Input: timeout provider 360, global 5, hai capability. Output: text/image dùng 360 và job/lease đủ dài; không network thật.
+     * =====================================================================
+     */
     public function test_provider_timeout_overrides_global_for_text_image_and_catalog_calls(): void
     {
         $token = $this->token();
@@ -552,7 +615,7 @@ final class AiProviderSettingsApiTest extends TestCase
 
             return Http::response(str_ends_with($request->url(), '/models')
                 ? ['data' => [['id' => 'text-a'], ['id' => 'image-a']]]
-                : ['choices' => [['message' => ['content' => 'OK']]]]);
+                : ['choices' => [['finish_reason' => 'stop', 'message' => ['content' => 'OK']]]]);
         });
         $url = '/api/admin/settings/ai/providers/'.$provider->id;
         $this->withToken($token)->postJson($url.'/test')->assertOk();
@@ -567,7 +630,11 @@ final class AiProviderSettingsApiTest extends TestCase
         }
     }
 
-    /** Input: POST mất kết nối, timeout provider đổi trước retry. Output: failed sau một lần, chỉ requeue khi bấm, nhận timeout mới và chống retry trùng; fake HTTP/queue. */
+    /**
+     * =====================================================================
+     * Input: POST mất kết nối, timeout provider đổi trước retry. Output: failed sau một lần, chỉ requeue khi bấm, nhận timeout mới và chống retry trùng; fake HTTP/queue.
+     * =====================================================================
+     */
     public function test_connection_failure_waits_for_manual_retry_and_uses_latest_timeout(): void
     {
         Queue::fake();
@@ -583,7 +650,7 @@ final class AiProviderSettingsApiTest extends TestCase
                 throw new \Illuminate\Http\Client\ConnectionException('Disconnected');
             }
 
-            return Http::response(['choices' => [['message' => ['content' => json_encode(['title' => 'Retry content', 'content_html' => '<p>Ready</p>'])]]]]);
+            return Http::response(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => json_encode(['title' => 'Retry content', 'content_html' => '<p>Ready</p>'])]]]]);
         });
         $id = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
             'target_type' => 'post', 'operation' => 'create', 'provider' => $provider->key, 'model' => 'text-a',
@@ -612,7 +679,11 @@ final class AiProviderSettingsApiTest extends TestCase
         $this->assertSame(1, AiImport::count());
     }
 
-    /** Input: GET catalog hoặc POST image mất kết nối. Output: một HTTP attempt, image failed và catalog cũ còn nguyên; không tạo ảnh thật. */
+    /**
+     * =====================================================================
+     * Input: GET catalog hoặc POST image mất kết nối. Output: một HTTP attempt, image failed và catalog cũ còn nguyên; không tạo ảnh thật.
+     * =====================================================================
+     */
     public function test_catalog_and_image_connection_failures_do_not_reconnect_automatically(): void
     {
         $token = $this->token();
@@ -638,7 +709,11 @@ final class AiProviderSettingsApiTest extends TestCase
         $this->assertSame('AI_PROVIDER_TIMEOUT', $image->fresh()->error_code);
     }
 
-    /** Input: failed run nhưng provider đã tắt. Output: từ chối retry, giữ lifecycle và không dispatch; DB/queue fake. */
+    /**
+     * =====================================================================
+     * Input: failed run nhưng provider đã tắt. Output: từ chối retry, giữ lifecycle và không dispatch; DB/queue fake.
+     * =====================================================================
+     */
     public function test_manual_retry_rejects_disabled_connection_without_mutating_run(): void
     {
         Queue::fake();
@@ -655,7 +730,11 @@ final class AiProviderSettingsApiTest extends TestCase
         Queue::assertNothingPushed();
     }
 
-    /** Input: config timeout 240 và provider mới bỏ field. Output: catalog/form default 240 và record lưu 240; chỉ DB test. */
+    /**
+     * =====================================================================
+     * Input: config timeout 240 và provider mới bỏ field. Output: catalog/form default 240 và record lưu 240; chỉ DB test.
+     * =====================================================================
+     */
     public function test_new_provider_and_form_use_configured_timeout_default(): void
     {
         config(['ai-providers.request_timeout' => 240]);

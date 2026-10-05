@@ -9,7 +9,7 @@ use Illuminate\Validation\Rule;
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Validate cập nhật từng phần Post, media và SEO.
- * CÁC HÀM/METHOD TRONG FILE: authorize(), rules(); seoRules() từ trait.
+ * CÁC HÀM/METHOD TRONG FILE: authorize(), rules(); seoRules(), after() từ trait.
  * INPUT/OUTPUT CỦA CLASS (tổng thể): request admin -> dữ liệu hợp lệ hoặc lỗi 422.
  * =====================================================================
  */
@@ -17,6 +17,7 @@ class PostUpdateRequest extends FormRequest
 {
     use \App\Http\Requests\Admin\Concerns\ValidatesAiProvenance;
     use \App\Http\Requests\Admin\Concerns\ValidatesPostSeo;
+    use \App\Http\Requests\Admin\Concerns\ValidatesContentMedia;
 
     /**
      * =====================================================================

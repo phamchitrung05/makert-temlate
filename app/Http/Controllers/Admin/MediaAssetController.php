@@ -22,6 +22,7 @@ use App\Jobs\Media\ScanMediaAssetJob;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
 use App\Models\User;
+use App\Services\Media\ContentMediaReferenceService;
 use App\Services\Media\MediaAssetLinkableResolver;
 use App\Services\MediaAssetUsageService;
 use Illuminate\Database\Eloquent\Builder;
@@ -49,7 +50,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * - store(): upload asset qua pipeline an toàn
  * - show(): trả chi tiết asset và usage
  * - update(): cập nhật metadata và visibility
- * - destroy(): soft-delete asset chưa bị usage khóa
+ * - destroy(): khóa asset, kiểm usage/candidate snapshot trước khi soft-delete
  * - attach(): gắn asset vào model/field nghiệp vụ
  * - detach(): tháo một usage của asset
  * - reorder(): sắp xếp usage theo field multiple
@@ -188,21 +189,26 @@ class MediaAssetController extends Controller
      * CHỨC NĂNG: Soft-delete asset không còn usage nghiệp vụ
      * =====================================================================
      *
-     * INPUT: MediaAsset chưa bị soft-delete.
+     * INPUT: Request actor và MediaAsset chưa bị soft-delete.
      * OUTPUT: Response HTTP 204 khi xóa thành công.
-     * EXCEPTION: ValidationException 422 nếu asset còn usage.
+     * SIDE EFFECT: Khóa row và soft-delete trong transaction, không xóa file đang dùng.
+     * EXCEPTION: 422 nếu asset còn domain usage, 409 nếu candidate/snapshot còn giữ.
+     * =====================================================================
      */
     public function destroy(Request $request, MediaAsset $mediaAsset): Response
     {
-        $this->authorizeForRequest($request, 'delete', $mediaAsset);
-
-        if ($mediaAsset->usages()->exists()) {
-            throw ValidationException::withMessages([
-                'media_asset' => 'Không thể xóa asset đang được model nghiệp vụ sử dụng.',
-            ]);
-        }
-
-        $mediaAsset->delete();
+        DB::transaction(function () use ($request, $mediaAsset): void {
+            $asset = MediaAsset::query()->whereKey($mediaAsset->getKey())->lockForUpdate()->firstOrFail();
+            $this->authorizeForRequest($request, 'delete', $asset);
+            if ($asset->usages()->exists()) {
+                throw ValidationException::withMessages([
+                    'media_asset' => 'Không thể xóa asset đang được model nghiệp vụ sử dụng.',
+                ]);
+            }
+            abort_if(app(ContentMediaReferenceService::class)->isReferencedByRetainedAiRun((int) $asset->getKey()), 409,
+                'Không thể xóa ảnh đang được candidate hoặc snapshot AI còn hạn sử dụng giữ.');
+            $asset->delete();
+        });
 
         return BaseResponse::noContent();
     }
@@ -430,7 +436,10 @@ class MediaAssetController extends Controller
      * CHỨC NĂNG: Tạo query eager load media collection library
      * =====================================================================
      *
+     * INPUT: Không có tham số; đọc scope/query của MediaAsset.
      * OUTPUT: Builder có relation media giới hạn đúng collection library.
+     * SIDE EFFECT: Chưa thực thi query hoặc ghi database.
+     * =====================================================================
      */
     private function mediaQuery(): Builder
     {

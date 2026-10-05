@@ -1,0 +1,34 @@
+{
+    "run_id": "01a1082f-58eb-710a-a3b3-ac34a7ba368d",
+    "diagnostics": {
+        "response_id": "resp_0287ba4fd825f39e016ac29b9478d087d09ce21940c466eb17",
+        "reported_model": "gpt-6.1-sol",
+        "finish_reason": "stop",
+        "stage": "ready",
+        "schema_version": "post.content.v1",
+        "requested_groups": [
+            "excerpt"
+        ],
+        "returned_fields": [
+            "excerpt"
+        ],
+        "usage": {
+            "prompt_tokens": 1063,
+            "completion_tokens": 128,
+            "total_tokens": 1191,
+            "reasoning_tokens": 32
+        }
+    },
+    "profile_ids": [
+        {
+            "id": 3,
+            "name": "QA Task 2 · Giải thích trực tiếp",
+            "version": 4
+        },
+        {
+            "id": 4,
+            "name": "QA Task 2 · Mẫu tham khảo du thuyền",
+            "version": 1
+        }
+    ]
+}

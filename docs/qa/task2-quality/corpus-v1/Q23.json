@@ -1,0 +1,36 @@
+{
+    "source_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/best-practices/security.md",
+    "title": "Attribution và link",
+    "source_format": "html",
+    "version": "article.source.v1",
+    "content_html": "<h1>Security {#security}</h1>\n<h2>Reporting Vulnerabilities {#reporting-vulnerabilities}</h2>\n<p>When a vulnerability is reported, it immediately becomes our top concern, with a full-time contributor dropping everything to work on it. To report a vulnerability, please email <a href=\"mailto:security@vuejs.org\">security@vuejs.org</a>.</p>\n<p>While the discovery of new vulnerabilities is rare, we also recommend always using the latest versions of Vue and its official companion libraries to ensure your application remains as secure as possible.</p>",
+    "blocks": [
+        {
+            "id": "S001",
+            "type": "h1",
+            "text": "Security {#security}",
+            "html": "<h1>Security {#security}</h1>"
+        },
+        {
+            "id": "S002",
+            "type": "h2",
+            "text": "Reporting Vulnerabilities {#reporting-vulnerabilities}",
+            "html": "<h2>Reporting Vulnerabilities {#reporting-vulnerabilities}</h2>"
+        },
+        {
+            "id": "S003",
+            "type": "p",
+            "text": "When a vulnerability is reported, it immediately becomes our top concern, with a full-time contributor dropping everything to work on it. To report a vulnerability, please email security@vuejs.org.",
+            "html": "<p>When a vulnerability is reported, it immediately becomes our top concern, with a full-time contributor dropping everything to work on it. To report a vulnerability, please email <a href=\"mailto:security@vuejs.org\">security@vuejs.org</a>.</p>"
+        },
+        {
+            "id": "S004",
+            "type": "p",
+            "text": "While the discovery of new vulnerabilities is rare, we also recommend always using the latest versions of Vue and its official companion libraries to ensure your application remains as secure as possible.",
+            "html": "<p>While the discovery of new vulnerabilities is rare, we also recommend always using the latest versions of Vue and its official companion libraries to ensure your application remains as secure as possible.</p>"
+        }
+    ],
+    "source_images": [],
+    "fetched_at": "2026-10-04T17:47:33+00:00",
+    "hash": "1915362cd9019fb24d3931cab01e20a6c564d4d5b046f7af6adb517639bd0576"
+}

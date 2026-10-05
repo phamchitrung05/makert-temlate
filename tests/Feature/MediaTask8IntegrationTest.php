@@ -121,7 +121,7 @@ class MediaTask8IntegrationTest extends TestCase
 
     /**
      * Nếu một media id sai, transaction Resource create rollback cả bản ghi
-     * domain lẫn usage cover đã được ghi trước đó.
+ * domain lẫn usage cover đã được ghi trước đó.
      */
     public function test_resource_media_sync_rolls_back_when_one_asset_is_invalid(): void
     {
@@ -214,7 +214,7 @@ class MediaTask8IntegrationTest extends TestCase
 
         $created = $this->withToken($token)->postJson('/api/admin/posts', [
             'title' => 'Task 8 Post',
-            'content' => 'Content',
+            'content' => $this->inlineHtml($contentImage),
             'media' => [
                 'thumbnail_id' => $thumbnail->id,
                 'content_image_ids' => [$contentImage->id],
@@ -261,6 +261,26 @@ class MediaTask8IntegrationTest extends TestCase
         Auth::forgetGuards();
 
         return $admin->createToken('task-8-test', ['admin'])->plainTextToken;
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Tạo HTML ảnh đúng contract inline thay cho gallery ngoài content.
+     * =====================================================================
+     * INPUT: Public image fixture.
+     * OUTPUT: HTML ID/URL khớp metadata Spatie; không cần GD hoặc upload thực.
+     * =====================================================================
+     */
+    private function inlineHtml(MediaAsset $asset): string
+    {
+        $media = $asset->media()->create([
+            'collection_name' => 'library', 'name' => 'Inline fixture', 'file_name' => 'inline.png',
+            'disk' => 'media_public', 'conversions_disk' => 'media_public', 'mime_type' => 'image/png',
+            'size' => 100, 'manipulations' => [], 'custom_properties' => [],
+            'generated_conversions' => [], 'responsive_images' => [], 'order_column' => 1,
+        ]);
+
+        return '<p>Content</p><img data-media-asset-id="'.$asset->id.'" src="'.e($media->getUrl()).'" alt="Inline">';
     }
 
     /**

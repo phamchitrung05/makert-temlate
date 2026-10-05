@@ -24,7 +24,7 @@ function renderForm(generation = initial) {
     global: { stubs: {
       AiContentSourceForm: true, VCard: Passthrough, VCardItem: Passthrough,
       VCardText: Passthrough, VAlert: Passthrough, VProgressLinear: true, VBtn: Button,
-      VIcon: true, VAvatar: true, AppSelect: true,
+      VIcon: true, VAvatar: true, AppSelect: true, AiPipelineReport: true,
     } },
   })
 }
@@ -48,8 +48,8 @@ describe('Ai Content create form', () => {
     await wrapper.get('button').trigger('click')
     expect(wrapper.emitted('generate')).toHaveLength(1)
     await wrapper.setProps({ generation: { ...initial, busy: true, canGenerate: false, session: { status: 'queued', current_step: 'queued', progress: 0 } } })
-    expect(wrapper.get('button').element.disabled).toBe(true)
-    expect(wrapper.text()).toContain('chờ worker')
+    expect(wrapper.findAll('button').find(button => button.text() === 'Phân tích & Tạo content').element.disabled).toBe(true)
+    expect(wrapper.text()).toContain('Chờ worker')
     expect(wrapper.get('fieldset').element.disabled).toBe(true)
     wrapper.unmount()
   })

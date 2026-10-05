@@ -34,7 +34,7 @@ final class SchemaRegistry
      * EXCEPTION/TRANSACTION: InvalidArgumentException; không mở transaction.
      *
      * @return array<string, mixed>
-     * =====================================================================
+     *                              =====================================================================
      */
     public function get(string $key): array
     {
@@ -56,7 +56,7 @@ final class SchemaRegistry
      * EXCEPTION/TRANSACTION: không có; không mở transaction.
      *
      * @return array<string, array<string, mixed>>
-     * =====================================================================
+     *                                             =====================================================================
      */
     public function all(): array
     {

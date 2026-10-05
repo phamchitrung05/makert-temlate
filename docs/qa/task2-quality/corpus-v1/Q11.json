@@ -1,0 +1,258 @@
+{
+    "source_url": "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md",
+    "title": "Các database hỗ trợ/điều kiện",
+    "source_format": "html",
+    "version": "article.source.v1",
+    "content_html": "<h1>Database: Getting Started</h1>\n<ul>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#introduction\">Introduction</a>\n<ul>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#configuration\">Configuration</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#read-and-write-connections\">Read and Write Connections</a></li>\n</ul>\n</li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#running-queries\">Running SQL Queries</a>\n<ul>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#using-multiple-database-connections\">Using Multiple Database Connections</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#listening-for-query-events\">Listening for Query Events</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#monitoring-cumulative-query-time\">Monitoring Cumulative Query Time</a></li>\n</ul>\n</li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#database-transactions\">Database Transactions</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#connecting-to-the-database-cli\">Connecting to the Database CLI</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#inspecting-your-databases\">Inspecting Your Databases</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#monitoring-your-databases\">Monitoring Your Databases</a></li>\n</ul>\n<p></p>\n<h2>Introduction</h2>\n<p>Almost every modern web application interacts with a database. Laravel makes interacting with databases extremely simple across a variety of supported databases using raw SQL, a <a href=\"https://github.com/docs/%7B%7Bversion%7D%7D/queries\">fluent query builder</a>, and the <a href=\"https://github.com/docs/%7B%7Bversion%7D%7D/eloquent\">Eloquent ORM</a>. Currently, Laravel provides first-party support for five databases:</p>\n\n<ul>\n<li>MariaDB 10.3+ (<a href=\"https://mariadb.org/about/#maintenance-policy\">Version Policy</a>)</li>\n<li>MySQL 5.7+ (<a href=\"https://en.wikipedia.org/wiki/MySQL#Release_history\">Version Policy</a>)</li>\n<li>PostgreSQL 10.0+ (<a href=\"https://www.postgresql.org/support/versioning/\">Version Policy</a>)</li>\n<li>SQLite 3.26.0+</li>\n<li>SQL Server 2017+ (<a href=\"https://docs.microsoft.com/en-us/lifecycle/products/?products=sql-server\">Version Policy</a>)</li>\n</ul>\n\n<p>Additionally, MongoDB is supported via the <code>mongodb/laravel-mongodb</code> package, which is officially maintained by MongoDB. Check out the <a href=\"https://www.mongodb.com/docs/drivers/php/laravel-mongodb/\">Laravel MongoDB</a> documentation for more information.</p>\n<p></p>\n<h3>Configuration</h3>\n<p>The configuration for Laravel's database services is located in your application's <code>config/database.php</code> configuration file. In this file, you may define all of your database connections, as well as specify which connection should be used by default. Most of the configuration options within this file are driven by the values of your application's environment variables. Examples for most of Laravel's supported database systems are provided in this file.</p>\n<p>By default, Laravel's sample <a href=\"https://github.com/docs/%7B%7Bversion%7D%7D/configuration#environment-configuration\">environment configuration</a> is ready to use with <a href=\"https://github.com/docs/%7B%7Bversion%7D%7D/sail\">Laravel Sail</a>, which is a Docker configuration for developing Laravel applications on your local machine. However, you are free to modify your database configuration as needed for your local database.</p>\n<p></p>\n<h4>SQLite Configuration</h4>\n<p>SQLite databases are contained within a single file on your filesystem. You can create a new SQLite database using the <code>touch</code> command in your terminal: <code>touch database/database.sqlite</code>. After the database has been created, you may easily configure your environment variables to point to this database by placing the absolute path to the database in the <code>DB_DATABASE</code> environment variable:</p>\n<pre><code>DB_CONNECTION=sqlite\nDB_DATABASE=/absolute/path/to/database.sqlite\n</code></pre>\n<p>By default, foreign key constraints are enabled for SQLite connections. If you would like to disable them, you should set the <code>DB_FOREIGN_KEYS</code> environment variable to <code>false</code>:</p>\n<pre><code>DB_FOREIGN_KEYS=false\n</code></pre>\n<blockquote>\n<p>[!NOTE]\nIf you use the <a href=\"https://github.com/docs/%7B%7Bversion%7D%7D/installation#creating-a-laravel-project\">Laravel installer</a> to create your Laravel application and select SQLite as your database, Laravel will automatically create a <code>database/database.sqlite</code> file and run the default <a href=\"https://github.com/docs/%7B%7Bversion%7D%7D/migrations\">database migrations</a> for you.</p>\n</blockquote>\n<p></p>\n<h4>Microsoft SQL Server Configuration</h4>\n<p>To use a Microsoft SQL Server database, you should ensure that you have the <code>sqlsrv</code> and <code>pdo_sqlsrv</code> PHP extensions installed as well as any dependencies they may require such as the Microsoft SQL ODBC driver.</p>\n<p></p>\n<h4>Configuration Using URLs</h4>\n<p>Typically, database connections are configured using multiple configuration values such as <code>host</code>, <code>database</code>, <code>username</code>, <code>password</code>, etc. Each of these configuration values has its own corresponding environment variable. This means that when configuring your database connection information on a production server, you need to manage several environment variables.</p>\n<p>Some managed database providers such as AWS and Heroku provide a single database \"URL\" that contains all of the connection information for the database in a single string. An example database URL may look something like the following:</p>\n<pre><code>mysql://root:password@127.0.0.1/forge?charset=UTF-8\n</code></pre>\n<p>These URLs typically follow a standard schema convention:</p>\n<pre><code>driver://username:password@host:port/database?options\n</code></pre>\n<p>For convenience, Laravel supports these URLs as an alternative to configuring your database with multiple configuration options. If the <code>url</code> (or corresponding <code>DB_URL</code> environment variable) configuration option is present, it will be used to extract the database connection and credential information.</p>\n<p></p>\n<h3>Read and Write Connections</h3>\n<p>Sometimes you may wish to use one database connection for SELECT statements, and another for INSERT, UPDATE, and DELETE statements. Laravel makes this a breeze, and the proper connections will always be used whether you are using raw queries, the query builder, or the Eloquent ORM.</p>\n<p>To see how read / write connections should be configured, let's look at this example:</p>\n<pre><code>'mysql' =&gt; [\n    'driver' =&gt; 'mysql',\n    \n    'read' =&gt; [\n        'host' =&gt; [\n            '192.168.1.1',\n            '196.168.1.2',\n        ],\n    ],\n    'write' =&gt; [\n        'host' =&gt; [\n            '192.168.1.3',\n        ],\n    ],\n    'sticky' =&gt; true,\n    \n    'port' =&gt; env('DB_PORT', '3306'),\n    'database' =&gt; env('DB_DATABASE', 'laravel'),\n    'username' =&gt; env('DB_USERNAME', 'root'),\n    'password' =&gt; env('DB_PASSWORD', ''),\n    'unix_socket' =&gt; env('DB_SOCKET', ''),\n    'charset' =&gt; env('DB_CHARSET', 'utf8mb4'),\n    'collation' =&gt; env('DB_COLLATION', 'utf8mb4_unicode_ci'),\n    'prefix' =&gt; '',\n    'prefix_indexes' =&gt; true,\n    'strict' =&gt; true,\n    'engine' =&gt; null,\n    'options' =&gt; extension_loaded('pdo_mysql') ? array_filter([\n        (PHP_VERSION_ID &gt;= 80500 ? \\Pdo\\Mysql::ATTR_SSL_CA : \\PDO::MYSQL_ATTR_SSL_CA) =&gt; env('MYSQL_ATTR_SSL_CA'),\n    ]) : [],\n],\n</code></pre>\n<p>Note that three keys have been added to the configuration array: <code>read</code>, <code>write</code> and <code>sticky</code>. The <code>read</code> and <code>write</code> keys have array values containing a single key: <code>host</code>. The rest of the database options for the <code>read</code> and <code>write</code> connections will be merged from the main <code>mysql</code> configuration array.</p>\n<p>You only need to place items in the <code>read</code> and <code>write</code> arrays if you wish to override the values from the main <code>mysql</code> array. So, in this case, <code>192.168.1.1</code> will be used as the host for the \"read\" connection, while <code>192.168.1.3</code> will be used for the \"write\" connection. The database credentials, prefix, character set, and all other options in the main <code>mysql</code> array will be shared across both connections. When multiple values exist in the <code>host</code> configuration array, a database host will be randomly chosen for each request.</p>\n<p></p>\n<h4>The <code>sticky</code> Option</h4>\n<p>The <code>sticky</code> option is an <em>optional</em> value that can be used to allow the immediate reading of records that have been written to the database during the current request cycle. If the <code>sticky</code> option is enabled and a \"write\" operation has been performed against the database during the current request cycle, any further \"read\" operations will use the \"write\" connection. This ensures that any data written during the request cycle can be immediately read back from the database during that same request. It is up to you to decide if this is the desired behavior for your application.</p>\n<p></p>",
+    "blocks": [
+        {
+            "id": "S001",
+            "type": "h1",
+            "text": "Database: Getting Started",
+            "html": "<h1>Database: Getting Started</h1>"
+        },
+        {
+            "id": "S002",
+            "type": "li",
+            "text": "Introduction\n\nConfiguration\nRead and Write Connections",
+            "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#introduction\">Introduction</a>\n<ul>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#configuration\">Configuration</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#read-and-write-connections\">Read and Write Connections</a></li>\n</ul>\n</li>"
+        },
+        {
+            "id": "S003",
+            "type": "li",
+            "text": "Running SQL Queries\n\nUsing Multiple Database Connections\nListening for Query Events\nMonitoring Cumulative Query Time",
+            "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#running-queries\">Running SQL Queries</a>\n<ul>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#using-multiple-database-connections\">Using Multiple Database Connections</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#listening-for-query-events\">Listening for Query Events</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#monitoring-cumulative-query-time\">Monitoring Cumulative Query Time</a></li>\n</ul>\n</li>"
+        },
+        {
+            "id": "S004",
+            "type": "li",
+            "text": "Database Transactions",
+            "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#database-transactions\">Database Transactions</a></li>"
+        },
+        {
+            "id": "S005",
+            "type": "li",
+            "text": "Connecting to the Database CLI",
+            "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#connecting-to-the-database-cli\">Connecting to the Database CLI</a></li>"
+        },
+        {
+            "id": "S006",
+            "type": "li",
+            "text": "Inspecting Your Databases",
+            "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#inspecting-your-databases\">Inspecting Your Databases</a></li>"
+        },
+        {
+            "id": "S007",
+            "type": "li",
+            "text": "Monitoring Your Databases",
+            "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md#monitoring-your-databases\">Monitoring Your Databases</a></li>"
+        },
+        {
+            "id": "S008",
+            "type": "h2",
+            "text": "Introduction",
+            "html": "<h2>Introduction</h2>"
+        },
+        {
+            "id": "S009",
+            "type": "p",
+            "text": "Almost every modern web application interacts with a database. Laravel makes interacting with databases extremely simple across a variety of supported databases using raw SQL, a fluent query builder, and the Eloquent ORM. Currently, Laravel provides first-party support for five databases:",
+            "html": "<p>Almost every modern web application interacts with a database. Laravel makes interacting with databases extremely simple across a variety of supported databases using raw SQL, a <a href=\"https://github.com/docs/%7B%7Bversion%7D%7D/queries\">fluent query builder</a>, and the <a href=\"https://github.com/docs/%7B%7Bversion%7D%7D/eloquent\">Eloquent ORM</a>. Currently, Laravel provides first-party support for five databases:</p>"
+        },
+        {
+            "id": "S010",
+            "type": "li",
+            "text": "MariaDB 10.3+ (Version Policy)",
+            "html": "<li>MariaDB 10.3+ (<a href=\"https://mariadb.org/about/#maintenance-policy\">Version Policy</a>)</li>"
+        },
+        {
+            "id": "S011",
+            "type": "li",
+            "text": "MySQL 5.7+ (Version Policy)",
+            "html": "<li>MySQL 5.7+ (<a href=\"https://en.wikipedia.org/wiki/MySQL#Release_history\">Version Policy</a>)</li>"
+        },
+        {
+            "id": "S012",
+            "type": "li",
+            "text": "PostgreSQL 10.0+ (Version Policy)",
+            "html": "<li>PostgreSQL 10.0+ (<a href=\"https://www.postgresql.org/support/versioning/\">Version Policy</a>)</li>"
+        },
+        {
+            "id": "S013",
+            "type": "li",
+            "text": "SQLite 3.26.0+",
+            "html": "<li>SQLite 3.26.0+</li>"
+        },
+        {
+            "id": "S014",
+            "type": "li",
+            "text": "SQL Server 2017+ (Version Policy)",
+            "html": "<li>SQL Server 2017+ (<a href=\"https://docs.microsoft.com/en-us/lifecycle/products/?products=sql-server\">Version Policy</a>)</li>"
+        },
+        {
+            "id": "S015",
+            "type": "p",
+            "text": "Additionally, MongoDB is supported via the mongodb/laravel-mongodb package, which is officially maintained by MongoDB. Check out the Laravel MongoDB documentation for more information.",
+            "html": "<p>Additionally, MongoDB is supported via the <code>mongodb/laravel-mongodb</code> package, which is officially maintained by MongoDB. Check out the <a href=\"https://www.mongodb.com/docs/drivers/php/laravel-mongodb/\">Laravel MongoDB</a> documentation for more information.</p>"
+        },
+        {
+            "id": "S016",
+            "type": "h3",
+            "text": "Configuration",
+            "html": "<h3>Configuration</h3>"
+        },
+        {
+            "id": "S017",
+            "type": "p",
+            "text": "The configuration for Laravel's database services is located in your application's config/database.php configuration file. In this file, you may define all of your database connections, as well as specify which connection should be used by default. Most of the configuration options within this file are driven by the values of your application's environment variables. Examples for most of Laravel's supported database systems are provided in this file.",
+            "html": "<p>The configuration for Laravel's database services is located in your application's <code>config/database.php</code> configuration file. In this file, you may define all of your database connections, as well as specify which connection should be used by default. Most of the configuration options within this file are driven by the values of your application's environment variables. Examples for most of Laravel's supported database systems are provided in this file.</p>"
+        },
+        {
+            "id": "S018",
+            "type": "p",
+            "text": "By default, Laravel's sample environment configuration is ready to use with Laravel Sail, which is a Docker configuration for developing Laravel applications on your local machine. However, you are free to modify your database configuration as needed for your local database.",
+            "html": "<p>By default, Laravel's sample <a href=\"https://github.com/docs/%7B%7Bversion%7D%7D/configuration#environment-configuration\">environment configuration</a> is ready to use with <a href=\"https://github.com/docs/%7B%7Bversion%7D%7D/sail\">Laravel Sail</a>, which is a Docker configuration for developing Laravel applications on your local machine. However, you are free to modify your database configuration as needed for your local database.</p>"
+        },
+        {
+            "id": "S019",
+            "type": "h4",
+            "text": "SQLite Configuration",
+            "html": "<h4>SQLite Configuration</h4>"
+        },
+        {
+            "id": "S020",
+            "type": "p",
+            "text": "SQLite databases are contained within a single file on your filesystem. You can create a new SQLite database using the touch command in your terminal: touch database/database.sqlite. After the database has been created, you may easily configure your environment variables to point to this database by placing the absolute path to the database in the DB_DATABASE environment variable:",
+            "html": "<p>SQLite databases are contained within a single file on your filesystem. You can create a new SQLite database using the <code>touch</code> command in your terminal: <code>touch database/database.sqlite</code>. After the database has been created, you may easily configure your environment variables to point to this database by placing the absolute path to the database in the <code>DB_DATABASE</code> environment variable:</p>"
+        },
+        {
+            "id": "S021",
+            "type": "pre",
+            "text": "DB_CONNECTION=sqlite\nDB_DATABASE=/absolute/path/to/database.sqlite",
+            "html": "<pre><code>DB_CONNECTION=sqlite\nDB_DATABASE=/absolute/path/to/database.sqlite\n</code></pre>"
+        },
+        {
+            "id": "S022",
+            "type": "p",
+            "text": "By default, foreign key constraints are enabled for SQLite connections. If you would like to disable them, you should set the DB_FOREIGN_KEYS environment variable to false:",
+            "html": "<p>By default, foreign key constraints are enabled for SQLite connections. If you would like to disable them, you should set the <code>DB_FOREIGN_KEYS</code> environment variable to <code>false</code>:</p>"
+        },
+        {
+            "id": "S023",
+            "type": "pre",
+            "text": "DB_FOREIGN_KEYS=false",
+            "html": "<pre><code>DB_FOREIGN_KEYS=false\n</code></pre>"
+        },
+        {
+            "id": "S024",
+            "type": "blockquote",
+            "text": "[!NOTE]\nIf you use the Laravel installer to create your Laravel application and select SQLite as your database, Laravel will automatically create a database/database.sqlite file and run the default database migrations for you.",
+            "html": "<blockquote>\n<p>[!NOTE]\nIf you use the <a href=\"https://github.com/docs/%7B%7Bversion%7D%7D/installation#creating-a-laravel-project\">Laravel installer</a> to create your Laravel application and select SQLite as your database, Laravel will automatically create a <code>database/database.sqlite</code> file and run the default <a href=\"https://github.com/docs/%7B%7Bversion%7D%7D/migrations\">database migrations</a> for you.</p>\n</blockquote>"
+        },
+        {
+            "id": "S025",
+            "type": "h4",
+            "text": "Microsoft SQL Server Configuration",
+            "html": "<h4>Microsoft SQL Server Configuration</h4>"
+        },
+        {
+            "id": "S026",
+            "type": "p",
+            "text": "To use a Microsoft SQL Server database, you should ensure that you have the sqlsrv and pdo_sqlsrv PHP extensions installed as well as any dependencies they may require such as the Microsoft SQL ODBC driver.",
+            "html": "<p>To use a Microsoft SQL Server database, you should ensure that you have the <code>sqlsrv</code> and <code>pdo_sqlsrv</code> PHP extensions installed as well as any dependencies they may require such as the Microsoft SQL ODBC driver.</p>"
+        },
+        {
+            "id": "S027",
+            "type": "h4",
+            "text": "Configuration Using URLs",
+            "html": "<h4>Configuration Using URLs</h4>"
+        },
+        {
+            "id": "S028",
+            "type": "p",
+            "text": "Typically, database connections are configured using multiple configuration values such as host, database, username, password, etc. Each of these configuration values has its own corresponding environment variable. This means that when configuring your database connection information on a production server, you need to manage several environment variables.",
+            "html": "<p>Typically, database connections are configured using multiple configuration values such as <code>host</code>, <code>database</code>, <code>username</code>, <code>password</code>, etc. Each of these configuration values has its own corresponding environment variable. This means that when configuring your database connection information on a production server, you need to manage several environment variables.</p>"
+        },
+        {
+            "id": "S029",
+            "type": "p",
+            "text": "Some managed database providers such as AWS and Heroku provide a single database \"URL\" that contains all of the connection information for the database in a single string. An example database URL may look something like the following:",
+            "html": "<p>Some managed database providers such as AWS and Heroku provide a single database \"URL\" that contains all of the connection information for the database in a single string. An example database URL may look something like the following:</p>"
+        },
+        {
+            "id": "S030",
+            "type": "pre",
+            "text": "mysql://root:password@127.0.0.1/forge?charset=UTF-8",
+            "html": "<pre><code>mysql://root:password@127.0.0.1/forge?charset=UTF-8\n</code></pre>"
+        },
+        {
+            "id": "S031",
+            "type": "p",
+            "text": "These URLs typically follow a standard schema convention:",
+            "html": "<p>These URLs typically follow a standard schema convention:</p>"
+        },
+        {
+            "id": "S032",
+            "type": "pre",
+            "text": "driver://username:password@host:port/database?options",
+            "html": "<pre><code>driver://username:password@host:port/database?options\n</code></pre>"
+        },
+        {
+            "id": "S033",
+            "type": "p",
+            "text": "For convenience, Laravel supports these URLs as an alternative to configuring your database with multiple configuration options. If the url (or corresponding DB_URL environment variable) configuration option is present, it will be used to extract the database connection and credential information.",
+            "html": "<p>For convenience, Laravel supports these URLs as an alternative to configuring your database with multiple configuration options. If the <code>url</code> (or corresponding <code>DB_URL</code> environment variable) configuration option is present, it will be used to extract the database connection and credential information.</p>"
+        },
+        {
+            "id": "S034",
+            "type": "h3",
+            "text": "Read and Write Connections",
+            "html": "<h3>Read and Write Connections</h3>"
+        },
+        {
+            "id": "S035",
+            "type": "p",
+            "text": "Sometimes you may wish to use one database connection for SELECT statements, and another for INSERT, UPDATE, and DELETE statements. Laravel makes this a breeze, and the proper connections will always be used whether you are using raw queries, the query builder, or the Eloquent ORM.",
+            "html": "<p>Sometimes you may wish to use one database connection for SELECT statements, and another for INSERT, UPDATE, and DELETE statements. Laravel makes this a breeze, and the proper connections will always be used whether you are using raw queries, the query builder, or the Eloquent ORM.</p>"
+        },
+        {
+            "id": "S036",
+            "type": "p",
+            "text": "To see how read / write connections should be configured, let's look at this example:",
+            "html": "<p>To see how read / write connections should be configured, let's look at this example:</p>"
+        },
+        {
+            "id": "S037",
+            "type": "pre",
+            "text": "'mysql' => [\n    'driver' => 'mysql',\n    \n    'read' => [\n        'host' => [\n            '192.168.1.1',\n            '196.168.1.2',\n        ],\n    ],\n    'write' => [\n        'host' => [\n            '192.168.1.3',\n        ],\n    ],\n    'sticky' => true,\n    \n    'port' => env('DB_PORT', '3306'),\n    'database' => env('DB_DATABASE', 'laravel'),\n    'username' => env('DB_USERNAME', 'root'),\n    'password' => env('DB_PASSWORD', ''),\n    'unix_socket' => env('DB_SOCKET', ''),\n    'charset' => env('DB_CHARSET', 'utf8mb4'),\n    'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),\n    'prefix' => '',\n    'prefix_indexes' => true,\n    'strict' => true,\n    'engine' => null,\n    'options' => extension_loaded('pdo_mysql') ? array_filter([\n        (PHP_VERSION_ID >= 80500 ? \\Pdo\\Mysql::ATTR_SSL_CA : \\PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),\n    ]) : [],\n],",
+            "html": "<pre><code>'mysql' =&gt; [\n    'driver' =&gt; 'mysql',\n    \n    'read' =&gt; [\n        'host' =&gt; [\n            '192.168.1.1',\n            '196.168.1.2',\n        ],\n    ],\n    'write' =&gt; [\n        'host' =&gt; [\n            '192.168.1.3',\n        ],\n    ],\n    'sticky' =&gt; true,\n    \n    'port' =&gt; env('DB_PORT', '3306'),\n    'database' =&gt; env('DB_DATABASE', 'laravel'),\n    'username' =&gt; env('DB_USERNAME', 'root'),\n    'password' =&gt; env('DB_PASSWORD', ''),\n    'unix_socket' =&gt; env('DB_SOCKET', ''),\n    'charset' =&gt; env('DB_CHARSET', 'utf8mb4'),\n    'collation' =&gt; env('DB_COLLATION', 'utf8mb4_unicode_ci'),\n    'prefix' =&gt; '',\n    'prefix_indexes' =&gt; true,\n    'strict' =&gt; true,\n    'engine' =&gt; null,\n    'options' =&gt; extension_loaded('pdo_mysql') ? array_filter([\n        (PHP_VERSION_ID &gt;= 80500 ? \\Pdo\\Mysql::ATTR_SSL_CA : \\PDO::MYSQL_ATTR_SSL_CA) =&gt; env('MYSQL_ATTR_SSL_CA'),\n    ]) : [],\n],\n</code></pre>"
+        },
+        {
+            "id": "S038",
+            "type": "p",
+            "text": "Note that three keys have been added to the configuration array: read, write and sticky. The read and write keys have array values containing a single key: host. The rest of the database options for the read and write connections will be merged from the main mysql configuration array.",
+            "html": "<p>Note that three keys have been added to the configuration array: <code>read</code>, <code>write</code> and <code>sticky</code>. The <code>read</code> and <code>write</code> keys have array values containing a single key: <code>host</code>. The rest of the database options for the <code>read</code> and <code>write</code> connections will be merged from the main <code>mysql</code> configuration array.</p>"
+        },
+        {
+            "id": "S039",
+            "type": "p",
+            "text": "You only need to place items in the read and write arrays if you wish to override the values from the main mysql array. So, in this case, 192.168.1.1 will be used as the host for the \"read\" connection, while 192.168.1.3 will be used for the \"write\" connection. The database credentials, prefix, character set, and all other options in the main mysql array will be shared across both connections. When multiple values exist in the host configuration array, a database host will be randomly chosen for each request.",
+            "html": "<p>You only need to place items in the <code>read</code> and <code>write</code> arrays if you wish to override the values from the main <code>mysql</code> array. So, in this case, <code>192.168.1.1</code> will be used as the host for the \"read\" connection, while <code>192.168.1.3</code> will be used for the \"write\" connection. The database credentials, prefix, character set, and all other options in the main <code>mysql</code> array will be shared across both connections. When multiple values exist in the <code>host</code> configuration array, a database host will be randomly chosen for each request.</p>"
+        },
+        {
+            "id": "S040",
+            "type": "h4",
+            "text": "The sticky Option",
+            "html": "<h4>The <code>sticky</code> Option</h4>"
+        },
+        {
+            "id": "S041",
+            "type": "p",
+            "text": "The sticky option is an optional value that can be used to allow the immediate reading of records that have been written to the database during the current request cycle. If the sticky option is enabled and a \"write\" operation has been performed against the database during the current request cycle, any further \"read\" operations will use the \"write\" connection. This ensures that any data written during the request cycle can be immediately read back from the database during that same request. It is up to you to decide if this is the desired behavior for your application.",
+            "html": "<p>The <code>sticky</code> option is an <em>optional</em> value that can be used to allow the immediate reading of records that have been written to the database during the current request cycle. If the <code>sticky</code> option is enabled and a \"write\" operation has been performed against the database during the current request cycle, any further \"read\" operations will use the \"write\" connection. This ensures that any data written during the request cycle can be immediately read back from the database during that same request. It is up to you to decide if this is the desired behavior for your application.</p>"
+        }
+    ],
+    "source_images": [],
+    "fetched_at": "2026-10-04T17:47:27+00:00",
+    "hash": "0d592acdac4287867d27ed79165748d6099f8d025d44c1e70fcbcbd080f02921"
+}

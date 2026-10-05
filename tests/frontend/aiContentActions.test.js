@@ -15,14 +15,22 @@ import { buildAiContentRegenerateRequest, buildAiContentRequest, createAiContent
 import { useAiRunFeedback } from '@/composables/useAiRunFeedback'
 
 const { service } = vi.hoisted(() => ({ service: {
-  status: vi.fn(), updateCandidate: vi.fn(), regenerate: vi.fn(), removeSession: vi.fn(), listSessions: vi.fn(),
+  status: vi.fn(), updateCandidate: vi.fn(), regenerate: vi.fn(), removeSession: vi.fn(), listSessions: vi.fn(), applyCandidate: vi.fn(), cancel: vi.fn(),
 } }))
 
 vi.mock('@/services/aiAgent', () => ({ aiAgentService: service }))
 let scope
 const parent = { id: 'parent', title: 'Bản gốc', targetType: 'sound', status: 'review' }
 
-/** Input: không có. Output: workspace/actions thuộc effect scope, độc lập form tạo mới. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Khởi tạo workspace/action test độc lập form tạo mới.
+ * =====================================================================
+ * INPUT: effect scope đã tạo trước test.
+ * OUTPUT: state workspace, feedback và action composable.
+ * SIDE EFFECT: khởi tạo reactive state; API đã mock không gọi provider.
+ * =====================================================================
+ */
 function state() {
   return scope.run(() => {
     const workspace = useAiContentWorkspace()
@@ -35,7 +43,10 @@ function state() {
   })
 }
 
-beforeEach(() => { vi.resetAllMocks(); vi.useFakeTimers(); scope = effectScope() })
+beforeEach(() => {
+  vi.resetAllMocks(); vi.useFakeTimers(); scope = effectScope()
+  service.status.mockResolvedValue({ job_id: parent.id, target_type: 'sound', status: 'ready', draft_version: 'v1', draft: { title: parent.title } })
+})
 afterEach(() => { scope.stop(); vi.useRealTimers() })
 
 describe('AI Content actions', () => {
@@ -43,7 +54,8 @@ describe('AI Content actions', () => {
     const s = state()
 
     service.regenerate.mockResolvedValue({ job_id: 'child', parent_id: parent.id, status: 'failed', error: 'AI trả nội dung rỗng' })
-    s.requestAction('regenerate', parent)
+    await s.requestAction('regenerate', parent)
+    service.status.mockClear()
     await s.confirmAction()
     expect(s.notice.value).toEqual({ type: 'error', message: 'AI trả nội dung rỗng' })
     expect(s.snackbar.value.visible).toBe(true)
@@ -57,8 +69,9 @@ describe('AI Content actions', () => {
     const s = state()
 
     service.regenerate.mockResolvedValue({ job_id: 'child', parent_id: parent.id, target_type: 'sound', status: 'queued' })
+    await s.requestAction('regenerate', parent)
+    service.status.mockClear()
     service.status.mockRejectedValueOnce(new Error('network'))
-    s.requestAction('regenerate', parent)
     await s.confirmAction()
     await vi.advanceTimersByTimeAsync(1000)
     expect(s.notice.value.type).toBe('warning')
@@ -72,12 +85,27 @@ describe('AI Content actions', () => {
   })
   it('builds separate regenerate groups and omits empty overrides', async () => {
     expect(buildAiContentRegenerateRequest({ fields: ['title', 'content_html', 'seo_title', 'focus_keyword', 'tag_ids', 'thumbnail_prompt'], prompt_key: null, provider: '', model_id: null }))
-      .toEqual({ fields: ['title', 'content', 'seo', 'taxonomy', 'thumbnail'] })
+      .toEqual({ fields: ['title', 'content', 'seo', 'thumbnail'] })
     for (const targetType of ['post', 'resource', 'sound', 'lesson']) {
       const payload = await buildAiContentRequest({ ...createAiContentSource(), targetType, type: 'text', text: 'Nguồn' }, { id: 1 })
 
       expect(payload.target_type).toBe(targetType)
     }
+  })
+
+  it('rejects taxonomy-only regeneration instead of creating an entire article', () => {
+    expect(() => buildAiContentRegenerateRequest({ fields: ['taxonomy', 'category_ids', 'suggested_tag_ids'] }))
+      .toThrow('danh mục và tag được chọn thủ công')
+    expect(buildAiContentRegenerateRequest()).toEqual({ fields: [] })
+  })
+
+  it('removes stale taxonomy requests without changing manual category and tag selections', async () => {
+    const source = { ...createAiContentSource(), type: 'text', text: 'Nguồn', outputs: ['title', 'content', 'taxonomy', 'category_ids', 'suggested_tag_ids'], categories: [7], tags: [8] }
+    const payload = await buildAiContentRequest(source, { id: 1 })
+
+    expect(payload.requested_outputs).toEqual(['title', 'content'])
+    expect(source.categories).toEqual([7])
+    expect(source.tags).toEqual([8])
   })
 
   it('saves versioned edits and preserves the creation form; errors keep the dialog open', async () => {
@@ -119,8 +147,9 @@ describe('AI Content actions', () => {
     let resolveRequest
 
     service.regenerate.mockReturnValue(new Promise(resolve => { resolveRequest = resolve }))
+    await s.requestAction('regenerate', parent)
+    service.status.mockClear()
     service.status.mockResolvedValue({ job_id: 'child', target_type: 'sound', status: 'ready', parent_id: parent.id, draft: { title: 'Bản mới' } })
-    s.requestAction('regenerate', parent)
 
     const pending = s.confirmAction({ fields: ['content_html'], instructions: '' })
 
@@ -163,7 +192,8 @@ describe('AI Content actions', () => {
     const s = state()
 
     service.regenerate.mockResolvedValue({ job_id: 'child', target_type: 'sound', status: 'queued' })
-    s.requestAction('regenerate', parent)
+    await s.requestAction('regenerate', parent)
+    service.status.mockClear()
     await s.confirmAction()
     scope.stop()
     await vi.advanceTimersByTimeAsync(20000)
@@ -175,8 +205,9 @@ describe('AI Content actions', () => {
     let resolvePoll
 
     service.regenerate.mockResolvedValue({ job_id: 'child', target_type: 'sound', status: 'queued' })
+    await s.requestAction('regenerate', parent)
+    service.status.mockClear()
     service.status.mockReturnValue(new Promise(resolve => { resolvePoll = resolve }))
-    s.requestAction('regenerate', parent)
     await s.confirmAction()
     await vi.advanceTimersByTimeAsync(1000)
     scope.stop()

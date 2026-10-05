@@ -104,15 +104,16 @@ describe('Ai Content creation input', () => {
     })).toContain('được hỗ trợ')
   })
 
-  it('extracts HTML article text without scripts or navigation and maps inline text', async () => {
-    const file = { name: 'source.html', size: 200, text: async () => '<nav>navigation</nav><article><header><h1>Title</h1></header><p>First paragraph</p><script>bad()</script><p>Second paragraph</p></article><footer>footer</footer>' }
+  it('sends HTML bytes unchanged so the backend can preserve structure and extract the article', async () => {
+    const html = '<nav>navigation</nav><article><pre><code>if (true) {\n  call();\n}</code></pre><table><tr><td>Value</td></tr></table><p>First paragraph</p><script>bad()</script></article><footer>footer</footer>'
+    const file = new File([html], 'source.html', { type: 'text/html' })
     const payload = await buildAiContentRequest({ ...validSource(), type: 'file', file: [file] }, textModel)
 
-    expect(payload.input.type).toBe('text')
-    expect(payload.input.text).toContain('Title')
-    expect(payload.input.text).toContain('First paragraph\nSecond paragraph')
-    expect(payload.input.text).not.toMatch(/bad|navigation|footer/)
-    await expect(buildAiContentRequest({ ...validSource(), type: 'file', file: { text: async () => '<script>bad()</script>' } }, textModel)).rejects.toThrow('Không tìm thấy')
+    expect(payload).toBeInstanceOf(FormData)
+    expect(await payload.get('html_file').text()).toBe(html)
+    expect(payload.get('source_encoding')).toBe('UTF-8')
+    expect(payload.get('input[text]')).toBeNull()
+    expect(payload.get('requested_outputs[0]')).toBe('title')
 
     const textPayload = await buildAiContentRequest({ ...validSource(), type: 'text', text: '  Nguồn bài viết  ' }, textModel)
 

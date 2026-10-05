@@ -5,8 +5,8 @@ namespace App\Services\Ai\Registries;
 use App\Enums\AiCapability;
 use App\Models\AiModel;
 use App\Models\AiProvider;
-use App\Services\Ai\AiConnection;
 use App\Services\Ai\Contracts\AiProviderContract;
+use App\Services\Ai\Providers\Transport\AiConnection;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
@@ -15,8 +15,9 @@ use InvalidArgumentException;
  * =====================================================================
  * CHỨC NĂNG FILE: Registry connection/model cho text, image và client legacy.
  * =====================================================================
- * CÁC HÀM/METHOD: get(), resolve(), resolveForRun(), connectionForRun(),
+ * CÁC HÀM/METHOD TRONG FILE: __construct(), get(), resolve(), resolveForRun(), connectionForRun(),
  * publicOptions(), configuredProvider(), modelOptions(), catalogAvailable().
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * INPUT: provider key, capability hoặc snapshot đã lưu khi tạo run.
  * OUTPUT: adapter/connection nội bộ hoặc metadata công khai không có key/endpoint.
  * SIDE EFFECT: đọc catalog/config và resolve container; không ghi DB/gọi HTTP.
@@ -65,6 +66,7 @@ final class ProviderRegistry
                 'models' => array_column($models, 'value'), 'model_options' => $models,
             ];
         }
+
         return $this->configuredProvider($key);
     }
 
@@ -194,7 +196,14 @@ final class ProviderRegistry
             ->unique('key')->values()->all();
     }
 
-    /** Resolve metadata từ driver; giữ thông số kết nối và API key ở config server-side. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Resolve metadata từ driver theo cấu hình server
+     * =====================================================================
+     * INPUT: provider key. OUTPUT: metadata public đã loại thông số kết nối/key.
+     * SIDE EFFECT: chỉ đọc config; exception khi provider chưa bật.
+     * =====================================================================
+     */
     private function configuredProvider(string $key): array
     {
         $connection = config('ai-providers.connections.'.$key);

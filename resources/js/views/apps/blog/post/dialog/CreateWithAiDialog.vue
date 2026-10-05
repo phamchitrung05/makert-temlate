@@ -8,25 +8,28 @@
   AI qua Pinia store, nhưng chỉ trả candidate/field đã chọn lên parent; không
   tự tạo slug, không tự lưu và không tự publish Post.
 
-  CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
+  CÁC HÀM/METHOD TRONG FILE:
   - load(): tải capability và reset field theo target Post.
   - resetDialogState(): xóa session và lựa chọn khi mở lại.
   - buildRequest(): chuẩn hóa lựa chọn nguồn/prompt/model thành request.
   - run(): tạo session AI từ URL/text và bắt đầu polling.
-  - poll(), finishPolling(): cập nhật progress/candidate, dừng khi terminal hoặc quá hạn.
+  - poll()/tick(), finishPolling(): cập nhật progress/candidate, dừng khi terminal hoặc quá hạn.
   - resumePolling(): tiếp tục kiểm tra run hiện tại, không gửi tạo job mới.
   - apply(): emit payload và nhóm field provenance đúng contract Post.
   - regenerate(): tạo candidate mới từ lựa chọn hiện tại.
   - cancel(): hủy session đang chạy và dừng polling.
   - retryRun(): retry kỹ thuật run lỗi, không tạo candidate lineage mới.
   - progressSteps(): ánh xạ lifecycle backend thành các bước hiển thị.
-  - watcher visible: khởi tạo/dọn polling theo vòng đời dialog.
+  - useAiSourcePreview()/writingOptions(): preview HTML gốc và snapshot văn phong/brief;
+  regenerate dùng lựa chọn riêng, mặc định giữ snapshot của parent.
+  - watcher visible/provider/candidate/form defaults: điều phối state theo vòng đời dialog.
+  - onBeforeUnmount(): vô hiệu response và dọn timer khi component bị tháo.
   - stop(), swapLanguages(): dọn timer và đổi ngôn ngữ nguồn/đích.
-  - capability, candidates, candidate, busy, sessionId, prompts, providers, models,
+  - capability, generationOutputs, candidates, candidate, busy, sessionId, prompts, providers, models,
   elapsedTime, progressSteps: đọc state/allowlist để render; watcher candidate/provider
   cập nhật field selection và xóa model không thuộc provider mới.
 
-  INPUT/OUTPUT CỦA COMPONENT (tổng thể):
+  INPUT/OUTPUT CỦA CLASS (tổng thể):
   - INPUT : v-model visible, targetId, capability API và dữ liệu candidate.
   - OUTPUT: UI giữ nguyên view-moi, event apply/applied; side effect gọi
   AI Agent API qua Pinia store; không ghi database trực tiếp.
@@ -41,12 +44,17 @@ import ArticleSourcePreviewCard from './ArticleSourcePreviewCard.vue'
 import AiImportProgressCard from './AiImportProgressCard.vue'
 import { toPostPayload } from '@/composables/aiCandidate'
 import { findProvider, providerModels } from '@/utils/aiModelOptions'
-import { buildAiContentRegenerateRequest } from '@/utils/aiContentInput'
+import { buildAiContentRegenerateRequest, withoutAiTaxonomyOutputs } from '@/utils/aiContentInput'
 import { formatAiError, isAiSuccess } from '@/utils/aiErrors'
 import { useAiRunFeedback } from '@/composables/useAiRunFeedback'
 import { getAlertColor } from '@/config/alertColors'
+import { articleRequestBody, articleSourcePayload, emptyWritingPreferences, pipelineProgress, writingOptions } from '@/utils/aiArticleOptions'
+import { useAiSourcePreview } from '@/composables/ai/useAiSourcePreview'
+import AiWritingPreferences from '@/views/ai/shared/AiWritingPreferences.vue'
+import AiSourcePreview from '@/views/ai/shared/AiSourcePreview.vue'
+import AiPipelineReport from '@/views/ai/shared/AiPipelineReport.vue'
 
-const props = defineProps({ targetId: { type: [Number, String], default: null } })
+const props = defineProps({ targetId: { type: [Number, String], default: null }, categoryIds: { type: Array, default: () => [] }, tagIds: { type: Array, default: () => [] } })
 const emit = defineEmits(['apply', 'applied'])
 const visible = defineModel({ type: Boolean, default: false })
 const store = useAiAgentStore()
@@ -60,7 +68,11 @@ const loadingCapabilities = shallowRef(false)
 const pollingPaused = shallowRef(false)
 const startedAt = shallowRef(null)
 const checkedAt = shallowRef(null)
-const form = reactive({ inputType: 'url', inputValue: '', language: 'vi', instructions: '', selectionMode: 'auto', promptKey: '', provider: '', model: '', outputs: [] })
+const form = reactive({ inputType: 'url', inputValue: '', file: null, sourceEncoding: 'UTF-8', writing: emptyWritingPreferences(), language: 'vi', instructions: '', selectionMode: 'auto', promptKey: '', provider: '', model: '', outputs: [] })
+const regenerateWriting = shallowRef(emptyWritingPreferences(true))
+const regenerateInstructions = shallowRef('')
+const refreshSource = shallowRef(false)
+const sourcePreview = useAiSourcePreview(() => form)
 const sourceLanguage = shallowRef('en')
 let timer
 let loadGeneration = 0
@@ -68,28 +80,133 @@ let disposed = false
 const editedDefaultFields = new Set()
 let applyingDefaults = false
 
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Ghi nhận người dùng sửa lựa chọn trước khi capability trả về.
+ * =====================================================================
+ * INPUT: inputType/outputs thay đổi qua form.
+ * OUTPUT: set field đã sửa để default không ghi đè lựa chọn mới.
+ * SIDE EFFECT: watcher sync cập nhật set cục bộ; không gọi API.
+ * =====================================================================
+ */
 for (const field of ['inputType', 'outputs']) {
   watch(() => form[field], () => {
     if (!applyingDefaults) editedDefaultFields.add(field)
   }, { deep: true, flush: 'sync' })
 }
 
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Đọc capability hiện tại từ store.
+ * =====================================================================
+ * INPUT: store.capabilities.
+ * OUTPUT: capability hoặc object rỗng khi chưa tải.
+ * SIDE EFFECT: computed thuần; không gọi API.
+ * =====================================================================
+ */
 const capability = computed(() => store.capabilities ?? {})
 
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Lấy output generation từ capability Post.
+ * =====================================================================
+ * INPUT: output registry backend.
+ * OUTPUT: danh sách output AI; bỏ taxonomy/field suggested legacy.
+ * SIDE EFFECT: computed thuần; không sửa danh mục và tag của Post.
+ * =====================================================================
+ */
+const generationOutputs = computed(() => withoutAiTaxonomyOutputs(capability.value.outputs ?? []))
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Chọn candidate hợp lệ để review.
+ * =====================================================================
+ * INPUT: candidates và session lifecycle trong store.
+ * OUTPUT: danh sách không chứa output của run đã lỗi/hủy/hết hạn.
+ * SIDE EFFECT: computed thuần, không thay đổi store.
+ * =====================================================================
+ */
 const candidates = computed(() => store.candidates.filter(item => (!item.status || isAiSuccess(item))
   && !(['failed', 'cancelled', 'expired'].includes(store.session?.status)
     && String(item.id) === String(store.session?.job_id ?? store.session?.id))))
 
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Đọc candidate đang chọn hoặc bản hợp lệ đầu tiên.
+ * =====================================================================
+ * INPUT: danh sách candidates và selectedCandidateId.
+ * OUTPUT: candidate đang review hoặc undefined.
+ * SIDE EFFECT: computed thuần, không áp dụng vào Post.
+ * =====================================================================
+ */
 const candidate = computed(() => candidates.value.find(item => String(item.id) === String(selectedCandidateId.value)) ?? candidates.value[0])
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Khóa thao tác khi dialog đang tải hoặc polling.
+ * =====================================================================
+ * INPUT: loading store, polling và loadingCapabilities.
+ * OUTPUT: trạng thái busy dùng bởi controls.
+ * SIDE EFFECT: computed thuần, không gửi request.
+ * =====================================================================
+ */
 const busy = computed(() => store.isLoading || polling.value || loadingCapabilities.value)
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Xác định UUID run để kiểm tra/thao tác tiếp.
+ * =====================================================================
+ * INPUT: session trong store.
+ * OUTPUT: job_id ưu tiên, hoặc id/session_id tương thích.
+ * SIDE EFFECT: computed thuần, không tạo run.
+ * =====================================================================
+ */
 const sessionId = computed(() => store.session?.job_id ?? store.session?.id ?? store.session?.session_id)
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Chuẩn hóa options prompt để render select.
+ * =====================================================================
+ * INPUT: prompt registry từ capability.
+ * OUTPUT: danh sách object key/label cho prompt.
+ * SIDE EFFECT: computed thuần, không sửa config backend.
+ * =====================================================================
+ */
 const prompts = computed(() => (capability.value.prompts ?? []).map(item => typeof item === 'string' ? { key: item, label: item } : item))
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Đọc provider catalog công khai cho dialog.
+ * =====================================================================
+ * INPUT: capability.providers.
+ * OUTPUT: options provider hoặc mảng rỗng.
+ * SIDE EFFECT: computed thuần, không chứa API key.
+ * =====================================================================
+ */
 const providers = computed(() => capability.value.providers ?? [])
 
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Lấy model options của provider hiện tại.
+ * =====================================================================
+ * INPUT: provider được chọn và provider catalog.
+ * OUTPUT: danh sách model hợp lệ cho select.
+ * SIDE EFFECT: computed thuần, backend vẫn resolve/validate model.
+ * =====================================================================
+ */
 const models = computed(() => providerModels(findProvider(providers.value, form.provider)))
 const succeeded = ['ready', 'completed', 'succeeded']
 const terminal = [...succeeded, 'failed', 'cancelled', 'expired']
 
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Định dạng thời gian xử lý trên progress card.
+ * =====================================================================
+ * INPUT: mốc bắt đầu và lần kiểm tra gần nhất.
+ * OUTPUT: chuỗi HH:MM:SS.
+ * SIDE EFFECT: computed thuần, không tạo timer.
+ * =====================================================================
+ */
 const elapsedTime = computed(() => {
   const seconds = Math.max(0, Math.floor(((checkedAt.value ?? startedAt.value) - startedAt.value) / 1000))
 
@@ -97,29 +214,16 @@ const elapsedTime = computed(() => {
     .map(value => String(value).padStart(2, '0')).join(':')
 })
 
-const progressSteps = computed(() => {
-  const status = store.session?.status
-  const current = succeeded.includes(status) ? 'ready' : store.session?.current_step || status || 'queued'
-  const order = ['queued', 'fetching', 'extracting', 'rewriting', 'seo', 'thumbnail', 'ready']
-  const currentIndex = Math.max(0, order.indexOf(current))
-
-  const labels = {
-    queued: ['Xếp hàng', 'Đang chờ worker xử lý'],
-    fetching: ['Đọc nguồn', 'Tải dữ liệu URL an toàn'],
-    extracting: ['Trích xuất', 'Lọc nội dung và metadata'],
-    rewriting: ['Tạo nội dung', 'Provider tạo structured candidate'],
-    seo: ['Tối ưu SEO', 'Kiểm tra field và taxonomy'],
-    thumbnail: ['Xử lý ảnh', 'Chuẩn bị thumbnail nguồn'],
-    ready: ['Hoàn tất', 'Candidate sẵn sàng review'],
-  }
-
-  return order.map((id, index) => ({
-    id: index + 1,
-    title: labels[id][0],
-    subtitle: labels[id][1],
-    status: current === 'ready' || index < currentIndex ? 'done' : current === id && polling.value ? 'processing' : 'pending',
-  }))
-})
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Ánh xạ lifecycle thành progress card hiện có.
+ * =====================================================================
+ * INPUT: status/current_step từ backend và polling state.
+ * OUTPUT: bước pending/processing/done kèm nhãn hiển thị.
+ * SIDE EFFECT: computed thuần; không điều phối pipeline backend.
+ * =====================================================================
+ */
+const progressSteps = computed(() => pipelineProgress(store.session, polling.value))
 
 const stepperItems = [
   { title: 'Nhập nguồn', subtitle: 'URL hoặc nội dung nguồn' },
@@ -154,12 +258,25 @@ const resetDialogState = () => {
   Object.assign(form, {
     inputType: 'url', inputValue: '', language: 'vi', instructions: '',
     selectionMode: 'auto', promptKey: '', provider: '', model: '', outputs: [],
+    writing: emptyWritingPreferences(), file: null, sourceEncoding: 'UTF-8',
   })
+  regenerateWriting.value = emptyWritingPreferences(true)
+  regenerateInstructions.value = ''
+  refreshSource.value = false
+  sourcePreview.reset()
   applyingDefaults = false
   editedDefaultFields.clear()
 }
 
-/** Input: dialog mở. Output: options mới nhất; bỏ qua response của lần mở cũ. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Tải capability và khởi tạo lựa chọn của dialog Post.
+ * =====================================================================
+ * INPUT: trạng thái dialog đang mở.
+ * OUTPUT: options mới nhất; bỏ response của lần mở trước.
+ * SIDE EFFECT: GET qua store và reset state cục bộ; không gọi provider.
+ * =====================================================================
+ */
 const load = async () => {
   const generation = ++loadGeneration
 
@@ -181,7 +298,7 @@ const load = async () => {
     if (!editedDefaultFields.has('outputs')) {
       const defaults = result.content_defaults ?? {}
 
-      form.outputs = (result.outputs ?? []).filter(output =>
+      form.outputs = withoutAiTaxonomyOutputs(result.outputs ?? []).filter(output =>
         !(output === 'seo' && defaults.generate_seo === false)
         && !(output === 'thumbnail' && defaults.generate_thumbnail === false))
     }
@@ -196,27 +313,54 @@ const load = async () => {
   }
 }
 
-/** Input: nguồn và provider. Output: payload create; bỏ optional trống để server dùng default. */
-const buildRequest = () => ({
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Tạo payload từ nguồn và lựa chọn hiện tại.
+ * =====================================================================
+ * INPUT: form nguồn/prompt/provider và capability backend.
+ * OUTPUT: payload create chỉ yêu cầu output AI được hỗ trợ.
+ * SIDE EFFECT: hàm thuần; optional trống được bỏ để server resolve default.
+ * =====================================================================
+ */
+const buildRequest = () => articleRequestBody({
   target_type: 'post', operation: 'create',
   ...(props.targetId ? { target_id: props.targetId } : {}),
-  input: { type: form.inputType, ...(form.inputType === 'url' ? { url: form.inputValue } : { text: form.inputValue }) },
+  ...(form.inputType === 'file' ? articleSourcePayload(form) : { input: { type: form.inputType, [form.inputType === 'url' ? 'url' : form.inputType === 'html' ? 'html' : 'text']: form.inputValue }, ...(form.inputType === 'html' ? { source_encoding: form.sourceEncoding } : {}) }),
+  ...writingOptions(form.writing),
+  category_ids: props.categoryIds.map(item => Number(item?.id ?? item)),
+  tag_ids: props.tagIds.map(item => Number(item?.id ?? item)),
   output_language: form.language, selection_mode: form.selectionMode,
   ...(form.instructions ? { instructions: form.instructions } : {}),
   ...(form.selectionMode === 'manual' && form.promptKey ? { prompt_key: form.promptKey } : {}),
   ...(form.provider ? { provider: form.provider } : {}),
   ...(form.model ? { model: form.model } : {}),
-  requested_outputs: form.outputs,
+  requested_outputs: withoutAiTaxonomyOutputs(form.outputs).filter(output => generationOutputs.value.includes(output)),
   generate_thumbnail: form.outputs.includes('thumbnail'),
   thumbnail_mode: 'auto',
 })
 
 let pollGeneration = 0
 
-/** Input: không có. Output: dừng timer, vô hiệu response polling cũ. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Dừng kiểm tra trạng thái ở client.
+ * =====================================================================
+ * INPUT: timer/generation polling hiện tại.
+ * OUTPUT: timer dừng và response polling cũ bị vô hiệu.
+ * SIDE EFFECT: xóa timer, cập nhật state; không hủy run backend.
+ * =====================================================================
+ */
 const stop = () => { clearTimeout(timer); pollGeneration++; polling.value = false }
 
-/** Input: lifecycle response. Output: kết thúc polling và hiện lỗi an toàn từ backend. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Hoàn tất polling sau response terminal.
+ * =====================================================================
+ * INPUT: lifecycle response backend.
+ * OUTPUT: trạng thái review hoặc lỗi an toàn hiển thị trên dialog.
+ * SIDE EFFECT: dừng timer, cập nhật progress và feedback.
+ * =====================================================================
+ */
 const finishPolling = result => {
   stop()
   pollingPaused.value = false
@@ -226,9 +370,13 @@ const finishPolling = result => {
 }
 
 /**
- * Input: run vừa tạo hoặc run đang chờ, ưu tiên job_id của child thay vì session cha.
- * Output: poll tuần tự, dừng terminal; tạm dừng sau 60 giây chờ hoặc 5 phút xử lý.
- * Side effect: GET status; không dispatch job hoặc hủy job khi client hết thời gian.
+ * =====================================================================
+ * CHỨC NĂNG: Kiểm tra trạng thái tuần tự cho đúng UUID run.
+ * =====================================================================
+ * INPUT: run vừa tạo hoặc đang chờ, ưu tiên job_id child thay vì session cha.
+ * OUTPUT: dừng terminal; tạm dừng sau 60 giây chờ hoặc 5 phút xử lý.
+ * SIDE EFFECT: GET status; không dispatch/hủy job khi client hết thời gian.
+ * =====================================================================
  */
 const poll = async response => {
   if (!visible.value || disposed) return
@@ -255,6 +403,15 @@ const poll = async response => {
 
   const generation = ++pollGeneration
 
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Đọc một lần status và hẹn lần kiểm tra tiếp theo.
+   * =====================================================================
+   * INPUT: UUID run và generation polling đang hoạt động.
+   * OUTPUT: state mới hoặc timer tiếp theo khi run chưa terminal.
+   * SIDE EFFECT: GET qua store; bỏ response sau đóng hoặc đổi run.
+   * =====================================================================
+   */
   const tick = async () => {
     if (generation !== pollGeneration) return
     try {
@@ -291,12 +448,28 @@ const poll = async response => {
   timer = setTimeout(tick, 800)
 }
 
-/** Input: run đang tạm dừng polling. Output: kiểm tra cùng UUID, không tạo lại run. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Tiếp tục đọc run khi polling đang tạm dừng.
+ * =====================================================================
+ * INPUT: session hiện tại trong store.
+ * OUTPUT: bắt đầu kiểm tra lại cùng UUID.
+ * SIDE EFFECT: GET status; không tạo run mới.
+ * =====================================================================
+ */
 const resumePolling = () => poll(store.session)
 
-/** Input: nguồn đã nhập. Output: tạo một run và chuyển sang progress. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Gửi nguồn để tạo một run AI mới.
+ * =====================================================================
+ * INPUT: nguồn và lựa chọn form hiện tại.
+ * OUTPUT: run queued hoặc lỗi validation/transport trên dialog.
+ * SIDE EFFECT: POST qua store và bắt đầu polling; không tự lưu Post.
+ * =====================================================================
+ */
 const run = async () => {
-  if (!form.inputValue.trim() || busy.value || pollingPaused.value) return
+  if ((form.inputType === 'file' ? !form.file : !form.inputValue.trim()) || busy.value || pollingPaused.value) return
   const generation = loadGeneration
 
   message.value = ''
@@ -341,6 +514,16 @@ const apply = () => {
   visible.value = false
 }
 
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Tạo candidate child theo phần AI được chọn.
+ * =====================================================================
+ * INPUT: candidate/run cha và field/prompt/model override hiện tại.
+ * OUTPUT: run child được polling; taxonomy thủ công không gửi để AI tạo.
+ * SIDE EFFECT: POST regenerate qua store; giữ candidate cha.
+ * EXCEPTION: lựa chọn chỉ có taxonomy bị từ chối trước khi gửi API.
+ * =====================================================================
+ */
 const regenerate = async () => {
   if (!sessionId.value || busy.value) return
   const generation = loadGeneration
@@ -349,7 +532,8 @@ const regenerate = async () => {
   checkedAt.value = null
   try {
     const response = await store.regenerate(candidate.value?.id ?? sessionId.value, buildAiContentRegenerateRequest({
-      fields: selectedFields.value, instructions: form.instructions,
+      fields: selectedFields.value, instructions: regenerateInstructions.value,
+      ...writingOptions(regenerateWriting.value, true), ...(refreshSource.value ? { refresh_source: true } : {}),
       prompt_key: form.selectionMode === 'manual' ? form.promptKey : '', provider: form.provider, model: form.model,
     }))
 
@@ -419,14 +603,53 @@ const swapLanguages = () => { const value = sourceLanguage.value
 
   sourceLanguage.value = form.language; form.language = value }
 
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Khởi tạo/dọn dialog khi đóng mở.
+ * =====================================================================
+ * INPUT: visible v-model.
+ * OUTPUT: capability mới khi mở, polling/feedback dừng khi đóng.
+ * SIDE EFFECT: load GET hoặc dọn timer, vô hiệu response cũ.
+ * =====================================================================
+ */
 watch(visible, open => {
   if (open) load()
   else { loadGeneration++; loadingCapabilities.value = false; setSnackbarVisible(false); stop() }
 }, { immediate: true })
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Reset model không thuộc provider mới.
+ * =====================================================================
+ * INPUT: form.provider thay đổi.
+ * OUTPUT: form.model rỗng khi lựa chọn cũ không còn hợp lệ.
+ * SIDE EFFECT: cập nhật form cục bộ; không gọi provider.
+ * =====================================================================
+ */
 watch(() => form.provider, () => {
   if (!models.value.some(model => model.value === form.model)) form.model = ''
 })
-watch(candidate, value => { selectedFields.value = Object.keys(value?.outputs ?? value?.draft ?? {}) })
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Khởi tạo field review khi đổi candidate.
+ * =====================================================================
+ * INPUT: outputs/draft của candidate mới.
+ * OUTPUT: các field nội dung được chọn; taxonomy chỉ áp dụng khi chọn tay.
+ * SIDE EFFECT: cập nhật selectedFields; không sửa category/tag của Post.
+ * =====================================================================
+ */
+watch(candidate, value => { selectedFields.value = withoutAiTaxonomyOutputs(Object.keys(value?.outputs ?? value?.draft ?? {})) })
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Dọn polling khi component bị tháo.
+ * =====================================================================
+ * INPUT: lifecycle onBeforeUnmount.
+ * OUTPUT: response cũ bị vô hiệu và timer được xóa.
+ * SIDE EFFECT: chỉ dọn client; không hủy run backend.
+ * =====================================================================
+ */
 onBeforeUnmount(() => { disposed = true; loadGeneration++; stop() })
 </script>
 
@@ -482,7 +705,22 @@ onBeforeUnmount(() => { disposed = true; loadGeneration++; stop() })
             cols="12"
             md
           >
+            <VFileInput
+              v-if="form.inputType === 'file'"
+              v-model="form.file"
+              label="File HTML nguồn"
+              accept=".html,.htm,text/html"
+              :disabled="busy"
+            />
+            <AppTextarea
+              v-else-if="['text', 'html'].includes(form.inputType)"
+              v-model="form.inputValue"
+              :label="form.inputType === 'html' ? 'HTML nguyên bản' : 'Nội dung nguồn'"
+              rows="5"
+              :disabled="busy"
+            />
             <AppTextField
+              v-else
               v-model="form.inputValue"
               :label="form.inputType === 'url' ? 'URL nguồn' : 'Nội dung nguồn'"
               prepend-inner-icon="tabler-link"
@@ -498,7 +736,7 @@ onBeforeUnmount(() => { disposed = true; loadGeneration++; stop() })
               prepend-icon="tabler-wand"
               class="text-none rounded-lg font-weight-medium"
               :loading="busy"
-              :disabled="!form.inputValue || loadingCapabilities || pollingPaused"
+              :disabled="(form.inputType === 'file' ? !form.file : !form.inputValue) || loadingCapabilities || pollingPaused"
               @click="run"
             >
               Bắt đầu tạo
@@ -559,7 +797,7 @@ onBeforeUnmount(() => { disposed = true; loadGeneration++; stop() })
             <AppSelect
               v-model="form.inputType"
               label="Loại nguồn"
-              :items="capability.input_types ?? ['url', 'text']"
+              :items="[{ title: 'URL nguồn', value: 'url' }, { title: 'Văn bản', value: 'text' }, { title: 'HTML nguyên bản', value: 'html' }, { title: 'File HTML', value: 'file' }]"
               :disabled="busy"
             />
           </VCol>
@@ -575,6 +813,26 @@ onBeforeUnmount(() => { disposed = true; loadGeneration++; stop() })
             />
           </VCol>
         </VRow>
+        <AppSelect
+          v-if="['file', 'html'].includes(form.inputType)"
+          v-model="form.sourceEncoding"
+          :items="['UTF-8', 'Windows-1252', 'ISO-8859-1']"
+          label="Encoding nguồn"
+          class="mb-4"
+          :disabled="busy"
+        />
+        <AiSourcePreview
+          :snapshot="sourcePreview.snapshot.value"
+          :busy="sourcePreview.busy.value"
+          :error="sourcePreview.error.value"
+          :disabled="busy"
+          @read="sourcePreview.read"
+        />
+        <AiWritingPreferences
+          v-model="form.writing"
+          :active="visible"
+          :disabled="busy"
+        />
         <VRow
           dense
           class="mb-4"
@@ -624,6 +882,7 @@ onBeforeUnmount(() => { disposed = true; loadGeneration++; stop() })
               label="Yêu cầu bổ sung"
               placeholder="Giữ nguyên code, viết cho người mới…"
               rows="2"
+              maxlength="4000"
               :disabled="busy"
             />
           </VCol>
@@ -631,7 +890,7 @@ onBeforeUnmount(() => { disposed = true; loadGeneration++; stop() })
             <AppSelect
               v-model="form.outputs"
               label="Các phần cần tạo"
-              :items="capability.outputs ?? []"
+              :items="generationOutputs"
               multiple
               chips
               :disabled="busy"
@@ -686,6 +945,36 @@ onBeforeUnmount(() => { disposed = true; loadGeneration++; stop() })
           :candidate="candidate"
           :providers="providers"
         />
+        <AiPipelineReport :session="store.session" />
+        <VExpansionPanels
+          v-if="candidate"
+          class="mt-4"
+        >
+          <VExpansionPanel title="Yêu cầu khi tạo lại">
+            <VExpansionPanelText>
+              <AiWritingPreferences
+                v-model="regenerateWriting"
+                regenerate
+                :parent-profile="store.session?.writing_profile"
+                :active="visible"
+                :disabled="busy"
+              />
+              <AppTextarea
+                v-model="regenerateInstructions"
+                label="Yêu cầu cho lần tạo lại"
+                placeholder="Để trống để giữ yêu cầu cũ"
+                maxlength="4000"
+                rows="3"
+                :disabled="busy"
+              />
+              <VCheckbox
+                v-model="refreshSource"
+                label="Đọc lại nguồn thay vì snapshot đã lưu"
+                :disabled="busy"
+              />
+            </VExpansionPanelText>
+          </VExpansionPanel>
+        </VExpansionPanels>
       </VCardText>
       <VDivider />
       <VCardActions class="justify-center gap-3 py-4">

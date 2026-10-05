@@ -2,13 +2,14 @@
 
 namespace App\Services\Ai\Contracts;
 
-use App\Services\Ai\AiConnection;
+use App\Services\Ai\Providers\Transport\AiConnection;
 
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Boundary riêng cho capability tạo ảnh, không dùng text contract.
  * =====================================================================
- * CÁC HÀM/METHOD: generate().
+ * CÁC HÀM/METHOD TRONG FILE: generate().
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * INPUT: connection snapshot và prompt của một image run.
  * OUTPUT: bytes ảnh; service Media Library chịu trách nhiệm validate và upload.
  * SIDE EFFECT: có thể gọi provider; không ghi Post, MediaAsset hoặc database.

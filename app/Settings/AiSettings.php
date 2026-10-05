@@ -7,6 +7,7 @@ use Spatie\LaravelSettings\Settings;
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Khai báo typed settings AI do Spatie lưu và đọc.
+ * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE: group().
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : payload nhóm ai trong repository settings.
@@ -18,6 +19,8 @@ class AiSettings extends Settings
     public ?int $default_text_model_id;
 
     public ?int $default_image_model_id;
+
+    public ?int $default_writing_profile_id;
 
     public ?int $fallback_text_model_id;
 
@@ -35,7 +38,13 @@ class AiSettings extends Settings
 
     public bool $auto_seo;
 
-    /** Input: Không có. Output: tên nhóm settings ổn định; không ghi dữ liệu. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Trả tên nhóm typed Settings.
+     * Input: không có. Output: ai; không ghi dữ liệu.
+     * Side effect: hàm thuần.
+     * =====================================================================
+     */
     public static function group(): string
     {
         return 'ai';

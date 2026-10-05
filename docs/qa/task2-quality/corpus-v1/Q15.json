@@ -1,0 +1,36 @@
+{
+    "source_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/about/faq.md",
+    "title": "FAQ ngắn",
+    "source_format": "html",
+    "version": "article.source.v1",
+    "content_html": "<h1>Frequently Asked Questions {#frequently-asked-questions}</h1>\n<h2>Who maintains Vue? {#who-maintains-vue}</h2>\n<p>Vue is an independent, community-driven project. It was created by <a href=\"https://x.com/evanyou\">Evan You</a> in 2014 as a personal side project. Today, Vue is actively maintained by <a href=\"https://github.com/about/team\">a team of both full-time and volunteer members from all around the world</a>, where Evan serves as the project lead. You can learn more about the story of Vue in this <a href=\"https://www.youtube.com/watch?v=OrxmtDw4pVI\">documentary</a>.</p>\n<p>Vue's development is primarily funded through sponsorships and we have been financially sustainable since 2016. If you or your business benefit from Vue, consider <a href=\"https://github.com/sponsor/\">sponsoring us</a> to support Vue's development!</p>",
+    "blocks": [
+        {
+            "id": "S001",
+            "type": "h1",
+            "text": "Frequently Asked Questions {#frequently-asked-questions}",
+            "html": "<h1>Frequently Asked Questions {#frequently-asked-questions}</h1>"
+        },
+        {
+            "id": "S002",
+            "type": "h2",
+            "text": "Who maintains Vue? {#who-maintains-vue}",
+            "html": "<h2>Who maintains Vue? {#who-maintains-vue}</h2>"
+        },
+        {
+            "id": "S003",
+            "type": "p",
+            "text": "Vue is an independent, community-driven project. It was created by Evan You in 2014 as a personal side project. Today, Vue is actively maintained by a team of both full-time and volunteer members from all around the world, where Evan serves as the project lead. You can learn more about the story of Vue in this documentary.",
+            "html": "<p>Vue is an independent, community-driven project. It was created by <a href=\"https://x.com/evanyou\">Evan You</a> in 2014 as a personal side project. Today, Vue is actively maintained by <a href=\"https://github.com/about/team\">a team of both full-time and volunteer members from all around the world</a>, where Evan serves as the project lead. You can learn more about the story of Vue in this <a href=\"https://www.youtube.com/watch?v=OrxmtDw4pVI\">documentary</a>.</p>"
+        },
+        {
+            "id": "S004",
+            "type": "p",
+            "text": "Vue's development is primarily funded through sponsorships and we have been financially sustainable since 2016. If you or your business benefit from Vue, consider sponsoring us to support Vue's development!",
+            "html": "<p>Vue's development is primarily funded through sponsorships and we have been financially sustainable since 2016. If you or your business benefit from Vue, consider <a href=\"https://github.com/sponsor/\">sponsoring us</a> to support Vue's development!</p>"
+        }
+    ],
+    "source_images": [],
+    "fetched_at": "2026-10-04T17:47:29+00:00",
+    "hash": "f381f3396273208338132a06a111caf61cd82fe2bece483138f5006ffce53eae"
+}

@@ -7,7 +7,7 @@ use App\Jobs\ProcessAiImportJob;
 use App\Models\AiImport;
 use App\Models\AiProvider;
 use App\Models\User;
-use App\Services\Ai\ArticleImportService;
+use App\Services\Ai\Content\ArticleImportService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -16,26 +16,75 @@ use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 use Tests\UsesIsolatedDatabase;
 
-/** Content settings use the existing catalog/settings contract and isolated, fake AI runs. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Kiểm Settings/default snapshot và nhánh baseline một lượt có chọn field.
+ * =====================================================================
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - setUp().
+ * - tearDown().
+ * - test_content_settings_persist_in_shared_contract_and_partial_update_preserves_other_settings().
+ * - test_invalid_content_values_and_unusable_text_models_are_rejected_without_changing_saved_defaults().
+ * - test_new_run_snapshots_saved_model_temperature_prompt_and_length_and_honors_disabled_automatic_outputs().
+ * - test_explicit_output_choices_override_settings_and_regenerate_preserves_unselected_parent_fields().
+ * - test_explicit_thumbnail_regeneration_checks_upload_permission_before_resolving_optional_image().
+ * - test_content_defaults_are_available_to_authored_runs_but_settings_remain_permission_protected().
+ * - test_environment_provider_adapters_also_use_saved_content_tuning().
+ * - token().
+ * - connection().
+ * =====================================================================
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : fixtures/requests admin, HTTP và Queue fake, database test cô lập.
+ * - OUTPUT: assertions cho contract, snapshot, quyền và lỗi; không gọi AI thật.
+ * - SIDE EFFECT: tạo/sửa dữ liệu trong database test; không chỉnh dữ liệu ứng dụng.
+ * =====================================================================
+ */
 final class AiContentSettingsApiTest extends TestCase
 {
     use UsesIsolatedDatabase;
 
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Khởi tạo fixtures và cấu hình test.
+     * INPUT: PHPUnit lifecycle hoặc tham số fixture của test.
+     * OUTPUT: state/fixture phục vụ test, không gọi model thật.
+
+     * =====================================================================
+     */
     protected function setUp(): void
     {
         parent::setUp();
+        // Fixtures một lượt kiểm riêng baseline được giữ để so sánh rollout.
+        config()->set('ai-content.pipeline', 'single_step');
+        config()->set('queue.default', 'database');
         $this->useIsolatedDatabase();
         $this->seed(RolePermissionSeeder::class);
         Http::preventStrayRequests();
         Queue::fake();
     }
 
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Dọn database và state sau test.
+     * INPUT: PHPUnit lifecycle hoặc tham số fixture của test.
+     * OUTPUT: state/fixture phục vụ test, không gọi model thật.
+
+     * =====================================================================
+     */
     protected function tearDown(): void
     {
         $this->tearDownIsolatedDatabase();
         parent::tearDown();
     }
 
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm regression test_content_settings_persist_in_shared_contract_and_partial_update_preserves_other_settings.
+     * INPUT: fixtures/request của kịch bản regression.
+     * OUTPUT: assertions xác nhận contract và side effect mong đợi.
+
+     * =====================================================================
+     */
     public function test_content_settings_persist_in_shared_contract_and_partial_update_preserves_other_settings(): void
     {
         $token = $this->token();
@@ -68,6 +117,14 @@ final class AiContentSettingsApiTest extends TestCase
         $this->withToken($token)->getJson('/api/admin/settings/ai/settings')->assertOk()->assertJsonPath('data.min_word_count', 800);
     }
 
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm regression test_invalid_content_values_and_unusable_text_models_are_rejected_without_changing_saved_defaults.
+     * INPUT: fixtures/request của kịch bản regression.
+     * OUTPUT: assertions xác nhận contract và side effect mong đợi.
+
+     * =====================================================================
+     */
     public function test_invalid_content_values_and_unusable_text_models_are_rejected_without_changing_saved_defaults(): void
     {
         $token = $this->token();
@@ -94,6 +151,14 @@ final class AiContentSettingsApiTest extends TestCase
         $this->withToken($token)->getJson('/api/admin/settings/ai/settings')->assertOk()->assertJsonPath('data.default_text_model_id', null);
     }
 
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm regression test_new_run_snapshots_saved_model_temperature_prompt_and_length_and_honors_disabled_automatic_outputs.
+     * INPUT: fixtures/request của kịch bản regression.
+     * OUTPUT: assertions xác nhận contract và side effect mong đợi.
+
+     * =====================================================================
+     */
     public function test_new_run_snapshots_saved_model_temperature_prompt_and_length_and_honors_disabled_automatic_outputs(): void
     {
         $token = $this->token();
@@ -105,7 +170,7 @@ final class AiContentSettingsApiTest extends TestCase
             'auto_thumbnail' => false, 'auto_seo' => false,
         ])->assertOk();
         $this->withToken($token)->getJson('/api/admin/ai-agent/capabilities/post')->assertOk()
-            ->assertJsonPath('data.content_defaults', ['model_id' => $model->id, 'generate_thumbnail' => false, 'generate_seo' => false, 'min_word_count' => 800]);
+            ->assertJsonPath('data.content_defaults', ['model_id' => $model->id, 'generate_thumbnail' => false, 'generate_seo' => false, 'min_word_count' => 800, 'default_writing_profile_id' => null]);
         $id = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
             'input' => ['type' => 'text', 'text' => 'Nội dung nguồn cho tác vụ có thiết lập mặc định.'],
             'instructions' => 'Viết khoảng 200 từ và giữ nguyên thuật ngữ kỹ thuật.',
@@ -139,6 +204,14 @@ final class AiContentSettingsApiTest extends TestCase
         Queue::assertNotPushed(ProcessAiImageGenerationJob::class);
     }
 
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm regression test_explicit_output_choices_override_settings_and_regenerate_preserves_unselected_parent_fields.
+     * INPUT: fixtures/request của kịch bản regression.
+     * OUTPUT: assertions xác nhận contract và side effect mong đợi.
+
+     * =====================================================================
+     */
     public function test_explicit_output_choices_override_settings_and_regenerate_preserves_unselected_parent_fields(): void
     {
         $token = $this->token();
@@ -165,7 +238,7 @@ final class AiContentSettingsApiTest extends TestCase
             'title' => 'Tiêu đề giữ nguyên', 'content_html' => '<p>Nội dung giữ nguyên.</p>', 'content' => '<p>Nội dung giữ nguyên.</p>',
             'thumbnail' => ['media_asset_id' => null, 'source_url' => null, 'alt_text' => ''],
         ]]]);
-        $childId = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions/'.$id.'/regenerate', ['fields' => ['seo', 'thumbnail']])->assertStatus(202)->json('data.job_id');
+        $childId = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions/'.$id.'/regenerate', ['fields' => ['seo', 'thumbnail'], 'refresh_source' => true])->assertStatus(202)->json('data.job_id');
         $child = AiImport::findOrFail($childId);
         $this->assertTrue($child->input_json['generate_seo']);
         $this->assertTrue($child->input_json['generate_thumbnail']);
@@ -191,6 +264,7 @@ final class AiContentSettingsApiTest extends TestCase
         $other = $provider->models()->create(['remote_model_id' => 'other-text', 'label' => 'Other', 'capabilities' => ['text_generation']]);
         $childId = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions/'.$parent->id.'/regenerate', [
             'fields' => ['content'], 'model_id' => $other->id,
+            'refresh_source' => true,
         ])->assertStatus(202)->json('data.job_id');
         $child = AiImport::findOrFail($childId);
         $this->assertFalse($child->input_json['generate_seo']);
@@ -198,6 +272,7 @@ final class AiContentSettingsApiTest extends TestCase
         $explicit->update(['status' => 'ready', 'result_json' => $parent->result_json]);
         $childId = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions/'.$explicit->id.'/regenerate', [
             'fields' => ['seo'],
+            'refresh_source' => true,
         ])->assertStatus(202)->json('data.job_id');
         (new ProcessAiImportJob($childId))->handle(app(ArticleImportService::class));
         $this->assertSame('ready', AiImport::findOrFail($childId)->status);
@@ -205,6 +280,14 @@ final class AiContentSettingsApiTest extends TestCase
         Queue::assertPushed(ProcessAiImageGenerationJob::class, 1);
     }
 
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm regression test_explicit_thumbnail_regeneration_checks_upload_permission_before_resolving_optional_image.
+     * INPUT: fixtures/request của kịch bản regression.
+     * OUTPUT: assertions xác nhận contract và side effect mong đợi.
+
+     * =====================================================================
+     */
     public function test_explicit_thumbnail_regeneration_checks_upload_permission_before_resolving_optional_image(): void
     {
         $token = $this->token();
@@ -225,6 +308,7 @@ final class AiContentSettingsApiTest extends TestCase
         Auth::forgetGuards();
         $childId = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions/'.$id.'/regenerate', [
             'fields' => ['thumbnail'],
+            'refresh_source' => true,
         ])->assertStatus(202)->json('data.job_id');
         $this->assertNull(AiImport::findOrFail($childId)->input_json['image_connection']);
         Http::fake(fn () => Http::response(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => json_encode(['title' => 'New', 'content_html' => '<p>New</p>'])]]]]));
@@ -233,6 +317,14 @@ final class AiContentSettingsApiTest extends TestCase
         Queue::assertNotPushed(ProcessAiImageGenerationJob::class);
     }
 
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm regression test_content_defaults_are_available_to_authored_runs_but_settings_remain_permission_protected.
+     * INPUT: fixtures/request của kịch bản regression.
+     * OUTPUT: assertions xác nhận contract và side effect mong đợi.
+
+     * =====================================================================
+     */
     public function test_content_defaults_are_available_to_authored_runs_but_settings_remain_permission_protected(): void
     {
         $token = $this->token(['posts.manage']);
@@ -241,6 +333,14 @@ final class AiContentSettingsApiTest extends TestCase
         $this->withToken($token)->putJson('/api/admin/settings/ai/settings', ['auto_seo' => false])->assertForbidden();
     }
 
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm regression test_environment_provider_adapters_also_use_saved_content_tuning.
+     * INPUT: fixtures/request của kịch bản regression.
+     * OUTPUT: assertions xác nhận contract và side effect mong đợi.
+
+     * =====================================================================
+     */
     public function test_environment_provider_adapters_also_use_saved_content_tuning(): void
     {
         $token = $this->token();
@@ -281,6 +381,14 @@ final class AiContentSettingsApiTest extends TestCase
         }
     }
 
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Tạo fixture dùng riêng trong ca kiểm thử.
+     * INPUT: PHPUnit lifecycle hoặc tham số fixture của test.
+     * OUTPUT: state/fixture phục vụ test, không gọi model thật.
+
+     * =====================================================================
+     */
     private function token(array $permissions = ['ai_settings.manage', 'posts.manage', 'media.upload']): string
     {
         $user = User::factory()->create(['status' => 'active']);
@@ -291,6 +399,14 @@ final class AiContentSettingsApiTest extends TestCase
         return $user->createToken('ai-content-settings-test', ['admin'])->plainTextToken;
     }
 
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Tạo fixture dùng riêng trong ca kiểm thử.
+     * INPUT: PHPUnit lifecycle hoặc tham số fixture của test.
+     * OUTPUT: state/fixture phục vụ test, không gọi model thật.
+
+     * =====================================================================
+     */
     private function connection(): AiProvider
     {
         return AiProvider::create([

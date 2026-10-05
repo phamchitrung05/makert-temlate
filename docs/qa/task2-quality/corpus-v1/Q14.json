@@ -1,0 +1,132 @@
+{
+    "source_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/extras/reactivity-in-depth.md",
+    "title": "Chuyên sâu",
+    "source_format": "html",
+    "version": "article.source.v1",
+    "content_html": "<hr>\n<h2>outline: deep</h2>\n\n<h1>Reactivity in Depth {#reactivity-in-depth}</h1>\n<p>One of Vue’s most distinctive features is the unobtrusive reactivity system. Component state consists of reactive JavaScript objects. When you modify them, the view updates. It makes state management simple and intuitive, but it’s also important to understand how it works to avoid some common gotchas. In this section, we are going to dig into some of the lower-level details of Vue’s reactivity system.</p>\n<h2>What is Reactivity? {#what-is-reactivity}</h2>\n<p>This term comes up in programming quite a bit these days, but what do people mean when they say it? Reactivity is a programming paradigm that allows us to adjust to changes in a declarative manner. The canonical example that people usually show, because it’s a great one, is an Excel spreadsheet:</p>\n\n<p>Here cell A2 is defined via a formula of <code>= A0 + A1</code> (you can click on A2 to view or edit the formula), so the spreadsheet gives us 3. No surprises there. But if you update A0 or A1, you'll notice that A2 automagically updates too.</p>\n<p>JavaScript doesn’t usually work like this. If we were to write something comparable in JavaScript:</p>\n<pre><code>let A0 = 1\nlet A1 = 2\nlet A2 = A0 + A1\n\nconsole.log(A2) // 3\n\nA0 = 2\nconsole.log(A2) // Still 3\n</code></pre>\n<p>When we mutate <code>A0</code>, <code>A2</code> does not change automatically.</p>\n<p>So how would we do this in JavaScript? First, in order to re-run the code that updates <code>A2</code>, let's wrap it in a function:</p>\n<pre><code>let A2\n\nfunction update() {\n  A2 = A0 + A1\n}\n</code></pre>\n<p>Then, we need to define a few terms:</p>\n<ul>\n<li>\n<p>The <code>update()</code> function produces a <strong>side effect</strong>, or <strong>effect</strong> for short, because it modifies the state of the program.</p>\n</li>\n<li>\n<p><code>A0</code> and <code>A1</code> are considered <strong>dependencies</strong> of the effect, as their values are used to perform the effect. The effect is said to be a <strong>subscriber</strong> to its dependencies.</p>\n</li>\n</ul>\n<p>What we need is a magic function that can invoke <code>update()</code> (the <strong>effect</strong>) whenever <code>A0</code> or <code>A1</code> (the <strong>dependencies</strong>) change:</p>\n<pre><code>whenDepsChange(update)\n</code></pre>\n<p>This <code>whenDepsChange()</code> function has the following tasks:</p>\n<ol>\n<li>\n<p>Track when a variable is read. E.g. when evaluating the expression <code>A0 + A1</code>, both <code>A0</code> and <code>A1</code> are read.</p>\n</li>\n<li>\n<p>If a variable is read when there is a currently running effect, make that effect a subscriber to that variable. E.g. because <code>A0</code> and <code>A1</code> are read when <code>update()</code> is being executed, <code>update()</code> becomes a subscriber to both <code>A0</code> and <code>A1</code> after the first call.</p>\n</li>\n<li>\n<p>Detect when a variable is mutated. E.g. when <code>A0</code> is assigned a new value, notify all its subscriber effects to re-run.</p>\n</li>\n</ol>",
+    "blocks": [
+        {
+            "id": "S001",
+            "type": "h2",
+            "text": "outline: deep",
+            "html": "<h2>outline: deep</h2>"
+        },
+        {
+            "id": "S002",
+            "type": "h1",
+            "text": "Reactivity in Depth {#reactivity-in-depth}",
+            "html": "<h1>Reactivity in Depth {#reactivity-in-depth}</h1>"
+        },
+        {
+            "id": "S003",
+            "type": "p",
+            "text": "One of Vue’s most distinctive features is the unobtrusive reactivity system. Component state consists of reactive JavaScript objects. When you modify them, the view updates. It makes state management simple and intuitive, but it’s also important to understand how it works to avoid some common gotchas. In this section, we are going to dig into some of the lower-level details of Vue’s reactivity system.",
+            "html": "<p>One of Vue’s most distinctive features is the unobtrusive reactivity system. Component state consists of reactive JavaScript objects. When you modify them, the view updates. It makes state management simple and intuitive, but it’s also important to understand how it works to avoid some common gotchas. In this section, we are going to dig into some of the lower-level details of Vue’s reactivity system.</p>"
+        },
+        {
+            "id": "S004",
+            "type": "h2",
+            "text": "What is Reactivity? {#what-is-reactivity}",
+            "html": "<h2>What is Reactivity? {#what-is-reactivity}</h2>"
+        },
+        {
+            "id": "S005",
+            "type": "p",
+            "text": "This term comes up in programming quite a bit these days, but what do people mean when they say it? Reactivity is a programming paradigm that allows us to adjust to changes in a declarative manner. The canonical example that people usually show, because it’s a great one, is an Excel spreadsheet:",
+            "html": "<p>This term comes up in programming quite a bit these days, but what do people mean when they say it? Reactivity is a programming paradigm that allows us to adjust to changes in a declarative manner. The canonical example that people usually show, because it’s a great one, is an Excel spreadsheet:</p>"
+        },
+        {
+            "id": "S006",
+            "type": "p",
+            "text": "Here cell A2 is defined via a formula of = A0 + A1 (you can click on A2 to view or edit the formula), so the spreadsheet gives us 3. No surprises there. But if you update A0 or A1, you'll notice that A2 automagically updates too.",
+            "html": "<p>Here cell A2 is defined via a formula of <code>= A0 + A1</code> (you can click on A2 to view or edit the formula), so the spreadsheet gives us 3. No surprises there. But if you update A0 or A1, you'll notice that A2 automagically updates too.</p>"
+        },
+        {
+            "id": "S007",
+            "type": "p",
+            "text": "JavaScript doesn’t usually work like this. If we were to write something comparable in JavaScript:",
+            "html": "<p>JavaScript doesn’t usually work like this. If we were to write something comparable in JavaScript:</p>"
+        },
+        {
+            "id": "S008",
+            "type": "pre",
+            "text": "let A0 = 1\nlet A1 = 2\nlet A2 = A0 + A1\n\nconsole.log(A2) // 3\n\nA0 = 2\nconsole.log(A2) // Still 3",
+            "html": "<pre><code>let A0 = 1\nlet A1 = 2\nlet A2 = A0 + A1\n\nconsole.log(A2) // 3\n\nA0 = 2\nconsole.log(A2) // Still 3\n</code></pre>"
+        },
+        {
+            "id": "S009",
+            "type": "p",
+            "text": "When we mutate A0, A2 does not change automatically.",
+            "html": "<p>When we mutate <code>A0</code>, <code>A2</code> does not change automatically.</p>"
+        },
+        {
+            "id": "S010",
+            "type": "p",
+            "text": "So how would we do this in JavaScript? First, in order to re-run the code that updates A2, let's wrap it in a function:",
+            "html": "<p>So how would we do this in JavaScript? First, in order to re-run the code that updates <code>A2</code>, let's wrap it in a function:</p>"
+        },
+        {
+            "id": "S011",
+            "type": "pre",
+            "text": "let A2\n\nfunction update() {\n  A2 = A0 + A1\n}",
+            "html": "<pre><code>let A2\n\nfunction update() {\n  A2 = A0 + A1\n}\n</code></pre>"
+        },
+        {
+            "id": "S012",
+            "type": "p",
+            "text": "Then, we need to define a few terms:",
+            "html": "<p>Then, we need to define a few terms:</p>"
+        },
+        {
+            "id": "S013",
+            "type": "li",
+            "text": "The update() function produces a side effect, or effect for short, because it modifies the state of the program.",
+            "html": "<li>\n<p>The <code>update()</code> function produces a <strong>side effect</strong>, or <strong>effect</strong> for short, because it modifies the state of the program.</p>\n</li>"
+        },
+        {
+            "id": "S014",
+            "type": "li",
+            "text": "A0 and A1 are considered dependencies of the effect, as their values are used to perform the effect. The effect is said to be a subscriber to its dependencies.",
+            "html": "<li>\n<p><code>A0</code> and <code>A1</code> are considered <strong>dependencies</strong> of the effect, as their values are used to perform the effect. The effect is said to be a <strong>subscriber</strong> to its dependencies.</p>\n</li>"
+        },
+        {
+            "id": "S015",
+            "type": "p",
+            "text": "What we need is a magic function that can invoke update() (the effect) whenever A0 or A1 (the dependencies) change:",
+            "html": "<p>What we need is a magic function that can invoke <code>update()</code> (the <strong>effect</strong>) whenever <code>A0</code> or <code>A1</code> (the <strong>dependencies</strong>) change:</p>"
+        },
+        {
+            "id": "S016",
+            "type": "pre",
+            "text": "whenDepsChange(update)",
+            "html": "<pre><code>whenDepsChange(update)\n</code></pre>"
+        },
+        {
+            "id": "S017",
+            "type": "p",
+            "text": "This whenDepsChange() function has the following tasks:",
+            "html": "<p>This <code>whenDepsChange()</code> function has the following tasks:</p>"
+        },
+        {
+            "id": "S018",
+            "type": "li",
+            "text": "Track when a variable is read. E.g. when evaluating the expression A0 + A1, both A0 and A1 are read.",
+            "html": "<li>\n<p>Track when a variable is read. E.g. when evaluating the expression <code>A0 + A1</code>, both <code>A0</code> and <code>A1</code> are read.</p>\n</li>"
+        },
+        {
+            "id": "S019",
+            "type": "li",
+            "text": "If a variable is read when there is a currently running effect, make that effect a subscriber to that variable. E.g. because A0 and A1 are read when update() is being executed, update() becomes a subscriber to both A0 and A1 after the first call.",
+            "html": "<li>\n<p>If a variable is read when there is a currently running effect, make that effect a subscriber to that variable. E.g. because <code>A0</code> and <code>A1</code> are read when <code>update()</code> is being executed, <code>update()</code> becomes a subscriber to both <code>A0</code> and <code>A1</code> after the first call.</p>\n</li>"
+        },
+        {
+            "id": "S020",
+            "type": "li",
+            "text": "Detect when a variable is mutated. E.g. when A0 is assigned a new value, notify all its subscriber effects to re-run.",
+            "html": "<li>\n<p>Detect when a variable is mutated. E.g. when <code>A0</code> is assigned a new value, notify all its subscriber effects to re-run.</p>\n</li>"
+        }
+    ],
+    "source_images": [],
+    "fetched_at": "2026-10-04T17:47:28+00:00",
+    "hash": "8295ced7c151328965d84bc0adfe12cb232e66b843a0ce7228e6710ba93676d1"
+}

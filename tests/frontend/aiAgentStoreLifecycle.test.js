@@ -25,6 +25,15 @@ function deferred() {
 describe('AI Agent response lifecycle', () => {
   beforeEach(() => { setActivePinia(createPinia()); vi.resetAllMocks() })
 
+  it.each(['analyzing', 'planning', 'writing', 'editing', 'validating'])('keeps %s stages running and hides intermediate drafts', async status => {
+    const store = useAiAgentStore()
+
+    aiAgentService.createSession.mockResolvedValue({ job_id: 'pipeline', status, draft: { title: 'Chưa duyệt' } })
+    await store.start({})
+    expect(store.isRunning).toBe(true)
+    expect(store.candidates).toEqual([])
+  })
+
   it('keeps a successful parent when a failed child response contains an invalid draft', async () => {
     const store = useAiAgentStore()
 

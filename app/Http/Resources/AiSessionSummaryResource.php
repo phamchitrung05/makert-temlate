@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources;
 
-use App\Services\Ai\AiResponseDiagnostics;
+use App\Services\Ai\Providers\Diagnostics\AiResponseDiagnostics;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -19,7 +19,15 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class AiSessionSummaryResource extends JsonResource
 {
-    /** Input: request và model đã authorize. Output: summary public; chỉ đọc model, không gọi provider. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Trả tiến độ và identity tối thiểu cho danh sách tác vụ
+     * =====================================================================
+     * INPUT: request và model đã authorize.
+     * OUTPUT: summary public, lỗi an toàn và current_step; không trả source/profile rules.
+     * SIDE EFFECT: chỉ đọc model; không gọi provider hoặc ghi database.
+     * =====================================================================
+     */
     public function toArray(Request $request): array
     {
         $diagnostics = AiResponseDiagnostics::sanitize((array) data_get($this->source_meta_json, 'ai_response', []));
@@ -31,6 +39,7 @@ class AiSessionSummaryResource extends JsonResource
             'title' => mb_substr((string) data_get($this->result_json, 'draft.title', ''), 0, 255),
             'thumbnail' => $this->whenLoaded('thumbnail', fn () => MediaAssetResource::make($this->thumbnail), null),
             'status' => $this->status,
+            'current_step' => $this->current_step,
             'progress' => (int) $this->progress,
             'error_code' => $this->error_code,
             'error' => $this->error_message,

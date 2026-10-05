@@ -1,0 +1,138 @@
+{
+    "source_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/essentials/computed.md",
+    "title": "Tiếng Anh sang tiếng Việt",
+    "source_format": "html",
+    "version": "article.source.v1",
+    "content_html": "<h1>Computed Properties {#computed-properties}</h1>\n\n\n<h2>Basic Example {#basic-example}</h2>\n<p>In-template expressions are very convenient, but they are meant for simple operations. Putting too much logic in your templates can make them bloated and hard to maintain. For example, if we have an object with a nested array:</p>\n\n<pre><code>export default {\n  data() {\n    return {\n      author: {\n        name: 'John Doe',\n        books: [\n          'Vue 2 - Advanced Guide',\n          'Vue 3 - Basic Guide',\n          'Vue 4 - The Mystery'\n        ]\n      }\n    }\n  }\n}\n</code></pre>\n\n<pre><code>const author = reactive({\n  name: 'John Doe',\n  books: [\n    'Vue 2 - Advanced Guide',\n    'Vue 3 - Basic Guide',\n    'Vue 4 - The Mystery'\n  ]\n})\n</code></pre>\n\n<p>And we want to display different messages depending on if <code>author</code> already has some books or not:</p>\n<pre><code>&lt;p&gt;Has published books:&lt;/p&gt;\n&lt;span&gt;{{ author.books.length &gt; 0 ? 'Yes' : 'No' }}&lt;/span&gt;\n</code></pre>\n<p>At this point, the template is getting a bit cluttered. We have to look at it for a second before realizing that it performs a calculation depending on <code>author.books</code>. More importantly, we probably don't want to repeat ourselves if we need to include this calculation in the template more than once.</p>\n<p>That's why for complex logic that includes reactive data, it is recommended to use a <strong>computed property</strong>. Here's the same example, refactored:</p>\n\n<pre><code>export default {\n  data() {\n    return {\n      author: {\n        name: 'John Doe',\n        books: [\n          'Vue 2 - Advanced Guide',\n          'Vue 3 - Basic Guide',\n          'Vue 4 - The Mystery'\n        ]\n      }\n    }\n  },\n  computed: {\n    // a computed getter\n    publishedBooksMessage() {\n      // `this` points to the component instance\n      return this.author.books.length &gt; 0 ? 'Yes' : 'No'\n    }\n  }\n}\n</code></pre>\n<pre><code>&lt;p&gt;Has published books:&lt;/p&gt;\n&lt;span&gt;{{ publishedBooksMessage }}&lt;/span&gt;\n</code></pre>\n<p><a href=\"https://play.vuejs.org/#eNqFkN1KxDAQhV/l0JsqaFfUq1IquwiKsF6JINaLbDNui20S8rO4lL676c82eCFCIDOZMzkzXxetlUoOjqI0ykypa2XzQtC3ktqC0ydzjUVXCIAzy87OpxjQZJ0WpwxgzlZSp+EBEKylFPGTrATuJcUXobST8sukeA8vQPzqCNe4xJofmCiJ48HV/FfbLLrxog0zdfmn4tYrXirC9mgs6WMcBB+nsJ+C8erHH0rZKmeJL0sot2tqUxHfDONuyRi2p4BggWCr2iQTgGTcLGlI7G2FHFe4Q/xGJoYn8SznQSbTQviTrRboPrHUqoZZ8hmQqfyRmTDFTC1bqalsFBN5183o/3NG33uvoWUwXYyi/gdTEpwK\">Try it in the Playground</a></p>\n<p>Here we have declared a computed property <code>publishedBooksMessage</code>.</p>\n<p>Try to change the value of the <code>books</code> array in the application <code>data</code> and you will see how <code>publishedBooksMessage</code> is changing accordingly.</p>\n<p>You can data-bind to computed properties in templates just like a normal property. Vue is aware that <code>this.publishedBooksMessage</code> depends on <code>this.author.books</code>, so it will update any bindings that depend on <code>this.publishedBooksMessage</code> when <code>this.author.books</code> changes.</p>\n<p>See also: <a href=\"https://github.com/guide/typescript/options-api#typing-computed-properties\">Typing Computed Properties</a> </p>\n\n\n<pre><code>&lt;script setup&gt;\nimport { reactive, computed } from 'vue'\n\nconst author = reactive({\n  name: 'John Doe',\n  books: [\n    'Vue 2 - Advanced Guide',\n    'Vue 3 - Basic Guide',\n    'Vue 4 - The Mystery'\n  ]\n})\n\n// a computed ref\nconst publishedBooksMessage = computed(() =&gt; {\n  return author.books.length &gt; 0 ? 'Yes' : 'No'\n})\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;p&gt;Has published books:&lt;/p&gt;\n  &lt;span&gt;{{ publishedBooksMessage }}&lt;/span&gt;\n&lt;/template&gt;\n</code></pre>\n<p><a href=\"https://play.vuejs.org/#eNp1kE9Lw0AQxb/KI5dtoTainkoaaREUoZ5EEONhm0ybYLO77J9CCfnuzta0vdjbzr6Zeb95XbIwZroPlMySzJW2MR6OfDB5oZrWaOvRwZIsfbOnCUrdmuCpQo+N1S0ET4pCFarUynnI4GttMT9PjLpCAUq2NIN41bXCkyYxiZ9rrX/cDF/xDYiPQLjDDRbVXqqSHZ5DUw2tg3zP8lK6pvxHe2DtvSasDs6TPTAT8F2ofhzh0hTygm5pc+I1Yb1rXE3VMsKsyDm5JcY/9Y5GY8xzHI+wnIpVw4nTI/10R2rra+S4xSPEJzkBvvNNs310ztK/RDlLLjy1Zic9cQVkJn+R7gIwxJGlMXiWnZEq77orhH3Pq2NH9DjvTfpfSBSbmA==\">Try it in the Playground</a></p>\n<p>Here we have declared a computed property <code>publishedBooksMessage</code>. The <code>computed()</code> function expects to be passed a <a href=\"https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get#description\">getter function</a>, and the returned value is a <strong>computed ref</strong>. Similar to normal refs, you can access the computed result as <code>publishedBooksMessage.value</code>. Computed refs are also auto-unwrapped in templates so you can reference them without <code>.value</code> in template expressions.</p>\n<p>A computed property automatically tracks its reactive dependencies. Vue is aware that the computation of <code>publishedBooksMessage</code> depends on <code>author.books</code>, so it will update any bindings that depend on <code>publishedBooksMessage</code> when <code>author.books</code> changes.</p>\n<p>See also: <a href=\"https://github.com/guide/typescript/composition-api#typing-computed\">Typing Computed</a> </p>",
+    "blocks": [
+        {
+            "id": "S001",
+            "type": "h1",
+            "text": "Computed Properties {#computed-properties}",
+            "html": "<h1>Computed Properties {#computed-properties}</h1>"
+        },
+        {
+            "id": "S002",
+            "type": "h2",
+            "text": "Basic Example {#basic-example}",
+            "html": "<h2>Basic Example {#basic-example}</h2>"
+        },
+        {
+            "id": "S003",
+            "type": "p",
+            "text": "In-template expressions are very convenient, but they are meant for simple operations. Putting too much logic in your templates can make them bloated and hard to maintain. For example, if we have an object with a nested array:",
+            "html": "<p>In-template expressions are very convenient, but they are meant for simple operations. Putting too much logic in your templates can make them bloated and hard to maintain. For example, if we have an object with a nested array:</p>"
+        },
+        {
+            "id": "S004",
+            "type": "pre",
+            "text": "export default {\n  data() {\n    return {\n      author: {\n        name: 'John Doe',\n        books: [\n          'Vue 2 - Advanced Guide',\n          'Vue 3 - Basic Guide',\n          'Vue 4 - The Mystery'\n        ]\n      }\n    }\n  }\n}",
+            "html": "<pre><code>export default {\n  data() {\n    return {\n      author: {\n        name: 'John Doe',\n        books: [\n          'Vue 2 - Advanced Guide',\n          'Vue 3 - Basic Guide',\n          'Vue 4 - The Mystery'\n        ]\n      }\n    }\n  }\n}\n</code></pre>"
+        },
+        {
+            "id": "S005",
+            "type": "pre",
+            "text": "const author = reactive({\n  name: 'John Doe',\n  books: [\n    'Vue 2 - Advanced Guide',\n    'Vue 3 - Basic Guide',\n    'Vue 4 - The Mystery'\n  ]\n})",
+            "html": "<pre><code>const author = reactive({\n  name: 'John Doe',\n  books: [\n    'Vue 2 - Advanced Guide',\n    'Vue 3 - Basic Guide',\n    'Vue 4 - The Mystery'\n  ]\n})\n</code></pre>"
+        },
+        {
+            "id": "S006",
+            "type": "p",
+            "text": "And we want to display different messages depending on if author already has some books or not:",
+            "html": "<p>And we want to display different messages depending on if <code>author</code> already has some books or not:</p>"
+        },
+        {
+            "id": "S007",
+            "type": "pre",
+            "text": "<p>Has published books:</p>\n<span>{{ author.books.length > 0 ? 'Yes' : 'No' }}</span>",
+            "html": "<pre><code>&lt;p&gt;Has published books:&lt;/p&gt;\n&lt;span&gt;{{ author.books.length &gt; 0 ? 'Yes' : 'No' }}&lt;/span&gt;\n</code></pre>"
+        },
+        {
+            "id": "S008",
+            "type": "p",
+            "text": "At this point, the template is getting a bit cluttered. We have to look at it for a second before realizing that it performs a calculation depending on author.books. More importantly, we probably don't want to repeat ourselves if we need to include this calculation in the template more than once.",
+            "html": "<p>At this point, the template is getting a bit cluttered. We have to look at it for a second before realizing that it performs a calculation depending on <code>author.books</code>. More importantly, we probably don't want to repeat ourselves if we need to include this calculation in the template more than once.</p>"
+        },
+        {
+            "id": "S009",
+            "type": "p",
+            "text": "That's why for complex logic that includes reactive data, it is recommended to use a computed property. Here's the same example, refactored:",
+            "html": "<p>That's why for complex logic that includes reactive data, it is recommended to use a <strong>computed property</strong>. Here's the same example, refactored:</p>"
+        },
+        {
+            "id": "S010",
+            "type": "pre",
+            "text": "export default {\n  data() {\n    return {\n      author: {\n        name: 'John Doe',\n        books: [\n          'Vue 2 - Advanced Guide',\n          'Vue 3 - Basic Guide',\n          'Vue 4 - The Mystery'\n        ]\n      }\n    }\n  },\n  computed: {\n    // a computed getter\n    publishedBooksMessage() {\n      // `this` points to the component instance\n      return this.author.books.length > 0 ? 'Yes' : 'No'\n    }\n  }\n}",
+            "html": "<pre><code>export default {\n  data() {\n    return {\n      author: {\n        name: 'John Doe',\n        books: [\n          'Vue 2 - Advanced Guide',\n          'Vue 3 - Basic Guide',\n          'Vue 4 - The Mystery'\n        ]\n      }\n    }\n  },\n  computed: {\n    // a computed getter\n    publishedBooksMessage() {\n      // `this` points to the component instance\n      return this.author.books.length &gt; 0 ? 'Yes' : 'No'\n    }\n  }\n}\n</code></pre>"
+        },
+        {
+            "id": "S011",
+            "type": "pre",
+            "text": "<p>Has published books:</p>\n<span>{{ publishedBooksMessage }}</span>",
+            "html": "<pre><code>&lt;p&gt;Has published books:&lt;/p&gt;\n&lt;span&gt;{{ publishedBooksMessage }}&lt;/span&gt;\n</code></pre>"
+        },
+        {
+            "id": "S012",
+            "type": "p",
+            "text": "Try it in the Playground",
+            "html": "<p><a href=\"https://play.vuejs.org/#eNqFkN1KxDAQhV/l0JsqaFfUq1IquwiKsF6JINaLbDNui20S8rO4lL676c82eCFCIDOZMzkzXxetlUoOjqI0ykypa2XzQtC3ktqC0ydzjUVXCIAzy87OpxjQZJ0WpwxgzlZSp+EBEKylFPGTrATuJcUXobST8sukeA8vQPzqCNe4xJofmCiJ48HV/FfbLLrxog0zdfmn4tYrXirC9mgs6WMcBB+nsJ+C8erHH0rZKmeJL0sot2tqUxHfDONuyRi2p4BggWCr2iQTgGTcLGlI7G2FHFe4Q/xGJoYn8SznQSbTQviTrRboPrHUqoZZ8hmQqfyRmTDFTC1bqalsFBN5183o/3NG33uvoWUwXYyi/gdTEpwK\">Try it in the Playground</a></p>"
+        },
+        {
+            "id": "S013",
+            "type": "p",
+            "text": "Here we have declared a computed property publishedBooksMessage.",
+            "html": "<p>Here we have declared a computed property <code>publishedBooksMessage</code>.</p>"
+        },
+        {
+            "id": "S014",
+            "type": "p",
+            "text": "Try to change the value of the books array in the application data and you will see how publishedBooksMessage is changing accordingly.",
+            "html": "<p>Try to change the value of the <code>books</code> array in the application <code>data</code> and you will see how <code>publishedBooksMessage</code> is changing accordingly.</p>"
+        },
+        {
+            "id": "S015",
+            "type": "p",
+            "text": "You can data-bind to computed properties in templates just like a normal property. Vue is aware that this.publishedBooksMessage depends on this.author.books, so it will update any bindings that depend on this.publishedBooksMessage when this.author.books changes.",
+            "html": "<p>You can data-bind to computed properties in templates just like a normal property. Vue is aware that <code>this.publishedBooksMessage</code> depends on <code>this.author.books</code>, so it will update any bindings that depend on <code>this.publishedBooksMessage</code> when <code>this.author.books</code> changes.</p>"
+        },
+        {
+            "id": "S016",
+            "type": "p",
+            "text": "See also: Typing Computed Properties",
+            "html": "<p>See also: <a href=\"https://github.com/guide/typescript/options-api#typing-computed-properties\">Typing Computed Properties</a> </p>"
+        },
+        {
+            "id": "S017",
+            "type": "pre",
+            "text": "<script setup>\nimport { reactive, computed } from 'vue'\n\nconst author = reactive({\n  name: 'John Doe',\n  books: [\n    'Vue 2 - Advanced Guide',\n    'Vue 3 - Basic Guide',\n    'Vue 4 - The Mystery'\n  ]\n})\n\n// a computed ref\nconst publishedBooksMessage = computed(() => {\n  return author.books.length > 0 ? 'Yes' : 'No'\n})\n</script>\n\n<template>\n  <p>Has published books:</p>\n  <span>{{ publishedBooksMessage }}</span>\n</template>",
+            "html": "<pre><code>&lt;script setup&gt;\nimport { reactive, computed } from 'vue'\n\nconst author = reactive({\n  name: 'John Doe',\n  books: [\n    'Vue 2 - Advanced Guide',\n    'Vue 3 - Basic Guide',\n    'Vue 4 - The Mystery'\n  ]\n})\n\n// a computed ref\nconst publishedBooksMessage = computed(() =&gt; {\n  return author.books.length &gt; 0 ? 'Yes' : 'No'\n})\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;p&gt;Has published books:&lt;/p&gt;\n  &lt;span&gt;{{ publishedBooksMessage }}&lt;/span&gt;\n&lt;/template&gt;\n</code></pre>"
+        },
+        {
+            "id": "S018",
+            "type": "p",
+            "text": "Try it in the Playground",
+            "html": "<p><a href=\"https://play.vuejs.org/#eNp1kE9Lw0AQxb/KI5dtoTainkoaaREUoZ5EEONhm0ybYLO77J9CCfnuzta0vdjbzr6Zeb95XbIwZroPlMySzJW2MR6OfDB5oZrWaOvRwZIsfbOnCUrdmuCpQo+N1S0ET4pCFarUynnI4GttMT9PjLpCAUq2NIN41bXCkyYxiZ9rrX/cDF/xDYiPQLjDDRbVXqqSHZ5DUw2tg3zP8lK6pvxHe2DtvSasDs6TPTAT8F2ofhzh0hTygm5pc+I1Yb1rXE3VMsKsyDm5JcY/9Y5GY8xzHI+wnIpVw4nTI/10R2rra+S4xSPEJzkBvvNNs310ztK/RDlLLjy1Zic9cQVkJn+R7gIwxJGlMXiWnZEq77orhH3Pq2NH9DjvTfpfSBSbmA==\">Try it in the Playground</a></p>"
+        },
+        {
+            "id": "S019",
+            "type": "p",
+            "text": "Here we have declared a computed property publishedBooksMessage. The computed() function expects to be passed a getter function, and the returned value is a computed ref. Similar to normal refs, you can access the computed result as publishedBooksMessage.value. Computed refs are also auto-unwrapped in templates so you can reference them without .value in template expressions.",
+            "html": "<p>Here we have declared a computed property <code>publishedBooksMessage</code>. The <code>computed()</code> function expects to be passed a <a href=\"https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get#description\">getter function</a>, and the returned value is a <strong>computed ref</strong>. Similar to normal refs, you can access the computed result as <code>publishedBooksMessage.value</code>. Computed refs are also auto-unwrapped in templates so you can reference them without <code>.value</code> in template expressions.</p>"
+        },
+        {
+            "id": "S020",
+            "type": "p",
+            "text": "A computed property automatically tracks its reactive dependencies. Vue is aware that the computation of publishedBooksMessage depends on author.books, so it will update any bindings that depend on publishedBooksMessage when author.books changes.",
+            "html": "<p>A computed property automatically tracks its reactive dependencies. Vue is aware that the computation of <code>publishedBooksMessage</code> depends on <code>author.books</code>, so it will update any bindings that depend on <code>publishedBooksMessage</code> when <code>author.books</code> changes.</p>"
+        },
+        {
+            "id": "S021",
+            "type": "p",
+            "text": "See also: Typing Computed",
+            "html": "<p>See also: <a href=\"https://github.com/guide/typescript/composition-api#typing-computed\">Typing Computed</a> </p>"
+        }
+    ],
+    "source_images": [],
+    "fetched_at": "2026-10-04T17:47:31+00:00",
+    "hash": "e920898da51b3cd4e3acdae52c33a76726d6d35295f0334ee0bba28f3c908cb5"
+}

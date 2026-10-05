@@ -19,7 +19,7 @@ use App\Services\Ai\Targets\PostAiAdapter;
  */
 return [
     'legacy_required_outputs' => ['title', 'content'],
-    'output_aliases' => ['content' => 'content_html', 'category_ids' => 'suggested_category_ids', 'tag_ids' => 'suggested_tag_ids'],
+    'output_aliases' => ['content' => 'content_html'],
     // Nhãn cho select và các trường canonical thuộc từng nhóm đầu ra.
     'output_definitions' => [
         'title' => [
@@ -48,15 +48,6 @@ return [
                 'og_description' => ['type' => 'string', 'max' => 5000],
             ],
         ],
-        'taxonomy' => [
-            'label' => 'Danh mục & tags',
-            'fields' => ['suggested_category_ids', 'suggested_tag_ids', 'category_ids', 'tag_ids'],
-            'minimum' => 1,
-            'rules' => [
-                'suggested_category_ids' => ['type' => 'integer_ids'],
-                'suggested_tag_ids' => ['type' => 'integer_ids'],
-            ],
-        ],
         'thumbnail' => [
             'label' => 'Thumbnail từ nguồn URL',
             'fields' => ['thumbnail', 'thumbnail_prompt', 'thumbnail_alt_text'],
@@ -76,11 +67,11 @@ return [
             'icon' => 'tabler-article',
             'color' => 'primary',
             'permission' => 'posts.manage',
-            'content_instructions' => 'Write an editorial article with a clear introduction, headings and conclusion.',
+            'content_instructions' => 'Write useful, natural prose appropriate to the source and article brief. Choose structure and length to fit the material; headings, introduction and conclusion are optional. Preserve facts, conditions, code, tables, links and quotes. Never generate taxonomy, slug, actor or publishing status.',
             'adapter' => PostAiAdapter::class,
             'operations' => ['create'],
             'inputs' => ['url', 'text'],
-            'outputs' => ['title', 'excerpt', 'content', 'seo', 'taxonomy', 'thumbnail'],
+            'outputs' => ['title', 'excerpt', 'content', 'seo', 'thumbnail'],
         ],
         'resource' => [
             'enabled' => true,
@@ -92,7 +83,7 @@ return [
             'adapter' => null,
             'operations' => ['create'],
             'inputs' => ['url', 'text'],
-            'outputs' => ['title', 'excerpt', 'content', 'seo', 'taxonomy', 'thumbnail'],
+            'outputs' => ['title', 'excerpt', 'content', 'seo', 'thumbnail'],
         ],
         'sound' => [
             'enabled' => true,
@@ -104,7 +95,7 @@ return [
             'adapter' => null,
             'operations' => ['create'],
             'inputs' => ['url', 'text'],
-            'outputs' => ['title', 'excerpt', 'content', 'seo', 'taxonomy', 'thumbnail'],
+            'outputs' => ['title', 'excerpt', 'content', 'seo', 'thumbnail'],
         ],
     ],
 
@@ -132,13 +123,16 @@ return [
     ],
 
     'schemas' => [
+        'article.analysis-plan.v1' => ['version' => '1.0', 'fields' => ['knowledge', 'writing_plan']],
+        'article.writer.v1' => ['version' => '1.0', 'fields' => ['draft', 'used_fact_ids', 'used_asset_ids']],
+        'article.editor.v1' => ['version' => '1.0', 'fields' => ['final', 'used_fact_ids', 'issues']],
+        'writing-profile.analysis.v1' => ['version' => '1.0', 'fields' => ['summary', 'rules', 'evidence', 'style_instructions']],
         'post.content.v1' => [
             'version' => '1.0',
             'fields' => [
                 'title', 'content_html', 'excerpt', 'focus_keyword', 'seo_title',
                 'seo_description', 'canonical_url', 'robots_index', 'robots_follow',
-                'og_title', 'og_description', 'suggested_category_ids',
-                'suggested_tag_ids', 'thumbnail_prompt', 'thumbnail_alt_text',
+                'og_title', 'og_description', 'thumbnail_prompt', 'thumbnail_alt_text',
             ],
         ],
     ],

@@ -13,17 +13,17 @@ use App\Models\ResourceVersion;
 use App\Models\Tag;
 use App\Models\Technology;
 use App\Models\User;
-use App\Services\Ai\AiOutputValidator;
-use App\Services\Ai\ArticleImportService;
-use App\Services\Ai\ArticleSourceFetcher;
+use App\Services\Ai\Content\AiOutputValidator;
+use App\Services\Ai\Content\ArticleImportService;
+use App\Services\Ai\Content\ArticleSourceFetcher;
 use App\Services\Ai\Contracts\AiImageProviderContract;
 use App\Services\Ai\Contracts\AiProviderContract;
-use App\Services\Ai\HttpAiImageProvider;
+use App\Services\Ai\Images\Adapters\HttpAiImageProvider;
+use App\Services\Ai\Providers\Adapters\StructuredAiProvider;
 use App\Services\Ai\Registries\PromptRegistry;
 use App\Services\Ai\Registries\ProviderRegistry;
 use App\Services\Ai\Registries\SchemaRegistry;
 use App\Services\Ai\Registries\TargetRegistry;
-use App\Services\Ai\StructuredAiProvider;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
 
@@ -111,6 +111,8 @@ class AppServiceProvider extends ServiceProvider
      * đảm mọi giá trị ghi xuống đều là alias đã khai báo ở đây, nên dữ liệu
      * không phụ thuộc namespace và một model không khai báo sẽ bị lỗi ngay.
      *
+     * INPUT: Danh sách alias model được khai báo trong provider.
+     * OUTPUT: Morph registry ổn định cho quan hệ polymorphic, không ghi DB.
      * SIDE EFFECT:
      * - Đăng ký alias cho 9 model; các alias cũ đã ghi vào database phải
      *   được migrate riêng nếu có

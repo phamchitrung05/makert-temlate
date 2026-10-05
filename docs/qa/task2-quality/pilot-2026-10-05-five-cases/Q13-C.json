@@ -1,0 +1,316 @@
+{
+    "arm": "C",
+    "status": "ready",
+    "error_code": null,
+    "final": {
+        "title": "Vue 3 cho người mới: giao diện cập nhật theo trạng thái như thế nào?",
+        "content_html": "<p>Với Vue, bạn mô tả giao diện dựa trên trạng thái JavaScript; khi trạng thái thay đổi, Vue tự động cập nhật giao diện. Vue là framework JavaScript để xây dựng giao diện người dùng trên nền HTML, CSS và JavaScript tiêu chuẩn. Tên Vue được đọc là /vjuː/, giống từ <em>view</em> trong tiếng Anh.</p>\n<p>Nội dung này giới thiệu <strong>Vue 3</strong>. Vue cung cấp mô hình lập trình khai báo và dựa trên component — các thành phần giao diện — giúp xây dựng giao diện từ đơn giản đến phức tạp.</p>\n<h2>Hai cơ chế cốt lõi của Vue</h2>\n<p><strong>Kết xuất khai báo (Declarative Rendering)</strong>: bạn dùng template để mô tả HTML cần hiển thị dựa trên trạng thái JavaScript. Vue mở rộng HTML tiêu chuẩn bằng cú pháp template, chẳng hạn cú pháp để hiển thị giá trị của một biến.</p>\n<p><strong>Tính phản ứng (Reactivity)</strong>: Vue tự động theo dõi thay đổi trạng thái JavaScript và cập nhật DOM khi có thay đổi. Ví dụ bộ đếm dưới đây minh họa cách hai cơ chế này phối hợp.</p>\n<h2>Ví dụ bộ đếm</h2>\n<p>Nguồn đưa ra hai cách khai báo JavaScript cho cùng một bộ đếm. Chỉ dùng một trong hai đoạn, không chạy cả hai cùng lúc. Cách thứ nhất khai báo <code>count</code> với giá trị ban đầu là <code>0</code> trong <code>data()</code>, rồi gắn ứng dụng vào phần tử có ID <code>app</code>:</p>\n<pre><code>import { createApp } from 'vue'\n\ncreateApp({\n  data() {\n    return {\n      count: 0\n    }\n  }\n}).mount('#app')\n</code></pre>\n<p>Cách thứ hai dùng <code>setup()</code> và <code>ref(0)</code> để khai báo trạng thái đếm, cũng bắt đầu từ <code>0</code>:</p>\n<pre><code>import { createApp, ref } from 'vue'\n\ncreateApp({\n  setup() {\n    return {\n      count: ref(0)\n    }\n  }\n}).mount('#app')\n</code></pre>\n<p>Cả hai cách đều dùng phần HTML sau:</p>\n<pre><code>&lt;div id=\"app\"&gt;\n  &lt;button @click=\"count++\"&gt;\n    Count is: {{ count }}\n  &lt;/button&gt;\n&lt;/div&gt;\n</code></pre>\n<p>Trong template, <code>{{ count }}</code> hiển thị giá trị của <code>count</code>, còn <code>@click=\"count++\"</code> tăng giá trị đó thêm một mỗi lần bấm nút. Theo logic của đoạn code, nút ban đầu hiển thị <code>Count is: 0</code>; sau một lần bấm, nội dung trở thành <code>Count is: 1</code>. Bạn khai báo nơi hiển thị số đếm, còn Vue theo dõi thay đổi của <code>count</code> và cập nhật nội dung tương ứng trong DOM.</p>\n<h2>Cần biết gì trước khi học?</h2>\n<p>Tài liệu giả định bạn đã có kiến thức cơ bản về <strong>HTML, CSS và JavaScript</strong>. Nếu hoàn toàn mới với lập trình frontend, nên học các nền tảng này trước khi bắt đầu với framework. Bạn có thể kiểm tra kiến thức hoặc ôn lại qua các phần tổng quan của MDN về <a href=\"https://developer.mozilla.org/en-US/docs/Web/JavaScript/A_re-introduction_to_JavaScript\">JavaScript</a>, <a href=\"https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML\">HTML</a> và <a href=\"https://developer.mozilla.org/en-US/docs/Learn/CSS/First_steps\">CSS</a>. Kinh nghiệm với framework khác có ích, nhưng không bắt buộc.</p>\n<p>Nếu đang dùng Vue 2, lưu ý rằng Vue 2 đã kết thúc hỗ trợ vào ngày <strong>31/12/2023</strong>. Xem thêm tại <a href=\"https://v2.vuejs.org/eol/\">Vue 2 EOL</a>; nếu nâng cấp lên Vue 3, tham khảo <a href=\"https://v3-migration.vuejs.org/\">Migration Guide</a>.</p>"
+    },
+    "quality_checks": [
+        {
+            "check": "copy",
+            "status": "pass"
+        },
+        {
+            "check": "similarity",
+            "status": "pass",
+            "metric": 0.037,
+            "reason": "lexical_metric_not_style_score"
+        },
+        {
+            "check": "language",
+            "status": "pass",
+            "detected": "vi"
+        },
+        {
+            "check": "source_code_links",
+            "status": "pass"
+        },
+        {
+            "check": "important_numbers",
+            "status": "pass"
+        },
+        {
+            "check": "unanchored_numbers",
+            "status": "warning",
+            "count": 2,
+            "reason": "requires_editor_review"
+        },
+        {
+            "check": "semantic_grounding",
+            "status": "undetermined",
+            "reason": "source_anchors_are_not_external_fact_verification"
+        }
+    ],
+    "cost": null,
+    "calls": [
+        {
+            "task": "article.analysis-plan",
+            "output": {
+                "knowledge": {
+                    "facts": [
+                        {
+                            "id": "F01",
+                            "claim": "Nguồn đang giới thiệu Vue 3.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "You are reading the documentation for Vue 3!",
+                            "important": true
+                        },
+                        {
+                            "id": "F02",
+                            "claim": "Theo nguồn, Vue 2 đã kết thúc hỗ trợ vào ngày 31/12/2023; nguồn dẫn đến Vue 2 EOL để tìm hiểu thêm.",
+                            "source_block_ids": [
+                                "S004"
+                            ],
+                            "evidence": "Vue 2 support has ended on Dec 31, 2023. Learn more about Vue 2 EOL.",
+                            "important": true
+                        },
+                        {
+                            "id": "F03",
+                            "claim": "Nguồn hướng người nâng cấp từ Vue 2 đến Migration Guide.",
+                            "source_block_ids": [
+                                "S005"
+                            ],
+                            "evidence": "Upgrading from Vue 2? Check out the Migration Guide.",
+                            "important": true
+                        },
+                        {
+                            "id": "F04",
+                            "claim": "Vue, đọc là /vjuː/ như từ “view”, là framework JavaScript dùng để xây dựng giao diện người dùng.",
+                            "source_block_ids": [
+                                "S007"
+                            ],
+                            "evidence": "Vue (pronounced /vjuː/, like view) is a JavaScript framework for building user interfaces.",
+                            "important": true
+                        },
+                        {
+                            "id": "F05",
+                            "claim": "Vue dựa trên HTML, CSS và JavaScript tiêu chuẩn, cung cấp mô hình lập trình khai báo và dựa trên component để xây dựng giao diện.",
+                            "source_block_ids": [
+                                "S007"
+                            ],
+                            "evidence": "It builds on top of standard HTML, CSS, and JavaScript and provides a declarative, component-based programming model that helps you efficiently develop user interfaces of any complexity.",
+                            "important": true
+                        },
+                        {
+                            "id": "F06",
+                            "claim": "Ví dụ JavaScript thứ nhất nhập createApp từ vue, khai báo count ban đầu bằng 0 trong data() và gắn ứng dụng vào '#app'.",
+                            "source_block_ids": [
+                                "S009"
+                            ],
+                            "evidence": "import { createApp } from 'vue'\n\ncreateApp({\n  data() {\n    return {\n      count: 0\n    }\n  }\n}).mount('#app')",
+                            "important": true
+                        },
+                        {
+                            "id": "F07",
+                            "claim": "Ví dụ JavaScript thứ hai nhập createApp và ref từ vue, trả về count: ref(0) trong setup() và cũng gắn ứng dụng vào '#app'. Đây là cách khai báo khác cho cùng ví dụ bộ đếm.",
+                            "source_block_ids": [
+                                "S010"
+                            ],
+                            "evidence": "import { createApp, ref } from 'vue'\n\ncreateApp({\n  setup() {\n    return {\n      count: ref(0)\n    }\n  }\n}).mount('#app')",
+                            "important": true
+                        },
+                        {
+                            "id": "F08",
+                            "claim": "Template của ví dụ có nút bấm dùng @click=\"count++\" để tăng count và hiển thị giá trị qua {{ count }}.",
+                            "source_block_ids": [
+                                "S011"
+                            ],
+                            "evidence": "Count is: {{ count }}",
+                            "important": true
+                        },
+                        {
+                            "id": "F09",
+                            "claim": "Rendering khai báo: Vue mở rộng HTML tiêu chuẩn bằng cú pháp template để mô tả đầu ra HTML dựa trên trạng thái JavaScript.",
+                            "source_block_ids": [
+                                "S014"
+                            ],
+                            "evidence": "Declarative Rendering: Vue extends standard HTML with a template syntax that allows us to declaratively describe HTML output based on JavaScript state.",
+                            "important": true
+                        },
+                        {
+                            "id": "F10",
+                            "claim": "Tính phản ứng: Vue tự động theo dõi thay đổi trạng thái JavaScript và cập nhật DOM khi có thay đổi.",
+                            "source_block_ids": [
+                                "S015"
+                            ],
+                            "evidence": "Reactivity: Vue automatically tracks JavaScript state changes and efficiently updates the DOM when changes happen.",
+                            "important": true
+                        },
+                        {
+                            "id": "F11",
+                            "claim": "Tài liệu yêu cầu người đọc có kiến thức cơ bản về HTML, CSS và JavaScript. Người hoàn toàn mới với frontend được khuyên học nền tảng trước khi bắt đầu framework.",
+                            "source_block_ids": [
+                                "S017"
+                            ],
+                            "evidence": "The rest of the documentation assumes basic familiarity with HTML, CSS, and JavaScript. If you are totally new to frontend development, it might not be the best idea to jump right into a framework as your first step - grasp the basics and then come back!",
+                            "important": true
+                        },
+                        {
+                            "id": "F12",
+                            "claim": "Nguồn cung cấp các liên kết tổng quan JavaScript, HTML và CSS để tự kiểm tra kiến thức. Kinh nghiệm với framework khác có ích nhưng không bắt buộc.",
+                            "source_block_ids": [
+                                "S017"
+                            ],
+                            "evidence": "You can check your knowledge level with these overviews for JavaScript, HTML and CSS if needed. Prior experience with other frameworks helps, but is not required.",
+                            "important": true
+                        }
+                    ],
+                    "terms": [
+                        "Vue 3",
+                        "Vue 2 EOL",
+                        "Migration Guide",
+                        "JavaScript",
+                        "HTML",
+                        "CSS",
+                        "component — thành phần giao diện",
+                        "Declarative Rendering — rendering khai báo",
+                        "Reactivity — tính phản ứng",
+                        "DOM",
+                        "template",
+                        "createApp",
+                        "data()",
+                        "setup()",
+                        "ref(0)",
+                        "count",
+                        "@click",
+                        "{{ count }}"
+                    ],
+                    "uncertainties": [
+                        "Nguồn không nêu phiên bản Vue 3 cụ thể, yêu cầu trình duyệt, phiên bản Node.js hay cách cài đặt và cấu hình môi trường chạy ví dụ.",
+                        "Nguồn không cung cấp benchmark hoặc số liệu hiệu năng; không diễn giải từ “efficiently” thành mức cải thiện định lượng.",
+                        "Khối “Result” không có kết quả hiển thị kèm theo trong dữ liệu nguồn; chỉ giải thích hành vi từ code và mô tả cơ chế, không tuyên bố đã chạy thử.",
+                        "Nguồn không trình bày các bước nâng cấp từ Vue 2; chỉ dẫn đến Migration Guide.",
+                        "Nguồn nhắc mô hình dựa trên component nhưng chưa có ví dụ tách hoặc tái sử dụng component."
+                    ]
+                },
+                "writing_plan": {
+                    "article_type": "Bài giải thích nhập môn ngắn dựa trên tài liệu Vue",
+                    "audience": "Người phát triển website, đặc biệt người mới tìm hiểu Vue đã có hoặc đang học nền tảng HTML, CSS và JavaScript",
+                    "angle": "Giải thích Vue 3 giải quyết việc mô tả giao diện và cập nhật giao diện theo trạng thái như thế nào, dùng bộ đếm trong nguồn làm minh họa; làm rõ kiến thức cần có và lưu ý dành cho người dùng Vue 2.",
+                    "outline": [
+                        "Đặt tiêu đề tiếng Việt ngắn, thể hiện nội dung nhập môn Vue 3. Mở ngay bằng vai trò của Vue: xây dựng giao diện trên nền HTML, CSS và JavaScript, theo mô hình khai báo và component; có thể ghi cách phát âm trong phần giới thiệu.",
+                        "Giải thích hai cơ chế chính bằng ngôn ngữ dễ hiểu: template mô tả giao diện dựa trên trạng thái, còn tính phản ứng giúp Vue theo dõi trạng thái và cập nhật DOM. Tránh lặp lại cùng ý ở nhiều đoạn.",
+                        "Giữ nguyên cả hai khối JavaScript ở S009 và S010 cùng khối HTML ở S011, không sửa code hoặc dịch chuỗi trong code. Nói rõ đây là hai cách khai báo cho cùng ví dụ, không phải hai đoạn JavaScript bắt buộc chạy cùng nhau. Giải thích ngắn count bắt đầu ở 0, nút bấm tăng count và giá trị hiển thị thay đổi theo trạng thái; không biến phần này thành hướng dẫn cài đặt.",
+                        "Kết bằng điều kiện học và phạm vi phiên bản: cần nền tảng HTML, CSS, JavaScript; không bắt buộc từng dùng framework khác. Giữ các liên kết tổng quan JavaScript, HTML, CSS từ nguồn. Nêu tài liệu dành cho Vue 3, Vue 2 kết thúc hỗ trợ ngày 31/12/2023, đồng thời giữ liên kết Vue 2 EOL và Migration Guide đúng đích trong nguồn.",
+                        "Giới hạn bài ở phần giới thiệu, giải thích ví dụ và lưu ý học tập; không thêm bảng, benchmark, API mới, trải nghiệm thực tế hoặc quy trình nâng cấp không có trong nguồn. Bỏ các dấu điều khiển tài liệu và tiêu đề kỹ thuật không phục vụ người đọc."
+                    ],
+                    "coverage_fact_ids": [
+                        "F01",
+                        "F02",
+                        "F03",
+                        "F04",
+                        "F05",
+                        "F06",
+                        "F07",
+                        "F08",
+                        "F09",
+                        "F10",
+                        "F11",
+                        "F12"
+                    ]
+                }
+            },
+            "diagnostics": {
+                "response_id": "resp_05c196747a2a4d53016ac294b543c087d1998fe9b9bf186693",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.analysis-plan.v1",
+                "usage": {
+                    "prompt_tokens": 4099,
+                    "completion_tokens": 2102,
+                    "total_tokens": 6201,
+                    "reasoning_tokens": 63
+                }
+            },
+            "latency_ms": 67003
+        },
+        {
+            "task": "article.writer",
+            "output": {
+                "draft": {
+                    "title": "Vue 3 cho người mới: giao diện thay đổi theo trạng thái như thế nào?",
+                    "content_html": "<p>Vue giúp bạn mô tả giao diện dựa trên trạng thái JavaScript, rồi tự động cập nhật giao diện khi trạng thái thay đổi. Đây là framework JavaScript để xây dựng giao diện người dùng, dựa trên HTML, CSS và JavaScript tiêu chuẩn. Vue được đọc là /vjuː/, giống từ <em>view</em> trong tiếng Anh.</p>\n<p>Nội dung này giới thiệu <strong>Vue 3</strong>. Vue cung cấp mô hình lập trình khai báo và dựa trên component — các thành phần giao diện — để xây dựng giao diện từ đơn giản đến phức tạp.</p>\n<h2>Hai cơ chế cốt lõi của Vue</h2>\n<p><strong>Rendering khai báo (Declarative Rendering)</strong> nghĩa là bạn dùng template để mô tả HTML cần hiển thị dựa trên trạng thái JavaScript. Template mở rộng HTML tiêu chuẩn bằng cú pháp của Vue: chẳng hạn, bạn có thể chỉ ra vị trí cần hiển thị giá trị của một biến.</p>\n<p><strong>Tính phản ứng (Reactivity)</strong> là cơ chế Vue tự động theo dõi thay đổi trạng thái JavaScript và cập nhật DOM khi có thay đổi. Trong ví dụ bộ đếm bên dưới, template xác định nơi hiển thị số đếm; tính phản ứng giúp số hiển thị thay đổi khi người dùng bấm nút.</p>\n<h2>Đọc ví dụ bộ đếm</h2>\n<p>Nguồn đưa ra hai cách khai báo JavaScript cho cùng một bộ đếm. Bạn chọn một trong hai, không cần chạy cả hai đoạn cùng lúc. Cách thứ nhất khai báo <code>count</code> với giá trị ban đầu là <code>0</code> trong <code>data()</code>, rồi gắn ứng dụng vào phần tử <code>#app</code>:</p>\n<pre><code>import { createApp } from 'vue'\n\ncreateApp({\n  data() {\n    return {\n      count: 0\n    }\n  }\n}).mount('#app')\n</code></pre>\n<p>Cách thứ hai dùng <code>setup()</code> và <code>ref(0)</code> để khai báo trạng thái đếm, cũng bắt đầu từ <code>0</code> và gắn vào <code>#app</code>:</p>\n<pre><code>import { createApp, ref } from 'vue'\n\ncreateApp({\n  setup() {\n    return {\n      count: ref(0)\n    }\n  }\n}).mount('#app')\n</code></pre>\n<p>Cả hai cách đều dùng phần HTML sau:</p>\n<pre><code>&lt;div id=\"app\"&gt;\n  &lt;button @click=\"count++\"&gt;\n    Count is: {{ count }}\n  &lt;/button&gt;\n&lt;/div&gt;\n</code></pre>\n<p>Trong template, <code>{{ count }}</code> hiển thị giá trị của <code>count</code>, còn <code>@click=\"count++\"</code> tăng giá trị đó thêm một mỗi lần bấm nút. Theo logic của ví dụ, nút ban đầu hiển thị <code>Count is: 0</code>; sau một lần bấm, giá trị trở thành <code>Count is: 1</code>. Vue theo dõi thay đổi của <code>count</code> và cập nhật nội dung tương ứng trong DOM.</p>\n<h2>Cần biết gì trước khi học?</h2>\n<p>Tài liệu giả định bạn đã có kiến thức cơ bản về <strong>HTML, CSS và JavaScript</strong>. Nếu hoàn toàn mới với frontend, nên học các nền tảng này trước khi bắt đầu với framework. Bạn có thể tự kiểm tra hoặc ôn lại qua các phần tổng quan của MDN về <a href=\"https://developer.mozilla.org/en-US/docs/Web/JavaScript/A_re-introduction_to_JavaScript\">JavaScript</a>, <a href=\"https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML\">HTML</a> và <a href=\"https://developer.mozilla.org/en-US/docs/Learn/CSS/First_steps\">CSS</a>. Kinh nghiệm với framework khác có ích, nhưng không bắt buộc.</p>\n<p>Nếu đang dùng Vue 2, cần lưu ý rằng phiên bản này đã kết thúc hỗ trợ vào ngày <strong>31/12/2023</strong>. Xem thông tin tại <a href=\"https://v2.vuejs.org/eol/\">Vue 2 EOL</a>; nếu muốn nâng cấp lên Vue 3, tham khảo <a href=\"https://v3-migration.vuejs.org/\">Migration Guide</a>.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04",
+                    "F05",
+                    "F06",
+                    "F07",
+                    "F08",
+                    "F09",
+                    "F10",
+                    "F11",
+                    "F12"
+                ],
+                "used_asset_ids": []
+            },
+            "diagnostics": {
+                "response_id": "resp_08545960bd886b02016ac294f7269087d083602b79f40717e3",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.writer.v1",
+                "usage": {
+                    "prompt_tokens": 5051,
+                    "completion_tokens": 1128,
+                    "total_tokens": 6179
+                }
+            },
+            "latency_ms": 36820
+        },
+        {
+            "task": "article.editor",
+            "output": {
+                "final": {
+                    "title": "Vue 3 cho người mới: giao diện cập nhật theo trạng thái như thế nào?",
+                    "content_html": "<p>Với Vue, bạn mô tả giao diện dựa trên trạng thái JavaScript; khi trạng thái thay đổi, Vue tự động cập nhật giao diện. Vue là framework JavaScript để xây dựng giao diện người dùng trên nền HTML, CSS và JavaScript tiêu chuẩn. Tên Vue được đọc là /vjuː/, giống từ <em>view</em> trong tiếng Anh.</p>\n<p>Nội dung này giới thiệu <strong>Vue 3</strong>. Vue cung cấp mô hình lập trình khai báo và dựa trên component — các thành phần giao diện — giúp xây dựng giao diện từ đơn giản đến phức tạp.</p>\n<h2>Hai cơ chế cốt lõi của Vue</h2>\n<p><strong>Kết xuất khai báo (Declarative Rendering)</strong>: bạn dùng template để mô tả HTML cần hiển thị dựa trên trạng thái JavaScript. Vue mở rộng HTML tiêu chuẩn bằng cú pháp template, chẳng hạn cú pháp để hiển thị giá trị của một biến.</p>\n<p><strong>Tính phản ứng (Reactivity)</strong>: Vue tự động theo dõi thay đổi trạng thái JavaScript và cập nhật DOM khi có thay đổi. Ví dụ bộ đếm dưới đây minh họa cách hai cơ chế này phối hợp.</p>\n<h2>Ví dụ bộ đếm</h2>\n<p>Nguồn đưa ra hai cách khai báo JavaScript cho cùng một bộ đếm. Chỉ dùng một trong hai đoạn, không chạy cả hai cùng lúc. Cách thứ nhất khai báo <code>count</code> với giá trị ban đầu là <code>0</code> trong <code>data()</code>, rồi gắn ứng dụng vào phần tử có ID <code>app</code>:</p>\n<pre><code>import { createApp } from 'vue'\n\ncreateApp({\n  data() {\n    return {\n      count: 0\n    }\n  }\n}).mount('#app')\n</code></pre>\n<p>Cách thứ hai dùng <code>setup()</code> và <code>ref(0)</code> để khai báo trạng thái đếm, cũng bắt đầu từ <code>0</code>:</p>\n<pre><code>import { createApp, ref } from 'vue'\n\ncreateApp({\n  setup() {\n    return {\n      count: ref(0)\n    }\n  }\n}).mount('#app')\n</code></pre>\n<p>Cả hai cách đều dùng phần HTML sau:</p>\n<pre><code>&lt;div id=\"app\"&gt;\n  &lt;button @click=\"count++\"&gt;\n    Count is: {{ count }}\n  &lt;/button&gt;\n&lt;/div&gt;\n</code></pre>\n<p>Trong template, <code>{{ count }}</code> hiển thị giá trị của <code>count</code>, còn <code>@click=\"count++\"</code> tăng giá trị đó thêm một mỗi lần bấm nút. Theo logic của đoạn code, nút ban đầu hiển thị <code>Count is: 0</code>; sau một lần bấm, nội dung trở thành <code>Count is: 1</code>. Bạn khai báo nơi hiển thị số đếm, còn Vue theo dõi thay đổi của <code>count</code> và cập nhật nội dung tương ứng trong DOM.</p>\n<h2>Cần biết gì trước khi học?</h2>\n<p>Tài liệu giả định bạn đã có kiến thức cơ bản về <strong>HTML, CSS và JavaScript</strong>. Nếu hoàn toàn mới với lập trình frontend, nên học các nền tảng này trước khi bắt đầu với framework. Bạn có thể kiểm tra kiến thức hoặc ôn lại qua các phần tổng quan của MDN về <a href=\"https://developer.mozilla.org/en-US/docs/Web/JavaScript/A_re-introduction_to_JavaScript\">JavaScript</a>, <a href=\"https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML\">HTML</a> và <a href=\"https://developer.mozilla.org/en-US/docs/Learn/CSS/First_steps\">CSS</a>. Kinh nghiệm với framework khác có ích, nhưng không bắt buộc.</p>\n<p>Nếu đang dùng Vue 2, lưu ý rằng Vue 2 đã kết thúc hỗ trợ vào ngày <strong>31/12/2023</strong>. Xem thêm tại <a href=\"https://v2.vuejs.org/eol/\">Vue 2 EOL</a>; nếu nâng cấp lên Vue 3, tham khảo <a href=\"https://v3-migration.vuejs.org/\">Migration Guide</a>.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04",
+                    "F05",
+                    "F06",
+                    "F07",
+                    "F08",
+                    "F09",
+                    "F10",
+                    "F11",
+                    "F12"
+                ],
+                "issues": []
+            },
+            "diagnostics": {
+                "response_id": "resp_07a630e04a37763b016ac2951bdeec87d08b9ff1106e2b13aa",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.editor.v1",
+                "usage": {
+                    "prompt_tokens": 6199,
+                    "completion_tokens": 1137,
+                    "total_tokens": 7336
+                }
+            },
+            "latency_ms": 36955
+        }
+    ],
+    "latency_ms": 140784,
+    "input_sha256": "da3e80722791cfc0ebb6a8872884f57f1a1e1aab0a4cf91433a4d6226f5b904c",
+    "source_sha256": "742c1f756538bef054460d2b80ca5dad9c583878e3cd05a5b80d5ab7a2538a0a",
+    "provider": "connection-97c6d404-7463-428e-8f17-8bd19c767885",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Vue 3 cho người mới: giao diện cập nhật theo trạng thái như thế nào?",
+        "content_html": "<p>Với Vue, bạn mô tả giao diện dựa trên trạng thái JavaScript; khi trạng thái thay đổi, Vue tự động cập nhật giao diện. Vue là framework JavaScript để xây dựng giao diện người dùng trên nền HTML, CSS và JavaScript tiêu chuẩn. Tên Vue được đọc là /vjuː/, giống từ <em>view</em> trong tiếng Anh.</p>\n<p>Nội dung này giới thiệu <strong>Vue 3</strong>. Vue cung cấp mô hình lập trình khai báo và dựa trên component — các thành phần giao diện — giúp xây dựng giao diện từ đơn giản đến phức tạp.</p>\n<h2>Hai cơ chế cốt lõi của Vue</h2>\n<p><strong>Kết xuất khai báo (Declarative Rendering)</strong>: bạn dùng template để mô tả HTML cần hiển thị dựa trên trạng thái JavaScript. Vue mở rộng HTML tiêu chuẩn bằng cú pháp template, chẳng hạn cú pháp để hiển thị giá trị của một biến.</p>\n<p><strong>Tính phản ứng (Reactivity)</strong>: Vue tự động theo dõi thay đổi trạng thái JavaScript và cập nhật DOM khi có thay đổi. Ví dụ bộ đếm dưới đây minh họa cách hai cơ chế này phối hợp.</p>\n<h2>Ví dụ bộ đếm</h2>\n<p>Nguồn đưa ra hai cách khai báo JavaScript cho cùng một bộ đếm. Chỉ dùng một trong hai đoạn, không chạy cả hai cùng lúc. Cách thứ nhất khai báo <code>count</code> với giá trị ban đầu là <code>0</code> trong <code>data()</code>, rồi gắn ứng dụng vào phần tử có ID <code>app</code>:</p>\n<pre><code>import { createApp } from 'vue'\n\ncreateApp({\n  data() {\n    return {\n      count: 0\n    }\n  }\n}).mount('#app')\n</code></pre>\n<p>Cách thứ hai dùng <code>setup()</code> và <code>ref(0)</code> để khai báo trạng thái đếm, cũng bắt đầu từ <code>0</code>:</p>\n<pre><code>import { createApp, ref } from 'vue'\n\ncreateApp({\n  setup() {\n    return {\n      count: ref(0)\n    }\n  }\n}).mount('#app')\n</code></pre>\n<p>Cả hai cách đều dùng phần HTML sau:</p>\n<pre><code>&lt;div id=\"app\"&gt;\n  &lt;button @click=\"count++\"&gt;\n    Count is: {{ count }}\n  &lt;/button&gt;\n&lt;/div&gt;\n</code></pre>\n<p>Trong template, <code>{{ count }}</code> hiển thị giá trị của <code>count</code>, còn <code>@click=\"count++\"</code> tăng giá trị đó thêm một mỗi lần bấm nút. Theo logic của đoạn code, nút ban đầu hiển thị <code>Count is: 0</code>; sau một lần bấm, nội dung trở thành <code>Count is: 1</code>. Bạn khai báo nơi hiển thị số đếm, còn Vue theo dõi thay đổi của <code>count</code> và cập nhật nội dung tương ứng trong DOM.</p>\n<h2>Cần biết gì trước khi học?</h2>\n<p>Tài liệu giả định bạn đã có kiến thức cơ bản về <strong>HTML, CSS và JavaScript</strong>. Nếu hoàn toàn mới với lập trình frontend, nên học các nền tảng này trước khi bắt đầu với framework. Bạn có thể kiểm tra kiến thức hoặc ôn lại qua các phần tổng quan của MDN về <a href=\"https://developer.mozilla.org/en-US/docs/Web/JavaScript/A_re-introduction_to_JavaScript\">JavaScript</a>, <a href=\"https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML\">HTML</a> và <a href=\"https://developer.mozilla.org/en-US/docs/Learn/CSS/First_steps\">CSS</a>. Kinh nghiệm với framework khác có ích, nhưng không bắt buộc.</p>\n<p>Nếu đang dùng Vue 2, lưu ý rằng Vue 2 đã kết thúc hỗ trợ vào ngày <strong>31/12/2023</strong>. Xem thêm tại <a href=\"https://v2.vuejs.org/eol/\">Vue 2 EOL</a>; nếu nâng cấp lên Vue 3, tham khảo <a href=\"https://v3-migration.vuejs.org/\">Migration Guide</a>.</p>"
+    },
+    "total_tokens": 19716
+}

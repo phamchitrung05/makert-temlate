@@ -4,7 +4,8 @@ namespace App\Actions\Posts;
 
 use App\Models\Post;
 use App\Models\User;
-use App\Services\Ai\AiProvenanceService;
+use App\Services\Ai\Provenance\AiProvenanceService;
+use App\Services\Media\ContentMediaReferenceService;
 use App\Services\MediaAssetUsageService;
 use App\Services\SeoMetadataService;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +18,8 @@ use Illuminate\Support\Facades\DB;
  * validate. SEO, taxonomy và media usage được đồng bộ trong cùng transaction.
  *
  * CÁC HÀM/METHOD TRONG FILE:
- * - __construct(): nhận các service domain dùng chung.
+ * - recordProvenance(): ghi nguồn AI sau khi Post đã lưu trong transaction.
+ * - __construct(): nhận các service domain và validator ảnh inline dùng chung.
  * - handle(): tạo Post và đồng bộ SEO/taxonomy/media atomically.
  * - syncTaxonomy()/extractTaxonomy(): chuẩn hóa và đồng bộ pivot.
  * - syncSeo()/syncMedia(): ghi SEO và usage media theo quyền actor.
@@ -35,7 +37,7 @@ class CreatePostAction
      * =====================================================================
      * CHỨC NĂNG: Nhận service media, SEO và lineage AI từ container.
      * =====================================================================
-     * INPUT: MediaAssetUsageService, SeoMetadataService và AiProvenanceService.
+     * INPUT: MediaAssetUsageService, SeoMetadataService, AiProvenanceService và ContentMediaReferenceService.
      * OUTPUT: action sẵn sàng xử lý.
      * SIDE EFFECT: không gọi database khi khởi tạo.
      * EXCEPTION/TRANSACTION: không có; không mở transaction.
@@ -45,13 +47,14 @@ class CreatePostAction
         private readonly MediaAssetUsageService $mediaAssetUsageService,
         private readonly SeoMetadataService $seoMetadataService,
         private readonly AiProvenanceService $aiProvenanceService,
+        private readonly ContentMediaReferenceService $contentMediaReferenceService,
     ) {}
 
     /**
      * =====================================================================
      * CHỨC NĂNG: Tạo Post và đồng bộ quan hệ trong transaction có retry deadlock.
      * =====================================================================
-     * INPUT: attributes đã validate và admin ID.
+     * INPUT: attributes đã validate và admin ID; content có ảnh phải mang ID/URL MediaLibrary thật.
      * OUTPUT: Post mới đã eager load.
      * SIDE EFFECT: ghi Post, SEO, taxonomy, media usage và lineage AI.
      * EXCEPTION/TRANSACTION: rollback khi một boundary thất bại; retry deadlock tối đa 5 lần.
@@ -61,6 +64,10 @@ class CreatePostAction
     {
         return DB::transaction(function () use ($attributes, $actorId): Post {
             $media = (array) ($attributes['media'] ?? []);
+            // INPUT: content mới. OUTPUT: usage theo ảnh thực sự trong HTML, bỏ gallery client sai lệch.
+            if (array_key_exists('content', $attributes)) {
+                $media['content_image_ids'] = $this->contentMediaReferenceService->validate((string) ($attributes['content'] ?? ''), User::findOrFail($actorId));
+            }
             $taxonomy = $this->extractTaxonomy($attributes);
             $aiRunId = $attributes['ai_run_id'] ?? null;
             $aiFields = (array) ($attributes['ai_fields'] ?? []);

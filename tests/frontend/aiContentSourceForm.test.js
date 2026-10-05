@@ -35,6 +35,7 @@ function renderForm() {
       },
     },
     global: { stubs: {
+      AiWritingPreferences: true, AiManualTaxonomyFields: true, AiSourcePreview: true,
       VTabs: Passthrough, VTab: Passthrough, VWindow: Passthrough, VWindowItem: Passthrough,
       VExpansionPanels: Passthrough, VExpansionPanel: Passthrough, VExpansionPanelTitle: Passthrough,
       VExpansionPanelText: Passthrough, VAlert: Passthrough, VRow: Passthrough, VCol: Passthrough,

@@ -2,6 +2,9 @@
 
 namespace App\Services\Ai\Contracts;
 
+use App\Services\Ai\Data\AiTaskRequest;
+use App\Services\Ai\Data\AiTaskResponse;
+
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Hợp đồng chung cho mọi nhà cung cấp AI.
@@ -11,7 +14,7 @@ namespace App\Services\Ai\Contracts;
  * đã chuẩn hóa; nó không được tự ghi Post, Resource hay MediaAsset.
  *
  * CÁC HÀM/METHOD TRONG FILE:
- * - configured(), generate(), providerName(), modelName().
+ * - configured(), execute(), generate(), providerName(), modelName().
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : cấu hình provider và nội dung nguồn đã sanitize.
@@ -35,6 +38,14 @@ interface AiProviderContract
 
     /**
      * =====================================================================
+     * Input: request bất biến theo nhiệm vụ và JSON Schema.
+     * Output: response đã kiểm envelope/schema; có thể gọi HTTP, không ghi Post.
+     * =====================================================================
+     */
+    public function execute(AiTaskRequest $request): AiTaskResponse;
+
+    /**
+     * =====================================================================
      * CHỨC NĂNG: Sinh output canonical từ nội dung nguồn.
      * =====================================================================
      * INPUT: title, content, language, style, prompt và instruction.
@@ -42,6 +53,7 @@ interface AiProviderContract
      * SIDE EFFECT: có thể gọi API bên ngoài.
      * EXCEPTION/TRANSACTION: provider exception; không mở transaction.
      * =====================================================================
+     *
      * @return array<string, mixed>
      */
     public function generate(

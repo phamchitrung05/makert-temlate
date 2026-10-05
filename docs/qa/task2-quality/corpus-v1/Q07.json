@@ -1,0 +1,120 @@
+{
+    "source_url": "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md",
+    "title": "Cấu hình PHP/Laravel",
+    "source_format": "html",
+    "version": "article.source.v1",
+    "content_html": "<h1>Configuration</h1>\n<ul>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#introduction\">Introduction</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-configuration\">Environment Configuration</a>\n<ul>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-variable-types\">Environment Variable Types</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#retrieving-environment-configuration\">Retrieving Environment Configuration</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#determining-the-current-environment\">Determining the Current Environment</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#encrypting-environment-files\">Encrypting Environment Files</a></li>\n</ul>\n</li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#accessing-configuration-values\">Accessing Configuration Values</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-caching\">Configuration Caching</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-publishing\">Configuration Publishing</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#debug-mode\">Debug Mode</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#maintenance-mode\">Maintenance Mode</a></li>\n</ul>\n<p></p>\n<h2>Introduction</h2>\n<p>All of the configuration files for the Laravel framework are stored in the <code>config</code> directory. Each option is documented, so feel free to look through the files and get familiar with the options available to you.</p>\n<p>These configuration files allow you to configure things like your database connection information, your mail server information, as well as various other core configuration values such as your application URL and encryption key.</p>\n<p></p>\n<h4>The <code>about</code> Command</h4>\n<p>Laravel can display an overview of your application's configuration, drivers, and environment via the <code>about</code> Artisan command.</p>\n<pre><code>php artisan about\n</code></pre>\n<p>If you're only interested in a particular section of the application overview output, you may filter for that section using the <code>--only</code> option:</p>\n<pre><code>php artisan about --only=environment\n</code></pre>\n<p>Or, to explore a specific configuration file's values in detail, you may use the <code>config:show</code> Artisan command:</p>\n<pre><code>php artisan config:show database\n</code></pre>\n<p></p>",
+    "blocks": [
+        {
+            "id": "S001",
+            "type": "h1",
+            "text": "Configuration",
+            "html": "<h1>Configuration</h1>"
+        },
+        {
+            "id": "S002",
+            "type": "li",
+            "text": "Introduction",
+            "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#introduction\">Introduction</a></li>"
+        },
+        {
+            "id": "S003",
+            "type": "li",
+            "text": "Environment Configuration\n\nEnvironment Variable Types\nRetrieving Environment Configuration\nDetermining the Current Environment\nEncrypting Environment Files",
+            "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-configuration\">Environment Configuration</a>\n<ul>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-variable-types\">Environment Variable Types</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#retrieving-environment-configuration\">Retrieving Environment Configuration</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#determining-the-current-environment\">Determining the Current Environment</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#encrypting-environment-files\">Encrypting Environment Files</a></li>\n</ul>\n</li>"
+        },
+        {
+            "id": "S004",
+            "type": "li",
+            "text": "Accessing Configuration Values",
+            "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#accessing-configuration-values\">Accessing Configuration Values</a></li>"
+        },
+        {
+            "id": "S005",
+            "type": "li",
+            "text": "Configuration Caching",
+            "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-caching\">Configuration Caching</a></li>"
+        },
+        {
+            "id": "S006",
+            "type": "li",
+            "text": "Configuration Publishing",
+            "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-publishing\">Configuration Publishing</a></li>"
+        },
+        {
+            "id": "S007",
+            "type": "li",
+            "text": "Debug Mode",
+            "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#debug-mode\">Debug Mode</a></li>"
+        },
+        {
+            "id": "S008",
+            "type": "li",
+            "text": "Maintenance Mode",
+            "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#maintenance-mode\">Maintenance Mode</a></li>"
+        },
+        {
+            "id": "S009",
+            "type": "h2",
+            "text": "Introduction",
+            "html": "<h2>Introduction</h2>"
+        },
+        {
+            "id": "S010",
+            "type": "p",
+            "text": "All of the configuration files for the Laravel framework are stored in the config directory. Each option is documented, so feel free to look through the files and get familiar with the options available to you.",
+            "html": "<p>All of the configuration files for the Laravel framework are stored in the <code>config</code> directory. Each option is documented, so feel free to look through the files and get familiar with the options available to you.</p>"
+        },
+        {
+            "id": "S011",
+            "type": "p",
+            "text": "These configuration files allow you to configure things like your database connection information, your mail server information, as well as various other core configuration values such as your application URL and encryption key.",
+            "html": "<p>These configuration files allow you to configure things like your database connection information, your mail server information, as well as various other core configuration values such as your application URL and encryption key.</p>"
+        },
+        {
+            "id": "S012",
+            "type": "h4",
+            "text": "The about Command",
+            "html": "<h4>The <code>about</code> Command</h4>"
+        },
+        {
+            "id": "S013",
+            "type": "p",
+            "text": "Laravel can display an overview of your application's configuration, drivers, and environment via the about Artisan command.",
+            "html": "<p>Laravel can display an overview of your application's configuration, drivers, and environment via the <code>about</code> Artisan command.</p>"
+        },
+        {
+            "id": "S014",
+            "type": "pre",
+            "text": "php artisan about",
+            "html": "<pre><code>php artisan about\n</code></pre>"
+        },
+        {
+            "id": "S015",
+            "type": "p",
+            "text": "If you're only interested in a particular section of the application overview output, you may filter for that section using the --only option:",
+            "html": "<p>If you're only interested in a particular section of the application overview output, you may filter for that section using the <code>--only</code> option:</p>"
+        },
+        {
+            "id": "S016",
+            "type": "pre",
+            "text": "php artisan about --only=environment",
+            "html": "<pre><code>php artisan about --only=environment\n</code></pre>"
+        },
+        {
+            "id": "S017",
+            "type": "p",
+            "text": "Or, to explore a specific configuration file's values in detail, you may use the config:show Artisan command:",
+            "html": "<p>Or, to explore a specific configuration file's values in detail, you may use the <code>config:show</code> Artisan command:</p>"
+        },
+        {
+            "id": "S018",
+            "type": "pre",
+            "text": "php artisan config:show database",
+            "html": "<pre><code>php artisan config:show database\n</code></pre>"
+        }
+    ],
+    "source_images": [],
+    "fetched_at": "2026-10-04T17:47:24+00:00",
+    "hash": "897ce54891b469a894b05ccf0010d5c1cd754c39578bb43789ad170ed84d16cd"
+}

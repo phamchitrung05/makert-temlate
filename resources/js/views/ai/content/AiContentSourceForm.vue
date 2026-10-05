@@ -7,15 +7,20 @@
   CÁC HÀM/METHOD TRONG FILE:
   - update(): phát bản sao state của field được sửa.
   - updateProvider(): đổi provider, bỏ model cũ để composable chọn model phù hợp.
+  - useAiSourcePreview(): đọc URL/raw HTML/file, invalidate preview khi nguồn đổi.
 
   INPUT/OUTPUT CỦA CLASS (tổng thể):
   - INPUT : v-model nguồn/tùy chọn, disabled và catalog từ AI Settings.
   - OUTPUT: update:modelValue và reload-catalog khi người dùng tải lại.
-  - SIDE EFFECT: không đọc file, tải URL hoặc gọi provider.
+  - SIDE EFFECT: preview/catalog qua API hiện có; không gọi model trực tiếp.
   =====================================================================
 -->
 <script setup>
 import { computed, shallowRef } from 'vue'
+import AiWritingPreferences from '@/views/ai/shared/AiWritingPreferences.vue'
+import AiManualTaxonomyFields from '@/views/ai/shared/AiManualTaxonomyFields.vue'
+import AiSourcePreview from '@/views/ai/shared/AiSourcePreview.vue'
+import { useAiSourcePreview } from '@/composables/ai/useAiSourcePreview'
 
 const props = defineProps({
   catalog: { type: Object, required: true },
@@ -25,10 +30,12 @@ const props = defineProps({
 const emit = defineEmits(['reloadCatalog'])
 const source = defineModel({ type: Object, required: true })
 const openOptions = shallowRef(0)
+const preview = useAiSourcePreview(source)
 
 const inputTabs = [
   { value: 'url', title: 'Link nguồn', icon: 'tabler-link' },
   { value: 'file', title: 'File HTML', icon: 'tabler-file-code' },
+  { value: 'html', title: 'HTML', icon: 'tabler-code' },
   { value: 'text', title: 'Nội dung nguồn', icon: 'tabler-file-text' },
   { value: 'prompt', title: 'Viết tự do', icon: 'tabler-pencil' },
 ]
@@ -94,6 +101,16 @@ const updateProvider = provider => {
           @update:model-value="update('text', $event)"
         />
       </VWindowItem>
+      <VWindowItem value="html">
+        <AppTextarea
+          :model-value="source.html"
+          label="HTML nguồn"
+          placeholder="Dán HTML nguyên bản của bài..."
+          rows="6"
+          :disabled="props.disabled"
+          @update:model-value="update('html', $event)"
+        />
+      </VWindowItem>
       <VWindowItem value="prompt">
         <AppTextarea
           :model-value="source.prompt"
@@ -104,6 +121,48 @@ const updateProvider = provider => {
         />
       </VWindowItem>
     </VWindow>
+    <AppSelect
+      v-if="['file', 'html'].includes(source.type)"
+      :model-value="source.sourceEncoding"
+      :items="['UTF-8', 'Windows-1252', 'ISO-8859-1']"
+      label="Encoding nguồn"
+      class="my-4"
+      :disabled="props.disabled"
+      @update:model-value="update('sourceEncoding', $event)"
+    />
+    <AiSourcePreview
+      v-if="source.type !== 'prompt'"
+      :snapshot="preview.snapshot.value"
+      :busy="preview.busy.value"
+      :error="preview.error.value"
+      :disabled="props.disabled"
+      class="mt-4"
+      @read="preview.read"
+    />
+    <AiWritingPreferences
+      :model-value="source.writing"
+      :disabled="props.disabled"
+      class="mt-4"
+      @update:model-value="update('writing', $event)"
+    />
+    <AppTextarea
+      :model-value="source.instructions"
+      label="Yêu cầu bổ sung cho bài này"
+      placeholder="Ví dụ: Giải thích cho người mới, giữ code và số liệu nguồn."
+      rows="3"
+      maxlength="4000"
+      class="mb-4"
+      :disabled="props.disabled"
+      @update:model-value="update('instructions', $event)"
+    />
+    <AiManualTaxonomyFields
+      v-if="source.targetType === 'post'"
+      :categories="source.category_ids"
+      :tags="source.tag_ids"
+      :disabled="props.disabled"
+      @update:categories="update('category_ids', $event)"
+      @update:tags="update('tag_ids', $event)"
+    />
     <VExpansionPanels
       v-model="openOptions"
       variant="accordion"

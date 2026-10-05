@@ -1,0 +1,552 @@
+{
+    "source_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/reusability/composables.md",
+    "title": "Bài dài có heading",
+    "source_format": "html",
+    "version": "article.source.v1",
+    "content_html": "<h1>Composables {#composables}</h1>\n\n<p>:::tip\nThis section assumes basic knowledge of Composition API. If you have been learning Vue with Options API only, you can set the API Preference to Composition API (using the toggle at the top of the left sidebar) and re-read the <a href=\"https://github.com/guide/essentials/reactivity-fundamentals\">Reactivity Fundamentals</a> and <a href=\"https://github.com/guide/essentials/lifecycle\">Lifecycle Hooks</a> chapters.\n:::</p>\n<h2>What is a \"Composable\"? {#what-is-a-composable}</h2>\n<p>In the context of Vue applications, a \"composable\" is a function that leverages Vue's Composition API to encapsulate and reuse <strong>stateful logic</strong>.</p>\n<p>When building frontend applications, we often need to reuse logic for common tasks. For example, we may need to format dates in many places, so we extract a reusable function for that. This formatter function encapsulates <strong>stateless logic</strong>: it takes some input and immediately returns expected output. There are many libraries out there for reusing stateless logic - for example <a href=\"https://lodash.com/\">lodash</a> and <a href=\"https://date-fns.org/\">date-fns</a>, which you may have heard of.</p>\n<p>By contrast, stateful logic involves managing state that changes over time. A simple example would be tracking the current position of the mouse on a page. In real-world scenarios, it could also be more complex logic such as touch gestures or connection status to a database.</p>\n<h2>Mouse Tracker Example {#mouse-tracker-example}</h2>\n<p>If we were to implement the mouse tracking functionality using the Composition API directly inside a component, it would look like this:</p>\n<pre><code>&lt;script setup&gt;\nimport { ref, onMounted, onUnmounted } from 'vue'\n\nconst x = ref(0)\nconst y = ref(0)\n\nfunction update(event) {\n  x.value = event.pageX\n  y.value = event.pageY\n}\n\nonMounted(() =&gt; window.addEventListener('mousemove', update))\nonUnmounted(() =&gt; window.removeEventListener('mousemove', update))\n&lt;/script&gt;\n\n&lt;template&gt;Mouse position is at: {{ x }}, {{ y }}&lt;/template&gt;\n</code></pre>\n<p>But what if we want to reuse the same logic in multiple components? We can extract the logic into an external file, as a composable function:</p>\n<pre><code>import { ref, onMounted, onUnmounted } from 'vue'\n\n// by convention, composable function names start with \"use\"\nexport function useMouse() {\n  // state encapsulated and managed by the composable\n  const x = ref(0)\n  const y = ref(0)\n\n  // a composable can update its managed state over time.\n  function update(event) {\n    x.value = event.pageX\n    y.value = event.pageY\n  }\n\n  // a composable can also hook into its owner component's\n  // lifecycle to setup and teardown side effects.\n  onMounted(() =&gt; window.addEventListener('mousemove', update))\n  onUnmounted(() =&gt; window.removeEventListener('mousemove', update))\n\n  // expose managed state as return value\n  return { x, y }\n}\n</code></pre>\n<p>And this is how it can be used in components:</p>\n<pre><code>&lt;script setup&gt;\nimport { useMouse } from './mouse.js'\n\nconst { x, y } = useMouse()\n&lt;/script&gt;\n\n&lt;template&gt;Mouse position is at: {{ x }}, {{ y }}&lt;/template&gt;\n</code></pre>\n\n<p><a href=\"https://play.vuejs.org/#eNqNkj1rwzAQhv/KocUOGKVzSAIdurVjoQUvJj4XlfgkJNmxMfrvPcmJkkKHLrbu69H7SlrEszFyHFDsxN6drDIeHPrBHGtSvdHWwwKDwzfNHwjQWd1DIbd9jOW3K2qq6aTJxb6pgpl7Dnmg3NS0365YBnLgsTfnxiNHACvUaKe80gTKQeN3sDAIQqjignEhIvKYqMRta1acFVrsKtDEQPLYxuU7cV8Msmg2mdTilIa6gU5p27tYWKKq1c3ENphaPrGFW25+yMXsHWFaFlfiiOSvFIBJjs15QJ5JeWmaL/xYS/Mfpc9YYrPxl52ULOpwhIuiVl9k07Yvsf9VOY+EtizSWfR6xKK6itgkvQ/+fyNs6v4XJXIsPwVL+WprCiL8AEUxw5s=\">Try it in the Playground</a></p>\n<p>As we can see, the core logic remains identical - all we had to do was move it into an external function and return the state that should be exposed. Just like inside a component, you can use the full range of <a href=\"https://github.com/api/#composition-api\">Composition API functions</a> in composables. The same <code>useMouse()</code> functionality can now be used in any component.</p>\n<p>The cooler part about composables though, is that you can also nest them: one composable function can call one or more other composable functions. This enables us to compose complex logic using small, isolated units, similar to how we compose an entire application using components. In fact, this is why we decided to call the collection of APIs that make this pattern possible Composition API.</p>\n<p>For example, we can extract the logic of adding and removing a DOM event listener into its own composable:</p>\n<pre><code>import { onMounted, onUnmounted } from 'vue'\n\nexport function useEventListener(target, event, callback) {\n  // if you want, you can also make this\n  // support selector strings as target\n  onMounted(() =&gt; target.addEventListener(event, callback))\n  onUnmounted(() =&gt; target.removeEventListener(event, callback))\n}\n</code></pre>\n<p>And now our <code>useMouse()</code> composable can be simplified to:</p>\n<pre><code>import { ref } from 'vue'\nimport { useEventListener } from './event'\n\nexport function useMouse() {\n  const x = ref(0)\n  const y = ref(0)\n\n  useEventListener(window, 'mousemove', (event) =&gt; {\n    x.value = event.pageX\n    y.value = event.pageY\n  })\n\n  return { x, y }\n}\n</code></pre>\n<p>:::tip\nEach component instance calling <code>useMouse()</code> will create its own copies of <code>x</code> and <code>y</code> state so they won't interfere with one another. If you want to manage shared state between components, read the <a href=\"https://github.com/guide/scaling-up/state-management\">State Management</a> chapter.\n:::</p>\n<h2>Async State Example {#async-state-example}</h2>\n<p>The <code>useMouse()</code> composable doesn't take any arguments, so let's take a look at another example that makes use of one. When doing async data fetching, we often need to handle different states: loading, success, and error:</p>\n<pre><code>&lt;script setup&gt;\nimport { ref } from 'vue'\n\nconst data = ref(null)\nconst error = ref(null)\n\nfetch('...')\n  .then((res) =&gt; res.json())\n  .then((json) =&gt; (data.value = json))\n  .catch((err) =&gt; (error.value = err))\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;div v-if=\"error\"&gt;Oops! Error encountered: {{ error.message }}&lt;/div&gt;\n  &lt;div v-else-if=\"data\"&gt;\n    Data loaded:\n    &lt;pre&gt;{{ data }}&lt;/pre&gt;\n  &lt;/div&gt;\n  &lt;div v-else&gt;Loading...&lt;/div&gt;\n&lt;/template&gt;\n</code></pre>\n<p>It would be tedious to have to repeat this pattern in every component that needs to fetch data. Let's extract it into a composable:</p>\n<pre><code>import { ref } from 'vue'\n\nexport function useFetch(url) {\n  const data = ref(null)\n  const error = ref(null)\n\n  fetch(url)\n    .then((res) =&gt; res.json())\n    .then((json) =&gt; (data.value = json))\n    .catch((err) =&gt; (error.value = err))\n\n  return { data, error }\n}\n</code></pre>\n<p>Now in our component we can just do:</p>\n<pre><code>&lt;script setup&gt;\nimport { useFetch } from './fetch.js'\n\nconst { data, error } = useFetch('...')\n&lt;/script&gt;\n</code></pre>\n<h3>Accepting Reactive State {#accepting-reactive-state}</h3>\n<p><code>useFetch()</code> takes a static URL string as input - so it performs the fetch only once and is then done. What if we want it to re-fetch whenever the URL changes? In order to achieve this, we need to pass reactive state into the composable function, and let the composable create watchers that perform actions using the passed state.</p>\n<p>For example, <code>useFetch()</code> should be able to accept a ref:</p>\n<pre><code>const url = ref('/initial-url')\n\nconst { data, error } = useFetch(url)\n\n// this should trigger a re-fetch\nurl.value = '/new-url'\n</code></pre>\n<p>Or, accept a <a href=\"https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get#description\">getter function</a>:</p>\n<pre><code>// re-fetch when props.id changes\nconst { data, error } = useFetch(() =&gt; `/posts/${props.id}`)\n</code></pre>\n<p>We can refactor our existing implementation with the <a href=\"https://github.com/api/reactivity-core.html#watcheffect\"><code>watchEffect()</code></a> and <a href=\"https://github.com/api/reactivity-utilities.html#tovalue\"><code>toValue()</code></a> APIs:</p>\n<pre><code>import { ref, watchEffect, toValue } from 'vue'\n\nexport function useFetch(url) {\n  const data = ref(null)\n  const error = ref(null)\n\n  const fetchData = () =&gt; {\n    // reset state before fetching..\n    data.value = null\n    error.value = null\n\n    fetch(toValue(url))\n      .then((res) =&gt; res.json())\n      .then((json) =&gt; (data.value = json))\n      .catch((err) =&gt; (error.value = err))\n  }\n\n  watchEffect(() =&gt; {\n    fetchData()\n  })\n\n  return { data, error }\n}\n</code></pre>\n<p><code>toValue()</code> is an API added in 3.3. It is designed to normalize refs or getters into values. If the argument is a ref, it returns the ref's value; if the argument is a function, it will call the function and return its return value. Otherwise, it returns the argument as-is. It works similarly to <a href=\"https://github.com/api/reactivity-utilities.html#unref\"><code>unref()</code></a>, but with special treatment for functions.</p>\n<p>Notice that <code>toValue(url)</code> is called <strong>inside</strong> the <code>watchEffect</code> callback. This ensures that any reactive dependencies accessed during the <code>toValue()</code> normalization are tracked by the watcher.</p>\n<p>This version of <code>useFetch()</code> now accepts static URL strings, refs, and getters, making it much more flexible. The watch effect will run immediately, and will track any dependencies accessed during <code>toValue(url)</code>. If no dependencies are tracked (e.g. url is already a string), the effect runs only once; otherwise, it will re-run whenever a tracked dependency changes.</p>\n<p>Here's <a href=\"https://play.vuejs.org/#eNp9Vdtu20YQ/ZUpUUA0qpAOjL4YktCbC7Rom8BN8sSHrMihtfZql9iLZEHgv2dml6SpxMiDIWkuZ+acmR2fs1+7rjgEzG6zlaut7Dw49KHbVFruO2M9nMFiu4Ta7LvgsYEeWmv2sKCkxSwoOPwTfb2b/EU5mopHR5GVro12HrbC4UerYA2Lnfeduy3LR2d0p0SNO6MatIU/dbI2DRZUtPSmMa4kgJQuG8qkjvLF28XVaAwRb2wxz69gvZkK/UQ5xUGogBQ/ZpyhEV4sAa01lnpeTwRyApsFWvT2RO6Eea40THBMgfq6NLwlS1/pVZnUJB3ph8c98fNIvwD+MaKBzkQut2xYbYP3RsPhTWvsusokSA0/Vxn8UitZP7GFSX/+8Sz7z1W2OZ9BQt+vypQXS1R+1cgDQciW4iMrimR0wu8270znfoC7SBaJWdAeLTa3QFgxuNijc+IBIy5PPyYOjU19RDEI954/Z/UptKTy6VvqA5XD1AwLTTl/0Aco4s5lV51F5sG+VJJ+v4qxYbmkfiiKYvSvyknPbJnNtoyW+HJpj4Icd22LtV+CN5/ikC4XuNL4HFPaoGsvie3FIqSJp1WIzabl00HxkoyetEVfufhv1kAu3EnX8z0CKEtKofcGzhMb2CItAELL1SPlFMV1pwVj+GROc/vWPoc26oDgdxhfSArlLnbWaBOcOoEzIP3CgbeifqLXLRyICaDBDnVD+3KC7emCSyQ4sifspOx61Hh4Qy/d8BsaOEdkYb1sZS2FoiJKnIC6FbqhsaTVZfk8gDgK6cHLPZowFGUzAQTNWl/BUSrFbzRYHXmSdeAp28RMsI0fyFDaUJg9Spd0SbERZcvZDBRleCPdQMCPh8ARwdRRnBCTjGz5WkT0i0GlSMqixTR6VKyHmmWEHIfV+naSOETyRx8vEYwMv7pa8dJU+hU9Kz2t86ReqjcgaTzCe3oGpEOeD4uyJOcjTXe+obScHwaAi82lo9dC/q/wuyINjrwbuC5uZrS4WAQeyTN9ftOXIVwy537iecoX92kR4q/F1UvqIMsSbq6vo5XF6ekCeEcTauVDFJpuQESvMv53IBXadx3r4KqMrt0w0kwoZY5/R5u3AZejvd5h/fSK/dE9s63K3vN7tQesssnnhX1An9x3//+Hz/R9cu5NExRFf8d5zyIF7jGF/RZ0Q23P4mK3f8XLRmfhg7t79qjdSIobjXLE+Cqju/b7d6i/tHtT3MQ8VrH/Ahstp5A=\">the updated version of <code>useFetch()</code></a>, with an artificial delay and randomized error for demo purposes.</p>\n<h2>Conventions and Best Practices {#conventions-and-best-practices}</h2>\n<h3>Naming {#naming}</h3>\n<p>It is a convention to name composable functions with camelCase names that start with \"use\".</p>\n<h3>Input Arguments {#input-arguments}</h3>\n<p>A composable can accept ref or getter arguments even if it doesn't rely on them for reactivity. If you are writing a composable that may be used by other developers, it's a good idea to handle the case of input arguments being refs or getters instead of raw values. The <a href=\"https://github.com/api/reactivity-utilities#tovalue\"><code>toValue()</code></a> utility function will come in handy for this purpose:</p>\n<pre><code>import { toValue } from 'vue'\n\nfunction useFeature(maybeRefOrGetter) {\n  // If maybeRefOrGetter is a ref or a getter,\n  // its normalized value will be returned.\n  // Otherwise, it is returned as-is.\n  const value = toValue(maybeRefOrGetter)\n}\n</code></pre>\n<p>If your composable creates reactive effects when the input is a ref or a getter, make sure to either explicitly watch the ref / getter with <code>watch()</code>, or call <code>toValue()</code> inside a <code>watchEffect()</code> so that it is properly tracked.</p>\n<p>The <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/reusability/composables.md#accepting-reactive-state\">useFetch() implementation discussed earlier</a> provides a concrete example of a composable that accepts refs, getters and plain values as input argument.</p>\n<h3>Return Values {#return-values}</h3>\n<p>You have probably noticed that we have been exclusively using <code>ref()</code> instead of <code>reactive()</code> in composables. The recommended convention is for composables to always return a plain, non-reactive object containing multiple refs. This allows it to be destructured in components while retaining reactivity:</p>\n<pre><code>// x and y are refs\nconst { x, y } = useMouse()\n</code></pre>\n<p>Returning a reactive object from a composable will cause such destructures to lose the reactivity connection to the state inside the composable, while the refs will retain that connection.</p>\n<p>If you prefer to use returned state from composables as object properties, you can wrap the returned object with <code>reactive()</code> so that the refs are unwrapped. For example:</p>\n<pre><code>const mouse = reactive(useMouse())\n// mouse.x is linked to original ref\nconsole.log(mouse.x)\n</code></pre>\n<pre><code>Mouse position is at: {{ mouse.x }}, {{ mouse.y }}\n</code></pre>\n<h3>Side Effects {#side-effects}</h3>\n<p>It is OK to perform side effects (e.g. adding DOM event listeners or fetching data) in composables, but pay attention to the following rules:</p>\n<ul>\n<li>\n<p>If you are working on an application that uses <a href=\"https://github.com/guide/scaling-up/ssr\">Server-Side Rendering</a> (SSR), make sure to perform DOM-specific side effects in post-mount lifecycle hooks, e.g. <code>onMounted()</code>. These hooks are only called in the browser, so you can be sure that code inside them has access to the DOM.</p>\n</li>\n<li>\n<p>Remember to clean up side effects in <code>onUnmounted()</code>. For example, if a composable sets up a DOM event listener, it should remove that listener in <code>onUnmounted()</code> as we have seen in the <code>useMouse()</code> example. It can be a good idea to use a composable that automatically does this for you, like the <code>useEventListener()</code> example.</p>\n</li>\n</ul>\n<h3>Usage Restrictions {#usage-restrictions}</h3>\n<p>Composables should only be called in <code>&lt;script setup&gt;</code> or the <code>setup()</code> hook. They should also be called <strong>synchronously</strong> in these contexts. In some cases, you can also call them in lifecycle hooks like <code>onMounted()</code>.</p>\n<p>These restrictions are important because these are the contexts where Vue is able to determine the current active component instance. Access to an active component instance is necessary so that:</p>\n<ol>\n<li>\n<p>Lifecycle hooks can be registered to it.</p>\n</li>\n<li>\n<p>Watchers can be linked to it, so that they can be disposed when the instance is unmounted to prevent memory leaks.</p>\n</li>\n</ol>\n<p>:::tip\n<code>&lt;script setup&gt;</code> is the only place where you can call composables <strong>after</strong> using <code>await</code>. The compiler automatically restores the active instance context for you after the async operation.\n:::</p>\n<h2>Extracting Composables for Code Organization {#extracting-composables-for-code-organization}</h2>\n<p>Composables can be extracted not only for reuse, but also for code organization. As the complexity of your components grows, you may end up with components that are too large to navigate and reason about. Composition API gives you the full flexibility to organize your component code into smaller functions based on logical concerns:</p>\n<pre><code>&lt;script setup&gt;\nimport { useFeatureA } from './featureA.js'\nimport { useFeatureB } from './featureB.js'\nimport { useFeatureC } from './featureC.js'\n\nconst { foo, bar } = useFeatureA()\nconst { baz } = useFeatureB(foo)\nconst { qux } = useFeatureC(baz)\n&lt;/script&gt;\n</code></pre>\n<p>To some extent, you can think of these extracted composables as component-scoped services that can talk to one another.</p>\n<h2>Using Composables in Options API {#using-composables-in-options-api}</h2>\n<p>If you are using Options API, composables must be called inside <code>setup()</code>, and the returned bindings must be returned from <code>setup()</code> so that they are exposed to <code>this</code> and the template:</p>\n<pre><code>import { useMouse } from './mouse.js'\nimport { useFetch } from './fetch.js'\n\nexport default {\n  setup() {\n    const { x, y } = useMouse()\n    const { data, error } = useFetch('...')\n    return { x, y, data, error }\n  },\n  mounted() {\n    // setup() exposed properties can be accessed on `this`\n    console.log(this.x)\n  }\n  // ...other options\n}\n</code></pre>\n<h2>Comparisons with Other Techniques {#comparisons-with-other-techniques}</h2>\n<h3>vs. Mixins {#vs-mixins}</h3>\n<p>Users coming from Vue 2 may be familiar with the <a href=\"https://github.com/api/options-composition#mixins\">mixins</a> option, which also allows us to extract component logic into reusable units. There are three primary drawbacks to mixins:</p>\n<ol>\n<li>\n<p><strong>Unclear source of properties</strong>: when using many mixins, it becomes unclear which instance property is injected by which mixin, making it difficult to trace the implementation and understand the component's behavior. This is also why we recommend using the refs + destructure pattern for composables: it makes the property source clear in consuming components.</p>\n</li>\n<li>\n<p><strong>Namespace collisions</strong>: multiple mixins from different authors can potentially register the same property keys, causing namespace collisions. With composables, you can rename the destructured variables if there are conflicting keys from different composables.</p>\n</li>\n<li>\n<p><strong>Implicit cross-mixin communication</strong>: multiple mixins that need to interact with one another have to rely on shared property keys, making them implicitly coupled. With composables, values returned from one composable can be passed into another as arguments, just like normal functions.</p>\n</li>\n</ol>\n<p>For the above reasons, we no longer recommend using mixins in Vue 3. The feature is kept only for migration and familiarity reasons.</p>\n<h3>vs. Renderless Components {#vs-renderless-components}</h3>\n<p>In the component slots chapter, we discussed the <a href=\"https://github.com/guide/components/slots#renderless-components\">Renderless Component</a> pattern based on scoped slots. We even implemented the same mouse tracking demo using renderless components.</p>\n<p>The main advantage of composables over renderless components is that composables do not incur the extra component instance overhead. When used across an entire application, the amount of extra component instances created by the renderless component pattern can become a noticeable performance overhead.</p>\n<p>The recommendation is to use composables when reusing pure logic, and use components when reusing both logic and visual layout.</p>\n<h3>vs. React Hooks {#vs-react-hooks}</h3>\n<p>If you have experience with React, you may notice that this looks very similar to custom React hooks. Composition API was in part inspired by React hooks, and Vue composables are indeed similar to React hooks in terms of logic composition capabilities. However, Vue composables are based on Vue's fine-grained reactivity system, which is fundamentally different from React hooks' execution model. This is discussed in more detail in the <a href=\"https://github.com/guide/extras/composition-api-faq#comparison-with-react-hooks\">Composition API FAQ</a>.</p>\n<h2>Further Reading {#further-reading}</h2>\n<ul>\n<li><a href=\"https://github.com/guide/extras/reactivity-in-depth\">Reactivity In Depth</a>: for a low-level understanding of how Vue's reactivity system works.</li>\n<li><a href=\"https://github.com/guide/scaling-up/state-management\">State Management</a>: for patterns of managing state shared by multiple components.</li>\n<li><a href=\"https://github.com/guide/scaling-up/testing#testing-composables\">Testing Composables</a>: tips on unit testing composables.</li>\n<li><a href=\"https://vueuse.org/\">VueUse</a>: an ever-growing collection of Vue composables. The source code is also a great learning resource.</li>\n</ul>",
+    "blocks": [
+        {
+            "id": "S001",
+            "type": "h1",
+            "text": "Composables {#composables}",
+            "html": "<h1>Composables {#composables}</h1>"
+        },
+        {
+            "id": "S002",
+            "type": "p",
+            "text": ":::tip\nThis section assumes basic knowledge of Composition API. If you have been learning Vue with Options API only, you can set the API Preference to Composition API (using the toggle at the top of the left sidebar) and re-read the Reactivity Fundamentals and Lifecycle Hooks chapters.\n:::",
+            "html": "<p>:::tip\nThis section assumes basic knowledge of Composition API. If you have been learning Vue with Options API only, you can set the API Preference to Composition API (using the toggle at the top of the left sidebar) and re-read the <a href=\"https://github.com/guide/essentials/reactivity-fundamentals\">Reactivity Fundamentals</a> and <a href=\"https://github.com/guide/essentials/lifecycle\">Lifecycle Hooks</a> chapters.\n:::</p>"
+        },
+        {
+            "id": "S003",
+            "type": "h2",
+            "text": "What is a \"Composable\"? {#what-is-a-composable}",
+            "html": "<h2>What is a \"Composable\"? {#what-is-a-composable}</h2>"
+        },
+        {
+            "id": "S004",
+            "type": "p",
+            "text": "In the context of Vue applications, a \"composable\" is a function that leverages Vue's Composition API to encapsulate and reuse stateful logic.",
+            "html": "<p>In the context of Vue applications, a \"composable\" is a function that leverages Vue's Composition API to encapsulate and reuse <strong>stateful logic</strong>.</p>"
+        },
+        {
+            "id": "S005",
+            "type": "p",
+            "text": "When building frontend applications, we often need to reuse logic for common tasks. For example, we may need to format dates in many places, so we extract a reusable function for that. This formatter function encapsulates stateless logic: it takes some input and immediately returns expected output. There are many libraries out there for reusing stateless logic - for example lodash and date-fns, which you may have heard of.",
+            "html": "<p>When building frontend applications, we often need to reuse logic for common tasks. For example, we may need to format dates in many places, so we extract a reusable function for that. This formatter function encapsulates <strong>stateless logic</strong>: it takes some input and immediately returns expected output. There are many libraries out there for reusing stateless logic - for example <a href=\"https://lodash.com/\">lodash</a> and <a href=\"https://date-fns.org/\">date-fns</a>, which you may have heard of.</p>"
+        },
+        {
+            "id": "S006",
+            "type": "p",
+            "text": "By contrast, stateful logic involves managing state that changes over time. A simple example would be tracking the current position of the mouse on a page. In real-world scenarios, it could also be more complex logic such as touch gestures or connection status to a database.",
+            "html": "<p>By contrast, stateful logic involves managing state that changes over time. A simple example would be tracking the current position of the mouse on a page. In real-world scenarios, it could also be more complex logic such as touch gestures or connection status to a database.</p>"
+        },
+        {
+            "id": "S007",
+            "type": "h2",
+            "text": "Mouse Tracker Example {#mouse-tracker-example}",
+            "html": "<h2>Mouse Tracker Example {#mouse-tracker-example}</h2>"
+        },
+        {
+            "id": "S008",
+            "type": "p",
+            "text": "If we were to implement the mouse tracking functionality using the Composition API directly inside a component, it would look like this:",
+            "html": "<p>If we were to implement the mouse tracking functionality using the Composition API directly inside a component, it would look like this:</p>"
+        },
+        {
+            "id": "S009",
+            "type": "pre",
+            "text": "<script setup>\nimport { ref, onMounted, onUnmounted } from 'vue'\n\nconst x = ref(0)\nconst y = ref(0)\n\nfunction update(event) {\n  x.value = event.pageX\n  y.value = event.pageY\n}\n\nonMounted(() => window.addEventListener('mousemove', update))\nonUnmounted(() => window.removeEventListener('mousemove', update))\n</script>\n\n<template>Mouse position is at: {{ x }}, {{ y }}</template>",
+            "html": "<pre><code>&lt;script setup&gt;\nimport { ref, onMounted, onUnmounted } from 'vue'\n\nconst x = ref(0)\nconst y = ref(0)\n\nfunction update(event) {\n  x.value = event.pageX\n  y.value = event.pageY\n}\n\nonMounted(() =&gt; window.addEventListener('mousemove', update))\nonUnmounted(() =&gt; window.removeEventListener('mousemove', update))\n&lt;/script&gt;\n\n&lt;template&gt;Mouse position is at: {{ x }}, {{ y }}&lt;/template&gt;\n</code></pre>"
+        },
+        {
+            "id": "S010",
+            "type": "p",
+            "text": "But what if we want to reuse the same logic in multiple components? We can extract the logic into an external file, as a composable function:",
+            "html": "<p>But what if we want to reuse the same logic in multiple components? We can extract the logic into an external file, as a composable function:</p>"
+        },
+        {
+            "id": "S011",
+            "type": "pre",
+            "text": "import { ref, onMounted, onUnmounted } from 'vue'\n\n// by convention, composable function names start with \"use\"\nexport function useMouse() {\n  // state encapsulated and managed by the composable\n  const x = ref(0)\n  const y = ref(0)\n\n  // a composable can update its managed state over time.\n  function update(event) {\n    x.value = event.pageX\n    y.value = event.pageY\n  }\n\n  // a composable can also hook into its owner component's\n  // lifecycle to setup and teardown side effects.\n  onMounted(() => window.addEventListener('mousemove', update))\n  onUnmounted(() => window.removeEventListener('mousemove', update))\n\n  // expose managed state as return value\n  return { x, y }\n}",
+            "html": "<pre><code>import { ref, onMounted, onUnmounted } from 'vue'\n\n// by convention, composable function names start with \"use\"\nexport function useMouse() {\n  // state encapsulated and managed by the composable\n  const x = ref(0)\n  const y = ref(0)\n\n  // a composable can update its managed state over time.\n  function update(event) {\n    x.value = event.pageX\n    y.value = event.pageY\n  }\n\n  // a composable can also hook into its owner component's\n  // lifecycle to setup and teardown side effects.\n  onMounted(() =&gt; window.addEventListener('mousemove', update))\n  onUnmounted(() =&gt; window.removeEventListener('mousemove', update))\n\n  // expose managed state as return value\n  return { x, y }\n}\n</code></pre>"
+        },
+        {
+            "id": "S012",
+            "type": "p",
+            "text": "And this is how it can be used in components:",
+            "html": "<p>And this is how it can be used in components:</p>"
+        },
+        {
+            "id": "S013",
+            "type": "pre",
+            "text": "<script setup>\nimport { useMouse } from './mouse.js'\n\nconst { x, y } = useMouse()\n</script>\n\n<template>Mouse position is at: {{ x }}, {{ y }}</template>",
+            "html": "<pre><code>&lt;script setup&gt;\nimport { useMouse } from './mouse.js'\n\nconst { x, y } = useMouse()\n&lt;/script&gt;\n\n&lt;template&gt;Mouse position is at: {{ x }}, {{ y }}&lt;/template&gt;\n</code></pre>"
+        },
+        {
+            "id": "S014",
+            "type": "p",
+            "text": "Try it in the Playground",
+            "html": "<p><a href=\"https://play.vuejs.org/#eNqNkj1rwzAQhv/KocUOGKVzSAIdurVjoQUvJj4XlfgkJNmxMfrvPcmJkkKHLrbu69H7SlrEszFyHFDsxN6drDIeHPrBHGtSvdHWwwKDwzfNHwjQWd1DIbd9jOW3K2qq6aTJxb6pgpl7Dnmg3NS0365YBnLgsTfnxiNHACvUaKe80gTKQeN3sDAIQqjignEhIvKYqMRta1acFVrsKtDEQPLYxuU7cV8Msmg2mdTilIa6gU5p27tYWKKq1c3ENphaPrGFW25+yMXsHWFaFlfiiOSvFIBJjs15QJ5JeWmaL/xYS/Mfpc9YYrPxl52ULOpwhIuiVl9k07Yvsf9VOY+EtizSWfR6xKK6itgkvQ/+fyNs6v4XJXIsPwVL+WprCiL8AEUxw5s=\">Try it in the Playground</a></p>"
+        },
+        {
+            "id": "S015",
+            "type": "p",
+            "text": "As we can see, the core logic remains identical - all we had to do was move it into an external function and return the state that should be exposed. Just like inside a component, you can use the full range of Composition API functions in composables. The same useMouse() functionality can now be used in any component.",
+            "html": "<p>As we can see, the core logic remains identical - all we had to do was move it into an external function and return the state that should be exposed. Just like inside a component, you can use the full range of <a href=\"https://github.com/api/#composition-api\">Composition API functions</a> in composables. The same <code>useMouse()</code> functionality can now be used in any component.</p>"
+        },
+        {
+            "id": "S016",
+            "type": "p",
+            "text": "The cooler part about composables though, is that you can also nest them: one composable function can call one or more other composable functions. This enables us to compose complex logic using small, isolated units, similar to how we compose an entire application using components. In fact, this is why we decided to call the collection of APIs that make this pattern possible Composition API.",
+            "html": "<p>The cooler part about composables though, is that you can also nest them: one composable function can call one or more other composable functions. This enables us to compose complex logic using small, isolated units, similar to how we compose an entire application using components. In fact, this is why we decided to call the collection of APIs that make this pattern possible Composition API.</p>"
+        },
+        {
+            "id": "S017",
+            "type": "p",
+            "text": "For example, we can extract the logic of adding and removing a DOM event listener into its own composable:",
+            "html": "<p>For example, we can extract the logic of adding and removing a DOM event listener into its own composable:</p>"
+        },
+        {
+            "id": "S018",
+            "type": "pre",
+            "text": "import { onMounted, onUnmounted } from 'vue'\n\nexport function useEventListener(target, event, callback) {\n  // if you want, you can also make this\n  // support selector strings as target\n  onMounted(() => target.addEventListener(event, callback))\n  onUnmounted(() => target.removeEventListener(event, callback))\n}",
+            "html": "<pre><code>import { onMounted, onUnmounted } from 'vue'\n\nexport function useEventListener(target, event, callback) {\n  // if you want, you can also make this\n  // support selector strings as target\n  onMounted(() =&gt; target.addEventListener(event, callback))\n  onUnmounted(() =&gt; target.removeEventListener(event, callback))\n}\n</code></pre>"
+        },
+        {
+            "id": "S019",
+            "type": "p",
+            "text": "And now our useMouse() composable can be simplified to:",
+            "html": "<p>And now our <code>useMouse()</code> composable can be simplified to:</p>"
+        },
+        {
+            "id": "S020",
+            "type": "pre",
+            "text": "import { ref } from 'vue'\nimport { useEventListener } from './event'\n\nexport function useMouse() {\n  const x = ref(0)\n  const y = ref(0)\n\n  useEventListener(window, 'mousemove', (event) => {\n    x.value = event.pageX\n    y.value = event.pageY\n  })\n\n  return { x, y }\n}",
+            "html": "<pre><code>import { ref } from 'vue'\nimport { useEventListener } from './event'\n\nexport function useMouse() {\n  const x = ref(0)\n  const y = ref(0)\n\n  useEventListener(window, 'mousemove', (event) =&gt; {\n    x.value = event.pageX\n    y.value = event.pageY\n  })\n\n  return { x, y }\n}\n</code></pre>"
+        },
+        {
+            "id": "S021",
+            "type": "p",
+            "text": ":::tip\nEach component instance calling useMouse() will create its own copies of x and y state so they won't interfere with one another. If you want to manage shared state between components, read the State Management chapter.\n:::",
+            "html": "<p>:::tip\nEach component instance calling <code>useMouse()</code> will create its own copies of <code>x</code> and <code>y</code> state so they won't interfere with one another. If you want to manage shared state between components, read the <a href=\"https://github.com/guide/scaling-up/state-management\">State Management</a> chapter.\n:::</p>"
+        },
+        {
+            "id": "S022",
+            "type": "h2",
+            "text": "Async State Example {#async-state-example}",
+            "html": "<h2>Async State Example {#async-state-example}</h2>"
+        },
+        {
+            "id": "S023",
+            "type": "p",
+            "text": "The useMouse() composable doesn't take any arguments, so let's take a look at another example that makes use of one. When doing async data fetching, we often need to handle different states: loading, success, and error:",
+            "html": "<p>The <code>useMouse()</code> composable doesn't take any arguments, so let's take a look at another example that makes use of one. When doing async data fetching, we often need to handle different states: loading, success, and error:</p>"
+        },
+        {
+            "id": "S024",
+            "type": "pre",
+            "text": "<script setup>\nimport { ref } from 'vue'\n\nconst data = ref(null)\nconst error = ref(null)\n\nfetch('...')\n  .then((res) => res.json())\n  .then((json) => (data.value = json))\n  .catch((err) => (error.value = err))\n</script>\n\n<template>\n  <div v-if=\"error\">Oops! Error encountered: {{ error.message }}</div>\n  <div v-else-if=\"data\">\n    Data loaded:\n    <pre>{{ data }}</pre>\n  </div>\n  <div v-else>Loading...</div>\n</template>",
+            "html": "<pre><code>&lt;script setup&gt;\nimport { ref } from 'vue'\n\nconst data = ref(null)\nconst error = ref(null)\n\nfetch('...')\n  .then((res) =&gt; res.json())\n  .then((json) =&gt; (data.value = json))\n  .catch((err) =&gt; (error.value = err))\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;div v-if=\"error\"&gt;Oops! Error encountered: {{ error.message }}&lt;/div&gt;\n  &lt;div v-else-if=\"data\"&gt;\n    Data loaded:\n    &lt;pre&gt;{{ data }}&lt;/pre&gt;\n  &lt;/div&gt;\n  &lt;div v-else&gt;Loading...&lt;/div&gt;\n&lt;/template&gt;\n</code></pre>"
+        },
+        {
+            "id": "S025",
+            "type": "p",
+            "text": "It would be tedious to have to repeat this pattern in every component that needs to fetch data. Let's extract it into a composable:",
+            "html": "<p>It would be tedious to have to repeat this pattern in every component that needs to fetch data. Let's extract it into a composable:</p>"
+        },
+        {
+            "id": "S026",
+            "type": "pre",
+            "text": "import { ref } from 'vue'\n\nexport function useFetch(url) {\n  const data = ref(null)\n  const error = ref(null)\n\n  fetch(url)\n    .then((res) => res.json())\n    .then((json) => (data.value = json))\n    .catch((err) => (error.value = err))\n\n  return { data, error }\n}",
+            "html": "<pre><code>import { ref } from 'vue'\n\nexport function useFetch(url) {\n  const data = ref(null)\n  const error = ref(null)\n\n  fetch(url)\n    .then((res) =&gt; res.json())\n    .then((json) =&gt; (data.value = json))\n    .catch((err) =&gt; (error.value = err))\n\n  return { data, error }\n}\n</code></pre>"
+        },
+        {
+            "id": "S027",
+            "type": "p",
+            "text": "Now in our component we can just do:",
+            "html": "<p>Now in our component we can just do:</p>"
+        },
+        {
+            "id": "S028",
+            "type": "pre",
+            "text": "<script setup>\nimport { useFetch } from './fetch.js'\n\nconst { data, error } = useFetch('...')\n</script>",
+            "html": "<pre><code>&lt;script setup&gt;\nimport { useFetch } from './fetch.js'\n\nconst { data, error } = useFetch('...')\n&lt;/script&gt;\n</code></pre>"
+        },
+        {
+            "id": "S029",
+            "type": "h3",
+            "text": "Accepting Reactive State {#accepting-reactive-state}",
+            "html": "<h3>Accepting Reactive State {#accepting-reactive-state}</h3>"
+        },
+        {
+            "id": "S030",
+            "type": "p",
+            "text": "useFetch() takes a static URL string as input - so it performs the fetch only once and is then done. What if we want it to re-fetch whenever the URL changes? In order to achieve this, we need to pass reactive state into the composable function, and let the composable create watchers that perform actions using the passed state.",
+            "html": "<p><code>useFetch()</code> takes a static URL string as input - so it performs the fetch only once and is then done. What if we want it to re-fetch whenever the URL changes? In order to achieve this, we need to pass reactive state into the composable function, and let the composable create watchers that perform actions using the passed state.</p>"
+        },
+        {
+            "id": "S031",
+            "type": "p",
+            "text": "For example, useFetch() should be able to accept a ref:",
+            "html": "<p>For example, <code>useFetch()</code> should be able to accept a ref:</p>"
+        },
+        {
+            "id": "S032",
+            "type": "pre",
+            "text": "const url = ref('/initial-url')\n\nconst { data, error } = useFetch(url)\n\n// this should trigger a re-fetch\nurl.value = '/new-url'",
+            "html": "<pre><code>const url = ref('/initial-url')\n\nconst { data, error } = useFetch(url)\n\n// this should trigger a re-fetch\nurl.value = '/new-url'\n</code></pre>"
+        },
+        {
+            "id": "S033",
+            "type": "p",
+            "text": "Or, accept a getter function:",
+            "html": "<p>Or, accept a <a href=\"https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get#description\">getter function</a>:</p>"
+        },
+        {
+            "id": "S034",
+            "type": "pre",
+            "text": "// re-fetch when props.id changes\nconst { data, error } = useFetch(() => `/posts/${props.id}`)",
+            "html": "<pre><code>// re-fetch when props.id changes\nconst { data, error } = useFetch(() =&gt; `/posts/${props.id}`)\n</code></pre>"
+        },
+        {
+            "id": "S035",
+            "type": "p",
+            "text": "We can refactor our existing implementation with the watchEffect() and toValue() APIs:",
+            "html": "<p>We can refactor our existing implementation with the <a href=\"https://github.com/api/reactivity-core.html#watcheffect\"><code>watchEffect()</code></a> and <a href=\"https://github.com/api/reactivity-utilities.html#tovalue\"><code>toValue()</code></a> APIs:</p>"
+        },
+        {
+            "id": "S036",
+            "type": "pre",
+            "text": "import { ref, watchEffect, toValue } from 'vue'\n\nexport function useFetch(url) {\n  const data = ref(null)\n  const error = ref(null)\n\n  const fetchData = () => {\n    // reset state before fetching..\n    data.value = null\n    error.value = null\n\n    fetch(toValue(url))\n      .then((res) => res.json())\n      .then((json) => (data.value = json))\n      .catch((err) => (error.value = err))\n  }\n\n  watchEffect(() => {\n    fetchData()\n  })\n\n  return { data, error }\n}",
+            "html": "<pre><code>import { ref, watchEffect, toValue } from 'vue'\n\nexport function useFetch(url) {\n  const data = ref(null)\n  const error = ref(null)\n\n  const fetchData = () =&gt; {\n    // reset state before fetching..\n    data.value = null\n    error.value = null\n\n    fetch(toValue(url))\n      .then((res) =&gt; res.json())\n      .then((json) =&gt; (data.value = json))\n      .catch((err) =&gt; (error.value = err))\n  }\n\n  watchEffect(() =&gt; {\n    fetchData()\n  })\n\n  return { data, error }\n}\n</code></pre>"
+        },
+        {
+            "id": "S037",
+            "type": "p",
+            "text": "toValue() is an API added in 3.3. It is designed to normalize refs or getters into values. If the argument is a ref, it returns the ref's value; if the argument is a function, it will call the function and return its return value. Otherwise, it returns the argument as-is. It works similarly to unref(), but with special treatment for functions.",
+            "html": "<p><code>toValue()</code> is an API added in 3.3. It is designed to normalize refs or getters into values. If the argument is a ref, it returns the ref's value; if the argument is a function, it will call the function and return its return value. Otherwise, it returns the argument as-is. It works similarly to <a href=\"https://github.com/api/reactivity-utilities.html#unref\"><code>unref()</code></a>, but with special treatment for functions.</p>"
+        },
+        {
+            "id": "S038",
+            "type": "p",
+            "text": "Notice that toValue(url) is called inside the watchEffect callback. This ensures that any reactive dependencies accessed during the toValue() normalization are tracked by the watcher.",
+            "html": "<p>Notice that <code>toValue(url)</code> is called <strong>inside</strong> the <code>watchEffect</code> callback. This ensures that any reactive dependencies accessed during the <code>toValue()</code> normalization are tracked by the watcher.</p>"
+        },
+        {
+            "id": "S039",
+            "type": "p",
+            "text": "This version of useFetch() now accepts static URL strings, refs, and getters, making it much more flexible. The watch effect will run immediately, and will track any dependencies accessed during toValue(url). If no dependencies are tracked (e.g. url is already a string), the effect runs only once; otherwise, it will re-run whenever a tracked dependency changes.",
+            "html": "<p>This version of <code>useFetch()</code> now accepts static URL strings, refs, and getters, making it much more flexible. The watch effect will run immediately, and will track any dependencies accessed during <code>toValue(url)</code>. If no dependencies are tracked (e.g. url is already a string), the effect runs only once; otherwise, it will re-run whenever a tracked dependency changes.</p>"
+        },
+        {
+            "id": "S040",
+            "type": "p",
+            "text": "Here's the updated version of useFetch(), with an artificial delay and randomized error for demo purposes.",
+            "html": "<p>Here's <a href=\"https://play.vuejs.org/#eNp9Vdtu20YQ/ZUpUUA0qpAOjL4YktCbC7Rom8BN8sSHrMihtfZql9iLZEHgv2dml6SpxMiDIWkuZ+acmR2fs1+7rjgEzG6zlaut7Dw49KHbVFruO2M9nMFiu4Ta7LvgsYEeWmv2sKCkxSwoOPwTfb2b/EU5mopHR5GVro12HrbC4UerYA2Lnfeduy3LR2d0p0SNO6MatIU/dbI2DRZUtPSmMa4kgJQuG8qkjvLF28XVaAwRb2wxz69gvZkK/UQ5xUGogBQ/ZpyhEV4sAa01lnpeTwRyApsFWvT2RO6Eea40THBMgfq6NLwlS1/pVZnUJB3ph8c98fNIvwD+MaKBzkQut2xYbYP3RsPhTWvsusokSA0/Vxn8UitZP7GFSX/+8Sz7z1W2OZ9BQt+vypQXS1R+1cgDQciW4iMrimR0wu8270znfoC7SBaJWdAeLTa3QFgxuNijc+IBIy5PPyYOjU19RDEI954/Z/UptKTy6VvqA5XD1AwLTTl/0Aco4s5lV51F5sG+VJJ+v4qxYbmkfiiKYvSvyknPbJnNtoyW+HJpj4Icd22LtV+CN5/ikC4XuNL4HFPaoGsvie3FIqSJp1WIzabl00HxkoyetEVfufhv1kAu3EnX8z0CKEtKofcGzhMb2CItAELL1SPlFMV1pwVj+GROc/vWPoc26oDgdxhfSArlLnbWaBOcOoEzIP3CgbeifqLXLRyICaDBDnVD+3KC7emCSyQ4sifspOx61Hh4Qy/d8BsaOEdkYb1sZS2FoiJKnIC6FbqhsaTVZfk8gDgK6cHLPZowFGUzAQTNWl/BUSrFbzRYHXmSdeAp28RMsI0fyFDaUJg9Spd0SbERZcvZDBRleCPdQMCPh8ARwdRRnBCTjGz5WkT0i0GlSMqixTR6VKyHmmWEHIfV+naSOETyRx8vEYwMv7pa8dJU+hU9Kz2t86ReqjcgaTzCe3oGpEOeD4uyJOcjTXe+obScHwaAi82lo9dC/q/wuyINjrwbuC5uZrS4WAQeyTN9ftOXIVwy537iecoX92kR4q/F1UvqIMsSbq6vo5XF6ekCeEcTauVDFJpuQESvMv53IBXadx3r4KqMrt0w0kwoZY5/R5u3AZejvd5h/fSK/dE9s63K3vN7tQesssnnhX1An9x3//+Hz/R9cu5NExRFf8d5zyIF7jGF/RZ0Q23P4mK3f8XLRmfhg7t79qjdSIobjXLE+Cqju/b7d6i/tHtT3MQ8VrH/Ahstp5A=\">the updated version of <code>useFetch()</code></a>, with an artificial delay and randomized error for demo purposes.</p>"
+        },
+        {
+            "id": "S041",
+            "type": "h2",
+            "text": "Conventions and Best Practices {#conventions-and-best-practices}",
+            "html": "<h2>Conventions and Best Practices {#conventions-and-best-practices}</h2>"
+        },
+        {
+            "id": "S042",
+            "type": "h3",
+            "text": "Naming {#naming}",
+            "html": "<h3>Naming {#naming}</h3>"
+        },
+        {
+            "id": "S043",
+            "type": "p",
+            "text": "It is a convention to name composable functions with camelCase names that start with \"use\".",
+            "html": "<p>It is a convention to name composable functions with camelCase names that start with \"use\".</p>"
+        },
+        {
+            "id": "S044",
+            "type": "h3",
+            "text": "Input Arguments {#input-arguments}",
+            "html": "<h3>Input Arguments {#input-arguments}</h3>"
+        },
+        {
+            "id": "S045",
+            "type": "p",
+            "text": "A composable can accept ref or getter arguments even if it doesn't rely on them for reactivity. If you are writing a composable that may be used by other developers, it's a good idea to handle the case of input arguments being refs or getters instead of raw values. The toValue() utility function will come in handy for this purpose:",
+            "html": "<p>A composable can accept ref or getter arguments even if it doesn't rely on them for reactivity. If you are writing a composable that may be used by other developers, it's a good idea to handle the case of input arguments being refs or getters instead of raw values. The <a href=\"https://github.com/api/reactivity-utilities#tovalue\"><code>toValue()</code></a> utility function will come in handy for this purpose:</p>"
+        },
+        {
+            "id": "S046",
+            "type": "pre",
+            "text": "import { toValue } from 'vue'\n\nfunction useFeature(maybeRefOrGetter) {\n  // If maybeRefOrGetter is a ref or a getter,\n  // its normalized value will be returned.\n  // Otherwise, it is returned as-is.\n  const value = toValue(maybeRefOrGetter)\n}",
+            "html": "<pre><code>import { toValue } from 'vue'\n\nfunction useFeature(maybeRefOrGetter) {\n  // If maybeRefOrGetter is a ref or a getter,\n  // its normalized value will be returned.\n  // Otherwise, it is returned as-is.\n  const value = toValue(maybeRefOrGetter)\n}\n</code></pre>"
+        },
+        {
+            "id": "S047",
+            "type": "p",
+            "text": "If your composable creates reactive effects when the input is a ref or a getter, make sure to either explicitly watch the ref / getter with watch(), or call toValue() inside a watchEffect() so that it is properly tracked.",
+            "html": "<p>If your composable creates reactive effects when the input is a ref or a getter, make sure to either explicitly watch the ref / getter with <code>watch()</code>, or call <code>toValue()</code> inside a <code>watchEffect()</code> so that it is properly tracked.</p>"
+        },
+        {
+            "id": "S048",
+            "type": "p",
+            "text": "The useFetch() implementation discussed earlier provides a concrete example of a composable that accepts refs, getters and plain values as input argument.",
+            "html": "<p>The <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/reusability/composables.md#accepting-reactive-state\">useFetch() implementation discussed earlier</a> provides a concrete example of a composable that accepts refs, getters and plain values as input argument.</p>"
+        },
+        {
+            "id": "S049",
+            "type": "h3",
+            "text": "Return Values {#return-values}",
+            "html": "<h3>Return Values {#return-values}</h3>"
+        },
+        {
+            "id": "S050",
+            "type": "p",
+            "text": "You have probably noticed that we have been exclusively using ref() instead of reactive() in composables. The recommended convention is for composables to always return a plain, non-reactive object containing multiple refs. This allows it to be destructured in components while retaining reactivity:",
+            "html": "<p>You have probably noticed that we have been exclusively using <code>ref()</code> instead of <code>reactive()</code> in composables. The recommended convention is for composables to always return a plain, non-reactive object containing multiple refs. This allows it to be destructured in components while retaining reactivity:</p>"
+        },
+        {
+            "id": "S051",
+            "type": "pre",
+            "text": "// x and y are refs\nconst { x, y } = useMouse()",
+            "html": "<pre><code>// x and y are refs\nconst { x, y } = useMouse()\n</code></pre>"
+        },
+        {
+            "id": "S052",
+            "type": "p",
+            "text": "Returning a reactive object from a composable will cause such destructures to lose the reactivity connection to the state inside the composable, while the refs will retain that connection.",
+            "html": "<p>Returning a reactive object from a composable will cause such destructures to lose the reactivity connection to the state inside the composable, while the refs will retain that connection.</p>"
+        },
+        {
+            "id": "S053",
+            "type": "p",
+            "text": "If you prefer to use returned state from composables as object properties, you can wrap the returned object with reactive() so that the refs are unwrapped. For example:",
+            "html": "<p>If you prefer to use returned state from composables as object properties, you can wrap the returned object with <code>reactive()</code> so that the refs are unwrapped. For example:</p>"
+        },
+        {
+            "id": "S054",
+            "type": "pre",
+            "text": "const mouse = reactive(useMouse())\n// mouse.x is linked to original ref\nconsole.log(mouse.x)",
+            "html": "<pre><code>const mouse = reactive(useMouse())\n// mouse.x is linked to original ref\nconsole.log(mouse.x)\n</code></pre>"
+        },
+        {
+            "id": "S055",
+            "type": "pre",
+            "text": "Mouse position is at: {{ mouse.x }}, {{ mouse.y }}",
+            "html": "<pre><code>Mouse position is at: {{ mouse.x }}, {{ mouse.y }}\n</code></pre>"
+        },
+        {
+            "id": "S056",
+            "type": "h3",
+            "text": "Side Effects {#side-effects}",
+            "html": "<h3>Side Effects {#side-effects}</h3>"
+        },
+        {
+            "id": "S057",
+            "type": "p",
+            "text": "It is OK to perform side effects (e.g. adding DOM event listeners or fetching data) in composables, but pay attention to the following rules:",
+            "html": "<p>It is OK to perform side effects (e.g. adding DOM event listeners or fetching data) in composables, but pay attention to the following rules:</p>"
+        },
+        {
+            "id": "S058",
+            "type": "li",
+            "text": "If you are working on an application that uses Server-Side Rendering (SSR), make sure to perform DOM-specific side effects in post-mount lifecycle hooks, e.g. onMounted(). These hooks are only called in the browser, so you can be sure that code inside them has access to the DOM.",
+            "html": "<li>\n<p>If you are working on an application that uses <a href=\"https://github.com/guide/scaling-up/ssr\">Server-Side Rendering</a> (SSR), make sure to perform DOM-specific side effects in post-mount lifecycle hooks, e.g. <code>onMounted()</code>. These hooks are only called in the browser, so you can be sure that code inside them has access to the DOM.</p>\n</li>"
+        },
+        {
+            "id": "S059",
+            "type": "li",
+            "text": "Remember to clean up side effects in onUnmounted(). For example, if a composable sets up a DOM event listener, it should remove that listener in onUnmounted() as we have seen in the useMouse() example. It can be a good idea to use a composable that automatically does this for you, like the useEventListener() example.",
+            "html": "<li>\n<p>Remember to clean up side effects in <code>onUnmounted()</code>. For example, if a composable sets up a DOM event listener, it should remove that listener in <code>onUnmounted()</code> as we have seen in the <code>useMouse()</code> example. It can be a good idea to use a composable that automatically does this for you, like the <code>useEventListener()</code> example.</p>\n</li>"
+        },
+        {
+            "id": "S060",
+            "type": "h3",
+            "text": "Usage Restrictions {#usage-restrictions}",
+            "html": "<h3>Usage Restrictions {#usage-restrictions}</h3>"
+        },
+        {
+            "id": "S061",
+            "type": "p",
+            "text": "Composables should only be called in <script setup> or the setup() hook. They should also be called synchronously in these contexts. In some cases, you can also call them in lifecycle hooks like onMounted().",
+            "html": "<p>Composables should only be called in <code>&lt;script setup&gt;</code> or the <code>setup()</code> hook. They should also be called <strong>synchronously</strong> in these contexts. In some cases, you can also call them in lifecycle hooks like <code>onMounted()</code>.</p>"
+        },
+        {
+            "id": "S062",
+            "type": "p",
+            "text": "These restrictions are important because these are the contexts where Vue is able to determine the current active component instance. Access to an active component instance is necessary so that:",
+            "html": "<p>These restrictions are important because these are the contexts where Vue is able to determine the current active component instance. Access to an active component instance is necessary so that:</p>"
+        },
+        {
+            "id": "S063",
+            "type": "li",
+            "text": "Lifecycle hooks can be registered to it.",
+            "html": "<li>\n<p>Lifecycle hooks can be registered to it.</p>\n</li>"
+        },
+        {
+            "id": "S064",
+            "type": "li",
+            "text": "Watchers can be linked to it, so that they can be disposed when the instance is unmounted to prevent memory leaks.",
+            "html": "<li>\n<p>Watchers can be linked to it, so that they can be disposed when the instance is unmounted to prevent memory leaks.</p>\n</li>"
+        },
+        {
+            "id": "S065",
+            "type": "p",
+            "text": ":::tip\n<script setup> is the only place where you can call composables after using await. The compiler automatically restores the active instance context for you after the async operation.\n:::",
+            "html": "<p>:::tip\n<code>&lt;script setup&gt;</code> is the only place where you can call composables <strong>after</strong> using <code>await</code>. The compiler automatically restores the active instance context for you after the async operation.\n:::</p>"
+        },
+        {
+            "id": "S066",
+            "type": "h2",
+            "text": "Extracting Composables for Code Organization {#extracting-composables-for-code-organization}",
+            "html": "<h2>Extracting Composables for Code Organization {#extracting-composables-for-code-organization}</h2>"
+        },
+        {
+            "id": "S067",
+            "type": "p",
+            "text": "Composables can be extracted not only for reuse, but also for code organization. As the complexity of your components grows, you may end up with components that are too large to navigate and reason about. Composition API gives you the full flexibility to organize your component code into smaller functions based on logical concerns:",
+            "html": "<p>Composables can be extracted not only for reuse, but also for code organization. As the complexity of your components grows, you may end up with components that are too large to navigate and reason about. Composition API gives you the full flexibility to organize your component code into smaller functions based on logical concerns:</p>"
+        },
+        {
+            "id": "S068",
+            "type": "pre",
+            "text": "<script setup>\nimport { useFeatureA } from './featureA.js'\nimport { useFeatureB } from './featureB.js'\nimport { useFeatureC } from './featureC.js'\n\nconst { foo, bar } = useFeatureA()\nconst { baz } = useFeatureB(foo)\nconst { qux } = useFeatureC(baz)\n</script>",
+            "html": "<pre><code>&lt;script setup&gt;\nimport { useFeatureA } from './featureA.js'\nimport { useFeatureB } from './featureB.js'\nimport { useFeatureC } from './featureC.js'\n\nconst { foo, bar } = useFeatureA()\nconst { baz } = useFeatureB(foo)\nconst { qux } = useFeatureC(baz)\n&lt;/script&gt;\n</code></pre>"
+        },
+        {
+            "id": "S069",
+            "type": "p",
+            "text": "To some extent, you can think of these extracted composables as component-scoped services that can talk to one another.",
+            "html": "<p>To some extent, you can think of these extracted composables as component-scoped services that can talk to one another.</p>"
+        },
+        {
+            "id": "S070",
+            "type": "h2",
+            "text": "Using Composables in Options API {#using-composables-in-options-api}",
+            "html": "<h2>Using Composables in Options API {#using-composables-in-options-api}</h2>"
+        },
+        {
+            "id": "S071",
+            "type": "p",
+            "text": "If you are using Options API, composables must be called inside setup(), and the returned bindings must be returned from setup() so that they are exposed to this and the template:",
+            "html": "<p>If you are using Options API, composables must be called inside <code>setup()</code>, and the returned bindings must be returned from <code>setup()</code> so that they are exposed to <code>this</code> and the template:</p>"
+        },
+        {
+            "id": "S072",
+            "type": "pre",
+            "text": "import { useMouse } from './mouse.js'\nimport { useFetch } from './fetch.js'\n\nexport default {\n  setup() {\n    const { x, y } = useMouse()\n    const { data, error } = useFetch('...')\n    return { x, y, data, error }\n  },\n  mounted() {\n    // setup() exposed properties can be accessed on `this`\n    console.log(this.x)\n  }\n  // ...other options\n}",
+            "html": "<pre><code>import { useMouse } from './mouse.js'\nimport { useFetch } from './fetch.js'\n\nexport default {\n  setup() {\n    const { x, y } = useMouse()\n    const { data, error } = useFetch('...')\n    return { x, y, data, error }\n  },\n  mounted() {\n    // setup() exposed properties can be accessed on `this`\n    console.log(this.x)\n  }\n  // ...other options\n}\n</code></pre>"
+        },
+        {
+            "id": "S073",
+            "type": "h2",
+            "text": "Comparisons with Other Techniques {#comparisons-with-other-techniques}",
+            "html": "<h2>Comparisons with Other Techniques {#comparisons-with-other-techniques}</h2>"
+        },
+        {
+            "id": "S074",
+            "type": "h3",
+            "text": "vs. Mixins {#vs-mixins}",
+            "html": "<h3>vs. Mixins {#vs-mixins}</h3>"
+        },
+        {
+            "id": "S075",
+            "type": "p",
+            "text": "Users coming from Vue 2 may be familiar with the mixins option, which also allows us to extract component logic into reusable units. There are three primary drawbacks to mixins:",
+            "html": "<p>Users coming from Vue 2 may be familiar with the <a href=\"https://github.com/api/options-composition#mixins\">mixins</a> option, which also allows us to extract component logic into reusable units. There are three primary drawbacks to mixins:</p>"
+        },
+        {
+            "id": "S076",
+            "type": "li",
+            "text": "Unclear source of properties: when using many mixins, it becomes unclear which instance property is injected by which mixin, making it difficult to trace the implementation and understand the component's behavior. This is also why we recommend using the refs + destructure pattern for composables: it makes the property source clear in consuming components.",
+            "html": "<li>\n<p><strong>Unclear source of properties</strong>: when using many mixins, it becomes unclear which instance property is injected by which mixin, making it difficult to trace the implementation and understand the component's behavior. This is also why we recommend using the refs + destructure pattern for composables: it makes the property source clear in consuming components.</p>\n</li>"
+        },
+        {
+            "id": "S077",
+            "type": "li",
+            "text": "Namespace collisions: multiple mixins from different authors can potentially register the same property keys, causing namespace collisions. With composables, you can rename the destructured variables if there are conflicting keys from different composables.",
+            "html": "<li>\n<p><strong>Namespace collisions</strong>: multiple mixins from different authors can potentially register the same property keys, causing namespace collisions. With composables, you can rename the destructured variables if there are conflicting keys from different composables.</p>\n</li>"
+        },
+        {
+            "id": "S078",
+            "type": "li",
+            "text": "Implicit cross-mixin communication: multiple mixins that need to interact with one another have to rely on shared property keys, making them implicitly coupled. With composables, values returned from one composable can be passed into another as arguments, just like normal functions.",
+            "html": "<li>\n<p><strong>Implicit cross-mixin communication</strong>: multiple mixins that need to interact with one another have to rely on shared property keys, making them implicitly coupled. With composables, values returned from one composable can be passed into another as arguments, just like normal functions.</p>\n</li>"
+        },
+        {
+            "id": "S079",
+            "type": "p",
+            "text": "For the above reasons, we no longer recommend using mixins in Vue 3. The feature is kept only for migration and familiarity reasons.",
+            "html": "<p>For the above reasons, we no longer recommend using mixins in Vue 3. The feature is kept only for migration and familiarity reasons.</p>"
+        },
+        {
+            "id": "S080",
+            "type": "h3",
+            "text": "vs. Renderless Components {#vs-renderless-components}",
+            "html": "<h3>vs. Renderless Components {#vs-renderless-components}</h3>"
+        },
+        {
+            "id": "S081",
+            "type": "p",
+            "text": "In the component slots chapter, we discussed the Renderless Component pattern based on scoped slots. We even implemented the same mouse tracking demo using renderless components.",
+            "html": "<p>In the component slots chapter, we discussed the <a href=\"https://github.com/guide/components/slots#renderless-components\">Renderless Component</a> pattern based on scoped slots. We even implemented the same mouse tracking demo using renderless components.</p>"
+        },
+        {
+            "id": "S082",
+            "type": "p",
+            "text": "The main advantage of composables over renderless components is that composables do not incur the extra component instance overhead. When used across an entire application, the amount of extra component instances created by the renderless component pattern can become a noticeable performance overhead.",
+            "html": "<p>The main advantage of composables over renderless components is that composables do not incur the extra component instance overhead. When used across an entire application, the amount of extra component instances created by the renderless component pattern can become a noticeable performance overhead.</p>"
+        },
+        {
+            "id": "S083",
+            "type": "p",
+            "text": "The recommendation is to use composables when reusing pure logic, and use components when reusing both logic and visual layout.",
+            "html": "<p>The recommendation is to use composables when reusing pure logic, and use components when reusing both logic and visual layout.</p>"
+        },
+        {
+            "id": "S084",
+            "type": "h3",
+            "text": "vs. React Hooks {#vs-react-hooks}",
+            "html": "<h3>vs. React Hooks {#vs-react-hooks}</h3>"
+        },
+        {
+            "id": "S085",
+            "type": "p",
+            "text": "If you have experience with React, you may notice that this looks very similar to custom React hooks. Composition API was in part inspired by React hooks, and Vue composables are indeed similar to React hooks in terms of logic composition capabilities. However, Vue composables are based on Vue's fine-grained reactivity system, which is fundamentally different from React hooks' execution model. This is discussed in more detail in the Composition API FAQ.",
+            "html": "<p>If you have experience with React, you may notice that this looks very similar to custom React hooks. Composition API was in part inspired by React hooks, and Vue composables are indeed similar to React hooks in terms of logic composition capabilities. However, Vue composables are based on Vue's fine-grained reactivity system, which is fundamentally different from React hooks' execution model. This is discussed in more detail in the <a href=\"https://github.com/guide/extras/composition-api-faq#comparison-with-react-hooks\">Composition API FAQ</a>.</p>"
+        },
+        {
+            "id": "S086",
+            "type": "h2",
+            "text": "Further Reading {#further-reading}",
+            "html": "<h2>Further Reading {#further-reading}</h2>"
+        },
+        {
+            "id": "S087",
+            "type": "li",
+            "text": "Reactivity In Depth: for a low-level understanding of how Vue's reactivity system works.",
+            "html": "<li><a href=\"https://github.com/guide/extras/reactivity-in-depth\">Reactivity In Depth</a>: for a low-level understanding of how Vue's reactivity system works.</li>"
+        },
+        {
+            "id": "S088",
+            "type": "li",
+            "text": "State Management: for patterns of managing state shared by multiple components.",
+            "html": "<li><a href=\"https://github.com/guide/scaling-up/state-management\">State Management</a>: for patterns of managing state shared by multiple components.</li>"
+        },
+        {
+            "id": "S089",
+            "type": "li",
+            "text": "Testing Composables: tips on unit testing composables.",
+            "html": "<li><a href=\"https://github.com/guide/scaling-up/testing#testing-composables\">Testing Composables</a>: tips on unit testing composables.</li>"
+        },
+        {
+            "id": "S090",
+            "type": "li",
+            "text": "VueUse: an ever-growing collection of Vue composables. The source code is also a great learning resource.",
+            "html": "<li><a href=\"https://vueuse.org/\">VueUse</a>: an ever-growing collection of Vue composables. The source code is also a great learning resource.</li>"
+        }
+    ],
+    "source_images": [],
+    "fetched_at": "2026-10-04T17:47:30+00:00",
+    "hash": "fad17ac9729a8e4247f12f3fc825d0bde84fd99e76d6e32443cbea099cb43c23"
+}

@@ -6,8 +6,8 @@ use App\Jobs\ProcessAiImportJob;
 use App\Models\AiImport;
 use App\Models\Post;
 use App\Models\User;
-use App\Services\Ai\ArticleImportService;
-use App\Services\Ai\StructuredAiProvider;
+use App\Services\Ai\Content\ArticleImportService;
+use App\Services\Ai\Providers\Adapters\StructuredAiProvider;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
@@ -17,14 +17,24 @@ use Tests\UsesIsolatedDatabase;
 
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Khóa contract candidate lineage, regenerate và retry.
+ * CHỨC NĂNG FILE: Kiểm regenerate/retry/Apply giữ candidate và provenance.
  * =====================================================================
- *
- * CÁC HÀM/METHOD TRONG FILE: setUp(), tearDown(), token() và các test lifecycle/apply.
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - setUp().
+ * - tearDown().
+ * - token().
+ * - test_regenerate_preserves_original_candidate().
+ * - test_regenerate_selected_field_preserves_unselected_parent_fields().
+ * - test_retry_reuses_failed_run().
+ * - test_apply_candidate_creates_draft_and_provenance().
+ * - test_apply_selected_fields_does_not_overwrite_unselected_fields().
+ * - test_regular_post_create_records_ai_provenance_from_form_metadata().
+ * - test_post_create_accepts_multiple_non_overlapping_ai_runs().
+ * =====================================================================
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
- * - INPUT : run ready/failed thuộc admin.
- * - OUTPUT: candidate mới hoặc retry cùng UUID và provenance apply.
- * - SIDE EFFECT: database SQLite cô lập, queue fake; không gọi provider thật.
+ * - INPUT : fixtures/requests admin, HTTP và Queue fake, database test cô lập.
+ * - OUTPUT: assertions cho contract, snapshot, quyền và lỗi; không gọi AI thật.
+ * - SIDE EFFECT: tạo/sửa dữ liệu trong database test; không chỉnh dữ liệu ứng dụng.
  * =====================================================================
  */
 class AiCandidateApiTest extends TestCase
@@ -34,16 +44,19 @@ class AiCandidateApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Chuẩn bị schema và quyền trong database test cô lập
+
      * =====================================================================
      * INPUT: PHPUnit lifecycle.
      * OUTPUT: Schema test và permission seed.
      * SIDE EFFECT: Tạo database test; không tác động dữ liệu ứng dụng thật.
      * EXCEPTION/TRANSACTION: Chỉ test setup; cleanup trong tearDown.
+
      * =====================================================================
      */
     protected function setUp(): void
     {
         parent::setUp();
+        config()->set('queue.default', 'database');
         $this->useIsolatedDatabase();
         $this->seed(RolePermissionSeeder::class);
     }
@@ -51,11 +64,13 @@ class AiCandidateApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Giải phóng tài nguyên database sau test
+
      * =====================================================================
      * INPUT: PHPUnit lifecycle.
      * OUTPUT: Database connection/test schema được dọn.
      * SIDE EFFECT: Dọn database test cô lập rồi gọi parent teardown.
      * EXCEPTION/TRANSACTION: Chỉ test cleanup; không tác động production.
+
      * =====================================================================
      */
     protected function tearDown(): void
@@ -67,11 +82,13 @@ class AiCandidateApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Tạo admin token có posts.manage cho test candidate
+
      * =====================================================================
      * INPUT: Fixture user active.
      * OUTPUT: Personal token chỉ dùng trong test.
      * SIDE EFFECT: Ghi user/permission/token trong DB test và xóa permission cache.
      * EXCEPTION/TRANSACTION: Không gọi AI thật; DB test được dọn sau test.
+
      * =====================================================================
      */
     private function token(): string
@@ -87,11 +104,13 @@ class AiCandidateApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng regenerate không ghi đè candidate gốc
+
      * =====================================================================
      * INPUT: Run ready thuộc actor và instructions override.
      * OUTPUT: Child run cùng session; result của parent không đổi.
      * SIDE EFFECT: Gọi API nội bộ/Queue fake và ghi run trong DB test.
      * EXCEPTION/TRANSACTION: Không gọi AI thật; DB test được dọn sau test.
+
      * =====================================================================
      */
     public function test_regenerate_preserves_original_candidate(): void
@@ -102,7 +121,7 @@ class AiCandidateApiTest extends TestCase
         $original = AiImport::query()->firstOrFail();
         $original->update(['status' => 'ready', 'result_json' => ['draft' => ['title' => 'A']]]);
 
-        $response = $this->withToken($token)->postJson('/api/admin/posts/ai/import/'.$original->id.'/regenerate', ['instructions' => 'Giữ nguyên code.']);
+        $response = $this->withToken($token)->postJson('/api/admin/posts/ai/import/'.$original->id.'/regenerate', ['instructions' => 'Giữ nguyên code.', 'refresh_source' => true]);
         $response->assertStatus(202)->assertJsonPath('data.operation', 'regenerate');
         $child = AiImport::query()->whereKey($response->json('data.job_id'))->firstOrFail();
         $this->assertSame($original->id, $child->parent_id);
@@ -115,11 +134,13 @@ class AiCandidateApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng chỉ field được chọn bị thay khi regenerate
+
      * =====================================================================
      * INPUT: Parent ready và source HTML từ HTTP fake; chỉ chọn title.
      * OUTPUT: Title mới, content giữ theo parent, result parent không đổi.
      * SIDE EFFECT: Child run đọc source qua HTTP fake; dùng deterministic provider.
      * EXCEPTION/TRANSACTION: Không gọi AI thật; DB test được dọn sau test.
+
      * =====================================================================
      */
     public function test_regenerate_selected_field_preserves_unselected_parent_fields(): void
@@ -151,6 +172,7 @@ class AiCandidateApiTest extends TestCase
 
         $response = $this->withToken($token)->postJson('/api/admin/posts/ai/import/'.$parent->id.'/regenerate', [
             'fields' => ['title'],
+            'refresh_source' => true,
         ])->assertStatus(202);
         $child = AiImport::query()->findOrFail($response->json('data.job_id'));
         $result = (new ArticleImportService(new StructuredAiProvider))->run($child);
@@ -164,11 +186,13 @@ class AiCandidateApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm chứng retry kỹ thuật giữ nguyên run UUID
+
      * =====================================================================
      * INPUT: Run failed và Queue fake.
      * OUTPUT: Một run duy nhất được requeue; không tạo candidate trùng.
      * SIDE EFFECT: Gọi API nội bộ và cập nhật run trong DB test.
      * EXCEPTION/TRANSACTION: Không gọi AI thật; DB test được dọn sau test.
+
      * =====================================================================
      */
     public function test_retry_reuses_failed_run(): void
@@ -187,11 +211,13 @@ class AiCandidateApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Áp dụng candidate vào Post draft và ghi provenance
+
      * =====================================================================
      * INPUT: candidate ready có title/content và field selection.
      * OUTPUT: Post draft mới cùng provenance theo field.
      * SIDE EFFECT: transaction tạo Post, SEO/taxonomy và audit provenance.
      * EXCEPTION/TRANSACTION: rollback toàn bộ khi payload hoặc candidate không hợp lệ.
+
      * =====================================================================
      */
     public function test_apply_candidate_creates_draft_and_provenance(): void
@@ -230,11 +256,13 @@ class AiCandidateApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Áp dụng field title mà không ghi đè content hiện có
+
      * =====================================================================
      * INPUT: Post hiện có, candidate ready và chỉ chọn field title.
      * OUTPUT: title đổi, content cũ giữ nguyên; provenance chỉ ghi field đã chọn.
      * SIDE EFFECT: update Post trong transaction và không tạo slug từ client.
      * EXCEPTION/TRANSACTION: rollback nếu candidate/field không hợp lệ.
+
      * =====================================================================
      */
     public function test_apply_selected_fields_does_not_overwrite_unselected_fields(): void
@@ -280,11 +308,13 @@ class AiCandidateApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Giữ provenance khi candidate được merge vào PostForm
+
      * =====================================================================
      * INPUT: Post create payload có ai_run_id/ai_fields từ form frontend.
      * OUTPUT: Post được lưu và audit lineage lấy metadata server-side.
      * SIDE EFFECT: tạo Post, provenance và cập nhật applied metadata của run.
      * EXCEPTION/TRANSACTION: candidate sai ownership/status phải rollback create.
+
      * =====================================================================
      */
     public function test_regular_post_create_records_ai_provenance_from_form_metadata(): void
@@ -337,11 +367,13 @@ class AiCandidateApiTest extends TestCase
     /**
      * =====================================================================
      * CHỨC NĂNG: Giữ lineage content và thumbnail từ hai run riêng
+
      * =====================================================================
      * INPUT: hai run ready cùng actor và ai_runs không overlap field.
      * OUTPUT: một Post có provenance đúng owner theo field.
      * SIDE EFFECT: tạo post/audit trong transaction; không gọi provider thật.
      * EXCEPTION/TRANSACTION: overlap hoặc image asset mismatch bị rollback.
+
      * =====================================================================
      */
     public function test_post_create_accepts_multiple_non_overlapping_ai_runs(): void

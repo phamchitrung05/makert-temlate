@@ -13,12 +13,16 @@ declare global {
   const activeAiLineage: typeof import('./resources/js/composables/aiCandidate.js')['activeAiLineage']
   const alphaDashValidator: typeof import('./resources/js/@core/utils/validators.js')['alphaDashValidator']
   const alphaValidator: typeof import('./resources/js/@core/utils/validators.js')['alphaValidator']
+  const analysisReport: typeof import('./resources/js/utils/aiWritingProfile.js')['analysisReport']
   const analyzeContent: typeof import('./resources/js/composables/seoMetadata.js')['analyzeContent']
   const analyzeSeo: typeof import('./resources/js/composables/seoMetadata.js')['analyzeSeo']
+  const articleRequestBody: typeof import('./resources/js/utils/aiArticleOptions.js')['articleRequestBody']
+  const articleSourcePayload: typeof import('./resources/js/utils/aiArticleOptions.js')['articleSourcePayload']
   const asyncComputed: typeof import('@vueuse/core')['asyncComputed']
   const autoResetRef: typeof import('@vueuse/core')['autoResetRef']
   const avatarText: typeof import('./resources/js/@core/utils/formatters.js')['avatarText']
   const betweenValidator: typeof import('./resources/js/@core/utils/validators.js')['betweenValidator']
+  const briefFields: typeof import('./resources/js/utils/aiArticleOptions.js')['briefFields']
   const buildAiContentRegenerateRequest: typeof import('./resources/js/utils/aiContentInput.js')['buildAiContentRegenerateRequest']
   const buildAiContentRequest: typeof import('./resources/js/utils/aiContentInput.js')['buildAiContentRequest']
   const buildContentUrl: typeof import('./resources/js/composables/seoMetadata.js')['buildContentUrl']
@@ -55,6 +59,8 @@ declare global {
   const eagerComputed: typeof import('@vueuse/core')['eagerComputed']
   const effectScope: typeof import('vue')['effectScope']
   const emailValidator: typeof import('./resources/js/@core/utils/validators.js')['emailValidator']
+  const emptyProfileForm: typeof import('./resources/js/utils/aiWritingProfile.js')['emptyProfileForm']
+  const emptyWritingPreferences: typeof import('./resources/js/utils/aiArticleOptions.js')['emptyWritingPreferences']
   const extendRef: typeof import('@vueuse/core')['extendRef']
   const extractHtmlText: typeof import('./resources/js/utils/aiContentInput.js')['extractHtmlText']
   const findProvider: typeof import('./resources/js/utils/aiModelOptions.js')['findProvider']
@@ -66,10 +72,13 @@ declare global {
   const getCurrentInstance: typeof import('vue')['getCurrentInstance']
   const getCurrentScope: typeof import('vue')['getCurrentScope']
   const h: typeof import('vue')['h']
+  const hasTemporaryImages: typeof import('./resources/js/utils/inlineMedia.js')['hasTemporaryImages']
   const hexToRgb: typeof import('./resources/js/@core/utils/colorConverter.js')['hexToRgb']
   const ignorableWatch: typeof import('@vueuse/core')['ignorableWatch']
   const inject: typeof import('vue')['inject']
   const injectLocal: typeof import('@vueuse/core')['injectLocal']
+  const inlineAssetUrl: typeof import('./resources/js/utils/inlineMedia.js')['inlineAssetUrl']
+  const inlineImageHtml: typeof import('./resources/js/utils/inlineMedia.js')['inlineImageHtml']
   const integerValidator: typeof import('./resources/js/@core/utils/validators.js')['integerValidator']
   const isAiSuccess: typeof import('./resources/js/utils/aiErrors.js')['isAiSuccess']
   const isDefined: typeof import('@vueuse/core')['isDefined']
@@ -122,7 +131,12 @@ declare global {
   const paginationMeta: typeof import('./resources/js/utils/paginationMeta.js')['paginationMeta']
   const passwordValidator: typeof import('./resources/js/@core/utils/validators.js')['passwordValidator']
   const pausableWatch: typeof import('@vueuse/core')['pausableWatch']
+  const pipelineProgress: typeof import('./resources/js/utils/aiArticleOptions.js')['pipelineProgress']
+  const pipelineStages: typeof import('./resources/js/utils/aiArticleOptions.js')['pipelineStages']
+  const pipelineStepLabel: typeof import('./resources/js/utils/aiArticleOptions.js')['pipelineStepLabel']
   const prefixWithPlus: typeof import('./resources/js/@core/utils/formatters.js')['prefixWithPlus']
+  const profilePayload: typeof import('./resources/js/utils/aiWritingProfile.js')['profilePayload']
+  const profileToForm: typeof import('./resources/js/utils/aiWritingProfile.js')['profileToForm']
   const provide: typeof import('vue')['provide']
   const provideLocal: typeof import('@vueuse/core')['provideLocal']
   const providerModels: typeof import('./resources/js/utils/aiModelOptions.js')['providerModels']
@@ -139,6 +153,7 @@ declare global {
   const refDefault: typeof import('@vueuse/core')['refDefault']
   const refThrottled: typeof import('@vueuse/core')['refThrottled']
   const refWithControl: typeof import('@vueuse/core')['refWithControl']
+  const referenceText: typeof import('./resources/js/utils/aiWritingProfile.js')['referenceText']
   const regexValidator: typeof import('./resources/js/@core/utils/validators.js')['regexValidator']
   const registerPlugins: typeof import('./resources/js/@core/utils/plugins.js')['registerPlugins']
   const requiredValidator: typeof import('./resources/js/@core/utils/validators.js')['requiredValidator']
@@ -146,6 +161,7 @@ declare global {
   const resolveRef: typeof import('@vueuse/core')['resolveRef']
   const resolveUnref: typeof import('@vueuse/core')['resolveUnref']
   const resolveVuetifyTheme: typeof import('./resources/js/@core/utils/vuetify.js')['resolveVuetifyTheme']
+  const resultToForm: typeof import('./resources/js/utils/aiWritingProfile.js')['resultToForm']
   const rgbaToHex: typeof import('./resources/js/@core/utils/colorConverter.js')['rgbaToHex']
   const setActivePinia: typeof import('pinia')['setActivePinia']
   const setMapStoreSuffix: typeof import('pinia')['setMapStoreSuffix']
@@ -298,6 +314,7 @@ declare global {
   const usePointer: typeof import('@vueuse/core')['usePointer']
   const usePointerLock: typeof import('@vueuse/core')['usePointerLock']
   const usePointerSwipe: typeof import('@vueuse/core')['usePointerSwipe']
+  const usePostInlineMedia: typeof import('./resources/js/composables/usePostInlineMedia.js')['usePostInlineMedia']
   const usePrecision: typeof import('@vueuse/math')['usePrecision']
   const usePreferredColorScheme: typeof import('@vueuse/core')['usePreferredColorScheme']
   const usePreferredContrast: typeof import('@vueuse/core')['usePreferredContrast']
@@ -367,6 +384,7 @@ declare global {
   const useWindowScroll: typeof import('@vueuse/core')['useWindowScroll']
   const useWindowSize: typeof import('@vueuse/core')['useWindowSize']
   const validateAiContentSource: typeof import('./resources/js/utils/aiContentInput.js')['validateAiContentSource']
+  const validateProfileForm: typeof import('./resources/js/utils/aiWritingProfile.js')['validateProfileForm']
   const watch: typeof import('vue')['watch']
   const watchArray: typeof import('@vueuse/core')['watchArray']
   const watchAtMost: typeof import('@vueuse/core')['watchAtMost']
@@ -383,7 +401,10 @@ declare global {
   const watchTriggerable: typeof import('@vueuse/core')['watchTriggerable']
   const watchWithFilter: typeof import('@vueuse/core')['watchWithFilter']
   const whenever: typeof import('@vueuse/core')['whenever']
+  const withoutAiTaxonomyOutputs: typeof import('./resources/js/utils/aiContentInput.js')['withoutAiTaxonomyOutputs']
   const wordsOf: typeof import('./resources/js/composables/seoMetadata.js')['wordsOf']
+  const writingOptions: typeof import('./resources/js/utils/aiArticleOptions.js')['writingOptions']
+  const writingRuleLabels: typeof import('./resources/js/utils/aiWritingProfile.js')['writingRuleLabels']
 }
 // for type re-export
 declare global {
@@ -404,12 +425,16 @@ declare module 'vue' {
     readonly activeAiLineage: UnwrapRef<typeof import('./resources/js/composables/aiCandidate.js')['activeAiLineage']>
     readonly alphaDashValidator: UnwrapRef<typeof import('./resources/js/@core/utils/validators.js')['alphaDashValidator']>
     readonly alphaValidator: UnwrapRef<typeof import('./resources/js/@core/utils/validators.js')['alphaValidator']>
+    readonly analysisReport: UnwrapRef<typeof import('./resources/js/utils/aiWritingProfile.js')['analysisReport']>
     readonly analyzeContent: UnwrapRef<typeof import('./resources/js/composables/seoMetadata.js')['analyzeContent']>
     readonly analyzeSeo: UnwrapRef<typeof import('./resources/js/composables/seoMetadata.js')['analyzeSeo']>
+    readonly articleRequestBody: UnwrapRef<typeof import('./resources/js/utils/aiArticleOptions.js')['articleRequestBody']>
+    readonly articleSourcePayload: UnwrapRef<typeof import('./resources/js/utils/aiArticleOptions.js')['articleSourcePayload']>
     readonly asyncComputed: UnwrapRef<typeof import('@vueuse/core')['asyncComputed']>
     readonly autoResetRef: UnwrapRef<typeof import('@vueuse/core')['autoResetRef']>
     readonly avatarText: UnwrapRef<typeof import('./resources/js/@core/utils/formatters.js')['avatarText']>
     readonly betweenValidator: UnwrapRef<typeof import('./resources/js/@core/utils/validators.js')['betweenValidator']>
+    readonly briefFields: UnwrapRef<typeof import('./resources/js/utils/aiArticleOptions.js')['briefFields']>
     readonly buildAiContentRegenerateRequest: UnwrapRef<typeof import('./resources/js/utils/aiContentInput.js')['buildAiContentRegenerateRequest']>
     readonly buildAiContentRequest: UnwrapRef<typeof import('./resources/js/utils/aiContentInput.js')['buildAiContentRequest']>
     readonly buildContentUrl: UnwrapRef<typeof import('./resources/js/composables/seoMetadata.js')['buildContentUrl']>
@@ -446,6 +471,8 @@ declare module 'vue' {
     readonly eagerComputed: UnwrapRef<typeof import('@vueuse/core')['eagerComputed']>
     readonly effectScope: UnwrapRef<typeof import('vue')['effectScope']>
     readonly emailValidator: UnwrapRef<typeof import('./resources/js/@core/utils/validators.js')['emailValidator']>
+    readonly emptyProfileForm: UnwrapRef<typeof import('./resources/js/utils/aiWritingProfile.js')['emptyProfileForm']>
+    readonly emptyWritingPreferences: UnwrapRef<typeof import('./resources/js/utils/aiArticleOptions.js')['emptyWritingPreferences']>
     readonly extendRef: UnwrapRef<typeof import('@vueuse/core')['extendRef']>
     readonly extractHtmlText: UnwrapRef<typeof import('./resources/js/utils/aiContentInput.js')['extractHtmlText']>
     readonly findProvider: UnwrapRef<typeof import('./resources/js/utils/aiModelOptions.js')['findProvider']>
@@ -457,10 +484,13 @@ declare module 'vue' {
     readonly getCurrentInstance: UnwrapRef<typeof import('vue')['getCurrentInstance']>
     readonly getCurrentScope: UnwrapRef<typeof import('vue')['getCurrentScope']>
     readonly h: UnwrapRef<typeof import('vue')['h']>
+    readonly hasTemporaryImages: UnwrapRef<typeof import('./resources/js/utils/inlineMedia.js')['hasTemporaryImages']>
     readonly hexToRgb: UnwrapRef<typeof import('./resources/js/@core/utils/colorConverter.js')['hexToRgb']>
     readonly ignorableWatch: UnwrapRef<typeof import('@vueuse/core')['ignorableWatch']>
     readonly inject: UnwrapRef<typeof import('vue')['inject']>
     readonly injectLocal: UnwrapRef<typeof import('@vueuse/core')['injectLocal']>
+    readonly inlineAssetUrl: UnwrapRef<typeof import('./resources/js/utils/inlineMedia.js')['inlineAssetUrl']>
+    readonly inlineImageHtml: UnwrapRef<typeof import('./resources/js/utils/inlineMedia.js')['inlineImageHtml']>
     readonly integerValidator: UnwrapRef<typeof import('./resources/js/@core/utils/validators.js')['integerValidator']>
     readonly isAiSuccess: UnwrapRef<typeof import('./resources/js/utils/aiErrors.js')['isAiSuccess']>
     readonly isDefined: UnwrapRef<typeof import('@vueuse/core')['isDefined']>
@@ -513,7 +543,12 @@ declare module 'vue' {
     readonly paginationMeta: UnwrapRef<typeof import('./resources/js/utils/paginationMeta.js')['paginationMeta']>
     readonly passwordValidator: UnwrapRef<typeof import('./resources/js/@core/utils/validators.js')['passwordValidator']>
     readonly pausableWatch: UnwrapRef<typeof import('@vueuse/core')['pausableWatch']>
+    readonly pipelineProgress: UnwrapRef<typeof import('./resources/js/utils/aiArticleOptions.js')['pipelineProgress']>
+    readonly pipelineStages: UnwrapRef<typeof import('./resources/js/utils/aiArticleOptions.js')['pipelineStages']>
+    readonly pipelineStepLabel: UnwrapRef<typeof import('./resources/js/utils/aiArticleOptions.js')['pipelineStepLabel']>
     readonly prefixWithPlus: UnwrapRef<typeof import('./resources/js/@core/utils/formatters.js')['prefixWithPlus']>
+    readonly profilePayload: UnwrapRef<typeof import('./resources/js/utils/aiWritingProfile.js')['profilePayload']>
+    readonly profileToForm: UnwrapRef<typeof import('./resources/js/utils/aiWritingProfile.js')['profileToForm']>
     readonly provide: UnwrapRef<typeof import('vue')['provide']>
     readonly provideLocal: UnwrapRef<typeof import('@vueuse/core')['provideLocal']>
     readonly providerModels: UnwrapRef<typeof import('./resources/js/utils/aiModelOptions.js')['providerModels']>
@@ -530,6 +565,7 @@ declare module 'vue' {
     readonly refDefault: UnwrapRef<typeof import('@vueuse/core')['refDefault']>
     readonly refThrottled: UnwrapRef<typeof import('@vueuse/core')['refThrottled']>
     readonly refWithControl: UnwrapRef<typeof import('@vueuse/core')['refWithControl']>
+    readonly referenceText: UnwrapRef<typeof import('./resources/js/utils/aiWritingProfile.js')['referenceText']>
     readonly regexValidator: UnwrapRef<typeof import('./resources/js/@core/utils/validators.js')['regexValidator']>
     readonly registerPlugins: UnwrapRef<typeof import('./resources/js/@core/utils/plugins.js')['registerPlugins']>
     readonly requiredValidator: UnwrapRef<typeof import('./resources/js/@core/utils/validators.js')['requiredValidator']>
@@ -537,6 +573,7 @@ declare module 'vue' {
     readonly resolveRef: UnwrapRef<typeof import('@vueuse/core')['resolveRef']>
     readonly resolveUnref: UnwrapRef<typeof import('@vueuse/core')['resolveUnref']>
     readonly resolveVuetifyTheme: UnwrapRef<typeof import('./resources/js/@core/utils/vuetify.js')['resolveVuetifyTheme']>
+    readonly resultToForm: UnwrapRef<typeof import('./resources/js/utils/aiWritingProfile.js')['resultToForm']>
     readonly rgbaToHex: UnwrapRef<typeof import('./resources/js/@core/utils/colorConverter.js')['rgbaToHex']>
     readonly setActivePinia: UnwrapRef<typeof import('pinia')['setActivePinia']>
     readonly setMapStoreSuffix: UnwrapRef<typeof import('pinia')['setMapStoreSuffix']>
@@ -689,6 +726,7 @@ declare module 'vue' {
     readonly usePointer: UnwrapRef<typeof import('@vueuse/core')['usePointer']>
     readonly usePointerLock: UnwrapRef<typeof import('@vueuse/core')['usePointerLock']>
     readonly usePointerSwipe: UnwrapRef<typeof import('@vueuse/core')['usePointerSwipe']>
+    readonly usePostInlineMedia: UnwrapRef<typeof import('./resources/js/composables/usePostInlineMedia.js')['usePostInlineMedia']>
     readonly usePrecision: UnwrapRef<typeof import('@vueuse/math')['usePrecision']>
     readonly usePreferredColorScheme: UnwrapRef<typeof import('@vueuse/core')['usePreferredColorScheme']>
     readonly usePreferredContrast: UnwrapRef<typeof import('@vueuse/core')['usePreferredContrast']>
@@ -758,6 +796,7 @@ declare module 'vue' {
     readonly useWindowScroll: UnwrapRef<typeof import('@vueuse/core')['useWindowScroll']>
     readonly useWindowSize: UnwrapRef<typeof import('@vueuse/core')['useWindowSize']>
     readonly validateAiContentSource: UnwrapRef<typeof import('./resources/js/utils/aiContentInput.js')['validateAiContentSource']>
+    readonly validateProfileForm: UnwrapRef<typeof import('./resources/js/utils/aiWritingProfile.js')['validateProfileForm']>
     readonly watch: UnwrapRef<typeof import('vue')['watch']>
     readonly watchArray: UnwrapRef<typeof import('@vueuse/core')['watchArray']>
     readonly watchAtMost: UnwrapRef<typeof import('@vueuse/core')['watchAtMost']>
@@ -774,6 +813,9 @@ declare module 'vue' {
     readonly watchTriggerable: UnwrapRef<typeof import('@vueuse/core')['watchTriggerable']>
     readonly watchWithFilter: UnwrapRef<typeof import('@vueuse/core')['watchWithFilter']>
     readonly whenever: UnwrapRef<typeof import('@vueuse/core')['whenever']>
+    readonly withoutAiTaxonomyOutputs: UnwrapRef<typeof import('./resources/js/utils/aiContentInput.js')['withoutAiTaxonomyOutputs']>
     readonly wordsOf: UnwrapRef<typeof import('./resources/js/composables/seoMetadata.js')['wordsOf']>
+    readonly writingOptions: UnwrapRef<typeof import('./resources/js/utils/aiArticleOptions.js')['writingOptions']>
+    readonly writingRuleLabels: UnwrapRef<typeof import('./resources/js/utils/aiWritingProfile.js')['writingRuleLabels']>
   }
 }

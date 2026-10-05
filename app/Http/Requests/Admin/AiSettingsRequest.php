@@ -9,6 +9,7 @@ use Illuminate\Foundation\Http\FormRequest;
  * CHỨC NĂNG FILE: Validate setting AI typed; model compatibility được service kiểm tra.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE: authorize(), rules().
+ * INPUT/OUTPUT CỦA CLASS (tổng thể): settings typed được validate, không nhận secrets.
  * INPUT: settings IDs và tuning từ HTTP request.
  * OUTPUT: validation rules typed; compatibility model được service kiểm tra lại.
  * SIDE EFFECT: Không ghi database hoặc gọi provider.
@@ -47,6 +48,7 @@ final class AiSettingsRequest extends FormRequest
         return [
             'default_text_model_id' => ['nullable', 'integer', 'min:1'],
             'default_image_model_id' => ['nullable', 'integer', 'min:1'],
+            'default_writing_profile_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'fallback_text_model_id' => ['nullable', 'integer', 'min:1'],
             'fallback_image_model_id' => ['nullable', 'integer', 'min:1'],
             'default_temperature' => ['nullable', 'numeric', 'min:0', 'max:2'],

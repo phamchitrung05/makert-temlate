@@ -4,8 +4,9 @@ namespace App\Actions\Posts;
 
 use App\Models\Post;
 use App\Models\User;
-use App\Services\Ai\AiProvenanceService;
+use App\Services\Ai\Provenance\AiProvenanceService;
 use App\Services\MediaAssetUsageService;
+use App\Services\Media\ContentMediaReferenceService;
 use App\Services\SeoMetadataService;
 use Illuminate\Support\Facades\DB;
 
@@ -17,7 +18,7 @@ use Illuminate\Support\Facades\DB;
  * trong transaction. Slug được model/domain service quyết định sau save.
  *
  * CÁC HÀM/METHOD TRONG FILE:
- * - __construct(): nhận service media và SEO.
+ * - __construct(): nhận service media, SEO, lineage và validator ảnh inline.
  * - handle(): khóa, cập nhật và eager load Post sau transaction.
  * - syncSeo(): ghi metadata SEO partial qua service domain.
  * - provenanceValues()/recordProvenance(): ghi lineage AI theo field đã chọn.
@@ -33,7 +34,7 @@ class UpdatePostAction
      * =====================================================================
      * CHỨC NĂNG: Nhận service media, SEO và lineage AI từ container.
      * =====================================================================
-     * INPUT: MediaAssetUsageService, SeoMetadataService và AiProvenanceService.
+     * INPUT: MediaAssetUsageService, SeoMetadataService, AiProvenanceService và ContentMediaReferenceService.
      * OUTPUT: action sẵn sàng xử lý.
      * SIDE EFFECT: không gọi database khi khởi tạo.
      * EXCEPTION/TRANSACTION: không có; không mở transaction.
@@ -43,13 +44,14 @@ class UpdatePostAction
         private readonly MediaAssetUsageService $mediaAssetUsageService,
         private readonly SeoMetadataService $seoMetadataService,
         private readonly AiProvenanceService $aiProvenanceService,
+        private readonly ContentMediaReferenceService $contentMediaReferenceService,
     ) {}
 
     /**
      * =====================================================================
      * CHỨC NĂNG: Cập nhật Post và quan hệ trong transaction có row lock.
      * =====================================================================
-     * INPUT: Post, attributes hợp lệ và admin ID.
+     * INPUT: Post, attributes hợp lệ và admin ID; content được gửi quyết định ảnh usage thực tế.
      * OUTPUT: Post fresh cùng slug/SEO/taxonomy/media.
      * SIDE EFFECT: ghi Post, SEO, taxonomy, media usage và lineage AI.
      * EXCEPTION/TRANSACTION: rollback khi boundary thất bại; retry deadlock tối đa 5 lần.
@@ -66,6 +68,10 @@ class UpdatePostAction
              */
             $post = Post::query()->whereKey($post->getKey())->lockForUpdate()->firstOrFail();
             $media = (array) ($attributes['media'] ?? []);
+            // INPUT: content nếu được cập nhật. OUTPUT: usage đúng HTML; partial update giữ usage cũ.
+            if (array_key_exists('content', $attributes)) {
+                $media['content_image_ids'] = $this->contentMediaReferenceService->validate((string) ($attributes['content'] ?? ''), User::findOrFail($actorId));
+            }
             $taxonomy = array_map(static fn ($ids): array => (array) $ids,
                 array_intersect_key($attributes, array_flip(['category_ids', 'tag_ids'])));
             $aiRunId = $attributes['ai_run_id'] ?? null;

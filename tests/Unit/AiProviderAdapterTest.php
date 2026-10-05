@@ -3,8 +3,8 @@
 namespace Tests\Unit;
 
 use App\Exceptions\AiImportException;
-use App\Services\Ai\GeminiProvider;
-use App\Services\Ai\OpenAiProvider;
+use App\Services\Ai\Providers\Adapters\GeminiProvider;
+use App\Services\Ai\Providers\Adapters\OpenAiProvider;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
@@ -12,32 +12,29 @@ use Tests\TestCase;
 
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Kiểm thử transport và structured output của provider AI.
+ * CHỨC NĂNG FILE: Regression HTTP adapter OpenAI/Gemini với provider responses giả lập.
  * =====================================================================
- *
- * Test dùng Http::fake để bảo đảm provider không gọi mạng trong suite mặc
- * định, đồng thời khóa contract model/provenance và schema canonical.
- *
  * CÁC HÀM/METHOD TRONG FILE:
- * - test_openai_provider_maps_chat_json_output(): kiểm tra OpenAI response.
- * - test_gemini_provider_maps_generate_content_output(): kiểm tra Gemini response.
- * - test_provider_rejects_malformed_json(): khóa lỗi structured output.
- * - test_provider_normalizes_connection_timeout(): khóa lỗi retry timeout.
- * - test_provider_rejects_refusal_response(): khóa refusal không retry.
- * - test_provider_marks_quota_error_as_retryable(): khóa HTTP 429 retry.
- * - test_null_optional_fields_are_omitted_but_incorrect_types_are_rejected(): JSON contract.
- *
+ * - test_null_optional_fields_are_omitted_but_incorrect_types_are_rejected().
+ * - test_openai_provider_maps_chat_json_output().
+ * - test_gemini_provider_maps_generate_content_output().
+ * - test_provider_rejects_malformed_json().
+ * - test_provider_normalizes_connection_timeout().
+ * - test_provider_rejects_refusal_response().
+ * - test_provider_marks_quota_error_as_retryable().
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
- * - INPUT : fake HTTP response và config provider.
- * - OUTPUT: canonical field được validate; không ghi domain database.
+ * - INPUT : fixtures source/JSON và cấu hình test đã cô lập.
+ * - OUTPUT: assertions contract; không gọi AI thật hoặc ghi database development.
  * =====================================================================
  */
 class AiProviderAdapterTest extends TestCase
 {
     /**
-     * Input: Provider trả field tùy chọn null hoặc text field kiểu object.
-     * Output: null dùng source fallback; object không bị ép chuỗi hoặc đưa vào Post.
-     * Side effect: HTTP fake; không gọi AI thật.
+     * =====================================================================
+     * INPUT: Fixture nguồn/output/cấu hình và dependencies fake của ca này.
+     * OUTPUT: Assertions contract/hành vi mong đợi; không gọi API AI thật.
+     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * =====================================================================
      */
     public function test_null_optional_fields_are_omitted_but_incorrect_types_are_rejected(): void
     {
@@ -47,7 +44,7 @@ class AiProviderAdapterTest extends TestCase
             ->push(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => json_encode(['title' => 'Title', 'content_html' => '<p>Content</p>', 'canonical_url' => null, 'thumbnail_prompt' => null, 'robots_index' => false, 'suggested_category_ids' => []])]]]])
             ->push(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => json_encode(['title' => ['value' => 'Title'], 'content_html' => '<p>Content</p>'])]]]]),
         ]);
-        $this->assertSame(['title' => 'Title', 'content_html' => '<p>Content</p>', 'robots_index' => false, 'suggested_category_ids' => [], 'content' => '<p>Content</p>'], (new OpenAiProvider)->generate('Nguồn', '<p>Gốc</p>'));
+        $this->assertSame(['title' => 'Title', 'content_html' => '<p>Content</p>', 'robots_index' => false, 'content' => '<p>Content</p>'], (new OpenAiProvider)->generate('Nguồn', '<p>Gốc</p>'));
         Http::assertSent(fn ($request): bool => str_contains($request['messages'][0]['content'], 'flat JSON object'));
         try {
             (new OpenAiProvider)->generate('Nguồn', '<p>Gốc</p>');

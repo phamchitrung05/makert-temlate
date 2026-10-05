@@ -8,7 +8,8 @@ use App\Models\AiImport;
 use App\Models\AiProvider;
 use App\Models\MediaAsset;
 use App\Models\User;
-use App\Services\Ai\ArticleImportService;
+use App\Services\Ai\Content\ArticleImportService;
+use App\Services\Ai\Content\ArticleSourceExtractor;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +20,34 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 use Tests\UsesIsolatedDatabase;
 
-/** The real queued pipeline must validate AI output before exposing a ready candidate. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Regression queue baseline một lượt và lifecycle validation candidate.
+ * =====================================================================
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - setUp().
+ * - tearDown().
+ * - test_missing_or_blank_selected_output_fails_without_source_fallback_or_retry().
+ * - invalidSelectedOutputs().
+ * - test_empty_content_after_sanitize_fails_before_thumbnail_download().
+ * - test_selected_only_valid_output_becomes_ready_and_preserves_manual_and_source_fields().
+ * - test_success_and_failure_diagnostics_are_saved_without_exposing_internal_metadata().
+ * - test_incomplete_response_fails_even_when_json_content_is_valid_and_keeps_diagnostics().
+ * - test_partial_seo_regeneration_preserves_parent_values_not_returned_by_ai().
+ * - test_failed_regeneration_preserves_parent_and_exposes_only_the_child_error().
+ * - test_thumbnail_only_uses_source_without_text_ai_and_missing_image_is_optional().
+ * - thumbnailSources().
+ * - createRun().
+ * - readyParent().
+ * - regenerate().
+ * - process().
+ * - response().
+ * - sourceHtml().
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : fixtures source/JSON và cấu hình test đã cô lập.
+ * - OUTPUT: assertions contract; không gọi AI thật hoặc ghi database development.
+ * =====================================================================
+ */
 final class AiOutputValidationLifecycleTest extends TestCase
 {
     use UsesIsolatedDatabase;
@@ -30,6 +58,12 @@ final class AiOutputValidationLifecycleTest extends TestCase
 
     private int $modelId;
 
+    /**
+     * =====================================================================
+     * Input: Không có; PHPUnit gọi trước mỗi ca.
+     * Output: Database riêng, quyền và HTTP/Queue/Storage fake; không gọi AI thật.
+     * =====================================================================
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -44,6 +78,8 @@ final class AiOutputValidationLifecycleTest extends TestCase
             'media-library.asset_disks.private' => 'media_private',
             'media-assets.temporary_disk' => 'media_private',
             'ai-providers.allowed_hosts' => [],
+            'ai-content.pipeline' => 'single_step',
+            'queue.default' => 'database',
         ]);
         $actor = User::factory()->create(['status' => 'active']);
         $actor->givePermissionTo(['posts.manage', 'media.upload']);
@@ -63,6 +99,12 @@ final class AiOutputValidationLifecycleTest extends TestCase
         ])->id;
     }
 
+    /**
+     * =====================================================================
+     * Input: Không có; PHPUnit gọi sau mỗi ca.
+     * Output: Dọn connection database test và dependency; không đụng dữ liệu development.
+     * =====================================================================
+     */
     protected function tearDown(): void
     {
         $this->tearDownIsolatedDatabase();
@@ -70,6 +112,12 @@ final class AiOutputValidationLifecycleTest extends TestCase
     }
 
     #[DataProvider('invalidSelectedOutputs')]
+    /**
+     * =====================================================================
+     * Input: Nhóm field/output lỗi từ data provider.
+     * Output: Assertions candidate failed, không merge nguồn che field thiếu hoặc retry HTTP.
+     * =====================================================================
+     */
     public function test_missing_or_blank_selected_output_fails_without_source_fallback_or_retry(
         array $groups,
         array $output,
@@ -96,6 +144,12 @@ final class AiOutputValidationLifecycleTest extends TestCase
             ->assertJsonPath('data.error_code', $errorCode);
     }
 
+    /**
+     * =====================================================================
+     * Input: Không có.
+     * Output: Fixtures field missing/null/blank/unselected cho regression contract.
+     * =====================================================================
+     */
     public static function invalidSelectedOutputs(): array
     {
         return [
@@ -116,6 +170,12 @@ final class AiOutputValidationLifecycleTest extends TestCase
         ];
     }
 
+    /**
+     * =====================================================================
+     * Input: HTML AI có script và whitespace cùng thumbnail nguồn.
+     * Output: Assertions lỗi content rỗng xảy ra trước tạo/tải thumbnail.
+     * =====================================================================
+     */
     public function test_empty_content_after_sanitize_fails_before_thumbnail_download(): void
     {
         Http::fake([
@@ -138,6 +198,12 @@ final class AiOutputValidationLifecycleTest extends TestCase
         Queue::assertNotPushed(ProcessAiImageGenerationJob::class);
     }
 
+    /**
+     * =====================================================================
+     * Input: Output excerpt hợp lệ và field ngoài lựa chọn sai kiểu.
+     * Output: Assertions ready, giữ title nhập tay và nội dung nguồn.
+     * =====================================================================
+     */
     public function test_selected_only_valid_output_becomes_ready_and_preserves_manual_and_source_fields(): void
     {
         Http::fake(['https://validation-provider.test/*' => Http::response($this->response([
@@ -157,6 +223,12 @@ final class AiOutputValidationLifecycleTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    /**
+     * =====================================================================
+     * Input: HTTP envelope chứa diagnostics hợp lệ và secret cố tình cài vào.
+     * Output: Assertions lưu token/ID an toàn, API không lộ secret/raw metadata.
+     * =====================================================================
+     */
     public function test_success_and_failure_diagnostics_are_saved_without_exposing_internal_metadata(): void
     {
         $secret = 'private-validation-key';
@@ -209,6 +281,12 @@ final class AiOutputValidationLifecycleTest extends TestCase
         $this->assertStringNotContainsString('response-validation-123', $list->getContent());
     }
 
+    /**
+     * =====================================================================
+     * Input: Finish reason length với JSON vẫn parse được.
+     * Output: Assertions failed incomplete, không nhận draft dở dang.
+     * =====================================================================
+     */
     public function test_incomplete_response_fails_even_when_json_content_is_valid_and_keeps_diagnostics(): void
     {
         $response = $this->response(['title' => 'Generated title', 'content_html' => '<p>Generated content.</p>']);
@@ -227,6 +305,12 @@ final class AiOutputValidationLifecycleTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    /**
+     * =====================================================================
+     * Input: Parent đã sửa và output SEO một phần.
+     * Output: Assertions chỉ field SEO có giá trị mới thay đổi, parent giữ nguyên.
+     * =====================================================================
+     */
     public function test_partial_seo_regeneration_preserves_parent_values_not_returned_by_ai(): void
     {
         $parent = $this->readyParent();
@@ -249,6 +333,12 @@ final class AiOutputValidationLifecycleTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    /**
+     * =====================================================================
+     * Input: Parent ready và child thiếu content được yêu cầu.
+     * Output: Assertions child failed, parent version/draft không mất và Apply bị chặn.
+     * =====================================================================
+     */
     public function test_failed_regeneration_preserves_parent_and_exposes_only_the_child_error(): void
     {
         $parent = $this->readyParent();
@@ -277,8 +367,17 @@ final class AiOutputValidationLifecycleTest extends TestCase
     }
 
     #[DataProvider('thumbnailSources')]
+    /**
+     * =====================================================================
+     * Input: Cờ nguồn có ảnh và HTTP/storage fake.
+     * Output: Assertions thumbnail-only không gọi AI text; bỏ qua ca cần GD khi extension thiếu.
+     * =====================================================================
+     */
     public function test_thumbnail_only_uses_source_without_text_ai_and_missing_image_is_optional(bool $hasImage): void
     {
+        if ($hasImage && ! function_exists('imagecreatefromstring')) {
+            $this->markTestSkipped('PHP CLI chưa có GD để chạy regression download/convert thumbnail.');
+        }
         Http::fake([
             'https://source.test/article' => Http::response($this->sourceHtml($hasImage), 200, ['Content-Type' => 'text/html']),
             'https://source.test/cover.png' => Http::response(
@@ -309,11 +408,23 @@ final class AiOutputValidationLifecycleTest extends TestCase
         Queue::assertNotPushed(ProcessAiImageGenerationJob::class);
     }
 
+    /**
+     * =====================================================================
+     * Input: Không có.
+     * Output: Hai fixtures nguồn có/không có thumbnail.
+     * =====================================================================
+     */
     public static function thumbnailSources(): array
     {
         return ['source has image' => [true], 'source has no image' => [false]];
     }
 
+    /**
+     * =====================================================================
+     * Input: Nhóm field và overrides API payload.
+     * Output: AiImport queued từ endpoint thật; Queue fake chặn worker tự chạy.
+     * =====================================================================
+     */
     private function createRun(array $groups, array $overrides = []): AiImport
     {
         $id = $this->withToken($this->token)->postJson('/api/admin/ai-agent/sessions', array_replace([
@@ -325,10 +436,16 @@ final class AiOutputValidationLifecycleTest extends TestCase
         return AiImport::findOrFail($id);
     }
 
+    /**
+     * =====================================================================
+     * Input: Không có.
+     * Output: Parent candidate ready với các field đã biên tập trong database test.
+     * =====================================================================
+     */
     private function readyParent(): AiImport
     {
         $parent = $this->createRun(['title', 'content', 'seo']);
-        $parent->update(['status' => 'ready', 'result_json' => ['draft' => [
+        $parent->update(['status' => 'ready', 'source_meta_json' => ['article_source' => (new ArticleSourceExtractor)->snapshot('<p>Source content must be preserved.</p>', ['source_url' => 'inline://'.$parent->id, 'title' => 'Source title'])], 'result_json' => ['draft' => [
             'title' => 'Edited parent title', 'content_html' => '<p>Edited parent content.</p>',
             'content' => '<p>Edited parent content.</p>', 'excerpt' => 'Edited parent excerpt.',
             'seo_title' => 'Previous SEO title', 'seo_description' => 'Edited parent SEO description.',
@@ -339,6 +456,12 @@ final class AiOutputValidationLifecycleTest extends TestCase
         return $parent->fresh();
     }
 
+    /**
+     * =====================================================================
+     * Input: Parent và nhóm field được chọn.
+     * Output: Child queued qua API thật; không thay parent.
+     * =====================================================================
+     */
     private function regenerate(AiImport $parent, array $groups): AiImport
     {
         $id = $this->withToken($this->token)->postJson('/api/admin/ai-agent/sessions/'.$parent->id.'/regenerate', [
@@ -348,11 +471,23 @@ final class AiOutputValidationLifecycleTest extends TestCase
         return AiImport::findOrFail($id);
     }
 
+    /**
+     * =====================================================================
+     * Input: Run trong database test.
+     * Output: Gọi job trực tiếp với service thật và HTTP fake; ghi lifecycle test.
+     * =====================================================================
+     */
     private function process(AiImport $run): void
     {
         (new ProcessAiImportJob($run->id))->handle(app(ArticleImportService::class));
     }
 
+    /**
+     * =====================================================================
+     * Input: Output canonical và envelope overrides.
+     * Output: Response OpenAI stop giả lập có token/ID để kiểm diagnostics.
+     * =====================================================================
+     */
     private function response(array $output, array $overrides = []): array
     {
         return array_replace([
@@ -362,6 +497,12 @@ final class AiOutputValidationLifecycleTest extends TestCase
         ], $overrides);
     }
 
+    /**
+     * =====================================================================
+     * Input: Cờ nguồn có thumbnail.
+     * Output: HTML source cố định; không đọc network hoặc filesystem.
+     * =====================================================================
+     */
     private function sourceHtml(bool $hasImage = true): string
     {
         return '<html><head><title>Source title</title>'

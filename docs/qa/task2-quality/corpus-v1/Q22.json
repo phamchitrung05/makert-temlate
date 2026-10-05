@@ -1,0 +1,138 @@
+{
+    "source_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/components/props.md",
+    "title": "Thuật ngữ/proper names",
+    "source_format": "html",
+    "version": "article.source.v1",
+    "content_html": "<h1>Props {#props}</h1>\n<blockquote>\n<p>This page assumes you've already read the <a href=\"https://github.com/guide/essentials/component-basics\">Components Basics</a>. Read that first if you are new to components.</p>\n</blockquote>\n\n<h2>Props Declaration {#props-declaration}</h2>\n<p>Vue components require explicit props declaration so that Vue knows what external props passed to the component should be treated as fallthrough attributes (which will be discussed in <a href=\"https://github.com/guide/components/attrs\">its dedicated section</a>).</p>\n\n<p>In SFCs using <code>&lt;script setup&gt;</code>, props can be declared using the <code>defineProps()</code> macro:</p>\n<pre><code>&lt;script setup&gt;\nconst props = defineProps(['foo'])\n\nconsole.log(props.foo)\n&lt;/script&gt;\n</code></pre>\n<p>In non-<code>&lt;script setup&gt;</code> components, props are declared using the <a href=\"https://github.com/api/options-state#props\"><code>props</code></a> option:</p>\n<pre><code>export default {\n  props: ['foo'],\n  setup(props) {\n    // setup() receives props as the first argument.\n    console.log(props.foo)\n  }\n}\n</code></pre>\n<p>Notice the argument passed to <code>defineProps()</code> is the same as the value provided to the <code>props</code> options: the same props options API is shared between the two declaration styles.</p>\n\n\n<p>Props are declared using the <a href=\"https://github.com/api/options-state#props\"><code>props</code></a> option:</p>\n<pre><code>export default {\n  props: ['foo'],\n  created() {\n    // props are exposed on `this`\n    console.log(this.foo)\n  }\n}\n</code></pre>\n\n<p>In addition to declaring props using an array of strings, we can also use the object syntax:</p>\n\n<pre><code>export default {\n  props: {\n    title: String,\n    likes: Number\n  }\n}\n</code></pre>\n\n<pre><code>// in &lt;script setup&gt;\ndefineProps({\n  title: String,\n  likes: Number\n})\n</code></pre>\n<pre><code>// in non-&lt;script setup&gt;\nexport default {\n  props: {\n    title: String,\n    likes: Number\n  }\n}\n</code></pre>\n\n<p>For each property in the object declaration syntax, the key is the name of the prop, while the value should be the constructor function of the expected type.</p>\n<p>This not only documents your component, but will also warn other developers using your component in the browser console if they pass the wrong type. We will discuss more details about <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/components/props.md#prop-validation\">prop validation</a> further down this page.</p>\n\n<p>See also: <a href=\"https://github.com/guide/typescript/options-api#typing-component-props\">Typing Component Props</a> </p>\n\n\n<p>If you are using TypeScript with <code>&lt;script setup&gt;</code>, it's also possible to declare props using pure type annotations:</p>\n<pre><code>&lt;script setup lang=\"ts\"&gt;\ndefineProps&lt;{\n  title?: string\n  likes?: number\n}&gt;()\n&lt;/script&gt;\n</code></pre>\n<p>More details: <a href=\"https://github.com/guide/typescript/composition-api#typing-component-props\">Typing Component Props</a> </p>",
+    "blocks": [
+        {
+            "id": "S001",
+            "type": "h1",
+            "text": "Props {#props}",
+            "html": "<h1>Props {#props}</h1>"
+        },
+        {
+            "id": "S002",
+            "type": "blockquote",
+            "text": "This page assumes you've already read the Components Basics. Read that first if you are new to components.",
+            "html": "<blockquote>\n<p>This page assumes you've already read the <a href=\"https://github.com/guide/essentials/component-basics\">Components Basics</a>. Read that first if you are new to components.</p>\n</blockquote>"
+        },
+        {
+            "id": "S003",
+            "type": "h2",
+            "text": "Props Declaration {#props-declaration}",
+            "html": "<h2>Props Declaration {#props-declaration}</h2>"
+        },
+        {
+            "id": "S004",
+            "type": "p",
+            "text": "Vue components require explicit props declaration so that Vue knows what external props passed to the component should be treated as fallthrough attributes (which will be discussed in its dedicated section).",
+            "html": "<p>Vue components require explicit props declaration so that Vue knows what external props passed to the component should be treated as fallthrough attributes (which will be discussed in <a href=\"https://github.com/guide/components/attrs\">its dedicated section</a>).</p>"
+        },
+        {
+            "id": "S005",
+            "type": "p",
+            "text": "In SFCs using <script setup>, props can be declared using the defineProps() macro:",
+            "html": "<p>In SFCs using <code>&lt;script setup&gt;</code>, props can be declared using the <code>defineProps()</code> macro:</p>"
+        },
+        {
+            "id": "S006",
+            "type": "pre",
+            "text": "<script setup>\nconst props = defineProps(['foo'])\n\nconsole.log(props.foo)\n</script>",
+            "html": "<pre><code>&lt;script setup&gt;\nconst props = defineProps(['foo'])\n\nconsole.log(props.foo)\n&lt;/script&gt;\n</code></pre>"
+        },
+        {
+            "id": "S007",
+            "type": "p",
+            "text": "In non-<script setup> components, props are declared using the props option:",
+            "html": "<p>In non-<code>&lt;script setup&gt;</code> components, props are declared using the <a href=\"https://github.com/api/options-state#props\"><code>props</code></a> option:</p>"
+        },
+        {
+            "id": "S008",
+            "type": "pre",
+            "text": "export default {\n  props: ['foo'],\n  setup(props) {\n    // setup() receives props as the first argument.\n    console.log(props.foo)\n  }\n}",
+            "html": "<pre><code>export default {\n  props: ['foo'],\n  setup(props) {\n    // setup() receives props as the first argument.\n    console.log(props.foo)\n  }\n}\n</code></pre>"
+        },
+        {
+            "id": "S009",
+            "type": "p",
+            "text": "Notice the argument passed to defineProps() is the same as the value provided to the props options: the same props options API is shared between the two declaration styles.",
+            "html": "<p>Notice the argument passed to <code>defineProps()</code> is the same as the value provided to the <code>props</code> options: the same props options API is shared between the two declaration styles.</p>"
+        },
+        {
+            "id": "S010",
+            "type": "p",
+            "text": "Props are declared using the props option:",
+            "html": "<p>Props are declared using the <a href=\"https://github.com/api/options-state#props\"><code>props</code></a> option:</p>"
+        },
+        {
+            "id": "S011",
+            "type": "pre",
+            "text": "export default {\n  props: ['foo'],\n  created() {\n    // props are exposed on `this`\n    console.log(this.foo)\n  }\n}",
+            "html": "<pre><code>export default {\n  props: ['foo'],\n  created() {\n    // props are exposed on `this`\n    console.log(this.foo)\n  }\n}\n</code></pre>"
+        },
+        {
+            "id": "S012",
+            "type": "p",
+            "text": "In addition to declaring props using an array of strings, we can also use the object syntax:",
+            "html": "<p>In addition to declaring props using an array of strings, we can also use the object syntax:</p>"
+        },
+        {
+            "id": "S013",
+            "type": "pre",
+            "text": "export default {\n  props: {\n    title: String,\n    likes: Number\n  }\n}",
+            "html": "<pre><code>export default {\n  props: {\n    title: String,\n    likes: Number\n  }\n}\n</code></pre>"
+        },
+        {
+            "id": "S014",
+            "type": "pre",
+            "text": "// in <script setup>\ndefineProps({\n  title: String,\n  likes: Number\n})",
+            "html": "<pre><code>// in &lt;script setup&gt;\ndefineProps({\n  title: String,\n  likes: Number\n})\n</code></pre>"
+        },
+        {
+            "id": "S015",
+            "type": "pre",
+            "text": "// in non-<script setup>\nexport default {\n  props: {\n    title: String,\n    likes: Number\n  }\n}",
+            "html": "<pre><code>// in non-&lt;script setup&gt;\nexport default {\n  props: {\n    title: String,\n    likes: Number\n  }\n}\n</code></pre>"
+        },
+        {
+            "id": "S016",
+            "type": "p",
+            "text": "For each property in the object declaration syntax, the key is the name of the prop, while the value should be the constructor function of the expected type.",
+            "html": "<p>For each property in the object declaration syntax, the key is the name of the prop, while the value should be the constructor function of the expected type.</p>"
+        },
+        {
+            "id": "S017",
+            "type": "p",
+            "text": "This not only documents your component, but will also warn other developers using your component in the browser console if they pass the wrong type. We will discuss more details about prop validation further down this page.",
+            "html": "<p>This not only documents your component, but will also warn other developers using your component in the browser console if they pass the wrong type. We will discuss more details about <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/components/props.md#prop-validation\">prop validation</a> further down this page.</p>"
+        },
+        {
+            "id": "S018",
+            "type": "p",
+            "text": "See also: Typing Component Props",
+            "html": "<p>See also: <a href=\"https://github.com/guide/typescript/options-api#typing-component-props\">Typing Component Props</a> </p>"
+        },
+        {
+            "id": "S019",
+            "type": "p",
+            "text": "If you are using TypeScript with <script setup>, it's also possible to declare props using pure type annotations:",
+            "html": "<p>If you are using TypeScript with <code>&lt;script setup&gt;</code>, it's also possible to declare props using pure type annotations:</p>"
+        },
+        {
+            "id": "S020",
+            "type": "pre",
+            "text": "<script setup lang=\"ts\">\ndefineProps<{\n  title?: string\n  likes?: number\n}>()\n</script>",
+            "html": "<pre><code>&lt;script setup lang=\"ts\"&gt;\ndefineProps&lt;{\n  title?: string\n  likes?: number\n}&gt;()\n&lt;/script&gt;\n</code></pre>"
+        },
+        {
+            "id": "S021",
+            "type": "p",
+            "text": "More details: Typing Component Props",
+            "html": "<p>More details: <a href=\"https://github.com/guide/typescript/composition-api#typing-component-props\">Typing Component Props</a> </p>"
+        }
+    ],
+    "source_images": [],
+    "fetched_at": "2026-10-04T17:47:32+00:00",
+    "hash": "39990ecaa6a8e62249bc5765f8d78e9f9ef8d4d7936134e1cfaa894ec84e1663"
+}

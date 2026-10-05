@@ -391,6 +391,27 @@
     "useAiContentSettings": true,
     "formatAiError": true,
     "isAiSuccess": true,
-    "useAiRunFeedback": true
+    "useAiRunFeedback": true,
+    "withoutAiTaxonomyOutputs": true,
+    "analysisReport": true,
+    "emptyProfileForm": true,
+    "profilePayload": true,
+    "profileToForm": true,
+    "referenceText": true,
+    "resultToForm": true,
+    "validateProfileForm": true,
+    "writingRuleLabels": true,
+    "articleRequestBody": true,
+    "articleSourcePayload": true,
+    "briefFields": true,
+    "emptyWritingPreferences": true,
+    "pipelineProgress": true,
+    "pipelineStages": true,
+    "pipelineStepLabel": true,
+    "writingOptions": true,
+    "hasTemporaryImages": true,
+    "inlineAssetUrl": true,
+    "inlineImageHtml": true,
+    "usePostInlineMedia": true
   }
 }

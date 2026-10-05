@@ -4,8 +4,8 @@ namespace Tests\Unit;
 
 use App\Exceptions\AiImportException;
 use App\Models\AiImport;
-use App\Services\Ai\ArticleImportService;
-use App\Services\Ai\StructuredAiProvider;
+use App\Services\Ai\Content\ArticleImportService;
+use App\Services\Ai\Providers\Adapters\StructuredAiProvider;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 

@@ -20,7 +20,7 @@ export const useAiAgentStore = defineStore('aiAgent', () => {
   const error = shallowRef(null)
   let resetGeneration = 0
   let capabilityGeneration = 0
-  const isRunning = computed(() => ['queued', 'running', 'processing', 'fetching', 'extracting', 'rewriting', 'seo', 'thumbnail'].includes(session.value?.status))
+  const isRunning = computed(() => ['queued', 'running', 'processing', 'fetching', 'extracting', 'analyzing', 'planning', 'writing', 'editing', 'validating', 'rewriting', 'seo', 'thumbnail'].includes(session.value?.status))
 
   /** Input: target key. Output: capability allowlist được lưu vào state. */
   const loadCapabilities = async targetType => {

@@ -10,7 +10,8 @@
 
   INPUT/OUTPUT CỦA CLASS (tổng thể):
   - INPUT : items, loading và lỗi đọc danh sách từ page.
-  - OUTPUT: emit reload/edit/remove/regenerate; không thay đổi form tạo mới.
+  - OUTPUT: emit reload/edit/remove/regenerate/refreshStatus/apply/cancel;
+  không thay đổi form tạo mới hoặc tự publish Post.
   - SIDE EFFECT: không gọi API hoặc sửa items đầu vào.
   =====================================================================
 -->
@@ -28,7 +29,7 @@ const props = defineProps({
   outputOptions: { type: Array, default: () => [] },
 })
 
-const emit = defineEmits(['reload', 'edit', 'remove', 'regenerate', 'refreshStatus'])
+const emit = defineEmits(['reload', 'edit', 'remove', 'regenerate', 'refreshStatus', 'apply', 'cancel'])
 const search = shallowRef('')
 const status = shallowRef('all')
 const page = shallowRef(1)
@@ -140,7 +141,7 @@ watch(() => filteredItems.value.length, total => {
         <div class="d-flex align-center gap-3 py-3 ai-content-list__title">
           <VAvatar
             rounded
-            size="40"
+            size="100"
             color="primary"
             variant="tonal"
           >
@@ -156,7 +157,7 @@ watch(() => filteredItems.value.length, total => {
             />
           </VAvatar>
           <div class="ai-content-list__text">
-            <div class="text-body-2 font-weight-medium text-high-emphasis text-wrap">
+            <div class=" font-weight-medium text-high-emphasis text-wrap">
               {{ item.title || 'Chưa có tiêu đề' }}
             </div>
             <div class="text-caption text-medium-emphasis text-truncate">
@@ -196,8 +197,30 @@ watch(() => filteredItems.value.length, total => {
                 variant="text"
                 :aria-label="`Chỉnh sửa ${item.title}`"
                 title="Chỉnh sửa"
-                :disabled="item.status !== 'review' || props.busyId === item.id"
+                :disabled="item.status === 'generating' || props.busyId === item.id"
                 @click="emit('edit', item)"
+              />
+              <VBtn
+                v-if="item.status === 'generating'"
+                icon="tabler-player-stop"
+                size="small"
+                variant="text"
+                color="error"
+                :disabled="props.busyId === item.id"
+                :aria-label="`Hủy tác vụ ${item.title}`"
+                title="Hủy tác vụ"
+                @click="emit('cancel', item)"
+              />
+              <VBtn
+                v-if="item.status === 'review' && item.targetType === 'post'"
+                icon="tabler-file-check"
+                size="small"
+                variant="text"
+                color="success"
+                :disabled="props.busyId === item.id"
+                :aria-label="`Tạo Post nháp từ ${item.title}`"
+                title="Tạo Post nháp"
+                @click="emit('apply', item)"
               />
               <VBtn
                 icon="tabler-refresh"

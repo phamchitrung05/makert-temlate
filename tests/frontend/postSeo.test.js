@@ -1,9 +1,23 @@
 /* eslint-disable camelcase */
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Kiểm checklist SEO và tránh đếm trùng ảnh inline/gallery.
+ * =====================================================================
+ * CÁC HÀM/METHOD TRONG FILE: evaluate(), các test word/keyword/URL/alt/fallback.
+ * INPUT/OUTPUT CỦA CLASS (tổng thể): HTML/form/media giả -> checklist/score;
+ * không gọi AI/API hoặc ghi database.
+ * =====================================================================
+ */
 import { describe, expect, it } from 'vitest'
 import { analyzeContent, analyzeSeo, createSeo } from '@/composables/seoMetadata'
 
 const origin = 'https://example.test'
 
+/**
+ * =====================================================================
+ * Input: form overrides và slug đã kiểm. Output: checklist public từ HTML thật.
+ * =====================================================================
+ */
 const evaluate = (overrides = {}, checked = false) => {
   const form = { title: '', excerpt: '', content: '', seo: createSeo(), thumbnail: null, contentImages: [], ...overrides }
 
@@ -57,6 +71,20 @@ describe('Post SEO rules', () => {
   it('counts alt per content image and unique media asset, ignoring decorative images', () => {
     const asset = { id: 1, alt_text: 'Ảnh' }
     const result = evaluate({ thumbnail: asset, contentImages: [asset, { id: 2, alt_text: '' }], content: '<img alt="Mô tả"><img alt="" role="presentation">' })
+
+    expect(result.rules.find(rule => rule.id === 'alt').progress).toBe('2/3')
+    expect(result.rules.find(rule => rule.id === 'alt').passed).toBe(false)
+  })
+
+  it('uses inline alt once when the same asset is also returned in the content gallery', () => {
+    const result = evaluate({ contentImages: [{ id: 7, alt_text: '' }], content: '<figure><img data-media-asset-id="7" src="https://example.test/image.png" alt="Mô tả tại vị trí chèn"><figcaption>Chú thích</figcaption></figure>' })
+
+    expect(result.rules.find(rule => rule.id === 'alt').progress).toBe('1/1')
+    expect(result.rules.find(rule => rule.id === 'alt').passed).toBe(true)
+  })
+
+  it('checks each inline occurrence while keeping a separate legacy gallery image', () => {
+    const result = evaluate({ contentImages: [{ id: 7, alt_text: 'Metadata không thay thế alt HTML' }, { id: 8, alt_text: 'Ảnh trang trí' }, { id: 9, alt_text: 'Ảnh gallery riêng' }], content: '<img data-media-asset-id="7" alt="Mô tả"><img data-media-asset-id="7" alt=""><img data-media-asset-id="8" role="presentation" alt="">' })
 
     expect(result.rules.find(rule => rule.id === 'alt').progress).toBe('2/3')
     expect(result.rules.find(rule => rule.id === 'alt').passed).toBe(false)

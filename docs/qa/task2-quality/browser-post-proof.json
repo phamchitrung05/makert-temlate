@@ -1,0 +1,101 @@
+{
+    "run_id": "01a1082f-58eb-710a-a3b3-ac34a7ba368d",
+    "parent_id": "01a107f5-28bc-70f8-95ed-74e7e980c50c",
+    "post_id": 6,
+    "post_status": "draft",
+    "published_at": null,
+    "run_actor": 1,
+    "post_actor": 1,
+    "profile": {
+        "id": 3,
+        "version": 4,
+        "name": "QA Task 2 · Giải thích trực tiếp",
+        "rules": {
+            "tone": "Thân thiện, rõ ràng, cụ thể; không lặp ý để kéo dài bài.",
+            "opening": "Nêu ngay điểm đáng chú ý hoặc vấn đề của nguồn, tránh khuôn mở bài chung."
+        },
+        "style_instructions": "Giải thích tự nhiên bằng tiếng Việt cho người mới. Mở bài bằng vấn đề trong nguồn, chọn bố cục theo nội dung. Giữ số liệu, giới hạn và điều kiện; không thêm quảng cáo hoặc facts của bài mẫu.",
+        "evidence": []
+    },
+    "candidate_category_ids": [
+        8
+    ],
+    "candidate_tag_ids": [
+        1
+    ],
+    "post_category_ids": [
+        8
+    ],
+    "post_tag_ids": [
+        1
+    ],
+    "image_asset_9": true,
+    "image_url": true,
+    "image_alt": true,
+    "caption": true,
+    "content_usage": [
+        {
+            "media_asset_id": 9,
+            "field": "post.content_images",
+            "sort_order": 0
+        }
+    ],
+    "queue_jobs": 0,
+    "qa_runs_taxonomy": [
+        {
+            "id": "01a107f5-28bc-70f8-95ed-74e7e980c50c",
+            "input": {
+                "category_ids": [
+                    8
+                ],
+                "tag_ids": [
+                    1
+                ],
+                "taxonomy_origin": "manual"
+            },
+            "draft": {
+                "category_ids": [
+                    8
+                ],
+                "tag_ids": [
+                    1
+                ],
+                "taxonomy_origin": "manual"
+            }
+        },
+        {
+            "id": "01a10804-7833-7178-bd7c-f06c8a79aea0",
+            "input": {
+                "category_ids": [],
+                "tag_ids": [],
+                "taxonomy_origin": "manual"
+            },
+            "draft": {
+                "category_ids": [],
+                "tag_ids": [],
+                "taxonomy_origin": "manual"
+            }
+        },
+        {
+            "id": "01a1082f-58eb-710a-a3b3-ac34a7ba368d",
+            "input": {
+                "category_ids": [
+                    8
+                ],
+                "tag_ids": [
+                    1
+                ],
+                "taxonomy_origin": "manual"
+            },
+            "draft": {
+                "category_ids": [
+                    8
+                ],
+                "tag_ids": [
+                    1
+                ],
+                "taxonomy_origin": "manual"
+            }
+        }
+    ]
+}

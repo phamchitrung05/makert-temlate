@@ -9,6 +9,8 @@ use App\Models\Resource;
 use App\Models\User;
 use App\Services\MediaAssetUsageService;
 use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 use Tests\UsesIsolatedDatabase;
@@ -30,6 +32,8 @@ use Tests\UsesIsolatedDatabase;
  * - test_attach_rejects_wrong_kind_model_deleted_asset_and_missing_permission(): kiểm tra invariant
  * - test_single_field_rejects_duplicate_and_replace_is_atomic(): kiểm tra single/replace
  * - test_multiple_field_can_reorder_and_detach(): kiểm tra multiple/reorder/detach
+ * - test_stale_deleted_assets_cannot_be_attached_or_replace_existing_usage(): từ chối instance cũ đã bị xóa
+ * - test_usage_writes_lock_fresh_assets_and_preserve_requested_order(): kiểm khóa asset và thứ tự usage
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : Resource, MediaAsset, actor và MediaAssetField
@@ -277,5 +281,83 @@ class MediaAssetUsageTest extends TestCase
         $this->service->detach($actor, $secondUsage->fresh());
         $this->assertDatabaseMissing('media_asset_usages', ['id' => $secondUsage->id]);
         $this->assertDatabaseHas('media_assets', ['id' => $second->id]);
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Chặn instance đã đọc trước khi request khác xóa asset
+     * =====================================================================
+     * INPUT: Instance cũ vẫn báo chưa xóa; database đã soft-delete hoặc mất hàng.
+     * OUTPUT: Attach/replace bị từ chối, usage trước đó còn nguyên; không ghi dở.
+     * =====================================================================
+     */
+    public function test_stale_deleted_assets_cannot_be_attached_or_replace_existing_usage(): void
+    {
+        $actor = $this->actor();
+        $resource = Resource::factory()->create();
+        $current = MediaAsset::factory()->image()->create();
+        $stale = MediaAsset::factory()->image()->create();
+        $this->service->attach($actor, $resource, $current, MediaAssetField::ResourceCover);
+        MediaAsset::findOrFail($stale->id)->delete();
+        $this->assertFalse($stale->trashed());
+
+        foreach ([
+            fn () => $this->service->attach($actor, $resource, $stale, MediaAssetField::ResourcePreview),
+            fn () => $this->service->replace($actor, $resource, MediaAssetField::ResourceCover, [$stale]),
+        ] as $write) {
+            try {
+                $write();
+                $this->fail('Instance cũ của asset đã xóa phải bị từ chối trước khi ghi usage.');
+            } catch (ValidationException $exception) {
+                $this->assertArrayHasKey('media_asset_id', $exception->errors());
+            }
+        }
+
+        $missing = MediaAsset::factory()->image()->create();
+        MediaAsset::findOrFail($missing->id)->forceDelete();
+        try {
+            $this->service->attach($actor, $resource, $missing, MediaAssetField::ResourcePreview);
+            $this->fail('Asset đã mất hàng phải bị từ chối.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('media_asset_id', $exception->errors());
+        }
+
+        $this->assertDatabaseCount('media_asset_usages', 1);
+        $this->assertSame($current->id, $resource->mediaAssetsForField(MediaAssetField::ResourceCover)->first()->id);
+        $this->assertSame(0, DB::transactionLevel());
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Khóa hàng database mới đọc trước attach/replace
+     * =====================================================================
+     * INPUT: Danh sách asset đảo thứ tự caller, SQLite không phát FOR UPDATE SQL.
+     * OUTPUT: Query builder có khóa trong transaction, nhưng usage giữ thứ tự caller.
+     * =====================================================================
+     */
+    public function test_usage_writes_lock_fresh_assets_and_preserve_requested_order(): void
+    {
+        $actor = $this->actor();
+        $resource = Resource::factory()->create();
+        $first = MediaAsset::factory()->image()->create();
+        $second = MediaAsset::factory()->image()->create();
+        $observed = [];
+        $scopes = MediaAsset::getAllGlobalScopes();
+        MediaAsset::addGlobalScope('observe_usage_lock', function (Builder $query) use (&$observed): void {
+            $observed[] = [$query->getQuery()->lock, DB::transactionLevel(), $query->getQuery()->orders];
+        });
+        try {
+            $this->service->attach($actor, $resource, $first, MediaAssetField::ResourceCover);
+            $replaced = $this->service->replace($actor, $resource, MediaAssetField::ResourcePreview, [$second, $first]);
+            $this->assertSame([$second->id, $first->id], $replaced->pluck('media_asset_id')->all());
+            $this->assertCount(2, $observed);
+            foreach ($observed as [$lock, $transactionLevel, $orders]) {
+                $this->assertTrue($lock);
+                $this->assertGreaterThan(0, $transactionLevel);
+                $this->assertSame([['column' => 'id', 'direction' => 'asc']], $orders);
+            }
+        } finally {
+            MediaAsset::setAllGlobalScopes($scopes);
+        }
     }
 }

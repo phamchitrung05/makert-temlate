@@ -1,0 +1,541 @@
+{
+    "version": 1,
+    "captured_at": "2026-10-04T17:47:17+00:00",
+    "review_status": "pending_human",
+    "coverage_gaps": [
+        "Corpus chủ yếu tài liệu kỹ thuật, chưa đại diện đủ bài du lịch/tin tức.",
+        "Chưa có benchmark với bảng số độc lập/gói trả phí.",
+        "Facts chuẩn và reviewer chưa được người đọc xác nhận.",
+        "Q24 cần fixture parent/asset riêng; source corpus không tự tạo MediaAsset."
+    ],
+    "cases": [
+        {
+            "case_id": "Q01",
+            "group": "Tin thay đổi rất ngắn",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q01.json",
+            "source_sha256": "1068bf4531bce9a9d933018fdc0664a5ce96cc4b6afcdd5aa7503cb6581f8777",
+            "raw_sha256": "18c6b2798b7c52c3c58ff13c76d005f355d560425a61e3d738ffa9f75452a8f3",
+            "source_origin_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/extras/reactivity-transform.md",
+            "selection": "preface",
+            "license": "CC BY 4.0 (image files excluded)",
+            "attribution": "Yuxi (Evan) You and Vue documentation contributors",
+            "license_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/LICENSE",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q02",
+            "group": "Release và phiên bản",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q02.json",
+            "source_sha256": "6884fedc06b7ae1f4e267bbcb02e4917d106e060cdb659a6f2f432c94dc6851d",
+            "raw_sha256": "f51528d6d1a2f39c7ee893eccb21552bc346b07f26c787b960ae4251ceff4d5f",
+            "source_origin_url": "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md",
+            "selection": "first-section",
+            "license": "MIT",
+            "attribution": "Taylor Otwell and Laravel documentation contributors",
+            "license_url": "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/license.md",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q03",
+            "group": "Migration/breaking changes",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q03.json",
+            "source_sha256": "f9764ab23d536ebde3b70bc4d8b8195a4c64b65d6fccec55cd32ae789cdd73f9",
+            "raw_sha256": "7fab2e53ddab5958770ed25d404934077c9d31752e9f35297561143565fe6a44",
+            "source_origin_url": "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md",
+            "selection": "first-section",
+            "license": "MIT",
+            "attribution": "Taylor Otwell and Laravel documentation contributors",
+            "license_url": "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/license.md",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q04",
+            "group": "Điều kiện license",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q04.json",
+            "source_sha256": "7a025e90d41d622d428e3d14247e54262de95ad8011b836be4a3850d3f344e49",
+            "raw_sha256": "984ec2ba4df86e5503616fb465b5d0eaeaf5311150c724d3ef0d1433edc8bbf7",
+            "source_origin_url": "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/license.md",
+            "selection": "all",
+            "license": "MIT",
+            "attribution": "Taylor Otwell and Laravel documentation contributors",
+            "license_url": "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/license.md",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q05",
+            "group": "Hiệu năng và bối cảnh",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q05.json",
+            "source_sha256": "4cb569cea124388c3bad2340838880a20e59d689d7cbf3c0ffe9d135227531e2",
+            "raw_sha256": "c86e3f47d95c6fcd6bceeaad22949b973b124cbd8619bd970638a026481367d5",
+            "source_origin_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/best-practices/performance.md",
+            "selection": "first-section",
+            "license": "CC BY 4.0 (image files excluded)",
+            "attribution": "Yuxi (Evan) You and Vue documentation contributors",
+            "license_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/LICENSE",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q06",
+            "group": "Tutorial CLI",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q06.json",
+            "source_sha256": "0bf99e7c16aa6d8cd08c069e0b3a9bc9c33d52af408e2c26652c8ff07923d03f",
+            "raw_sha256": "c9c86f8df47d3b179c28c4521e44474194a4f04459f38416f4744915cf16c7d2",
+            "source_origin_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/quick-start.md",
+            "selection": "first-section",
+            "license": "CC BY 4.0 (image files excluded)",
+            "attribution": "Yuxi (Evan) You and Vue documentation contributors",
+            "license_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/LICENSE",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q07",
+            "group": "Cấu hình PHP/Laravel",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q07.json",
+            "source_sha256": "2937d401e81895deae84db701fdbf61b51ed3e897e9f672beaf2c9f5d234d24f",
+            "raw_sha256": "0053c6722795834693474bf71ad6d45703e22c4206dbeedf59eda75672d35ec6",
+            "source_origin_url": "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md",
+            "selection": "first-section",
+            "license": "MIT",
+            "attribution": "Taylor Otwell and Laravel documentation contributors",
+            "license_url": "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/license.md",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q08",
+            "group": "JavaScript/TypeScript",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q08.json",
+            "source_sha256": "4473638d3420d306445ef71a1a1538377de591a9162a7a0ebaac8d72eff1050c",
+            "raw_sha256": "31e9a56f5c13437d1409bc995bfaf504603912c714565eeb787b6ee7a91687d4",
+            "source_origin_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/typescript/overview.md",
+            "selection": "first-section",
+            "license": "CC BY 4.0 (image files excluded)",
+            "attribution": "Yuxi (Evan) You and Vue documentation contributors",
+            "license_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/LICENSE",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q09",
+            "group": "Async/watchers",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q09.json",
+            "source_sha256": "e5d1dcb89581d54cc41faf4d5c47b75bcc3eea04463168580ebf754e791e5df9",
+            "raw_sha256": "67af48b85a118b153b930500f3773d0481b0a16521adaa76866521fe8294c675",
+            "source_origin_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/essentials/watchers.md",
+            "selection": "first-section",
+            "license": "CC BY 4.0 (image files excluded)",
+            "attribution": "Yuxi (Evan) You and Vue documentation contributors",
+            "license_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/LICENSE",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q10",
+            "group": "Minh họa cây component",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q10.json",
+            "source_sha256": "87a8bfcf143c26ecb669b51aa1203019f075c9380f34f3edd1d4d029db3c6a9e",
+            "raw_sha256": "174710241ea6d1a16300412c3347c063944d79c02d0cac0b728f7bd8b02802dc",
+            "source_origin_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/essentials/component-basics.md",
+            "selection": "first-section",
+            "license": "CC BY 4.0 (image files excluded)",
+            "attribution": "Yuxi (Evan) You and Vue documentation contributors",
+            "license_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/LICENSE",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q11",
+            "group": "Các database hỗ trợ/điều kiện",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q11.json",
+            "source_sha256": "d489a46e8b91dca31d299073591342ad6a4e0cd9edd18123d16e1d7d1f90f714",
+            "raw_sha256": "5941073699eddd971619dc1c4399eeb1aec52d61b488d6d46124655a6726a7be",
+            "source_origin_url": "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/database.md",
+            "selection": "first-section",
+            "license": "MIT",
+            "attribution": "Taylor Otwell and Laravel documentation contributors",
+            "license_url": "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/license.md",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q12",
+            "group": "So sánh trade-off",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q12.json",
+            "source_sha256": "672b41ad5f596d54002422c8a2d24fece323d72575c14145e0fc0ebdfa14a5d7",
+            "raw_sha256": "1e7521796f567ca05e2f9b6392efc5eb8f22cd60594746c56290b1b4a663b774",
+            "source_origin_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/extras/composition-api-faq.md",
+            "selection": "first-section",
+            "license": "CC BY 4.0 (image files excluded)",
+            "attribution": "Yuxi (Evan) You and Vue documentation contributors",
+            "license_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/LICENSE",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q13",
+            "group": "Giải thích cho người mới",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q13.json",
+            "source_sha256": "18cbccdaa2dc89666ac367a80c0b7e9b9e78e7c97dfaf8db8cc0807cc9d6c414",
+            "raw_sha256": "c626bfa8ed26f62e3a64df7a20a652fa1d1b466521a2c73a4d8e5813a0780558",
+            "source_origin_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/introduction.md",
+            "selection": "first-section",
+            "license": "CC BY 4.0 (image files excluded)",
+            "attribution": "Yuxi (Evan) You and Vue documentation contributors",
+            "license_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/LICENSE",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q14",
+            "group": "Chuyên sâu",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q14.json",
+            "source_sha256": "8675090be7976abaf557dd96f469b772b2f5242e48f6e6df796be3983977c6b1",
+            "raw_sha256": "9d943348e1399155581f584055a8e91f5fb6c8879a7725764c3e2fce704e8707",
+            "source_origin_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/extras/reactivity-in-depth.md",
+            "selection": "first-section",
+            "license": "CC BY 4.0 (image files excluded)",
+            "attribution": "Yuxi (Evan) You and Vue documentation contributors",
+            "license_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/LICENSE",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q15",
+            "group": "FAQ ngắn",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q15.json",
+            "source_sha256": "de74254cbf42faf5d3c1cd081a811e9ab63f5615769907b8a9534931eaf001a4",
+            "raw_sha256": "cab87e4c557c665d01db7084dcd3b6965fc88b5f3bfff7af43b597327567e894",
+            "source_origin_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/about/faq.md",
+            "selection": "first-section",
+            "license": "CC BY 4.0 (image files excluded)",
+            "attribution": "Yuxi (Evan) You and Vue documentation contributors",
+            "license_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/LICENSE",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q16",
+            "group": "Bài dài có heading",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q16.json",
+            "source_sha256": "511b3ef5899ebe1e964e6e7825d32a5e2f2d34b916d73bdad7a3b74a10873dea",
+            "raw_sha256": "b455a5e66082b8272797715320d8d1dfab9ccc4fb50a2df6498cccdbf69f64b8",
+            "source_origin_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/reusability/composables.md",
+            "selection": "all",
+            "license": "CC BY 4.0 (image files excluded)",
+            "attribution": "Yuxi (Evan) You and Vue documentation contributors",
+            "license_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/LICENSE",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q17",
+            "group": "Nhiều code/ít prose",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q17.json",
+            "source_sha256": "94415de4e7cc383018e7a7f081315dcb0a77a944f5742e8be938b91adab1d6dd",
+            "raw_sha256": "653734fa28d4dc1bdb146315e43b73b82d52961c284734e8993f07c4bba7cf3c",
+            "source_origin_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/api/built-in-directives.md",
+            "selection": "first-section",
+            "license": "CC BY 4.0 (image files excluded)",
+            "attribution": "Yuxi (Evan) You and Vue documentation contributors",
+            "license_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/LICENSE",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q18",
+            "group": "HTML có navigation/footer/ads",
+            "source_language": "vi",
+            "output_language": "vi",
+            "source_snapshot_path": "Q18.json",
+            "source_sha256": "2299d9d9e3f225898fd8a8348259794be0ca303c6c8064b8c29aa94400ff31be",
+            "raw_sha256": "d689a3335968a3bc985563508f0290e32d4ba00228e5b329a75c3706068ec185",
+            "source_origin_url": null,
+            "selection": "backend extracts main article",
+            "license": "User supplied; local evaluation only",
+            "attribution": "Star Travel / Star International; HTML supplied by project owner",
+            "license_url": null,
+            "writing_brief": {
+                "audience": "Người tìm hiểu du thuyền",
+                "purpose": "Hiểu trải nghiệm và giới hạn nguồn cũ",
+                "length": "Theo lượng thông tin nguồn"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending",
+            "notes": "Q18/Q21 dùng cùng bài thật để kiểm hai luồng; không tính là hai nguồn độc lập."
+        },
+        {
+            "case_id": "Q19",
+            "group": "Nội dung HTML trong form",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q19.json",
+            "source_sha256": "a41a5802a25d5199842a904d63612770bda47ab2cc320944f3bbd45454e1358f",
+            "raw_sha256": "89074b36712ba98a1aeb486c4b7d15b9ae840676f7032efb56d609b05fdbaf03",
+            "source_origin_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/essentials/forms.md",
+            "selection": "first-section",
+            "license": "CC BY 4.0 (image files excluded)",
+            "attribution": "Yuxi (Evan) You and Vue documentation contributors",
+            "license_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/LICENSE",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q20",
+            "group": "Tiếng Anh sang tiếng Việt",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q20.json",
+            "source_sha256": "5d66aa379676ced643cec56dc81a40cf6af44ff1cda83213b6a2b3e4ecb7f586",
+            "raw_sha256": "531504a4479b8fb03c0fa596e27a5489fb411d94a18dec4d9e6364abc781b5ea",
+            "source_origin_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/essentials/computed.md",
+            "selection": "first-section",
+            "license": "CC BY 4.0 (image files excluded)",
+            "attribution": "Yuxi (Evan) You and Vue documentation contributors",
+            "license_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/LICENSE",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q21",
+            "group": "Nguồn tiếng Việt viết lại tiếng Việt",
+            "source_language": "vi",
+            "output_language": "vi",
+            "source_snapshot_path": "Q21.json",
+            "source_sha256": "2299d9d9e3f225898fd8a8348259794be0ca303c6c8064b8c29aa94400ff31be",
+            "raw_sha256": "d689a3335968a3bc985563508f0290e32d4ba00228e5b329a75c3706068ec185",
+            "source_origin_url": null,
+            "selection": "backend extracts main article",
+            "license": "User supplied; local evaluation only",
+            "attribution": "Star Travel / Star International; HTML supplied by project owner",
+            "license_url": null,
+            "writing_brief": {
+                "audience": "Người tìm hiểu du thuyền",
+                "purpose": "Hiểu trải nghiệm và giới hạn nguồn cũ",
+                "length": "Theo lượng thông tin nguồn"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending",
+            "notes": "Q18/Q21 dùng cùng bài thật để kiểm hai luồng; không tính là hai nguồn độc lập."
+        },
+        {
+            "case_id": "Q22",
+            "group": "Thuật ngữ/proper names",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q22.json",
+            "source_sha256": "ad4f2aa1a1c2d73822534d23f927d8950f78dc1f61336de2ceeced7e7f6b3fcf",
+            "raw_sha256": "2801c67aa81dbba03e149a86d0c3402c2a4fd311a3efb834b2eec1e8c0acea14",
+            "source_origin_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/components/props.md",
+            "selection": "first-section",
+            "license": "CC BY 4.0 (image files excluded)",
+            "attribution": "Yuxi (Evan) You and Vue documentation contributors",
+            "license_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/LICENSE",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q23",
+            "group": "Attribution và link",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q23.json",
+            "source_sha256": "15c341dbaa6d8086df36bc96ead7ced360af4e3e117245b5fec99cfa33fcfb32",
+            "raw_sha256": "842768abda46d21a6fab0cad792d8f2ffbbfc38a313cc640535867db347b60f0",
+            "source_origin_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/best-practices/security.md",
+            "selection": "first-section",
+            "license": "CC BY 4.0 (image files excluded)",
+            "attribution": "Yuxi (Evan) You and Vue documentation contributors",
+            "license_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/LICENSE",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q24",
+            "group": "Nguồn cho ca regenerate với ảnh",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q24.json",
+            "source_sha256": "9799fa84fe569bde3d8b7995d67ee4ccf649d40ef50af79cbf8f7323792de472",
+            "raw_sha256": "aec3e6125e594d05468e8f9d9b68597d8f89a75be9a3f79f07441963b8e31c12",
+            "source_origin_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/components/attrs.md",
+            "selection": "first-section",
+            "license": "CC BY 4.0 (image files excluded)",
+            "attribution": "Yuxi (Evan) You and Vue documentation contributors",
+            "license_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/LICENSE",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        },
+        {
+            "case_id": "Q25",
+            "group": "Điều kiện/async và số liệu",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q25.json",
+            "source_sha256": "1dcf495e2d9870b891dadafd17b47b4f67d9367ee681150b2f4ac4e4b67c87ef",
+            "raw_sha256": "0d92020d8d71672b98e89b132073ad94ebf4894326b4999a5061edf72b9e3b7a",
+            "source_origin_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/components/async.md",
+            "selection": "first-section",
+            "license": "CC BY 4.0 (image files excluded)",
+            "attribution": "Yuxi (Evan) You and Vue documentation contributors",
+            "license_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/LICENSE",
+            "writing_brief": {
+                "audience": "Người phát triển website",
+                "purpose": "Hiểu nội dung và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý"
+            },
+            "important_facts": [],
+            "human_fact_review": "pending"
+        }
+    ],
+    "unique_sources": 24
+}

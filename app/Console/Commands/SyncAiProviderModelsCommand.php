@@ -4,7 +4,7 @@ namespace App\Console\Commands;
 
 use App\Exceptions\AiImportException;
 use App\Models\AiProvider;
-use App\Services\Ai\AiProviderCatalogService;
+use App\Services\Ai\Providers\Catalog\AiProviderCatalogService;
 use Illuminate\Console\Command;
 
 /**
@@ -12,6 +12,7 @@ use Illuminate\Console\Command;
  * CHỨC NĂNG FILE: Đồng bộ catalog định kỳ qua service dùng chung với Admin UI.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE: handle().
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * INPUT: providers active dùng models endpoint.
  * OUTPUT: exit code và số lượng model sync; không in endpoint/key/provider body.
  * SIDE EFFECT: service gọi HTTPS và cập nhật catalog/activity log.

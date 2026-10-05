@@ -10,6 +10,7 @@
  * request web vẫn được Laravel xử lý theo cơ chế mặc định.
  *
  * CÁC HÀM/METHOD TRONG FILE:
+ * - withSchedule(): dọn run/checkpoint/phân tích hết hạn và đồng bộ model tùy chọn
  * - withMiddleware(): đăng ký middleware alias và quy tắc redirect guest
  * - withExceptions(): chọn JSON response và chuyển exception API qua BaseResponse
  *
@@ -40,7 +41,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withSchedule(function (Schedule $schedule): void {
+        // =====================================================================
+        // INPUT: scheduler Laravel. OUTPUT: cleanup định kỳ, khóa chống chạy trùng.
+        // =====================================================================
         $schedule->command('ai-import:cleanup')->daily()->withoutOverlapping(30);
+        $schedule->command('ai:cleanup-writing-profile-analyses')->daily()->withoutOverlapping(30);
         if (config('ai-providers.sync_enabled', false)) {
             $schedule->command('ai-providers:sync-models')->hourly()->withoutOverlapping(60);
         }

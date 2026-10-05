@@ -1,9 +1,9 @@
 <?php
 
-use App\Services\Ai\DeterministicAiProvider;
-use App\Services\Ai\GeminiProvider;
-use App\Services\Ai\OpenAiProvider;
-use App\Services\Ai\StructuredAiProvider;
+use App\Services\Ai\Providers\Adapters\DeterministicAiProvider;
+use App\Services\Ai\Providers\Adapters\GeminiProvider;
+use App\Services\Ai\Providers\Adapters\OpenAiProvider;
+use App\Services\Ai\Providers\Adapters\StructuredAiProvider;
 
 /**
  * =====================================================================

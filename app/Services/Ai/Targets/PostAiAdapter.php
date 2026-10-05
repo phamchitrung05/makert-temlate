@@ -7,12 +7,14 @@ use App\Services\SeoMetadataService;
 use App\Support\SeoRules;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Chuyển draft AI thành payload Post theo field được chọn.
  *
  * CÁC HÀM/METHOD TRONG FILE:
+ * - __construct(): nhận sanitizer cho nội dung chuẩn Post.
  * - key(), toPreview(), toApplyPayload().
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
@@ -99,9 +101,9 @@ class PostAiAdapter implements AiTargetAdapterContract
             'excerpt' => ['nullable', 'string', 'max:5000'],
             'content' => ['nullable', 'string'],
             'category_ids' => ['sometimes', 'array'],
-            'category_ids.*' => ['integer', 'distinct', 'exists:categories,id'],
+            'category_ids.*' => ['integer', 'distinct', Rule::exists('categories', 'id')->where('status', 'active')->whereNull('deleted_at')],
             'tag_ids' => ['sometimes', 'array'],
-            'tag_ids.*' => ['integer', 'distinct', 'exists:tags,id'],
+            'tag_ids.*' => ['integer', 'distinct', Rule::exists('tags', 'id')->where('status', 'active')->whereNull('deleted_at')],
             ...SeoRules::rules(),
             'media' => ['sometimes', 'array'],
             'media.thumbnail_id' => ['nullable', 'integer', 'min:1'],

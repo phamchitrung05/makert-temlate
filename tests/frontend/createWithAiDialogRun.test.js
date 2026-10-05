@@ -40,6 +40,7 @@ async function render() {
     global: {
       mocks: { $vuetify: { display: { smAndDown: false } } },
       stubs: {
+        AiWritingPreferences: true, AiSourcePreview: true, AiPipelineReport: true,
         ...passthroughStubs(['VDialog', 'DialogCloseBtn', 'VCard', 'VCardItem', 'VCardTitle', 'VCardSubtitle', 'VCardText', 'VCardActions', 'VAvatar', 'VIcon', 'VSheet', 'VRow', 'VCol', 'VAlert', 'VDivider', 'VProgressLinear', 'AppStepper', 'ArticleSourcePreviewCard']),
         VBtn: { props: ['disabled'], template: '<button :disabled="disabled"><slot /></button>' },
         AppSelect: SelectStub, AppTextField: TextStub, AppTextarea: TextStub,

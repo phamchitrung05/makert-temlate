@@ -1,0 +1,146 @@
+<!doctype html><html lang="vi"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; img-src &#39;none&#39;"><title>Task 2 · Gói chấm mù chất lượng</title><style>body{font:16px/1.65 system-ui;background:#f5f5fb;color:#27253e;max-width:1440px;margin:24px auto;padding:20px}h1,h2{line-height:1.3}.pair{display:grid;grid-template-columns:1fr 1fr;gap:20px}article,details{padding:24px;background:white;border:1px solid #ddd;border-radius:12px;margin:16px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{border-collapse:collapse;display:block;overflow:auto}td,th{border:1px solid #aaa;padding:8px}section{margin:40px 0}a{color:#6552ca}@media(max-width:800px){.pair{grid-template-columns:1fr}}</style><body><h1>Task 2 · Chấm chất lượng bài viết</h1><p>Đọc nguồn và brief rồi chấm X/Y độc lập. Hai người đọc dùng hai CSV riêng. Ghi lỗi facts/điều kiện trước khi chấm văn phong; không dùng AI thay người đánh giá. Chưa có điểm hoặc kết luận rollout. Không mở blind-key/summary trong lúc chấm.</p><section><h2>Q01 · Tin thay đổi rất ngắn</h2><p>Brief: {&quot;audience&quot;:&quot;Người phát triển website&quot;,&quot;purpose&quot;:&quot;Hiểu nội dung và điều kiện nguồn&quot;,&quot;length&quot;:&quot;Theo lượng thông tin nguồn, tránh kéo dài\/lặp ý&quot;}</p><p>Nguồn: Yuxi (Evan) You and Vue documentation contributors · CC BY 4.0 (image files excluded). Phần chọn: preface; HTML được chuyển đổi để kiểm pipeline.</p><p><a href="https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/extras/reactivity-transform.md">Nguồn gốc tại commit đã đóng băng</a> · <a href="https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/LICENSE">License/attribution</a></p><details><summary>Đọc nguồn đã đóng băng</summary><h1>Reactivity Transform {#reactivity-transform}</h1>
+<p>:::danger Removed Experimental Feature
+Reactivity Transform was an experimental feature, and has been removed in the latest 3.4 release. Please read about <a href="https://github.com/vuejs/rfcs/discussions/369#discussioncomment-5059028">the reasoning here</a>.</p>
+<p>If you still intend to use it, it is now available via the <a href="https://vue-macros.sxzz.moe/features/reactivity-transform.html">Vue Macros</a> plugin.
+:::</p>
+<p>:::tip Composition-API-specific
+Reactivity Transform is a Composition-API-specific feature and requires a build step.
+:::</p></details><div class="pair"><article><h3>X</h3><h4>Reactivity Transform đã bị loại bỏ trong Vue 3.4</h4><p>Reactivity Transform từng là một tính năng thử nghiệm của Vue, nhưng đã bị loại bỏ trong phiên bản 3.4. Nếu đang sử dụng hoặc tìm hiểu tính năng này, bạn cần lưu ý thay đổi đó.</p><h2>Tùy chọn nếu vẫn muốn sử dụng</h2><p>Bạn có thể đọc <a href="https://github.com/vuejs/rfcs/discussions/369#discussioncomment-5059028">lý do loại bỏ Reactivity Transform</a> trong phần thảo luận của Vue. Nếu vẫn muốn sử dụng tính năng này, hiện bạn có thể dùng thông qua plugin <a href="https://vue-macros.sxzz.moe/features/reactivity-transform.html">Vue Macros</a>.</p><h2>Điều kiện sử dụng</h2><p>Reactivity Transform là tính năng dành riêng cho Composition API và yêu cầu một bước build.</p></article><article><h3>Y</h3><h4>Reactivity Transform đã bị loại bỏ trong Vue 3.4</h4><p>Reactivity Transform từng là tính năng thử nghiệm và đã bị loại bỏ trong Vue 3.4. Bạn có thể đọc <a href="https://github.com/vuejs/rfcs/discussions/369#discussioncomment-5059028">thảo luận giải thích lý do loại bỏ</a> được tài liệu Vue dẫn lại; thông báo này không trình bày cụ thể lý do.</p><p>Nếu vẫn muốn dùng Reactivity Transform, bạn có thể sử dụng tính năng này qua plugin <a href="https://vue-macros.sxzz.moe/features/reactivity-transform.html">Vue Macros</a>. Tính năng này dành riêng cho Composition API và yêu cầu một bước build.</p></article></div></section><section><h2>Q13 · Giải thích cho người mới</h2><p>Brief: {&quot;audience&quot;:&quot;Người phát triển website&quot;,&quot;purpose&quot;:&quot;Hiểu nội dung và điều kiện nguồn&quot;,&quot;length&quot;:&quot;Theo lượng thông tin nguồn, tránh kéo dài\/lặp ý&quot;}</p><p>Nguồn: Yuxi (Evan) You and Vue documentation contributors · CC BY 4.0 (image files excluded). Phần chọn: first-section; HTML được chuyển đổi để kiểm pipeline.</p><p><a href="https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/introduction.md">Nguồn gốc tại commit đã đóng băng</a> · <a href="https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/LICENSE">License/attribution</a></p><details><summary>Đọc nguồn đã đóng băng</summary><hr>
+<h2>footer: false</h2>
+<h1>Introduction {#introduction}</h1>
+<p>:::info You are reading the documentation for Vue 3!</p>
+<ul>
+<li>Vue 2 support has ended on <strong>Dec 31, 2023</strong>. Learn more about <a href="https://v2.vuejs.org/eol/">Vue 2 EOL</a>.</li>
+<li>Upgrading from Vue 2? Check out the <a href="https://v3-migration.vuejs.org/">Migration Guide</a>.
+:::</li>
+</ul>
+
+
+<h2>What is Vue? {#what-is-vue}</h2>
+<p>Vue (pronounced /vjuː/, like <strong>view</strong>) is a JavaScript framework for building user interfaces. It builds on top of standard HTML, CSS, and JavaScript and provides a declarative, component-based programming model that helps you efficiently develop user interfaces of any complexity.</p>
+<p>Here is a minimal example:</p>
+
+<pre><code>import { createApp } from 'vue'
+
+createApp({
+  data() {
+    return {
+      count: 0
+    }
+  }
+}).mount('#app')
+</code></pre>
+
+<pre><code>import { createApp, ref } from 'vue'
+
+createApp({
+  setup() {
+    return {
+      count: ref(0)
+    }
+  }
+}).mount('#app')
+</code></pre>
+
+<pre><code>&lt;div id="app"&gt;
+  &lt;button @click="count++"&gt;
+    Count is: {{ count }}
+  &lt;/button&gt;
+&lt;/div&gt;
+</code></pre>
+<p><strong>Result</strong></p>
+
+
+<p>The above example demonstrates the two core features of Vue:</p>
+<ul>
+<li>
+<p><strong>Declarative Rendering</strong>: Vue extends standard HTML with a template syntax that allows us to declaratively describe HTML output based on JavaScript state.</p>
+</li>
+<li>
+<p><strong>Reactivity</strong>: Vue automatically tracks JavaScript state changes and efficiently updates the DOM when changes happen.</p>
+</li>
+</ul>
+<p>You may already have questions - don't worry. We will cover every little detail in the rest of the documentation. For now, please read along so you can have a high-level understanding of what Vue offers.</p>
+<p>:::tip Prerequisites
+The rest of the documentation assumes basic familiarity with HTML, CSS, and JavaScript. If you are totally new to frontend development, it might not be the best idea to jump right into a framework as your first step - grasp the basics and then come back! You can check your knowledge level with these overviews for <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/A_re-introduction_to_JavaScript">JavaScript</a>, <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML">HTML</a> and <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/First_steps">CSS</a> if needed. Prior experience with other frameworks helps, but is not required.
+:::</p></details><div class="pair"><article><h3>X</h3><h4>Giới thiệu Vue 3 cho người mới phát triển website</h4><h1>Giới thiệu Vue 3</h1>
+<p>Khi xây dựng giao diện website, bạn cần mô tả nội dung hiển thị và cập nhật giao diện khi dữ liệu thay đổi. Vue hỗ trợ công việc này dựa trên HTML, CSS và JavaScript tiêu chuẩn, với cách lập trình khai báo và tổ chức giao diện thành các thành phần.</p>
+<p><strong>Lưu ý:</strong> Nội dung này giới thiệu <strong>Vue 3</strong>. Vue 2 đã kết thúc hỗ trợ vào <strong>ngày 31 tháng 12 năm 2023</strong>. Bạn có thể tìm hiểu thêm tại trang <a href="https://v2.vuejs.org/eol/">Vue 2 EOL</a>. Nếu đang nâng cấp từ Vue 2, hãy tham khảo <a href="https://v3-migration.vuejs.org/">hướng dẫn chuyển đổi</a>.</p>
+<h2>Vue là gì?</h2>
+<p>Vue, phát âm là /vjuː/ giống từ <strong>view</strong> trong tiếng Anh, là một framework JavaScript dùng để xây dựng giao diện người dùng. Vue cung cấp mô hình lập trình khai báo, dựa trên thành phần, giúp bạn phát triển hiệu quả các giao diện với nhiều mức độ phức tạp khác nhau.</p>
+<h2>Ví dụ tối giản</h2>
+<p>Ví dụ dưới đây tạo một ứng dụng có trạng thái <code>count</code>, với giá trị ban đầu là <code>0</code>. Phần JavaScript có thể được viết theo một trong hai cách sau:</p>
+<pre><code>import { createApp } from 'vue'
+
+createApp({
+  data() {
+    return {
+      count: 0
+    }
+  }
+}).mount('#app')
+</code></pre>
+<pre><code>import { createApp, ref } from 'vue'
+
+createApp({
+  setup() {
+    return {
+      count: ref(0)
+    }
+  }
+}).mount('#app')
+</code></pre>
+<p>Phần HTML hiển thị giá trị đếm trong một nút:</p>
+<pre><code>&lt;div id="app"&gt;
+  &lt;button @click="count++"&gt;
+    Count is: {{ count }}
+  &lt;/button&gt;
+&lt;/div&gt;
+</code></pre>
+<p>Khi nhấn nút, <code>count</code> tăng lên và giá trị hiển thị được cập nhật. Ví dụ này minh họa hai đặc điểm cốt lõi của Vue:</p>
+<ul>
+<li><strong>Kết xuất khai báo:</strong> Vue mở rộng HTML tiêu chuẩn bằng cú pháp template, cho phép bạn mô tả đầu ra HTML dựa trên trạng thái JavaScript. Trong ví dụ, <code>{{ count }}</code> mô tả giá trị cần hiển thị.</li>
+<li><strong>Tính phản ứng:</strong> Vue tự động theo dõi thay đổi của trạng thái JavaScript và cập nhật DOM một cách hiệu quả khi thay đổi xảy ra.</li>
+</ul>
+<p>Nếu bạn chưa hiểu hết các chi tiết trong ví dụ, đừng lo. Những phần tiếp theo của tài liệu sẽ giải thích cụ thể hơn. Ở bước này, mục tiêu là nắm được cách Vue kết nối trạng thái JavaScript với giao diện.</p>
+<h2>Kiến thức cần có trước khi bắt đầu</h2>
+<p>Các phần tiếp theo của tài liệu giả định rằng bạn đã có kiến thức cơ bản về HTML, CSS và JavaScript. Nếu hoàn toàn mới với phát triển frontend, bạn nên học nền tảng trước thay vì bắt đầu ngay bằng một framework, rồi quay lại tìm hiểu Vue.</p>
+<p>Để kiểm tra hoặc củng cố kiến thức, bạn có thể tham khảo các tài liệu tổng quan về <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/A_re-introduction_to_JavaScript">JavaScript</a>, <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML">HTML</a> và <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/First_steps">CSS</a>. Kinh nghiệm với framework khác sẽ hữu ích, nhưng không phải điều kiện bắt buộc.</p></article><article><h3>Y</h3><h4>Vue 3 cho người mới: giao diện cập nhật theo trạng thái như thế nào?</h4><p>Với Vue, bạn mô tả giao diện dựa trên trạng thái JavaScript; khi trạng thái thay đổi, Vue tự động cập nhật giao diện. Vue là framework JavaScript để xây dựng giao diện người dùng trên nền HTML, CSS và JavaScript tiêu chuẩn. Tên Vue được đọc là /vjuː/, giống từ <em>view</em> trong tiếng Anh.</p>
+<p>Nội dung này giới thiệu <strong>Vue 3</strong>. Vue cung cấp mô hình lập trình khai báo và dựa trên component — các thành phần giao diện — giúp xây dựng giao diện từ đơn giản đến phức tạp.</p>
+<h2>Hai cơ chế cốt lõi của Vue</h2>
+<p><strong>Kết xuất khai báo (Declarative Rendering)</strong>: bạn dùng template để mô tả HTML cần hiển thị dựa trên trạng thái JavaScript. Vue mở rộng HTML tiêu chuẩn bằng cú pháp template, chẳng hạn cú pháp để hiển thị giá trị của một biến.</p>
+<p><strong>Tính phản ứng (Reactivity)</strong>: Vue tự động theo dõi thay đổi trạng thái JavaScript và cập nhật DOM khi có thay đổi. Ví dụ bộ đếm dưới đây minh họa cách hai cơ chế này phối hợp.</p>
+<h2>Ví dụ bộ đếm</h2>
+<p>Nguồn đưa ra hai cách khai báo JavaScript cho cùng một bộ đếm. Chỉ dùng một trong hai đoạn, không chạy cả hai cùng lúc. Cách thứ nhất khai báo <code>count</code> với giá trị ban đầu là <code>0</code> trong <code>data()</code>, rồi gắn ứng dụng vào phần tử có ID <code>app</code>:</p>
+<pre><code>import { createApp } from 'vue'
+
+createApp({
+  data() {
+    return {
+      count: 0
+    }
+  }
+}).mount('#app')
+</code></pre>
+<p>Cách thứ hai dùng <code>setup()</code> và <code>ref(0)</code> để khai báo trạng thái đếm, cũng bắt đầu từ <code>0</code>:</p>
+<pre><code>import { createApp, ref } from 'vue'
+
+createApp({
+  setup() {
+    return {
+      count: ref(0)
+    }
+  }
+}).mount('#app')
+</code></pre>
+<p>Cả hai cách đều dùng phần HTML sau:</p>
+<pre><code>&lt;div id="app"&gt;
+  &lt;button @click="count++"&gt;
+    Count is: {{ count }}
+  &lt;/button&gt;
+&lt;/div&gt;
+</code></pre>
+<p>Trong template, <code>{{ count }}</code> hiển thị giá trị của <code>count</code>, còn <code>@click="count++"</code> tăng giá trị đó thêm một mỗi lần bấm nút. Theo logic của đoạn code, nút ban đầu hiển thị <code>Count is: 0</code>; sau một lần bấm, nội dung trở thành <code>Count is: 1</code>. Bạn khai báo nơi hiển thị số đếm, còn Vue theo dõi thay đổi của <code>count</code> và cập nhật nội dung tương ứng trong DOM.</p>
+<h2>Cần biết gì trước khi học?</h2>
+<p>Tài liệu giả định bạn đã có kiến thức cơ bản về <strong>HTML, CSS và JavaScript</strong>. Nếu hoàn toàn mới với lập trình frontend, nên học các nền tảng này trước khi bắt đầu với framework. Bạn có thể kiểm tra kiến thức hoặc ôn lại qua các phần tổng quan của MDN về <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/A_re-introduction_to_JavaScript">JavaScript</a>, <a href="https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML">HTML</a> và <a href="https://developer.mozilla.org/en-US/docs/Learn/CSS/First_steps">CSS</a>. Kinh nghiệm với framework khác có ích, nhưng không bắt buộc.</p>
+<p>Nếu đang dùng Vue 2, lưu ý rằng Vue 2 đã kết thúc hỗ trợ vào ngày <strong>31/12/2023</strong>. Xem thêm tại <a href="https://v2.vuejs.org/eol/">Vue 2 EOL</a>; nếu nâng cấp lên Vue 3, tham khảo <a href="https://v3-migration.vuejs.org/">Migration Guide</a>.</p></article></div></section></body></html>

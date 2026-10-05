@@ -1,0 +1,60 @@
+{
+    "arm": "B",
+    "status": "failed",
+    "error_code": "AI_QUALITY_GROUNDING",
+    "final": null,
+    "quality_checks": [],
+    "cost": null,
+    "diagnostics": {
+        "stage": "validate",
+        "validation_errors": [
+            {
+                "group": "content",
+                "field": "content_html",
+                "reason": "source_link_missing"
+            }
+        ]
+    },
+    "calls": [
+        {
+            "task": "single_step",
+            "output": {
+                "title": "Release và phiên bản",
+                "content_html": "<h1>Release Notes</h1>\n<p>Khi phát triển website bằng Laravel, việc hiểu cách đánh số phiên bản và chính sách tương thích giúp bạn lựa chọn phiên bản phù hợp, khai báo phụ thuộc đúng cách và đánh giá tác động của mỗi lần cập nhật. Laravel cùng các gói chính thức khác áp dụng quy tắc Semantic Versioning, vì vậy số phiên bản phản ánh loại thay đổi được thực hiện trong một bản phát hành.</p>\n<ul>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#versioning-scheme\">Versioning Scheme</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#support-policy\">Support Policy</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37dc40aee9/releases.md#laravel-12\">Laravel 12</a></li>\n</ul>\n<h2>Quy tắc đánh số phiên bản</h2>\n<p>Laravel và các gói chính thức do Laravel phát triển tuân theo <a href=\"https://semver.org\">Semantic Versioning</a>. Các bản phát hành chính của framework được thực hiện hằng năm, thường vào khoảng quý I. Trong khi đó, các bản phát hành minor và patch có thể xuất hiện thường xuyên, thậm chí mỗi tuần.</p>\n<p>Điểm quan trọng là các bản phát hành minor và patch <strong>không được</strong> chứa những thay đổi phá vỡ khả năng tương thích. Điều này giúp việc cập nhật trong cùng một chu kỳ phiên bản có thể được thực hiện mà không phải xử lý các thay đổi phá vỡ đã được dự kiến cho bản phát hành chính.</p>\n<h2>Khai báo phiên bản phụ thuộc</h2>\n<p>Khi tham chiếu framework Laravel hoặc các thành phần của framework từ ứng dụng hay package của mình, bạn nên luôn sử dụng một ràng buộc phiên bản, chẳng hạn như <code>^12.0</code>. Lý do là các bản phát hành major của Laravel có thể bao gồm những thay đổi phá vỡ tương thích.</p>\n<p>Ràng buộc phiên bản giúp mô tả phạm vi phiên bản mà ứng dụng hoặc package có thể sử dụng. Dù các bản major có thể chứa breaking changes, Laravel vẫn hướng đến việc bảo đảm rằng quá trình cập nhật lên một bản major mới có thể hoàn tất trong một ngày hoặc ít hơn.</p>\n<h2>Đối số có tên</h2>\n<p><a href=\"https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments\">Đối số có tên</a> không thuộc phạm vi các nguyên tắc tương thích ngược của Laravel. Khi cần thiết để cải thiện codebase Laravel, đội ngũ phát triển có thể đổi tên các đối số của hàm.</p>\n<p>Vì vậy, khi gọi các phương thức Laravel bằng đối số có tên, bạn nên thận trọng. Tên tham số được sử dụng trong lời gọi hiện tại có thể thay đổi trong tương lai. Cần hiểu rõ giới hạn này trước khi dựa vào tên tham số trong code của ứng dụng hoặc package.</p>",
+                "content": "<h1>Release Notes</h1>\n<p>Khi phát triển website bằng Laravel, việc hiểu cách đánh số phiên bản và chính sách tương thích giúp bạn lựa chọn phiên bản phù hợp, khai báo phụ thuộc đúng cách và đánh giá tác động của mỗi lần cập nhật. Laravel cùng các gói chính thức khác áp dụng quy tắc Semantic Versioning, vì vậy số phiên bản phản ánh loại thay đổi được thực hiện trong một bản phát hành.</p>\n<ul>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#versioning-scheme\">Versioning Scheme</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#support-policy\">Support Policy</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37dc40aee9/releases.md#laravel-12\">Laravel 12</a></li>\n</ul>\n<h2>Quy tắc đánh số phiên bản</h2>\n<p>Laravel và các gói chính thức do Laravel phát triển tuân theo <a href=\"https://semver.org\">Semantic Versioning</a>. Các bản phát hành chính của framework được thực hiện hằng năm, thường vào khoảng quý I. Trong khi đó, các bản phát hành minor và patch có thể xuất hiện thường xuyên, thậm chí mỗi tuần.</p>\n<p>Điểm quan trọng là các bản phát hành minor và patch <strong>không được</strong> chứa những thay đổi phá vỡ khả năng tương thích. Điều này giúp việc cập nhật trong cùng một chu kỳ phiên bản có thể được thực hiện mà không phải xử lý các thay đổi phá vỡ đã được dự kiến cho bản phát hành chính.</p>\n<h2>Khai báo phiên bản phụ thuộc</h2>\n<p>Khi tham chiếu framework Laravel hoặc các thành phần của framework từ ứng dụng hay package của mình, bạn nên luôn sử dụng một ràng buộc phiên bản, chẳng hạn như <code>^12.0</code>. Lý do là các bản phát hành major của Laravel có thể bao gồm những thay đổi phá vỡ tương thích.</p>\n<p>Ràng buộc phiên bản giúp mô tả phạm vi phiên bản mà ứng dụng hoặc package có thể sử dụng. Dù các bản major có thể chứa breaking changes, Laravel vẫn hướng đến việc bảo đảm rằng quá trình cập nhật lên một bản major mới có thể hoàn tất trong một ngày hoặc ít hơn.</p>\n<h2>Đối số có tên</h2>\n<p><a href=\"https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments\">Đối số có tên</a> không thuộc phạm vi các nguyên tắc tương thích ngược của Laravel. Khi cần thiết để cải thiện codebase Laravel, đội ngũ phát triển có thể đổi tên các đối số của hàm.</p>\n<p>Vì vậy, khi gọi các phương thức Laravel bằng đối số có tên, bạn nên thận trọng. Tên tham số được sử dụng trong lời gọi hiện tại có thể thay đổi trong tương lai. Cần hiểu rõ giới hạn này trước khi dựa vào tên tham số trong code của ứng dụng hoặc package.</p>"
+            },
+            "diagnostics": {
+                "response_id": "resp_0fd79d26363256b4016ac299ab2a6887d0ab79ba086e0d97eb",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "post.content.v1",
+                "requested_groups": [
+                    "title",
+                    "content"
+                ],
+                "returned_fields": [
+                    "title",
+                    "content_html"
+                ],
+                "usage": {
+                    "prompt_tokens": 1262,
+                    "completion_tokens": 843,
+                    "total_tokens": 2105,
+                    "reasoning_tokens": 67
+                }
+            },
+            "latency_ms": 68378
+        }
+    ],
+    "latency_ms": 68384,
+    "input_sha256": "a3d908d5a743a546775def6a0ea1346747744910f4bdcaa7cbbd0d757c9b3b2f",
+    "source_sha256": "3a0301916ee8607e3f5764fa705babeb7028ba6d2798adaf7cd8ac1b6a32d466",
+    "provider": "connection-97c6d404-7463-428e-8f17-8bd19c767885",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Release và phiên bản",
+        "content_html": "<h1>Release Notes</h1>\n<p>Khi phát triển website bằng Laravel, việc hiểu cách đánh số phiên bản và chính sách tương thích giúp bạn lựa chọn phiên bản phù hợp, khai báo phụ thuộc đúng cách và đánh giá tác động của mỗi lần cập nhật. Laravel cùng các gói chính thức khác áp dụng quy tắc Semantic Versioning, vì vậy số phiên bản phản ánh loại thay đổi được thực hiện trong một bản phát hành.</p>\n<ul>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#versioning-scheme\">Versioning Scheme</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#support-policy\">Support Policy</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37dc40aee9/releases.md#laravel-12\">Laravel 12</a></li>\n</ul>\n<h2>Quy tắc đánh số phiên bản</h2>\n<p>Laravel và các gói chính thức do Laravel phát triển tuân theo <a href=\"https://semver.org\">Semantic Versioning</a>. Các bản phát hành chính của framework được thực hiện hằng năm, thường vào khoảng quý I. Trong khi đó, các bản phát hành minor và patch có thể xuất hiện thường xuyên, thậm chí mỗi tuần.</p>\n<p>Điểm quan trọng là các bản phát hành minor và patch <strong>không được</strong> chứa những thay đổi phá vỡ khả năng tương thích. Điều này giúp việc cập nhật trong cùng một chu kỳ phiên bản có thể được thực hiện mà không phải xử lý các thay đổi phá vỡ đã được dự kiến cho bản phát hành chính.</p>\n<h2>Khai báo phiên bản phụ thuộc</h2>\n<p>Khi tham chiếu framework Laravel hoặc các thành phần của framework từ ứng dụng hay package của mình, bạn nên luôn sử dụng một ràng buộc phiên bản, chẳng hạn như <code>^12.0</code>. Lý do là các bản phát hành major của Laravel có thể bao gồm những thay đổi phá vỡ tương thích.</p>\n<p>Ràng buộc phiên bản giúp mô tả phạm vi phiên bản mà ứng dụng hoặc package có thể sử dụng. Dù các bản major có thể chứa breaking changes, Laravel vẫn hướng đến việc bảo đảm rằng quá trình cập nhật lên một bản major mới có thể hoàn tất trong một ngày hoặc ít hơn.</p>\n<h2>Đối số có tên</h2>\n<p><a href=\"https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments\">Đối số có tên</a> không thuộc phạm vi các nguyên tắc tương thích ngược của Laravel. Khi cần thiết để cải thiện codebase Laravel, đội ngũ phát triển có thể đổi tên các đối số của hàm.</p>\n<p>Vì vậy, khi gọi các phương thức Laravel bằng đối số có tên, bạn nên thận trọng. Tên tham số được sử dụng trong lời gọi hiện tại có thể thay đổi trong tương lai. Cần hiểu rõ giới hạn này trước khi dựa vào tên tham số trong code của ứng dụng hoặc package.</p>"
+    },
+    "total_tokens": 2105
+}

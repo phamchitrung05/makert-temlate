@@ -1,0 +1,91 @@
+{
+    "source_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/essentials/component-basics.md",
+    "title": "Minh họa cây component",
+    "source_format": "html",
+    "version": "article.source.v1",
+    "content_html": "<h1>Components Basics {#components-basics}</h1>\n\n<p>Components allow us to split the UI into independent and reusable pieces, and think about each piece in isolation. It's common for an app to be organized into a tree of nested components:</p>\n<p></p>\n\n<p>This is very similar to how we nest native HTML elements, but Vue implements its own component model that allows us to encapsulate custom content and logic in each component. Vue also plays nicely with native Web Components. If you are curious about the relationship between Vue Components and native Web Components, <a href=\"https://github.com/guide/extras/web-components\">read more here</a>.</p>\n<h2>Defining a Component {#defining-a-component}</h2>\n<p>When using a build step, we typically define each Vue component in a dedicated file using the <code>.vue</code> extension - known as a <a href=\"https://github.com/guide/scaling-up/sfc\">Single-File Component</a> (SFC for short):</p>\n\n<pre><code>&lt;script&gt;\nexport default {\n  data() {\n    return {\n      count: 0\n    }\n  }\n}\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;button @click=\"count++\"&gt;You clicked me {{ count }} times.&lt;/button&gt;\n&lt;/template&gt;\n</code></pre>\n\n<pre><code>&lt;script setup&gt;\nimport { ref } from 'vue'\n\nconst count = ref(0)\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;button @click=\"count++\"&gt;You clicked me {{ count }} times.&lt;/button&gt;\n&lt;/template&gt;\n</code></pre>\n\n<p>When not using a build step, a Vue component can be defined as a plain JavaScript object containing Vue-specific options:</p>\n\n<pre><code>export default {\n  data() {\n    return {\n      count: 0\n    }\n  },\n  template: `\n    &lt;button @click=\"count++\"&gt;\n      You clicked me {{ count }} times.\n    &lt;/button&gt;`\n}\n</code></pre>\n\n<pre><code>import { ref } from 'vue'\n\nexport default {\n  setup() {\n    const count = ref(0)\n    return { count }\n  },\n  template: `\n    &lt;button @click=\"count++\"&gt;\n      You clicked me {{ count }} times.\n    &lt;/button&gt;`\n  // Can also target an in-DOM template:\n  // template: '#my-template-element'\n}\n</code></pre>\n\n<p>The template is inlined as a JavaScript string here, which Vue will compile on the fly. You can also use an ID selector pointing to an element (usually native <code>&lt;template&gt;</code> elements) - Vue will use its content as the template source.</p>\n<p>The example above defines a single component and exports it as the default export of a <code>.js</code> file, but you can use named exports to export multiple components from the same file.</p>",
+    "blocks": [
+        {
+            "id": "S001",
+            "type": "h1",
+            "text": "Components Basics {#components-basics}",
+            "html": "<h1>Components Basics {#components-basics}</h1>"
+        },
+        {
+            "id": "S002",
+            "type": "p",
+            "text": "Components allow us to split the UI into independent and reusable pieces, and think about each piece in isolation. It's common for an app to be organized into a tree of nested components:",
+            "html": "<p>Components allow us to split the UI into independent and reusable pieces, and think about each piece in isolation. It's common for an app to be organized into a tree of nested components:</p>"
+        },
+        {
+            "id": "S003",
+            "type": "p",
+            "text": "This is very similar to how we nest native HTML elements, but Vue implements its own component model that allows us to encapsulate custom content and logic in each component. Vue also plays nicely with native Web Components. If you are curious about the relationship between Vue Components and native Web Components, read more here.",
+            "html": "<p>This is very similar to how we nest native HTML elements, but Vue implements its own component model that allows us to encapsulate custom content and logic in each component. Vue also plays nicely with native Web Components. If you are curious about the relationship between Vue Components and native Web Components, <a href=\"https://github.com/guide/extras/web-components\">read more here</a>.</p>"
+        },
+        {
+            "id": "S004",
+            "type": "h2",
+            "text": "Defining a Component {#defining-a-component}",
+            "html": "<h2>Defining a Component {#defining-a-component}</h2>"
+        },
+        {
+            "id": "S005",
+            "type": "p",
+            "text": "When using a build step, we typically define each Vue component in a dedicated file using the .vue extension - known as a Single-File Component (SFC for short):",
+            "html": "<p>When using a build step, we typically define each Vue component in a dedicated file using the <code>.vue</code> extension - known as a <a href=\"https://github.com/guide/scaling-up/sfc\">Single-File Component</a> (SFC for short):</p>"
+        },
+        {
+            "id": "S006",
+            "type": "pre",
+            "text": "<script>\nexport default {\n  data() {\n    return {\n      count: 0\n    }\n  }\n}\n</script>\n\n<template>\n  <button @click=\"count++\">You clicked me {{ count }} times.</button>\n</template>",
+            "html": "<pre><code>&lt;script&gt;\nexport default {\n  data() {\n    return {\n      count: 0\n    }\n  }\n}\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;button @click=\"count++\"&gt;You clicked me {{ count }} times.&lt;/button&gt;\n&lt;/template&gt;\n</code></pre>"
+        },
+        {
+            "id": "S007",
+            "type": "pre",
+            "text": "<script setup>\nimport { ref } from 'vue'\n\nconst count = ref(0)\n</script>\n\n<template>\n  <button @click=\"count++\">You clicked me {{ count }} times.</button>\n</template>",
+            "html": "<pre><code>&lt;script setup&gt;\nimport { ref } from 'vue'\n\nconst count = ref(0)\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;button @click=\"count++\"&gt;You clicked me {{ count }} times.&lt;/button&gt;\n&lt;/template&gt;\n</code></pre>"
+        },
+        {
+            "id": "S008",
+            "type": "p",
+            "text": "When not using a build step, a Vue component can be defined as a plain JavaScript object containing Vue-specific options:",
+            "html": "<p>When not using a build step, a Vue component can be defined as a plain JavaScript object containing Vue-specific options:</p>"
+        },
+        {
+            "id": "S009",
+            "type": "pre",
+            "text": "export default {\n  data() {\n    return {\n      count: 0\n    }\n  },\n  template: `\n    <button @click=\"count++\">\n      You clicked me {{ count }} times.\n    </button>`\n}",
+            "html": "<pre><code>export default {\n  data() {\n    return {\n      count: 0\n    }\n  },\n  template: `\n    &lt;button @click=\"count++\"&gt;\n      You clicked me {{ count }} times.\n    &lt;/button&gt;`\n}\n</code></pre>"
+        },
+        {
+            "id": "S010",
+            "type": "pre",
+            "text": "import { ref } from 'vue'\n\nexport default {\n  setup() {\n    const count = ref(0)\n    return { count }\n  },\n  template: `\n    <button @click=\"count++\">\n      You clicked me {{ count }} times.\n    </button>`\n  // Can also target an in-DOM template:\n  // template: '#my-template-element'\n}",
+            "html": "<pre><code>import { ref } from 'vue'\n\nexport default {\n  setup() {\n    const count = ref(0)\n    return { count }\n  },\n  template: `\n    &lt;button @click=\"count++\"&gt;\n      You clicked me {{ count }} times.\n    &lt;/button&gt;`\n  // Can also target an in-DOM template:\n  // template: '#my-template-element'\n}\n</code></pre>"
+        },
+        {
+            "id": "S011",
+            "type": "p",
+            "text": "The template is inlined as a JavaScript string here, which Vue will compile on the fly. You can also use an ID selector pointing to an element (usually native <template> elements) - Vue will use its content as the template source.",
+            "html": "<p>The template is inlined as a JavaScript string here, which Vue will compile on the fly. You can also use an ID selector pointing to an element (usually native <code>&lt;template&gt;</code> elements) - Vue will use its content as the template source.</p>"
+        },
+        {
+            "id": "S012",
+            "type": "p",
+            "text": "The example above defines a single component and exports it as the default export of a .js file, but you can use named exports to export multiple components from the same file.",
+            "html": "<p>The example above defines a single component and exports it as the default export of a <code>.js</code> file, but you can use named exports to export multiple components from the same file.</p>"
+        }
+    ],
+    "source_images": [
+        {
+            "id": "SOURCE_IMAGE_1",
+            "source_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/essentials/images/components.png",
+            "alt": "Diagram showing a component tree structure with a root component branching into multiple child and nested sub-child components",
+            "context": ""
+        }
+    ],
+    "fetched_at": "2026-10-04T17:47:26+00:00",
+    "hash": "3c28959b842755845ca675718f14afbb81374a10ce4b38d0b811409bf22340bb"
+}

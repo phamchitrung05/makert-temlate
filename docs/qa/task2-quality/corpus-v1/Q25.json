@@ -1,0 +1,96 @@
+{
+    "source_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/components/async.md",
+    "title": "Điều kiện/async và số liệu",
+    "source_format": "html",
+    "version": "article.source.v1",
+    "content_html": "<h1>Async Components {#async-components}</h1>\n<h2>Basic Usage {#basic-usage}</h2>\n<p>In large applications, we may need to divide the app into smaller chunks and only load a component from the server when it's needed. To make that possible, Vue has a <a href=\"https://github.com/api/general#defineasynccomponent\"><code>defineAsyncComponent</code></a> function:</p>\n<pre><code>import { defineAsyncComponent } from 'vue'\n\nconst AsyncComp = defineAsyncComponent(() =&gt; {\n  return new Promise((resolve, reject) =&gt; {\n    // ...load component from server\n    resolve(/* loaded component */)\n  })\n})\n// ... use `AsyncComp` like a normal component\n</code></pre>\n<p>As you can see, <code>defineAsyncComponent</code> accepts a loader function that returns a Promise. The Promise's <code>resolve</code> callback should be called when you have retrieved your component definition from the server. You can also call <code>reject(reason)</code> to indicate the load has failed.</p>\n<p><a href=\"https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/import\">ES module dynamic import</a> also returns a Promise, so most of the time we will use it in combination with <code>defineAsyncComponent</code>. Bundlers like Vite and webpack also support the syntax (and will use it as bundle split points), so we can use it to import Vue SFCs:</p>\n<pre><code>import { defineAsyncComponent } from 'vue'\n\nconst AsyncComp = defineAsyncComponent(() =&gt;\n  import('./components/MyComponent.vue')\n)\n</code></pre>\n<p>The resulting <code>AsyncComp</code> is a wrapper component that only calls the loader function when it is actually rendered on the page. In addition, it will pass along any props and slots to the inner component, so you can use the async wrapper to seamlessly replace the original component while achieving lazy loading.</p>\n<p>As with normal components, async components can be <a href=\"https://github.com/guide/components/registration#global-registration\">registered globally</a> using <code>app.component()</code>:</p>\n<pre><code>app.component('MyComponent', defineAsyncComponent(() =&gt;\n  import('./components/MyComponent.vue')\n))\n</code></pre>\n\n<p>You can also use <code>defineAsyncComponent</code> when <a href=\"https://github.com/guide/components/registration#local-registration\">registering a component locally</a>:</p>\n<pre><code>&lt;script&gt;\nimport { defineAsyncComponent } from 'vue'\n\nexport default {\n  components: {\n    AdminPage: defineAsyncComponent(() =&gt;\n      import('./components/AdminPageComponent.vue')\n    )\n  }\n}\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;AdminPage /&gt;\n&lt;/template&gt;\n</code></pre>\n\n\n<p>They can also be defined directly inside their parent component:</p>\n<pre><code>&lt;script setup&gt;\nimport { defineAsyncComponent } from 'vue'\n\nconst AdminPage = defineAsyncComponent(() =&gt;\n  import('./components/AdminPageComponent.vue')\n)\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;AdminPage /&gt;\n&lt;/template&gt;\n</code></pre>",
+    "blocks": [
+        {
+            "id": "S001",
+            "type": "h1",
+            "text": "Async Components {#async-components}",
+            "html": "<h1>Async Components {#async-components}</h1>"
+        },
+        {
+            "id": "S002",
+            "type": "h2",
+            "text": "Basic Usage {#basic-usage}",
+            "html": "<h2>Basic Usage {#basic-usage}</h2>"
+        },
+        {
+            "id": "S003",
+            "type": "p",
+            "text": "In large applications, we may need to divide the app into smaller chunks and only load a component from the server when it's needed. To make that possible, Vue has a defineAsyncComponent function:",
+            "html": "<p>In large applications, we may need to divide the app into smaller chunks and only load a component from the server when it's needed. To make that possible, Vue has a <a href=\"https://github.com/api/general#defineasynccomponent\"><code>defineAsyncComponent</code></a> function:</p>"
+        },
+        {
+            "id": "S004",
+            "type": "pre",
+            "text": "import { defineAsyncComponent } from 'vue'\n\nconst AsyncComp = defineAsyncComponent(() => {\n  return new Promise((resolve, reject) => {\n    // ...load component from server\n    resolve(/* loaded component */)\n  })\n})\n// ... use `AsyncComp` like a normal component",
+            "html": "<pre><code>import { defineAsyncComponent } from 'vue'\n\nconst AsyncComp = defineAsyncComponent(() =&gt; {\n  return new Promise((resolve, reject) =&gt; {\n    // ...load component from server\n    resolve(/* loaded component */)\n  })\n})\n// ... use `AsyncComp` like a normal component\n</code></pre>"
+        },
+        {
+            "id": "S005",
+            "type": "p",
+            "text": "As you can see, defineAsyncComponent accepts a loader function that returns a Promise. The Promise's resolve callback should be called when you have retrieved your component definition from the server. You can also call reject(reason) to indicate the load has failed.",
+            "html": "<p>As you can see, <code>defineAsyncComponent</code> accepts a loader function that returns a Promise. The Promise's <code>resolve</code> callback should be called when you have retrieved your component definition from the server. You can also call <code>reject(reason)</code> to indicate the load has failed.</p>"
+        },
+        {
+            "id": "S006",
+            "type": "p",
+            "text": "ES module dynamic import also returns a Promise, so most of the time we will use it in combination with defineAsyncComponent. Bundlers like Vite and webpack also support the syntax (and will use it as bundle split points), so we can use it to import Vue SFCs:",
+            "html": "<p><a href=\"https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/import\">ES module dynamic import</a> also returns a Promise, so most of the time we will use it in combination with <code>defineAsyncComponent</code>. Bundlers like Vite and webpack also support the syntax (and will use it as bundle split points), so we can use it to import Vue SFCs:</p>"
+        },
+        {
+            "id": "S007",
+            "type": "pre",
+            "text": "import { defineAsyncComponent } from 'vue'\n\nconst AsyncComp = defineAsyncComponent(() =>\n  import('./components/MyComponent.vue')\n)",
+            "html": "<pre><code>import { defineAsyncComponent } from 'vue'\n\nconst AsyncComp = defineAsyncComponent(() =&gt;\n  import('./components/MyComponent.vue')\n)\n</code></pre>"
+        },
+        {
+            "id": "S008",
+            "type": "p",
+            "text": "The resulting AsyncComp is a wrapper component that only calls the loader function when it is actually rendered on the page. In addition, it will pass along any props and slots to the inner component, so you can use the async wrapper to seamlessly replace the original component while achieving lazy loading.",
+            "html": "<p>The resulting <code>AsyncComp</code> is a wrapper component that only calls the loader function when it is actually rendered on the page. In addition, it will pass along any props and slots to the inner component, so you can use the async wrapper to seamlessly replace the original component while achieving lazy loading.</p>"
+        },
+        {
+            "id": "S009",
+            "type": "p",
+            "text": "As with normal components, async components can be registered globally using app.component():",
+            "html": "<p>As with normal components, async components can be <a href=\"https://github.com/guide/components/registration#global-registration\">registered globally</a> using <code>app.component()</code>:</p>"
+        },
+        {
+            "id": "S010",
+            "type": "pre",
+            "text": "app.component('MyComponent', defineAsyncComponent(() =>\n  import('./components/MyComponent.vue')\n))",
+            "html": "<pre><code>app.component('MyComponent', defineAsyncComponent(() =&gt;\n  import('./components/MyComponent.vue')\n))\n</code></pre>"
+        },
+        {
+            "id": "S011",
+            "type": "p",
+            "text": "You can also use defineAsyncComponent when registering a component locally:",
+            "html": "<p>You can also use <code>defineAsyncComponent</code> when <a href=\"https://github.com/guide/components/registration#local-registration\">registering a component locally</a>:</p>"
+        },
+        {
+            "id": "S012",
+            "type": "pre",
+            "text": "<script>\nimport { defineAsyncComponent } from 'vue'\n\nexport default {\n  components: {\n    AdminPage: defineAsyncComponent(() =>\n      import('./components/AdminPageComponent.vue')\n    )\n  }\n}\n</script>\n\n<template>\n  <AdminPage />\n</template>",
+            "html": "<pre><code>&lt;script&gt;\nimport { defineAsyncComponent } from 'vue'\n\nexport default {\n  components: {\n    AdminPage: defineAsyncComponent(() =&gt;\n      import('./components/AdminPageComponent.vue')\n    )\n  }\n}\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;AdminPage /&gt;\n&lt;/template&gt;\n</code></pre>"
+        },
+        {
+            "id": "S013",
+            "type": "p",
+            "text": "They can also be defined directly inside their parent component:",
+            "html": "<p>They can also be defined directly inside their parent component:</p>"
+        },
+        {
+            "id": "S014",
+            "type": "pre",
+            "text": "<script setup>\nimport { defineAsyncComponent } from 'vue'\n\nconst AdminPage = defineAsyncComponent(() =>\n  import('./components/AdminPageComponent.vue')\n)\n</script>\n\n<template>\n  <AdminPage />\n</template>",
+            "html": "<pre><code>&lt;script setup&gt;\nimport { defineAsyncComponent } from 'vue'\n\nconst AdminPage = defineAsyncComponent(() =&gt;\n  import('./components/AdminPageComponent.vue')\n)\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;AdminPage /&gt;\n&lt;/template&gt;\n</code></pre>"
+        }
+    ],
+    "source_images": [],
+    "fetched_at": "2026-10-04T17:47:34+00:00",
+    "hash": "4a53c7ee068a6280dfee8f5f37fefb743558bc692c6bedeeb832d25c6270fd03"
+}

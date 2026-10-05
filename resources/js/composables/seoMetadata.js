@@ -12,6 +12,8 @@
  * - wordsOf()/analyzeContent(): thống kê nội dung HTML
  * - analyzeSeo(): tính checklist, score và metadata hiệu lực
  * - buildContentUrl(): dựng URL public theo path model
+ * - normalizeKeyword()/slugKeyword(): chuẩn hóa từ khóa và slug.
+ * - add(): closure tạo item checklist; không gọi API hoặc sửa model.
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : metadata, title/content/excerpt và media của model nội dung.
@@ -19,7 +21,12 @@
  * =====================================================================
  */
 
-/** Input: payload API Post/Resource tùy chọn. Output: state SEO camelCase độc lập model. */
+/**
+ * =====================================================================
+ * Input: payload API Post/Resource tùy chọn.
+ * Output: state SEO camelCase độc lập model.
+ * =====================================================================
+ */
 export const createSeo = (model = {}) => {
   const nested = model?.seo_metadata ?? model?.seo ?? model
 
@@ -37,23 +44,48 @@ export const createSeo = (model = {}) => {
   }
 }
 
-/** Input: text. Output: đơn vị phân cách khoảng trắng chứa chữ/số. */
+/**
+ * =====================================================================
+ * Input: text.
+ * Output: đơn vị phân cách khoảng trắng chứa chữ/số.
+ * =====================================================================
+ */
 export const wordsOf = text => String(text).split(/\s+/u).filter(word => /[\p{L}\p{N}]/u.test(word))
 
-/** Input: keyword/text. Output: lowercase NFC, giữ dấu tiếng Việt để so khớp tự nhiên. */
+/**
+ * =====================================================================
+ * Input: keyword/text.
+ * Output: lowercase NFC, giữ dấu tiếng Việt để so khớp tự nhiên.
+ * =====================================================================
+ */
 const normalizeKeyword = text => String(text).normalize('NFC').toLocaleLowerCase('vi').replace(/[^\p{L}\p{N}]+/gu, ' ').trim()
 
-/** Input: keyword. Output: chuỗi không dấu để so khớp trong slug. */
+/**
+ * =====================================================================
+ * Input: keyword.
+ * Output: chuỗi không dấu để so khớp trong slug.
+ * =====================================================================
+ */
 const slugKeyword = text => normalizeKeyword(text).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/\s+/g, '-')
 
-/** Input: slug, origin và path model. Output: URL public đã encode slug. */
+/**
+ * =====================================================================
+ * Input: slug, origin và path model.
+ * Output: URL public đã encode slug.
+ * =====================================================================
+ */
 export const buildContentUrl = (slug, origin, path = '/blog') => {
   const basePath = String(path || '/').replace(/\/$/u, '') || '/'
 
   return new URL(`${basePath}/${encodeURIComponent(slug || '')}`, origin).href
 }
 
-/** Input: HTML editor và origin. Output: text/words/headings/links/images. */
+/**
+ * =====================================================================
+ * Input: HTML editor và origin. Output: text/words/headings/links/images và IDs
+ * ảnh inline để gallery usage không làm checklist đếm trùng một ảnh.
+ * =====================================================================
+ */
 export function analyzeContent(html, origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost') {
   const template = document.createElement('template')
 
@@ -65,7 +97,10 @@ export function analyzeContent(html, origin = typeof window !== 'undefined' ? wi
 
   const headings = root.querySelectorAll('h2').length
 
-  const images = [...root.querySelectorAll('img')]
+  const imageNodes = [...root.querySelectorAll('img')]
+  const inlineAssetIds = [...new Set(imageNodes.map(node => node.getAttribute('data-media-asset-id')).filter(id => /^[1-9]\d*$/u.test(id || '')))]
+
+  const images = imageNodes
     .filter(node => !['presentation', 'none'].includes(node.getAttribute('role')) && node.getAttribute('aria-hidden') !== 'true')
     .map(node => ({ alt: node.getAttribute('alt')?.trim() || '' }))
 
@@ -88,12 +123,14 @@ export function analyzeContent(html, origin = typeof window !== 'undefined' ? wi
 
   const text = (root.textContent || '').replace(/\s+/gu, ' ').trim()
 
-  return { text, words: wordsOf(text), headings, links, images }
+  return { text, words: wordsOf(text), headings, links, images, inlineAssetIds }
 }
 
 /**
+ * =====================================================================
  * Input: form/model, slug đã kiểm tra, URL và thống kê HTML.
  * Output: checklist SEO, score và metadata hiệu lực; không gửi score lên API.
+ * =====================================================================
  */
 export function analyzeSeo({ form = {}, slug = '', checked = false, url = '', content }) {
   const seo = form.seo ?? form.seoMetadata ?? form.seo_metadata ?? {}
@@ -105,7 +142,11 @@ export function analyzeSeo({ form = {}, slug = '', checked = false, url = '', co
   const contains = text => Boolean(keyword) && (` ${normalizeKeyword(text)} `).includes(` ${keyword} `)
   const featuredImage = form.thumbnail ?? form.featuredImage ?? form.cover ?? null
   const contentImages = form.contentImages ?? form.imageGallery ?? form.content_images ?? form.preview ?? []
-  const assets = [featuredImage, ...(Array.isArray(contentImages) ? contentImages : [])]
+  const inlineIds = new Set(content?.inlineAssetIds ?? [])
+
+  // Gallery chứa cả usage suy từ HTML; mỗi vị trí inline được kiểm alt trên HTML thật.
+  // Thumbnail vẫn là một vai trò riêng, còn gallery legacy chưa có trong HTML vẫn được kiểm.
+  const assets = [featuredImage, ...(Array.isArray(contentImages) ? contentImages : []).filter(asset => !inlineIds.has(String(asset?.id)))]
   const uniqueAssets = [...new Map(assets.filter(Boolean).map(asset => [asset.id, asset])).values()]
   const images = [...(content?.images ?? []), ...uniqueAssets.map(asset => ({ alt: asset.alt_text?.trim() || asset.altText?.trim() || '' }))]
   const altCount = images.filter(image => image.alt).length
@@ -113,7 +154,12 @@ export function analyzeSeo({ form = {}, slug = '', checked = false, url = '', co
   const descriptionLength = [...description].length
   const rules = []
 
-  /** Input: rule data. Output: một item checklist có trạng thái chuẩn hóa. */
+  /**
+   * =====================================================================
+   * Input: rule data.
+   * Output: một item checklist có trạng thái chuẩn hóa.
+   * =====================================================================
+   */
   const add = (id, label, passed, progress, weight, hint, applicable = true) => rules.push({
     id, label, passed: Boolean(passed), progress, weight, hint,
     status: !applicable ? 'na' : passed ? 'passed' : 'pending',

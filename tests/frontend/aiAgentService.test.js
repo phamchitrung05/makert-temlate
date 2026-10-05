@@ -13,6 +13,7 @@ import { aiAgentService, fallbackCapabilities } from '@/services/aiAgent'
  * =====================================================================
  * CHỨC NĂNG FILE: Kiểm thử API boundary của AI Agent dùng chung.
  * =====================================================================
+ * CÁC HÀM/METHOD TRONG FILE: beforeEach(), các test capability/fallback/envelope.
  * INPUT: capability/session và lỗi API generic.
  * OUTPUT: payload unwrap đúng hoặc fallback Post giữ nguyên lỗi gốc.
  * SIDE EFFECT: chỉ mock $api; không gọi mạng và không ghi database.
@@ -21,6 +22,24 @@ import { aiAgentService, fallbackCapabilities } from '@/services/aiAgent'
 describe('aiAgentService', () => {
   beforeEach(() => {
     apiMocks.$api.mockReset()
+  })
+
+  it('honors backend outputs and removes only legacy taxonomy generation choices', async () => {
+    const capability = {
+      target_type: 'post', outputs: ['title', 'summary', 'taxonomy', 'suggested_tag_ids'],
+      output_options: [{ value: 'title', title: 'Tiêu đề' }, { value: 'summary', title: 'Tóm tắt' }, { value: 'taxonomy', title: 'Taxonomy' }],
+    }
+
+    apiMocks.$api.mockResolvedValueOnce({ success: true, data: capability })
+    await expect(aiAgentService.capabilities('post')).resolves.toEqual({
+      ...capability,
+      outputs: ['title', 'summary'],
+      output_options: [{ value: 'title', title: 'Tiêu đề' }, { value: 'summary', title: 'Tóm tắt' }],
+    })
+    apiMocks.$api.mockResolvedValueOnce({ success: true, data: [capability] })
+    expect((await aiAgentService.targets())[0].outputs).toEqual(['title', 'summary'])
+    expect(capability.outputs).toContain('taxonomy')
+    expect(fallbackCapabilities('post').outputs).toEqual(['title', 'excerpt', 'content', 'seo', 'thumbnail'])
   })
 
   it('uses the backend capability registry and unwraps its envelope', async () => {

@@ -42,6 +42,7 @@ interface AiTargetAdapterContract
      * SIDE EFFECT: không ghi database.
      * EXCEPTION/TRANSACTION: validation exception; không mở transaction.
      * =====================================================================
+     *
      * @param  array<string, mixed>  $outputs
      * @return array<string, mixed>
      */
@@ -56,6 +57,7 @@ interface AiTargetAdapterContract
      * SIDE EFFECT: không ghi database.
      * EXCEPTION/TRANSACTION: validation exception; không mở transaction.
      * =====================================================================
+     *
      * @param  array<string, mixed>  $outputs
      * @param  list<string>  $fields
      * @return array<string, mixed>
