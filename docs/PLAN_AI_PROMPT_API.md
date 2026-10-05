@@ -95,7 +95,21 @@ Regression frontend **39 file / 258 tests** đạt, gồm **52 tests Ai Prompt**
 
 List đã nối tạo thủ công, GET detail, PUT theo version, bật/tắt, DELETE có xác nhận và cập nhật mặc định. Dùng lại form duyệt trong dialog quản lý; không bắt gọi AI để tạo mẫu thủ công. Lỗi 409 giữ bản sửa, tải bản mới cần xác nhận bỏ thay đổi; POST chưa rõ kết quả không tự gửi lần hai. Nếu profile đã lưu nhưng cập nhật default thất bại, giữ ID/version đã lưu và cho thử lại thao tác default riêng.
 
-Mẫu bật xuất hiện trong select của AI Content và dialog Post; regenerate giữ snapshot cũ trừ khi chọn override. Lịch sử/điểm/SEO ở Add chưa có endpoint tiếp tục ghi nhãn minh họa. Bằng chứng và giới hạn model thật xem [QA Task 2 localhost](qa/TASK2_LOCALHOST_2026-10-05.md).
+Mẫu bật xuất hiện trong select của AI Content; regenerate giữ snapshot cũ trừ khi chọn override. Từ 2026-10-05 đã gỡ dialog tạo nội dung AI trong Post List/Add/Edit, việc tạo bài tập trung ở AI Content. Lịch sử/điểm/SEO ở Add chưa có endpoint tiếp tục ghi nhãn minh họa. Bằng chứng và giới hạn model thật xem [QA Task 2 localhost](qa/TASK2_LOCALHOST_2026-10-05.md).
+
+### 0.8 Tách dialog và ổn định tải/đóng — 2026-10-05
+
+List dùng bốn dialog riêng: nhập thủ công, chỉnh sửa, bật/tắt và xóa. Các dialog và nội dung dùng riêng cho dialog được gom trong `resources/js/views/ai/prompt/dialog/`, giữ hậu tố `Dialog` trong tên component. Tạo/sửa dùng chung các trường form; bật/tắt và xóa dùng xác nhận gọn, không chứa form nhập liệu. Khi mở tạo/sửa, form hiện đầy đủ ngay, bị khóa và có vòng xoay cho đến khi GET thành công. GET lỗi giữ form khóa và cho tải lại. Các thao tác xác nhận cũng chờ đọc phiên bản hiện tại.
+
+Tất cả dialog Prompt dùng khung `AppDialogLayout`: header và footer cố định,
+chỉ content cuộn. Form tạo/sửa ẩn action nội bộ bằng `showActions=false`,
+đưa Hủy và Tạo/Lưu ra footer; submit bằng Enter và guard loading/dirty/version
+vẫn hoạt động. Quy tắc bắt buộc cho dialog tương lai nằm trong
+[cấu trúc dialog chung](PROJECT_STRUCTURE.md#431-cấu-trúc-dialog-bắt-buộc).
+
+Trạng thái mở được tách khỏi dữ liệu đang hiển thị. Đóng/hủy hoặc lưu thành công giữ nguyên nội dung đến `afterLeave` của Vuetify, sau đó mới dọn form; không còn gỡ form/co dialog giữa hiệu ứng. Đóng lúc đang tải hủy request, response muộn không đổi lần mở mới. Xác nhận bỏ bản chưa lưu, conflict 409, default lỗi và khóa POST chưa rõ kết quả vẫn được giữ.
+
+**Kiểm chứng:** toàn frontend **43 files/296 tests** đạt, gồm 7 regression mới thao tác List thật với HTTP giả cho tải chậm/lỗi/đóng/mở lại/lưu và các dialog riêng. Scoped ESLint/build đạt. Browser localhost xác nhận form khóa + vòng xoay, mở lại form trống, chiều cao/nội dung còn nguyên lúc bắt đầu đóng, hủy xác nhận giữ bản nhập và xác nhận đóng không để lại dialog. List localhost hiện rỗng; sửa/bật-tắt/xóa kiểm bằng HTTP giả, không tạo dữ liệu hoặc gọi AI để QA.
 
 ## 1. Hiện trạng và phạm vi
 
@@ -292,7 +306,7 @@ Kiểm thử tập trung vào quyền preview/owner/expiry, request trùng và p
 
 Browser QA xác nhận đủ ba nguồn, loading/error/empty/ready, thao tác sửa rồi lưu, reload/resume, list/history, clipboard/download và responsive/theme. Không chạy build/test ứng dụng chỉ để lập tài liệu plan.
 
-**Phần nối tiếp của Task 2:** thêm select văn phong trong Ai Content/CreateWithAiDialog và default profile trong AI & Content Settings bằng `/options`; gửi `writing_profile_id`, brief/yêu cầu riêng vào session API đã có. Null/vắng ID hiện nghĩa là dùng website default, không phải “bỏ mọi văn phong”. Nhãn select phải phản ánh đúng contract; muốn một lựa chọn “không dùng mẫu kể cả default” cần chốt field backend riêng trước. Không để AI tự chọn profile. Mẫu đã lưu sẽ sẵn sàng cho bước này, nhưng Ai Prompt được nghiệm thu độc lập trước.
+**Phần nối tiếp của Task 2:** select văn phong trong AI Content và default profile trong AI & Content Settings dùng `/options`; gửi `writing_profile_id`, brief/yêu cầu riêng vào session API đã có. Dialog tạo nội dung riêng ở Post đã bỏ theo quyết định 2026-10-05. Null/vắng ID hiện nghĩa là dùng website default, không phải “bỏ mọi văn phong”. Nhãn select phải phản ánh đúng contract; muốn một lựa chọn “không dùng mẫu kể cả default” cần chốt field backend riêng trước. Không để AI tự chọn profile. Mẫu đã lưu sẽ sẵn sàng cho bước này, nhưng Ai Prompt được nghiệm thu độc lập trước.
 
 **Checklist theo dõi**
 

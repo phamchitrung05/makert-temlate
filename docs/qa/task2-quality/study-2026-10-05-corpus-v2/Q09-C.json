@@ -1,0 +1,362 @@
+{
+    "arm": "C",
+    "status": "ready",
+    "error_code": null,
+    "final": {
+        "title": "Watcher trong Vue: dùng watch và chọn đúng nguồn theo dõi",
+        "content_html": "<p>Khi trạng thái thay đổi, bạn có thể cần gọi một tác vụ bất đồng bộ rồi cập nhật trạng thái khác, hoặc thay đổi DOM. Những tác động phụ này là trường hợp sử dụng watcher. Nếu chỉ cần tính một giá trị dẫn xuất, computed properties cho phép khai báo cách tính giá trị đó.</p>\n<h2>Dùng watch trong Options API</h2>\n<p>Với Options API, <a href=\"https://github.com/api/options-state#watch\">tùy chọn <code>watch</code></a> cho phép chạy một hàm khi thuộc tính reactive thay đổi. Ví dụ dưới đây theo dõi nội dung câu hỏi và chỉ gọi API lấy câu trả lời nếu câu hỏi chứa dấu <code>?</code>:</p>\n<pre><code>export default {\n  data() {\n    return {\n      question: '',\n      answer: 'Questions usually contain a question mark. ;-)',\n      loading: false\n    }\n  },\n  watch: {\n    // whenever question changes, this function will run\n    question(newQuestion, oldQuestion) {\n      if (newQuestion.includes('?')) {\n        this.getAnswer()\n      }\n    }\n  },\n  methods: {\n    async getAnswer() {\n      this.loading = true\n      this.answer = 'Thinking...'\n      try {\n        const res = await fetch('https://yesno.wtf/api')\n        this.answer = (await res.json()).answer\n      } catch (error) {\n        this.answer = 'Error! Could not reach the API. ' + error\n      } finally {\n        this.loading = false\n      }\n    }\n  }\n}\n</code></pre>\n<pre><code>&lt;p&gt;\n  Ask a yes/no question:\n  &lt;input v-model=\"question\" :disabled=\"loading\" /&gt;\n&lt;/p&gt;\n&lt;p&gt;{{ answer }}&lt;/p&gt;\n</code></pre>\n<p>Mỗi lần <code>question</code> thay đổi, hàm theo dõi được gọi. Nếu câu hỏi chứa dấu hỏi, <code>getAnswer()</code> đặt <code>loading</code> thành <code>true</code>, hiển thị <code>'Thinking...'</code> rồi gửi yêu cầu. Hàm lấy trường <code>answer</code> từ JSON trả về; nếu có lỗi được bắt trong <code>catch</code>, nó cập nhật thông báo lỗi. Khối <code>finally</code> đặt <code>loading</code> về <code>false</code>.</p>\n<p>Trong template, <code>v-model</code> liên kết ô nhập với <code>question</code>, <code>:disabled=\"loading\"</code> vô hiệu hóa ô nhập khi đang chờ, còn <code>{{ answer }}</code> hiển thị câu trả lời.</p>\n<p><a href=\"https://play.vuejs.org/#eNp9VE1v2zAM/SucLnaw1D70lqUbsiKH7rB1W4++aDYdq5ElTx9xgiD/fbT8lXZFAQO2+Mgn8pH0mW2aJjl4ZCu2trkRjfucKTw22jgosOReOjhnCqDgjseL/hvAoPNGjSeAvx6tE1qtIIqWo5Er26Ih088BteCt51KeINfKcaGAT5FQc7NP4NPNYiaQmhdC7VZQcmlxMF+61yUcWu7yajVmkabQVqjwgGZmzSuudmiX4CphofQqD+ZWSAnGqz5y9I4VtmOuS9CyGA9T3QCihGu3RKhc+gJtHH2JFld+EG5Mdug2QYZ4MSKhgBd11OgqXdipEm5PKoer0Jk2kA66wB044/EF1GtOSPRUCbUnryRJosnFnK4zpC5YR7205M9bLhyUSIrGUeVcY1dpekKrdNK6MuWNiKYKXt8V98FElDxbknGxGLCpZMi7VkGMxmjzv0pz1tvO4QPcay8LULoj5RToKoTN40MCEXyEQDJTl0KFmXpNOqsUxudN+TNFzzqdJp8ODutGcod0Alg34QWwsXsaVtIjVXqe9h5bC9V4B4ebWhco7zI24hmDVSEs/yOxIPOQEFnTnjzt2emS83nYFrhcevM6nRJhS+Ys9aoUu6Av7WqoNWO5rhsh0fxownplbBqhjJEmuv0WbN2UDNtDMRXm+zfsz/bY2TL2SH1Ec8CMTZjjhqaxh7e/v+ORvieQqvaSvN8Bf6HV0veSdG5fvSoo7Su/kO1D3f13SKInuz06VHYsahzzfl0yRj+s+3dKn9O9TW7HPrPLP624lFU=\">Thử ví dụ Options API trong Playground</a>.</p>\n<p>Khóa trong tùy chọn <code>watch</code> cũng có thể là đường dẫn phân tách bằng dấu chấm, như <code>'some.nested.key'</code>. Cách viết này chỉ hỗ trợ đường dẫn đơn giản, không hỗ trợ biểu thức:</p>\n<pre><code>export default {\n  watch: {\n    // Note: only simple paths. Expressions are not supported.\n    'some.nested.key'(newValue) {\n      // ...\n    }\n  }\n}\n</code></pre>\n<h2>Viết cùng ví dụ bằng Composition API</h2>\n<p>Trong Composition API, <a href=\"https://github.com/api/reactivity-core#watch\">hàm <code>watch</code></a> kích hoạt callback khi trạng thái reactive được theo dõi thay đổi. Ví dụ tương ứng dùng <code>&lt;script setup&gt;</code>, import <code>ref</code> và <code>watch</code> từ Vue, rồi khai báo <code>question</code>, <code>answer</code> và <code>loading</code> dưới dạng ref:</p>\n<pre><code>&lt;script setup&gt;\nimport { ref, watch } from 'vue'\n\nconst question = ref('')\nconst answer = ref('Questions usually contain a question mark. ;-)')\nconst loading = ref(false)\n\n// watch works directly on a ref\nwatch(question, async (newQuestion, oldQuestion) =&gt; {\n  if (newQuestion.includes('?')) {\n    loading.value = true\n    answer.value = 'Thinking...'\n    try {\n      const res = await fetch('https://yesno.wtf/api')\n      answer.value = (await res.json()).answer\n    } catch (error) {\n      answer.value = 'Error! Could not reach the API. ' + error\n    } finally {\n      loading.value = false\n    }\n  }\n})\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;p&gt;\n    Ask a yes/no question:\n    &lt;input v-model=\"question\" :disabled=\"loading\" /&gt;\n  &lt;/p&gt;\n  &lt;p&gt;{{ answer }}&lt;/p&gt;\n&lt;/template&gt;\n</code></pre>\n<p><code>watch</code> nhận trực tiếp ref <code>question</code> và một callback <code>async</code>. Luồng lấy câu trả lời và xử lý lỗi giống ví dụ Options API; điểm khác là các ref trong script được cập nhật qua <code>loading.value</code> và <code>answer.value</code>. Template vẫn dùng <code>v-model=\"question\"</code>, <code>:disabled=\"loading\"</code> và <code>{{ answer }}</code>.</p>\n<p><a href=\"https://play.vuejs.org/#eNp9U8Fy0zAQ/ZVFF9tDah96C2mZ0umhHKBAj7oIe52oUSQjyXEyGf87KytyoDC9JPa+p+e3b1cndtd15b5HtmQrV1vZeXDo++6Wa7nrjPVwAovtAgbh6w2M0Fqzg4xOZFxzXRvtPPzq0XlpNNwEbp5lRUKEdgPaVP925jnoXS+UOgKxvJAaxEVjJ+y2hA9XxUVFGdFIvT7LtEI5JIzrqjrbGozdOmikxdqTKqmIQOV6gvOkvQDhjrqGXOOQvCzAqCa9FHBzCyeuAWT7F6uUulZ9gy7PPmZFETmQjJV7oXoke972GJHY+Axkzxupt4FalhRcYHh7TDIQcqA+LTriikFIDy0G59nG+84tq+qITpty8G0lOhmSiedefSaPZ0mnfHFG50VRRkbkj1BPceVorbFzF/+6fQj4O7g3vWpAm6Ao6JzfINw9PZaQwXuYNJJuK/U0z1nxdTLT0M7s8Ec/I3WxquLS0brRi8ddp4RHegNYhR0M/Du3pXFSAJU285osI7aSuus97K92pkF1w1nCOYNlI534qbCh8tkOVasoXkV1+sjplLZ0HGN5Vc1G2IJ5R8Np5XpKlK7J1CJntdl1UqH92k0bzdkyNc8ZRWGGz1MtbMQi1esN1tv/1F/cIdQ4e6LJod0jZzPmhV2jj/DDjy94oOcZpK57Rew3wO/ojOpjJIH2qdcN2f6DN7l9nC47RfTsHg4etUtNpZUeJz5ndPPv32j9Yve6vE6DZuNvu1R2Tg==\">Thử ví dụ Composition API trong Playground</a>.</p>\n<h2>watch có thể theo dõi những nguồn nào?</h2>\n<p>Đối số đầu tiên của <code>watch</code> có thể là:</p>\n<ul><li>Một ref, kể cả computed ref.</li><li>Một đối tượng reactive.</li><li>Một <a href=\"https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get#description\">hàm getter</a> trả về giá trị cần theo dõi.</li><li>Một mảng gồm nhiều nguồn theo dõi.</li></ul>\n<pre><code>const x = ref(0)\nconst y = ref(0)\n\n// single ref\nwatch(x, (newX) =&gt; {\n  console.log(`x is ${newX}`)\n})\n\n// getter\nwatch(\n  () =&gt; x.value + y.value,\n  (sum) =&gt; {\n    console.log(`sum of x + y is: ${sum}`)\n  }\n)\n\n// array of multiple sources\nwatch([x, () =&gt; y.value], ([newX, newY]) =&gt; {\n  console.log(`x is ${newX} and y is ${newY}`)\n})\n</code></pre>\n<p>Đoạn code minh họa việc theo dõi trực tiếp ref <code>x</code>, theo dõi tổng <code>x.value + y.value</code> qua getter, và theo dõi nhiều nguồn bằng mảng <code>[x, () =&gt; y.value]</code>. Với mảng nguồn, callback nhận các giá trị mới tương ứng qua <code>[newX, newY]</code>.</p>\n<h2>Theo dõi thuộc tính của đối tượng reactive: dùng getter</h2>\n<p>Không thể truyền trực tiếp thuộc tính dạng số trong ví dụ sau làm nguồn theo dõi:</p>\n<pre><code>const obj = reactive({ count: 0 })\n\n// this won't work because we are passing a number to watch()\nwatch(obj.count, (count) =&gt; {\n  console.log(`Count is: ${count}`)\n})\n</code></pre>\n<p>Ở đây, <code>obj.count</code> là một số. Truyền giá trị đó vào <code>watch</code> không cung cấp nguồn reactive cần theo dõi. Thay vào đó, hãy truyền getter <code>() =&gt; obj.count</code>:</p>\n<pre><code>// instead, use a getter:\nwatch(\n  () =&gt; obj.count,\n  (count) =&gt; {\n    console.log(`Count is: ${count}`)\n  }\n)\n</code></pre>\n<p>Nguồn: <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/essentials/watchers.md\">tài liệu Vue về Watchers</a>.</p>"
+    },
+    "quality_checks": [
+        {
+            "check": "copy",
+            "status": "pass"
+        },
+        {
+            "check": "similarity",
+            "status": "pass",
+            "metric": 0.02,
+            "reason": "lexical_metric_not_style_score"
+        },
+        {
+            "check": "language",
+            "status": "pass",
+            "detected": "vi"
+        },
+        {
+            "check": "source_code_links",
+            "status": "pass"
+        },
+        {
+            "check": "important_numbers",
+            "status": "pass"
+        },
+        {
+            "check": "unanchored_numbers",
+            "status": "pass",
+            "count": 0,
+            "reason": "requires_editor_review"
+        },
+        {
+            "check": "semantic_grounding",
+            "status": "undetermined",
+            "reason": "source_anchors_are_not_external_fact_verification"
+        }
+    ],
+    "cost": null,
+    "calls": [
+        {
+            "task": "article.analysis-plan",
+            "output": {
+                "knowledge": {
+                    "facts": [
+                        {
+                            "id": "F01",
+                            "claim": "Computed properties dùng để tính giá trị dẫn xuất theo cách khai báo; khi cần thực hiện tác động phụ theo thay đổi trạng thái, chẳng hạn thay đổi DOM hoặc cập nhật trạng thái khác từ kết quả bất đồng bộ, nguồn giới thiệu cách dùng watcher.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Computed properties allow us to declaratively compute derived values. However, there are cases where we need to perform \"side effects\" in reaction to state changes - for example, mutating the DOM, or changing another piece of state based on the result of an async operation.",
+                            "important": true
+                        },
+                        {
+                            "id": "F02",
+                            "claim": "Với Options API, tùy chọn watch kích hoạt một hàm khi thuộc tính reactive thay đổi.",
+                            "source_block_ids": [
+                                "S004"
+                            ],
+                            "evidence": "With the Options API, we can use the watch option to trigger a function whenever a reactive property changes:",
+                            "important": true
+                        },
+                        {
+                            "id": "F03",
+                            "claim": "Ví dụ Options API theo dõi question; mỗi khi giá trị này thay đổi, hàm theo dõi kiểm tra dấu hỏi và chỉ gọi getAnswer() nếu newQuestion chứa '?'.",
+                            "source_block_ids": [
+                                "S005"
+                            ],
+                            "evidence": "  watch: {\n    // whenever question changes, this function will run\n    question(newQuestion, oldQuestion) {\n      if (newQuestion.includes('?')) {\n        this.getAnswer()\n      }\n    }\n  },",
+                            "important": true
+                        },
+                        {
+                            "id": "F04",
+                            "claim": "Trong ví dụ Options API, getAnswer() bật loading và hiển thị 'Thinking...', gọi fetch tới API trong code, lấy trường answer từ JSON; catch cập nhật thông báo lỗi và finally đặt loading về false.",
+                            "source_block_ids": [
+                                "S005"
+                            ],
+                            "evidence": "    async getAnswer() {\n      this.loading = true\n      this.answer = 'Thinking...'\n      try {\n        const res = await fetch('https://yesno.wtf/api')\n        this.answer = (await res.json()).answer\n      } catch (error) {\n        this.answer = 'Error! Could not reach the API. ' + error\n      } finally {\n        this.loading = false\n      }\n    }",
+                            "important": true
+                        },
+                        {
+                            "id": "F05",
+                            "claim": "Template của ví dụ Options API liên kết ô nhập với question bằng v-model, vô hiệu hóa ô nhập khi loading là true và hiển thị answer.",
+                            "source_block_ids": [
+                                "S006"
+                            ],
+                            "evidence": "<p>\n  Ask a yes/no question:\n  <input v-model=\"question\" :disabled=\"loading\" />\n</p>\n<p>{{ answer }}</p>",
+                            "important": true
+                        },
+                        {
+                            "id": "F06",
+                            "claim": "Tùy chọn watch của Options API hỗ trợ khóa là đường dẫn phân tách bằng dấu chấm.",
+                            "source_block_ids": [
+                                "S008"
+                            ],
+                            "evidence": "The watch option also supports a dot-delimited path as the key:",
+                            "important": true
+                        },
+                        {
+                            "id": "F07",
+                            "claim": "Khóa đường dẫn của watch chỉ hỗ trợ đường dẫn đơn giản, không hỗ trợ biểu thức; nguồn minh họa bằng 'some.nested.key'.",
+                            "source_block_ids": [
+                                "S009"
+                            ],
+                            "evidence": "    // Note: only simple paths. Expressions are not supported.\n    'some.nested.key'(newValue) {\n      // ...\n    }",
+                            "important": true
+                        },
+                        {
+                            "id": "F08",
+                            "claim": "Với Composition API, hàm watch kích hoạt callback khi trạng thái reactive được theo dõi thay đổi.",
+                            "source_block_ids": [
+                                "S010"
+                            ],
+                            "evidence": "With Composition API, we can use the watch function to trigger a callback whenever a piece of reactive state changes:",
+                            "important": true
+                        },
+                        {
+                            "id": "F09",
+                            "claim": "Ví dụ Composition API dùng <script setup>, import ref và watch từ vue, rồi khai báo question, answer và loading dưới dạng ref.",
+                            "source_block_ids": [
+                                "S011"
+                            ],
+                            "evidence": "<script setup>\nimport { ref, watch } from 'vue'\n\nconst question = ref('')\nconst answer = ref('Questions usually contain a question mark. ;-)')\nconst loading = ref(false)",
+                            "important": true
+                        },
+                        {
+                            "id": "F10",
+                            "claim": "Trong ví dụ Composition API, watch nhận trực tiếp ref question và callback async; khi câu hỏi chứa '?', callback cập nhật loading.value và answer.value, lấy câu trả lời bằng fetch, xử lý lỗi trong catch và đặt loading.value về false trong finally.",
+                            "source_block_ids": [
+                                "S011"
+                            ],
+                            "evidence": "// watch works directly on a ref\nwatch(question, async (newQuestion, oldQuestion) => {\n  if (newQuestion.includes('?')) {\n    loading.value = true\n    answer.value = 'Thinking...'\n    try {\n      const res = await fetch('https://yesno.wtf/api')\n      answer.value = (await res.json()).answer\n    } catch (error) {\n      answer.value = 'Error! Could not reach the API. ' + error\n    } finally {\n      loading.value = false\n    }\n  }\n})",
+                            "important": true
+                        },
+                        {
+                            "id": "F11",
+                            "claim": "Template trong ví dụ Composition API cũng dùng v-model=\"question\", :disabled=\"loading\" và nội suy answer.",
+                            "source_block_ids": [
+                                "S011"
+                            ],
+                            "evidence": "<template>\n  <p>\n    Ask a yes/no question:\n    <input v-model=\"question\" :disabled=\"loading\" />\n  </p>\n  <p>{{ answer }}</p>\n</template>",
+                            "important": true
+                        },
+                        {
+                            "id": "F12",
+                            "claim": "Đối số đầu tiên của watch có thể là ref, kể cả computed ref; một reactive object; một hàm getter; hoặc một mảng gồm nhiều nguồn theo dõi.",
+                            "source_block_ids": [
+                                "S014"
+                            ],
+                            "evidence": "watch's first argument can be different types of reactive \"sources\": it can be a ref (including computed refs), a reactive object, a getter function, or an array of multiple sources:",
+                            "important": true
+                        },
+                        {
+                            "id": "F13",
+                            "claim": "Nguồn minh họa ba cách truyền nguồn theo dõi: ref x; getter tính x.value + y.value; và mảng [x, () => y.value] với callback nhận các giá trị mới tương ứng.",
+                            "source_block_ids": [
+                                "S015"
+                            ],
+                            "evidence": "const x = ref(0)\nconst y = ref(0)\n\n// single ref\nwatch(x, (newX) => {\n  console.log(`x is ${newX}`)\n})\n\n// getter\nwatch(\n  () => x.value + y.value,\n  (sum) => {\n    console.log(`sum of x + y is: ${sum}`)\n  }\n)\n\n// array of multiple sources\nwatch([x, () => y.value], ([newX, newY]) => {\n  console.log(`x is ${newX} and y is ${newY}`)\n})",
+                            "important": true
+                        },
+                        {
+                            "id": "F14",
+                            "claim": "Với obj = reactive({ count: 0 }), watch(obj.count, ...) không hoạt động như mong muốn vì đối số truyền vào là một số, không phải nguồn reactive cần theo dõi.",
+                            "source_block_ids": [
+                                "S017"
+                            ],
+                            "evidence": "const obj = reactive({ count: 0 })\n\n// this won't work because we are passing a number to watch()\nwatch(obj.count, (count) => {\n  console.log(`Count is: ${count}`)\n})",
+                            "important": true
+                        },
+                        {
+                            "id": "F15",
+                            "claim": "Để theo dõi thuộc tính count trong ví dụ reactive object, nguồn hướng dẫn truyền getter () => obj.count cho watch.",
+                            "source_block_ids": [
+                                "S019"
+                            ],
+                            "evidence": "// instead, use a getter:\nwatch(\n  () => obj.count,\n  (count) => {\n    console.log(`Count is: ${count}`)\n  }\n)",
+                            "important": true
+                        }
+                    ],
+                    "terms": [
+                        "watcher — bộ theo dõi thay đổi trạng thái",
+                        "computed properties — thuộc tính tính toán",
+                        "side effects — tác động phụ",
+                        "Options API",
+                        "Composition API",
+                        "watch",
+                        "ref",
+                        "computed ref",
+                        "reactive object — đối tượng reactive",
+                        "getter — hàm trả về giá trị cần theo dõi",
+                        "callback — hàm được gọi khi có thay đổi",
+                        "<script setup>",
+                        "v-model",
+                        "loading",
+                        "async/await",
+                        "try/catch/finally"
+                    ],
+                    "uncertainties": [
+                        "Phần nguồn được cung cấp không nêu phiên bản Vue cụ thể hoặc yêu cầu phiên bản tối thiểu; không tự bổ sung các điều kiện phiên bản.",
+                        "Nguồn chỉ bao gồm ví dụ cơ bản và các kiểu nguồn theo dõi; không cung cấp thông tin về deep watch, immediate, watchEffect, thời điểm chạy callback, cleanup hay dừng watcher.",
+                        "Ví dụ có fetch và xử lý lỗi nhưng không mô tả cơ chế hủy request, chống phản hồi lỗi thời hoặc kiểm tra HTTP status; không khẳng định code giải quyết những vấn đề này.",
+                        "Không có bằng chứng trong dữ liệu về tình trạng hoạt động hiện tại của API minh họa hoặc các liên kết; giữ nguyên chúng theo yêu cầu, không tuyên bố đã kiểm tra."
+                    ]
+                },
+                "writing_plan": {
+                    "article_type": "Bài giải thích kỹ thuật kèm ví dụ code từ tài liệu Vue",
+                    "audience": "Người phát triển website, đặc biệt người mới tìm hiểu watcher trong Vue.",
+                    "angle": "Giải thích khi cần dùng watcher thay vì chỉ tính giá trị dẫn xuất, đối chiếu cách viết bằng Options API và Composition API qua cùng một ví dụ bất đồng bộ, rồi làm rõ kiểu nguồn theo dõi và lỗi truyền trực tiếp thuộc tính dạng số.",
+                    "outline": [
+                        "Định hướng tiêu đề tiếng Việt về watcher trong Vue, cách dùng watch và chọn đúng nguồn theo dõi; khi viết bài chỉ xuất title và content theo brief.",
+                        "Mở ngắn bằng vấn đề thực tế trong nguồn: trạng thái thay đổi có thể cần gọi thao tác bất đồng bộ rồi cập nhật trạng thái khác, thay vì chỉ tính một giá trị dẫn xuất. Không mở bằng giới thiệu chung về Vue.",
+                        "Phần Options API: giải thích tùy chọn watch, giữ nguyên toàn bộ code S005 và template S006; chỉ rõ điều kiện có dấu '?', luồng loading, kết quả và lỗi. Đặt liên kết watch option cùng liên kết Playground của S007 tại phần này.",
+                        "Tiếp nối Options API bằng đường dẫn phân tách dấu chấm; giữ code S009 và nhấn mạnh chỉ hỗ trợ đường dẫn đơn giản, không hỗ trợ biểu thức.",
+                        "Phần Composition API: giữ nguyên toàn bộ ví dụ S011; giải thích ngắn cách truyền ref trực tiếp, callback async và cập nhật qua .value trong script. Không lặp lại dài dòng luồng request đã giải thích. Đặt liên kết watch function và Playground của S012 tại đây.",
+                        "Phần nguồn theo dõi: liệt kê ref/computed ref, reactive object, getter và mảng nhiều nguồn; giữ code S015, giải thích giá trị tổng và các giá trị mới trong callback mảng. Gắn liên kết getter của S014 với thuật ngữ tương ứng.",
+                        "Kết bằng lỗi thường gặp: giữ code không hoạt động S017 và cách sửa S019; giải thích obj.count trong ví dụ là số, còn () => obj.count là getter. Không mở rộng sang các API hoặc tùy chọn không có trong nguồn.",
+                        "Bố cục khoảng bốn mục nội dung, văn xuôi gọn theo lượng thông tin nguồn; giữ nguyên tất cả code, chuỗi, giá trị và điều kiện, không dịch comment hay sửa code. Khi xuất bài, chuyển toàn bộ required_hrefs thành anchor thật với href nguyên vẹn, lấy trực tiếp từ dữ liệu kể cả fragment Playground; chỉ dùng allowed_hrefs và dẫn nguồn bằng source_url đã cung cấp. URL fetch trong code giữ nguyên dưới dạng code, không thêm anchor ngoài danh sách cho phép."
+                    ],
+                    "coverage_fact_ids": [
+                        "F01",
+                        "F02",
+                        "F03",
+                        "F04",
+                        "F05",
+                        "F06",
+                        "F07",
+                        "F08",
+                        "F09",
+                        "F10",
+                        "F11",
+                        "F12",
+                        "F13",
+                        "F14",
+                        "F15"
+                    ]
+                }
+            },
+            "diagnostics": {
+                "response_id": "resp_0c43a2a49375f256016ac349e2a40887d294b6704fc6c323ff",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.analysis-plan.v1",
+                "usage": {
+                    "prompt_tokens": 10645,
+                    "completion_tokens": 2971,
+                    "total_tokens": 13616,
+                    "reasoning_tokens": 50
+                }
+            },
+            "latency_ms": 93678
+        },
+        {
+            "task": "article.writer",
+            "output": {
+                "draft": {
+                    "title": "Watcher trong Vue: dùng watch cho tác vụ bất đồng bộ và chọn đúng nguồn theo dõi",
+                    "content_html": "<p>Khi trạng thái thay đổi, đôi khi bạn cần làm nhiều hơn việc tính lại một giá trị: gọi một tác vụ bất đồng bộ, dùng kết quả để cập nhật trạng thái khác hoặc thay đổi DOM. Đây là những tác động phụ mà watcher giúp xử lý. Còn computed properties dùng để khai báo cách tính các giá trị dẫn xuất.</p>\n<h2>Dùng watch trong Options API</h2>\n<p>Với Options API, <a href=\"https://github.com/api/options-state#watch\">tùy chọn <code>watch</code></a> cho phép chạy một hàm khi thuộc tính reactive thay đổi. Ví dụ dưới đây theo dõi nội dung câu hỏi và gọi API lấy câu trả lời khi câu hỏi có dấu <code>?</code>:</p>\n<pre><code>export default {\n  data() {\n    return {\n      question: '',\n      answer: 'Questions usually contain a question mark. ;-)',\n      loading: false\n    }\n  },\n  watch: {\n    // whenever question changes, this function will run\n    question(newQuestion, oldQuestion) {\n      if (newQuestion.includes('?')) {\n        this.getAnswer()\n      }\n    }\n  },\n  methods: {\n    async getAnswer() {\n      this.loading = true\n      this.answer = 'Thinking...'\n      try {\n        const res = await fetch('https://yesno.wtf/api')\n        this.answer = (await res.json()).answer\n      } catch (error) {\n        this.answer = 'Error! Could not reach the API. ' + error\n      } finally {\n        this.loading = false\n      }\n    }\n  }\n}\n</code></pre>\n<pre><code>&lt;p&gt;\n  Ask a yes/no question:\n  &lt;input v-model=\"question\" :disabled=\"loading\" /&gt;\n&lt;/p&gt;\n&lt;p&gt;{{ answer }}&lt;/p&gt;\n</code></pre>\n<p>Mỗi lần <code>question</code> thay đổi, hàm theo dõi được gọi, nhưng <code>getAnswer()</code> chỉ chạy nếu <code>newQuestion.includes('?')</code> đúng. Khi bắt đầu lấy câu trả lời, hàm bật <code>loading</code> và đặt <code>answer</code> thành <code>'Thinking...'</code>. Kết quả được đọc từ trường <code>answer</code> của JSON; nếu có lỗi được bắt trong <code>catch</code>, giao diện hiển thị thông báo lỗi. Khối <code>finally</code> đặt <code>loading</code> về <code>false</code>.</p>\n<p>Ở template, <code>v-model</code> liên kết ô nhập với <code>question</code>, <code>:disabled=\"loading\"</code> vô hiệu hóa ô nhập trong lúc chờ, còn <code>{{ answer }}</code> hiển thị câu trả lời.</p>\n<p><a href=\"https://play.vuejs.org/#eNp9VE1v2zAM/SucLnaw1D70lqUbsiKH7rB1W4++aDYdq5ElTx9xgiD/fbT8lXZFAQO2+Mgn8pH0mW2aJjl4ZCu2trkRjfucKTw22jgosOReOjhnCqDgjseL/hvAoPNGjSeAvx6tE1qtIIqWo5Er26Ih088BteCt51KeINfKcaGAT5FQc7NP4NPNYiaQmhdC7VZQcmlxMF+61yUcWu7yajVmkabQVqjwgGZmzSuudmiX4CphofQqD+ZWSAnGqz5y9I4VtmOuS9CyGA9T3QCihGu3RKhc+gJtHH2JFld+EG5Mdug2QYZ4MSKhgBd11OgqXdipEm5PKoer0Jk2kA66wB044/EF1GtOSPRUCbUnryRJosnFnK4zpC5YR7205M9bLhyUSIrGUeVcY1dpekKrdNK6MuWNiKYKXt8V98FElDxbknGxGLCpZMi7VkGMxmjzv0pz1tvO4QPcay8LULoj5RToKoTN40MCEXyEQDJTl0KFmXpNOqsUxudN+TNFzzqdJp8ODutGcod0Alg34QWwsXsaVtIjVXqe9h5bC9V4B4ebWhco7zI24hmDVSEs/yOxIPOQEFnTnjzt2emS83nYFrhcevM6nRJhS+Ys9aoUu6Av7WqoNWO5rhsh0fxownplbBqhjJEmuv0WbN2UDNtDMRXm+zfsz/bY2TL2SH1Ec8CMTZjjhqaxh7e/v+ORvieQqvaSvN8Bf6HV0veSdG5fvSoo7Su/kO1D3f13SKInuz06VHYsahzzfl0yRj+s+3dKn9O9TW7HPrPLP624lFU=\">Thử ví dụ Options API trong Playground</a>.</p>\n<p>Khóa trong tùy chọn <code>watch</code> cũng có thể là đường dẫn phân tách bằng dấu chấm, như <code>'some.nested.key'</code>. Cách viết này chỉ hỗ trợ đường dẫn đơn giản, không hỗ trợ biểu thức:</p>\n<pre><code>export default {\n  watch: {\n    // Note: only simple paths. Expressions are not supported.\n    'some.nested.key'(newValue) {\n      // ...\n    }\n  }\n}\n</code></pre>\n<h2>Cùng tác vụ với Composition API</h2>\n<p>Trong Composition API, <a href=\"https://github.com/api/reactivity-core#watch\">hàm <code>watch</code></a> nhận nguồn reactive cần theo dõi và callback chạy khi nguồn đó thay đổi. Ví dụ tương ứng dùng <code>&lt;script setup&gt;</code>, với <code>question</code>, <code>answer</code> và <code>loading</code> được khai báo bằng <code>ref</code>:</p>\n<pre><code>&lt;script setup&gt;\nimport { ref, watch } from 'vue'\n\nconst question = ref('')\nconst answer = ref('Questions usually contain a question mark. ;-)')\nconst loading = ref(false)\n\n// watch works directly on a ref\nwatch(question, async (newQuestion, oldQuestion) =&gt; {\n  if (newQuestion.includes('?')) {\n    loading.value = true\n    answer.value = 'Thinking...'\n    try {\n      const res = await fetch('https://yesno.wtf/api')\n      answer.value = (await res.json()).answer\n    } catch (error) {\n      answer.value = 'Error! Could not reach the API. ' + error\n    } finally {\n      loading.value = false\n    }\n  }\n})\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;p&gt;\n    Ask a yes/no question:\n    &lt;input v-model=\"question\" :disabled=\"loading\" /&gt;\n  &lt;/p&gt;\n  &lt;p&gt;{{ answer }}&lt;/p&gt;\n&lt;/template&gt;\n</code></pre>\n<p>Ở đây, <code>watch</code> nhận trực tiếp ref <code>question</code>. Callback <code>async</code> vẫn kiểm tra dấu hỏi trước khi gửi yêu cầu, nhưng việc cập nhật các ref trong script dùng <code>loading.value</code> và <code>answer.value</code>. Template giữ cách liên kết ô nhập, vô hiệu hóa khi đang chờ và hiển thị kết quả như ví dụ Options API.</p>\n<p><a href=\"https://play.vuejs.org/#eNp9U8Fy0zAQ/ZVFF9tDah96C2mZ0umhHKBAj7oIe52oUSQjyXEyGf87KytyoDC9JPa+p+e3b1cndtd15b5HtmQrV1vZeXDo++6Wa7nrjPVwAovtAgbh6w2M0Fqzg4xOZFxzXRvtPPzq0XlpNNwEbp5lRUKEdgPaVP925jnoXS+UOgKxvJAaxEVjJ+y2hA9XxUVFGdFIvT7LtEI5JIzrqjrbGozdOmikxdqTKqmIQOV6gvOkvQDhjrqGXOOQvCzAqCa9FHBzCyeuAWT7F6uUulZ9gy7PPmZFETmQjJV7oXoke972GJHY+Axkzxupt4FalhRcYHh7TDIQcqA+LTriikFIDy0G59nG+84tq+qITpty8G0lOhmSiedefSaPZ0mnfHFG50VRRkbkj1BPceVorbFzF/+6fQj4O7g3vWpAm6Ao6JzfINw9PZaQwXuYNJJuK/U0z1nxdTLT0M7s8Ec/I3WxquLS0brRi8ddp4RHegNYhR0M/Du3pXFSAJU285osI7aSuus97K92pkF1w1nCOYNlI534qbCh8tkOVasoXkV1+sjplLZ0HGN5Vc1G2IJ5R8Np5XpKlK7J1CJntdl1UqH92k0bzdkyNc8ZRWGGz1MtbMQi1esN1tv/1F/cIdQ4e6LJod0jZzPmhV2jj/DDjy94oOcZpK57Rew3wO/ojOpjJIH2qdcN2f6DN7l9nC47RfTsHg4etUtNpZUeJz5ndPPv32j9Yve6vE6DZuNvu1R2Tg==\">Thử ví dụ Composition API trong Playground</a>.</p>\n<h2>watch có thể theo dõi những nguồn nào?</h2>\n<p>Đối số đầu tiên của <code>watch</code> có thể là một ref, kể cả computed ref; một đối tượng reactive; một <a href=\"https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get#description\">hàm getter</a> trả về giá trị cần theo dõi; hoặc một mảng gồm nhiều nguồn.</p>\n<pre><code>const x = ref(0)\nconst y = ref(0)\n\n// single ref\nwatch(x, (newX) =&gt; {\n  console.log(`x is ${newX}`)\n})\n\n// getter\nwatch(\n  () =&gt; x.value + y.value,\n  (sum) =&gt; {\n    console.log(`sum of x + y is: ${sum}`)\n  }\n)\n\n// array of multiple sources\nwatch([x, () =&gt; y.value], ([newX, newY]) =&gt; {\n  console.log(`x is ${newX} and y is ${newY}`)\n})\n</code></pre>\n<p>Ba cách viết này theo dõi ba nguồn khác nhau: ref <code>x</code>, tổng do getter <code>() =&gt; x.value + y.value</code> trả về, và nhóm nguồn <code>[x, () =&gt; y.value]</code>. Với mảng nguồn, callback nhận các giá trị mới tương ứng qua <code>[newX, newY]</code>.</p>\n<h2>Theo dõi thuộc tính của đối tượng reactive: dùng getter</h2>\n<p>Một lỗi dễ gặp là truyền trực tiếp thuộc tính dạng số của đối tượng reactive vào <code>watch</code>:</p>\n<pre><code>const obj = reactive({ count: 0 })\n\n// this won't work because we are passing a number to watch()\nwatch(obj.count, (count) =&gt; {\n  console.log(`Count is: ${count}`)\n})\n</code></pre>\n<p>Trong ví dụ này, <code>obj.count</code> được đọc thành một số trước khi truyền vào <code>watch</code>, nên cách viết trên không cung cấp nguồn reactive cần theo dõi. Hãy truyền một getter đọc thuộc tính đó:</p>\n<pre><code>// instead, use a getter:\nwatch(\n  () =&gt; obj.count,\n  (count) =&gt; {\n    console.log(`Count is: ${count}`)\n  }\n)\n</code></pre>\n<p>Điểm khác biệt nằm ở đối số đầu tiên: <code>obj.count</code> là giá trị số, còn <code>() =&gt; obj.count</code> là hàm lấy giá trị mà <code>watch</code> có thể dùng làm nguồn theo dõi.</p>\n<p>Nguồn: <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/essentials/watchers.md\">tài liệu Vue về Watchers</a>.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04",
+                    "F05",
+                    "F06",
+                    "F07",
+                    "F08",
+                    "F09",
+                    "F10",
+                    "F11",
+                    "F12",
+                    "F13",
+                    "F14",
+                    "F15"
+                ],
+                "used_asset_ids": []
+            },
+            "diagnostics": {
+                "response_id": "resp_0a2b977c3d54b56a016ac34a403d1c87d1a38537ebfb619bdf",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.writer.v1",
+                "usage": {
+                    "prompt_tokens": 12400,
+                    "completion_tokens": 3186,
+                    "total_tokens": 15586
+                }
+            },
+            "latency_ms": 101306
+        },
+        {
+            "task": "article.editor",
+            "output": {
+                "final": {
+                    "title": "Watcher trong Vue: dùng watch và chọn đúng nguồn theo dõi",
+                    "content_html": "<p>Khi trạng thái thay đổi, bạn có thể cần gọi một tác vụ bất đồng bộ rồi cập nhật trạng thái khác, hoặc thay đổi DOM. Những tác động phụ này là trường hợp sử dụng watcher. Nếu chỉ cần tính một giá trị dẫn xuất, computed properties cho phép khai báo cách tính giá trị đó.</p>\n<h2>Dùng watch trong Options API</h2>\n<p>Với Options API, <a href=\"https://github.com/api/options-state#watch\">tùy chọn <code>watch</code></a> cho phép chạy một hàm khi thuộc tính reactive thay đổi. Ví dụ dưới đây theo dõi nội dung câu hỏi và chỉ gọi API lấy câu trả lời nếu câu hỏi chứa dấu <code>?</code>:</p>\n<pre><code>export default {\n  data() {\n    return {\n      question: '',\n      answer: 'Questions usually contain a question mark. ;-)',\n      loading: false\n    }\n  },\n  watch: {\n    // whenever question changes, this function will run\n    question(newQuestion, oldQuestion) {\n      if (newQuestion.includes('?')) {\n        this.getAnswer()\n      }\n    }\n  },\n  methods: {\n    async getAnswer() {\n      this.loading = true\n      this.answer = 'Thinking...'\n      try {\n        const res = await fetch('https://yesno.wtf/api')\n        this.answer = (await res.json()).answer\n      } catch (error) {\n        this.answer = 'Error! Could not reach the API. ' + error\n      } finally {\n        this.loading = false\n      }\n    }\n  }\n}\n</code></pre>\n<pre><code>&lt;p&gt;\n  Ask a yes/no question:\n  &lt;input v-model=\"question\" :disabled=\"loading\" /&gt;\n&lt;/p&gt;\n&lt;p&gt;{{ answer }}&lt;/p&gt;\n</code></pre>\n<p>Mỗi lần <code>question</code> thay đổi, hàm theo dõi được gọi. Nếu câu hỏi chứa dấu hỏi, <code>getAnswer()</code> đặt <code>loading</code> thành <code>true</code>, hiển thị <code>'Thinking...'</code> rồi gửi yêu cầu. Hàm lấy trường <code>answer</code> từ JSON trả về; nếu có lỗi được bắt trong <code>catch</code>, nó cập nhật thông báo lỗi. Khối <code>finally</code> đặt <code>loading</code> về <code>false</code>.</p>\n<p>Trong template, <code>v-model</code> liên kết ô nhập với <code>question</code>, <code>:disabled=\"loading\"</code> vô hiệu hóa ô nhập khi đang chờ, còn <code>{{ answer }}</code> hiển thị câu trả lời.</p>\n<p><a href=\"https://play.vuejs.org/#eNp9VE1v2zAM/SucLnaw1D70lqUbsiKH7rB1W4++aDYdq5ElTx9xgiD/fbT8lXZFAQO2+Mgn8pH0mW2aJjl4ZCu2trkRjfucKTw22jgosOReOjhnCqDgjseL/hvAoPNGjSeAvx6tE1qtIIqWo5Er26Ih088BteCt51KeINfKcaGAT5FQc7NP4NPNYiaQmhdC7VZQcmlxMF+61yUcWu7yajVmkabQVqjwgGZmzSuudmiX4CphofQqD+ZWSAnGqz5y9I4VtmOuS9CyGA9T3QCihGu3RKhc+gJtHH2JFld+EG5Mdug2QYZ4MSKhgBd11OgqXdipEm5PKoer0Jk2kA66wB044/EF1GtOSPRUCbUnryRJosnFnK4zpC5YR7205M9bLhyUSIrGUeVcY1dpekKrdNK6MuWNiKYKXt8V98FElDxbknGxGLCpZMi7VkGMxmjzv0pz1tvO4QPcay8LULoj5RToKoTN40MCEXyEQDJTl0KFmXpNOqsUxudN+TNFzzqdJp8ODutGcod0Alg34QWwsXsaVtIjVXqe9h5bC9V4B4ebWhco7zI24hmDVSEs/yOxIPOQEFnTnjzt2emS83nYFrhcevM6nRJhS+Ys9aoUu6Av7WqoNWO5rhsh0fxownplbBqhjJEmuv0WbN2UDNtDMRXm+zfsz/bY2TL2SH1Ec8CMTZjjhqaxh7e/v+ORvieQqvaSvN8Bf6HV0veSdG5fvSoo7Su/kO1D3f13SKInuz06VHYsahzzfl0yRj+s+3dKn9O9TW7HPrPLP624lFU=\">Thử ví dụ Options API trong Playground</a>.</p>\n<p>Khóa trong tùy chọn <code>watch</code> cũng có thể là đường dẫn phân tách bằng dấu chấm, như <code>'some.nested.key'</code>. Cách viết này chỉ hỗ trợ đường dẫn đơn giản, không hỗ trợ biểu thức:</p>\n<pre><code>export default {\n  watch: {\n    // Note: only simple paths. Expressions are not supported.\n    'some.nested.key'(newValue) {\n      // ...\n    }\n  }\n}\n</code></pre>\n<h2>Viết cùng ví dụ bằng Composition API</h2>\n<p>Trong Composition API, <a href=\"https://github.com/api/reactivity-core#watch\">hàm <code>watch</code></a> kích hoạt callback khi trạng thái reactive được theo dõi thay đổi. Ví dụ tương ứng dùng <code>&lt;script setup&gt;</code>, import <code>ref</code> và <code>watch</code> từ Vue, rồi khai báo <code>question</code>, <code>answer</code> và <code>loading</code> dưới dạng ref:</p>\n<pre><code>&lt;script setup&gt;\nimport { ref, watch } from 'vue'\n\nconst question = ref('')\nconst answer = ref('Questions usually contain a question mark. ;-)')\nconst loading = ref(false)\n\n// watch works directly on a ref\nwatch(question, async (newQuestion, oldQuestion) =&gt; {\n  if (newQuestion.includes('?')) {\n    loading.value = true\n    answer.value = 'Thinking...'\n    try {\n      const res = await fetch('https://yesno.wtf/api')\n      answer.value = (await res.json()).answer\n    } catch (error) {\n      answer.value = 'Error! Could not reach the API. ' + error\n    } finally {\n      loading.value = false\n    }\n  }\n})\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;p&gt;\n    Ask a yes/no question:\n    &lt;input v-model=\"question\" :disabled=\"loading\" /&gt;\n  &lt;/p&gt;\n  &lt;p&gt;{{ answer }}&lt;/p&gt;\n&lt;/template&gt;\n</code></pre>\n<p><code>watch</code> nhận trực tiếp ref <code>question</code> và một callback <code>async</code>. Luồng lấy câu trả lời và xử lý lỗi giống ví dụ Options API; điểm khác là các ref trong script được cập nhật qua <code>loading.value</code> và <code>answer.value</code>. Template vẫn dùng <code>v-model=\"question\"</code>, <code>:disabled=\"loading\"</code> và <code>{{ answer }}</code>.</p>\n<p><a href=\"https://play.vuejs.org/#eNp9U8Fy0zAQ/ZVFF9tDah96C2mZ0umhHKBAj7oIe52oUSQjyXEyGf87KytyoDC9JPa+p+e3b1cndtd15b5HtmQrV1vZeXDo++6Wa7nrjPVwAovtAgbh6w2M0Fqzg4xOZFxzXRvtPPzq0XlpNNwEbp5lRUKEdgPaVP925jnoXS+UOgKxvJAaxEVjJ+y2hA9XxUVFGdFIvT7LtEI5JIzrqjrbGozdOmikxdqTKqmIQOV6gvOkvQDhjrqGXOOQvCzAqCa9FHBzCyeuAWT7F6uUulZ9gy7PPmZFETmQjJV7oXoke972GJHY+Axkzxupt4FalhRcYHh7TDIQcqA+LTriikFIDy0G59nG+84tq+qITpty8G0lOhmSiedefSaPZ0mnfHFG50VRRkbkj1BPceVorbFzF/+6fQj4O7g3vWpAm6Ao6JzfINw9PZaQwXuYNJJuK/U0z1nxdTLT0M7s8Ec/I3WxquLS0brRi8ddp4RHegNYhR0M/Du3pXFSAJU285osI7aSuus97K92pkF1w1nCOYNlI534qbCh8tkOVasoXkV1+sjplLZ0HGN5Vc1G2IJ5R8Np5XpKlK7J1CJntdl1UqH92k0bzdkyNc8ZRWGGz1MtbMQi1esN1tv/1F/cIdQ4e6LJod0jZzPmhV2jj/DDjy94oOcZpK57Rew3wO/ojOpjJIH2qdcN2f6DN7l9nC47RfTsHg4etUtNpZUeJz5ndPPv32j9Yve6vE6DZuNvu1R2Tg==\">Thử ví dụ Composition API trong Playground</a>.</p>\n<h2>watch có thể theo dõi những nguồn nào?</h2>\n<p>Đối số đầu tiên của <code>watch</code> có thể là:</p>\n<ul><li>Một ref, kể cả computed ref.</li><li>Một đối tượng reactive.</li><li>Một <a href=\"https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get#description\">hàm getter</a> trả về giá trị cần theo dõi.</li><li>Một mảng gồm nhiều nguồn theo dõi.</li></ul>\n<pre><code>const x = ref(0)\nconst y = ref(0)\n\n// single ref\nwatch(x, (newX) =&gt; {\n  console.log(`x is ${newX}`)\n})\n\n// getter\nwatch(\n  () =&gt; x.value + y.value,\n  (sum) =&gt; {\n    console.log(`sum of x + y is: ${sum}`)\n  }\n)\n\n// array of multiple sources\nwatch([x, () =&gt; y.value], ([newX, newY]) =&gt; {\n  console.log(`x is ${newX} and y is ${newY}`)\n})\n</code></pre>\n<p>Đoạn code minh họa việc theo dõi trực tiếp ref <code>x</code>, theo dõi tổng <code>x.value + y.value</code> qua getter, và theo dõi nhiều nguồn bằng mảng <code>[x, () =&gt; y.value]</code>. Với mảng nguồn, callback nhận các giá trị mới tương ứng qua <code>[newX, newY]</code>.</p>\n<h2>Theo dõi thuộc tính của đối tượng reactive: dùng getter</h2>\n<p>Không thể truyền trực tiếp thuộc tính dạng số trong ví dụ sau làm nguồn theo dõi:</p>\n<pre><code>const obj = reactive({ count: 0 })\n\n// this won't work because we are passing a number to watch()\nwatch(obj.count, (count) =&gt; {\n  console.log(`Count is: ${count}`)\n})\n</code></pre>\n<p>Ở đây, <code>obj.count</code> là một số. Truyền giá trị đó vào <code>watch</code> không cung cấp nguồn reactive cần theo dõi. Thay vào đó, hãy truyền getter <code>() =&gt; obj.count</code>:</p>\n<pre><code>// instead, use a getter:\nwatch(\n  () =&gt; obj.count,\n  (count) =&gt; {\n    console.log(`Count is: ${count}`)\n  }\n)\n</code></pre>\n<p>Nguồn: <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/essentials/watchers.md\">tài liệu Vue về Watchers</a>.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04",
+                    "F05",
+                    "F06",
+                    "F07",
+                    "F08",
+                    "F09",
+                    "F10",
+                    "F11",
+                    "F12",
+                    "F13",
+                    "F14",
+                    "F15"
+                ],
+                "issues": []
+            },
+            "diagnostics": {
+                "response_id": "resp_0c260d2f67dd6af8016ac34aa54bfc87d2b0978a6dbcc74a54",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.editor.v1",
+                "usage": {
+                    "prompt_tokens": 15532,
+                    "completion_tokens": 3153,
+                    "total_tokens": 18685,
+                    "reasoning_tokens": 36
+                }
+            },
+            "latency_ms": 100905
+        }
+    ],
+    "latency_ms": 295907,
+    "input_sha256": "d2cf45cace68b2aba88410fc6bc2b899c66d75e501a304becf0f88da57989d3c",
+    "comparison_input_sha256": "62974da0c98e3bfedbd2b29301cbea50ab0f5daac9668715e93e4f1ff0299240",
+    "writing_profile_sha256": "1267aa8b907b63f12cd8c953c4a6664dbea3f3e7acabb12a28e64293053a7c96",
+    "brief_sha256": "a7f052446c270a2c36979d5688c0edaf10a0f5a164ae6ab255b69d622b3c56c6",
+    "image_evaluation": {
+        "mode": "source_metadata_only",
+        "source_images": 0,
+        "approved_asset_regenerate": "not_evaluated",
+        "pixel_understanding": "not_evaluated"
+    },
+    "source_sha256": "ec81037b0a51caac3a1dae751bf3543b83d09d89ebaf55659312fad7b134fa16",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Watcher trong Vue: dùng watch và chọn đúng nguồn theo dõi",
+        "content_html": "<p>Khi trạng thái thay đổi, bạn có thể cần gọi một tác vụ bất đồng bộ rồi cập nhật trạng thái khác, hoặc thay đổi DOM. Những tác động phụ này là trường hợp sử dụng watcher. Nếu chỉ cần tính một giá trị dẫn xuất, computed properties cho phép khai báo cách tính giá trị đó.</p>\n<h2>Dùng watch trong Options API</h2>\n<p>Với Options API, <a href=\"https://github.com/api/options-state#watch\">tùy chọn <code>watch</code></a> cho phép chạy một hàm khi thuộc tính reactive thay đổi. Ví dụ dưới đây theo dõi nội dung câu hỏi và chỉ gọi API lấy câu trả lời nếu câu hỏi chứa dấu <code>?</code>:</p>\n<pre><code>export default {\n  data() {\n    return {\n      question: '',\n      answer: 'Questions usually contain a question mark. ;-)',\n      loading: false\n    }\n  },\n  watch: {\n    // whenever question changes, this function will run\n    question(newQuestion, oldQuestion) {\n      if (newQuestion.includes('?')) {\n        this.getAnswer()\n      }\n    }\n  },\n  methods: {\n    async getAnswer() {\n      this.loading = true\n      this.answer = 'Thinking...'\n      try {\n        const res = await fetch('https://yesno.wtf/api')\n        this.answer = (await res.json()).answer\n      } catch (error) {\n        this.answer = 'Error! Could not reach the API. ' + error\n      } finally {\n        this.loading = false\n      }\n    }\n  }\n}\n</code></pre>\n<pre><code>&lt;p&gt;\n  Ask a yes/no question:\n  &lt;input v-model=\"question\" :disabled=\"loading\" /&gt;\n&lt;/p&gt;\n&lt;p&gt;{{ answer }}&lt;/p&gt;\n</code></pre>\n<p>Mỗi lần <code>question</code> thay đổi, hàm theo dõi được gọi. Nếu câu hỏi chứa dấu hỏi, <code>getAnswer()</code> đặt <code>loading</code> thành <code>true</code>, hiển thị <code>'Thinking...'</code> rồi gửi yêu cầu. Hàm lấy trường <code>answer</code> từ JSON trả về; nếu có lỗi được bắt trong <code>catch</code>, nó cập nhật thông báo lỗi. Khối <code>finally</code> đặt <code>loading</code> về <code>false</code>.</p>\n<p>Trong template, <code>v-model</code> liên kết ô nhập với <code>question</code>, <code>:disabled=\"loading\"</code> vô hiệu hóa ô nhập khi đang chờ, còn <code>{{ answer }}</code> hiển thị câu trả lời.</p>\n<p><a href=\"https://play.vuejs.org/#eNp9VE1v2zAM/SucLnaw1D70lqUbsiKH7rB1W4++aDYdq5ElTx9xgiD/fbT8lXZFAQO2+Mgn8pH0mW2aJjl4ZCu2trkRjfucKTw22jgosOReOjhnCqDgjseL/hvAoPNGjSeAvx6tE1qtIIqWo5Er26Ih088BteCt51KeINfKcaGAT5FQc7NP4NPNYiaQmhdC7VZQcmlxMF+61yUcWu7yajVmkabQVqjwgGZmzSuudmiX4CphofQqD+ZWSAnGqz5y9I4VtmOuS9CyGA9T3QCihGu3RKhc+gJtHH2JFld+EG5Mdug2QYZ4MSKhgBd11OgqXdipEm5PKoer0Jk2kA66wB044/EF1GtOSPRUCbUnryRJosnFnK4zpC5YR7205M9bLhyUSIrGUeVcY1dpekKrdNK6MuWNiKYKXt8V98FElDxbknGxGLCpZMi7VkGMxmjzv0pz1tvO4QPcay8LULoj5RToKoTN40MCEXyEQDJTl0KFmXpNOqsUxudN+TNFzzqdJp8ODutGcod0Alg34QWwsXsaVtIjVXqe9h5bC9V4B4ebWhco7zI24hmDVSEs/yOxIPOQEFnTnjzt2emS83nYFrhcevM6nRJhS+Ys9aoUu6Av7WqoNWO5rhsh0fxownplbBqhjJEmuv0WbN2UDNtDMRXm+zfsz/bY2TL2SH1Ec8CMTZjjhqaxh7e/v+ORvieQqvaSvN8Bf6HV0veSdG5fvSoo7Su/kO1D3f13SKInuz06VHYsahzzfl0yRj+s+3dKn9O9TW7HPrPLP624lFU=\">Thử ví dụ Options API trong Playground</a>.</p>\n<p>Khóa trong tùy chọn <code>watch</code> cũng có thể là đường dẫn phân tách bằng dấu chấm, như <code>'some.nested.key'</code>. Cách viết này chỉ hỗ trợ đường dẫn đơn giản, không hỗ trợ biểu thức:</p>\n<pre><code>export default {\n  watch: {\n    // Note: only simple paths. Expressions are not supported.\n    'some.nested.key'(newValue) {\n      // ...\n    }\n  }\n}\n</code></pre>\n<h2>Viết cùng ví dụ bằng Composition API</h2>\n<p>Trong Composition API, <a href=\"https://github.com/api/reactivity-core#watch\">hàm <code>watch</code></a> kích hoạt callback khi trạng thái reactive được theo dõi thay đổi. Ví dụ tương ứng dùng <code>&lt;script setup&gt;</code>, import <code>ref</code> và <code>watch</code> từ Vue, rồi khai báo <code>question</code>, <code>answer</code> và <code>loading</code> dưới dạng ref:</p>\n<pre><code>&lt;script setup&gt;\nimport { ref, watch } from 'vue'\n\nconst question = ref('')\nconst answer = ref('Questions usually contain a question mark. ;-)')\nconst loading = ref(false)\n\n// watch works directly on a ref\nwatch(question, async (newQuestion, oldQuestion) =&gt; {\n  if (newQuestion.includes('?')) {\n    loading.value = true\n    answer.value = 'Thinking...'\n    try {\n      const res = await fetch('https://yesno.wtf/api')\n      answer.value = (await res.json()).answer\n    } catch (error) {\n      answer.value = 'Error! Could not reach the API. ' + error\n    } finally {\n      loading.value = false\n    }\n  }\n})\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;p&gt;\n    Ask a yes/no question:\n    &lt;input v-model=\"question\" :disabled=\"loading\" /&gt;\n  &lt;/p&gt;\n  &lt;p&gt;{{ answer }}&lt;/p&gt;\n&lt;/template&gt;\n</code></pre>\n<p><code>watch</code> nhận trực tiếp ref <code>question</code> và một callback <code>async</code>. Luồng lấy câu trả lời và xử lý lỗi giống ví dụ Options API; điểm khác là các ref trong script được cập nhật qua <code>loading.value</code> và <code>answer.value</code>. Template vẫn dùng <code>v-model=\"question\"</code>, <code>:disabled=\"loading\"</code> và <code>{{ answer }}</code>.</p>\n<p><a href=\"https://play.vuejs.org/#eNp9U8Fy0zAQ/ZVFF9tDah96C2mZ0umhHKBAj7oIe52oUSQjyXEyGf87KytyoDC9JPa+p+e3b1cndtd15b5HtmQrV1vZeXDo++6Wa7nrjPVwAovtAgbh6w2M0Fqzg4xOZFxzXRvtPPzq0XlpNNwEbp5lRUKEdgPaVP925jnoXS+UOgKxvJAaxEVjJ+y2hA9XxUVFGdFIvT7LtEI5JIzrqjrbGozdOmikxdqTKqmIQOV6gvOkvQDhjrqGXOOQvCzAqCa9FHBzCyeuAWT7F6uUulZ9gy7PPmZFETmQjJV7oXoke972GJHY+Axkzxupt4FalhRcYHh7TDIQcqA+LTriikFIDy0G59nG+84tq+qITpty8G0lOhmSiedefSaPZ0mnfHFG50VRRkbkj1BPceVorbFzF/+6fQj4O7g3vWpAm6Ao6JzfINw9PZaQwXuYNJJuK/U0z1nxdTLT0M7s8Ec/I3WxquLS0brRi8ddp4RHegNYhR0M/Du3pXFSAJU285osI7aSuus97K92pkF1w1nCOYNlI534qbCh8tkOVasoXkV1+sjplLZ0HGN5Vc1G2IJ5R8Np5XpKlK7J1CJntdl1UqH92k0bzdkyNc8ZRWGGz1MtbMQi1esN1tv/1F/cIdQ4e6LJod0jZzPmhV2jj/DDjy94oOcZpK57Rew3wO/ojOpjJIH2qdcN2f6DN7l9nC47RfTsHg4etUtNpZUeJz5ndPPv32j9Yve6vE6DZuNvu1R2Tg==\">Thử ví dụ Composition API trong Playground</a>.</p>\n<h2>watch có thể theo dõi những nguồn nào?</h2>\n<p>Đối số đầu tiên của <code>watch</code> có thể là:</p>\n<ul><li>Một ref, kể cả computed ref.</li><li>Một đối tượng reactive.</li><li>Một <a href=\"https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get#description\">hàm getter</a> trả về giá trị cần theo dõi.</li><li>Một mảng gồm nhiều nguồn theo dõi.</li></ul>\n<pre><code>const x = ref(0)\nconst y = ref(0)\n\n// single ref\nwatch(x, (newX) =&gt; {\n  console.log(`x is ${newX}`)\n})\n\n// getter\nwatch(\n  () =&gt; x.value + y.value,\n  (sum) =&gt; {\n    console.log(`sum of x + y is: ${sum}`)\n  }\n)\n\n// array of multiple sources\nwatch([x, () =&gt; y.value], ([newX, newY]) =&gt; {\n  console.log(`x is ${newX} and y is ${newY}`)\n})\n</code></pre>\n<p>Đoạn code minh họa việc theo dõi trực tiếp ref <code>x</code>, theo dõi tổng <code>x.value + y.value</code> qua getter, và theo dõi nhiều nguồn bằng mảng <code>[x, () =&gt; y.value]</code>. Với mảng nguồn, callback nhận các giá trị mới tương ứng qua <code>[newX, newY]</code>.</p>\n<h2>Theo dõi thuộc tính của đối tượng reactive: dùng getter</h2>\n<p>Không thể truyền trực tiếp thuộc tính dạng số trong ví dụ sau làm nguồn theo dõi:</p>\n<pre><code>const obj = reactive({ count: 0 })\n\n// this won't work because we are passing a number to watch()\nwatch(obj.count, (count) =&gt; {\n  console.log(`Count is: ${count}`)\n})\n</code></pre>\n<p>Ở đây, <code>obj.count</code> là một số. Truyền giá trị đó vào <code>watch</code> không cung cấp nguồn reactive cần theo dõi. Thay vào đó, hãy truyền getter <code>() =&gt; obj.count</code>:</p>\n<pre><code>// instead, use a getter:\nwatch(\n  () =&gt; obj.count,\n  (count) =&gt; {\n    console.log(`Count is: ${count}`)\n  }\n)\n</code></pre>\n<p>Nguồn: <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/essentials/watchers.md\">tài liệu Vue về Watchers</a>.</p>"
+    },
+    "total_tokens": 47887
+}

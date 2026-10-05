@@ -9,11 +9,14 @@ use App\Services\Ai\Content\ArticleImportService;
 use App\Services\Ai\Content\ArticleSourceExtractor;
 use App\Services\Ai\Content\Data\ArticleInputHasher;
 use App\Services\Ai\Content\Pipelines\ArticleGenerationPipeline;
+use App\Services\Ai\Content\Prompts\ArticlePromptBuilder;
+use App\Services\Ai\Content\Quality\ArticleEvidenceValidator;
 use App\Services\Ai\Content\Quality\ArticleQualityGate;
 use App\Services\Ai\Contracts\AiProviderContract;
 use App\Services\Ai\Data\AiTaskRequest;
 use App\Services\Ai\Data\AiTaskResponse;
 use App\Services\Ai\Providers\Adapters\OpenAiProvider;
+use App\Services\Ai\Providers\Diagnostics\AiResponseDiagnostics;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -146,7 +149,8 @@ final class ArticleGenerationPipelineTest extends TestCase
             $this->generateFixture($provider);
             $this->fail('Unknown anchor must fail.');
         } catch (AiImportException $exception) {
-            $this->assertSame('AI_SOURCE_REFERENCE', $exception->errorCode);
+            $this->assertSame('AI_PROVIDER_SCHEMA', $exception->errorCode);
+            $this->assertSame('invalid_value', $exception->diagnostics['validation_errors'][0]['reason']);
             $this->assertCount(1, $provider->requests);
         }
     }
@@ -508,7 +512,7 @@ final class ArticleGenerationPipelineTest extends TestCase
      */
     public function test_analysis_prompt_specifies_plain_text_and_legacy_schema_stays_unchanged(): void
     {
-        $builder = new \App\Services\Ai\Content\Prompts\ArticlePromptBuilder;
+        $builder = new ArticlePromptBuilder;
         $old = $builder->schema('article.analysis-plan', ['title', 'content'], ['prompt_version' => '2.0']);
         $new = $builder->schema('article.analysis-plan', ['title', 'content'], config('ai-content'));
         $this->assertArrayNotHasKey('description', data_get($old, 'properties.knowledge.properties.facts.items.properties.evidence'));
@@ -526,10 +530,10 @@ final class ArticleGenerationPipelineTest extends TestCase
         $analysis = $this->responses()[0];
         $analysis['knowledge']['facts'][0]['evidence'] = '<strong>fabricated evidence</strong>';
         try {
-            (new \App\Services\Ai\Content\Quality\ArticleEvidenceValidator)->analysis($analysis, $this->source());
+            (new ArticleEvidenceValidator)->analysis($analysis, $this->source());
             $this->fail('Wrong evidence must fail.');
         } catch (AiImportException $exception) {
-            $safe = \App\Services\Ai\Providers\Diagnostics\AiResponseDiagnostics::sanitize($exception->diagnostics);
+            $safe = AiResponseDiagnostics::sanitize($exception->diagnostics);
             $this->assertSame('evidence_not_in_source', $safe['validation_errors'][0]['reason']);
             $this->assertSame('task_output', $safe['validation_errors'][0]['field']);
             $this->assertStringNotContainsString('fabricated evidence', json_encode($safe));

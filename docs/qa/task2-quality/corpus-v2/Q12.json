@@ -1,0 +1,84 @@
+{
+    "source_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/extras/composition-api-faq.md",
+    "title": "So sánh trade-off",
+    "source_format": "html",
+    "version": "article.source.v1",
+    "content_html": "<hr>\n<h2>outline: deep</h2>\n<h1>Composition API FAQ {#composition-api-faq}</h1>\n<p>:::tip\nThis FAQ assumes prior experience with Vue - in particular, experience with Vue 2 while primarily using Options API.\n:::</p>\n<h2>What is Composition API? {#what-is-composition-api}</h2>\n\n<p>Composition API is a set of APIs that allows us to author Vue components using imported functions instead of declaring options. It is an umbrella term that covers the following APIs:</p>\n<ul>\n<li>\n<p><a href=\"https://github.com/api/reactivity-core\">Reactivity API</a>, e.g. <code>ref()</code> and <code>reactive()</code>, that allows us to directly create reactive state, computed state, and watchers.</p>\n</li>\n<li>\n<p><a href=\"https://github.com/api/composition-api-lifecycle\">Lifecycle Hooks</a>, e.g. <code>onMounted()</code> and <code>onUnmounted()</code>, that allow us to programmatically hook into the component lifecycle.</p>\n</li>\n<li>\n<p><a href=\"https://github.com/api/composition-api-dependency-injection\">Dependency Injection</a>, i.e. <code>provide()</code> and <code>inject()</code>, that allow us to leverage Vue's dependency injection system while using Reactivity APIs.</p>\n</li>\n</ul>\n<p>Composition API is a built-in feature of Vue 3 and <a href=\"https://blog.vuejs.org/posts/vue-2-7-naruto.html\">Vue 2.7</a>. For older Vue 2 versions, use the officially maintained <a href=\"https://github.com/vuejs/composition-api\"><code>@vue/composition-api</code></a> plugin. In Vue 3, it is also primarily used together with the <a href=\"https://github.com/api/sfc-script-setup\"><code>&lt;script setup&gt;</code></a> syntax in Single-File Components. Here's a basic example of a component using Composition API:</p>\n<pre><code>&lt;script setup&gt;\nimport { ref, onMounted } from 'vue'\n\n// reactive state\nconst count = ref(0)\n\n// functions that mutate state and trigger updates\nfunction increment() {\n  count.value++\n}\n\n// lifecycle hooks\nonMounted(() =&gt; {\n  console.log(`The initial count is ${count.value}.`)\n})\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;button @click=\"increment\"&gt;Count is: {{ count }}&lt;/button&gt;\n&lt;/template&gt;\n</code></pre>\n<p>Despite an API style based on function composition, <strong>Composition API is NOT functional programming</strong>. Composition API is based on Vue's mutable, fine-grained reactivity paradigm, whereas functional programming emphasizes immutability.</p>\n<p>If you are interested in learning how to use Vue with Composition API, you can set the site-wide API preference to Composition API using the toggle at the top of the left sidebar, and then go through the guide from the beginning.</p>",
+    "blocks": [
+        {
+            "id": "S001",
+            "type": "h2",
+            "text": "outline: deep",
+            "html": "<h2>outline: deep</h2>"
+        },
+        {
+            "id": "S002",
+            "type": "h1",
+            "text": "Composition API FAQ {#composition-api-faq}",
+            "html": "<h1>Composition API FAQ {#composition-api-faq}</h1>"
+        },
+        {
+            "id": "S003",
+            "type": "p",
+            "text": ":::tip\nThis FAQ assumes prior experience with Vue - in particular, experience with Vue 2 while primarily using Options API.\n:::",
+            "html": "<p>:::tip\nThis FAQ assumes prior experience with Vue - in particular, experience with Vue 2 while primarily using Options API.\n:::</p>"
+        },
+        {
+            "id": "S004",
+            "type": "h2",
+            "text": "What is Composition API? {#what-is-composition-api}",
+            "html": "<h2>What is Composition API? {#what-is-composition-api}</h2>"
+        },
+        {
+            "id": "S005",
+            "type": "p",
+            "text": "Composition API is a set of APIs that allows us to author Vue components using imported functions instead of declaring options. It is an umbrella term that covers the following APIs:",
+            "html": "<p>Composition API is a set of APIs that allows us to author Vue components using imported functions instead of declaring options. It is an umbrella term that covers the following APIs:</p>"
+        },
+        {
+            "id": "S006",
+            "type": "li",
+            "text": "Reactivity API, e.g. ref() and reactive(), that allows us to directly create reactive state, computed state, and watchers.",
+            "html": "<li>\n<p><a href=\"https://github.com/api/reactivity-core\">Reactivity API</a>, e.g. <code>ref()</code> and <code>reactive()</code>, that allows us to directly create reactive state, computed state, and watchers.</p>\n</li>"
+        },
+        {
+            "id": "S007",
+            "type": "li",
+            "text": "Lifecycle Hooks, e.g. onMounted() and onUnmounted(), that allow us to programmatically hook into the component lifecycle.",
+            "html": "<li>\n<p><a href=\"https://github.com/api/composition-api-lifecycle\">Lifecycle Hooks</a>, e.g. <code>onMounted()</code> and <code>onUnmounted()</code>, that allow us to programmatically hook into the component lifecycle.</p>\n</li>"
+        },
+        {
+            "id": "S008",
+            "type": "li",
+            "text": "Dependency Injection, i.e. provide() and inject(), that allow us to leverage Vue's dependency injection system while using Reactivity APIs.",
+            "html": "<li>\n<p><a href=\"https://github.com/api/composition-api-dependency-injection\">Dependency Injection</a>, i.e. <code>provide()</code> and <code>inject()</code>, that allow us to leverage Vue's dependency injection system while using Reactivity APIs.</p>\n</li>"
+        },
+        {
+            "id": "S009",
+            "type": "p",
+            "text": "Composition API is a built-in feature of Vue 3 and Vue 2.7. For older Vue 2 versions, use the officially maintained @vue/composition-api plugin. In Vue 3, it is also primarily used together with the <script setup> syntax in Single-File Components. Here's a basic example of a component using Composition API:",
+            "html": "<p>Composition API is a built-in feature of Vue 3 and <a href=\"https://blog.vuejs.org/posts/vue-2-7-naruto.html\">Vue 2.7</a>. For older Vue 2 versions, use the officially maintained <a href=\"https://github.com/vuejs/composition-api\"><code>@vue/composition-api</code></a> plugin. In Vue 3, it is also primarily used together with the <a href=\"https://github.com/api/sfc-script-setup\"><code>&lt;script setup&gt;</code></a> syntax in Single-File Components. Here's a basic example of a component using Composition API:</p>"
+        },
+        {
+            "id": "S010",
+            "type": "pre",
+            "text": "<script setup>\nimport { ref, onMounted } from 'vue'\n\n// reactive state\nconst count = ref(0)\n\n// functions that mutate state and trigger updates\nfunction increment() {\n  count.value++\n}\n\n// lifecycle hooks\nonMounted(() => {\n  console.log(`The initial count is ${count.value}.`)\n})\n</script>\n\n<template>\n  <button @click=\"increment\">Count is: {{ count }}</button>\n</template>",
+            "html": "<pre><code>&lt;script setup&gt;\nimport { ref, onMounted } from 'vue'\n\n// reactive state\nconst count = ref(0)\n\n// functions that mutate state and trigger updates\nfunction increment() {\n  count.value++\n}\n\n// lifecycle hooks\nonMounted(() =&gt; {\n  console.log(`The initial count is ${count.value}.`)\n})\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;button @click=\"increment\"&gt;Count is: {{ count }}&lt;/button&gt;\n&lt;/template&gt;\n</code></pre>"
+        },
+        {
+            "id": "S011",
+            "type": "p",
+            "text": "Despite an API style based on function composition, Composition API is NOT functional programming. Composition API is based on Vue's mutable, fine-grained reactivity paradigm, whereas functional programming emphasizes immutability.",
+            "html": "<p>Despite an API style based on function composition, <strong>Composition API is NOT functional programming</strong>. Composition API is based on Vue's mutable, fine-grained reactivity paradigm, whereas functional programming emphasizes immutability.</p>"
+        },
+        {
+            "id": "S012",
+            "type": "p",
+            "text": "If you are interested in learning how to use Vue with Composition API, you can set the site-wide API preference to Composition API using the toggle at the top of the left sidebar, and then go through the guide from the beginning.",
+            "html": "<p>If you are interested in learning how to use Vue with Composition API, you can set the site-wide API preference to Composition API using the toggle at the top of the left sidebar, and then go through the guide from the beginning.</p>"
+        }
+    ],
+    "source_images": [],
+    "fetched_at": "2026-10-04T17:47:27+00:00",
+    "hash": "e2b06bb50f82fb8dae61ee69ede265a94f31ea1adc7f04f9c37e92b501bb0247"
+}

@@ -1,0 +1,126 @@
+{
+    "source_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/essentials/watchers.md",
+    "title": "Async/watchers",
+    "source_format": "html",
+    "version": "article.source.v1",
+    "content_html": "<h1>Watchers {#watchers}</h1>\n<h2>Basic Example {#basic-example}</h2>\n<p>Computed properties allow us to declaratively compute derived values. However, there are cases where we need to perform \"side effects\" in reaction to state changes - for example, mutating the DOM, or changing another piece of state based on the result of an async operation.</p>\n\n<p>With the Options API, we can use the <a href=\"https://github.com/api/options-state#watch\"><code>watch</code> option</a> to trigger a function whenever a reactive property changes:</p>\n<pre><code>export default {\n  data() {\n    return {\n      question: '',\n      answer: 'Questions usually contain a question mark. ;-)',\n      loading: false\n    }\n  },\n  watch: {\n    // whenever question changes, this function will run\n    question(newQuestion, oldQuestion) {\n      if (newQuestion.includes('?')) {\n        this.getAnswer()\n      }\n    }\n  },\n  methods: {\n    async getAnswer() {\n      this.loading = true\n      this.answer = 'Thinking...'\n      try {\n        const res = await fetch('https://yesno.wtf/api')\n        this.answer = (await res.json()).answer\n      } catch (error) {\n        this.answer = 'Error! Could not reach the API. ' + error\n      } finally {\n        this.loading = false\n      }\n    }\n  }\n}\n</code></pre>\n<pre><code>&lt;p&gt;\n  Ask a yes/no question:\n  &lt;input v-model=\"question\" :disabled=\"loading\" /&gt;\n&lt;/p&gt;\n&lt;p&gt;{{ answer }}&lt;/p&gt;\n</code></pre>\n<p><a href=\"https://play.vuejs.org/#eNp9VE1v2zAM/SucLnaw1D70lqUbsiKH7rB1W4++aDYdq5ElTx9xgiD/fbT8lXZFAQO2+Mgn8pH0mW2aJjl4ZCu2trkRjfucKTw22jgosOReOjhnCqDgjseL/hvAoPNGjSeAvx6tE1qtIIqWo5Er26Ih088BteCt51KeINfKcaGAT5FQc7NP4NPNYiaQmhdC7VZQcmlxMF+61yUcWu7yajVmkabQVqjwgGZmzSuudmiX4CphofQqD+ZWSAnGqz5y9I4VtmOuS9CyGA9T3QCihGu3RKhc+gJtHH2JFld+EG5Mdug2QYZ4MSKhgBd11OgqXdipEm5PKoer0Jk2kA66wB044/EF1GtOSPRUCbUnryRJosnFnK4zpC5YR7205M9bLhyUSIrGUeVcY1dpekKrdNK6MuWNiKYKXt8V98FElDxbknGxGLCpZMi7VkGMxmjzv0pz1tvO4QPcay8LULoj5RToKoTN40MCEXyEQDJTl0KFmXpNOqsUxudN+TNFzzqdJp8ODutGcod0Alg34QWwsXsaVtIjVXqe9h5bC9V4B4ebWhco7zI24hmDVSEs/yOxIPOQEFnTnjzt2emS83nYFrhcevM6nRJhS+Ys9aoUu6Av7WqoNWO5rhsh0fxownplbBqhjJEmuv0WbN2UDNtDMRXm+zfsz/bY2TL2SH1Ec8CMTZjjhqaxh7e/v+ORvieQqvaSvN8Bf6HV0veSdG5fvSoo7Su/kO1D3f13SKInuz06VHYsahzzfl0yRj+s+3dKn9O9TW7HPrPLP624lFU=\">Try it in the Playground</a></p>\n<p>The <code>watch</code> option also supports a dot-delimited path as the key:</p>\n<pre><code>export default {\n  watch: {\n    // Note: only simple paths. Expressions are not supported.\n    'some.nested.key'(newValue) {\n      // ...\n    }\n  }\n}\n</code></pre>\n\n\n<p>With Composition API, we can use the <a href=\"https://github.com/api/reactivity-core#watch\"><code>watch</code> function</a> to trigger a callback whenever a piece of reactive state changes:</p>\n<pre><code>&lt;script setup&gt;\nimport { ref, watch } from 'vue'\n\nconst question = ref('')\nconst answer = ref('Questions usually contain a question mark. ;-)')\nconst loading = ref(false)\n\n// watch works directly on a ref\nwatch(question, async (newQuestion, oldQuestion) =&gt; {\n  if (newQuestion.includes('?')) {\n    loading.value = true\n    answer.value = 'Thinking...'\n    try {\n      const res = await fetch('https://yesno.wtf/api')\n      answer.value = (await res.json()).answer\n    } catch (error) {\n      answer.value = 'Error! Could not reach the API. ' + error\n    } finally {\n      loading.value = false\n    }\n  }\n})\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;p&gt;\n    Ask a yes/no question:\n    &lt;input v-model=\"question\" :disabled=\"loading\" /&gt;\n  &lt;/p&gt;\n  &lt;p&gt;{{ answer }}&lt;/p&gt;\n&lt;/template&gt;\n</code></pre>\n<p><a href=\"https://play.vuejs.org/#eNp9U8Fy0zAQ/ZVFF9tDah96C2mZ0umhHKBAj7oIe52oUSQjyXEyGf87KytyoDC9JPa+p+e3b1cndtd15b5HtmQrV1vZeXDo++6Wa7nrjPVwAovtAgbh6w2M0Fqzg4xOZFxzXRvtPPzq0XlpNNwEbp5lRUKEdgPaVP925jnoXS+UOgKxvJAaxEVjJ+y2hA9XxUVFGdFIvT7LtEI5JIzrqjrbGozdOmikxdqTKqmIQOV6gvOkvQDhjrqGXOOQvCzAqCa9FHBzCyeuAWT7F6uUulZ9gy7PPmZFETmQjJV7oXoke972GJHY+Axkzxupt4FalhRcYHh7TDIQcqA+LTriikFIDy0G59nG+84tq+qITpty8G0lOhmSiedefSaPZ0mnfHFG50VRRkbkj1BPceVorbFzF/+6fQj4O7g3vWpAm6Ao6JzfINw9PZaQwXuYNJJuK/U0z1nxdTLT0M7s8Ec/I3WxquLS0brRi8ddp4RHegNYhR0M/Du3pXFSAJU285osI7aSuus97K92pkF1w1nCOYNlI534qbCh8tkOVasoXkV1+sjplLZ0HGN5Vc1G2IJ5R8Np5XpKlK7J1CJntdl1UqH92k0bzdkyNc8ZRWGGz1MtbMQi1esN1tv/1F/cIdQ4e6LJod0jZzPmhV2jj/DDjy94oOcZpK57Rew3wO/ojOpjJIH2qdcN2f6DN7l9nC47RfTsHg4etUtNpZUeJz5ndPPv32j9Yve6vE6DZuNvu1R2Tg==\">Try it in the Playground</a></p>\n<h3>Watch Source Types {#watch-source-types}</h3>\n<p><code>watch</code>'s first argument can be different types of reactive \"sources\": it can be a ref (including computed refs), a reactive object, a <a href=\"https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get#description\">getter function</a>, or an array of multiple sources:</p>\n<pre><code>const x = ref(0)\nconst y = ref(0)\n\n// single ref\nwatch(x, (newX) =&gt; {\n  console.log(`x is ${newX}`)\n})\n\n// getter\nwatch(\n  () =&gt; x.value + y.value,\n  (sum) =&gt; {\n    console.log(`sum of x + y is: ${sum}`)\n  }\n)\n\n// array of multiple sources\nwatch([x, () =&gt; y.value], ([newX, newY]) =&gt; {\n  console.log(`x is ${newX} and y is ${newY}`)\n})\n</code></pre>\n<p>Do note that you can't watch a property of a reactive object like this:</p>\n<pre><code>const obj = reactive({ count: 0 })\n\n// this won't work because we are passing a number to watch()\nwatch(obj.count, (count) =&gt; {\n  console.log(`Count is: ${count}`)\n})\n</code></pre>\n<p>Instead, use a getter:</p>\n<pre><code>// instead, use a getter:\nwatch(\n  () =&gt; obj.count,\n  (count) =&gt; {\n    console.log(`Count is: ${count}`)\n  }\n)\n</code></pre>",
+    "blocks": [
+        {
+            "id": "S001",
+            "type": "h1",
+            "text": "Watchers {#watchers}",
+            "html": "<h1>Watchers {#watchers}</h1>"
+        },
+        {
+            "id": "S002",
+            "type": "h2",
+            "text": "Basic Example {#basic-example}",
+            "html": "<h2>Basic Example {#basic-example}</h2>"
+        },
+        {
+            "id": "S003",
+            "type": "p",
+            "text": "Computed properties allow us to declaratively compute derived values. However, there are cases where we need to perform \"side effects\" in reaction to state changes - for example, mutating the DOM, or changing another piece of state based on the result of an async operation.",
+            "html": "<p>Computed properties allow us to declaratively compute derived values. However, there are cases where we need to perform \"side effects\" in reaction to state changes - for example, mutating the DOM, or changing another piece of state based on the result of an async operation.</p>"
+        },
+        {
+            "id": "S004",
+            "type": "p",
+            "text": "With the Options API, we can use the watch option to trigger a function whenever a reactive property changes:",
+            "html": "<p>With the Options API, we can use the <a href=\"https://github.com/api/options-state#watch\"><code>watch</code> option</a> to trigger a function whenever a reactive property changes:</p>"
+        },
+        {
+            "id": "S005",
+            "type": "pre",
+            "text": "export default {\n  data() {\n    return {\n      question: '',\n      answer: 'Questions usually contain a question mark. ;-)',\n      loading: false\n    }\n  },\n  watch: {\n    // whenever question changes, this function will run\n    question(newQuestion, oldQuestion) {\n      if (newQuestion.includes('?')) {\n        this.getAnswer()\n      }\n    }\n  },\n  methods: {\n    async getAnswer() {\n      this.loading = true\n      this.answer = 'Thinking...'\n      try {\n        const res = await fetch('https://yesno.wtf/api')\n        this.answer = (await res.json()).answer\n      } catch (error) {\n        this.answer = 'Error! Could not reach the API. ' + error\n      } finally {\n        this.loading = false\n      }\n    }\n  }\n}",
+            "html": "<pre><code>export default {\n  data() {\n    return {\n      question: '',\n      answer: 'Questions usually contain a question mark. ;-)',\n      loading: false\n    }\n  },\n  watch: {\n    // whenever question changes, this function will run\n    question(newQuestion, oldQuestion) {\n      if (newQuestion.includes('?')) {\n        this.getAnswer()\n      }\n    }\n  },\n  methods: {\n    async getAnswer() {\n      this.loading = true\n      this.answer = 'Thinking...'\n      try {\n        const res = await fetch('https://yesno.wtf/api')\n        this.answer = (await res.json()).answer\n      } catch (error) {\n        this.answer = 'Error! Could not reach the API. ' + error\n      } finally {\n        this.loading = false\n      }\n    }\n  }\n}\n</code></pre>"
+        },
+        {
+            "id": "S006",
+            "type": "pre",
+            "text": "<p>\n  Ask a yes/no question:\n  <input v-model=\"question\" :disabled=\"loading\" />\n</p>\n<p>{{ answer }}</p>",
+            "html": "<pre><code>&lt;p&gt;\n  Ask a yes/no question:\n  &lt;input v-model=\"question\" :disabled=\"loading\" /&gt;\n&lt;/p&gt;\n&lt;p&gt;{{ answer }}&lt;/p&gt;\n</code></pre>"
+        },
+        {
+            "id": "S007",
+            "type": "p",
+            "text": "Try it in the Playground",
+            "html": "<p><a href=\"https://play.vuejs.org/#eNp9VE1v2zAM/SucLnaw1D70lqUbsiKH7rB1W4++aDYdq5ElTx9xgiD/fbT8lXZFAQO2+Mgn8pH0mW2aJjl4ZCu2trkRjfucKTw22jgosOReOjhnCqDgjseL/hvAoPNGjSeAvx6tE1qtIIqWo5Er26Ih088BteCt51KeINfKcaGAT5FQc7NP4NPNYiaQmhdC7VZQcmlxMF+61yUcWu7yajVmkabQVqjwgGZmzSuudmiX4CphofQqD+ZWSAnGqz5y9I4VtmOuS9CyGA9T3QCihGu3RKhc+gJtHH2JFld+EG5Mdug2QYZ4MSKhgBd11OgqXdipEm5PKoer0Jk2kA66wB044/EF1GtOSPRUCbUnryRJosnFnK4zpC5YR7205M9bLhyUSIrGUeVcY1dpekKrdNK6MuWNiKYKXt8V98FElDxbknGxGLCpZMi7VkGMxmjzv0pz1tvO4QPcay8LULoj5RToKoTN40MCEXyEQDJTl0KFmXpNOqsUxudN+TNFzzqdJp8ODutGcod0Alg34QWwsXsaVtIjVXqe9h5bC9V4B4ebWhco7zI24hmDVSEs/yOxIPOQEFnTnjzt2emS83nYFrhcevM6nRJhS+Ys9aoUu6Av7WqoNWO5rhsh0fxownplbBqhjJEmuv0WbN2UDNtDMRXm+zfsz/bY2TL2SH1Ec8CMTZjjhqaxh7e/v+ORvieQqvaSvN8Bf6HV0veSdG5fvSoo7Su/kO1D3f13SKInuz06VHYsahzzfl0yRj+s+3dKn9O9TW7HPrPLP624lFU=\">Try it in the Playground</a></p>"
+        },
+        {
+            "id": "S008",
+            "type": "p",
+            "text": "The watch option also supports a dot-delimited path as the key:",
+            "html": "<p>The <code>watch</code> option also supports a dot-delimited path as the key:</p>"
+        },
+        {
+            "id": "S009",
+            "type": "pre",
+            "text": "export default {\n  watch: {\n    // Note: only simple paths. Expressions are not supported.\n    'some.nested.key'(newValue) {\n      // ...\n    }\n  }\n}",
+            "html": "<pre><code>export default {\n  watch: {\n    // Note: only simple paths. Expressions are not supported.\n    'some.nested.key'(newValue) {\n      // ...\n    }\n  }\n}\n</code></pre>"
+        },
+        {
+            "id": "S010",
+            "type": "p",
+            "text": "With Composition API, we can use the watch function to trigger a callback whenever a piece of reactive state changes:",
+            "html": "<p>With Composition API, we can use the <a href=\"https://github.com/api/reactivity-core#watch\"><code>watch</code> function</a> to trigger a callback whenever a piece of reactive state changes:</p>"
+        },
+        {
+            "id": "S011",
+            "type": "pre",
+            "text": "<script setup>\nimport { ref, watch } from 'vue'\n\nconst question = ref('')\nconst answer = ref('Questions usually contain a question mark. ;-)')\nconst loading = ref(false)\n\n// watch works directly on a ref\nwatch(question, async (newQuestion, oldQuestion) => {\n  if (newQuestion.includes('?')) {\n    loading.value = true\n    answer.value = 'Thinking...'\n    try {\n      const res = await fetch('https://yesno.wtf/api')\n      answer.value = (await res.json()).answer\n    } catch (error) {\n      answer.value = 'Error! Could not reach the API. ' + error\n    } finally {\n      loading.value = false\n    }\n  }\n})\n</script>\n\n<template>\n  <p>\n    Ask a yes/no question:\n    <input v-model=\"question\" :disabled=\"loading\" />\n  </p>\n  <p>{{ answer }}</p>\n</template>",
+            "html": "<pre><code>&lt;script setup&gt;\nimport { ref, watch } from 'vue'\n\nconst question = ref('')\nconst answer = ref('Questions usually contain a question mark. ;-)')\nconst loading = ref(false)\n\n// watch works directly on a ref\nwatch(question, async (newQuestion, oldQuestion) =&gt; {\n  if (newQuestion.includes('?')) {\n    loading.value = true\n    answer.value = 'Thinking...'\n    try {\n      const res = await fetch('https://yesno.wtf/api')\n      answer.value = (await res.json()).answer\n    } catch (error) {\n      answer.value = 'Error! Could not reach the API. ' + error\n    } finally {\n      loading.value = false\n    }\n  }\n})\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;p&gt;\n    Ask a yes/no question:\n    &lt;input v-model=\"question\" :disabled=\"loading\" /&gt;\n  &lt;/p&gt;\n  &lt;p&gt;{{ answer }}&lt;/p&gt;\n&lt;/template&gt;\n</code></pre>"
+        },
+        {
+            "id": "S012",
+            "type": "p",
+            "text": "Try it in the Playground",
+            "html": "<p><a href=\"https://play.vuejs.org/#eNp9U8Fy0zAQ/ZVFF9tDah96C2mZ0umhHKBAj7oIe52oUSQjyXEyGf87KytyoDC9JPa+p+e3b1cndtd15b5HtmQrV1vZeXDo++6Wa7nrjPVwAovtAgbh6w2M0Fqzg4xOZFxzXRvtPPzq0XlpNNwEbp5lRUKEdgPaVP925jnoXS+UOgKxvJAaxEVjJ+y2hA9XxUVFGdFIvT7LtEI5JIzrqjrbGozdOmikxdqTKqmIQOV6gvOkvQDhjrqGXOOQvCzAqCa9FHBzCyeuAWT7F6uUulZ9gy7PPmZFETmQjJV7oXoke972GJHY+Axkzxupt4FalhRcYHh7TDIQcqA+LTriikFIDy0G59nG+84tq+qITpty8G0lOhmSiedefSaPZ0mnfHFG50VRRkbkj1BPceVorbFzF/+6fQj4O7g3vWpAm6Ao6JzfINw9PZaQwXuYNJJuK/U0z1nxdTLT0M7s8Ec/I3WxquLS0brRi8ddp4RHegNYhR0M/Du3pXFSAJU285osI7aSuus97K92pkF1w1nCOYNlI534qbCh8tkOVasoXkV1+sjplLZ0HGN5Vc1G2IJ5R8Np5XpKlK7J1CJntdl1UqH92k0bzdkyNc8ZRWGGz1MtbMQi1esN1tv/1F/cIdQ4e6LJod0jZzPmhV2jj/DDjy94oOcZpK57Rew3wO/ojOpjJIH2qdcN2f6DN7l9nC47RfTsHg4etUtNpZUeJz5ndPPv32j9Yve6vE6DZuNvu1R2Tg==\">Try it in the Playground</a></p>"
+        },
+        {
+            "id": "S013",
+            "type": "h3",
+            "text": "Watch Source Types {#watch-source-types}",
+            "html": "<h3>Watch Source Types {#watch-source-types}</h3>"
+        },
+        {
+            "id": "S014",
+            "type": "p",
+            "text": "watch's first argument can be different types of reactive \"sources\": it can be a ref (including computed refs), a reactive object, a getter function, or an array of multiple sources:",
+            "html": "<p><code>watch</code>'s first argument can be different types of reactive \"sources\": it can be a ref (including computed refs), a reactive object, a <a href=\"https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get#description\">getter function</a>, or an array of multiple sources:</p>"
+        },
+        {
+            "id": "S015",
+            "type": "pre",
+            "text": "const x = ref(0)\nconst y = ref(0)\n\n// single ref\nwatch(x, (newX) => {\n  console.log(`x is ${newX}`)\n})\n\n// getter\nwatch(\n  () => x.value + y.value,\n  (sum) => {\n    console.log(`sum of x + y is: ${sum}`)\n  }\n)\n\n// array of multiple sources\nwatch([x, () => y.value], ([newX, newY]) => {\n  console.log(`x is ${newX} and y is ${newY}`)\n})",
+            "html": "<pre><code>const x = ref(0)\nconst y = ref(0)\n\n// single ref\nwatch(x, (newX) =&gt; {\n  console.log(`x is ${newX}`)\n})\n\n// getter\nwatch(\n  () =&gt; x.value + y.value,\n  (sum) =&gt; {\n    console.log(`sum of x + y is: ${sum}`)\n  }\n)\n\n// array of multiple sources\nwatch([x, () =&gt; y.value], ([newX, newY]) =&gt; {\n  console.log(`x is ${newX} and y is ${newY}`)\n})\n</code></pre>"
+        },
+        {
+            "id": "S016",
+            "type": "p",
+            "text": "Do note that you can't watch a property of a reactive object like this:",
+            "html": "<p>Do note that you can't watch a property of a reactive object like this:</p>"
+        },
+        {
+            "id": "S017",
+            "type": "pre",
+            "text": "const obj = reactive({ count: 0 })\n\n// this won't work because we are passing a number to watch()\nwatch(obj.count, (count) => {\n  console.log(`Count is: ${count}`)\n})",
+            "html": "<pre><code>const obj = reactive({ count: 0 })\n\n// this won't work because we are passing a number to watch()\nwatch(obj.count, (count) =&gt; {\n  console.log(`Count is: ${count}`)\n})\n</code></pre>"
+        },
+        {
+            "id": "S018",
+            "type": "p",
+            "text": "Instead, use a getter:",
+            "html": "<p>Instead, use a getter:</p>"
+        },
+        {
+            "id": "S019",
+            "type": "pre",
+            "text": "// instead, use a getter:\nwatch(\n  () => obj.count,\n  (count) => {\n    console.log(`Count is: ${count}`)\n  }\n)",
+            "html": "<pre><code>// instead, use a getter:\nwatch(\n  () =&gt; obj.count,\n  (count) =&gt; {\n    console.log(`Count is: ${count}`)\n  }\n)\n</code></pre>"
+        }
+    ],
+    "source_images": [],
+    "fetched_at": "2026-10-04T17:47:25+00:00",
+    "hash": "b7e5df4c391749d013ed70339575d52b203692ec8feaf61a2d06c14e7856144d"
+}

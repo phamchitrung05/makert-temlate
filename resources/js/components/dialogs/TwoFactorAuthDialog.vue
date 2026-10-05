@@ -1,4 +1,14 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: TwoFactorAuthDialog dùng khung dialog chung.
+  CÁC HÀM/METHOD TRONG FILE: openSelectedMethodDialog.
+  INPUT/OUTPUT CỦA CLASS (tổng thể): props/model và thao tác UI -> sự kiện của
+  caller; header/footer cố định, content cuộn qua AppDialogLayout.
+  =====================================================================
+-->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
+
 const props = defineProps({
   isDialogVisible: {
     type: Boolean,
@@ -54,23 +64,21 @@ const openSelectedMethodDialog = () => {
 
 <template>
   <VDialog
+    scrollable
     :width="$vuetify.display.smAndDown ? 'auto' : 800"
     :model-value="props.isDialogVisible"
     @update:model-value="(val) => $emit('update:isDialogVisible', val)"
   >
-    <!-- Dialog close btn -->
-    <DialogCloseBtn @click="$emit('update:isDialogVisible', false)" />
+    <AppDialogLayout @close="$emit('update:isDialogVisible', false)">
+      <template #header>
+        <VCardItem>
+          <VCardTitle>Select Authentication Method</VCardTitle>
+          <VCardSubtitle>You also need to select a method by which the proxy authenticates to the directory serve.</VCardSubtitle>
+        </VCardItem>
+      </template>
 
-    <VCard class="pa-2 pa-sm-10">
       <VCardText>
-        <!-- 👉 Title -->
         <div class="mb-6">
-          <h4 class="text-h4 text-center mb-2">
-            Select Authentication Method
-          </h4>
-          <p class="text-body-1 text-center mb-6">
-            You also need to select a method by which the proxy authenticates to the directory serve.
-          </p>
           <CustomRadios
             v-model:selected-radio="selectedMethod"
             :radio-content="authMethods"
@@ -95,11 +103,9 @@ const openSelectedMethodDialog = () => {
             </template>
           </CustomRadios>
         </div>
-
-        <div class="d-flex gap-4 justify-center">
-          <VBtn @click="openSelectedMethodDialog">
-            submit
-          </VBtn>
+      </VCardText>
+      <template #footer>
+        <VCardActions class="justify-end">
           <VBtn
             color="secondary"
             variant="tonal"
@@ -107,9 +113,15 @@ const openSelectedMethodDialog = () => {
           >
             Cancel
           </VBtn>
-        </div>
-      </VCardText>
-    </VCard>
+          <VBtn
+            variant="flat"
+            @click="openSelectedMethodDialog"
+          >
+            submit
+          </VBtn>
+        </VCardActions>
+      </template>
+    </AppDialogLayout>
   </VDialog>
 
   <AddAuthenticatorAppDialog

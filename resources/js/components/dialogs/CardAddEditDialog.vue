@@ -1,4 +1,15 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: CardAddEditDialog dùng khung dialog chung.
+  CÁC HÀM/METHOD TRONG FILE: formSubmit, dialogModelValueUpdate.
+  INPUT/OUTPUT CỦA CLASS (tổng thể): props/model và thao tác UI -> sự kiện của
+  caller; header/footer cố định, content cuộn qua AppDialogLayout.
+  =====================================================================
+-->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
+import { useId } from 'vue'
+
 const props = defineProps({
   cardDetails: {
     type: Object,
@@ -23,6 +34,7 @@ const emit = defineEmits([
   'update:isDialogVisible',
 ])
 
+const dialogFormId = useId()
 const cardDetails = ref(structuredClone(toRaw(props.cardDetails)))
 
 watch(() => props, () => {
@@ -40,28 +52,30 @@ const dialogModelValueUpdate = val => {
 
 <template>
   <VDialog
+    scrollable
     :width="$vuetify.display.smAndDown ? 'auto' : 600"
     :model-value="props.isDialogVisible"
     @update:model-value="dialogModelValueUpdate"
   >
-    <!-- Dialog close btn -->
-    <DialogCloseBtn @click="dialogModelValueUpdate(false)" />
-
-    <VCard class="pa-2 pa-sm-10">
-      <!-- 👉 Title -->
-      <VCardItem class="text-center">
-        <VCardTitle>
-          <h4 class="text-h4 mb-2">
-            {{ props.cardDetails.name ? 'Edit Card' : 'Add New Card' }}
-          </h4>
-        </VCardTitle>
-        <p class="text-body-1 mb-0">
-          {{ props.cardDetails.name ? 'Edit your saved card details' : 'Add card for future billing' }}
-        </p>
-      </VCardItem>
+    <AppDialogLayout @close="dialogModelValueUpdate(false)">
+      <template #header>
+        <VCardItem class="text-center">
+          <VCardTitle>
+            <h4 class="text-h4 mb-2">
+              {{ props.cardDetails.name ? 'Edit Card' : 'Add New Card' }}
+            </h4>
+          </VCardTitle>
+          <p class="text-body-1 mb-0">
+            {{ props.cardDetails.name ? 'Edit your saved card details' : 'Add card for future billing' }}
+          </p>
+        </VCardItem>
+      </template>
 
       <VCardText class="pt-6">
-        <VForm @submit.prevent="() => {}">
+        <VForm
+          :id="dialogFormId"
+          @submit.prevent="formSubmit"
+        >
           <VRow>
             <!-- 👉 Card Number -->
             <VCol cols="12">
@@ -117,30 +131,28 @@ const dialogModelValueUpdate = val => {
                 label="Save Card for future billing?"
               />
             </VCol>
-
-            <!-- 👉 Card actions -->
-            <VCol
-              cols="12"
-              class="text-center"
-            >
-              <VBtn
-                class="me-4"
-                type="submit"
-                @click="formSubmit"
-              >
-                Submit
-              </VBtn>
-              <VBtn
-                color="secondary"
-                variant="tonal"
-                @click="$emit('update:isDialogVisible', false)"
-              >
-                Cancel
-              </VBtn>
-            </VCol>
           </VRow>
         </VForm>
       </VCardText>
-    </VCard>
+      <template #footer>
+        <VCardActions class="justify-end">
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            @click="$emit('update:isDialogVisible', false)"
+          >
+            Cancel
+          </VBtn>
+          <VBtn
+            variant="flat"
+            :form="dialogFormId"
+            class="me-4"
+            type="submit"
+          >
+            Submit
+          </VBtn>
+        </VCardActions>
+      </template>
+    </AppDialogLayout>
   </VDialog>
 </template>

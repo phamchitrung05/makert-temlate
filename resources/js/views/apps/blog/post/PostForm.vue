@@ -1,5 +1,6 @@
 <!--
   =====================================================================
+  Header/footer cố định qua AppDialogLayout; chỉ content ở giữa được cuộn.
   CHỨC NĂNG FILE: Kết hợp giao diện tạo/chỉnh sửa Post và phát payload lưu
   =====================================================================
 
@@ -15,7 +16,7 @@
   - createPostOptions(): tạo state mặc định cho nhóm tùy chọn bài viết
   - sync(): đồng bộ Post prop vào form state
   - submit(): validate và emit payload với trạng thái được chọn
-  - applyAiContent()/commitAiContent(): áp dụng candidate và giữ lineage run
+  - applyAiThumbnail()/commitAiThumbnail(): áp dụng ảnh thumbnail và giữ lineage run
   - watcher props.post: cập nhật form khi API tải xong Post
   - mediaBusy: khóa lưu/publish trong lúc picker/upload hoặc còn URL ảnh tạm.
 
@@ -25,12 +26,12 @@
   =====================================================================
 -->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 import { computed, reactive, shallowRef, watch } from 'vue'
 import PostContentPanel from './PostContentPanel.vue'
 import PostMediaPanel from './PostMediaPanel.vue'
 import PostSettingsSidebar from './PostSettingsSidebar.vue'
 import PostSeoTabs from './PostSeoTabs.vue'
-import CreateWithAiDialog from './dialog/CreateWithAiDialog.vue'
 import { buildContentUrl, createSeo } from '../../../../composables/seoMetadata'
 import { useSeoMetadata } from '../../../../composables/useSeoMetadata'
 import { useSlug } from '../../../../composables/useSlug'
@@ -45,12 +46,10 @@ const props = defineProps({
 
 const emit = defineEmits(['submit', 'discard'])
 const formRef = shallowRef()
-const aiDialog = shallowRef(false)
 const mediaBusy = shallowRef(false)
-const pendingAiPayload = shallowRef(null)
+const pendingThumbnailPayload = shallowRef(null)
 const pendingAiProvenance = shallowRef(null)
 const overwriteDialog = shallowRef(false)
-const overwritten = shallowRef([])
 
 /**
  * =====================================================================
@@ -176,36 +175,37 @@ const submit = async (status = form.status) => {
 
 /**
  * =====================================================================
- * CHỨC NĂNG: Chuẩn bị candidate AI và xác nhận field bị ghi đè.
+ * CHỨC NĂNG: Chuẩn bị thumbnail AI và xác nhận thay ảnh hiện tại.
  * =====================================================================
- * INPUT: candidate fields và lineage metadata từ AI Agent.
+ * INPUT: media asset và lineage metadata từ dialog tạo ảnh.
  * OUTPUT: cập nhật pending payload cục bộ, chưa lưu backend.
- * SIDE EFFECT: mở xác nhận nếu payload sẽ ghi đè dữ liệu hiện tại.
+ * SIDE EFFECT: mở xác nhận nếu thumbnail khác ảnh hiện tại.
  * EXCEPTION: không gọi API hoặc lưu Post tại bước này.
  * =====================================================================
  */
-const applyAiContent = (payload, provenance = null) => {
-  pendingAiPayload.value = payload
+const applyAiThumbnail = (asset, provenance = null) => {
+  const payload = { thumbnail: asset }
+
+  pendingThumbnailPayload.value = payload
   pendingAiProvenance.value = provenance
-  overwritten.value = overwrittenFields(form, payload)
-  if (overwritten.value.length) overwriteDialog.value = true
-  else commitAiContent()
+  if (overwrittenFields(form, payload).length) overwriteDialog.value = true
+  else commitAiThumbnail()
 }
 
 /**
  * =====================================================================
- * CHỨC NĂNG: Áp dụng candidate và lineage sau khi admin xác nhận.
+ * CHỨC NĂNG: Áp dụng thumbnail và lineage sau khi admin xác nhận.
  * =====================================================================
- * INPUT: pending payload/provenance sau khi admin xác nhận.
- * OUTPUT: merge field được chọn vào form và đóng dialog.
+ * INPUT: pending thumbnail/provenance sau khi admin xác nhận.
+ * OUTPUT: cập nhật thumbnail trong form và đóng dialog.
  * SIDE EFFECT: form giữ aiLineage để postService gửi danh sách run/field lên API.
  * EXCEPTION: không gọi API hoặc lưu Post tại bước này.
  * =====================================================================
  */
-const commitAiContent = () => {
-  if (pendingAiPayload.value) Object.assign(form, mergePostCandidate(form, pendingAiPayload.value))
+const commitAiThumbnail = () => {
+  if (pendingThumbnailPayload.value) Object.assign(form, mergePostCandidate(form, pendingThumbnailPayload.value))
   form.aiLineage = mergeAiLineage(form.aiLineage, pendingAiProvenance.value, form)
-  pendingAiPayload.value = null
+  pendingThumbnailPayload.value = null
   pendingAiProvenance.value = null
   overwriteDialog.value = false
 }
@@ -231,17 +231,6 @@ const commitAiContent = () => {
       </div>
 
       <div class="d-flex gap-4 align-center flex-wrap">
-        <VBtn
-          variant="tonal"
-          color="secondary"
-          prepend-icon="tabler-wand"
-          @click="aiDialog = true"
-        >
-          Fill All with AI
-          <VTooltip activator="parent">
-            Đọc URL và điền nội dung, SEO vào form.
-          </VTooltip>
-        </VBtn>
         <VBtn
           variant="tonal"
           color="primary"
@@ -278,38 +267,37 @@ const commitAiContent = () => {
       {{ props.error }}
     </VAlert>
 
-    <CreateWithAiDialog
-      v-model="aiDialog"
-      :target-id="props.post?.id"
-      :category-ids="form.categories"
-      :tag-ids="form.tags"
-      @apply="applyAiContent"
-    />
     <VDialog
       v-model="overwriteDialog"
+      scrollable
       max-width="480"
     >
-      <VCard title="Xác nhận ghi đè nội dung">
+      <AppDialogLayout
+        title="Xác nhận thay thumbnail"
+        @close="overwriteDialog = false"
+      >
         <VCardText>
-          Các field đã có dữ liệu sẽ được thay bằng candidate AI: {{ overwritten.join(', ') }}.
-          Những field không chọn vẫn được giữ nguyên.
+          Thumbnail hiện tại sẽ được thay bằng ảnh AI đã chọn.
         </VCardText>
-        <VCardActions>
-          <VSpacer />
-          <VBtn
-            variant="text"
-            @click="overwriteDialog = false; pendingAiPayload = null; pendingAiProvenance = null"
-          >
-            Giữ dữ liệu hiện tại
-          </VBtn>
-          <VBtn
-            color="primary"
-            @click="commitAiContent"
-          >
-            Áp dụng
-          </VBtn>
-        </VCardActions>
-      </VCard>
+        <template #footer>
+          <VCardActions>
+            <VSpacer />
+            <VBtn
+              variant="text"
+              @click="overwriteDialog = false; pendingThumbnailPayload = null; pendingAiProvenance = null"
+            >
+              Giữ dữ liệu hiện tại
+            </VBtn>
+            <VBtn
+              variant="flat"
+              color="primary"
+              @click="commitAiThumbnail"
+            >
+              Áp dụng
+            </VBtn>
+          </VCardActions>
+        </template>
+      </AppDialogLayout>
     </VDialog>
 
     <VForm
@@ -356,7 +344,7 @@ const commitAiContent = () => {
             v-model:content-images="form.contentImages"
             :title="form.title"
             :disabled="props.loading || props.saving"
-            @ai-image-applied="(asset, provenance) => applyAiContent({ thumbnail: asset }, provenance)"
+            @ai-image-applied="applyAiThumbnail"
           />
           <PostSettingsSidebar
             v-model:status="form.status"

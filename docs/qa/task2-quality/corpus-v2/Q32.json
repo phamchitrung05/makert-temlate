@@ -1,0 +1,44 @@
+{
+    "source_url": "https://www.vietnam.travel/things-to-do/7-things-to-do-hoi-an",
+    "source_format": "html",
+    "title": "Du lịch văn hóa · Hội An · Anh sang Việt",
+    "published_at": null,
+    "version": "article.source.v1",
+    "content_html": "<p>When Hoi An was named 'Asia's Leading Cultural City Destination 2022’ at the 29th World Travel Awards (Asia &amp; Oceania) in September, it was no surprise. The charming yellow town, with its rich history and varied tourism offerings, beat nominees including Seoul (South Korea) and Kyoto (Japan) to take the title − for the third time.</p><p>The UNESCO World Heritage site was a trading port as far back as the second century A.D., and it drew together traders from across the world during its 16th century heyday. It was a meeting place where indigenous cultures mixed with cultural influences from Europe, China and Japan, among others. </p><p>While today’s travellers visit Hoi An for many reasons – such as its poetic scenic, beaches, and proximity to other destinations – it’s this cultural value that makes the greatest impression. From ancient My Son Sanctuary ruins and fascinating museums to stunning live performances and authentic excursions, Hoi An is an experience no culture-lover should miss. </p><p>Here are seven top things to do…</p>",
+    "blocks": [
+        {
+            "id": "S001",
+            "type": "p",
+            "text": "When Hoi An was named 'Asia's Leading Cultural City Destination 2022’ at the 29th World Travel Awards (Asia & Oceania) in September, it was no surprise. The charming yellow town, with its rich history and varied tourism offerings, beat nominees including Seoul (South Korea) and Kyoto (Japan) to take the title − for the third time.",
+            "html": "<p>When Hoi An was named 'Asia's Leading Cultural City Destination 2022’ at the 29th World Travel Awards (Asia &amp; Oceania) in September, it was no surprise. The charming yellow town, with its rich history and varied tourism offerings, beat nominees including Seoul (South Korea) and Kyoto (Japan) to take the title − for the third time.</p>"
+        },
+        {
+            "id": "S002",
+            "type": "p",
+            "text": "The UNESCO World Heritage site was a trading port as far back as the second century A.D., and it drew together traders from across the world during its 16th century heyday. It was a meeting place where indigenous cultures mixed with cultural influences from Europe, China and Japan, among others. ",
+            "html": "<p>The UNESCO World Heritage site was a trading port as far back as the second century A.D., and it drew together traders from across the world during its 16th century heyday. It was a meeting place where indigenous cultures mixed with cultural influences from Europe, China and Japan, among others. </p>"
+        },
+        {
+            "id": "S003",
+            "type": "p",
+            "text": "While today’s travellers visit Hoi An for many reasons – such as its poetic scenic, beaches, and proximity to other destinations – it’s this cultural value that makes the greatest impression. From ancient My Son Sanctuary ruins and fascinating museums to stunning live performances and authentic excursions, Hoi An is an experience no culture-lover should miss. ",
+            "html": "<p>While today’s travellers visit Hoi An for many reasons – such as its poetic scenic, beaches, and proximity to other destinations – it’s this cultural value that makes the greatest impression. From ancient My Son Sanctuary ruins and fascinating museums to stunning live performances and authentic excursions, Hoi An is an experience no culture-lover should miss. </p>"
+        },
+        {
+            "id": "S004",
+            "type": "p",
+            "text": "Here are seven top things to do…",
+            "html": "<p>Here are seven top things to do…</p>"
+        }
+    ],
+    "source_images": [
+        {
+            "id": "SOURCE_IMAGE_1",
+            "source_url": "https://www.vietnam.travel/sites/default/files/inline-images/shutterstock_2131967667.jpg",
+            "alt": "Hoi An",
+            "context": "When Hoi An was named 'Asia's Leading Cultural City Destination 2022’ at the 29th World Travel Awards (Asia & Oceania) in September, it was no surprise. The charming yellow town, with its rich history and varied tourism offerings, beat nominees including Seoul (South Korea) and Kyoto (Japan) to take the title − for the third time.The UNESCO World Heritage site was a trading port as far back as the second century A.D., and it drew together traders from across the world during its 16th century heyday. It was a meeting place where indigenous cultures mixed with cultural influences from Europe, China and Japan, among others. While today’s travellers visit Hoi An for many reasons – such as its poetic scenic, beaches, and proximity to other destinations – it’s this cultural value that makes the greatest impression. From ancient My Son Sanctuary ruins and fascinating museums to stunning live performances and authentic excursions, Hoi An is an experience no culture-lover should miss. Here are "
+        }
+    ],
+    "fetched_at": "2026-10-05T06:39:06+00:00",
+    "hash": "343a0c8f34024c5645af653daebba613b7c9c4240268c59bba29fdf5aaf11fc9"
+}

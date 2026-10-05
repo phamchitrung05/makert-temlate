@@ -1,4 +1,13 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: AddPaymentMethodDialog dùng khung dialog chung.
+  CÁC HÀM/METHOD TRONG FILE: dialogVisibleUpdate.
+  INPUT/OUTPUT CỦA CLASS (tổng thể): props/model và thao tác UI -> sự kiện của
+  caller; header/footer cố định, content cuộn qua AppDialogLayout.
+  =====================================================================
+-->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 import americanExDark from '@images/icons/payments/img/ae-dark.png'
 import americanExLight from '@images/icons/payments/img/american-express.png'
 import dcDark from '@images/icons/payments/img/dc-dark.png'
@@ -60,23 +69,20 @@ const paymentMethodsData = [
 
 <template>
   <VDialog
+    scrollable
     :model-value="props.isDialogVisible"
     :width="$vuetify.display.smAndDown ? 'auto' : 750"
     @update:model-value="dialogVisibleUpdate"
   >
-    <!-- 👉 dialog close btn -->
-    <DialogCloseBtn @click="emit('update:isDialogVisible', false)" />
+    <AppDialogLayout @close="emit('update:isDialogVisible', false)">
+      <template #header>
+        <VCardItem>
+          <VCardTitle>Add payment methods</VCardTitle>
+          <VCardSubtitle>Supported payment methods</VCardSubtitle>
+        </VCardItem>
+      </template>
 
-    <VCard class="pa-2 pa-sm-10">
       <VCardText>
-        <!-- 👉 Title -->
-        <h4 class="text-h4 text-center mb-2">
-          Add payment methods
-        </h4>
-        <p class="text-body-1 text-center mb-6">
-          Supported payment methods
-        </p>
-
         <div
           v-for="(item, index) in paymentMethodsData"
           :key="index"
@@ -100,7 +106,7 @@ const paymentMethodsData = [
           <VDivider v-if="index !== paymentMethodsData.length - 1" />
         </div>
       </VCardText>
-    </VCard>
+    </AppDialogLayout>
   </VDialog>
 </template>
 

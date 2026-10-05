@@ -1,0 +1,215 @@
+{
+    "arm": "C",
+    "status": "ready",
+    "error_code": null,
+    "final": {
+        "title": "Bốn cách thử Vue trực tuyến theo nhu cầu",
+        "content_html": "<p>Tài liệu Vue giới thiệu bốn cách bắt đầu trực tuyến, tùy bạn muốn thử nhanh, dùng HTML thuần, làm việc với công cụ build hay học theo hướng dẫn tương tác:</p>\n<ul>\n<li><strong>Thử nhanh với <a href=\"https://play.vuejs.org/#eNo9jcEKwjAMhl/lt5fpQYfXUQfefAMvvRQbddC1pUuHUPrudg4HIcmXjyRZXEM4zYlEJ+T0iEPgXjn6BB8Zhp46WUZWDjCa9f6w9kAkTtH9CRinV4fmRtZ63H20Ztesqiylphqy3R5UYBqD1UyVAPk+9zkvV1CKbCv9poMLiTEfR2/IXpSoXomqZLtti/IFwVtA9A==\">Playground</a>:</strong> thử Vue trực tiếp để làm quen nhanh.</li>\n<li><strong>Bắt đầu bằng HTML thuần với <a href=\"https://jsfiddle.net/yyx990803/2ke1ab0z/\">JSFiddle</a>:</strong> nếu muốn dùng HTML thuần mà không có bước build, bạn có thể bắt đầu từ ví dụ này.</li>\n<li><strong>Thử môi trường build đầy đủ với <a href=\"https://vite.new/vue\">StackBlitz</a>:</strong> nếu đã quen với Node.js và khái niệm công cụ build, bạn có thể thử một môi trường có thiết lập build đầy đủ ngay trong trình duyệt.</li>\n<li><strong>Học qua hướng dẫn tương tác trên <a href=\"http://scrimba.com/links/vue-quickstart\">Scrimba</a>:</strong> tìm hiểu thiết lập được khuyến nghị và cách chạy, chỉnh sửa, triển khai ứng dụng Vue đầu tiên.</li>\n</ul>\n<p>Nguồn: <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/quick-start.md\">Tài liệu Vue — Quick Start</a>.</p>"
+    },
+    "quality_checks": [
+        {
+            "check": "copy",
+            "status": "pass"
+        },
+        {
+            "check": "similarity",
+            "status": "pass",
+            "metric": 0.027,
+            "reason": "lexical_metric_not_style_score"
+        },
+        {
+            "check": "language",
+            "status": "pass",
+            "detected": "vi"
+        },
+        {
+            "check": "source_code_links",
+            "status": "pass"
+        },
+        {
+            "check": "important_numbers",
+            "status": "pass"
+        },
+        {
+            "check": "unanchored_numbers",
+            "status": "pass",
+            "count": 0,
+            "reason": "requires_editor_review"
+        },
+        {
+            "check": "semantic_grounding",
+            "status": "undetermined",
+            "reason": "source_anchors_are_not_external_fact_verification"
+        }
+    ],
+    "cost": null,
+    "calls": [
+        {
+            "task": "article.analysis-plan",
+            "output": {
+                "knowledge": {
+                    "facts": [
+                        {
+                            "id": "F01",
+                            "claim": "Nguồn giới thiệu Playground như một cách thử nhanh Vue trực tiếp trên mạng.",
+                            "source_block_ids": [
+                                "S004"
+                            ],
+                            "evidence": "To quickly get a taste of Vue, you can try it directly in our Playground.",
+                            "important": true
+                        },
+                        {
+                            "id": "F02",
+                            "claim": "Nếu muốn bắt đầu với HTML thuần và không có bước build, người đọc có thể dùng ví dụ JSFiddle được nguồn liên kết.",
+                            "source_block_ids": [
+                                "S005"
+                            ],
+                            "evidence": "If you prefer a plain HTML setup without any build steps, you can use this JSFiddle as your starting point.",
+                            "important": true
+                        },
+                        {
+                            "id": "F03",
+                            "claim": "Với người đã quen Node.js và khái niệm công cụ build, nguồn gợi ý StackBlitz để thử một môi trường có thiết lập build đầy đủ ngay trong trình duyệt.",
+                            "source_block_ids": [
+                                "S006"
+                            ],
+                            "evidence": "If you are already familiar with Node.js and the concept of build tools, you can also try a complete build setup right within your browser on StackBlitz.",
+                            "important": true
+                        },
+                        {
+                            "id": "F04",
+                            "claim": "Nguồn giới thiệu bài hướng dẫn tương tác Scrimba để tìm hiểu thiết lập được khuyến nghị, với nội dung chạy, chỉnh sửa và triển khai ứng dụng Vue đầu tiên.",
+                            "source_block_ids": [
+                                "S007"
+                            ],
+                            "evidence": "To get a walkthrough of the recommended setup, watch this interactive Scrimba tutorial that shows you how to run, edit, and deploy your first Vue app.",
+                            "important": true
+                        }
+                    ],
+                    "terms": [
+                        "Vue",
+                        "Playground",
+                        "HTML thuần",
+                        "build",
+                        "JSFiddle",
+                        "Node.js",
+                        "StackBlitz",
+                        "Scrimba"
+                    ],
+                    "uncertainties": [
+                        "Dù tiêu đề nguồn được cung cấp là “Tutorial CLI”, các khối nội dung chỉ giới thiệu cách thử Vue trực tuyến; không có hướng dẫn CLI hay lệnh cài đặt.",
+                        "Nguồn không nêu phiên bản Vue, phiên bản Node.js, yêu cầu hệ thống hoặc chi tiết cấu hình build.",
+                        "Nguồn mô tả nội dung của các dịch vụ được liên kết nhưng không cung cấp kết quả kiểm tra tình trạng hoạt động hiện tại của chúng."
+                    ]
+                },
+                "writing_plan": {
+                    "article_type": "Hướng dẫn ngắn chọn cách thử Vue trực tuyến",
+                    "audience": "Người phát triển website, đặc biệt người mới tìm hiểu Vue",
+                    "angle": "Giải thích bốn lựa chọn theo nhu cầu: thử nhanh, dùng HTML thuần không build, thử thiết lập build trong trình duyệt hoặc học qua hướng dẫn tương tác; giữ rõ điều kiện đã quen Node.js và công cụ build ở lựa chọn StackBlitz.",
+                    "outline": [
+                        "Đặt tiêu đề tiếng Việt tập trung vào thử Vue trực tuyến, không gọi đây là hướng dẫn CLI. Mở bằng một câu ngắn nêu các lựa chọn theo nhu cầu, tránh phần giới thiệu Vue ngoài nguồn.",
+                        "Trình bày bốn mục ngắn: Playground để thử nhanh; JSFiddle cho HTML thuần không có bước build; StackBlitz cho người đã quen Node.js và công cụ build; Scrimba để theo dõi cách chạy, chỉnh sửa và triển khai ứng dụng đầu tiên. Không thêm lệnh, API, phiên bản hay trải nghiệm sử dụng.",
+                        "Trong nội dung bài sau này, gắn tên từng dịch vụ bằng anchor thật với nguyên vẹn href tương ứng trong link_requirements.required_hrefs, kể cả toàn bộ fragment của Playground và giao thức http của Scrimba. Chỉ dùng các URL thuộc allowed_hrefs; nếu ghi nguồn, dùng đúng URL GitHub đã cung cấp.",
+                        "Giữ bài ngắn với đoạn mở và danh sách bốn lựa chọn; không đưa metadata “footer: false” vào nội dung, không lặp lại danh sách trong một phần kết luận."
+                    ],
+                    "coverage_fact_ids": [
+                        "F01",
+                        "F02",
+                        "F03",
+                        "F04"
+                    ]
+                }
+            },
+            "diagnostics": {
+                "response_id": "resp_001d76c736d1838c016ac34768ed4487d08c1226062650c37e",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.analysis-plan.v1",
+                "usage": {
+                    "prompt_tokens": 3912,
+                    "completion_tokens": 937,
+                    "total_tokens": 4849
+                }
+            },
+            "latency_ms": 30732
+        },
+        {
+            "task": "article.writer",
+            "output": {
+                "draft": {
+                    "title": "Bốn cách thử Vue trực tuyến theo nhu cầu",
+                    "content_html": "<p>Bạn muốn thử nhanh Vue, bắt đầu với HTML thuần hay tìm hiểu một thiết lập có công cụ build? Phần khởi đầu nhanh trong tài liệu Vue giới thiệu bốn lựa chọn:</p>\n<ul>\n<li><strong>Thử nhanh với <a href=\"https://play.vuejs.org/#eNo9jcEKwjAMhl/lt5fpQYfXUQfefAMvvRQbddC1pUuHUPrudg4HIcmXjyRZXEM4zYlEJ+T0iEPgXjn6BB8Zhp46WUZWDjCa9f6w9kAkTtH9CRinV4fmRtZ63H20Ztesqiylphqy3R5UYBqD1UyVAPk+9zkvV1CKbCv9poMLiTEfR2/IXpSoXomqZLtti/IFwVtA9A==\">Playground</a>:</strong> phù hợp khi bạn chỉ muốn làm quen với Vue bằng cách thử trực tiếp trên mạng.</li>\n<li><strong>Bắt đầu bằng HTML thuần với <a href=\"https://jsfiddle.net/yyx990803/2ke1ab0z/\">JSFiddle</a>:</strong> dùng ví dụ được liên kết làm điểm khởi đầu nếu bạn muốn một thiết lập không có bước build.</li>\n<li><strong>Thử thiết lập build đầy đủ với <a href=\"https://vite.new/vue\">StackBlitz</a>:</strong> nếu đã quen với Node.js và khái niệm công cụ build, bạn có thể thử môi trường này ngay trong trình duyệt.</li>\n<li><strong>Học theo hướng dẫn tương tác trên <a href=\"http://scrimba.com/links/vue-quickstart\">Scrimba</a>:</strong> bài hướng dẫn giới thiệu thiết lập được khuyến nghị và cách chạy, chỉnh sửa, triển khai ứng dụng Vue đầu tiên.</li>\n</ul>\n<p>Nguồn: <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/quick-start.md\">Tài liệu Vue — Quick Start</a>.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04"
+                ],
+                "used_asset_ids": []
+            },
+            "diagnostics": {
+                "response_id": "resp_0bc52b2e7a620c23016ac34787ddd487d08149075ab5feb196",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.writer.v1",
+                "usage": {
+                    "prompt_tokens": 3918,
+                    "completion_tokens": 551,
+                    "total_tokens": 4469
+                }
+            },
+            "latency_ms": 21751
+        },
+        {
+            "task": "article.editor",
+            "output": {
+                "final": {
+                    "title": "Bốn cách thử Vue trực tuyến theo nhu cầu",
+                    "content_html": "<p>Tài liệu Vue giới thiệu bốn cách bắt đầu trực tuyến, tùy bạn muốn thử nhanh, dùng HTML thuần, làm việc với công cụ build hay học theo hướng dẫn tương tác:</p>\n<ul>\n<li><strong>Thử nhanh với <a href=\"https://play.vuejs.org/#eNo9jcEKwjAMhl/lt5fpQYfXUQfefAMvvRQbddC1pUuHUPrudg4HIcmXjyRZXEM4zYlEJ+T0iEPgXjn6BB8Zhp46WUZWDjCa9f6w9kAkTtH9CRinV4fmRtZ63H20Ztesqiylphqy3R5UYBqD1UyVAPk+9zkvV1CKbCv9poMLiTEfR2/IXpSoXomqZLtti/IFwVtA9A==\">Playground</a>:</strong> thử Vue trực tiếp để làm quen nhanh.</li>\n<li><strong>Bắt đầu bằng HTML thuần với <a href=\"https://jsfiddle.net/yyx990803/2ke1ab0z/\">JSFiddle</a>:</strong> nếu muốn dùng HTML thuần mà không có bước build, bạn có thể bắt đầu từ ví dụ này.</li>\n<li><strong>Thử môi trường build đầy đủ với <a href=\"https://vite.new/vue\">StackBlitz</a>:</strong> nếu đã quen với Node.js và khái niệm công cụ build, bạn có thể thử một môi trường có thiết lập build đầy đủ ngay trong trình duyệt.</li>\n<li><strong>Học qua hướng dẫn tương tác trên <a href=\"http://scrimba.com/links/vue-quickstart\">Scrimba</a>:</strong> tìm hiểu thiết lập được khuyến nghị và cách chạy, chỉnh sửa, triển khai ứng dụng Vue đầu tiên.</li>\n</ul>\n<p>Nguồn: <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/quick-start.md\">Tài liệu Vue — Quick Start</a>.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04"
+                ],
+                "issues": []
+            },
+            "diagnostics": {
+                "response_id": "resp_00144d91fc228218016ac3479d582887d2b887fc4baea1d561",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.editor.v1",
+                "usage": {
+                    "prompt_tokens": 4475,
+                    "completion_tokens": 558,
+                    "total_tokens": 5033
+                }
+            },
+            "latency_ms": 20579
+        }
+    ],
+    "latency_ms": 73076,
+    "input_sha256": "d2cf45cace68b2aba88410fc6bc2b899c66d75e501a304becf0f88da57989d3c",
+    "comparison_input_sha256": "62974da0c98e3bfedbd2b29301cbea50ab0f5daac9668715e93e4f1ff0299240",
+    "writing_profile_sha256": "1267aa8b907b63f12cd8c953c4a6664dbea3f3e7acabb12a28e64293053a7c96",
+    "brief_sha256": "a7f052446c270a2c36979d5688c0edaf10a0f5a164ae6ab255b69d622b3c56c6",
+    "image_evaluation": {
+        "mode": "source_metadata_only",
+        "source_images": 0,
+        "approved_asset_regenerate": "not_evaluated",
+        "pixel_understanding": "not_evaluated"
+    },
+    "source_sha256": "7af3d7a28072105c9961c01dbf51a8695a207ab5bae5cd95b4ba118e93455889",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Bốn cách thử Vue trực tuyến theo nhu cầu",
+        "content_html": "<p>Tài liệu Vue giới thiệu bốn cách bắt đầu trực tuyến, tùy bạn muốn thử nhanh, dùng HTML thuần, làm việc với công cụ build hay học theo hướng dẫn tương tác:</p>\n<ul>\n<li><strong>Thử nhanh với <a href=\"https://play.vuejs.org/#eNo9jcEKwjAMhl/lt5fpQYfXUQfefAMvvRQbddC1pUuHUPrudg4HIcmXjyRZXEM4zYlEJ+T0iEPgXjn6BB8Zhp46WUZWDjCa9f6w9kAkTtH9CRinV4fmRtZ63H20Ztesqiylphqy3R5UYBqD1UyVAPk+9zkvV1CKbCv9poMLiTEfR2/IXpSoXomqZLtti/IFwVtA9A==\">Playground</a>:</strong> thử Vue trực tiếp để làm quen nhanh.</li>\n<li><strong>Bắt đầu bằng HTML thuần với <a href=\"https://jsfiddle.net/yyx990803/2ke1ab0z/\">JSFiddle</a>:</strong> nếu muốn dùng HTML thuần mà không có bước build, bạn có thể bắt đầu từ ví dụ này.</li>\n<li><strong>Thử môi trường build đầy đủ với <a href=\"https://vite.new/vue\">StackBlitz</a>:</strong> nếu đã quen với Node.js và khái niệm công cụ build, bạn có thể thử một môi trường có thiết lập build đầy đủ ngay trong trình duyệt.</li>\n<li><strong>Học qua hướng dẫn tương tác trên <a href=\"http://scrimba.com/links/vue-quickstart\">Scrimba</a>:</strong> tìm hiểu thiết lập được khuyến nghị và cách chạy, chỉnh sửa, triển khai ứng dụng Vue đầu tiên.</li>\n</ul>\n<p>Nguồn: <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/quick-start.md\">Tài liệu Vue — Quick Start</a>.</p>"
+    },
+    "total_tokens": 14351
+}

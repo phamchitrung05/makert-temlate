@@ -1,8 +1,9 @@
 <!--
   =====================================================================
-  CHỨC NĂNG FILE: Form duyệt và lưu văn phong sau khi phân tích bài mẫu.
+  CHỨC NĂNG FILE: Các trường duyệt/lưu văn phong cho trang Add và dialog List.
   =====================================================================
-  Người dùng sửa tên/mô tả/quy tắc/hướng dẫn trước khi bấm lưu. Trích đoạn
+  Người dùng sửa tên/mô tả/quy tắc/hướng dẫn trước khi bấm lưu; mỗi ô nhập
+  có placeholder gợi ý phù hợp với nội dung cần điền. Trích đoạn
   bằng chứng được giữ nguyên; giao tiếp qua props/events, không tự gọi API.
 
   CÁC HÀM/METHOD TRONG FILE:
@@ -21,6 +22,7 @@
   INPUT/OUTPUT CỦA CLASS (tổng thể):
   - INPUT : modelValue gồm name/description/rules_json/evidence_json/hướng dẫn;
   - INPUT : busy/saving/errors/savedProfile/conflict/canSave/defaultProfileId.
+  - INPUT : showHeader/showActions để dùng trong page hoặc dialog có footer riêng.
   - OUTPUT: update:modelValue với object mới, save và reloadProfile.
   - SIDE EFFECT: không mutate props, gọi model hoặc lưu trực tiếp database.
   =====================================================================
@@ -38,27 +40,30 @@ const props = defineProps({
   canSave: { type: Boolean, default: false },
   defaultProfileId: { type: Number, default: null },
   defaultError: { type: String, default: '' },
+  showHeader: { type: Boolean, default: true },
+  showActions: { type: Boolean, default: true },
+  saveLabel: { type: String, default: '' },
 })
 
 const emit = defineEmits(['update:modelValue', 'save', 'reloadProfile'])
 
 const ruleFields = [
-  { key: 'tone', label: 'Giọng văn' },
-  { key: 'pronouns', label: 'Cách xưng hô' },
-  { key: 'emotion', label: 'Sắc thái cảm xúc' },
-  { key: 'opening', label: 'Cách mở bài' },
-  { key: 'sentence_rhythm', label: 'Nhịp câu' },
-  { key: 'paragraph_rhythm', label: 'Nhịp đoạn văn' },
-  { key: 'transitions', label: 'Cách chuyển ý' },
-  { key: 'vocabulary', label: 'Cách dùng từ' },
-  { key: 'technical_terms', label: 'Thuật ngữ chuyên môn' },
-  { key: 'structure_patterns', label: 'Mẫu bố cục', isList: true },
-  { key: 'headings', label: 'Cách đặt tiêu đề' },
-  { key: 'bullets', label: 'Cách dùng danh sách' },
-  { key: 'examples', label: 'Cách đưa ví dụ' },
-  { key: 'ending', label: 'Cách kết bài' },
-  { key: 'avoid', label: 'Những cách viết cần tránh', isList: true },
-  { key: 'uncertainties', label: 'Điểm chưa đủ bằng chứng', isList: true },
+  { key: 'tone', label: 'Giọng văn', placeholder: 'Ví dụ: Thân thiện, rõ ràng, không quá trang trọng.' },
+  { key: 'pronouns', label: 'Cách xưng hô', placeholder: 'Ví dụ: Gọi người đọc là “bạn”, xưng “mình”.' },
+  { key: 'emotion', label: 'Sắc thái cảm xúc', placeholder: 'Ví dụ: Bình tĩnh, tích cực, tránh cường điệu.' },
+  { key: 'opening', label: 'Cách mở bài', placeholder: 'Ví dụ: Mở bằng vấn đề thực tế hoặc câu hỏi của người đọc.' },
+  { key: 'sentence_rhythm', label: 'Nhịp câu', placeholder: 'Ví dụ: Ưu tiên câu ngắn, xen kẽ câu dài khi cần giải thích.' },
+  { key: 'paragraph_rhythm', label: 'Nhịp đoạn văn', placeholder: 'Ví dụ: Mỗi đoạn 2–3 câu, tập trung vào một ý chính.' },
+  { key: 'transitions', label: 'Cách chuyển ý', placeholder: 'Ví dụ: Nối các phần bằng câu dẫn ngắn, chuyển ý tự nhiên.' },
+  { key: 'vocabulary', label: 'Cách dùng từ', placeholder: 'Ví dụ: Dùng từ phổ thông, cụ thể, tránh cách nói sáo rỗng.' },
+  { key: 'technical_terms', label: 'Thuật ngữ chuyên môn', placeholder: 'Ví dụ: Giải thích thuật ngữ ngay lần đầu xuất hiện.' },
+  { key: 'structure_patterns', label: 'Mẫu bố cục', isList: true, placeholder: 'Ví dụ: Nêu vấn đề\nGiải thích\nĐưa ví dụ thực tế' },
+  { key: 'headings', label: 'Cách đặt tiêu đề', placeholder: 'Ví dụ: Tiêu đề ngắn, nêu rõ nội dung của từng phần.' },
+  { key: 'bullets', label: 'Cách dùng danh sách', placeholder: 'Ví dụ: Dùng bullet cho các ý song song, đánh số cho các bước.' },
+  { key: 'examples', label: 'Cách đưa ví dụ', placeholder: 'Ví dụ: Đưa tình huống đời thường ngay sau phần giải thích.' },
+  { key: 'ending', label: 'Cách kết bài', placeholder: 'Ví dụ: Nhắc lại ý chính và gợi ý bước tiếp theo cho người đọc.' },
+  { key: 'avoid', label: 'Những cách viết cần tránh', isList: true, placeholder: 'Ví dụ: Câu dài, nhiều ý\nLặp lại cùng một thông tin' },
+  { key: 'uncertainties', label: 'Điểm chưa đủ bằng chứng', isList: true, placeholder: 'Ví dụ: Chưa rõ cách xưng hô\nChưa có đủ mẫu về cách kết bài' },
 ]
 
 const arrayRuleKeys = new Set(ruleFields.filter(field => field.isList).map(field => field.key))
@@ -210,8 +215,9 @@ function requestReload() {
 </script>
 
 <template>
-  <VCard>
+  <VCard :flat="!props.showHeader">
     <VCardItem
+      v-if="props.showHeader"
       title="Duyệt và lưu văn phong"
       subtitle="Bạn có thể chỉnh sửa hướng dẫn trước khi dùng cho các bài viết sau."
     >
@@ -281,6 +287,7 @@ function requestReload() {
               :model-value="props.modelValue.name || ''"
               label="Tên văn phong"
               placeholder="Ví dụ: Giải thích dễ hiểu"
+              persistent-placeholder
               maxlength="160"
               :counter="160"
               :disabled="formDisabled"
@@ -292,7 +299,8 @@ function requestReload() {
             <AppTextarea
               :model-value="props.modelValue.description || ''"
               label="Mô tả"
-              placeholder="Văn phong này phù hợp với nội dung nào?"
+              placeholder="Ví dụ: Dành cho bài hướng dẫn, giúp người mới dễ hiểu và áp dụng."
+              persistent-placeholder
               maxlength="2000"
               :counter="2000"
               :rows="2"
@@ -306,7 +314,8 @@ function requestReload() {
             <AppTextarea
               :model-value="props.modelValue.style_instructions || ''"
               label="Hướng dẫn văn phong"
-              placeholder="Các hướng dẫn được áp dụng khi AI viết bài mới."
+              placeholder="Ví dụ: Viết rõ ràng, xưng “bạn”, dùng câu ngắn và giải thích bằng ví dụ thực tế."
+              persistent-placeholder
               maxlength="10000"
               :counter="10000"
               :rows="6"
@@ -318,7 +327,10 @@ function requestReload() {
             />
           </VCol>
           <VCol cols="12">
-            <VExpansionPanels variant="accordion">
+            <VExpansionPanels
+              variant="accordion"
+              :disabled="formDisabled"
+            >
               <VExpansionPanel>
                 <VExpansionPanelTitle>
                   Quy tắc văn phong · {{ ruleCount }} mục
@@ -345,6 +357,8 @@ function requestReload() {
                       <AppTextarea
                         :model-value="getRuleValue(field.key)"
                         :label="field.label"
+                        :placeholder="field.placeholder"
+                        persistent-placeholder
                         :hint="field.isList ? 'Mỗi ý trên một dòng; tối đa 20 ý.' : ''"
                         :rows="2"
                         :max-rows="8"
@@ -397,6 +411,8 @@ function requestReload() {
                       <AppTextarea
                         :model-value="item.explanation"
                         label="Diễn giải"
+                        placeholder="Giải thích trích đoạn này thể hiện quy tắc văn phong nào và vì sao."
+                        persistent-placeholder
                         maxlength="1000"
                         :rows="2"
                         auto-grow
@@ -433,6 +449,7 @@ function requestReload() {
             />
           </VCol>
           <VCol
+            v-if="props.showActions"
             cols="12"
             class="d-flex justify-end"
           >
@@ -442,7 +459,7 @@ function requestReload() {
               :loading="props.saving"
               :disabled="!props.canSave || formDisabled || props.conflict"
             >
-              {{ props.savedProfile ? 'Lưu thay đổi' : 'Lưu văn phong' }}
+              {{ props.saveLabel || (props.savedProfile ? 'Lưu thay đổi' : 'Lưu văn phong') }}
             </VBtn>
           </VCol>
         </VRow>

@@ -14,9 +14,12 @@ use App\Services\Ai\Providers\Catalog\ModelResolver;
 use App\Services\Ai\Registries\ProviderRegistry;
 use App\Services\Ai\Settings\AiSettingsService;
 use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
+use Tests\ArticlePipelineFixture;
 use Tests\TestCase;
 use Tests\UsesIsolatedDatabase;
 
@@ -75,7 +78,6 @@ final class AiProviderSettingsApiTest extends TestCase
     {
         parent::setUp();
         // Fixtures một lượt kiểm riêng baseline được giữ để so sánh rollout.
-        config()->set('ai-content.pipeline', 'single_step');
         config()->set('queue.default', 'database');
         $this->useIsolatedDatabase();
         $this->seed(RolePermissionSeeder::class);
@@ -145,10 +147,12 @@ final class AiProviderSettingsApiTest extends TestCase
         $this->assertSame(['text-only'], $option['models']);
         $this->assertSame($text->id, $option['model_options'][0]['id']);
 
-        Http::fake(['https://gateway.example/v1/chat/completions' => Http::sequence()
-            ->push(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => json_encode(['title' => 'AI title', 'content_html' => '<p>AI content</p>'])]]]])
-            ->push(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => 'not JSON']]]]),
-        ]);
+        $attempts = 0;
+        Http::fake(['https://gateway.example/v1/chat/completions' => function ($request) use (&$attempts) {
+            $attempts++;
+
+            return Http::response(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => $attempts > 3 ? 'not JSON' : json_encode(ArticlePipelineFixture::httpOutput($request, ['title' => 'AI title', 'content_html' => '<p>AI content</p>']))]]]]);
+        }]);
         $request = [
             'target_type' => 'post', 'operation' => 'create',
             'input' => ['type' => 'text', 'text' => 'Nội dung nguồn đủ dài để kiểm thử tạo bài viết bằng model content.'],
@@ -336,7 +340,7 @@ final class AiProviderSettingsApiTest extends TestCase
         $response = $this->withToken($token)->postJson('/api/admin/ai-image/generations', [
             'prompt' => 'A clean editorial illustration', 'model_id' => $model->id,
         ])->assertStatus(202);
-        $run = \App\Models\AiImport::query()->findOrFail($response->json('data.job_id'));
+        $run = AiImport::query()->findOrFail($response->json('data.job_id'));
         $this->assertArrayNotHasKey('api_key', $run->input_json['ai_connection']);
         Queue::assertPushed(ProcessAiImageGenerationJob::class);
     }
@@ -564,7 +568,7 @@ final class AiProviderSettingsApiTest extends TestCase
     private function connection(array $overrides = []): AiProvider
     {
         return AiProvider::query()->create(array_replace([
-            'key' => 'offline-'.\Illuminate\Support\Str::uuid(), 'name' => 'Offline Gateway',
+            'key' => 'offline-'.Str::uuid(), 'name' => 'Offline Gateway',
             'driver' => 'openai-compatible', 'kind' => 'gateway', 'base_url' => 'https://gateway.example/v1',
             'api_key' => 'offline-key', 'is_active' => true, 'discovery_mode' => 'manual',
         ], $overrides));
@@ -647,10 +651,10 @@ final class AiProviderSettingsApiTest extends TestCase
             $calls++;
             $timeouts[] = $options['timeout'];
             if ($calls === 1) {
-                throw new \Illuminate\Http\Client\ConnectionException('Disconnected');
+                throw new ConnectionException('Disconnected');
             }
 
-            return Http::response(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => json_encode(['title' => 'Retry content', 'content_html' => '<p>Ready</p>'])]]]]);
+            return Http::response(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => json_encode(ArticlePipelineFixture::httpOutput($request, ['title' => 'Retry content', 'content_html' => '<p>Ready</p>']))]]]]);
         });
         $id = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
             'target_type' => 'post', 'operation' => 'create', 'provider' => $provider->key, 'model' => 'text-a',
@@ -669,13 +673,13 @@ final class AiProviderSettingsApiTest extends TestCase
         $this->assertSame(600, $input['ai_connection']['timeout']);
         unset($input['ai_connection']['timeout'], $originalInput['ai_connection']['timeout']);
         $this->assertSame($originalInput, $input);
-        Queue::assertPushed(ProcessAiImportJob::class, fn ($job): bool => $job->importId === $id && $job->timeout === 720);
+        Queue::assertPushed(ProcessAiImportJob::class, fn ($job): bool => $job->importId === $id && $job->timeout === 1920);
         $this->withToken($token)->postJson($url)->assertConflict();
         Queue::assertPushed(ProcessAiImportJob::class, 2);
         $this->assertSame(1, $calls);
         (new ProcessAiImportJob($id, 600))->handle(app(ArticleImportService::class));
         $this->assertSame('ready', AiImport::findOrFail($id)->status);
-        $this->assertEquals([120, 600], $timeouts);
+        $this->assertEquals([120, 600, 600, 600], $timeouts);
         $this->assertSame(1, AiImport::count());
     }
 
@@ -693,7 +697,7 @@ final class AiProviderSettingsApiTest extends TestCase
         Http::fake(function ($request, $options) use (&$calls) {
             $calls++;
             $this->assertEquals(300, $options['timeout']);
-            throw new \Illuminate\Http\Client\ConnectionException('Disconnected');
+            throw new ConnectionException('Disconnected');
         });
         $this->withToken($token)->postJson('/api/admin/settings/ai/providers/'.$provider->id.'/sync')->assertUnprocessable();
         $this->assertSame(1, $calls);

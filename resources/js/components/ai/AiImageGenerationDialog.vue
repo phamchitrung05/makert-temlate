@@ -1,4 +1,5 @@
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 /* eslint-disable camelcase -- Laravel API DTOs keep server field names. */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { aiAgentService } from '@/services/aiAgent'
@@ -7,7 +8,8 @@ import { findProvider, providerModels } from '@/utils/aiModelOptions'
 
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Tạo ảnh độc lập với luồng content
+ * Header/footer cố định qua AppDialogLayout; chỉ content ở giữa được cuộn.
+  CHỨC NĂNG FILE: Tạo ảnh độc lập với luồng content
  * =====================================================================
  *
  * Dialog cho phép chọn provider/model ảnh hoặc để server lấy default image
@@ -222,8 +224,12 @@ onBeforeUnmount(stop)
     max-width="680"
     scrollable
   >
-    <VCard>
-      <VCardTitle>Tạo thumbnail bằng AI</VCardTitle>
+    <AppDialogLayout @close="visible = false">
+      <template #header>
+        <VCardItem>
+          <VCardTitle>Tạo thumbnail bằng AI</VCardTitle>
+        </VCardItem>
+      </template>
       <VCardText>
         <VTextarea
           v-model="form.prompt"
@@ -289,28 +295,32 @@ onBeforeUnmount(stop)
           Ảnh đã tạo nhưng không tải được asset để chọn.
         </VAlert>
       </VCardText>
-      <VCardActions class="justify-end">
-        <VBtn
-          variant="text"
-          @click="visible = false"
-        >
-          Đóng
-        </VBtn><VBtn
-          v-if="!asset"
-          color="primary"
-          :loading="loading"
-          :disabled="!form.prompt.trim()"
-          @click="start"
-        >
-          Tạo ảnh
-        </VBtn><VBtn
-          v-else
-          color="primary"
-          @click="apply"
-        >
-          Dùng thumbnail này
-        </VBtn>
-      </VCardActions>
-    </VCard>
+      <template #footer>
+        <VCardActions class="justify-end">
+          <VBtn
+            variant="text"
+            @click="visible = false"
+          >
+            Đóng
+          </VBtn><VBtn
+            v-if="!asset"
+            variant="flat"
+            color="primary"
+            :loading="loading"
+            :disabled="!form.prompt.trim()"
+            @click="start"
+          >
+            Tạo ảnh
+          </VBtn><VBtn
+            v-else
+            variant="flat"
+            color="primary"
+            @click="apply"
+          >
+            Dùng thumbnail này
+          </VBtn>
+        </VCardActions>
+      </template>
+    </AppDialogLayout>
   </VDialog>
 </template>

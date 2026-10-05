@@ -1,4 +1,14 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: UserUpgradePlanDialog dùng khung dialog chung.
+  CÁC HÀM/METHOD TRONG FILE: dialogModelValueUpdate.
+  INPUT/OUTPUT CỦA CLASS (tổng thể): props/model và thao tác UI -> sự kiện của
+  caller; header/footer cố định, content cuộn qua AppDialogLayout.
+  =====================================================================
+-->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
+
 const props = defineProps({
   isDialogVisible: {
     type: Boolean,
@@ -43,23 +53,20 @@ const dialogModelValueUpdate = val => {
 <template>
   <!-- 👉 upgrade plan -->
   <VDialog
+    scrollable
     :width="$vuetify.display.smAndDown ? 'auto' : 650"
     :model-value="props.isDialogVisible"
     @update:model-value="dialogModelValueUpdate"
   >
-    <!-- Dialog close btn -->
-    <DialogCloseBtn @click="dialogModelValueUpdate(false)" />
+    <AppDialogLayout @close="dialogModelValueUpdate(false)">
+      <template #header>
+        <VCardItem>
+          <VCardTitle>Upgrade Plan</VCardTitle>
+          <VCardSubtitle>Choose the best plan for user.</VCardSubtitle>
+        </VCardItem>
+      </template>
 
-    <VCard class="pa-2 pa-sm-10">
       <VCardText>
-        <!-- 👉 Title -->
-        <h4 class="text-h4 text-center mb-2">
-          Upgrade Plan
-        </h4>
-        <p class="text-body-1 text-center mb-6">
-          Choose the best plan for user.
-        </p>
-
         <div class="d-flex justify-space-between flex-column flex-sm-row gap-4">
           <AppSelect
             v-model="selectedPlan"
@@ -67,12 +74,6 @@ const dialogModelValueUpdate = val => {
             label="Choose a plan"
             placeholder="Basic"
           />
-          <VBtn
-            class="align-self-end"
-            :block="$vuetify.display.xs"
-          >
-            Upgrade
-          </VBtn>
         </div>
 
         <VDivider class="my-6" />
@@ -90,13 +91,6 @@ const dialogModelValueUpdate = val => {
               / month
             </sub>
           </div>
-          <VBtn
-            color="error"
-            variant="tonal"
-            @click="isConfirmDialogVisible = true"
-          >
-            Cancel Subscription
-          </VBtn>
         </div>
       </VCardText>
 
@@ -109,6 +103,20 @@ const dialogModelValueUpdate = val => {
         confirmation-question="Are you sure to cancel your subscription?"
         cancel-msg="Unsubscription Cancelled!!"
       />
-    </VCard>
+      <template #footer>
+        <VCardActions class="justify-end">
+          <VBtn variant="flat">
+            Upgrade
+          </VBtn>
+          <VBtn
+            color="error"
+            variant="tonal"
+            @click="isConfirmDialogVisible = true"
+          >
+            Cancel Subscription
+          </VBtn>
+        </VCardActions>
+      </template>
+    </AppDialogLayout>
   </VDialog>
 </template>

@@ -1,27 +1,25 @@
 <!--
   =====================================================================
-  CHỨC NĂNG FILE: Trang danh sách Post và điểm kích hoạt AI Agent tạo draft.
+  CHỨC NĂNG FILE: Trang danh sách Post và điều hướng tạo/chỉnh sửa bài viết.
   =====================================================================
 
-  Trang tải danh sách Post qua Pinia store và mở CreateWithAiDialog khi admin
-  bấm nút tạo nội dung bằng AI. Dialog chỉ trả candidate; việc lưu/publish vẫn
-  thuộc PostForm và API Post.
+  Trang tải danh sách Post qua Pinia store và điều hướng tới PostForm.
+  Việc tạo nội dung bằng AI được quản lý tại trang AI Content.
 
   CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
+  - loadPosts(): tải danh sách theo trang, tìm kiếm và trạng thái.
   - watcher page/itemsPerPage/search: tải lại Post list khi query thay đổi.
   - errorMessage: chuẩn hóa lỗi API để hiển thị trong bảng.
 
   INPUT/OUTPUT CỦA COMPONENT (tổng thể):
   - INPUT : route, Post store và trạng thái query của bảng.
-  - OUTPUT: bảng Post, điều hướng Add Post và mở dialog AI; không gọi provider
-  AI trực tiếp.
+  - OUTPUT: bảng Post và điều hướng Add/Edit Post.
   =====================================================================
 -->
 <script setup>
 import { computed, shallowRef, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { usePostStore } from '@/stores/post'
-import CreateWithAiDialog from '@/views/apps/blog/post/dialog/CreateWithAiDialog.vue'
 
 const router = useRouter()
 const store = usePostStore()
@@ -30,7 +28,6 @@ const page = shallowRef(1)
 const itemsPerPage = shallowRef(15)
 const search = shallowRef('')
 const status = shallowRef(null)
-const isCreateWithAiDialogVisible = shallowRef(false)
 const errorMessage = computed(() => error.value?.data?.message || error.value?.response?._data?.message || 'Không thể tải bài viết.')
 
 /** Input: filter/page thay đổi. Output: tải lại Post bằng Pinia store. */
@@ -60,14 +57,6 @@ watch(page, () => void loadPosts(), { immediate: true })
       </div>
       <div class="d-flex flex-wrap gap-2">
         <VBtn
-          prepend-icon="tabler-wand"
-          variant="tonal"
-          color="secondary"
-          @click="isCreateWithAiDialogVisible = true"
-        >
-          Create With AI
-        </VBtn>
-        <VBtn
           prepend-icon="tabler-plus"
           @click="router.push({ name: 'apps-blog-post-add' })"
         >
@@ -75,7 +64,6 @@ watch(page, () => void loadPosts(), { immediate: true })
         </VBtn>
       </div>
     </div>
-    <CreateWithAiDialog v-model="isCreateWithAiDialogVisible" />
     <VCard>
       <VCardText>
         <VRow>

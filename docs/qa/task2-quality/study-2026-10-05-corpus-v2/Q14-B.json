@@ -1,0 +1,96 @@
+{
+    "arm": "B",
+    "status": "ready",
+    "error_code": null,
+    "final": {
+        "title": "Tìm hiểu sâu về hệ thống phản ứng của Vue",
+        "content_html": "<h1>Tìm hiểu sâu về hệ thống phản ứng của Vue</h1>\n<p>Trong Vue, trạng thái của component được lưu trong các đối tượng JavaScript có tính phản ứng (reactive). Khi bạn thay đổi trạng thái, giao diện sẽ cập nhật theo. Hệ thống này hoạt động một cách kín đáo, giúp việc quản lý trạng thái trở nên đơn giản và trực quan. Tuy nhiên, hiểu cơ chế bên dưới vẫn rất quan trọng để tránh những lỗi thường gặp.</p>\n<p>Phần này đi sâu vào cách hệ thống phản ứng của Vue hoạt động, bắt đầu từ khái niệm phản ứng và những thao tác cần thiết để theo dõi thay đổi.</p>\n<h2>Tính phản ứng là gì?</h2>\n<p>Tính phản ứng, hay reactivity, là một mô hình lập trình cho phép chúng ta thích ứng với thay đổi theo cách khai báo. Một ví dụ dễ hình dung là bảng tính Excel: ô A2 được định nghĩa bằng công thức <code>= A0 + A1</code>. Khi A0 bằng 1 và A1 bằng 2, A2 hiển thị kết quả 3. Bạn có thể nhấp vào A2 để xem hoặc chỉnh sửa công thức. Nếu thay đổi A0 hoặc A1, A2 cũng tự động cập nhật.</p>\n<p>JavaScript thông thường không hoạt động như vậy. Hãy xem đoạn mã tương đương:</p>\n<pre><code>let A0 = 1\nlet A1 = 2\nlet A2 = A0 + A1\n\nconsole.log(A2) // 3\n\nA0 = 2\nconsole.log(A2) // Still 3\n</code></pre>\n<p>Sau khi <code>A0</code> được đổi thành 2, <code>A2</code> vẫn là 3. Giá trị của <code>A2</code> không tự động được tính lại khi <code>A0</code> thay đổi.</p>\n<h2>Từ phép tính đến hiệu ứng và phụ thuộc</h2>\n<p>Để có thể chạy lại phép tính cập nhật <code>A2</code>, trước hết chúng ta đưa nó vào một hàm:</p>\n<pre><code>let A2\n\nfunction update() {\n  A2 = A0 + A1\n}\n</code></pre>\n<p>Từ đây, có hai khái niệm cần làm rõ:</p>\n<ul>\n<li>Hàm <code>update()</code> tạo ra một <strong>hiệu ứng phụ</strong> (side effect), thường gọi ngắn gọn là <strong>hiệu ứng</strong> (effect), vì nó thay đổi trạng thái của chương trình.</li>\n<li><code>A0</code> và <code>A1</code> là các <strong>phụ thuộc</strong> (dependencies) của hiệu ứng, bởi giá trị của chúng được dùng khi thực hiện hiệu ứng. Hiệu ứng được gọi là một <strong>bên đăng ký theo dõi</strong> (subscriber) các phụ thuộc đó.</li>\n</ul>\n<p>Điều chúng ta cần là một hàm có thể gọi lại <code>update()</code> mỗi khi <code>A0</code> hoặc <code>A1</code> thay đổi. Có thể hình dung cách sử dụng hàm đó như sau:</p>\n<pre><code>whenDepsChange(update)\n</code></pre>\n<h2>Cần theo dõi những gì để tự động cập nhật?</h2>\n<p>Hàm <code>whenDepsChange()</code> trong ví dụ cần thực hiện ba nhiệm vụ:</p>\n<ol>\n<li><strong>Theo dõi khi một biến được đọc.</strong> Chẳng hạn, khi tính biểu thức <code>A0 + A1</code>, chương trình đọc giá trị của cả <code>A0</code> và <code>A1</code>.</li>\n<li><strong>Đăng ký hiệu ứng đang chạy với những biến được đọc.</strong> Vì <code>A0</code> và <code>A1</code> được đọc trong lúc <code>update()</code> thực thi, sau lần gọi đầu tiên, <code>update()</code> trở thành bên đăng ký theo dõi cả hai biến.</li>\n<li><strong>Phát hiện khi một biến thay đổi.</strong> Khi <code>A0</code> được gán giá trị mới, hệ thống cần thông báo cho tất cả hiệu ứng đã đăng ký theo dõi biến đó để chúng chạy lại.</li>\n</ol>"
+    },
+    "quality_checks": [
+        {
+            "check": "copy",
+            "status": "pass"
+        },
+        {
+            "check": "similarity",
+            "status": "pass",
+            "metric": 0.017,
+            "reason": "lexical_metric_not_style_score"
+        },
+        {
+            "check": "language",
+            "status": "pass",
+            "detected": "vi"
+        },
+        {
+            "check": "source_code_links",
+            "status": "pass"
+        },
+        {
+            "check": "important_numbers",
+            "status": "pass"
+        },
+        {
+            "check": "unanchored_numbers",
+            "status": "pass",
+            "count": 0,
+            "reason": "requires_editor_review"
+        },
+        {
+            "check": "semantic_grounding",
+            "status": "undetermined",
+            "reason": "source_anchors_are_not_external_fact_verification"
+        }
+    ],
+    "cost": null,
+    "calls": [
+        {
+            "task": "single_step",
+            "output": {
+                "title": "Tìm hiểu sâu về hệ thống phản ứng của Vue",
+                "content_html": "<h1 id=\"reactivity-in-depth\">Tìm hiểu sâu về hệ thống phản ứng của Vue</h1>\n<p>Trong Vue, trạng thái của component được lưu trong các đối tượng JavaScript có tính phản ứng (reactive). Khi bạn thay đổi trạng thái, giao diện sẽ cập nhật theo. Hệ thống này hoạt động một cách kín đáo, giúp việc quản lý trạng thái trở nên đơn giản và trực quan. Tuy nhiên, hiểu cơ chế bên dưới vẫn rất quan trọng để tránh những lỗi thường gặp.</p>\n<p>Phần này đi sâu vào cách hệ thống phản ứng của Vue hoạt động, bắt đầu từ khái niệm phản ứng và những thao tác cần thiết để theo dõi thay đổi.</p>\n<h2 id=\"what-is-reactivity\">Tính phản ứng là gì?</h2>\n<p>Tính phản ứng, hay reactivity, là một mô hình lập trình cho phép chúng ta thích ứng với thay đổi theo cách khai báo. Một ví dụ dễ hình dung là bảng tính Excel: ô A2 được định nghĩa bằng công thức <code>= A0 + A1</code>. Khi A0 bằng 1 và A1 bằng 2, A2 hiển thị kết quả 3. Bạn có thể nhấp vào A2 để xem hoặc chỉnh sửa công thức. Nếu thay đổi A0 hoặc A1, A2 cũng tự động cập nhật.</p>\n<p>JavaScript thông thường không hoạt động như vậy. Hãy xem đoạn mã tương đương:</p>\n<pre><code>let A0 = 1\nlet A1 = 2\nlet A2 = A0 + A1\n\nconsole.log(A2) // 3\n\nA0 = 2\nconsole.log(A2) // Still 3\n</code></pre>\n<p>Sau khi <code>A0</code> được đổi thành 2, <code>A2</code> vẫn là 3. Giá trị của <code>A2</code> không tự động được tính lại khi <code>A0</code> thay đổi.</p>\n<h2>Từ phép tính đến hiệu ứng và phụ thuộc</h2>\n<p>Để có thể chạy lại phép tính cập nhật <code>A2</code>, trước hết chúng ta đưa nó vào một hàm:</p>\n<pre><code>let A2\n\nfunction update() {\n  A2 = A0 + A1\n}\n</code></pre>\n<p>Từ đây, có hai khái niệm cần làm rõ:</p>\n<ul>\n<li>Hàm <code>update()</code> tạo ra một <strong>hiệu ứng phụ</strong> (side effect), thường gọi ngắn gọn là <strong>hiệu ứng</strong> (effect), vì nó thay đổi trạng thái của chương trình.</li>\n<li><code>A0</code> và <code>A1</code> là các <strong>phụ thuộc</strong> (dependencies) của hiệu ứng, bởi giá trị của chúng được dùng khi thực hiện hiệu ứng. Hiệu ứng được gọi là một <strong>bên đăng ký theo dõi</strong> (subscriber) các phụ thuộc đó.</li>\n</ul>\n<p>Điều chúng ta cần là một hàm có thể gọi lại <code>update()</code> mỗi khi <code>A0</code> hoặc <code>A1</code> thay đổi. Có thể hình dung cách sử dụng hàm đó như sau:</p>\n<pre><code>whenDepsChange(update)\n</code></pre>\n<h2>Cần theo dõi những gì để tự động cập nhật?</h2>\n<p>Hàm <code>whenDepsChange()</code> trong ví dụ cần thực hiện ba nhiệm vụ:</p>\n<ol>\n<li><strong>Theo dõi khi một biến được đọc.</strong> Chẳng hạn, khi tính biểu thức <code>A0 + A1</code>, chương trình đọc giá trị của cả <code>A0</code> và <code>A1</code>.</li>\n<li><strong>Đăng ký hiệu ứng đang chạy với những biến được đọc.</strong> Vì <code>A0</code> và <code>A1</code> được đọc trong lúc <code>update()</code> thực thi, sau lần gọi đầu tiên, <code>update()</code> trở thành bên đăng ký theo dõi cả hai biến.</li>\n<li><strong>Phát hiện khi một biến thay đổi.</strong> Khi <code>A0</code> được gán giá trị mới, hệ thống cần thông báo cho tất cả hiệu ứng đã đăng ký theo dõi biến đó để chúng chạy lại.</li>\n</ol>",
+                "content": "<h1 id=\"reactivity-in-depth\">Tìm hiểu sâu về hệ thống phản ứng của Vue</h1>\n<p>Trong Vue, trạng thái của component được lưu trong các đối tượng JavaScript có tính phản ứng (reactive). Khi bạn thay đổi trạng thái, giao diện sẽ cập nhật theo. Hệ thống này hoạt động một cách kín đáo, giúp việc quản lý trạng thái trở nên đơn giản và trực quan. Tuy nhiên, hiểu cơ chế bên dưới vẫn rất quan trọng để tránh những lỗi thường gặp.</p>\n<p>Phần này đi sâu vào cách hệ thống phản ứng của Vue hoạt động, bắt đầu từ khái niệm phản ứng và những thao tác cần thiết để theo dõi thay đổi.</p>\n<h2 id=\"what-is-reactivity\">Tính phản ứng là gì?</h2>\n<p>Tính phản ứng, hay reactivity, là một mô hình lập trình cho phép chúng ta thích ứng với thay đổi theo cách khai báo. Một ví dụ dễ hình dung là bảng tính Excel: ô A2 được định nghĩa bằng công thức <code>= A0 + A1</code>. Khi A0 bằng 1 và A1 bằng 2, A2 hiển thị kết quả 3. Bạn có thể nhấp vào A2 để xem hoặc chỉnh sửa công thức. Nếu thay đổi A0 hoặc A1, A2 cũng tự động cập nhật.</p>\n<p>JavaScript thông thường không hoạt động như vậy. Hãy xem đoạn mã tương đương:</p>\n<pre><code>let A0 = 1\nlet A1 = 2\nlet A2 = A0 + A1\n\nconsole.log(A2) // 3\n\nA0 = 2\nconsole.log(A2) // Still 3\n</code></pre>\n<p>Sau khi <code>A0</code> được đổi thành 2, <code>A2</code> vẫn là 3. Giá trị của <code>A2</code> không tự động được tính lại khi <code>A0</code> thay đổi.</p>\n<h2>Từ phép tính đến hiệu ứng và phụ thuộc</h2>\n<p>Để có thể chạy lại phép tính cập nhật <code>A2</code>, trước hết chúng ta đưa nó vào một hàm:</p>\n<pre><code>let A2\n\nfunction update() {\n  A2 = A0 + A1\n}\n</code></pre>\n<p>Từ đây, có hai khái niệm cần làm rõ:</p>\n<ul>\n<li>Hàm <code>update()</code> tạo ra một <strong>hiệu ứng phụ</strong> (side effect), thường gọi ngắn gọn là <strong>hiệu ứng</strong> (effect), vì nó thay đổi trạng thái của chương trình.</li>\n<li><code>A0</code> và <code>A1</code> là các <strong>phụ thuộc</strong> (dependencies) của hiệu ứng, bởi giá trị của chúng được dùng khi thực hiện hiệu ứng. Hiệu ứng được gọi là một <strong>bên đăng ký theo dõi</strong> (subscriber) các phụ thuộc đó.</li>\n</ul>\n<p>Điều chúng ta cần là một hàm có thể gọi lại <code>update()</code> mỗi khi <code>A0</code> hoặc <code>A1</code> thay đổi. Có thể hình dung cách sử dụng hàm đó như sau:</p>\n<pre><code>whenDepsChange(update)\n</code></pre>\n<h2>Cần theo dõi những gì để tự động cập nhật?</h2>\n<p>Hàm <code>whenDepsChange()</code> trong ví dụ cần thực hiện ba nhiệm vụ:</p>\n<ol>\n<li><strong>Theo dõi khi một biến được đọc.</strong> Chẳng hạn, khi tính biểu thức <code>A0 + A1</code>, chương trình đọc giá trị của cả <code>A0</code> và <code>A1</code>.</li>\n<li><strong>Đăng ký hiệu ứng đang chạy với những biến được đọc.</strong> Vì <code>A0</code> và <code>A1</code> được đọc trong lúc <code>update()</code> thực thi, sau lần gọi đầu tiên, <code>update()</code> trở thành bên đăng ký theo dõi cả hai biến.</li>\n<li><strong>Phát hiện khi một biến thay đổi.</strong> Khi <code>A0</code> được gán giá trị mới, hệ thống cần thông báo cho tất cả hiệu ứng đã đăng ký theo dõi biến đó để chúng chạy lại.</li>\n</ol>"
+            },
+            "diagnostics": {
+                "response_id": "resp_076cbe46a9432b7e016ac34cb206b887d08501a9a179b0ce18",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "post.content.v1",
+                "requested_groups": [
+                    "title",
+                    "content"
+                ],
+                "returned_fields": [
+                    "title",
+                    "content_html"
+                ],
+                "usage": {
+                    "prompt_tokens": 1862,
+                    "completion_tokens": 1030,
+                    "total_tokens": 2892
+                }
+            },
+            "latency_ms": 42757
+        }
+    ],
+    "latency_ms": 42761,
+    "input_sha256": "bd24d66602536d82d31fe86faa63dc162ea5da4897555c01418e2f6dbf5c731d",
+    "comparison_input_sha256": "62974da0c98e3bfedbd2b29301cbea50ab0f5daac9668715e93e4f1ff0299240",
+    "writing_profile_sha256": "1267aa8b907b63f12cd8c953c4a6664dbea3f3e7acabb12a28e64293053a7c96",
+    "brief_sha256": "a7f052446c270a2c36979d5688c0edaf10a0f5a164ae6ab255b69d622b3c56c6",
+    "image_evaluation": {
+        "mode": "source_metadata_only",
+        "source_images": 0,
+        "approved_asset_regenerate": "not_evaluated",
+        "pixel_understanding": "not_evaluated"
+    },
+    "source_sha256": "452e6ca3d18083973217020da4f7535094e935c6f2de78345e108baeb6fe48cc",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Tìm hiểu sâu về hệ thống phản ứng của Vue",
+        "content_html": "<h1>Tìm hiểu sâu về hệ thống phản ứng của Vue</h1>\n<p>Trong Vue, trạng thái của component được lưu trong các đối tượng JavaScript có tính phản ứng (reactive). Khi bạn thay đổi trạng thái, giao diện sẽ cập nhật theo. Hệ thống này hoạt động một cách kín đáo, giúp việc quản lý trạng thái trở nên đơn giản và trực quan. Tuy nhiên, hiểu cơ chế bên dưới vẫn rất quan trọng để tránh những lỗi thường gặp.</p>\n<p>Phần này đi sâu vào cách hệ thống phản ứng của Vue hoạt động, bắt đầu từ khái niệm phản ứng và những thao tác cần thiết để theo dõi thay đổi.</p>\n<h2>Tính phản ứng là gì?</h2>\n<p>Tính phản ứng, hay reactivity, là một mô hình lập trình cho phép chúng ta thích ứng với thay đổi theo cách khai báo. Một ví dụ dễ hình dung là bảng tính Excel: ô A2 được định nghĩa bằng công thức <code>= A0 + A1</code>. Khi A0 bằng 1 và A1 bằng 2, A2 hiển thị kết quả 3. Bạn có thể nhấp vào A2 để xem hoặc chỉnh sửa công thức. Nếu thay đổi A0 hoặc A1, A2 cũng tự động cập nhật.</p>\n<p>JavaScript thông thường không hoạt động như vậy. Hãy xem đoạn mã tương đương:</p>\n<pre><code>let A0 = 1\nlet A1 = 2\nlet A2 = A0 + A1\n\nconsole.log(A2) // 3\n\nA0 = 2\nconsole.log(A2) // Still 3\n</code></pre>\n<p>Sau khi <code>A0</code> được đổi thành 2, <code>A2</code> vẫn là 3. Giá trị của <code>A2</code> không tự động được tính lại khi <code>A0</code> thay đổi.</p>\n<h2>Từ phép tính đến hiệu ứng và phụ thuộc</h2>\n<p>Để có thể chạy lại phép tính cập nhật <code>A2</code>, trước hết chúng ta đưa nó vào một hàm:</p>\n<pre><code>let A2\n\nfunction update() {\n  A2 = A0 + A1\n}\n</code></pre>\n<p>Từ đây, có hai khái niệm cần làm rõ:</p>\n<ul>\n<li>Hàm <code>update()</code> tạo ra một <strong>hiệu ứng phụ</strong> (side effect), thường gọi ngắn gọn là <strong>hiệu ứng</strong> (effect), vì nó thay đổi trạng thái của chương trình.</li>\n<li><code>A0</code> và <code>A1</code> là các <strong>phụ thuộc</strong> (dependencies) của hiệu ứng, bởi giá trị của chúng được dùng khi thực hiện hiệu ứng. Hiệu ứng được gọi là một <strong>bên đăng ký theo dõi</strong> (subscriber) các phụ thuộc đó.</li>\n</ul>\n<p>Điều chúng ta cần là một hàm có thể gọi lại <code>update()</code> mỗi khi <code>A0</code> hoặc <code>A1</code> thay đổi. Có thể hình dung cách sử dụng hàm đó như sau:</p>\n<pre><code>whenDepsChange(update)\n</code></pre>\n<h2>Cần theo dõi những gì để tự động cập nhật?</h2>\n<p>Hàm <code>whenDepsChange()</code> trong ví dụ cần thực hiện ba nhiệm vụ:</p>\n<ol>\n<li><strong>Theo dõi khi một biến được đọc.</strong> Chẳng hạn, khi tính biểu thức <code>A0 + A1</code>, chương trình đọc giá trị của cả <code>A0</code> và <code>A1</code>.</li>\n<li><strong>Đăng ký hiệu ứng đang chạy với những biến được đọc.</strong> Vì <code>A0</code> và <code>A1</code> được đọc trong lúc <code>update()</code> thực thi, sau lần gọi đầu tiên, <code>update()</code> trở thành bên đăng ký theo dõi cả hai biến.</li>\n<li><strong>Phát hiện khi một biến thay đổi.</strong> Khi <code>A0</code> được gán giá trị mới, hệ thống cần thông báo cho tất cả hiệu ứng đã đăng ký theo dõi biến đó để chúng chạy lại.</li>\n</ol>"
+    },
+    "total_tokens": 2892
+}

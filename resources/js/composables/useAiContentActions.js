@@ -49,14 +49,14 @@ export function useAiContentActions({ updateSession, removeItem, onFeedback = ()
   /**
    * =====================================================================
    * Input: item ready.
-   * Output: detail riêng; bỏ response khi dialog đóng/đổi item.
+   * Output: mở đủ field theo target trong lúc GET detail; bỏ response khi đóng/đổi item.
    * =====================================================================
    */
   async function openEditor(item) {
     if (item.status === 'generating' || editorSaving.value) return
     const version = ++editorVersion
 
-    editor.value = { job_id: item.id, draft: {} }
+    editor.value = { job_id: item.id, target_type: item.targetType, draft: {} }
     editorLoading.value = true
     editorError.value = ''
     try {

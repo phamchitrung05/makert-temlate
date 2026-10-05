@@ -1,6 +1,6 @@
 # API tạo bài AI — Task 2
 
-Backend và các form Vue 3 đã nối API: AI Content, dialog tạo Post, regenerate, quản lý văn phong và MediaLibrary trong editor chung. Generation chỉ lưu candidate; Apply tạo Post draft khi người dùng xác nhận. Báo cáo nghiệm thu localhost tại [Task 2 QA](qa/TASK2_LOCALHOST_2026-10-05.md).
+Backend và các form Vue 3 đã nối API: AI Content, regenerate, quản lý văn phong và MediaLibrary trong editor chung. Tạo nội dung tập trung ở AI Content; dialog tạo bài AI trong Post đã gỡ. Generation chỉ lưu candidate; Apply tạo Post draft khi người dùng xác nhận. Báo cáo nghiệm thu localhost ban đầu tại [Task 2 QA](qa/TASK2_LOCALHOST_2026-10-05.md).
 
 Form tạo mới dùng `writing_profile_id: null` cho mặc định website. Regenerate bỏ field này để giữ snapshot của parent; chọn lại mặc định gửi `null` rõ ràng. Brief chỉ gửi khi người dùng bật phần chỉnh brief; gửi `{}` rõ ràng để xóa brief kế thừa. File HTML được gửi multipart nguyên byte cùng encoding, không flatten thành text ở trình duyệt. Preview nguồn không gọi model.
 
@@ -188,7 +188,14 @@ Title và content bắt buộc, các field excerpt/SEO/taxonomy là tùy chọn.
 
 Ảnh inline cần `img` có `data-media-asset-id` và URL chính xác thuộc MediaAsset **public**, đúng quyền attach, có file thật. Lấy từ `/api/admin/media-assets` hoặc upload bằng API hiện có; `asset.id` là ref, `asset.file.url`/conversion đã sẵn sàng là URL. Backend không tin `content_image_ids` tự khai báo: suy từ HTML và đồng bộ usage `post.content_images` khi Apply/lưu Post. Chặn ID/URL giả, event handler, `srcset`/`picture` chưa hỗ trợ, URL tạm blob/base64. Xóa ảnh khỏi nội dung không tự xóa file toàn cục.
 
-Kết nối picker/upload TinyMCE chưa triển khai theo yêu cầu backend trước. Khi nối UI: chọn/upload ngay trong editor, giữ ref attribute, chờ upload xong trước lưu. Regenerate ảnh parent dùng placeholder ID do backend cung cấp; AI không tạo URL/ID mới. Ảnh AI quên đặt được khôi phục cuối bài để giữ asset; cần editor rà lại vị trí. Tự nhập toàn bộ ảnh nguồn/vision/AI sinh ảnh inline để giai đoạn sau.
+Picker/upload TinyMCE đã nối MediaLibrary trong editor dùng chung của Post và AI Content: chọn/upload ngay trong editor, nhập alt/caption, giữ ref attribute và chặn lưu khi upload chưa xong. Tiny Cloud giữ nguyên license; local QA dùng `localhost` với key hiện có. Regenerate ảnh parent dùng placeholder ID do backend cung cấp; AI không tạo URL/ID mới. Figure có một ảnh giữ cả caption khi khôi phục; ảnh thiếu vị trí hợp lệ được khôi phục cuối bài để bảo toàn asset, cần editor rà vị trí. Tự nhập toàn bộ ảnh nguồn/vision/AI sinh ảnh inline để giai đoạn sau.
+
+Browser nghiệm thu Tiny Cloud thật và Apply được ghi tại
+[Task 2 hoàn tất kỹ thuật](qa/TASK2_COMPLETE_2026-10-05/README.md).
+Menu dùng `ui_mode: 'split'`; cửa sổ TinyMCE gắn vào body có lớp overlay chung
+và event `editorDialog` để caller nhường focus đúng thời gian. Quy chuẩn dialog
+ở `PROJECT_STRUCTURE.md` mục 4.3.1. Đợt QA này dùng SQLite, không thay thế bằng
+chứng MySQL/cancel/resume của 12.24; UI fixture replay không tính là call AI mới.
 
 ```http
 POST /api/admin/ai-agent/candidates/{uuid}/apply
@@ -224,7 +231,7 @@ OpenAI/Gemini/http-json dùng adapter generic task và schema validation server.
 
 - Migrate database và Spatie Settings bằng luồng `php artisan migrate` hiện có; kiểm default text model/profile trước khi tạo run.
 - Dùng queue worker thực tế, ưu tiên `database`/`redis` hiện có; không chạy generation trong HTTP. Backend từ chối driver `sync`/`null`, kể cả connection alias trỏ về driver đó. Process manager và scheduler phải hoạt động, không chỉ bật `.env`.
-- `AI_CONTENT_PIPELINE=three_step` mặc định; `single_step` là nhánh rollout/so sánh. Mode/prompt/schema/quality/output contracts được snapshot vào run.
+- Tạo toàn bộ nội dung Post luôn dùng `three_step`: Analyze + Plan → Write → Edit. Luồng B `single_step` và switch môi trường `AI_CONTENT_PIPELINE` đã được gỡ ngày 2026-10-05. Snapshot/config cũ không thể bật lại B; run mới hoặc chạy lại ghi mode `three_step`. Prompt/schema/quality/output contracts vẫn được snapshot vào run. Chỉ sửa các trường riêng như title/SEO/excerpt tiếp tục dùng một request theo hợp đồng của trường.
 - Job timeout = `max(AI_IMPORT_JOB_TIMEOUT, clamp(request_timeout,5,600) × số_call + 120)`. Ba call 600 giây cần tối đa **1920 giây**; đây là ngân sách, không phải ETA. Worker có PCNTL/runtime đủ timeout; cấu hình process manager `stopwaitsecs` lớn hơn job budget để không cắt bài khi restart.
 - `retry_after` của database/redis/beanstalkd tối thiểu **2000 giây**, còn tăng theo `AI_IMPORT_JOB_TIMEOUT + 60`. Luôn giữ request timeout < job budget < lease. Nếu tăng job budget hoặc dùng gateway chậm hơn, rà lại lease/process manager.
 - SQS visibility timeout thuộc cấu hình queue trên AWS, không dùng `retry_after` trong file Laravel; đặt visibility lớn hơn budget tương ứng trước khi dùng SQS. Chưa có xác nhận production/VPS/SQS đã cấu hình từ các test local.

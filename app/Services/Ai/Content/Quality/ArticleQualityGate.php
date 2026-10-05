@@ -118,11 +118,14 @@ final class ArticleQualityGate
                 $this->failure('AI_QUALITY_GROUNDING', 'Nội dung AI làm mất hoặc sửa code nguồn.', 'source_code_changed');
             }
         }
-        preg_match_all('/<a\b[^>]*href=["\']([^"\']+)["\']/i', $source['content_html'], $sourceLinks);
-        preg_match_all('/<a\b[^>]*href=["\']([^"\']+)["\']/i', $html, $finalLinks);
-        $decode = fn (string $url): string => html_entity_decode($url, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        if (array_diff(array_map($decode, $sourceLinks[1]), array_map($decode, $finalLinks[1])) !== []) {
+        $linkPolicy = new ArticleSourceLinkPolicy;
+        $linkManifest = $linkPolicy->manifest($source);
+        $finalLinks = $linkPolicy->hrefs($html);
+        if (array_diff($linkManifest['required_hrefs'], $finalLinks) !== []) {
             $this->failure('AI_QUALITY_GROUNDING', 'Nội dung AI làm mất link tham khảo trong nguồn.', 'source_link_missing');
+        }
+        if (array_diff($finalLinks, $linkManifest['allowed_hrefs']) !== []) {
+            $this->failure('AI_QUALITY_GROUNDING', 'Nội dung AI có link không khớp nguồn; hãy kiểm tra URL tham khảo.', 'source_link_unknown');
         }
         $outputNumbers = $this->numbers($this->numberText($html));
         foreach ($analysis['knowledge']['facts'] ?? [] as $fact) {
@@ -160,7 +163,7 @@ final class ArticleQualityGate
      * Chỉ số nguyên nguồn >= 4 chữ số được chấp nhận dạng nhóm nghìn ở output.
      * Token nguồn có dấu chấm giữ nguyên (version/decimal có thể trông như nhóm nghìn).
      * Đối chiếu warning chiều ngược có thể bật allowGroupedExpected, không nới gate.
-     * Không tự suy diễn số viết bằng chữ hoặc thế kỷ của năm hai chữ số.
+     * Ngày/giờ/thế kỷ được chuẩn hóa có ngữ cảnh; không suy diễn số lớn hoặc năm.
      * =====================================================================
      */
     private function missingNumbers(array $expected, array $actual, bool $allowGroupedExpected = false): array
@@ -188,14 +191,13 @@ final class ArticleQualityGate
     /**
      * =====================================================================
      * Input: text nguồn/final.
-     * Output: tokens số/phiên bản duy nhất; không coi regex là kiểm ngữ nghĩa.
+     * Output: tokens số/phiên bản và các ngữ cảnh ngày/giờ/thế kỷ/danh sách thứ.
+     * Không đổi HTML lưu hoặc coi thành phần của số lớn (mười hai) là số nhỏ (hai).
      * =====================================================================
      */
     private function numbers(string $text): array
     {
-        preg_match_all('/\d+(?:[.,]\d+)*/u', $text, $matches);
-
-        return array_values(array_unique($matches[0]));
+        return (new ArticleNumberNormalizer)->tokens($text);
     }
 
     /**

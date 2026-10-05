@@ -1,0 +1,2 @@
+﻿case_id,label,bundle_sha256,reviewer,review_state,source_facts_confirmed,accuracy_gate,facts_errors_and_severity,important_fact_evidence,naturalness_1_5,usefulness_1_5,structure_1_5,repetition_1_5,brief_style_1_5,critical_errors,major_errors,minor_errors,important_facts_preserved,important_facts_expected,fact_edits,expression_edits,paragraphs_added,paragraphs_removed,editing_minutes,coverage_notes,preservation_notes,paired_preference
+Q33,X,ce8e3f14c639e3d8eec4d8da1513e61838077bd7adcb3a8785f61b4006322b4d,,,,,,,,,,,,,,,,,,,,,,,,

@@ -1,0 +1,43 @@
+{
+    "version": "v2-Q33-closure",
+    "captured_at": "2026-10-05T06:39:04+00:00",
+    "review_status": "pending_human",
+    "coverage_gaps": [
+        "Nguồn web mới là trích đoạn được chọn, không mặc định là toàn bài.",
+        "Facts quan trọng cần hai người đọc xác nhận độc lập từ nguồn.",
+        "Ảnh nguồn chỉ là metadata/chú thích: chưa kiểm pixel hoặc regenerate với asset được duyệt.",
+        "Chưa có benchmark độc lập; bảng giới hạn dịch vụ không đại diện benchmark."
+    ],
+    "cases": [
+        {
+            "case_id": "Q33",
+            "group": "Bảng số liệu · giới hạn GitHub Actions theo gói",
+            "source_language": "en",
+            "output_language": "vi",
+            "source_snapshot_path": "Q33.json",
+            "source_sha256": "0e5f82562876bdbf1d54eebb4e7e4e1c00a07eb7944a66cb78ae6f0d4c05e693",
+            "raw_sha256": "07787e38fe813bd89e6c06b5546cf9965b778147f6c7a470eb68361db032202b",
+            "excerpt_sha256": "f0f95cf1303f730fd7408ec4a635efa58367f11c29c7485f2b4067841a18d1cb",
+            "source_origin_url": "https://docs.github.com/en/actions/reference/limits",
+            "selection": "Bảng đầu nguyên vẹn, heading và đoạn giải thích liền trước; không phải toàn trang",
+            "license": "CC BY 4.0",
+            "license_url": "https://github.com/github/docs/blob/main/LICENSE",
+            "attribution": "GitHub documentation contributors",
+            "writing_brief": {
+                "audience": "Người phát triển tìm hiểu giới hạn dịch vụ",
+                "purpose": "Viết bài trong phạm vi trích đoạn đóng băng; giữ mốc thời gian và điều kiện nguồn",
+                "length": "Theo lượng thông tin nguồn, tránh kéo dài/lặp ý",
+                "source_scope": "Giữ nguyên bảng đầu tiên và đơn vị/điều kiện; không suy giới hạn thành benchmark tốc độ hoặc cam kết. Tài liệu hiện tại được đóng băng theo thời điểm tải."
+            },
+            "important_facts": [],
+            "human_fact_review": "pending",
+            "notes": "Giữ nguyên bảng đầu tiên và đơn vị/điều kiện; không suy giới hạn thành benchmark tốc độ hoặc cam kết. Tài liệu hiện tại được đóng băng theo thời điểm tải.",
+            "captured_at": "2026-10-05T06:39:07+00:00",
+            "source_image_count": 0,
+            "source_table_count": 1
+        }
+    ],
+    "unique_sources": 1,
+    "parent_manifest_sha256": "f8104f32e6875589dc6d9ea401fb720d055d9d2140fcbb1c4e78ede63e16cfe2",
+    "purpose": "C-only timeout verification, not a replacement for the original 20-source study"
+}

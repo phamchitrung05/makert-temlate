@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Exceptions\AiImportException;
 use App\Services\Ai\Content\ArticleSourceExtractor;
+use App\Services\Ai\Content\Data\ArticleInputHasher;
 use App\Services\Ai\Content\Evaluation\ArticleQualityEvaluation;
 use App\Services\Ai\Content\Evaluation\EvaluationProviderRecorder;
 use App\Services\Ai\Contracts\AiProviderContract;
@@ -12,6 +13,7 @@ use App\Services\Ai\Data\AiTaskRequest;
 use App\Services\Ai\Data\AiTaskResponse;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Mockery;
 use Tests\TestCase;
 
 /**
@@ -20,7 +22,7 @@ use Tests\TestCase;
  * CÁC HÀM/METHOD TRONG FILE: source(), input(),
  * test_budget_counts_three_calls_and_rejects_fake_baseline(),
  * test_insufficient_budget_stops_before_call(),
- * test_single_step_records_usage_and_preserves_the_input_without_database_work(),
+ * test_three_step_records_usage_and_preserves_the_input_without_database_work(),
  * test_three_step_uses_same_source_and_exports_real_canonical_artifacts(),
  * test_failed_stage_retains_artifacts_and_missing_usage_is_unknown(),
  * test_recorder_enforces_call_limit_even_when_called_directly();
@@ -56,14 +58,14 @@ final class ArticleQualityEvaluationTest extends TestCase
 
     /**
      * =====================================================================
-     * Input: 5 case B/C.
-     * Output: 20 call; baseline A không được giả bằng B.
+     * Input: 5 case C.
+     * Output: 15 call; B không được chạy lại.
      * =====================================================================
      */
     public function test_budget_counts_three_calls_and_rejects_fake_baseline(): void
     {
         $runner = new ArticleQualityEvaluation;
-        $this->assertSame(20, $runner->plannedCalls(5, ['B', 'C']));
+        $this->assertSame(15, $runner->plannedCalls(5, ['C']));
         $this->expectException(InvalidArgumentException::class);
         $runner->plannedCalls(5, ['A', 'B', 'C']);
     }
@@ -87,11 +89,11 @@ final class ArticleQualityEvaluationTest extends TestCase
 
     /**
      * =====================================================================
-     * Input: B và brief/profile.
-     * Output: một call, usage thật, không DB write/read.
+     * Input: C và brief/profile.
+     * Output: ba call, usage fixture, không DB write/read.
      * =====================================================================
      */
-    public function test_single_step_records_usage_and_preserves_the_input_without_database_work(): void
+    public function test_three_step_records_usage_and_preserves_the_input_without_database_work(): void
     {
         $queries = [];
         DB::listen(function ($query) use (&$queries): void {
@@ -99,21 +101,21 @@ final class ArticleQualityEvaluationTest extends TestCase
         });
         $provider = new EvaluationFixture;
         $input = $this->input();
-        $result = (new ArticleQualityEvaluation)->run($this->source(), $input, $provider, 'B', 1);
+        $result = (new ArticleQualityEvaluation)->run($this->source(), $input, $provider, 'C', 3);
         $this->assertSame('ready', $result['status']);
-        $this->assertCount(1, $result['calls']);
-        $this->assertSame(12, $result['total_tokens']);
+        $this->assertCount(3, $result['calls']);
+        $this->assertSame(36, $result['total_tokens']);
         $this->assertNull($result['cost']);
-        $this->assertStringContainsString('Viết tự nhiên.', $provider->instructions);
-        $this->assertStringContainsString('Người mới', $provider->instructions);
+        $this->assertSame('Viết tự nhiên.', $provider->requests[0]->input['profile']['style_instructions']);
+        $this->assertSame('Người mới', $provider->requests[0]->input['brief']['audience']);
         $this->assertSame($input, $this->input());
         $this->assertSame([], $queries);
     }
 
     /**
      * =====================================================================
-     * Input: C cùng source/profile của B.
-     * Output: đúng ba task, hash source bằng nhau.
+     * Input: C và source/profile immutable.
+     * Output: đúng ba task, hash source/profile/brief giữ nguyên.
      * =====================================================================
      */
     public function test_three_step_uses_same_source_and_exports_real_canonical_artifacts(): void
@@ -121,14 +123,27 @@ final class ArticleQualityEvaluationTest extends TestCase
         $runner = new ArticleQualityEvaluation;
         $source = $this->source();
         $input = $this->input();
-        $b = $runner->run($source, $input, new EvaluationFixture, 'B', 1);
         $c = $runner->run($source, $input, new EvaluationFixture, 'C', 3);
         $this->assertSame('ready', $c['status']);
         $this->assertSame(['article.analysis-plan', 'article.writer', 'article.editor'], array_column($c['calls'], 'task'));
-        $this->assertSame($b['source_sha256'], $c['source_sha256']);
+        $this->assertSame(ArticleInputHasher::hash(array_replace($source, ['inline_image_refs' => [], 'snapshot_run_id' => ''])), $c['source_sha256']);
+        $this->assertSame(ArticleInputHasher::hash($input['writing_profile_snapshot']), $c['writing_profile_sha256']);
+        $this->assertSame(ArticleInputHasher::hash($input['writing_brief']), $c['brief_sha256']);
+        $this->assertSame('not_evaluated', $c['image_evaluation']['pixel_understanding']);
         $this->assertSame(36, $c['total_tokens']);
         $this->assertNotEmpty($c['quality_checks']);
         $this->assertArrayNotHasKey('score', $c);
+    }
+
+    /** Input: yêu cầu B trực tiếp. Output: từ chối trước provider, không call nào. */
+    public function test_removed_branch_is_rejected_before_any_provider_call(): void
+    {
+        $provider = Mockery::mock(AiProviderContract::class);
+        $provider->shouldNotReceive('configured');
+        $provider->shouldNotReceive('generate');
+        $provider->shouldNotReceive('execute');
+        $this->expectException(InvalidArgumentException::class);
+        (new ArticleQualityEvaluation)->run($this->source(), $this->input(), $provider, 'B', 1);
     }
 
     /**

@@ -1,5 +1,14 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: Dialog tìm kiếm trong thanh điều hướng admin.
+  CÁC HÀM/METHOD TRONG FILE: clearSearchAndCloseDialog(), getFocusOnSearchList(),
+  dialogModelValueUpdate(); watcher hotkey và trạng thái mở.
+  INPUT/OUTPUT CỦA CLASS (tổng thể): query/results/loading -> search/update events;
+  header chứa ô tìm kiếm, chỉ kết quả cuộn và footer luôn có nút đóng.
+  =====================================================================
+-->
 <script setup>
-import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 import {
   VList,
   VListItem,
@@ -81,6 +90,7 @@ watch(() => props.isDialogVisible, () => {
 
 <template>
   <VDialog
+    scrollable
     max-width="600"
     :model-value="props.isDialogVisible"
     :height="$vuetify.display.smAndUp ? '531' : '100%'"
@@ -89,65 +99,56 @@ watch(() => props.isDialogVisible, () => {
     @update:model-value="dialogModelValueUpdate"
     @keyup.esc="clearSearchAndCloseDialog"
   >
-    <VCard
+    <AppDialogLayout
       height="100%"
       width="100%"
-      class="position-relative"
+      @close="clearSearchAndCloseDialog"
     >
-      <VCardText
-        class="px-4"
-        style="padding-block: 1rem 1.2rem;"
-      >
-        <!-- 👉 Search Input -->
-        <VTextField
-          ref="refSearchInput"
-          v-model="searchQueryLocal"
-          autofocus
-          density="compact"
-          variant="plain"
-          class="app-bar-search-input"
-          @keyup.esc="clearSearchAndCloseDialog"
-          @keydown="getFocusOnSearchList"
-          @update:model-value="$emit('search', searchQueryLocal)"
+      <template #header>
+        <VCardItem title="Tìm kiếm" />
+        <VCardText
+          class="px-4"
+          style="padding-block: 1rem 1.2rem;"
         >
-          <!-- 👉 Prepend Inner -->
-          <template #prepend-inner>
-            <div class="d-flex align-center text-high-emphasis me-1">
-              <VIcon
-                size="24"
-                icon="tabler-search"
-              />
-            </div>
-          </template>
-
-          <!-- 👉 Append Inner -->
-          <template #append-inner>
-            <div class="d-flex align-start">
-              <div
-                class="text-base text-disabled cursor-pointer me-3"
-                @click="clearSearchAndCloseDialog"
-              >
-                [esc]
+          <!-- 👉 Search Input -->
+          <VTextField
+            ref="refSearchInput"
+            v-model="searchQueryLocal"
+            autofocus
+            density="compact"
+            variant="plain"
+            class="app-bar-search-input"
+            @keyup.esc="clearSearchAndCloseDialog"
+            @keydown="getFocusOnSearchList"
+            @update:model-value="$emit('search', searchQueryLocal)"
+          >
+            <!-- 👉 Prepend Inner -->
+            <template #prepend-inner>
+              <div class="d-flex align-center text-high-emphasis me-1">
+                <VIcon
+                  size="24"
+                  icon="tabler-search"
+                />
               </div>
+            </template>
 
-              <VIcon
-                icon="tabler-x"
-                size="24"
-                @click="clearSearchAndCloseDialog"
-              />
-            </div>
-          </template>
-        </VTextField>
-      </VCardText>
+            <!-- 👉 Append Inner -->
+            <template #append-inner>
+              <div class="d-flex align-start">
+                <div
+                  class="text-base text-disabled cursor-pointer me-3"
+                  @click="clearSearchAndCloseDialog"
+                >
+                  [esc]
+                </div>
+              </div>
+            </template>
+          </VTextField>
+        </VCardText>
+      </template>
 
-      <!-- 👉 Divider -->
-      <VDivider />
-
-      <!-- 👉 Perfect Scrollbar -->
-      <PerfectScrollbar
-        :options="{ wheelPropagation: false, suppressScrollX: true }"
-        class="h-100"
-      >
+      <!-- 👉 Scrollable results -->
+      <div class="h-100">
         <!-- 👉 Suggestions -->
         <div
           v-show="!!props.searchResults && !searchQueryLocal && $slots.suggestions"
@@ -212,8 +213,8 @@ watch(() => props.isDialogVisible, () => {
             type="list-item-two-line"
           />
         </template>
-      </PerfectScrollbar>
-    </VCard>
+      </div>
+    </AppDialogLayout>
   </VDialog>
 </template>
 

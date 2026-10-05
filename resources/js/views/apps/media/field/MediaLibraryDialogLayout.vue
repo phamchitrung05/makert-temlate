@@ -21,6 +21,7 @@
   =====================================================================
 -->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 import { computed, reactive, shallowRef, useTemplateRef, watch } from 'vue'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import MediaAssetGrid from './MediaAssetGrid.vue'
@@ -319,34 +320,41 @@ const handleUploadInput = event => {
 </script>
 
 <template>
-  <VCard class="media-library-dialog-card d-flex flex-column">
-    <VCardItem class="px-6 py-4 border-b">
-      <template #prepend>
-        <VAvatar
-          color="primary"
-          variant="tonal"
-          rounded="lg"
-          size="42"
-          class="me-3"
-        >
-          <VIcon
-            icon="tabler-photo"
-            size="22"
-          />
-        </VAvatar>
-      </template>
-      <VCardTitle>Select Media</VCardTitle>
-      <VCardSubtitle>
-        {{ props.fieldTitle }}
-        <span
-          v-if="props.fieldName"
-          class="text-caption text-medium-emphasis"
-        >
-          · {{ props.fieldName }} ({{ props.fieldKind || props.effectiveKind || '—' }})
-        </span>
-        · Chọn media từ thư viện hoặc upload file mới.
-      </VCardSubtitle>
-    </VCardItem>
+  <AppDialogLayout
+    class="media-library-dialog-card"
+    :body-scroll="false"
+    :close-disabled="props.isMutating"
+    @close="emit('close')"
+  >
+    <template #header>
+      <VCardItem class="px-6 py-4">
+        <template #prepend>
+          <VAvatar
+            color="primary"
+            variant="tonal"
+            rounded="lg"
+            size="42"
+            class="me-3"
+          >
+            <VIcon
+              icon="tabler-photo"
+              size="22"
+            />
+          </VAvatar>
+        </template>
+        <VCardTitle>Select Media</VCardTitle>
+        <VCardSubtitle>
+          {{ props.fieldTitle }}
+          <span
+            v-if="props.fieldName"
+            class="text-caption text-medium-emphasis"
+          >
+            · {{ props.fieldName }} ({{ props.fieldKind || props.effectiveKind || '—' }})
+          </span>
+          · Chọn media từ thư viện hoặc upload file mới.
+        </VCardSubtitle>
+      </VCardItem>
+    </template>
 
     <VCardText class="pa-0 media-library-dialog-body">
       <VRow
@@ -882,32 +890,33 @@ const handleUploadInput = event => {
       </VRow>
     </VCardText>
 
-    <VDivider />
-
-    <VCardActions class="px-6 py-3 d-flex justify-space-between align-center flex-wrap gap-3">
-      <div class="text-body-2 text-medium-emphasis">
-        {{ props.selectedAssets.length }} file đã chọn
-      </div>
-      <div class="d-flex gap-2">
-        <VBtn
-          variant="tonal"
-          :disabled="props.isMutating"
-          @click="emit('close')"
-        >
-          Cancel
-        </VBtn>
-        <VBtn
-          v-if="props.multiple"
-          color="primary"
-          :disabled="!props.canAttach || props.isMutating"
-          prepend-icon="tabler-check"
-          @click="emit('confirm')"
-        >
-          Select Media
-        </VBtn>
-      </div>
-    </VCardActions>
-  </VCard>
+    <template #footer>
+      <VCardActions class="px-6 py-3 d-flex justify-space-between align-center flex-wrap gap-3">
+        <div class="text-body-2 text-medium-emphasis">
+          {{ props.selectedAssets.length }} file đã chọn
+        </div>
+        <div class="d-flex gap-2">
+          <VBtn
+            variant="tonal"
+            :disabled="props.isMutating"
+            @click="emit('close')"
+          >
+            Cancel
+          </VBtn>
+          <VBtn
+            v-if="props.multiple"
+            variant="flat"
+            color="primary"
+            :disabled="!props.canAttach || props.isMutating"
+            prepend-icon="tabler-check"
+            @click="emit('confirm')"
+          >
+            Select Media
+          </VBtn>
+        </div>
+      </VCardActions>
+    </template>
+  </AppDialogLayout>
 </template>
 
 <style scoped>
@@ -919,7 +928,7 @@ const handleUploadInput = event => {
 
 .media-library-dialog-body {
   flex: 1 1 0%;
-  block-size: 0;
+  block-size: 100%;
   min-block-size: 0;
   overflow: hidden !important;
 }
@@ -1060,9 +1069,9 @@ const handleUploadInput = event => {
   background-color: rgb(var(--v-theme-surface));
 }
 
-@media (max-width: 959.98px) {
+@media (max-width: 959.98px), (max-height: 599.98px) {
   .media-library-dialog-body {
-    block-size: 0;
+    block-size: 100%;
     overflow-y: auto !important;
   }
 

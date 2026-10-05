@@ -1,0 +1,519 @@
+{
+    "arm": "C",
+    "status": "ready",
+    "error_code": null,
+    "final": {
+        "title": "Dùng Vue với TypeScript: thiết lập dự án và tách riêng kiểm tra kiểu",
+        "content_html": "<p><strong>Dùng TypeScript với Vite không có nghĩa là mã đã được kiểm tra kiểu.</strong> Trong thiết lập mà tài liệu Vue mô tả, dev server và bundler của Vite chỉ chuyển đổi mã, không kiểm tra kiểu. Cách tách biệt này giúp dev server giữ tốc độ; IDE và công cụ riêng sẽ đảm nhiệm phần kiểm tra kiểu.</p>\n<p>TypeScript có thể phát hiện nhiều lỗi phổ biến bằng phân tích tĩnh khi build, giảm nguy cơ lỗi lúc chạy trên production và giúp bạn tự tin hơn khi refactor ứng dụng lớn. Thông tin kiểu cũng giúp IDE gợi ý hoàn thành mã. Vue được viết bằng TypeScript và hỗ trợ TypeScript chính thức; mọi gói Vue chính thức đều đi kèm khai báo kiểu để dùng ngay.</p>\n<h2>Khởi tạo dự án và kiểm tra kiểu</h2>\n<p><a href=\"https://github.com/vuejs/create-vue\"><code>create-vue</code></a>, công cụ khởi tạo dự án chính thức của Vue, có tùy chọn tạo dự án dùng <a href=\"https://vite.dev/\">Vite</a> với TypeScript được thiết lập sẵn.</p>\n<p>Trong quá trình phát triển, tài liệu khuyến nghị <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/typescript/overview.md#ide-support\">thiết lập IDE phù hợp</a> để nhận phản hồi tức thì về lỗi kiểu. Nếu dùng component một tệp của Vue (SFC), hãy dùng <a href=\"https://github.com/vuejs/language-tools/tree/master/packages/tsc\"><code>vue-tsc</code></a> để kiểm tra kiểu từ dòng lệnh và sinh khai báo kiểu.</p>\n<p><code>vue-tsc</code> là công cụ bọc <code>tsc</code>, giao diện dòng lệnh của TypeScript. Nó hoạt động phần lớn tương tự <code>tsc</code>, nhưng hỗ trợ thêm Vue SFC bên cạnh các tệp TypeScript. Bạn có thể:</p>\n<ul>\n<li>Chạy <code>vue-tsc</code> ở chế độ watch song song với dev server Vite.</li>\n<li>Dùng plugin như <a href=\"https://vite-plugin-checker.netlify.app/\">vite-plugin-checker</a> để chạy kiểm tra trong một worker thread riêng.</li>\n</ul>\n<h2>Thiết lập IDE cho Vue và TypeScript</h2>\n<p>Tài liệu khuyến nghị <a href=\"https://code.visualstudio.com/\">Visual Studio Code</a> vì khả năng hỗ trợ TypeScript sẵn có. Extension chính thức <a href=\"https://marketplace.visualstudio.com/items?itemName=Vue.volar\">Vue - Official</a>, trước đây có tên Volar, cung cấp hỗ trợ TypeScript bên trong Vue SFC cùng nhiều tính năng khác.</p>\n<p><strong>Nếu đã cài Vetur, hãy vô hiệu hóa extension này trong dự án Vue 3.</strong> Vue - Official thay thế <a href=\"https://marketplace.visualstudio.com/items?itemName=octref.vetur\">Vetur</a>, extension chính thức trước đây dành cho Vue 2.</p>\n<p><a href=\"https://www.jetbrains.com/webstorm/\">WebStorm</a> cũng hỗ trợ sẵn TypeScript và Vue. Các IDE JetBrains khác hỗ trợ trực tiếp hoặc thông qua <a href=\"https://plugins.jetbrains.com/plugin/9442-vue-js\">plugin miễn phí</a>. Theo bản tài liệu này, từ phiên bản <strong>2023.2</strong>, WebStorm và Vue Plugin tích hợp sẵn Vue Language Server.</p>\n<p>Tại <code>Settings &gt; Languages &amp; Frameworks &gt; TypeScript &gt; Vue</code>, bạn có thể đặt Vue service dùng tích hợp Volar cho mọi phiên bản TypeScript. Mặc định được nêu trong tài liệu là dùng Volar với TypeScript <strong>5.0 trở lên</strong>.</p>\n<h2>Các điều kiện cần chú ý trong tsconfig.json</h2>\n<p>Dự án tạo bằng <code>create-vue</code> có <code>tsconfig.json</code> được cấu hình sẵn, với cấu hình nền từ gói <a href=\"https://github.com/vuejs/tsconfig\"><code>@vue/tsconfig</code></a>. Dự án dùng <a href=\"https://www.typescriptlang.org/docs/handbook/project-references.html\">Project References</a> để bảo đảm kiểu phù hợp với từng môi trường chạy; chẳng hạn, mã ứng dụng và mã kiểm thử có các biến toàn cục khác nhau.</p>\n<p>Nếu tự cấu hình <code>tsconfig.json</code>, cần chú ý:</p>\n<ul>\n<li><strong>Giới hạn chuyển đổi từng tệp:</strong> đặt <a href=\"https://www.typescriptlang.org/tsconfig#isolatedModules\"><code>compilerOptions.isolatedModules</code></a> thành <code>true</code>. Trong thiết lập được nguồn mô tả, Vite dùng <a href=\"https://esbuild.github.io/\">esbuild</a> để chuyển đổi TypeScript và chịu các giới hạn của việc chuyển đổi từng tệp riêng lẻ. Tài liệu cũng mô tả <a href=\"https://www.typescriptlang.org/tsconfig#verbatimModuleSyntax\"><code>compilerOptions.verbatimModuleSyntax</code></a> là <a href=\"https://github.com/microsoft/TypeScript/issues/53601\">tùy chọn bao hàm các ràng buộc của <code>isolatedModules</code></a> và là một lựa chọn phù hợp khác; <code>@vue/tsconfig</code> sử dụng tùy chọn này.</li>\n<li><strong>Kiểu của <code>this</code> khi dùng Options API:</strong> đặt <a href=\"https://www.typescriptlang.org/tsconfig#strict\"><code>compilerOptions.strict</code></a> thành <code>true</code>, hoặc ít nhất bật <a href=\"https://www.typescriptlang.org/tsconfig#noImplicitThis\"><code>compilerOptions.noImplicitThis</code></a>, vốn thuộc nhóm tùy chọn <code>strict</code>. Nếu không, <code>this</code> trong các tùy chọn component sẽ được coi là <code>any</code>.</li>\n<li><strong>Alias đường dẫn:</strong> nếu đã cấu hình alias trong công cụ build, bạn cũng phải cấu hình cho TypeScript qua <a href=\"https://www.typescriptlang.org/tsconfig#paths\"><code>compilerOptions.paths</code></a>. Điều này áp dụng cả với alias <code>@/*</code> mặc định trong dự án <code>create-vue</code>.</li>\n<li><strong>Khi dùng TSX với Vue:</strong> đặt <a href=\"https://www.typescriptlang.org/tsconfig#jsx\"><code>compilerOptions.jsx</code></a> thành <code>\"preserve\"</code> và <a href=\"https://www.typescriptlang.org/tsconfig#jsxImportSource\"><code>compilerOptions.jsxImportSource</code></a> thành <code>\"vue\"</code>.</li>\n</ul>\n<p>Để tra cứu thêm, xem <a href=\"https://www.typescriptlang.org/docs/handbook/compiler-options.html\">tài liệu chính thức về các tùy chọn trình biên dịch TypeScript</a> và <a href=\"https://esbuild.github.io/content-types/#typescript-caveats\">những điểm cần lưu ý khi biên dịch TypeScript bằng esbuild</a>.</p>\n<h2>Vue CLI và hạn chế của việc kiểm tra kiểu bằng ts-loader</h2>\n<p>Vue CLI có hỗ trợ TypeScript nhưng không còn được tài liệu này khuyến nghị. <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/typescript/overview.md#note-on-vue-cli-and-ts-loader\">Ghi chú về Vue CLI và <code>ts-loader</code></a> giải thích hạn chế của việc đưa kiểm tra kiểu vào quy trình chuyển đổi mã.</p>\n<p>Trong thiết lập dựa trên webpack như Vue CLI, một cách phổ biến là dùng <code>ts-loader</code> để kiểm tra kiểu trong quy trình chuyển đổi module. Tuy nhiên, kiểm tra kiểu cần biết toàn bộ đồ thị module, nên bước chuyển đổi một module riêng lẻ không phải nơi phù hợp cho công việc này. Tài liệu nêu ba vấn đề:</p>\n<ul>\n<li><code>ts-loader</code> chỉ kiểm tra kiểu của mã sau chuyển đổi, nên lỗi có thể không khớp với kết quả từ IDE hoặc <code>vue-tsc</code>, vốn ánh xạ trực tiếp về mã nguồn.</li>\n<li>Kiểm tra kiểu có thể chậm. Khi chạy cùng thread hoặc process với chuyển đổi mã, nó ảnh hưởng đáng kể đến tốc độ build toàn ứng dụng.</li>\n<li>IDE đã kiểm tra kiểu trong một process riêng. Vì vậy, theo tài liệu, làm chậm trải nghiệm phát triển để kiểm tra ngay trong quy trình chuyển đổi không phải đánh đổi hợp lý.</li>\n</ul>\n<p>Nếu đang dùng <strong>Vue 3 + TypeScript qua Vue CLI</strong>, tài liệu khuyến nghị chuyển sang Vite. Tại thời điểm của bản tài liệu này, nhóm Vue cũng cho biết đang phát triển tùy chọn CLI chỉ chuyển đổi TypeScript, để người dùng chuyển phần kiểm tra kiểu sang <code>vue-tsc</code>. Đây là thông tin về công việc đang được thực hiện, không phải xác nhận tính năng đã phát hành.</p>\n<p>Nguồn: <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/typescript/overview.md\">Using Vue with TypeScript</a>, bản tài liệu tại commit được cung cấp. Các mô tả công cụ, mốc phiên bản và thiết lập trong bài được giữ theo bản nguồn, không phải xác nhận về trạng thái mới nhất của các công cụ.</p>"
+    },
+    "quality_checks": [
+        {
+            "check": "copy",
+            "status": "pass"
+        },
+        {
+            "check": "similarity",
+            "status": "pass",
+            "metric": 0.076,
+            "reason": "lexical_metric_not_style_score"
+        },
+        {
+            "check": "language",
+            "status": "pass",
+            "detected": "vi"
+        },
+        {
+            "check": "source_code_links",
+            "status": "pass"
+        },
+        {
+            "check": "important_numbers",
+            "status": "pass"
+        },
+        {
+            "check": "unanchored_numbers",
+            "status": "pass",
+            "count": 0,
+            "reason": "requires_editor_review"
+        },
+        {
+            "check": "semantic_grounding",
+            "status": "undetermined",
+            "reason": "source_anchors_are_not_external_fact_verification"
+        }
+    ],
+    "cost": null,
+    "calls": [
+        {
+            "task": "article.analysis-plan",
+            "output": {
+                "knowledge": {
+                    "facts": [
+                        {
+                            "id": "F01",
+                            "claim": "TypeScript có thể phát hiện nhiều lỗi phổ biến bằng phân tích tĩnh khi build, giảm nguy cơ lỗi lúc chạy trên môi trường production, hỗ trợ refactor ứng dụng lớn và cung cấp tự động hoàn thành dựa trên kiểu trong IDE.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "A type system like TypeScript can detect many common errors via static analysis at build time. This reduces the chance of runtime errors in production, and also allows us to more confidently refactor code in large-scale applications. TypeScript also improves developer ergonomics via type-based auto-completion in IDEs.",
+                            "important": true
+                        },
+                        {
+                            "id": "F02",
+                            "claim": "Vue được viết bằng TypeScript và hỗ trợ TypeScript chính thức; mọi gói Vue chính thức đều đi kèm khai báo kiểu để sử dụng ngay.",
+                            "source_block_ids": [
+                                "S004"
+                            ],
+                            "evidence": "Vue is written in TypeScript itself and provides first-class TypeScript support. All official Vue packages come with bundled type declarations that should work out-of-the-box.",
+                            "important": true
+                        },
+                        {
+                            "id": "F03",
+                            "claim": "Công cụ khởi tạo dự án chính thức create-vue có tùy chọn tạo dự án Vue dùng Vite và sẵn sàng cho TypeScript.",
+                            "source_block_ids": [
+                                "S006"
+                            ],
+                            "evidence": "create-vue, the official project scaffolding tool, offers the options to scaffold a Vite-powered, TypeScript-ready Vue project.",
+                            "important": true
+                        },
+                        {
+                            "id": "F04",
+                            "claim": "Trong thiết lập dựa trên Vite được nguồn mô tả, dev server và bundler chỉ chuyển đổi mã, không kiểm tra kiểu; việc tách này giúp dev server giữ tốc độ khi dùng TypeScript.",
+                            "source_block_ids": [
+                                "S008"
+                            ],
+                            "evidence": "With a Vite-based setup, the dev server and the bundler are transpilation-only and do not perform any type-checking. This ensures the Vite dev server stays blazing fast even when using TypeScript.",
+                            "important": true
+                        },
+                        {
+                            "id": "F05",
+                            "claim": "Nguồn khuyến nghị thiết lập IDE phù hợp để nhận phản hồi tức thì về lỗi kiểu trong quá trình phát triển.",
+                            "source_block_ids": [
+                                "S009"
+                            ],
+                            "evidence": "During development, we recommend relying on a good IDE setup for instant feedback on type errors.",
+                            "important": true
+                        },
+                        {
+                            "id": "F06",
+                            "claim": "Với Vue SFC, nguồn khuyến nghị vue-tsc để kiểm tra kiểu từ dòng lệnh và sinh khai báo kiểu. Công cụ này bọc tsc, hoạt động tương tự tsc nhưng hỗ trợ thêm Vue SFC bên cạnh tệp TypeScript.",
+                            "source_block_ids": [
+                                "S010"
+                            ],
+                            "evidence": "If using SFCs, use the vue-tsc utility for command line type checking and type declaration generation. vue-tsc is a wrapper around tsc, TypeScript's own command line interface. It works largely the same as tsc except that it supports Vue SFCs in addition to TypeScript files.",
+                            "important": true
+                        },
+                        {
+                            "id": "F07",
+                            "claim": "Có thể chạy vue-tsc ở chế độ watch song song với dev server Vite, hoặc dùng vite-plugin-checker để thực hiện kiểm tra trong một worker thread riêng.",
+                            "source_block_ids": [
+                                "S010"
+                            ],
+                            "evidence": "You can run vue-tsc in watch mode in parallel to the Vite dev server, or use a Vite plugin like vite-plugin-checker which runs the checks in a separate worker thread.",
+                            "important": true
+                        },
+                        {
+                            "id": "F08",
+                            "claim": "Vue CLI có hỗ trợ TypeScript nhưng không còn được nguồn khuyến nghị.",
+                            "source_block_ids": [
+                                "S011"
+                            ],
+                            "evidence": "Vue CLI also provides TypeScript support, but is no longer recommended.",
+                            "important": true
+                        },
+                        {
+                            "id": "F09",
+                            "claim": "Nguồn khuyến nghị Visual Studio Code vì hỗ trợ TypeScript sẵn có. Vue - Official, trước đây tên Volar, là extension VS Code chính thức cung cấp hỗ trợ TypeScript trong Vue SFC.",
+                            "source_block_ids": [
+                                "S013"
+                            ],
+                            "evidence": "Visual Studio Code (VS Code) is strongly recommended for its great out-of-the-box support for TypeScript.\n\n\nVue - Official (previously Volar) is the official VS Code extension that provides TypeScript support inside Vue SFCs, along with many other great features.",
+                            "important": true
+                        },
+                        {
+                            "id": "F10",
+                            "claim": "Vue - Official thay thế Vetur, extension chính thức trước đây cho Vue 2. Nếu đã cài Vetur thì cần vô hiệu hóa extension này trong dự án Vue 3.",
+                            "source_block_ids": [
+                                "S013"
+                            ],
+                            "evidence": "Vue - Official extension replaces Vetur, our previous official VS Code extension for Vue 2. If you have Vetur currently installed, make sure to disable it in Vue 3 projects.",
+                            "important": true
+                        },
+                        {
+                            "id": "F11",
+                            "claim": "WebStorm hỗ trợ sẵn TypeScript và Vue; các IDE JetBrains khác cũng hỗ trợ sẵn hoặc thông qua plugin miễn phí. Từ phiên bản 2023.2, WebStorm và Vue Plugin tích hợp Vue Language Server.",
+                            "source_block_ids": [
+                                "S014"
+                            ],
+                            "evidence": "WebStorm also provides out-of-the-box support for both TypeScript and Vue. Other JetBrains IDEs support them too, either out of the box or via a free plugin. As of version 2023.2, WebStorm and the Vue Plugin come with built-in support for the Vue Language Server.",
+                            "important": true
+                        },
+                        {
+                            "id": "F12",
+                            "claim": "Theo nguồn, trong Settings > Languages & Frameworks > TypeScript > Vue có thể đặt Vue service dùng tích hợp Volar cho mọi phiên bản TypeScript; mặc định Volar được dùng với TypeScript 5.0 trở lên.",
+                            "source_block_ids": [
+                                "S014"
+                            ],
+                            "evidence": "You can set the Vue service to use Volar integration on all TypeScript versions, under Settings > Languages & Frameworks > TypeScript > Vue. By default, Volar will be used for TypeScript versions 5.0 and higher.",
+                            "important": true
+                        },
+                        {
+                            "id": "F13",
+                            "claim": "Dự án tạo bằng create-vue có tsconfig.json được cấu hình sẵn, dùng cấu hình nền từ @vue/tsconfig và Project References để phân biệt kiểu giữa các môi trường, chẳng hạn mã ứng dụng và mã kiểm thử có biến toàn cục khác nhau.",
+                            "source_block_ids": [
+                                "S016"
+                            ],
+                            "evidence": "Projects scaffolded via create-vue include pre-configured tsconfig.json. The base config is abstracted in the @vue/tsconfig package. Inside the project, we use Project References to ensure correct types for code running in different environments (e.g. app code and test code should have different global variables).",
+                            "important": true
+                        },
+                        {
+                            "id": "F14",
+                            "claim": "Nguồn hướng dẫn đặt compilerOptions.isolatedModules thành true vì Vite dùng esbuild để chuyển đổi TypeScript và chịu giới hạn chuyển đổi từng tệp riêng lẻ.",
+                            "source_block_ids": [
+                                "S018"
+                            ],
+                            "evidence": "compilerOptions.isolatedModules is set to true because Vite uses esbuild for transpiling TypeScript and is subject to single-file transpile limitations.",
+                            "important": true
+                        },
+                        {
+                            "id": "F15",
+                            "claim": "Nguồn mô tả compilerOptions.verbatimModuleSyntax là superset của isolatedModules và là lựa chọn phù hợp khác; @vue/tsconfig sử dụng tùy chọn này.",
+                            "source_block_ids": [
+                                "S018"
+                            ],
+                            "evidence": "compilerOptions.verbatimModuleSyntax is a superset of isolatedModules and is a good choice, too - it's what @vue/tsconfig uses.",
+                            "important": true
+                        },
+                        {
+                            "id": "F16",
+                            "claim": "Khi dùng Options API, phải đặt compilerOptions.strict thành true hoặc ít nhất bật compilerOptions.noImplicitThis để kiểm tra kiểu của this trong các tùy chọn component; nếu không, this được coi là any.",
+                            "source_block_ids": [
+                                "S019"
+                            ],
+                            "evidence": "If you're using Options API, you need to set compilerOptions.strict to true (or at least enable compilerOptions.noImplicitThis, which is a part of the strict flag) to leverage type checking of this in component options. Otherwise this will be treated as any.",
+                            "important": true
+                        },
+                        {
+                            "id": "F17",
+                            "claim": "Alias phân giải đường dẫn đã cấu hình trong công cụ build, ví dụ @/* mặc định của dự án create-vue, cũng phải được cấu hình cho TypeScript qua compilerOptions.paths.",
+                            "source_block_ids": [
+                                "S020"
+                            ],
+                            "evidence": "If you have configured resolver aliases in your build tool, for example the @/* alias configured by default in a create-vue project, you need to also configure it for TypeScript via compilerOptions.paths.",
+                            "important": true
+                        },
+                        {
+                            "id": "F18",
+                            "claim": "Nếu dùng TSX với Vue, đặt compilerOptions.jsx thành \"preserve\" và compilerOptions.jsxImportSource thành \"vue\".",
+                            "source_block_ids": [
+                                "S021"
+                            ],
+                            "evidence": "If you intend to use TSX with Vue, set compilerOptions.jsx to \"preserve\", and set compilerOptions.jsxImportSource to \"vue\".",
+                            "important": true
+                        },
+                        {
+                            "id": "F19",
+                            "claim": "Nguồn dẫn tài liệu chính thức về tùy chọn trình biên dịch TypeScript để đọc thêm.",
+                            "source_block_ids": [
+                                "S023"
+                            ],
+                            "evidence": "Official TypeScript compiler options docs",
+                            "important": false
+                        },
+                        {
+                            "id": "F20",
+                            "claim": "Nguồn dẫn tài liệu về các điểm cần lưu ý khi biên dịch TypeScript bằng esbuild.",
+                            "source_block_ids": [
+                                "S024"
+                            ],
+                            "evidence": "esbuild TypeScript compilation caveats",
+                            "important": false
+                        },
+                        {
+                            "id": "F21",
+                            "claim": "Trong thiết lập webpack như Vue CLI, việc kiểm tra kiểu trong pipeline chuyển đổi module bằng ts-loader là cách phổ biến. Nguồn đánh giá cách này không phù hợp vì kiểm tra kiểu cần biết toàn bộ đồ thị module, không chỉ một bước chuyển đổi module riêng lẻ.",
+                            "source_block_ids": [
+                                "S026"
+                            ],
+                            "evidence": "In webpack-based setups such as Vue CLI, it is common to perform type checking as part of the module transform pipeline, for example with ts-loader. This, however, isn't a clean solution because the type system needs knowledge of the entire module graph to perform type checks. Individual module's transform step simply is not the right place for the task.",
+                            "important": true
+                        },
+                        {
+                            "id": "F22",
+                            "claim": "Theo nguồn, ts-loader chỉ kiểm tra kiểu của mã sau chuyển đổi, nên lỗi có thể không khớp với lỗi từ IDE hoặc vue-tsc vốn ánh xạ trực tiếp về mã nguồn.",
+                            "source_block_ids": [
+                                "S027"
+                            ],
+                            "evidence": "ts-loader can only type check post-transform code. This doesn't align with the errors we see in IDEs or from vue-tsc, which map directly back to the source code.",
+                            "important": true
+                        },
+                        {
+                            "id": "F23",
+                            "claim": "Kiểm tra kiểu có thể chậm; thực hiện cùng thread hoặc process với chuyển đổi mã sẽ ảnh hưởng đáng kể đến tốc độ build toàn ứng dụng.",
+                            "source_block_ids": [
+                                "S028"
+                            ],
+                            "evidence": "Type checking can be slow. When it is performed in the same thread / process with code transformations, it significantly affects the build speed of the entire application.",
+                            "important": true
+                        },
+                        {
+                            "id": "F24",
+                            "claim": "Nguồn cho rằng làm chậm trải nghiệm phát triển không phải đánh đổi hợp lý khi IDE đã chạy kiểm tra kiểu trong một process riêng.",
+                            "source_block_ids": [
+                                "S029"
+                            ],
+                            "evidence": "We already have type checking running right in our IDE in a separate process, so the cost of dev experience slow down simply isn't a good trade-off.",
+                            "important": true
+                        },
+                        {
+                            "id": "F25",
+                            "claim": "Nguồn khuyến nghị mạnh việc chuyển sang Vite nếu đang dùng Vue 3 + TypeScript qua Vue CLI.",
+                            "source_block_ids": [
+                                "S030"
+                            ],
+                            "evidence": "If you are currently using Vue 3 + TypeScript via Vue CLI, we strongly recommend migrating over to Vite.",
+                            "important": true
+                        },
+                        {
+                            "id": "F26",
+                            "claim": "Tại thời điểm của bản tài liệu được cung cấp, nhóm Vue cho biết đang phát triển tùy chọn CLI chỉ chuyển đổi TypeScript để người dùng chuyển sang vue-tsc cho kiểm tra kiểu; đây là thông tin đang phát triển trong nguồn, không phải xác nhận tính năng đã phát hành.",
+                            "source_block_ids": [
+                                "S030"
+                            ],
+                            "evidence": "We are also working on CLI options to enable transpile-only TS support, so that you can switch to vue-tsc for type checking.",
+                            "important": true
+                        }
+                    ],
+                    "terms": [
+                        "TypeScript",
+                        "Vue 3",
+                        "Vite",
+                        "create-vue",
+                        "SFC — Single-File Component, component một tệp",
+                        "transpilation-only — chỉ chuyển đổi mã, không kiểm tra kiểu",
+                        "type checking — kiểm tra kiểu",
+                        "type declarations — khai báo kiểu",
+                        "vue-tsc",
+                        "tsc",
+                        "watch mode",
+                        "vite-plugin-checker",
+                        "worker thread",
+                        "Visual Studio Code",
+                        "Vue - Official",
+                        "Volar",
+                        "Vetur",
+                        "WebStorm",
+                        "Vue Language Server",
+                        "tsconfig.json",
+                        "@vue/tsconfig",
+                        "Project References",
+                        "esbuild",
+                        "compilerOptions.isolatedModules",
+                        "compilerOptions.verbatimModuleSyntax",
+                        "Options API",
+                        "compilerOptions.strict",
+                        "compilerOptions.noImplicitThis",
+                        "this",
+                        "any",
+                        "@/*",
+                        "compilerOptions.paths",
+                        "TSX",
+                        "compilerOptions.jsx",
+                        "compilerOptions.jsxImportSource",
+                        "Vue CLI",
+                        "webpack",
+                        "ts-loader",
+                        "đồ thị module"
+                    ],
+                    "uncertainties": [
+                        "Nguồn là bản tài liệu gắn với một commit cụ thể; ngày lấy dữ liệu không chứng minh mọi mô tả về công cụ còn là trạng thái mới nhất.",
+                        "Chưa có bằng chứng trong nguồn về việc tùy chọn Vue CLI chỉ chuyển đổi TypeScript đã được phát hành. Cần giữ cách diễn đạt đây là công việc đang được thực hiện tại thời điểm tài liệu.",
+                        "Các mốc WebStorm 2023.2 và TypeScript 5.0, đường dẫn thiết lập IDE, việc Vite dùng esbuild và quan hệ giữa verbatimModuleSyntax với isolatedModules phải được trình bày theo bản nguồn, không tự cập nhật hoặc mở rộng sang mọi phiên bản hiện tại.",
+                        "Nguồn không cung cấp benchmark, lệnh cài đặt, cấu hình tsconfig.json hoàn chỉnh hoặc quy trình CI; không tự thêm các nội dung này như thể có trong tài liệu.",
+                        "Khả năng phát hiện lỗi bằng TypeScript không đồng nghĩa loại bỏ mọi lỗi runtime; Vite chuyển đổi hoặc build mã không đồng nghĩa đã kiểm tra kiểu."
+                    ]
+                },
+                "writing_plan": {
+                    "article_type": "Bài giải thích kỹ thuật và hướng dẫn thiết lập theo tài liệu Vue",
+                    "audience": "Người phát triển website, đặc biệt người mới thiết lập Vue với TypeScript hoặc đang cân nhắc chuyển từ Vue CLI sang Vite.",
+                    "angle": "Mở bằng điểm dễ hiểu nhầm: dự án Vue dùng TypeScript với Vite vẫn cần kiểm tra kiểu riêng. Từ đó giải thích vai trò của IDE, vue-tsc, các điều kiện trong tsconfig.json và lý do nguồn khuyến nghị tách kiểm tra kiểu khỏi chuyển đổi mã.",
+                    "outline": [
+                        "Tiêu đề dự kiến tập trung vào thiết lập Vue với TypeScript và phân biệt chuyển đổi mã với kiểm tra kiểu; không biến bài thành tin phát hành hoặc tuyên bố về phiên bản mới nhất.",
+                        "Mở bài ngắn: Vite chỉ chuyển đổi mã trong thiết lập mà nguồn mô tả, không tự kiểm tra kiểu. Nêu lợi ích thực tế của TypeScript và việc các gói Vue chính thức có sẵn khai báo kiểu, tránh lời mở đầu chung chung. Dựa trên F01, F02, F04.",
+                        "Mục khởi tạo và kiểm tra kiểu: giới thiệu create-vue cùng Vite; giải thích IDE cung cấp phản hồi khi viết mã, còn vue-tsc kiểm tra Vue SFC và sinh khai báo kiểu. Nêu hai lựa chọn chạy vue-tsc ở watch mode song song hoặc dùng vite-plugin-checker với worker riêng. Giữ liên kết nội dung tới phần IDE của nguồn. Dựa trên F03, F05–F07.",
+                        "Mục IDE: trình bày VS Code với Vue - Official, tên cũ Volar, và điều kiện vô hiệu hóa Vetur trong dự án Vue 3. Tiếp theo là WebStorm và các IDE JetBrains; giữ mốc 2023.2, mặc định TypeScript 5.0 trở lên và đường dẫn Settings > Languages & Frameworks > TypeScript > Vue. Dựa trên F09–F12.",
+                        "Mục tsconfig.json: giải thích cấu hình sẵn từ create-vue, @vue/tsconfig và Project References. Dùng danh sách ngắn cho từng điều kiện cấu hình thủ công: isolatedModules = true và giới hạn chuyển đổi từng tệp bằng esbuild; verbatimModuleSyntax theo mô tả của nguồn; strict hoặc noImplicitThis cho Options API; paths cho alias @/*; jsx = \"preserve\" và jsxImportSource = \"vue\" khi dùng TSX. Giữ nguyên tên tùy chọn và giá trị, không tự tạo tệp cấu hình hoàn chỉnh. Dựa trên F13–F18.",
+                        "Mục Vue CLI và ts-loader: nêu Vue CLI vẫn hỗ trợ TypeScript nhưng không còn được khuyến nghị; giữ liên kết tới ghi chú tương ứng trong nguồn. Giải thích ngắn ba vấn đề: kiểm tra kiểu cần toàn bộ đồ thị module, kiểm tra mã sau chuyển đổi khiến lỗi không khớp trực tiếp với mã nguồn, và việc dùng chung thread/process có thể làm chậm build dù IDE đã kiểm tra riêng. Kết bằng khuyến nghị chuyển Vue 3 + TypeScript sang Vite. Thông tin tùy chọn CLI đang phát triển phải quy về thời điểm bản tài liệu, không viết thành tính năng đã có. Dựa trên F08, F21–F26.",
+                        "Đặt hai liên kết đọc thêm về tùy chọn trình biên dịch TypeScript và lưu ý biên dịch TypeScript của esbuild ở cuối phần cấu hình hoặc cuối bài, không kéo dài thành mục giải thích mới. Dựa trên F19, F20.",
+                        "Khi viết bài, giữ mọi URL trong link_requirements.required_hrefs dưới dạng liên kết thực với href chính xác, kể cả hai liên kết tới mục trong bản nguồn; giữ nguyên commit, query và fragment. Chỉ dùng allowed_hrefs, và dẫn nguồn bằng source_url được cung cấp. Không thay các liên kết này bằng đường dẫn dựng lại hoặc chỉ ghi URL như văn bản.",
+                        "Độ dài theo lượng thông tin nguồn: mở bài ngắn và bốn mục chính, ưu tiên đoạn ngắn và danh sách cấu hình. Không dịch từng câu, lặp lợi ích, thêm trải nghiệm, API, benchmark hay hướng dẫn ngoài nguồn. Bản viết sau sẽ có title và content bằng tiếng Việt; bước này chỉ cung cấp kiến thức và kế hoạch."
+                    ],
+                    "coverage_fact_ids": [
+                        "F01",
+                        "F02",
+                        "F03",
+                        "F04",
+                        "F05",
+                        "F06",
+                        "F07",
+                        "F08",
+                        "F09",
+                        "F10",
+                        "F11",
+                        "F12",
+                        "F13",
+                        "F14",
+                        "F15",
+                        "F16",
+                        "F17",
+                        "F18",
+                        "F19",
+                        "F20",
+                        "F21",
+                        "F22",
+                        "F23",
+                        "F24",
+                        "F25",
+                        "F26"
+                    ]
+                }
+            },
+            "diagnostics": {
+                "response_id": "resp_0e54c11c493d13a0016ac3485d942887d0928a52e59bc8664d",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.analysis-plan.v1",
+                "usage": {
+                    "prompt_tokens": 9102,
+                    "completion_tokens": 4657,
+                    "total_tokens": 13759,
+                    "reasoning_tokens": 62
+                }
+            },
+            "latency_ms": 144233
+        },
+        {
+            "task": "article.writer",
+            "output": {
+                "draft": {
+                    "title": "Dùng Vue với TypeScript: thiết lập dự án và kiểm tra kiểu đúng cách",
+                    "content_html": "<p><strong>Dùng TypeScript với Vite không có nghĩa là mã đã được kiểm tra kiểu.</strong> Trong thiết lập được tài liệu Vue mô tả, dev server và bundler của Vite chỉ chuyển đổi mã, không thực hiện kiểm tra kiểu. Việc tách hai công việc này giúp dev server giữ tốc độ khi phát triển bằng TypeScript; phần kiểm tra kiểu cần được đảm nhiệm bởi IDE và công cụ riêng.</p>\n<p>TypeScript có thể phát hiện nhiều lỗi phổ biến qua phân tích tĩnh, giảm nguy cơ lỗi lúc chạy trên production và giúp refactor ứng dụng lớn tự tin hơn. IDE cũng có thể dùng thông tin kiểu để gợi ý hoàn thành mã. Vue được viết bằng TypeScript, hỗ trợ ngôn ngữ này chính thức, và mọi gói Vue chính thức đều đi kèm khai báo kiểu để sử dụng ngay.</p>\n<h2>Khởi tạo dự án và tách riêng kiểm tra kiểu</h2>\n<p><a href=\"https://github.com/vuejs/create-vue\"><code>create-vue</code></a>, công cụ khởi tạo dự án chính thức của Vue, có tùy chọn tạo dự án dùng <a href=\"https://vite.dev/\">Vite</a> và sẵn sàng cho TypeScript.</p>\n<p>Khi viết mã, tài liệu khuyến nghị một <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/typescript/overview.md#ide-support\">thiết lập IDE phù hợp</a> để nhận phản hồi tức thì về lỗi kiểu. Nếu dự án dùng component một tệp của Vue (SFC), hãy dùng <a href=\"https://github.com/vuejs/language-tools/tree/master/packages/tsc\"><code>vue-tsc</code></a> để kiểm tra kiểu từ dòng lệnh và sinh khai báo kiểu.</p>\n<p><code>vue-tsc</code> bọc <code>tsc</code>, công cụ dòng lệnh của TypeScript. Cách hoạt động phần lớn tương tự <code>tsc</code>, nhưng hỗ trợ thêm Vue SFC bên cạnh các tệp TypeScript. Có hai cách tổ chức việc kiểm tra trong quá trình phát triển:</p>\n<ul>\n<li>Chạy <code>vue-tsc</code> ở chế độ watch song song với dev server Vite.</li>\n<li>Dùng plugin như <a href=\"https://vite-plugin-checker.netlify.app/\">vite-plugin-checker</a> để thực hiện kiểm tra trong một worker thread riêng.</li>\n</ul>\n<h2>Thiết lập IDE cho Vue và TypeScript</h2>\n<p>Tài liệu khuyến nghị <a href=\"https://code.visualstudio.com/\">Visual Studio Code</a> vì khả năng hỗ trợ TypeScript sẵn có. Với Vue SFC, extension chính thức là <a href=\"https://marketplace.visualstudio.com/items?itemName=Vue.volar\">Vue - Official</a>, trước đây có tên Volar, cung cấp hỗ trợ TypeScript bên trong component cùng nhiều tính năng khác.</p>\n<p><strong>Nếu đã cài Vetur, hãy vô hiệu hóa nó trong dự án Vue 3.</strong> Vue - Official thay thế <a href=\"https://marketplace.visualstudio.com/items?itemName=octref.vetur\">Vetur</a>, extension chính thức trước đây dành cho Vue 2.</p>\n<p><a href=\"https://www.jetbrains.com/webstorm/\">WebStorm</a> cũng hỗ trợ sẵn cả TypeScript và Vue. Các IDE JetBrains khác hỗ trợ hai công nghệ này trực tiếp hoặc thông qua <a href=\"https://plugins.jetbrains.com/plugin/9442-vue-js\">plugin miễn phí</a>. Theo bản tài liệu được cung cấp, từ phiên bản <strong>2023.2</strong>, WebStorm và Vue Plugin tích hợp sẵn Vue Language Server.</p>\n<p>Trong <code>Settings &gt; Languages &amp; Frameworks &gt; TypeScript &gt; Vue</code>, có thể đặt Vue service sử dụng tích hợp Volar cho mọi phiên bản TypeScript. Mặc định được nêu trong nguồn là dùng Volar với TypeScript <strong>5.0 trở lên</strong>.</p>\n<h2>Những điều cần chú ý trong tsconfig.json</h2>\n<p>Dự án tạo bằng <code>create-vue</code> có sẵn <code>tsconfig.json</code> đã được cấu hình. Cấu hình nền nằm trong gói <a href=\"https://github.com/vuejs/tsconfig\"><code>@vue/tsconfig</code></a>; dự án dùng <a href=\"https://www.typescriptlang.org/docs/handbook/project-references.html\">Project References</a> để bảo đảm kiểu phù hợp với từng môi trường chạy. Chẳng hạn, mã ứng dụng và mã kiểm thử cần có các biến toàn cục khác nhau.</p>\n<p>Nếu tự cấu hình <code>tsconfig.json</code>, cần chú ý các điều kiện sau:</p>\n<ul>\n<li><strong>Giới hạn chuyển đổi từng tệp:</strong> đặt <a href=\"https://www.typescriptlang.org/tsconfig#isolatedModules\"><code>compilerOptions.isolatedModules</code></a> thành <code>true</code>. Lý do trong nguồn là Vite dùng <a href=\"https://esbuild.github.io/\">esbuild</a> để chuyển đổi TypeScript và chịu các giới hạn của việc chuyển đổi từng tệp riêng lẻ. Nguồn cũng mô tả <a href=\"https://www.typescriptlang.org/tsconfig#verbatimModuleSyntax\"><code>compilerOptions.verbatimModuleSyntax</code></a> là <a href=\"https://github.com/microsoft/TypeScript/issues/53601\">tùy chọn bao hàm các ràng buộc của <code>isolatedModules</code></a> và là một lựa chọn phù hợp khác; đây là tùy chọn mà <code>@vue/tsconfig</code> sử dụng.</li>\n<li><strong>Kiểu của <code>this</code> khi dùng Options API:</strong> đặt <a href=\"https://www.typescriptlang.org/tsconfig#strict\"><code>compilerOptions.strict</code></a> thành <code>true</code>, hoặc ít nhất bật <a href=\"https://www.typescriptlang.org/tsconfig#noImplicitThis\"><code>compilerOptions.noImplicitThis</code></a>, vốn thuộc nhóm tùy chọn <code>strict</code>. Nếu không, <code>this</code> trong các tùy chọn component sẽ được coi là <code>any</code>.</li>\n<li><strong>Alias đường dẫn:</strong> nếu đã cấu hình alias trong công cụ build, bạn cũng phải cấu hình cho TypeScript qua <a href=\"https://www.typescriptlang.org/tsconfig#paths\"><code>compilerOptions.paths</code></a>. Điều này áp dụng cả với alias <code>@/*</code> được cấu hình mặc định trong dự án <code>create-vue</code>.</li>\n<li><strong>Nếu dùng TSX với Vue:</strong> đặt <a href=\"https://www.typescriptlang.org/tsconfig#jsx\"><code>compilerOptions.jsx</code></a> thành <code>\"preserve\"</code> và <a href=\"https://www.typescriptlang.org/tsconfig#jsxImportSource\"><code>compilerOptions.jsxImportSource</code></a> thành <code>\"vue\"</code>.</li>\n</ul>\n<p>Để tra cứu thêm, xem <a href=\"https://www.typescriptlang.org/docs/handbook/compiler-options.html\">tài liệu chính thức về các tùy chọn trình biên dịch TypeScript</a> và <a href=\"https://esbuild.github.io/content-types/#typescript-caveats\">những điểm cần lưu ý khi biên dịch TypeScript bằng esbuild</a>.</p>\n<h2>Vì sao nguồn không còn khuyến nghị Vue CLI và ts-loader?</h2>\n<p>Vue CLI có hỗ trợ TypeScript, nhưng không còn được tài liệu này khuyến nghị. <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/typescript/overview.md#note-on-vue-cli-and-ts-loader\">Ghi chú về Vue CLI và <code>ts-loader</code></a> giải thích vấn đề nằm ở cách kết hợp kiểm tra kiểu với chuyển đổi mã.</p>\n<p>Trong thiết lập dựa trên webpack như Vue CLI, một cách phổ biến là dùng <code>ts-loader</code> để kiểm tra kiểu ngay trong quy trình chuyển đổi module. Tuy nhiên, kiểm tra kiểu cần biết toàn bộ đồ thị module; bước chuyển đổi một module riêng lẻ không phải vị trí phù hợp cho công việc đó. Nguồn nêu ba hạn chế:</p>\n<ul>\n<li><code>ts-loader</code> chỉ kiểm tra kiểu của mã sau chuyển đổi. Vì vậy, lỗi không khớp với kết quả từ IDE hoặc <code>vue-tsc</code>, vốn ánh xạ trực tiếp về mã nguồn.</li>\n<li>Kiểm tra kiểu có thể chậm. Khi chạy cùng thread hoặc process với chuyển đổi mã, nó ảnh hưởng đáng kể đến tốc độ build toàn ứng dụng.</li>\n<li>IDE đã thực hiện kiểm tra kiểu trong một process riêng, nên theo tài liệu, làm chậm trải nghiệm phát triển để kiểm tra ngay trong quy trình chuyển đổi không phải đánh đổi hợp lý.</li>\n</ul>\n<p>Với dự án đang dùng <strong>Vue 3 + TypeScript qua Vue CLI</strong>, nguồn khuyến nghị mạnh việc chuyển sang Vite. Tại thời điểm của bản tài liệu này, nhóm Vue cũng cho biết đang phát triển tùy chọn CLI chỉ chuyển đổi TypeScript, để người dùng có thể chuyển phần kiểm tra kiểu sang <code>vue-tsc</code>. Đây là thông tin về công việc đang được thực hiện, không phải xác nhận tính năng đã phát hành.</p>\n<p><small>Nguồn: <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/typescript/overview.md\">Using Vue with TypeScript</a>, bản tài liệu tại commit được cung cấp. Các mô tả công cụ, mốc phiên bản và thiết lập ở trên được giữ theo bản nguồn, không phải tuyên bố về trạng thái mới nhất của mọi công cụ.</small></p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04",
+                    "F05",
+                    "F06",
+                    "F07",
+                    "F08",
+                    "F09",
+                    "F10",
+                    "F11",
+                    "F12",
+                    "F13",
+                    "F14",
+                    "F15",
+                    "F16",
+                    "F17",
+                    "F18",
+                    "F19",
+                    "F20",
+                    "F21",
+                    "F22",
+                    "F23",
+                    "F24",
+                    "F25",
+                    "F26"
+                ],
+                "used_asset_ids": []
+            },
+            "diagnostics": {
+                "response_id": "resp_053d08349805477f016ac348eddbf087d19c6008a7ee4835c1",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.writer.v1",
+                "usage": {
+                    "prompt_tokens": 12259,
+                    "completion_tokens": 2510,
+                    "total_tokens": 14769
+                }
+            },
+            "latency_ms": 78525
+        },
+        {
+            "task": "article.editor",
+            "output": {
+                "final": {
+                    "title": "Dùng Vue với TypeScript: thiết lập dự án và tách riêng kiểm tra kiểu",
+                    "content_html": "<p><strong>Dùng TypeScript với Vite không có nghĩa là mã đã được kiểm tra kiểu.</strong> Trong thiết lập mà tài liệu Vue mô tả, dev server và bundler của Vite chỉ chuyển đổi mã, không kiểm tra kiểu. Cách tách biệt này giúp dev server giữ tốc độ; IDE và công cụ riêng sẽ đảm nhiệm phần kiểm tra kiểu.</p>\n<p>TypeScript có thể phát hiện nhiều lỗi phổ biến bằng phân tích tĩnh khi build, giảm nguy cơ lỗi lúc chạy trên production và giúp bạn tự tin hơn khi refactor ứng dụng lớn. Thông tin kiểu cũng giúp IDE gợi ý hoàn thành mã. Vue được viết bằng TypeScript và hỗ trợ TypeScript chính thức; mọi gói Vue chính thức đều đi kèm khai báo kiểu để dùng ngay.</p>\n<h2>Khởi tạo dự án và kiểm tra kiểu</h2>\n<p><a href=\"https://github.com/vuejs/create-vue\"><code>create-vue</code></a>, công cụ khởi tạo dự án chính thức của Vue, có tùy chọn tạo dự án dùng <a href=\"https://vite.dev/\">Vite</a> với TypeScript được thiết lập sẵn.</p>\n<p>Trong quá trình phát triển, tài liệu khuyến nghị <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/typescript/overview.md#ide-support\">thiết lập IDE phù hợp</a> để nhận phản hồi tức thì về lỗi kiểu. Nếu dùng component một tệp của Vue (SFC), hãy dùng <a href=\"https://github.com/vuejs/language-tools/tree/master/packages/tsc\"><code>vue-tsc</code></a> để kiểm tra kiểu từ dòng lệnh và sinh khai báo kiểu.</p>\n<p><code>vue-tsc</code> là công cụ bọc <code>tsc</code>, giao diện dòng lệnh của TypeScript. Nó hoạt động phần lớn tương tự <code>tsc</code>, nhưng hỗ trợ thêm Vue SFC bên cạnh các tệp TypeScript. Bạn có thể:</p>\n<ul>\n<li>Chạy <code>vue-tsc</code> ở chế độ watch song song với dev server Vite.</li>\n<li>Dùng plugin như <a href=\"https://vite-plugin-checker.netlify.app/\">vite-plugin-checker</a> để chạy kiểm tra trong một worker thread riêng.</li>\n</ul>\n<h2>Thiết lập IDE cho Vue và TypeScript</h2>\n<p>Tài liệu khuyến nghị <a href=\"https://code.visualstudio.com/\">Visual Studio Code</a> vì khả năng hỗ trợ TypeScript sẵn có. Extension chính thức <a href=\"https://marketplace.visualstudio.com/items?itemName=Vue.volar\">Vue - Official</a>, trước đây có tên Volar, cung cấp hỗ trợ TypeScript bên trong Vue SFC cùng nhiều tính năng khác.</p>\n<p><strong>Nếu đã cài Vetur, hãy vô hiệu hóa extension này trong dự án Vue 3.</strong> Vue - Official thay thế <a href=\"https://marketplace.visualstudio.com/items?itemName=octref.vetur\">Vetur</a>, extension chính thức trước đây dành cho Vue 2.</p>\n<p><a href=\"https://www.jetbrains.com/webstorm/\">WebStorm</a> cũng hỗ trợ sẵn TypeScript và Vue. Các IDE JetBrains khác hỗ trợ trực tiếp hoặc thông qua <a href=\"https://plugins.jetbrains.com/plugin/9442-vue-js\">plugin miễn phí</a>. Theo bản tài liệu này, từ phiên bản <strong>2023.2</strong>, WebStorm và Vue Plugin tích hợp sẵn Vue Language Server.</p>\n<p>Tại <code>Settings &gt; Languages &amp; Frameworks &gt; TypeScript &gt; Vue</code>, bạn có thể đặt Vue service dùng tích hợp Volar cho mọi phiên bản TypeScript. Mặc định được nêu trong tài liệu là dùng Volar với TypeScript <strong>5.0 trở lên</strong>.</p>\n<h2>Các điều kiện cần chú ý trong tsconfig.json</h2>\n<p>Dự án tạo bằng <code>create-vue</code> có <code>tsconfig.json</code> được cấu hình sẵn, với cấu hình nền từ gói <a href=\"https://github.com/vuejs/tsconfig\"><code>@vue/tsconfig</code></a>. Dự án dùng <a href=\"https://www.typescriptlang.org/docs/handbook/project-references.html\">Project References</a> để bảo đảm kiểu phù hợp với từng môi trường chạy; chẳng hạn, mã ứng dụng và mã kiểm thử có các biến toàn cục khác nhau.</p>\n<p>Nếu tự cấu hình <code>tsconfig.json</code>, cần chú ý:</p>\n<ul>\n<li><strong>Giới hạn chuyển đổi từng tệp:</strong> đặt <a href=\"https://www.typescriptlang.org/tsconfig#isolatedModules\"><code>compilerOptions.isolatedModules</code></a> thành <code>true</code>. Trong thiết lập được nguồn mô tả, Vite dùng <a href=\"https://esbuild.github.io/\">esbuild</a> để chuyển đổi TypeScript và chịu các giới hạn của việc chuyển đổi từng tệp riêng lẻ. Tài liệu cũng mô tả <a href=\"https://www.typescriptlang.org/tsconfig#verbatimModuleSyntax\"><code>compilerOptions.verbatimModuleSyntax</code></a> là <a href=\"https://github.com/microsoft/TypeScript/issues/53601\">tùy chọn bao hàm các ràng buộc của <code>isolatedModules</code></a> và là một lựa chọn phù hợp khác; <code>@vue/tsconfig</code> sử dụng tùy chọn này.</li>\n<li><strong>Kiểu của <code>this</code> khi dùng Options API:</strong> đặt <a href=\"https://www.typescriptlang.org/tsconfig#strict\"><code>compilerOptions.strict</code></a> thành <code>true</code>, hoặc ít nhất bật <a href=\"https://www.typescriptlang.org/tsconfig#noImplicitThis\"><code>compilerOptions.noImplicitThis</code></a>, vốn thuộc nhóm tùy chọn <code>strict</code>. Nếu không, <code>this</code> trong các tùy chọn component sẽ được coi là <code>any</code>.</li>\n<li><strong>Alias đường dẫn:</strong> nếu đã cấu hình alias trong công cụ build, bạn cũng phải cấu hình cho TypeScript qua <a href=\"https://www.typescriptlang.org/tsconfig#paths\"><code>compilerOptions.paths</code></a>. Điều này áp dụng cả với alias <code>@/*</code> mặc định trong dự án <code>create-vue</code>.</li>\n<li><strong>Khi dùng TSX với Vue:</strong> đặt <a href=\"https://www.typescriptlang.org/tsconfig#jsx\"><code>compilerOptions.jsx</code></a> thành <code>\"preserve\"</code> và <a href=\"https://www.typescriptlang.org/tsconfig#jsxImportSource\"><code>compilerOptions.jsxImportSource</code></a> thành <code>\"vue\"</code>.</li>\n</ul>\n<p>Để tra cứu thêm, xem <a href=\"https://www.typescriptlang.org/docs/handbook/compiler-options.html\">tài liệu chính thức về các tùy chọn trình biên dịch TypeScript</a> và <a href=\"https://esbuild.github.io/content-types/#typescript-caveats\">những điểm cần lưu ý khi biên dịch TypeScript bằng esbuild</a>.</p>\n<h2>Vue CLI và hạn chế của việc kiểm tra kiểu bằng ts-loader</h2>\n<p>Vue CLI có hỗ trợ TypeScript nhưng không còn được tài liệu này khuyến nghị. <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/typescript/overview.md#note-on-vue-cli-and-ts-loader\">Ghi chú về Vue CLI và <code>ts-loader</code></a> giải thích hạn chế của việc đưa kiểm tra kiểu vào quy trình chuyển đổi mã.</p>\n<p>Trong thiết lập dựa trên webpack như Vue CLI, một cách phổ biến là dùng <code>ts-loader</code> để kiểm tra kiểu trong quy trình chuyển đổi module. Tuy nhiên, kiểm tra kiểu cần biết toàn bộ đồ thị module, nên bước chuyển đổi một module riêng lẻ không phải nơi phù hợp cho công việc này. Tài liệu nêu ba vấn đề:</p>\n<ul>\n<li><code>ts-loader</code> chỉ kiểm tra kiểu của mã sau chuyển đổi, nên lỗi có thể không khớp với kết quả từ IDE hoặc <code>vue-tsc</code>, vốn ánh xạ trực tiếp về mã nguồn.</li>\n<li>Kiểm tra kiểu có thể chậm. Khi chạy cùng thread hoặc process với chuyển đổi mã, nó ảnh hưởng đáng kể đến tốc độ build toàn ứng dụng.</li>\n<li>IDE đã kiểm tra kiểu trong một process riêng. Vì vậy, theo tài liệu, làm chậm trải nghiệm phát triển để kiểm tra ngay trong quy trình chuyển đổi không phải đánh đổi hợp lý.</li>\n</ul>\n<p>Nếu đang dùng <strong>Vue 3 + TypeScript qua Vue CLI</strong>, tài liệu khuyến nghị chuyển sang Vite. Tại thời điểm của bản tài liệu này, nhóm Vue cũng cho biết đang phát triển tùy chọn CLI chỉ chuyển đổi TypeScript, để người dùng chuyển phần kiểm tra kiểu sang <code>vue-tsc</code>. Đây là thông tin về công việc đang được thực hiện, không phải xác nhận tính năng đã phát hành.</p>\n<p><small>Nguồn: <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/typescript/overview.md\">Using Vue with TypeScript</a>, bản tài liệu tại commit được cung cấp. Các mô tả công cụ, mốc phiên bản và thiết lập trong bài được giữ theo bản nguồn, không phải xác nhận về trạng thái mới nhất của các công cụ.</small></p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04",
+                    "F05",
+                    "F06",
+                    "F07",
+                    "F08",
+                    "F09",
+                    "F10",
+                    "F11",
+                    "F12",
+                    "F13",
+                    "F14",
+                    "F15",
+                    "F16",
+                    "F17",
+                    "F18",
+                    "F19",
+                    "F20",
+                    "F21",
+                    "F22",
+                    "F23",
+                    "F24",
+                    "F25",
+                    "F26"
+                ],
+                "issues": []
+            },
+            "diagnostics": {
+                "response_id": "resp_001caf4f8122ce25016ac3493cbeac87d293283159d34af402",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.editor.v1",
+                "usage": {
+                    "prompt_tokens": 14642,
+                    "completion_tokens": 2487,
+                    "total_tokens": 17129,
+                    "reasoning_tokens": 32
+                }
+            },
+            "latency_ms": 78237
+        }
+    ],
+    "latency_ms": 301015,
+    "input_sha256": "d2cf45cace68b2aba88410fc6bc2b899c66d75e501a304becf0f88da57989d3c",
+    "comparison_input_sha256": "62974da0c98e3bfedbd2b29301cbea50ab0f5daac9668715e93e4f1ff0299240",
+    "writing_profile_sha256": "1267aa8b907b63f12cd8c953c4a6664dbea3f3e7acabb12a28e64293053a7c96",
+    "brief_sha256": "a7f052446c270a2c36979d5688c0edaf10a0f5a164ae6ab255b69d622b3c56c6",
+    "image_evaluation": {
+        "mode": "source_metadata_only",
+        "source_images": 0,
+        "approved_asset_regenerate": "not_evaluated",
+        "pixel_understanding": "not_evaluated"
+    },
+    "source_sha256": "2ac48d88924202f68a4f1a37a0377b8f0637825370cc7f8208fd75fec26ed16d",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Dùng Vue với TypeScript: thiết lập dự án và tách riêng kiểm tra kiểu",
+        "content_html": "<p><strong>Dùng TypeScript với Vite không có nghĩa là mã đã được kiểm tra kiểu.</strong> Trong thiết lập mà tài liệu Vue mô tả, dev server và bundler của Vite chỉ chuyển đổi mã, không kiểm tra kiểu. Cách tách biệt này giúp dev server giữ tốc độ; IDE và công cụ riêng sẽ đảm nhiệm phần kiểm tra kiểu.</p>\n<p>TypeScript có thể phát hiện nhiều lỗi phổ biến bằng phân tích tĩnh khi build, giảm nguy cơ lỗi lúc chạy trên production và giúp bạn tự tin hơn khi refactor ứng dụng lớn. Thông tin kiểu cũng giúp IDE gợi ý hoàn thành mã. Vue được viết bằng TypeScript và hỗ trợ TypeScript chính thức; mọi gói Vue chính thức đều đi kèm khai báo kiểu để dùng ngay.</p>\n<h2>Khởi tạo dự án và kiểm tra kiểu</h2>\n<p><a href=\"https://github.com/vuejs/create-vue\"><code>create-vue</code></a>, công cụ khởi tạo dự án chính thức của Vue, có tùy chọn tạo dự án dùng <a href=\"https://vite.dev/\">Vite</a> với TypeScript được thiết lập sẵn.</p>\n<p>Trong quá trình phát triển, tài liệu khuyến nghị <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/typescript/overview.md#ide-support\">thiết lập IDE phù hợp</a> để nhận phản hồi tức thì về lỗi kiểu. Nếu dùng component một tệp của Vue (SFC), hãy dùng <a href=\"https://github.com/vuejs/language-tools/tree/master/packages/tsc\"><code>vue-tsc</code></a> để kiểm tra kiểu từ dòng lệnh và sinh khai báo kiểu.</p>\n<p><code>vue-tsc</code> là công cụ bọc <code>tsc</code>, giao diện dòng lệnh của TypeScript. Nó hoạt động phần lớn tương tự <code>tsc</code>, nhưng hỗ trợ thêm Vue SFC bên cạnh các tệp TypeScript. Bạn có thể:</p>\n<ul>\n<li>Chạy <code>vue-tsc</code> ở chế độ watch song song với dev server Vite.</li>\n<li>Dùng plugin như <a href=\"https://vite-plugin-checker.netlify.app/\">vite-plugin-checker</a> để chạy kiểm tra trong một worker thread riêng.</li>\n</ul>\n<h2>Thiết lập IDE cho Vue và TypeScript</h2>\n<p>Tài liệu khuyến nghị <a href=\"https://code.visualstudio.com/\">Visual Studio Code</a> vì khả năng hỗ trợ TypeScript sẵn có. Extension chính thức <a href=\"https://marketplace.visualstudio.com/items?itemName=Vue.volar\">Vue - Official</a>, trước đây có tên Volar, cung cấp hỗ trợ TypeScript bên trong Vue SFC cùng nhiều tính năng khác.</p>\n<p><strong>Nếu đã cài Vetur, hãy vô hiệu hóa extension này trong dự án Vue 3.</strong> Vue - Official thay thế <a href=\"https://marketplace.visualstudio.com/items?itemName=octref.vetur\">Vetur</a>, extension chính thức trước đây dành cho Vue 2.</p>\n<p><a href=\"https://www.jetbrains.com/webstorm/\">WebStorm</a> cũng hỗ trợ sẵn TypeScript và Vue. Các IDE JetBrains khác hỗ trợ trực tiếp hoặc thông qua <a href=\"https://plugins.jetbrains.com/plugin/9442-vue-js\">plugin miễn phí</a>. Theo bản tài liệu này, từ phiên bản <strong>2023.2</strong>, WebStorm và Vue Plugin tích hợp sẵn Vue Language Server.</p>\n<p>Tại <code>Settings &gt; Languages &amp; Frameworks &gt; TypeScript &gt; Vue</code>, bạn có thể đặt Vue service dùng tích hợp Volar cho mọi phiên bản TypeScript. Mặc định được nêu trong tài liệu là dùng Volar với TypeScript <strong>5.0 trở lên</strong>.</p>\n<h2>Các điều kiện cần chú ý trong tsconfig.json</h2>\n<p>Dự án tạo bằng <code>create-vue</code> có <code>tsconfig.json</code> được cấu hình sẵn, với cấu hình nền từ gói <a href=\"https://github.com/vuejs/tsconfig\"><code>@vue/tsconfig</code></a>. Dự án dùng <a href=\"https://www.typescriptlang.org/docs/handbook/project-references.html\">Project References</a> để bảo đảm kiểu phù hợp với từng môi trường chạy; chẳng hạn, mã ứng dụng và mã kiểm thử có các biến toàn cục khác nhau.</p>\n<p>Nếu tự cấu hình <code>tsconfig.json</code>, cần chú ý:</p>\n<ul>\n<li><strong>Giới hạn chuyển đổi từng tệp:</strong> đặt <a href=\"https://www.typescriptlang.org/tsconfig#isolatedModules\"><code>compilerOptions.isolatedModules</code></a> thành <code>true</code>. Trong thiết lập được nguồn mô tả, Vite dùng <a href=\"https://esbuild.github.io/\">esbuild</a> để chuyển đổi TypeScript và chịu các giới hạn của việc chuyển đổi từng tệp riêng lẻ. Tài liệu cũng mô tả <a href=\"https://www.typescriptlang.org/tsconfig#verbatimModuleSyntax\"><code>compilerOptions.verbatimModuleSyntax</code></a> là <a href=\"https://github.com/microsoft/TypeScript/issues/53601\">tùy chọn bao hàm các ràng buộc của <code>isolatedModules</code></a> và là một lựa chọn phù hợp khác; <code>@vue/tsconfig</code> sử dụng tùy chọn này.</li>\n<li><strong>Kiểu của <code>this</code> khi dùng Options API:</strong> đặt <a href=\"https://www.typescriptlang.org/tsconfig#strict\"><code>compilerOptions.strict</code></a> thành <code>true</code>, hoặc ít nhất bật <a href=\"https://www.typescriptlang.org/tsconfig#noImplicitThis\"><code>compilerOptions.noImplicitThis</code></a>, vốn thuộc nhóm tùy chọn <code>strict</code>. Nếu không, <code>this</code> trong các tùy chọn component sẽ được coi là <code>any</code>.</li>\n<li><strong>Alias đường dẫn:</strong> nếu đã cấu hình alias trong công cụ build, bạn cũng phải cấu hình cho TypeScript qua <a href=\"https://www.typescriptlang.org/tsconfig#paths\"><code>compilerOptions.paths</code></a>. Điều này áp dụng cả với alias <code>@/*</code> mặc định trong dự án <code>create-vue</code>.</li>\n<li><strong>Khi dùng TSX với Vue:</strong> đặt <a href=\"https://www.typescriptlang.org/tsconfig#jsx\"><code>compilerOptions.jsx</code></a> thành <code>\"preserve\"</code> và <a href=\"https://www.typescriptlang.org/tsconfig#jsxImportSource\"><code>compilerOptions.jsxImportSource</code></a> thành <code>\"vue\"</code>.</li>\n</ul>\n<p>Để tra cứu thêm, xem <a href=\"https://www.typescriptlang.org/docs/handbook/compiler-options.html\">tài liệu chính thức về các tùy chọn trình biên dịch TypeScript</a> và <a href=\"https://esbuild.github.io/content-types/#typescript-caveats\">những điểm cần lưu ý khi biên dịch TypeScript bằng esbuild</a>.</p>\n<h2>Vue CLI và hạn chế của việc kiểm tra kiểu bằng ts-loader</h2>\n<p>Vue CLI có hỗ trợ TypeScript nhưng không còn được tài liệu này khuyến nghị. <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/typescript/overview.md#note-on-vue-cli-and-ts-loader\">Ghi chú về Vue CLI và <code>ts-loader</code></a> giải thích hạn chế của việc đưa kiểm tra kiểu vào quy trình chuyển đổi mã.</p>\n<p>Trong thiết lập dựa trên webpack như Vue CLI, một cách phổ biến là dùng <code>ts-loader</code> để kiểm tra kiểu trong quy trình chuyển đổi module. Tuy nhiên, kiểm tra kiểu cần biết toàn bộ đồ thị module, nên bước chuyển đổi một module riêng lẻ không phải nơi phù hợp cho công việc này. Tài liệu nêu ba vấn đề:</p>\n<ul>\n<li><code>ts-loader</code> chỉ kiểm tra kiểu của mã sau chuyển đổi, nên lỗi có thể không khớp với kết quả từ IDE hoặc <code>vue-tsc</code>, vốn ánh xạ trực tiếp về mã nguồn.</li>\n<li>Kiểm tra kiểu có thể chậm. Khi chạy cùng thread hoặc process với chuyển đổi mã, nó ảnh hưởng đáng kể đến tốc độ build toàn ứng dụng.</li>\n<li>IDE đã kiểm tra kiểu trong một process riêng. Vì vậy, theo tài liệu, làm chậm trải nghiệm phát triển để kiểm tra ngay trong quy trình chuyển đổi không phải đánh đổi hợp lý.</li>\n</ul>\n<p>Nếu đang dùng <strong>Vue 3 + TypeScript qua Vue CLI</strong>, tài liệu khuyến nghị chuyển sang Vite. Tại thời điểm của bản tài liệu này, nhóm Vue cũng cho biết đang phát triển tùy chọn CLI chỉ chuyển đổi TypeScript, để người dùng chuyển phần kiểm tra kiểu sang <code>vue-tsc</code>. Đây là thông tin về công việc đang được thực hiện, không phải xác nhận tính năng đã phát hành.</p>\n<p>Nguồn: <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/typescript/overview.md\">Using Vue with TypeScript</a>, bản tài liệu tại commit được cung cấp. Các mô tả công cụ, mốc phiên bản và thiết lập trong bài được giữ theo bản nguồn, không phải xác nhận về trạng thái mới nhất của các công cụ.</p>"
+    },
+    "total_tokens": 45657
+}

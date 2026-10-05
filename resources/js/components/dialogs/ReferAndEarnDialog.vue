@@ -1,4 +1,13 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: ReferAndEarnDialog dùng khung dialog chung.
+  CÁC HÀM/METHOD TRONG FILE: dialogVisibleUpdate.
+  INPUT/OUTPUT CỦA CLASS (tổng thể): props/model và thao tác UI -> sự kiện của
+  caller; header/footer cố định, content cuộn qua AppDialogLayout.
+  =====================================================================
+-->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 import keyboard from '@images/svg/keyboard.svg'
 import paper from '@images/svg/paper-send.svg'
 import rocket from '@images/svg/rocket.svg'
@@ -38,22 +47,20 @@ const referAndEarnSteps = [
 
 <template>
   <VDialog
+    scrollable
     :model-value="props.isDialogVisible"
     :width="$vuetify.display.smAndDown ? 'auto' : 800"
     @update:model-value="dialogVisibleUpdate"
   >
-    <!-- 👉 Dialog close btn -->
-    <DialogCloseBtn @click="$emit('update:isDialogVisible', false)" />
+    <AppDialogLayout @close="$emit('update:isDialogVisible', false)">
+      <template #header>
+        <VCardItem>
+          <VCardTitle>Refer & Earn</VCardTitle>
+          <VCardSubtitle>Invite your friend to <span class="text-capitalize">{{ themeConfig.app.title }}</span>, if they sign up, you and your friend will get 30 days free trial</VCardSubtitle>
+        </VCardItem>
+      </template>
 
-    <VCard class="pa-2 pa-sm-10">
       <VCardText>
-        <h4 class="text-h4 text-center mb-2">
-          Refer & Earn
-        </h4>
-        <p class="text-body-1 mb-6 text-center">
-          Invite your friend to <span class="text-capitalize">{{ themeConfig.app.title }}</span>, if they sign up, you and your friend will get 30 days free trial
-        </p>
-
         <VRow class="text-center mt-8">
           <VCol
             v-for="step in referAndEarnSteps"
@@ -165,7 +172,7 @@ const referAndEarnSteps = [
           </div>
         </VForm>
       </VCardText>
-    </VCard>
+    </AppDialogLayout>
   </VDialog>
 </template>
 

@@ -123,6 +123,9 @@ describe('Task 2 profile management', () => {
     expect(api).toHaveBeenLastCalledWith('/admin/settings/ai/settings', { method: 'PUT', retry: 0, body: { default_writing_profile_id: 12 } })
     expect(api.mock.calls.some(([path]) => path.endsWith('/analyses'))).toBe(false)
     expect(changed).toHaveBeenCalledOnce()
+    expect(state.isOpen.value).toBe(false)
+    expect(state.form.value.name).toBe('Mẫu thủ công')
+    state.finishClose('create')
     expect(state.action.value).toBeNull()
   })
   it('preserves the edit on 409, loads the latest version only explicitly, then sends that version', async () => {
@@ -150,6 +153,7 @@ describe('Task 2 profile management', () => {
     await flushPromises()
     await state.confirm()
     expect(api).toHaveBeenLastCalledWith('/admin/ai/writing-profiles/4', { method: 'PUT', body: { version: 3, is_enabled: false }, retry: 0 })
+    state.finishClose('toggle')
     state.open('delete', profile)
     await flushPromises()
     await state.confirm()
@@ -167,6 +171,7 @@ describe('Task 2 profile management', () => {
     expect(state.defaultError.value).toContain('offline')
     expect(state.action.value).not.toBeNull()
     state.close()
+    state.finishClose('create')
     state.open('create')
     await flushPromises()
     state.form.value = { ...state.form.value, name: 'Kết quả chưa rõ', style_instructions: 'Tự nhiên.', rules_json: { tone: 'Tự nhiên' } }
@@ -179,16 +184,25 @@ describe('Task 2 profile management', () => {
     await state.save()
     expect(api.mock.calls).toHaveLength(calls)
   })
-  it('aborts stale detail reads after closing without restoring a deleted dialog', async () => {
+  it('keeps the closing form and ignores stale detail before cleaning up after the transition', async () => {
     let resolveDetail
     api.mockImplementation(path => path.endsWith('/options') ? Promise.resolve({ success: true, data: { items: [] } }) : new Promise(resolve => { resolveDetail = resolve }))
 
     const state = setup(() => useAiPromptManagement())
 
     state.open('edit', profile)
+
+    const signal = api.mock.calls.find(([path]) => path.endsWith('/4'))[1].signal
+
     state.close()
-    resolveDetail({ success: true, data: profile })
+    expect(signal.aborted).toBe(true)
+    resolveDetail({ success: true, data: { ...profile, name: 'Phản hồi muộn' } })
     await flushPromises()
+    expect(state.isOpen.value).toBe(false)
+    expect(state.action.value.kind).toBe('edit')
+    expect(state.form.value.name).toBe(profile.name)
+    expect(state.loading.value).toBe(true)
+    state.finishClose('edit')
     expect(state.action.value).toBeNull()
     expect(state.profile.value).toBeNull()
   })
@@ -205,6 +219,8 @@ describe('Task 2 profile management', () => {
     api.mockResolvedValueOnce({ success: true, data: { ...profile, version: 5 } }).mockResolvedValueOnce({ success: true, data: { default_writing_profile_id: null } })
     await state.save()
     expect(api).toHaveBeenLastCalledWith('/admin/settings/ai/settings', expect.objectContaining({ body: { default_writing_profile_id: null } }))
+    expect(state.isOpen.value).toBe(false)
+    state.finishClose('edit')
     expect(state.action.value).toBeNull()
   })
 })

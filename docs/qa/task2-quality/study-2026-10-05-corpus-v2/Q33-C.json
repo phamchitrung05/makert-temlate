@@ -1,0 +1,210 @@
+{
+    "arm": "C",
+    "status": "failed",
+    "error_code": "AI_PROVIDER_TIMEOUT",
+    "final": null,
+    "quality_checks": [],
+    "cost": null,
+    "diagnostics": {
+        "stage": "transport",
+        "schema_version": "article.writer.v1"
+    },
+    "calls": [
+        {
+            "task": "article.analysis-plan",
+            "output": {
+                "knowledge": {
+                    "facts": [
+                        {
+                            "id": "F01",
+                            "claim": "Các giới hạn trong nguồn có thể thay đổi. Một workflow run bị hủy khi đạt thời gian tối đa 35 ngày, trong đó tính cả thời gian thực thi, chờ và phê duyệt.",
+                            "source_block_ids": [
+                                "S002",
+                                "S003"
+                            ],
+                            "evidence": "These limits are subject to change.",
+                            "important": true
+                        },
+                        {
+                            "id": "F02",
+                            "claim": "Workflow có thể chờ phê duyệt môi trường tối đa 30 ngày. Job matrix tạo tối đa 256 job cho mỗi workflow run, áp dụng cho cả runner do GitHub lưu trữ và self-hosted runner.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "A job matrix can generate a maximum of 256 jobs per workflow run. This limit applies to both GitHub-hosted and self-hosted runners.",
+                            "important": true
+                        },
+                        {
+                            "id": "F03",
+                            "claim": "Một workflow run được chạy lại tối đa 50 lần, bao gồm cả chạy lại toàn bộ và chạy lại một phần job; nguồn ghi nhận có thể yêu cầu Support ticket để tăng giới hạn này.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "A workflow run can be re-run a maximum of 50 times. This limit includes both full re-runs and re-runs of a subset of jobs. Support ticket",
+                            "important": true
+                        },
+                        {
+                            "id": "F04",
+                            "claim": "Workflow file lớn hơn 500 KB sẽ không khởi chạy run. Mỗi check suite có tối đa 50.000 check run; khi đạt ngưỡng, các check run bổ sung không thể được tạo và giới hạn này áp dụng cho cả Checks API lẫn workflow run của GitHub Actions.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "A workflow file larger than 500 KB will not start runs. See Workflow file size.ChecksCheck runs per check suite50,000 check runs / check suiteA check suite can have a maximum of 50,000 check runs. This limit applies to check runs created through the Checks API and by GitHub Actions workflow runs. When a check suite reaches this limit, additional check runs cannot be created for that check suite. Support ticket",
+                            "important": true
+                        },
+                        {
+                            "id": "F05",
+                            "claim": "Mỗi repository bị giới hạn 1.500 sự kiện kích hoạt workflow trong 10 giây. Hệ thống cho phép tối đa 500 workflow run được xếp hàng trong 10 giây; khi đạt ngưỡng, các run do webhook dự kiến kích hoạt sẽ bị chặn và không được xếp hàng. Một concurrency group có thể xếp tối đa 100 job hoặc workflow run khi dùng queue: max; vượt ngưỡng sẽ bị từ chối.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Each repository is limited to events triggering a workflow run. Support ticketWorkflows queuingWorkflow run queued500 workflow runs / 10 secondsWhen the limit is reached, the workflow runs that were supposed to be triggered by the webhook events will be blocked and will not be queued. Reusable workflows are viewed as a single entity. For example, a run with 30 reusable workflows counts as 1 in this instance.Workflows queuingConcurrency group queue100 workflow runs / concurrency groupWhen using queue: max in the concurrency section, up to 100 jobs or workflow runs can be queued per concurrency group. Runs beyond this limit will be rejected.",
+                            "important": true
+                        },
+                        {
+                            "id": "F06",
+                            "claim": "Self-hosted runner có các giới hạn: đăng ký 1.500 runner trong 5 phút cho mỗi repository, organization hoặc enterprise; tối đa 10.000 runner cùng lúc trong một runner group; mỗi job chạy tối đa 5 ngày; job được xếp hàng tối đa 24 giờ trước khi tự động bị hủy.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Runners can be registered per repository/organization/enterprise. Support ticketSelf-hostedRunners per runner group10,000 runnersRunners registered at the same time per runner group.Self-hostedJob execution time5 daysEach job in a workflow can run for up to 5 days of execution time. If a job reaches this limit, the job is terminated and fails.Self-hostedJob queue time24 hoursA job can be in the queue for 24 hours before it is automatically cancelled.",
+                            "important": true
+                        },
+                        {
+                            "id": "F07",
+                            "claim": "Với tất cả GitHub-hosted runner, thời gian thực thi tối đa của mỗi job là 6 giờ; job đạt giới hạn sẽ bị kết thúc và thất bại. Job concurrency và storage limits thay đổi tùy trường hợp.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Each job in a workflow can run for up to 6 hours of execution time. If a job reaches this limit, the job is terminated and fails.All GitHub-hosted runnersStorage limitsVariesFor more information, see Storage limits for all GitHub-hosted runners.",
+                            "important": true
+                        },
+                        {
+                            "id": "F08",
+                            "claim": "Larger runner có giới hạn concurrency thay đổi theo loại runner, thông thường tối đa 1.000 cho Linux CPU runner; giới hạn static IP là 10 IP cho mỗi enterprise và organization. Vnet injection cần buffer 30% để đáp ứng concurrency job tối đa dự kiến.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Established when setting up a runner. Normally 1,000 max for Linux CPU runners, but varies by type. See Job concurrency limits for GitHub-hosted runners. Support ticketLarger runnersStatic IP limits10 IPs10 IPs per enterprise and organization. Support ticketLarger runnersPrivate IP scaling for vnet injection30% bufferYou need a buffer to accommodate the maximum job concurrency you anticipate. See Private IP scaling for vnet injection on larger runners. Configurable Azure virtual network",
+                            "important": true
+                        },
+                        {
+                            "id": "F09",
+                            "claim": "Giới hạn dependency caching theo repository là 200 lượt upload cache entry mỗi phút, 1.500 lượt download mỗi phút và 400 lượt xóa cache mỗi phút. Khi vượt giới hạn, các yêu cầu tương ứng tiếp theo sẽ thất bại cho tới khi rate limit được đặt lại; yêu cầu xóa theo key hoặc ID đều được tính.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Each repository is limited to 400 cache delete operations per minute. If this limit is exceeded, subsequent cache delete attempts will fail until the rate limit resets. Each request to delete caches either by key or by ID counts towards this limit.",
+                            "important": true
+                        },
+                        {
+                            "id": "F10",
+                            "claim": "Giới hạn upload và download dependency cache cũng được áp dụng riêng theo repository; các lần thử tiếp theo sẽ thất bại cho đến khi rate limit được reset nếu vượt ngưỡng.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Each repository is limited to 200 cache entry uploads per minute. If this limit is exceeded, subsequent cache upload attempts will fail until the rate limit resets.Dependency cachingDownloads per minute1500 per minuteEach repository is limited to 1500 cache entry downloads per minute. If this limit is exceeded, subsequent cache download attempts will fail until the rate limit resets.",
+                            "important": true
+                        }
+                    ],
+                    "terms": [
+                        "GitHub Actions",
+                        "workflow run",
+                        "workflow file",
+                        "job matrix",
+                        "re-run",
+                        "check suite",
+                        "Checks API",
+                        "webhook event",
+                        "reusable workflow",
+                        "concurrency group",
+                        "self-hosted runner",
+                        "GitHub-hosted runner",
+                        "larger runner",
+                        "dependency caching",
+                        "rate limit",
+                        "Support ticket",
+                        "queue: max",
+                        "vnet injection"
+                    ],
+                    "uncertainties": [
+                        "Nguồn không nêu ngày xuất bản hoặc phiên bản tài liệu cụ thể.",
+                        "Nguồn khẳng định các giới hạn có thể thay đổi, vì vậy bài viết cần trình bày đây là các số liệu trong trích đoạn được cung cấp, không khẳng định chúng là vĩnh viễn.",
+                        "Nguồn chỉ ghi Support ticket ở một số hàng; không cung cấp quy trình, điều kiện phê duyệt hoặc mức tăng cụ thể.",
+                        "Các mục Job Concurrency và Storage limits của GitHub-hosted runner được ghi là Var​​ies, không có giá trị cố định trong trích đoạn.",
+                        "Không suy ra giới hạn theo từng gói dịch vụ vì trích đoạn không cung cấp bảng phân loại theo gói dù tiêu đề đầu vào đề cập đến giới hạn theo gói."
+                    ]
+                },
+                "writing_plan": {
+                    "article_type": "Bài giải thích tham khảo giới hạn GitHub Actions",
+                    "audience": "Người phát triển muốn kiểm tra các ngưỡng thực thi workflow, runner, hàng đợi và dependency cache.",
+                    "angle": "Tập trung vào những ngưỡng dễ làm workflow bị hủy, thất bại, bị chặn hoặc bị từ chối; trình bày theo nhóm giới hạn để người đọc dễ đối chiếu với hệ thống của mình. Cần nói rõ đây là các giới hạn trong trích đoạn nguồn và chúng có thể thay đổi.",
+                    "outline": [
+                        "Tiêu đề nêu các giới hạn GitHub Actions cần lưu ý khi thiết kế workflow.",
+                        "Mở bài đi thẳng vào rủi ro: workflow có thể bị hủy do thời gian chạy, bị chặn khi hàng đợi hoặc tần suất sự kiện đạt ngưỡng; dẫn tới mục Existing system limits bằng đúng liên kết bắt buộc.",
+                        "Nhóm giới hạn thực thi workflow: 35 ngày cho workflow run, 30 ngày chờ phê duyệt môi trường, 256 job cho job matrix và 50 lần re-run; giữ điều kiện áp dụng và ghi chú Support ticket nơi nguồn có nêu.",
+                        "Nhóm workflow file và Checks: 500 KB cho mỗi workflow file; 50.000 check run cho mỗi check suite, gồm nguồn tạo qua Checks API và GitHub Actions.",
+                        "Nhóm xếp hàng và concurrency: 1.500 sự kiện trong 10 giây mỗi repository, 500 workflow run trong 10 giây, reusable workflow được tính như một thực thể và concurrency group tối đa 100 run/job khi dùng queue: max.",
+                        "Nhóm self-hosted runner: giới hạn đăng ký, số runner trong runner group, thời gian chạy job 5 ngày và thời gian chờ 24 giờ.",
+                        "Nhóm GitHub-hosted runner: concurrency và storage thay đổi; thời gian chạy mỗi job tối đa 6 giờ. Giữ liên kết bắt buộc tới các mục concurrency và storage.",
+                        "Nhóm larger runner: concurrency thay đổi theo loại, mức thông thường 1.000 cho Linux CPU runner, 10 static IP mỗi enterprise và organization, cùng buffer 30% cho private IP scaling; giữ các liên kết bắt buộc liên quan.",
+                        "Nhóm dependency caching: upload 200/phút, download 1.500/phút, delete 400/phút theo repository; nêu hậu quả khi vượt rate limit và việc xóa theo key hoặc ID đều được tính.",
+                        "Kết luận ngắn nhắc người đọc đối chiếu lại tài liệu vì các giới hạn có thể thay đổi, không bổ sung hướng dẫn hay thông tin ngoài nguồn."
+                    ],
+                    "coverage_fact_ids": [
+                        "F01",
+                        "F02",
+                        "F03",
+                        "F04",
+                        "F05",
+                        "F06",
+                        "F07",
+                        "F08",
+                        "F09",
+                        "F10"
+                    ]
+                }
+            },
+            "diagnostics": {
+                "response_id": "resp_08e213f60c72e46d016ac3536a08a487d1ba69136fa6c1387a",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.analysis-plan.v1",
+                "usage": {
+                    "prompt_tokens": 7046,
+                    "completion_tokens": 2616,
+                    "total_tokens": 9662,
+                    "reasoning_tokens": 321
+                }
+            },
+            "latency_ms": 104608
+        },
+        {
+            "task": "article.writer",
+            "output": null,
+            "diagnostics": {
+                "error_code": "AI_PROVIDER_TIMEOUT",
+                "stage": "transport",
+                "schema_version": "article.writer.v1"
+            },
+            "latency_ms": 200057
+        }
+    ],
+    "latency_ms": 304669,
+    "input_sha256": "58d6ef21dc679c97fdde14a93b89fbc537054d11aede56d40c755ba1d51b7a47",
+    "comparison_input_sha256": "48d7753f10eb77f467dc6fd209e45355ed104d9d1c3cea8d6a6bf6157b1ef559",
+    "writing_profile_sha256": "1267aa8b907b63f12cd8c953c4a6664dbea3f3e7acabb12a28e64293053a7c96",
+    "brief_sha256": "5ab4339b81d3415a49809df315e63897ce01cb7cda99a48ec794dae36595a3bf",
+    "image_evaluation": {
+        "mode": "source_metadata_only",
+        "source_images": 0,
+        "approved_asset_regenerate": "not_evaluated",
+        "pixel_understanding": "not_evaluated"
+    },
+    "source_sha256": "40bf21530b23c3075de716de8f637952b3c35e22fb7ddf9f4374186075bedd06",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": null,
+    "total_tokens": null
+}

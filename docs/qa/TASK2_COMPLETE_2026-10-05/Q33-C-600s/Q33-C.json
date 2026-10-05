@@ -1,0 +1,433 @@
+{
+    "arm": "C",
+    "status": "failed",
+    "error_code": "AI_QUALITY_GROUNDING",
+    "final": null,
+    "quality_checks": [],
+    "cost": null,
+    "diagnostics": {
+        "stage": "validate",
+        "validation_errors": [
+            {
+                "group": "content",
+                "field": "content_html",
+                "reason": "important_number_missing"
+            }
+        ]
+    },
+    "calls": [
+        {
+            "task": "article.analysis-plan",
+            "output": {
+                "knowledge": {
+                    "facts": [
+                        {
+                            "id": "F01",
+                            "claim": "Các giới hạn trong tài liệu có thể thay đổi.",
+                            "source_block_ids": [
+                                "S002"
+                            ],
+                            "evidence": "These limits are subject to change.",
+                            "important": true
+                        },
+                        {
+                            "id": "F02",
+                            "claim": "Một workflow run có giới hạn 35 ngày, tính cả thời gian thực thi, chờ và phê duyệt; khi chạm giới hạn, workflow run bị hủy.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Workflow run time35 days / workflow runIf a workflow run reaches this limit, the workflow run is cancelled. This period includes execution duration, and time spent on waiting and approval.",
+                            "important": true
+                        },
+                        {
+                            "id": "F03",
+                            "claim": "Workflow có thể chờ phê duyệt môi trường tối đa 30 ngày.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Gate approval time30 daysA workflow may wait for up to 30 days on environment approvals.",
+                            "important": true
+                        },
+                        {
+                            "id": "F04",
+                            "claim": "Job matrix có thể tạo tối đa 256 job trong một workflow run; giới hạn áp dụng cho cả GitHub-hosted và self-hosted runners.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Job Matrix256 jobs / workflow runA job matrix can generate a maximum of 256 jobs per workflow run. This limit applies to both GitHub-hosted and self-hosted runners.",
+                            "important": true
+                        },
+                        {
+                            "id": "F05",
+                            "claim": "Một workflow run có thể chạy lại tối đa 50 lần, tính cả chạy lại toàn bộ và chạy lại một phần các job. Bảng nguồn ghi có thể yêu cầu tăng giới hạn qua support ticket.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Re-run50 re-runsA workflow run can be re-run a maximum of 50 times. This limit includes both full re-runs and re-runs of a subset of jobs. Support ticket",
+                            "important": true
+                        },
+                        {
+                            "id": "F06",
+                            "claim": "Giới hạn kích thước tệp workflow là 500 KB mỗi tệp; tệp lớn hơn 500 KB sẽ không khởi chạy các run.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Workflow file size500 KB per fileA workflow file larger than 500 KB will not start runs. See Workflow file size.",
+                            "important": true
+                        },
+                        {
+                            "id": "F07",
+                            "claim": "Một check suite có tối đa 50.000 check run, tính cả check run tạo qua Checks API và GitHub Actions. Khi đạt giới hạn, không thể tạo thêm check run cho suite đó. Bảng ghi có thể yêu cầu tăng qua support ticket.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Check runs per check suite50,000 check runs / check suiteA check suite can have a maximum of 50,000 check runs. This limit applies to check runs created through the Checks API and by GitHub Actions workflow runs. When a check suite reaches this limit, additional check runs cannot be created for that check suite. Support ticket",
+                            "important": true
+                        },
+                        {
+                            "id": "F08",
+                            "claim": "Mỗi repository có giới hạn 1.500 sự kiện kích hoạt workflow trong 10 giây. Bảng ghi có thể yêu cầu tăng giới hạn qua support ticket.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Workflow trigger event rate limit1500 events / 10 seconds / repositoryEach repository is limited to events triggering a workflow run. Support ticket",
+                            "important": true
+                        },
+                        {
+                            "id": "F09",
+                            "claim": "Giới hạn đưa workflow run vào hàng đợi là 500 run trong 10 giây. Khi chạm giới hạn, các run lẽ ra được webhook kích hoạt sẽ bị chặn, không được xếp hàng. Reusable workflows được tính như một thực thể: một run có 30 reusable workflows vẫn tính là 1.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Workflow run queued500 workflow runs / 10 secondsWhen the limit is reached, the workflow runs that were supposed to be triggered by the webhook events will be blocked and will not be queued. Reusable workflows are viewed as a single entity. For example, a run with 30 reusable workflows counts as 1 in this instance.",
+                            "important": true
+                        },
+                        {
+                            "id": "F10",
+                            "claim": "Khi dùng queue: max trong concurrency, mỗi concurrency group có thể xếp hàng tối đa 100 job hoặc workflow run; run vượt giới hạn bị từ chối.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Concurrency group queue100 workflow runs / concurrency groupWhen using queue: max in the concurrency section, up to 100 jobs or workflow runs can be queued per concurrency group. Runs beyond this limit will be rejected.",
+                            "important": true
+                        },
+                        {
+                            "id": "F11",
+                            "claim": "Self-hosted runners có giới hạn đăng ký 1.500 runner trong 5 phút theo phạm vi repository, organization hoặc enterprise. Bảng ghi có thể yêu cầu tăng qua support ticket.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Self-hostedRunner registrations1500 runners / 5 minutes / repository/org/enterpriseRunners can be registered per repository/organization/enterprise. Support ticket",
+                            "important": true
+                        },
+                        {
+                            "id": "F12",
+                            "claim": "Mỗi runner group có thể có tối đa 10.000 self-hosted runner được đăng ký cùng lúc.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Self-hostedRunners per runner group10,000 runnersRunners registered at the same time per runner group.",
+                            "important": true
+                        },
+                        {
+                            "id": "F13",
+                            "claim": "Mỗi job trên self-hosted runner được thực thi tối đa 5 ngày; khi chạm giới hạn, job bị chấm dứt và thất bại.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Self-hostedJob execution time5 daysEach job in a workflow can run for up to 5 days of execution time. If a job reaches this limit, the job is terminated and fails.",
+                            "important": true
+                        },
+                        {
+                            "id": "F14",
+                            "claim": "Job trên self-hosted runner có thể ở trong hàng đợi 24 giờ trước khi tự động bị hủy.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Self-hostedJob queue time24 hoursA job can be in the queue for 24 hours before it is automatically cancelled.",
+                            "important": true
+                        },
+                        {
+                            "id": "F15",
+                            "claim": "Giới hạn số job chạy đồng thời trên GitHub-hosted runners được ghi là thay đổi tùy trường hợp, với liên kết đến mục chi tiết. Bảng ghi có thể yêu cầu tăng qua support ticket.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "All GitHub-hosted runnersJob ConcurrencyVariesSee Job concurrency limits for GitHub-hosted runners. Support ticket",
+                            "important": true
+                        },
+                        {
+                            "id": "F16",
+                            "claim": "Mỗi job trên GitHub-hosted runner được thực thi tối đa 6 giờ; khi chạm giới hạn, job bị chấm dứt và thất bại.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "All GitHub-hosted runnersJob execution time6 hoursEach job in a workflow can run for up to 6 hours of execution time. If a job reaches this limit, the job is terminated and fails.",
+                            "important": true
+                        },
+                        {
+                            "id": "F17",
+                            "claim": "Giới hạn lưu trữ của GitHub-hosted runners được ghi là thay đổi tùy trường hợp; trích đoạn chỉ dẫn đến mục chi tiết, không cung cấp con số.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "All GitHub-hosted runnersStorage limitsVariesFor more information, see Storage limits for all GitHub-hosted runners.",
+                            "important": true
+                        },
+                        {
+                            "id": "F18",
+                            "claim": "Giới hạn đồng thời trên từng larger runner được thiết lập khi cấu hình và phụ thuộc loại runner. Với Linux CPU runners, mức tối đa thông thường là 1.000, không phải mức chung cho mọi loại. Bảng ghi có thể yêu cầu tăng qua support ticket.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Larger runnersPer runner concurrency limitVaries by runner typeEstablished when setting up a runner. Normally 1,000 max for Linux CPU runners, but varies by type. See Job concurrency limits for GitHub-hosted runners. Support ticket",
+                            "important": true
+                        },
+                        {
+                            "id": "F19",
+                            "claim": "Larger runners có giới hạn 10 IP tĩnh cho mỗi enterprise và organization. Bảng ghi có thể yêu cầu tăng qua support ticket.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Larger runnersStatic IP limits10 IPs10 IPs per enterprise and organization. Support ticket",
+                            "important": true
+                        },
+                        {
+                            "id": "F20",
+                            "claim": "Khi mở rộng IP riêng cho vnet injection trên larger runners, cần phần dự phòng 30% để đáp ứng số job chạy đồng thời tối đa dự kiến. Bảng ghi Azure virtual network có thể cấu hình.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Larger runnersPrivate IP scaling for vnet injection30% bufferYou need a buffer to accommodate the maximum job concurrency you anticipate. See Private IP scaling for vnet injection on larger runners. Configurable Azure virtual network",
+                            "important": true
+                        },
+                        {
+                            "id": "F21",
+                            "claim": "Mỗi repository được tải lên tối đa 200 mục cache mỗi phút; khi vượt giới hạn, các lần tải lên tiếp theo thất bại cho đến khi giới hạn tốc độ được đặt lại.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Dependency cachingUploads per minute200 per minuteEach repository is limited to 200 cache entry uploads per minute. If this limit is exceeded, subsequent cache upload attempts will fail until the rate limit resets.",
+                            "important": true
+                        },
+                        {
+                            "id": "F22",
+                            "claim": "Mỗi repository được tải xuống tối đa 1.500 mục cache mỗi phút; khi vượt giới hạn, các lần tải xuống tiếp theo thất bại cho đến khi giới hạn tốc độ được đặt lại.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Dependency cachingDownloads per minute1500 per minuteEach repository is limited to 1500 cache entry downloads per minute. If this limit is exceeded, subsequent cache download attempts will fail until the rate limit resets.",
+                            "important": true
+                        },
+                        {
+                            "id": "F23",
+                            "claim": "Mỗi repository được thực hiện tối đa 400 thao tác xóa cache mỗi phút; khi vượt giới hạn, các lần xóa tiếp theo thất bại cho đến khi giới hạn tốc độ được đặt lại. Mỗi yêu cầu xóa theo key hoặc ID đều được tính.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Dependency cachingDeletes per minute400 per minuteEach repository is limited to 400 cache delete operations per minute. If this limit is exceeded, subsequent cache delete attempts will fail until the rate limit resets. Each request to delete caches either by key or by ID counts towards this limit.",
+                            "important": true
+                        }
+                    ],
+                    "terms": [
+                        "GitHub Actions",
+                        "workflow run",
+                        "job",
+                        "job matrix",
+                        "GitHub-hosted runner",
+                        "self-hosted runner",
+                        "larger runner",
+                        "check suite",
+                        "check run",
+                        "Checks API",
+                        "reusable workflow",
+                        "concurrency group",
+                        "queue: max",
+                        "support ticket",
+                        "vnet injection",
+                        "Azure virtual network",
+                        "dependency caching"
+                    ],
+                    "uncertainties": [
+                        "Trích đoạn không có bảng giới hạn theo từng gói GitHub, dù tiêu đề đầu vào nhắc đến giới hạn theo gói. Không suy diễn số job đồng thời, dung lượng lưu trữ hay quyền lợi từng gói.",
+                        "Nguồn không có ngày xuất bản. Mốc 2026-10-05T06:39:07+00:00 là thời điểm thu thập bản trích đoạn, không phải ngày công bố hoặc ngày thay đổi giới hạn.",
+                        "Các mục chỉ ghi Varies hoặc Varies by runner type không cung cấp đủ dữ liệu để xác định mọi mức giới hạn cụ thể; nội dung tại các liên kết không nằm trong trích đoạn đóng băng.",
+                        "Support ticket thể hiện kênh yêu cầu tăng giới hạn trong bảng, không bảo đảm mọi yêu cầu đều được chấp thuận. Ô trống không đủ để kết luận giới hạn chắc chắn không thể tăng.",
+                        "Dòng giới hạn 500 workflow runs / 10 seconds không nêu phạm vi repository trong phần văn bản được cung cấp; không tự bổ sung phạm vi.",
+                        "Nguồn không nêu công thức tính phần dự phòng IP 30%, thời gian xử lý support ticket hoặc chi tiết cơ chế đặt lại giới hạn tốc độ."
+                    ]
+                },
+                "writing_plan": {
+                    "article_type": "Bài tham khảo kỹ thuật bằng tiếng Việt, giữ bảng giới hạn và giải thích ngắn",
+                    "audience": "Người phát triển tìm hiểu giới hạn dịch vụ, kể cả người mới làm quen GitHub Actions",
+                    "angle": "Làm rõ sự khác nhau giữa giới hạn toàn workflow, từng job, hàng đợi và tốc độ thao tác; giữ đầy đủ số liệu và điều kiện trong bản trích đoạn. Không trình bày thành so sánh theo gói vì nguồn không có dữ liệu đó.",
+                    "outline": [
+                        "Đặt tiêu đề về các giới hạn hệ thống GitHub Actions, không hứa hẹn bảng theo gói. Mở bằng điểm dễ nhầm: 35 ngày cho workflow gồm cả chờ và phê duyệt, còn từng job có giới hạn riêng. Ghi rõ đây là bản trích đoạn thu thập lúc 2026-10-05T06:39:07+00:00 và các giới hạn có thể thay đổi; không gọi đây là ngày phát hành.",
+                        "Dẫn nguồn bằng anchor đến https://docs.github.com/en/actions/reference/limits và giữ anchor mục hệ thống với href chính xác https://docs.github.com/en/actions/reference/limits#existing-system-limits.",
+                        "Giữ bảng đầy đủ 22 dòng và năm cột của nguồn: nhóm giới hạn, giới hạn, ngưỡng, mô tả, khả năng yêu cầu tăng. Việt hóa tự nhiên nhưng giữ nguyên số liệu, đơn vị, điều kiện, ví dụ và code queue: max; không biến ô trống thành khẳng định không thể tăng.",
+                        "Trong các dòng workflow, tệp và checks, bao phủ F02–F07. Giữ liên kết phê duyệt môi trường https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments#wait-timer và liên kết kích thước tệp https://docs.github.com/en/actions/reference/limits#workflow-file-size dưới dạng anchor thật.",
+                        "Trong các dòng hàng đợi, bao phủ F08–F10; phân biệt tốc độ sự kiện với tốc độ đưa run vào hàng đợi, giữ ví dụ 30 reusable workflows tính là 1 và điều kiện queue: max. Không gán thêm phạm vi cho mức 500 run trong 10 giây.",
+                        "Trong các dòng runner, bao phủ F11–F20; giữ khác biệt 5 ngày và 6 giờ, thời gian chờ 24 giờ, các ngưỡng đăng ký, IP và phần dự phòng 30%. Giữ các anchor https://docs.github.com/en/actions/reference/limits#job-concurrency-limits-for-github-hosted-runners, https://docs.github.com/en/actions/reference/limits#storage-limits-for-all-github-hosted-runners và https://docs.github.com/en/actions/reference/limits#private-ip-scaling-for-vnet-injection-on-larger-runners tại các dòng tương ứng, kể cả khi liên kết đồng thời xuất hiện ở hai dòng.",
+                        "Trong các dòng cache, bao phủ F21–F23; giữ ba mức 200, 1500 và 400 mỗi phút theo repository, hệ quả thất bại đến khi đặt lại giới hạn và cách tính yêu cầu xóa theo key hoặc ID.",
+                        "Sau bảng, chỉ thêm một đoạn lưu ý ngắn về các ô Varies, mức 1.000 thông thường chỉ cho Linux CPU larger runners và ý nghĩa support ticket. Nêu rằng trích đoạn không đủ để so sánh theo gói; tránh nhắc lại toàn bộ bảng hoặc bổ sung API, benchmark và trải nghiệm ngoài nguồn."
+                    ],
+                    "coverage_fact_ids": [
+                        "F01",
+                        "F02",
+                        "F03",
+                        "F04",
+                        "F05",
+                        "F06",
+                        "F07",
+                        "F08",
+                        "F09",
+                        "F10",
+                        "F11",
+                        "F12",
+                        "F13",
+                        "F14",
+                        "F15",
+                        "F16",
+                        "F17",
+                        "F18",
+                        "F19",
+                        "F20",
+                        "F21",
+                        "F22",
+                        "F23"
+                    ]
+                }
+            },
+            "diagnostics": {
+                "response_id": "resp_002ffe23246a8a9f016ac3715de32087d0b65efb8ee070e0e3",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.analysis-plan.v1",
+                "usage": {
+                    "prompt_tokens": 7046,
+                    "completion_tokens": 3944,
+                    "total_tokens": 10990,
+                    "reasoning_tokens": 50
+                }
+            },
+            "latency_ms": 144714
+        },
+        {
+            "task": "article.writer",
+            "output": {
+                "draft": {
+                    "title": "Giới hạn GitHub Actions: thời gian chạy, hàng đợi, runner và cache",
+                    "content_html": "<p><strong>Giới hạn 35 ngày của một workflow run không có nghĩa là mỗi job được chạy 35 ngày.</strong> Mốc này tính cả thời gian thực thi, chờ và phê duyệt. Từng job có giới hạn riêng: tối đa 6 giờ trên GitHub-hosted runner và 5 ngày trên self-hosted runner.</p><p>Bảng dưới đây dựa trên mục <a href=\"https://docs.github.com/en/actions/reference/limits#existing-system-limits\">Existing system limits</a> trong <a href=\"https://docs.github.com/en/actions/reference/limits\">tài liệu GitHub Actions</a>, theo bản trích đoạn được thu thập lúc <time datetime=\"2026-10-05T06:39:07+00:00\">2026-10-05T06:39:07+00:00</time>. Đây là thời điểm thu thập, không phải ngày công bố hay cập nhật giới hạn. GitHub lưu ý rằng các giới hạn có thể thay đổi.</p><h2>Bảng giới hạn hệ thống GitHub Actions</h2><table><thead><tr><th scope=\"col\">Nhóm giới hạn</th><th scope=\"col\">Giới hạn</th><th scope=\"col\">Ngưỡng</th><th scope=\"col\">Mô tả và điều kiện</th><th scope=\"col\">Khả năng yêu cầu tăng giới hạn</th></tr></thead><tbody><tr><td>Thực thi workflow</td><td>Thời gian của workflow run</td><td>35 ngày / workflow run</td><td>Tính cả thời gian thực thi, chờ và phê duyệt. Khi chạm giới hạn, workflow run bị hủy.</td><td></td></tr><tr><td>Thực thi workflow</td><td>Thời gian chờ phê duyệt</td><td>30 ngày</td><td>Workflow có thể <a href=\"https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments#wait-timer\">chờ phê duyệt môi trường tối đa 30 ngày</a>.</td><td></td></tr><tr><td>Thực thi workflow</td><td>Job matrix</td><td>256 job / workflow run</td><td>Một job matrix có thể tạo tối đa 256 job trong mỗi workflow run. Áp dụng cho cả GitHub-hosted và self-hosted runners.</td><td></td></tr><tr><td>Thực thi workflow</td><td>Chạy lại</td><td>50 lần chạy lại</td><td>Mỗi workflow run được chạy lại tối đa 50 lần, tính cả chạy lại toàn bộ và chạy lại một phần các job.</td><td>Gửi support ticket</td></tr><tr><td>Tệp workflow</td><td>Kích thước tệp workflow</td><td>500 KB / tệp</td><td>Tệp lớn hơn 500 KB sẽ không khởi chạy các run. Xem <a href=\"https://docs.github.com/en/actions/reference/limits#workflow-file-size\">giới hạn kích thước tệp workflow</a>.</td><td></td></tr><tr><td>Checks</td><td>Số check run trong một check suite</td><td>50.000 check run / check suite</td><td>Áp dụng cho check run được tạo qua Checks API và qua GitHub Actions workflow runs. Khi suite đạt giới hạn, không thể tạo thêm check run cho suite đó.</td><td>Gửi support ticket</td></tr><tr><td>Hàng đợi workflow</td><td>Tốc độ sự kiện kích hoạt workflow</td><td>1.500 sự kiện / 10 giây / repository</td><td>Giới hạn số sự kiện kích hoạt workflow run trong mỗi repository.</td><td>Gửi support ticket</td></tr><tr><td>Hàng đợi workflow</td><td>Số workflow run được đưa vào hàng đợi</td><td>500 workflow run / 10 giây</td><td>Khi chạm giới hạn, các run lẽ ra được sự kiện webhook kích hoạt sẽ bị chặn và không được đưa vào hàng đợi. Reusable workflows được tính như một thực thể: một run có 30 reusable workflows vẫn chỉ tính là 1 trong giới hạn này.</td><td></td></tr><tr><td>Hàng đợi workflow</td><td>Hàng đợi của concurrency group</td><td>100 workflow run / concurrency group</td><td>Khi dùng <code>queue: max</code> trong phần <code>concurrency</code>, mỗi concurrency group có thể xếp hàng tối đa 100 job hoặc workflow run. Các run vượt giới hạn bị từ chối.</td><td></td></tr><tr><td>Self-hosted runners</td><td>Đăng ký runner</td><td>1.500 runner / 5 phút / repository, organization hoặc enterprise</td><td>Giới hạn đăng ký runner theo phạm vi repository, organization hoặc enterprise.</td><td>Gửi support ticket</td></tr><tr><td>Self-hosted runners</td><td>Số runner trong một runner group</td><td>10.000 runner</td><td>Số runner tối đa được đăng ký cùng lúc trong mỗi runner group.</td><td></td></tr><tr><td>Self-hosted runners</td><td>Thời gian thực thi job</td><td>5 ngày</td><td>Mỗi job trong workflow được thực thi tối đa 5 ngày. Khi chạm giới hạn, job bị chấm dứt và thất bại.</td><td></td></tr><tr><td>Self-hosted runners</td><td>Thời gian job chờ trong hàng đợi</td><td>24 giờ</td><td>Job có thể nằm trong hàng đợi 24 giờ trước khi tự động bị hủy.</td><td></td></tr><tr><td>Tất cả GitHub-hosted runners</td><td>Số job chạy đồng thời</td><td>Tùy trường hợp</td><td>Trích đoạn không đưa ra một con số chung. Xem <a href=\"https://docs.github.com/en/actions/reference/limits#job-concurrency-limits-for-github-hosted-runners\">giới hạn số job chạy đồng thời trên GitHub-hosted runners</a>.</td><td>Gửi support ticket</td></tr><tr><td>Tất cả GitHub-hosted runners</td><td>Thời gian thực thi job</td><td>6 giờ</td><td>Mỗi job trong workflow được thực thi tối đa 6 giờ. Khi chạm giới hạn, job bị chấm dứt và thất bại.</td><td></td></tr><tr><td>Tất cả GitHub-hosted runners</td><td>Dung lượng lưu trữ</td><td>Tùy trường hợp</td><td>Trích đoạn không cung cấp con số cụ thể. Xem <a href=\"https://docs.github.com/en/actions/reference/limits#storage-limits-for-all-github-hosted-runners\">giới hạn lưu trữ của GitHub-hosted runners</a>.</td><td></td></tr><tr><td>Larger runners</td><td>Giới hạn chạy đồng thời trên từng runner</td><td>Tùy loại runner</td><td>Được thiết lập khi cấu hình runner. Với Linux CPU runners, mức tối đa thông thường là 1.000, nhưng giới hạn thay đổi theo loại runner. Xem <a href=\"https://docs.github.com/en/actions/reference/limits#job-concurrency-limits-for-github-hosted-runners\">giới hạn số job chạy đồng thời trên GitHub-hosted runners</a>.</td><td>Gửi support ticket</td></tr><tr><td>Larger runners</td><td>IP tĩnh</td><td>10 IP</td><td>10 IP cho mỗi enterprise và organization.</td><td>Gửi support ticket</td></tr><tr><td>Larger runners</td><td>Mở rộng IP riêng cho vnet injection</td><td>Phần dự phòng 30%</td><td>Cần phần dự phòng để đáp ứng số job chạy đồng thời tối đa dự kiến. Xem <a href=\"https://docs.github.com/en/actions/reference/limits#private-ip-scaling-for-vnet-injection-on-larger-runners\">mở rộng IP riêng cho vnet injection trên larger runners</a>.</td><td>Có thể cấu hình Azure virtual network</td></tr><tr><td>Cache phụ thuộc</td><td>Tải lên cache mỗi phút</td><td>200 / phút / repository</td><td>Mỗi repository được tải lên tối đa 200 mục cache mỗi phút. Nếu vượt giới hạn, các lần tải lên tiếp theo sẽ thất bại cho đến khi giới hạn tốc độ được đặt lại.</td><td></td></tr><tr><td>Cache phụ thuộc</td><td>Tải xuống cache mỗi phút</td><td>1.500 / phút / repository</td><td>Mỗi repository được tải xuống tối đa 1.500 mục cache mỗi phút. Nếu vượt giới hạn, các lần tải xuống tiếp theo sẽ thất bại cho đến khi giới hạn tốc độ được đặt lại.</td><td></td></tr><tr><td>Cache phụ thuộc</td><td>Xóa cache mỗi phút</td><td>400 / phút / repository</td><td>Mỗi repository được thực hiện tối đa 400 thao tác xóa cache mỗi phút. Nếu vượt giới hạn, các lần xóa tiếp theo sẽ thất bại cho đến khi giới hạn tốc độ được đặt lại. Mỗi yêu cầu xóa theo key hoặc ID đều được tính vào giới hạn.</td><td></td></tr></tbody></table><p><strong>Lưu ý khi đọc bảng:</strong> Các ô “Tùy trường hợp” hoặc “Tùy loại runner” không đủ để xác định giới hạn cho từng gói GitHub; mức 1.000 nêu trên chỉ là mức tối đa thông thường của Linux CPU larger runners, không phải mức chung cho mọi loại. “Gửi support ticket” là kênh yêu cầu tăng giới hạn, không bảo đảm yêu cầu được chấp thuận; ô trống nghĩa là bảng nguồn không nêu thông tin, chứ không khẳng định giới hạn đó không thể tăng. Trích đoạn này không có bảng so sánh giới hạn theo từng gói.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04",
+                    "F05",
+                    "F06",
+                    "F07",
+                    "F08",
+                    "F09",
+                    "F10",
+                    "F11",
+                    "F12",
+                    "F13",
+                    "F14",
+                    "F15",
+                    "F16",
+                    "F17",
+                    "F18",
+                    "F19",
+                    "F20",
+                    "F21",
+                    "F22",
+                    "F23"
+                ],
+                "used_asset_ids": []
+            },
+            "diagnostics": {
+                "response_id": "resp_04046fb89cbb3834016ac371ee35f487d09871256a327b60b9",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.writer.v1",
+                "usage": {
+                    "prompt_tokens": 9745,
+                    "completion_tokens": 2397,
+                    "total_tokens": 12142
+                }
+            },
+            "latency_ms": 88408
+        },
+        {
+            "task": "article.editor",
+            "output": {
+                "final": {
+                    "title": "Giới hạn GitHub Actions: thời gian chạy, hàng đợi, runner và cache",
+                    "content_html": "<p><strong>Giới hạn 35 ngày của một workflow run tính cả thời gian thực thi, chờ và phê duyệt — không phải thời gian chạy tối đa của từng job.</strong> Mỗi job có giới hạn riêng: 6 giờ trên GitHub-hosted runner và 5 ngày trên self-hosted runner.</p><p>Bảng dưới đây dựa trên mục <a href=\"https://docs.github.com/en/actions/reference/limits#existing-system-limits\">Existing system limits</a> trong <a href=\"https://docs.github.com/en/actions/reference/limits\">tài liệu GitHub Actions</a>, theo bản trích đoạn được thu thập lúc <time datetime=\"2026-10-05T06:39:07+00:00\">2026-10-05T06:39:07+00:00</time>. Đây là thời điểm thu thập, không phải ngày công bố hay cập nhật giới hạn. Các giới hạn có thể thay đổi.</p><h2>Bảng giới hạn hệ thống GitHub Actions</h2><table><thead><tr><th scope=\"col\">Nhóm giới hạn</th><th scope=\"col\">Giới hạn</th><th scope=\"col\">Ngưỡng</th><th scope=\"col\">Mô tả và điều kiện</th><th scope=\"col\">Khả năng yêu cầu tăng giới hạn</th></tr></thead><tbody><tr><td>Thực thi workflow</td><td>Thời gian của workflow run</td><td>35 ngày / workflow run</td><td>Tính cả thời gian thực thi, chờ và phê duyệt. Khi chạm giới hạn, workflow run bị hủy.</td><td></td></tr><tr><td>Thực thi workflow</td><td>Thời gian chờ phê duyệt</td><td>30 ngày</td><td>Workflow có thể <a href=\"https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments#wait-timer\">chờ phê duyệt môi trường tối đa 30 ngày</a>.</td><td></td></tr><tr><td>Thực thi workflow</td><td>Job matrix</td><td>256 job / workflow run</td><td>Một job matrix có thể tạo tối đa 256 job trong mỗi workflow run. Áp dụng cho cả GitHub-hosted và self-hosted runners.</td><td></td></tr><tr><td>Thực thi workflow</td><td>Chạy lại</td><td>50 lần chạy lại</td><td>Mỗi workflow run được chạy lại tối đa 50 lần, tính cả chạy lại toàn bộ và chạy lại một phần các job.</td><td>Gửi support ticket</td></tr><tr><td>Tệp workflow</td><td>Kích thước tệp workflow</td><td>500 KB / tệp</td><td>Tệp lớn hơn 500 KB sẽ không khởi chạy các run. Xem <a href=\"https://docs.github.com/en/actions/reference/limits#workflow-file-size\">giới hạn kích thước tệp workflow</a>.</td><td></td></tr><tr><td>Checks</td><td>Số check run trong một check suite</td><td>50.000 check run / check suite</td><td>Mỗi check suite có tối đa 50.000 check run, tính cả check run được tạo qua Checks API và các workflow run của GitHub Actions. Khi suite đạt giới hạn, không thể tạo thêm check run cho suite đó.</td><td>Gửi support ticket</td></tr><tr><td>Hàng đợi workflow</td><td>Tốc độ sự kiện kích hoạt workflow</td><td>1.500 sự kiện / 10 giây / repository</td><td>Giới hạn số sự kiện kích hoạt workflow run trong mỗi repository.</td><td>Gửi support ticket</td></tr><tr><td>Hàng đợi workflow</td><td>Số workflow run được đưa vào hàng đợi</td><td>500 workflow run / 10 giây</td><td>Khi chạm giới hạn, các run lẽ ra được sự kiện webhook kích hoạt sẽ bị chặn và không được đưa vào hàng đợi. Reusable workflows được tính như một thực thể: một run có 30 reusable workflows vẫn chỉ tính là 1 trong giới hạn này.</td><td></td></tr><tr><td>Hàng đợi workflow</td><td>Hàng đợi của concurrency group</td><td>100 workflow run / concurrency group</td><td>Khi dùng <code>queue: max</code> trong phần <code>concurrency</code>, mỗi concurrency group có thể xếp hàng tối đa 100 job hoặc workflow run. Các run vượt giới hạn bị từ chối.</td><td></td></tr><tr><td>Self-hosted runners</td><td>Đăng ký runner</td><td>1.500 runner / 5 phút / repository, organization hoặc enterprise</td><td>Giới hạn đăng ký runner theo phạm vi repository, organization hoặc enterprise.</td><td>Gửi support ticket</td></tr><tr><td>Self-hosted runners</td><td>Số runner trong một runner group</td><td>10.000 runner</td><td>Số runner tối đa được đăng ký cùng lúc trong mỗi runner group.</td><td></td></tr><tr><td>Self-hosted runners</td><td>Thời gian thực thi job</td><td>5 ngày</td><td>Mỗi job trong workflow được thực thi tối đa 5 ngày. Khi chạm giới hạn, job bị chấm dứt và thất bại.</td><td></td></tr><tr><td>Self-hosted runners</td><td>Thời gian job chờ trong hàng đợi</td><td>24 giờ</td><td>Job có thể nằm trong hàng đợi 24 giờ trước khi tự động bị hủy.</td><td></td></tr><tr><td>Tất cả GitHub-hosted runners</td><td>Số job chạy đồng thời</td><td>Tùy trường hợp</td><td>Xem <a href=\"https://docs.github.com/en/actions/reference/limits#job-concurrency-limits-for-github-hosted-runners\">giới hạn số job chạy đồng thời trên GitHub-hosted runners</a>.</td><td>Gửi support ticket</td></tr><tr><td>Tất cả GitHub-hosted runners</td><td>Thời gian thực thi job</td><td>6 giờ</td><td>Mỗi job trong workflow được thực thi tối đa 6 giờ. Khi chạm giới hạn, job bị chấm dứt và thất bại.</td><td></td></tr><tr><td>Tất cả GitHub-hosted runners</td><td>Dung lượng lưu trữ</td><td>Tùy trường hợp</td><td>Xem <a href=\"https://docs.github.com/en/actions/reference/limits#storage-limits-for-all-github-hosted-runners\">giới hạn lưu trữ của GitHub-hosted runners</a>.</td><td></td></tr><tr><td>Larger runners</td><td>Giới hạn chạy đồng thời trên từng runner</td><td>Tùy loại runner</td><td>Được thiết lập khi cấu hình runner. Với Linux CPU runners, mức tối đa thông thường là 1.000, nhưng giới hạn thay đổi theo loại runner. Xem <a href=\"https://docs.github.com/en/actions/reference/limits#job-concurrency-limits-for-github-hosted-runners\">giới hạn số job chạy đồng thời trên GitHub-hosted runners</a>.</td><td>Gửi support ticket</td></tr><tr><td>Larger runners</td><td>IP tĩnh</td><td>10 IP</td><td>10 IP cho mỗi enterprise và organization.</td><td>Gửi support ticket</td></tr><tr><td>Larger runners</td><td>Mở rộng IP riêng cho vnet injection</td><td>Phần dự phòng 30%</td><td>Cần phần dự phòng để đáp ứng số job chạy đồng thời tối đa dự kiến. Xem <a href=\"https://docs.github.com/en/actions/reference/limits#private-ip-scaling-for-vnet-injection-on-larger-runners\">mở rộng IP riêng cho vnet injection trên larger runners</a>.</td><td>Có thể cấu hình Azure virtual network</td></tr><tr><td>Cache phụ thuộc</td><td>Tải lên cache mỗi phút</td><td>200 / phút / repository</td><td>Mỗi repository được tải lên tối đa 200 mục cache mỗi phút. Nếu vượt giới hạn, các lần tải lên tiếp theo sẽ thất bại cho đến khi giới hạn tốc độ được đặt lại.</td><td></td></tr><tr><td>Cache phụ thuộc</td><td>Tải xuống cache mỗi phút</td><td>1.500 / phút / repository</td><td>Mỗi repository được tải xuống tối đa 1.500 mục cache mỗi phút. Nếu vượt giới hạn, các lần tải xuống tiếp theo sẽ thất bại cho đến khi giới hạn tốc độ được đặt lại.</td><td></td></tr><tr><td>Cache phụ thuộc</td><td>Xóa cache mỗi phút</td><td>400 / phút / repository</td><td>Mỗi repository được thực hiện tối đa 400 thao tác xóa cache mỗi phút. Nếu vượt giới hạn, các lần xóa tiếp theo sẽ thất bại cho đến khi giới hạn tốc độ được đặt lại. Mỗi yêu cầu xóa theo key hoặc ID đều được tính vào giới hạn.</td><td></td></tr></tbody></table><p><strong>Lưu ý khi đọc bảng:</strong> Trích đoạn không cung cấp các mức cụ thể cho những ô “Tùy trường hợp” và không có bảng so sánh theo gói GitHub. Mức 1.000 chỉ là mức tối đa thông thường của Linux CPU larger runners, không áp dụng chung cho mọi loại runner. “Gửi support ticket” là kênh yêu cầu tăng giới hạn, không bảo đảm yêu cầu được chấp thuận. Ô trống chỉ có nghĩa là bảng nguồn không nêu thông tin, không phải khẳng định giới hạn đó không thể tăng.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04",
+                    "F05",
+                    "F06",
+                    "F07",
+                    "F08",
+                    "F09",
+                    "F10",
+                    "F11",
+                    "F12",
+                    "F13",
+                    "F14",
+                    "F15",
+                    "F16",
+                    "F17",
+                    "F18",
+                    "F19",
+                    "F20",
+                    "F21",
+                    "F22",
+                    "F23"
+                ],
+                "issues": []
+            },
+            "diagnostics": {
+                "response_id": "resp_07bf1bf151a9b494016ac37246d7d487d295ba80e3a8edd2e1",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.editor.v1",
+                "usage": {
+                    "prompt_tokens": 12091,
+                    "completion_tokens": 2385,
+                    "total_tokens": 14476,
+                    "reasoning_tokens": 26
+                }
+            },
+            "latency_ms": 88491
+        }
+    ],
+    "latency_ms": 321634,
+    "input_sha256": "8ebea0ae225583a104735eb4add1f66c5b1c6d44ceb23a010b30cf8bc380f13b",
+    "comparison_input_sha256": "5143700da97eb1daaa27276962bb22160dcad28885e00e80508265dd85639518",
+    "writing_profile_sha256": "1267aa8b907b63f12cd8c953c4a6664dbea3f3e7acabb12a28e64293053a7c96",
+    "brief_sha256": "5ab4339b81d3415a49809df315e63897ce01cb7cda99a48ec794dae36595a3bf",
+    "image_evaluation": {
+        "mode": "source_metadata_only",
+        "source_images": 0,
+        "approved_asset_regenerate": "not_evaluated",
+        "pixel_understanding": "not_evaluated"
+    },
+    "source_sha256": "40bf21530b23c3075de716de8f637952b3c35e22fb7ddf9f4374186075bedd06",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Giới hạn GitHub Actions: thời gian chạy, hàng đợi, runner và cache",
+        "content_html": "<p><strong>Giới hạn 35 ngày của một workflow run tính cả thời gian thực thi, chờ và phê duyệt — không phải thời gian chạy tối đa của từng job.</strong> Mỗi job có giới hạn riêng: 6 giờ trên GitHub-hosted runner và 5 ngày trên self-hosted runner.</p><p>Bảng dưới đây dựa trên mục <a href=\"https://docs.github.com/en/actions/reference/limits#existing-system-limits\">Existing system limits</a> trong <a href=\"https://docs.github.com/en/actions/reference/limits\">tài liệu GitHub Actions</a>, theo bản trích đoạn được thu thập lúc 2026-10-05T06:39:07+00:00. Đây là thời điểm thu thập, không phải ngày công bố hay cập nhật giới hạn. Các giới hạn có thể thay đổi.</p><h2>Bảng giới hạn hệ thống GitHub Actions</h2><table><thead><tr><th scope=\"col\">Nhóm giới hạn</th><th scope=\"col\">Giới hạn</th><th scope=\"col\">Ngưỡng</th><th scope=\"col\">Mô tả và điều kiện</th><th scope=\"col\">Khả năng yêu cầu tăng giới hạn</th></tr></thead><tbody><tr><td>Thực thi workflow</td><td>Thời gian của workflow run</td><td>35 ngày / workflow run</td><td>Tính cả thời gian thực thi, chờ và phê duyệt. Khi chạm giới hạn, workflow run bị hủy.</td><td></td></tr><tr><td>Thực thi workflow</td><td>Thời gian chờ phê duyệt</td><td>30 ngày</td><td>Workflow có thể <a href=\"https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments#wait-timer\">chờ phê duyệt môi trường tối đa 30 ngày</a>.</td><td></td></tr><tr><td>Thực thi workflow</td><td>Job matrix</td><td>256 job / workflow run</td><td>Một job matrix có thể tạo tối đa 256 job trong mỗi workflow run. Áp dụng cho cả GitHub-hosted và self-hosted runners.</td><td></td></tr><tr><td>Thực thi workflow</td><td>Chạy lại</td><td>50 lần chạy lại</td><td>Mỗi workflow run được chạy lại tối đa 50 lần, tính cả chạy lại toàn bộ và chạy lại một phần các job.</td><td>Gửi support ticket</td></tr><tr><td>Tệp workflow</td><td>Kích thước tệp workflow</td><td>500 KB / tệp</td><td>Tệp lớn hơn 500 KB sẽ không khởi chạy các run. Xem <a href=\"https://docs.github.com/en/actions/reference/limits#workflow-file-size\">giới hạn kích thước tệp workflow</a>.</td><td></td></tr><tr><td>Checks</td><td>Số check run trong một check suite</td><td>50.000 check run / check suite</td><td>Mỗi check suite có tối đa 50.000 check run, tính cả check run được tạo qua Checks API và các workflow run của GitHub Actions. Khi suite đạt giới hạn, không thể tạo thêm check run cho suite đó.</td><td>Gửi support ticket</td></tr><tr><td>Hàng đợi workflow</td><td>Tốc độ sự kiện kích hoạt workflow</td><td>1.500 sự kiện / 10 giây / repository</td><td>Giới hạn số sự kiện kích hoạt workflow run trong mỗi repository.</td><td>Gửi support ticket</td></tr><tr><td>Hàng đợi workflow</td><td>Số workflow run được đưa vào hàng đợi</td><td>500 workflow run / 10 giây</td><td>Khi chạm giới hạn, các run lẽ ra được sự kiện webhook kích hoạt sẽ bị chặn và không được đưa vào hàng đợi. Reusable workflows được tính như một thực thể: một run có 30 reusable workflows vẫn chỉ tính là 1 trong giới hạn này.</td><td></td></tr><tr><td>Hàng đợi workflow</td><td>Hàng đợi của concurrency group</td><td>100 workflow run / concurrency group</td><td>Khi dùng <code>queue: max</code> trong phần <code>concurrency</code>, mỗi concurrency group có thể xếp hàng tối đa 100 job hoặc workflow run. Các run vượt giới hạn bị từ chối.</td><td></td></tr><tr><td>Self-hosted runners</td><td>Đăng ký runner</td><td>1.500 runner / 5 phút / repository, organization hoặc enterprise</td><td>Giới hạn đăng ký runner theo phạm vi repository, organization hoặc enterprise.</td><td>Gửi support ticket</td></tr><tr><td>Self-hosted runners</td><td>Số runner trong một runner group</td><td>10.000 runner</td><td>Số runner tối đa được đăng ký cùng lúc trong mỗi runner group.</td><td></td></tr><tr><td>Self-hosted runners</td><td>Thời gian thực thi job</td><td>5 ngày</td><td>Mỗi job trong workflow được thực thi tối đa 5 ngày. Khi chạm giới hạn, job bị chấm dứt và thất bại.</td><td></td></tr><tr><td>Self-hosted runners</td><td>Thời gian job chờ trong hàng đợi</td><td>24 giờ</td><td>Job có thể nằm trong hàng đợi 24 giờ trước khi tự động bị hủy.</td><td></td></tr><tr><td>Tất cả GitHub-hosted runners</td><td>Số job chạy đồng thời</td><td>Tùy trường hợp</td><td>Xem <a href=\"https://docs.github.com/en/actions/reference/limits#job-concurrency-limits-for-github-hosted-runners\">giới hạn số job chạy đồng thời trên GitHub-hosted runners</a>.</td><td>Gửi support ticket</td></tr><tr><td>Tất cả GitHub-hosted runners</td><td>Thời gian thực thi job</td><td>6 giờ</td><td>Mỗi job trong workflow được thực thi tối đa 6 giờ. Khi chạm giới hạn, job bị chấm dứt và thất bại.</td><td></td></tr><tr><td>Tất cả GitHub-hosted runners</td><td>Dung lượng lưu trữ</td><td>Tùy trường hợp</td><td>Xem <a href=\"https://docs.github.com/en/actions/reference/limits#storage-limits-for-all-github-hosted-runners\">giới hạn lưu trữ của GitHub-hosted runners</a>.</td><td></td></tr><tr><td>Larger runners</td><td>Giới hạn chạy đồng thời trên từng runner</td><td>Tùy loại runner</td><td>Được thiết lập khi cấu hình runner. Với Linux CPU runners, mức tối đa thông thường là 1.000, nhưng giới hạn thay đổi theo loại runner. Xem <a href=\"https://docs.github.com/en/actions/reference/limits#job-concurrency-limits-for-github-hosted-runners\">giới hạn số job chạy đồng thời trên GitHub-hosted runners</a>.</td><td>Gửi support ticket</td></tr><tr><td>Larger runners</td><td>IP tĩnh</td><td>10 IP</td><td>10 IP cho mỗi enterprise và organization.</td><td>Gửi support ticket</td></tr><tr><td>Larger runners</td><td>Mở rộng IP riêng cho vnet injection</td><td>Phần dự phòng 30%</td><td>Cần phần dự phòng để đáp ứng số job chạy đồng thời tối đa dự kiến. Xem <a href=\"https://docs.github.com/en/actions/reference/limits#private-ip-scaling-for-vnet-injection-on-larger-runners\">mở rộng IP riêng cho vnet injection trên larger runners</a>.</td><td>Có thể cấu hình Azure virtual network</td></tr><tr><td>Cache phụ thuộc</td><td>Tải lên cache mỗi phút</td><td>200 / phút / repository</td><td>Mỗi repository được tải lên tối đa 200 mục cache mỗi phút. Nếu vượt giới hạn, các lần tải lên tiếp theo sẽ thất bại cho đến khi giới hạn tốc độ được đặt lại.</td><td></td></tr><tr><td>Cache phụ thuộc</td><td>Tải xuống cache mỗi phút</td><td>1.500 / phút / repository</td><td>Mỗi repository được tải xuống tối đa 1.500 mục cache mỗi phút. Nếu vượt giới hạn, các lần tải xuống tiếp theo sẽ thất bại cho đến khi giới hạn tốc độ được đặt lại.</td><td></td></tr><tr><td>Cache phụ thuộc</td><td>Xóa cache mỗi phút</td><td>400 / phút / repository</td><td>Mỗi repository được thực hiện tối đa 400 thao tác xóa cache mỗi phút. Nếu vượt giới hạn, các lần xóa tiếp theo sẽ thất bại cho đến khi giới hạn tốc độ được đặt lại. Mỗi yêu cầu xóa theo key hoặc ID đều được tính vào giới hạn.</td><td></td></tr></tbody></table><p><strong>Lưu ý khi đọc bảng:</strong> Trích đoạn không cung cấp các mức cụ thể cho những ô “Tùy trường hợp” và không có bảng so sánh theo gói GitHub. Mức 1.000 chỉ là mức tối đa thông thường của Linux CPU larger runners, không áp dụng chung cho mọi loại runner. “Gửi support ticket” là kênh yêu cầu tăng giới hạn, không bảo đảm yêu cầu được chấp thuận. Ô trống chỉ có nghĩa là bảng nguồn không nêu thông tin, không phải khẳng định giới hạn đó không thể tăng.</p>"
+    },
+    "total_tokens": 37608
+}

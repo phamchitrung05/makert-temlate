@@ -1,0 +1,197 @@
+{
+    "arm": "C",
+    "status": "ready",
+    "error_code": null,
+    "final": {
+        "title": "Nâng cấp Laravel từ 11.x lên 12.0: hai mục có tác động lớn",
+        "content_html": "<p>Hướng dẫn <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#upgrade-12.0\">nâng cấp Laravel từ 11.x lên 12.0</a> liệt kê hai mục trong nhóm thay đổi có tác động lớn (High Impact Changes): <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#updating-dependencies\">cập nhật các phụ thuộc (dependencies)</a> và <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#updating-the-laravel-installer\">cập nhật Laravel Installer</a>.</p><p>Phần trích từ <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md\">tài liệu nâng cấp Laravel</a> được cung cấp chỉ có tiêu đề và các liên kết, chưa nêu cách thực hiện, phiên bản phụ thuộc, yêu cầu môi trường hay điều kiện tương thích. Các mục này là điểm để đọc tiếp, chưa đủ để xác định dự án cần sửa gì hoặc chạy lệnh nào khi nâng cấp.</p>"
+    },
+    "quality_checks": [
+        {
+            "check": "copy",
+            "status": "skipped",
+            "reason": "short_prose"
+        },
+        {
+            "check": "language",
+            "status": "pass",
+            "detected": "vi"
+        },
+        {
+            "check": "source_code_links",
+            "status": "pass"
+        },
+        {
+            "check": "important_numbers",
+            "status": "pass"
+        },
+        {
+            "check": "unanchored_numbers",
+            "status": "pass",
+            "count": 0,
+            "reason": "requires_editor_review"
+        },
+        {
+            "check": "semantic_grounding",
+            "status": "undetermined",
+            "reason": "source_anchors_are_not_external_fact_verification"
+        }
+    ],
+    "cost": null,
+    "calls": [
+        {
+            "task": "article.analysis-plan",
+            "output": {
+                "knowledge": {
+                    "facts": [
+                        {
+                            "id": "F01",
+                            "claim": "Nguồn liệt kê mục hướng dẫn nâng cấp lên phiên bản 12.0 từ 11.x.",
+                            "source_block_ids": [
+                                "S002"
+                            ],
+                            "evidence": "Upgrading To 12.0 From 11.x",
+                            "important": true
+                        },
+                        {
+                            "id": "F02",
+                            "claim": "Trong phần “High Impact Changes” (các thay đổi có tác động lớn), nguồn liệt kê mục cập nhật các phụ thuộc.",
+                            "source_block_ids": [
+                                "S003",
+                                "S004"
+                            ],
+                            "evidence": "Updating Dependencies",
+                            "important": true
+                        },
+                        {
+                            "id": "F03",
+                            "claim": "Trong phần “High Impact Changes” (các thay đổi có tác động lớn), nguồn liệt kê mục cập nhật Laravel Installer.",
+                            "source_block_ids": [
+                                "S003",
+                                "S005"
+                            ],
+                            "evidence": "Updating the Laravel Installer",
+                            "important": true
+                        }
+                    ],
+                    "terms": [
+                        "Laravel",
+                        "Laravel Installer",
+                        "phụ thuộc (dependencies)",
+                        "thay đổi có tác động lớn (High Impact Changes)",
+                        "12.0",
+                        "11.x"
+                    ],
+                    "uncertainties": [
+                        "Nội dung được cung cấp chỉ gồm tiêu đề và các mục liên kết, không có phần hướng dẫn nâng cấp chi tiết.",
+                        "Nguồn chưa nêu phiên bản cụ thể của các phụ thuộc, yêu cầu môi trường, lệnh cập nhật hay điều kiện tương thích.",
+                        "Không đủ dữ liệu để mô tả từng thay đổi phá vỡ tương thích, cách xử lý hoặc mức độ ảnh hưởng đối với một dự án cụ thể."
+                    ]
+                },
+                "writing_plan": {
+                    "article_type": "Bản tóm tắt ngắn về phạm vi hướng dẫn nâng cấp và giới hạn thông tin nguồn",
+                    "audience": "Người phát triển website, kể cả người mới tìm hiểu việc nâng cấp Laravel.",
+                    "angle": "Nêu ngay phạm vi nâng cấp từ 11.x lên 12.0 và hai mục được nguồn xếp vào nhóm có tác động lớn; phân biệt rõ danh mục cần tham khảo với các yêu cầu kỹ thuật chưa được cung cấp.",
+                    "outline": [
+                        "Đặt tiêu đề ngắn về nâng cấp Laravel từ 11.x lên 12.0, không hứa hẹn hướng dẫn chi tiết.",
+                        "Đoạn đầu giới thiệu phạm vi nâng cấp và hai mục có tác động lớn: cập nhật phụ thuộc và cập nhật Laravel Installer. Khi viết bài, gắn ba mục với anchor thật, giữ nguyên lần lượt các href: https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#upgrade-12.0 ; https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#updating-dependencies ; https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#updating-the-laravel-installer .",
+                        "Đoạn cuối làm rõ phần nguồn được cung cấp mới là danh mục liên kết, chưa chứa điều kiện tương thích, phiên bản phụ thuộc hoặc thao tác cập nhật. Không suy diễn yêu cầu kỹ thuật hay thêm code; dẫn nguồn bằng anchor tới https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md . Giữ toàn bài trong khoảng hai đoạn ngắn, không lặp ý."
+                    ],
+                    "coverage_fact_ids": [
+                        "F01",
+                        "F02",
+                        "F03"
+                    ]
+                }
+            },
+            "diagnostics": {
+                "response_id": "resp_080d7c59b18e0e86016ac3471a71e487d0b6c7216617aa6632",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.analysis-plan.v1",
+                "usage": {
+                    "prompt_tokens": 3306,
+                    "completion_tokens": 866,
+                    "total_tokens": 4172
+                }
+            },
+            "latency_ms": 28891
+        },
+        {
+            "task": "article.writer",
+            "output": {
+                "draft": {
+                    "title": "Nâng cấp Laravel từ 11.x lên 12.0: hai mục có tác động lớn",
+                    "content_html": "<p>Trong hướng dẫn <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#upgrade-12.0\">nâng cấp Laravel từ 11.x lên 12.0</a>, nguồn liệt kê hai mục thuộc nhóm thay đổi có tác động lớn (High Impact Changes): <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#updating-dependencies\">cập nhật các phụ thuộc (dependencies)</a> và <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#updating-the-laravel-installer\">cập nhật Laravel Installer</a>.</p><p>Phần trích từ <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md\">tài liệu nâng cấp Laravel</a> được cung cấp chỉ gồm tiêu đề và các liên kết, chưa có hướng dẫn thao tác, phiên bản phụ thuộc, yêu cầu môi trường hay điều kiện tương thích. Vì vậy, phần này giúp xác định các mục cần đọc tiếp, nhưng chưa đủ để kết luận dự án cần sửa gì hoặc chạy lệnh nào khi nâng cấp.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03"
+                ],
+                "used_asset_ids": []
+            },
+            "diagnostics": {
+                "response_id": "resp_0edf5d019be66ef9016ac347376d9c87d08a51d5f7ba85aba7",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.writer.v1",
+                "usage": {
+                    "prompt_tokens": 3271,
+                    "completion_tokens": 402,
+                    "total_tokens": 3673
+                }
+            },
+            "latency_ms": 15544
+        },
+        {
+            "task": "article.editor",
+            "output": {
+                "final": {
+                    "title": "Nâng cấp Laravel từ 11.x lên 12.0: hai mục có tác động lớn",
+                    "content_html": "<p>Hướng dẫn <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#upgrade-12.0\">nâng cấp Laravel từ 11.x lên 12.0</a> liệt kê hai mục trong nhóm thay đổi có tác động lớn (High Impact Changes): <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#updating-dependencies\">cập nhật các phụ thuộc (dependencies)</a> và <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#updating-the-laravel-installer\">cập nhật Laravel Installer</a>.</p><p>Phần trích từ <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md\">tài liệu nâng cấp Laravel</a> được cung cấp chỉ có tiêu đề và các liên kết, chưa nêu cách thực hiện, phiên bản phụ thuộc, yêu cầu môi trường hay điều kiện tương thích. Các mục này là điểm để đọc tiếp, chưa đủ để xác định dự án cần sửa gì hoặc chạy lệnh nào khi nâng cấp.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03"
+                ],
+                "issues": []
+            },
+            "diagnostics": {
+                "response_id": "resp_0b78db518660d9c5016ac34747d1d087d09a9433f8a40228b7",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.editor.v1",
+                "usage": {
+                    "prompt_tokens": 3682,
+                    "completion_tokens": 408,
+                    "total_tokens": 4090
+                }
+            },
+            "latency_ms": 16312
+        }
+    ],
+    "latency_ms": 60756,
+    "input_sha256": "d2cf45cace68b2aba88410fc6bc2b899c66d75e501a304becf0f88da57989d3c",
+    "comparison_input_sha256": "62974da0c98e3bfedbd2b29301cbea50ab0f5daac9668715e93e4f1ff0299240",
+    "writing_profile_sha256": "1267aa8b907b63f12cd8c953c4a6664dbea3f3e7acabb12a28e64293053a7c96",
+    "brief_sha256": "a7f052446c270a2c36979d5688c0edaf10a0f5a164ae6ab255b69d622b3c56c6",
+    "image_evaluation": {
+        "mode": "source_metadata_only",
+        "source_images": 0,
+        "approved_asset_regenerate": "not_evaluated",
+        "pixel_understanding": "not_evaluated"
+    },
+    "source_sha256": "63c6be0dbfd9d483dd37fed6a9bc6da165610821c5d476294427e2e88bb5101b",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Nâng cấp Laravel từ 11.x lên 12.0: hai mục có tác động lớn",
+        "content_html": "<p>Hướng dẫn <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#upgrade-12.0\">nâng cấp Laravel từ 11.x lên 12.0</a> liệt kê hai mục trong nhóm thay đổi có tác động lớn (High Impact Changes): <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#updating-dependencies\">cập nhật các phụ thuộc (dependencies)</a> và <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#updating-the-laravel-installer\">cập nhật Laravel Installer</a>.</p><p>Phần trích từ <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md\">tài liệu nâng cấp Laravel</a> được cung cấp chỉ có tiêu đề và các liên kết, chưa nêu cách thực hiện, phiên bản phụ thuộc, yêu cầu môi trường hay điều kiện tương thích. Các mục này là điểm để đọc tiếp, chưa đủ để xác định dự án cần sửa gì hoặc chạy lệnh nào khi nâng cấp.</p>"
+    },
+    "total_tokens": 11935
+}

@@ -108,6 +108,10 @@ async function renderList() {
       plugins: [router, createVuetify()],
       components: { VDataTableServer, VBtn, VChip },
       stubs: {
+        AiPromptCreateDialog: true,
+        AiPromptEditDialog: true,
+        AiPromptToggleDialog: true,
+        AiPromptDeleteDialog: true,
         VCard: { template: '<section><slot /></section>' },
         VCardText: { template: '<div><slot /></div>' },
         VRow: { template: '<div><slot /></div>' },

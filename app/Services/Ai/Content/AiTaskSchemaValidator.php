@@ -40,7 +40,7 @@ final class AiTaskSchemaValidator
     /**
      * =====================================================================
      * Input: giá trị, schema, path và danh sách lỗi truyền tham chiếu.
-     * Output: thêm lỗi type/required/enum/length/extra; không lưu nội dung nguồn.
+     * Output: thêm lỗi type/required/enum/pattern/length/extra; không lưu nội dung nguồn.
      * =====================================================================
      */
     private function check(mixed $value, array $schema, string $path, array &$errors): void
@@ -66,6 +66,9 @@ final class AiTaskSchemaValidator
         }
         if ($type === 'string' && (mb_strlen($value) < ($schema['minLength'] ?? 0) || mb_strlen($value) > ($schema['maxLength'] ?? 200000))) {
             $errors[] = ['field' => $path, 'reason' => 'invalid_length'];
+        }
+        if ($type === 'string' && isset($schema['pattern']) && preg_match('~'.str_replace('~', '\\~', $schema['pattern']).'~u', $value) !== 1) {
+            $errors[] = ['field' => $path, 'reason' => 'invalid_value'];
         }
         if (in_array($type, ['number', 'integer'], true) && ($value < ($schema['minimum'] ?? -INF) || $value > ($schema['maximum'] ?? INF))) {
             $errors[] = ['field' => $path, 'reason' => 'invalid_value'];

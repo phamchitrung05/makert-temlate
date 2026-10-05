@@ -1,0 +1,246 @@
+{
+    "arm": "C",
+    "status": "ready",
+    "error_code": null,
+    "final": {
+        "title": "Quy tắc phiên bản Laravel và lưu ý khi nâng cấp",
+        "content_html": "<p>Khi nâng cấp Laravel, cần phân biệt phiên bản chính (major) với phiên bản phụ (minor) và bản vá (patch): major có những thay đổi phá vỡ tương thích, còn minor và patch theo nguyên tắc <strong>không được chứa những thay đổi này</strong>. Laravel và các gói chính thức khác của Laravel tuân theo <a href=\"https://semver.org\">Semantic Versioning</a>. Các phiên bản major của framework được phát hành hằng năm, khoảng quý I; các bản minor và patch có thể được phát hành hằng tuần.</p>\n<p>Khi khai báo phụ thuộc vào Laravel hoặc các thành phần của framework trong ứng dụng hay gói, tài liệu khuyến nghị luôn dùng ràng buộc phiên bản như <code>^12.0</code>, vì các bản major có thay đổi phá vỡ tương thích. Nhóm phát triển Laravel đặt mục tiêu giúp việc nâng cấp lên bản major mới có thể hoàn thành trong <strong>một ngày hoặc ít hơn</strong>. Đây là mục tiêu nhóm nỗ lực đạt được, không phải bảo đảm về thời gian nâng cấp cho mọi dự án.</p>\n<p>Một ngoại lệ cần chú ý là <a href=\"https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments\">named arguments</a> — cách truyền đối số theo tên. Named arguments không thuộc phạm vi bảo đảm tương thích ngược của Laravel. Nhóm phát triển có thể đổi tên tham số của hàm khi cần cải thiện mã nguồn. Vì vậy, khi dùng named arguments để gọi phương thức Laravel, bạn cần thận trọng: tên tham số có thể thay đổi trong tương lai.</p>\n<p>Nguồn: <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md\">Tài liệu Release Notes của Laravel</a>.</p>"
+    },
+    "quality_checks": [
+        {
+            "check": "copy",
+            "status": "pass"
+        },
+        {
+            "check": "similarity",
+            "status": "pass",
+            "metric": 0.048,
+            "reason": "lexical_metric_not_style_score"
+        },
+        {
+            "check": "language",
+            "status": "pass",
+            "detected": "vi"
+        },
+        {
+            "check": "source_code_links",
+            "status": "pass"
+        },
+        {
+            "check": "important_numbers",
+            "status": "pass"
+        },
+        {
+            "check": "unanchored_numbers",
+            "status": "pass",
+            "count": 0,
+            "reason": "requires_editor_review"
+        },
+        {
+            "check": "semantic_grounding",
+            "status": "undetermined",
+            "reason": "source_anchors_are_not_external_fact_verification"
+        }
+    ],
+    "cost": null,
+    "calls": [
+        {
+            "task": "article.analysis-plan",
+            "output": {
+                "knowledge": {
+                    "facts": [
+                        {
+                            "id": "F01",
+                            "claim": "Laravel và các gói chính thức khác của Laravel tuân theo Semantic Versioning.",
+                            "source_block_ids": [
+                                "S006"
+                            ],
+                            "evidence": "Laravel and its other first-party packages follow Semantic Versioning.",
+                            "important": true
+                        },
+                        {
+                            "id": "F02",
+                            "claim": "Phiên bản major của framework được phát hành hằng năm, khoảng quý I; các phiên bản minor và patch có thể được phát hành thường xuyên đến mức hằng tuần.",
+                            "source_block_ids": [
+                                "S006"
+                            ],
+                            "evidence": "Major framework releases are released every year (~Q1), while minor and patch releases may be released as often as every week.",
+                            "important": true
+                        },
+                        {
+                            "id": "F03",
+                            "claim": "Theo nguyên tắc trong tài liệu, các phiên bản minor và patch không được chứa thay đổi phá vỡ tương thích.",
+                            "source_block_ids": [
+                                "S006"
+                            ],
+                            "evidence": "Minor and patch releases should never contain breaking changes.",
+                            "important": true
+                        },
+                        {
+                            "id": "F04",
+                            "claim": "Khi khai báo phụ thuộc vào Laravel hoặc các thành phần của framework trong ứng dụng hay gói, tài liệu khuyến nghị luôn dùng ràng buộc phiên bản như ^12.0, vì các phiên bản major có chứa thay đổi phá vỡ tương thích.",
+                            "source_block_ids": [
+                                "S007"
+                            ],
+                            "evidence": "When referencing the Laravel framework or its components from your application or package, you should always use a version constraint such as ^12.0, since major releases of Laravel do include breaking changes.",
+                            "important": true
+                        },
+                        {
+                            "id": "F05",
+                            "claim": "Laravel đặt mục tiêu để việc nâng cấp lên phiên bản major mới có thể hoàn thành trong một ngày hoặc ít hơn; đây là mục tiêu mà nhóm phát triển nỗ lực đạt được, không phải bảo đảm cho mọi dự án.",
+                            "source_block_ids": [
+                                "S007"
+                            ],
+                            "evidence": "However, we strive to always ensure you may update to a new major release in one day or less.",
+                            "important": true
+                        },
+                        {
+                            "id": "F06",
+                            "claim": "Named arguments không nằm trong phạm vi hướng dẫn bảo đảm tương thích ngược của Laravel.",
+                            "source_block_ids": [
+                                "S009"
+                            ],
+                            "evidence": "Named arguments are not covered by Laravel's backwards compatibility guidelines.",
+                            "important": true
+                        },
+                        {
+                            "id": "F07",
+                            "claim": "Laravel có thể đổi tên tham số của hàm khi cần cải thiện mã nguồn. Vì vậy, khi dùng named arguments để gọi phương thức Laravel, cần thận trọng và chấp nhận khả năng tên tham số thay đổi trong tương lai.",
+                            "source_block_ids": [
+                                "S009"
+                            ],
+                            "evidence": "We may choose to rename function arguments when necessary in order to improve the Laravel codebase. Therefore, using named arguments when calling Laravel methods should be done cautiously and with the understanding that the parameter names may change in the future.",
+                            "important": true
+                        }
+                    ],
+                    "terms": [
+                        "Laravel",
+                        "Semantic Versioning",
+                        "major — phiên bản chính",
+                        "minor — phiên bản phụ",
+                        "patch — bản vá",
+                        "breaking changes — thay đổi phá vỡ tương thích",
+                        "version constraint — ràng buộc phiên bản",
+                        "^12.0",
+                        "named arguments — truyền đối số theo tên",
+                        "backwards compatibility — tương thích ngược"
+                    ],
+                    "uncertainties": [
+                        "Support Policy và Laravel 12 chỉ xuất hiện trong mục lục của phần nguồn được cung cấp; không có nội dung để xác định thời hạn hỗ trợ, yêu cầu hệ thống hay tính năng Laravel 12.",
+                        "Nguồn không nêu ngày phát hành cụ thể; khoảng quý I là nhịp phát hành dự kiến chung, không phải lịch cố định.",
+                        "Nguồn không cung cấp quy trình nâng cấp hay thời gian thực tế cho từng dự án; không được biến mục tiêu một ngày hoặc ít hơn thành cam kết.",
+                        "Nguồn không giải thích chi tiết cách diễn giải ^12.0; giữ nguyên ví dụ này, không tự bổ sung giới hạn phiên bản hay cấu hình."
+                    ]
+                },
+                "writing_plan": {
+                    "article_type": "Bài giải thích ngắn về quy tắc phiên bản và lưu ý tương thích của Laravel",
+                    "audience": "Người phát triển website, gồm người mới cần hiểu cách đọc phiên bản và các điều kiện khi nâng cấp Laravel.",
+                    "angle": "Đi thẳng vào khác biệt giữa major và minor/patch, sau đó làm rõ cách khai báo ràng buộc phiên bản và ngoại lệ tương thích ngược đối với named arguments. Chỉ giải thích nội dung có trong đoạn nguồn, không mở rộng thành bài giới thiệu Laravel 12.",
+                    "outline": [
+                        "Đặt tiêu đề tiếng Việt tập trung vào quy tắc phiên bản Laravel và lưu ý khi nâng cấp, không hứa hẹn nội dung về tính năng hay chính sách hỗ trợ chưa được cung cấp.",
+                        "Phần mở đầu ngắn: nêu major có thay đổi phá vỡ tương thích, còn minor và patch theo nguyên tắc không được chứa các thay đổi đó. Giới thiệu Laravel và các gói chính thức tuân theo Semantic Versioning; gắn liên kết thật với href chính xác https://semver.org. Nêu nhịp major hằng năm, khoảng quý I, và minor/patch có thể phát hành hằng tuần.",
+                        "Đoạn tiếp theo: giải thích khuyến nghị dùng ràng buộc phiên bản khi khai báo phụ thuộc vào framework hoặc thành phần của nó trong ứng dụng/gói; giữ nguyên ^12.0 ở dạng mã nội tuyến. Nêu mục tiêu nâng cấp major trong một ngày hoặc ít hơn và phân biệt rõ mục tiêu với bảo đảm.",
+                        "Phần cuối ngắn về named arguments: giữ liên kết thật với href chính xác https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments. Làm rõ ngoại lệ trong hướng dẫn tương thích ngược, khả năng đổi tên tham số để cải thiện mã nguồn và yêu cầu thận trọng khi gọi phương thức Laravel theo tên đối số.",
+                        "Dẫn nguồn bằng liên kết https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md nếu thêm dòng ghi nguồn. Có thể bỏ các liên kết mục lục; không thêm phần Support Policy hay tính năng Laravel 12. Giữ bài gọn, khoảng ba đến bốn đoạn, không lặp kết luận hoặc bổ sung ví dụ API ngoài nguồn."
+                    ],
+                    "coverage_fact_ids": [
+                        "F01",
+                        "F02",
+                        "F03",
+                        "F04",
+                        "F05",
+                        "F06",
+                        "F07"
+                    ]
+                }
+            },
+            "diagnostics": {
+                "response_id": "resp_0db46804a0ac936b016ac33c1e988487d2944e8e8bbc0ca166",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.analysis-plan.v1",
+                "usage": {
+                    "prompt_tokens": 3990,
+                    "completion_tokens": 1513,
+                    "total_tokens": 5503
+                }
+            },
+            "latency_ms": 48832
+        },
+        {
+            "task": "article.writer",
+            "output": {
+                "draft": {
+                    "title": "Quy tắc phiên bản Laravel và lưu ý về tương thích khi nâng cấp",
+                    "content_html": "<p>Khi nâng cấp Laravel, cần phân biệt phiên bản chính (major) với phiên bản phụ (minor) và bản vá (patch): major có chứa thay đổi phá vỡ tương thích, còn minor và patch theo nguyên tắc <strong>không được chứa những thay đổi này</strong>. Laravel và các gói chính thức khác của Laravel tuân theo <a href=\"https://semver.org\">Semantic Versioning</a>. Framework phát hành phiên bản major hằng năm, khoảng quý I; các bản minor và patch có thể được phát hành thường xuyên đến mức hằng tuần.</p>\n<p>Khi khai báo phụ thuộc vào Laravel hoặc các thành phần của framework trong ứng dụng hay gói, tài liệu khuyến nghị luôn dùng ràng buộc phiên bản như <code>^12.0</code>, vì các bản major có thay đổi phá vỡ tương thích. Nhóm phát triển Laravel đặt mục tiêu để việc nâng cấp lên một bản major mới có thể hoàn thành trong <strong>một ngày hoặc ít hơn</strong>. Đây là mục tiêu mà nhóm nỗ lực đạt được, không phải bảo đảm về thời gian nâng cấp cho mọi dự án.</p>\n<p>Một ngoại lệ cần chú ý là <a href=\"https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments\">named arguments</a> — cách truyền đối số theo tên. Cách gọi này không nằm trong phạm vi hướng dẫn bảo đảm tương thích ngược của Laravel. Nhóm phát triển có thể đổi tên tham số của hàm khi cần cải thiện mã nguồn. Vì vậy, nếu dùng named arguments để gọi phương thức Laravel, bạn cần thận trọng và hiểu rằng tên tham số có thể thay đổi trong tương lai.</p>\n<p>Nguồn: <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md\">Tài liệu Release Notes của Laravel</a>.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04",
+                    "F05",
+                    "F06",
+                    "F07"
+                ],
+                "used_asset_ids": []
+            },
+            "diagnostics": {
+                "response_id": "resp_01d94d5b1d0aadf6016ac33c4f3c8887d19143117d6dbb69fd",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.writer.v1",
+                "usage": {
+                    "prompt_tokens": 4517,
+                    "completion_tokens": 491,
+                    "total_tokens": 5008
+                }
+            },
+            "latency_ms": 17314
+        },
+        {
+            "task": "article.editor",
+            "output": {
+                "final": {
+                    "title": "Quy tắc phiên bản Laravel và lưu ý khi nâng cấp",
+                    "content_html": "<p>Khi nâng cấp Laravel, cần phân biệt phiên bản chính (major) với phiên bản phụ (minor) và bản vá (patch): major có những thay đổi phá vỡ tương thích, còn minor và patch theo nguyên tắc <strong>không được chứa những thay đổi này</strong>. Laravel và các gói chính thức khác của Laravel tuân theo <a href=\"https://semver.org\">Semantic Versioning</a>. Các phiên bản major của framework được phát hành hằng năm, khoảng quý I; các bản minor và patch có thể được phát hành hằng tuần.</p>\n<p>Khi khai báo phụ thuộc vào Laravel hoặc các thành phần của framework trong ứng dụng hay gói, tài liệu khuyến nghị luôn dùng ràng buộc phiên bản như <code>^12.0</code>, vì các bản major có thay đổi phá vỡ tương thích. Nhóm phát triển Laravel đặt mục tiêu giúp việc nâng cấp lên bản major mới có thể hoàn thành trong <strong>một ngày hoặc ít hơn</strong>. Đây là mục tiêu nhóm nỗ lực đạt được, không phải bảo đảm về thời gian nâng cấp cho mọi dự án.</p>\n<p>Một ngoại lệ cần chú ý là <a href=\"https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments\">named arguments</a> — cách truyền đối số theo tên. Named arguments không thuộc phạm vi bảo đảm tương thích ngược của Laravel. Nhóm phát triển có thể đổi tên tham số của hàm khi cần cải thiện mã nguồn. Vì vậy, khi dùng named arguments để gọi phương thức Laravel, bạn cần thận trọng: tên tham số có thể thay đổi trong tương lai.</p>\n<p>Nguồn: <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md\">Tài liệu Release Notes của Laravel</a>.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04",
+                    "F05",
+                    "F06",
+                    "F07"
+                ],
+                "issues": []
+            },
+            "diagnostics": {
+                "response_id": "resp_0598f49d8f0ec53f016ac33c60b65c87d0b6afe1663f972e1b",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.editor.v1",
+                "usage": {
+                    "prompt_tokens": 5005,
+                    "completion_tokens": 505,
+                    "total_tokens": 5510
+                }
+            },
+            "latency_ms": 17955
+        }
+    ],
+    "latency_ms": 84115,
+    "input_sha256": "d2cf45cace68b2aba88410fc6bc2b899c66d75e501a304becf0f88da57989d3c",
+    "source_sha256": "3a0301916ee8607e3f5764fa705babeb7028ba6d2798adaf7cd8ac1b6a32d466",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Quy tắc phiên bản Laravel và lưu ý khi nâng cấp",
+        "content_html": "<p>Khi nâng cấp Laravel, cần phân biệt phiên bản chính (major) với phiên bản phụ (minor) và bản vá (patch): major có những thay đổi phá vỡ tương thích, còn minor và patch theo nguyên tắc <strong>không được chứa những thay đổi này</strong>. Laravel và các gói chính thức khác của Laravel tuân theo <a href=\"https://semver.org\">Semantic Versioning</a>. Các phiên bản major của framework được phát hành hằng năm, khoảng quý I; các bản minor và patch có thể được phát hành hằng tuần.</p>\n<p>Khi khai báo phụ thuộc vào Laravel hoặc các thành phần của framework trong ứng dụng hay gói, tài liệu khuyến nghị luôn dùng ràng buộc phiên bản như <code>^12.0</code>, vì các bản major có thay đổi phá vỡ tương thích. Nhóm phát triển Laravel đặt mục tiêu giúp việc nâng cấp lên bản major mới có thể hoàn thành trong <strong>một ngày hoặc ít hơn</strong>. Đây là mục tiêu nhóm nỗ lực đạt được, không phải bảo đảm về thời gian nâng cấp cho mọi dự án.</p>\n<p>Một ngoại lệ cần chú ý là <a href=\"https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments\">named arguments</a> — cách truyền đối số theo tên. Named arguments không thuộc phạm vi bảo đảm tương thích ngược của Laravel. Nhóm phát triển có thể đổi tên tham số của hàm khi cần cải thiện mã nguồn. Vì vậy, khi dùng named arguments để gọi phương thức Laravel, bạn cần thận trọng: tên tham số có thể thay đổi trong tương lai.</p>\n<p>Nguồn: <a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md\">Tài liệu Release Notes của Laravel</a>.</p>"
+    },
+    "total_tokens": 16021
+}

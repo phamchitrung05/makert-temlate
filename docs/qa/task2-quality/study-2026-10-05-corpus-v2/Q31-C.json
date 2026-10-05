@@ -1,0 +1,261 @@
+{
+    "arm": "C",
+    "status": "ready",
+    "error_code": null,
+    "final": {
+        "title": "Phong Nha: sức hút không chỉ đến từ Sơn Đoòng",
+        "content_html": "<p><a href=\"https://vietnam.travel/places-to-go/central-vietnam/phong-nha\">Phong Nha</a> không chỉ thu hút du khách nhờ Sơn Đoòng, hang động được Vietnam Travel giới thiệu là lớn nhất thế giới. Theo bài viết, chỉ trong vài năm, vùng đất yên ắng giáp Lào này đã trở thành một trung tâm du lịch. Việc phát hiện Sơn Đoòng góp phần làm Phong Nha được chú ý hơn, bên cạnh cảnh quan phủ rừng và những thành tạo đá vôi mà nguồn mô tả là lâu đời nhất châu Á.</p><p>Tuy vậy, không phải ai đến Phong Nha cũng có thể khám phá Sơn Đoòng. Trích đoạn cho biết việc vào hang bị giới hạn ở khoảng 200 người mỗi năm, tham gia các tour do Oxalis tổ chức. Nguồn không cung cấp ngày xuất bản, nên không thể coi con số này là hạn mức hiện hành đã được xác minh.</p><p>Ngoài Sơn Đoòng, Phong Nha còn có các hoạt động ngoài trời dành cho người yêu thiên nhiên. Theo nguồn, phần lớn tour trong khu vực có hoạt động tham quan hang động, nhưng người không thích không gian tối vẫn có nhiều lựa chọn khác. Trích đoạn chưa nêu cụ thể những lựa chọn này.</p><p>Nguồn: <a href=\"https://www.vietnam.travel/things-to-do/cave-country-phong-nha\">bài viết của Vietnam Travel về Phong Nha</a>. Nội dung trên chỉ giới thiệu thông tin có trong trích đoạn được cung cấp.</p>"
+    },
+    "quality_checks": [
+        {
+            "check": "copy",
+            "status": "pass"
+        },
+        {
+            "check": "similarity",
+            "status": "pass",
+            "metric": 0.023,
+            "reason": "lexical_metric_not_style_score"
+        },
+        {
+            "check": "language",
+            "status": "pass",
+            "detected": "vi"
+        },
+        {
+            "check": "source_code_links",
+            "status": "pass"
+        },
+        {
+            "check": "important_numbers",
+            "status": "pass"
+        },
+        {
+            "check": "unanchored_numbers",
+            "status": "pass",
+            "count": 0,
+            "reason": "requires_editor_review"
+        },
+        {
+            "check": "semantic_grounding",
+            "status": "undetermined",
+            "reason": "source_anchors_are_not_external_fact_verification"
+        }
+    ],
+    "cost": null,
+    "calls": [
+        {
+            "task": "article.analysis-plan",
+            "output": {
+                "knowledge": {
+                    "facts": [
+                        {
+                            "id": "F01",
+                            "claim": "Theo nguồn, Phong Nha đã chuyển từ một địa điểm yên ắng giáp Lào thành trung tâm du lịch chỉ trong vài năm; đây là mô tả theo thời điểm của nguồn, không phải cập nhật hiện tại.",
+                            "source_block_ids": [
+                                "S002"
+                            ],
+                            "evidence": "In just a few short years, Phong Nha has gone from a sleepy, outpost bordering Laos, to a full-scale tourist centre.",
+                            "important": true
+                        },
+                        {
+                            "id": "F02",
+                            "claim": "Nguồn mô tả Phong Nha có những thành tạo đá vôi lâu đời nhất châu Á và cảnh quan phủ rừng.",
+                            "source_block_ids": [
+                                "S002"
+                            ],
+                            "evidence": "In addition to possessing the continent’s oldest limestone formations and its jungle-covered scenery,",
+                            "important": true
+                        },
+                        {
+                            "id": "F03",
+                            "claim": "Nguồn giới thiệu Sơn Đoòng là hang động lớn nhất thế giới và cho rằng việc phát hiện hang góp phần làm Phong Nha thu hút sự chú ý.",
+                            "source_block_ids": [
+                                "S001",
+                                "S002"
+                            ],
+                            "evidence": "the discovery of Han Son Doong, the largest caves in the world, catapulted the excitement to new heights.",
+                            "important": true
+                        },
+                        {
+                            "id": "F04",
+                            "claim": "Theo trích đoạn, việc vào Sơn Đoòng bị giới hạn ở khoảng 200 người khám phá hang mỗi năm, tham gia các tour do Oxalis tổ chức; không được trình bày con số này như hạn mức hiện hành đã được xác minh.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "entrance is restricted to a lucky 200 or so cavers a year who travel on tours organised by Oxalis",
+                            "important": true
+                        },
+                        {
+                            "id": "F05",
+                            "claim": "Phong Nha còn thu hút du khách nhờ các hoạt động ngoài trời, không chỉ riêng Sơn Đoòng.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "But it’s not just Son Doong that people travel to Phong Nha for -- entrance is restricted to a lucky 200 or so cavers a year who travel on tours organised by Oxalis -- but all the other outdoor-based activities available in the area.",
+                            "important": true
+                        },
+                        {
+                            "id": "F06",
+                            "claim": "Theo nguồn, phần lớn các tour trong khu vực có hoạt động tham quan hang động.",
+                            "source_block_ids": [
+                                "S004"
+                            ],
+                            "evidence": "Most of the tours include the caves.",
+                            "important": true
+                        },
+                        {
+                            "id": "F07",
+                            "claim": "Nguồn khẳng định khu vực còn nhiều lựa chọn cho người không thích không gian tối, nhưng trích đoạn không nêu cụ thể các lựa chọn đó.",
+                            "source_block_ids": [
+                                "S004"
+                            ],
+                            "evidence": "And for those who aren’t into dark, spaces, there are many other options to wile away some time.",
+                            "important": true
+                        },
+                        {
+                            "id": "F08",
+                            "claim": "Trích đoạn kết thúc ở tiêu đề về động Phong Nha và động Thiên Đường, chưa có nội dung giới thiệu hai hang này.",
+                            "source_block_ids": [
+                                "S005"
+                            ],
+                            "evidence": "Phong Nha and Paradise Caves",
+                            "important": false
+                        }
+                    ],
+                    "terms": [
+                        "Phong Nha",
+                        "Sơn Đoòng — nguồn ghi “Han Son Doong” và “Son Doong”",
+                        "Oxalis",
+                        "Thành tạo đá vôi",
+                        "Động Thiên Đường — Paradise Cave"
+                    ],
+                    "uncertainties": [
+                        "Nguồn không cung cấp ngày xuất bản; thời điểm thu thập không xác lập thời điểm của các mô tả trong bài.",
+                        "Chưa có dữ liệu trong trích đoạn để xác minh hạn mức khoảng 200 người mỗi năm còn áp dụng hiện nay hay không.",
+                        "Nhận định về các thành tạo đá vôi lâu đời nhất châu Á không kèm niên đại hoặc căn cứ so sánh trong trích đoạn; cần giữ quy thuộc cho nguồn.",
+                        "Trích đoạn không nêu tên các hoạt động ngoài trời khác, lịch trình, giá tour, cách đặt chỗ hay điều kiện tham gia chi tiết.",
+                        "Không có phần nội dung sau tiêu đề về động Phong Nha và động Thiên Đường; không được tự bổ sung mô tả hai hang."
+                    ]
+                },
+                "writing_plan": {
+                    "article_type": "Bài giới thiệu điểm đến ngắn dựa trên trích đoạn",
+                    "audience": "Người đọc tiếng Việt muốn tìm hiểu khái quát về Phong Nha",
+                    "angle": "Phong Nha không chỉ có Sơn Đoòng: giới thiệu sức hút của cảnh quan và các lựa chọn gần gũi thiên nhiên, đồng thời giữ rõ giới hạn tham quan được nguồn nêu và không biến thông tin chưa có ngày xuất bản thành cập nhật hiện hành.",
+                    "outline": [
+                        "Đặt tiêu đề ngắn nhấn mạnh Phong Nha có sức hút ngoài Sơn Đoòng; tránh giọng quảng cáo hoặc hàm ý có hướng dẫn tham quan đầy đủ.",
+                        "Đoạn mở: nêu ngay Sơn Đoòng và sức hút thiên nhiên của Phong Nha; lồng bối cảnh chuyển mình từ địa điểm yên ắng giáp Lào thành trung tâm du lịch trong vài năm theo nguồn. Quy thuộc nhận định về đá vôi lâu đời nhất châu Á cho nguồn. Gắn tên Phong Nha với liên kết thật, giữ nguyên href https://vietnam.travel/places-to-go/central-vietnam/phong-nha.",
+                        "Đoạn hai: giải thích không phải ai đến Phong Nha cũng tham quan Sơn Đoòng. Nêu chính xác giới hạn khoảng 200 người khám phá hang mỗi năm qua tour do Oxalis tổ chức, với cách dẫn “theo trích đoạn nguồn”, không khẳng định đây là hạn mức hiện nay.",
+                        "Đoạn cuối: nêu phần lớn tour có tham quan hang nhưng khu vực còn hoạt động ngoài trời và lựa chọn cho người không thích không gian tối. Không liệt kê hoạt động hay mô tả động Phong Nha, động Thiên Đường vì trích đoạn chưa cung cấp. Dẫn nguồn bằng liên kết thật tới https://www.vietnam.travel/things-to-do/cave-country-phong-nha. Toàn bài khoảng ba đoạn ngắn, không kéo dài bằng các mục thiếu dữ liệu."
+                    ],
+                    "coverage_fact_ids": [
+                        "F01",
+                        "F02",
+                        "F03",
+                        "F04",
+                        "F05",
+                        "F06",
+                        "F07"
+                    ]
+                }
+            },
+            "diagnostics": {
+                "response_id": "resp_0ee5cb7033ee3a3e016ac35214298887d18a33ef74e6d91292",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.analysis-plan.v1",
+                "usage": {
+                    "prompt_tokens": 3449,
+                    "completion_tokens": 1562,
+                    "total_tokens": 5011,
+                    "reasoning_tokens": 41
+                }
+            },
+            "latency_ms": 64768
+        },
+        {
+            "task": "article.writer",
+            "output": {
+                "draft": {
+                    "title": "Phong Nha: sức hút không chỉ đến từ Sơn Đoòng",
+                    "content_html": "<p>Sơn Đoòng, được nguồn giới thiệu là hang động lớn nhất thế giới, đã góp phần đưa <a href=\"https://vietnam.travel/places-to-go/central-vietnam/phong-nha\">Phong Nha</a> đến gần hơn với những người yêu thiên nhiên. Theo bài viết của Vietnam Travel, chỉ trong vài năm, vùng đất yên ắng giáp Lào này đã trở thành một trung tâm du lịch. Bên cạnh sức hút từ việc phát hiện Sơn Đoòng, bài viết còn nhấn mạnh cảnh quan phủ rừng và những thành tạo đá vôi được nguồn mô tả là lâu đời nhất châu Á.</p><p>Nhưng đến Phong Nha không đồng nghĩa với việc vào Sơn Đoòng. Theo trích đoạn nguồn, việc tham quan hang bị giới hạn ở khoảng 200 người khám phá hang mỗi năm, thông qua các tour do Oxalis tổ chức. Bài viết không có ngày xuất bản, nên con số này cần được hiểu là thông tin nguồn nêu, không phải hạn mức hiện hành đã được xác minh.</p><p>Sức hấp dẫn của Phong Nha còn nằm ở các hoạt động ngoài trời, chứ không chỉ ở Sơn Đoòng. Nguồn cho biết phần lớn tour trong khu vực có hoạt động tham quan hang động, nhưng người không thích không gian tối vẫn có nhiều lựa chọn khác. Trích đoạn chưa nêu cụ thể những lựa chọn đó. Nội dung trên được giới thiệu trong phạm vi <a href=\"https://www.vietnam.travel/things-to-do/cave-country-phong-nha\">trích đoạn bài viết của Vietnam Travel về Phong Nha</a>.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04",
+                    "F05",
+                    "F06",
+                    "F07"
+                ],
+                "used_asset_ids": []
+            },
+            "diagnostics": {
+                "response_id": "resp_090a43103d887607016ac352539cfc87d2ba89d24d8cac9a81",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.writer.v1",
+                "usage": {
+                    "prompt_tokens": 4003,
+                    "completion_tokens": 418,
+                    "total_tokens": 4421
+                }
+            },
+            "latency_ms": 21868
+        },
+        {
+            "task": "article.editor",
+            "output": {
+                "final": {
+                    "title": "Phong Nha: sức hút không chỉ đến từ Sơn Đoòng",
+                    "content_html": "<p><a href=\"https://vietnam.travel/places-to-go/central-vietnam/phong-nha\">Phong Nha</a> không chỉ thu hút du khách nhờ Sơn Đoòng, hang động được Vietnam Travel giới thiệu là lớn nhất thế giới. Theo bài viết, chỉ trong vài năm, vùng đất yên ắng giáp Lào này đã trở thành một trung tâm du lịch. Việc phát hiện Sơn Đoòng góp phần làm Phong Nha được chú ý hơn, bên cạnh cảnh quan phủ rừng và những thành tạo đá vôi mà nguồn mô tả là lâu đời nhất châu Á.</p><p>Tuy vậy, không phải ai đến Phong Nha cũng có thể khám phá Sơn Đoòng. Trích đoạn cho biết việc vào hang bị giới hạn ở khoảng 200 người mỗi năm, tham gia các tour do Oxalis tổ chức. Nguồn không cung cấp ngày xuất bản, nên không thể coi con số này là hạn mức hiện hành đã được xác minh.</p><p>Ngoài Sơn Đoòng, Phong Nha còn có các hoạt động ngoài trời dành cho người yêu thiên nhiên. Theo nguồn, phần lớn tour trong khu vực có hoạt động tham quan hang động, nhưng người không thích không gian tối vẫn có nhiều lựa chọn khác. Trích đoạn chưa nêu cụ thể những lựa chọn này.</p><p>Nguồn: <a href=\"https://www.vietnam.travel/things-to-do/cave-country-phong-nha\">bài viết của Vietnam Travel về Phong Nha</a>. Nội dung trên chỉ giới thiệu thông tin có trong trích đoạn được cung cấp.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04",
+                    "F05",
+                    "F06",
+                    "F07"
+                ],
+                "issues": []
+            },
+            "diagnostics": {
+                "response_id": "resp_0e74fbc1833cbe1c016ac352695e1087d0970084a2ba22153e",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.editor.v1",
+                "usage": {
+                    "prompt_tokens": 4418,
+                    "completion_tokens": 409,
+                    "total_tokens": 4827
+                }
+            },
+            "latency_ms": 20207
+        }
+    ],
+    "latency_ms": 106859,
+    "input_sha256": "09327c139d5d914eaca9f8b9a96de66290428383ba215886ef7a41bc9543403c",
+    "comparison_input_sha256": "cb23d726297f4c9c6fdefe138036834d5acbe1c3cec4cfd473b4316423940d4c",
+    "writing_profile_sha256": "1267aa8b907b63f12cd8c953c4a6664dbea3f3e7acabb12a28e64293053a7c96",
+    "brief_sha256": "1bad7c2ad15a337340189521251f25ae6bedb45f2846dda38223e4f20720cc6c",
+    "image_evaluation": {
+        "mode": "source_metadata_only",
+        "source_images": 1,
+        "approved_asset_regenerate": "not_evaluated",
+        "pixel_understanding": "not_evaluated"
+    },
+    "source_sha256": "824d03999d597538ea6c539ec69eb25e677f2069a68d6931d7364b8de9030374",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Phong Nha: sức hút không chỉ đến từ Sơn Đoòng",
+        "content_html": "<p><a href=\"https://vietnam.travel/places-to-go/central-vietnam/phong-nha\">Phong Nha</a> không chỉ thu hút du khách nhờ Sơn Đoòng, hang động được Vietnam Travel giới thiệu là lớn nhất thế giới. Theo bài viết, chỉ trong vài năm, vùng đất yên ắng giáp Lào này đã trở thành một trung tâm du lịch. Việc phát hiện Sơn Đoòng góp phần làm Phong Nha được chú ý hơn, bên cạnh cảnh quan phủ rừng và những thành tạo đá vôi mà nguồn mô tả là lâu đời nhất châu Á.</p><p>Tuy vậy, không phải ai đến Phong Nha cũng có thể khám phá Sơn Đoòng. Trích đoạn cho biết việc vào hang bị giới hạn ở khoảng 200 người mỗi năm, tham gia các tour do Oxalis tổ chức. Nguồn không cung cấp ngày xuất bản, nên không thể coi con số này là hạn mức hiện hành đã được xác minh.</p><p>Ngoài Sơn Đoòng, Phong Nha còn có các hoạt động ngoài trời dành cho người yêu thiên nhiên. Theo nguồn, phần lớn tour trong khu vực có hoạt động tham quan hang động, nhưng người không thích không gian tối vẫn có nhiều lựa chọn khác. Trích đoạn chưa nêu cụ thể những lựa chọn này.</p><p>Nguồn: <a href=\"https://www.vietnam.travel/things-to-do/cave-country-phong-nha\">bài viết của Vietnam Travel về Phong Nha</a>. Nội dung trên chỉ giới thiệu thông tin có trong trích đoạn được cung cấp.</p>"
+    },
+    "total_tokens": 14259
+}

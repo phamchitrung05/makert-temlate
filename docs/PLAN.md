@@ -195,6 +195,42 @@ Quy tắc áp dụng cho Vue:
 - CASL tạm thời chưa được áp dụng trong Vue; source và dependency được giữ lại để triển khai authorization UI ở giai đoạn sau.
 - Mọi task Vue phải có loading, empty, error và retry state phù hợp.
 
+### Chuẩn cấu trúc dialog (bắt buộc)
+
+- Lấy `AppDialogLayout` làm chuẩn: header và footer cố định,
+  **chỉ content ở giữa được scroll**. Mọi dialog của ứng dụng, kể cả xác nhận,
+  cảnh báo, xem chi tiết và dialog dùng chung, đều phải có đủ ba phần.
+- Dùng `VDialog scrollable` + `components/dialogs/AppDialogLayout.vue`.
+  Header dùng `title`/`subtitle` hoặc `#header`; nội dung ở default slot;
+  Hủy/Đóng và thao tác chính ở `#footer` (dialog chỉ xem có footer Đóng mặc định).
+- Nút X dùng `DialogCloseBtn`, nổi ngoài góc trên bên phải theo mẫu Vuexy.
+  Layout đặt nút cạnh card để không bị cắt bởi `overflow: hidden`; không đặt
+  X trong header/content hoặc tự thêm nút X ở từng feature.
+- Không đặt action của dialog ở cuối form dài trong content; không cuộn toàn
+  `VCard`/`VForm`; giữ validation/Enter và guard khi chuyển submit ra footer.
+- Loading hiện đủ field ngay khi mở, khóa nhập/Lưu và có vòng xoay qua
+  `#overlay`; lớp loading phải nằm trên toolbar editor. Lỗi tải giữ form khóa
+  và có thao tác tải lại. Khi đóng chỉ dọn dữ liệu sau `after-leave`, bỏ qua
+  event đóng cũ nếu đã mở lại. Đường đóng khi lưu và cảnh báo bản chưa lưu do feature xử lý.
+- File mới đặt trong `views/<feature>/dialog/*Dialog.vue`; dialog/layout dùng
+  chung nằm trong `components/dialogs/`. Demo Vuetify trong `views/demos/` là
+  reference; khi tái sử dụng trong ứng dụng phải theo chuẩn này.
+- Quy tắc layout, trường hợp picker nhiều panel, mẫu code và acceptance bắt
+  buộc: [PROJECT_STRUCTURE.md — Cấu trúc dialog](./PROJECT_STRUCTURE.md#431-cấu-trúc-dialog-bắt-buộc).
+- [x] Chuẩn hóa 39 dialog ứng dụng hiện tại — 2026-10-05: khung chung,
+  footer ngoài form, submit/Enter, picker responsive và plan đã hoàn tất.
+  Frontend **44 files/300 tests**, scoped ESLint và production build đạt.
+  Chi tiết kiểm chứng: [FIX 1 mục 12.26](./fix_1.md#1226-chuẩn-hóa-headercontentfooter-dialog--2026-10-05).
+- [x] Chuẩn hóa vị trí nút X — 2026-10-05: `DialogCloseBtn` nổi ngoài góc card
+  trong khung chung; edit AI Content và các dialog provider/model đều đồng nhất.
+  42 frontend files/285 tests, scoped ESLint/build và kiểm giao diện desktop/mobile đạt.
+  Chi tiết: [FIX 1 mục 12.28](./fix_1.md#1228-nút-x-theo-mẫu-dialog-vuexy--2026-10-05).
+- [x] Loading dialog edit AI Content — 2026-10-05: hiện đủ field, disable và
+  vòng xoay khi GET; giữ form đến after-leave, retry đúng loại nội dung.
+  Bỏ dòng “Danh mục và tag · chọn thủ công” trong component taxonomy chung.
+  42 frontend files/292 tests, scoped ESLint/Stylelint, build và browser desktop/mobile đạt.
+  Chi tiết: [FIX 1 mục 12.29](./fix_1.md#1229-loading-form-edit-ai-content--2026-10-05).
+
 ## 1.3. Quy tắc cập nhật trạng thái task
 
 - Mỗi task trong roadmap phải có trạng thái `TODO`, `IN PROGRESS`, `BLOCKED` hoặc `DONE`.
@@ -214,7 +250,16 @@ Quy tắc áp dụng cho Vue:
   và AI Content Agent foundation đã có; còn workflow review/publish đầy đủ,
   revision, backend sanitization và browser/staging verification.
 - Giao diện public: đang được hoàn thiện ở luồng riêng. Luồng công việc hiện tại không xây public UI; chỉ chuẩn bị contract/API để tích hợp sau khi Admin Dashboard hoàn tất.
-- Đợt gần nhất đã hoàn thành: Timeout riêng cho provider AI (5–600 giây), mặc định provider mới đọc `config/ai-providers.php`; mất kết nối/hết hạn không tự gửi lại. Ai Content có nút thử lại thủ công, giữ UUID/input và nhận timeout mới nhất. Queue có ngân sách HTTP + xử lý, lease đủ dài. 46 backend tests/272 assertions, 38 frontend tests và production build đạt. Chi tiết: `docs/qa/AI_PROVIDER_TIMEOUT_2026-10-03.md`.
+- FIX 1 — 2026-10-05: Task 1 và Task 2 `DONE` trong phạm vi kỹ thuật. Task 2 đã sửa gate số liệu, kiểm lại 19 output C đã lưu, chạy riêng Q33 và nghiệm thu Tiny Cloud thật trên localhost với MediaLibrary/Apply Post nháp. 374 backend tests/2530 assertions, 43 frontend files/302 tests, lint và build đạt. Hai người đọc chấm chất lượng được chủ dự án chuyển sang đợt riêng; chưa có điểm hoặc kết luận rollout. Toàn FIX 1 vẫn `IN PROGRESS`: workflow biên tập, thumbnail generate, Reverb/VPS và chín tab Settings ngoài AI còn chờ. Chi tiết: [FIX 1 mục 12.35](./fix_1.md#1235-hoàn-tất-kỹ-thuật-task-2--2026-10-05), [báo cáo và bằng chứng](./qa/TASK2_COMPLETE_2026-10-05/README.md).
+- [x] Đợt gần nhất đã hoàn thành: Task 2 kỹ thuật tại 12.35. Số liệu tương đương được đối chiếu theo ngữ cảnh, giá trị/phiên bản sai vẫn bị chặn. Q33 mới thực hiện ba call C; artifact lỗi gốc và audit gate sau sửa được ghi riêng. TinyMCE toolbar/native window hoạt động trong dialog, ảnh giữ ID/alt/caption/usage qua save/reload/Apply. 62 files study/phiếu chấm lịch sử giữ nguyên hash.
+- Bản cập nhật GitHub 2026-10-05 gom code, chuẩn dialog, plan/contracts và gói QA của các mốc 12.25–12.35. Trạng thái Task 2 là `DONE` kỹ thuật; chấm người đọc theo đợt riêng, các hạng mục workflow/thumbnail/Reverb/Settings vẫn theo backlog bên dưới.
+- Snapshot QA/corpus/bộ chấm mới có quy tắc `.gitattributes` giữ nguyên bytes, để mã SHA-256 vẫn khớp sau commit/checkout trên Windows; không đổi nội dung hoặc điểm của study đã freeze.
+- Task tiếp theo theo FIX 1: workflow `ai_content_drafts` dài hạn và API duyệt/từ chối → UI biên tập/so sánh nguồn → thumbnail generate → Realtime/VPS → chín tab Settings ngoài AI. Chấm người đọc là đợt chất lượng riêng; không phục hồi B để đánh giá. Study B/C lịch sử vẫn ready C 14/20 với 79 calls; audit mới không viết lại kết quả này.
+- Đợt loading dialog đã hoàn thành: Dialog edit AI Content hiện đủ field ngay khi mở, khóa nhập/Lưu và hiện vòng xoay khi tải như nhập thủ công. Giữ form/loading đến after-leave, bỏ phản hồi/event đóng cũ; GET lỗi vẫn có form và tải lại đúng loại nội dung. Bỏ dòng “Danh mục và tag · chọn thủ công” trong taxonomy chung. 42 frontend files/292 tests, scoped ESLint/Stylelint, production build và browser desktop/mobile đạt. Chi tiết: [FIX 1 mục 12.29](./fix_1.md#1229-loading-form-edit-ai-content--2026-10-05).
+- Đợt nút X trước đã hoàn thành: Chuẩn vị trí nút X qua `AppDialogLayout`/`DialogCloseBtn`: nổi ngoài góc trên bên phải của card, áp dụng cho edit AI Content và toàn bộ dialog AI Settings. Giữ header/footer cố định, chỉ content cuộn; chuyển attrs vào card. 42 frontend files/285 tests, scoped ESLint và build 1 phút 39 giây đạt. Browser kiểm component thật với API giả ở desktop/mobile/viewport thấp. Chi tiết: [FIX 1 mục 12.28](./fix_1.md#1228-nút-x-theo-mẫu-dialog-vuexy--2026-10-05).
+- Đợt dọn Post trước đã hoàn thành: Gỡ Create With AI/Fill All with AI, nút AI Assistant minh họa và dialog tạo nội dung khỏi Post List/Add/Edit; xóa các component/test chỉ phục vụ dialog cũ. Tạo nội dung Post tập trung ở AI Content. Plan/inventory/cấu trúc project đã cập nhật, chuẩn dialog vẫn dùng `AppDialogLayout`. 42 frontend files/285 tests, scoped ESLint và build 51.44 giây đạt. Chi tiết: [FIX 1 mục 12.27](./fix_1.md#1227-tập-trung-tạo-nội-dung-ở-ai-content--2026-10-05).
+- Đợt dialog trước đã hoàn thành: Chuẩn hóa 39 dialog ứng dụng bằng `AppDialogLayout`, header/footer cố định, chỉ content cuộn. 44 frontend files/300 tests, scoped ESLint/build đạt; browser kiểm component thật với API giả ở desktop, mobile và viewport thấp. Chi tiết: [FIX 1 mục 12.26](./fix_1.md#1226-chuẩn-hóa-headercontentfooter-dialog--2026-10-05).
+- Đợt timeout trước đã hoàn thành: Timeout riêng cho provider AI (5–600 giây), mặc định provider mới đọc `config/ai-providers.php`; mất kết nối/hết hạn không tự gửi lại. Ai Content có nút thử lại thủ công, giữ UUID/input và nhận timeout mới nhất. Queue có ngân sách HTTP + xử lý, lease đủ dài. 46 backend tests/272 assertions, 38 frontend tests và production build đạt. Chi tiết: `docs/qa/AI_PROVIDER_TIMEOUT_2026-10-03.md`.
 - Đợt tạo bài trước đã hoàn thành: Ai Content có cột phải chuyên tạo bài Post mới, độc lập với danh sách. Nối nút tạo với session API hiện có; hỗ trợ URL/HTML/text/đề bài, validation capability, progress/error/polling cleanup. Danh sách đọc summary root còn hạn theo owner, bỏ dữ liệu mẫu; dialog chi tiết/duyệt bổ sung sau. 34 frontend tests và 11 backend tests/63 assertions đạt. Chi tiết: `docs/qa/AI_CONTENT_CREATE_2026-10-02.md`.
 - Đợt catalog trước đã hoàn thành: Chuyển AI Settings vào `Systerm AI` ở cả menu dọc/ngang; nối provider/model thật từ AI Settings vào các form Ai Content. Catalog dùng provider active/có key và model enabled/available, loading/error/retry. Chi tiết: `docs/qa/AI_CONTENT_CATALOG_2026-10-02.md`.
 - Đợt sửa sync đã hoàn thành: Sửa sync model `APIKEY.FUN`: gom IPv4/IPv6 public vào một rule cURL DNS thay vì ghi đè từng IP. UI đã đồng bộ 4 model; 22 backend tests/99 assertions đạt. Chi tiết: `docs/qa/AI_PROVIDER_SYNC_FIX_2026-10-02.md`.
@@ -1186,8 +1231,9 @@ Chi tiết contract, registry, migration, candidate/provenance và danh sách en
   capability endpoint.
 - [x] Candidate lineage, regenerate/retry, comparison và apply từng field; chỉ
   Apply mới tạo Post draft/slug và ghi provenance.
-- [x] Dialog AI dùng chung; `CreateWithAiDialog` giữ hierarchy giao diện cũ và
-  chỉ bổ sung field/capability cần thiết.
+- [x] Dialog AI dùng chung theo capability cho các tài nguyên. Từ 2026-10-05,
+  tạo nội dung Post chỉ ở trang AI Content; Post List/Add/Edit đã gỡ các nút
+  Create With AI/Fill All with AI và dialog tạo nội dung riêng.
 - [x] Adapter HTTP OpenAI/Gemini, logo provider/model và metadata provenance đã
   hoạt động qua provider registry/capability backend.
 - [x] Sửa DNS pinning cho host trả IPv4/IPv6: một rule cURL chứa các IP public;

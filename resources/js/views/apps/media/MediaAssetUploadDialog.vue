@@ -1,5 +1,6 @@
 <!--
   =====================================================================
+  Header/footer cố định qua AppDialogLayout; chỉ content ở giữa được cuộn.
   CHỨC NĂNG FILE: Hiển thị form upload file cho Media Library admin
   =====================================================================
 
@@ -18,6 +19,7 @@
   =====================================================================
 -->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 import { computed, reactive, useTemplateRef, watch } from 'vue'
 
 const props = defineProps({
@@ -114,17 +116,18 @@ watch(() => props.modelValue, isVisible => {
 
 <template>
   <VDialog
+    scrollable
     max-width="720"
     :model-value="props.modelValue"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <DialogCloseBtn @click="emit('update:modelValue', false)" />
-
-    <VCard>
-      <VCardItem>
-        <VCardTitle>Upload file</VCardTitle>
-        <VCardSubtitle>Thêm file vào Media Library dùng chung.</VCardSubtitle>
-      </VCardItem>
+    <AppDialogLayout @close="emit('update:modelValue', false)">
+      <template #header>
+        <VCardItem>
+          <VCardTitle>Upload file</VCardTitle>
+          <VCardSubtitle>Thêm file vào Media Library dùng chung.</VCardSubtitle>
+        </VCardItem>
+      </template>
 
       <VCardText>
         <VAlert
@@ -203,21 +206,24 @@ watch(() => props.modelValue, isVisible => {
         </VForm>
       </VCardText>
 
-      <VCardActions class="justify-end">
-        <VBtn
-          variant="tonal"
-          :disabled="props.loading"
-          @click="emit('update:modelValue', false)"
-        >
-          Cancel
-        </VBtn>
-        <VBtn
-          :loading="props.loading"
-          @click="submit"
-        >
-          Upload
-        </VBtn>
-      </VCardActions>
-    </VCard>
+      <template #footer>
+        <VCardActions class="justify-end">
+          <VBtn
+            variant="tonal"
+            :disabled="props.loading"
+            @click="emit('update:modelValue', false)"
+          >
+            Cancel
+          </VBtn>
+          <VBtn
+            variant="flat"
+            :loading="props.loading"
+            @click="submit"
+          >
+            Upload
+          </VBtn>
+        </VCardActions>
+      </template>
+    </AppDialogLayout>
   </VDialog>
 </template>

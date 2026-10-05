@@ -16,7 +16,10 @@ import { reactive } from 'vue'
 import { useAiPromptList } from '@/composables/ai/prompt/useAiPromptList'
 import AiPromptListFilters from '@/views/ai/prompt/AiPromptListFilters.vue'
 import AiPromptListTable from '@/views/ai/prompt/AiPromptListTable.vue'
-import AiPromptManageDialog from '@/views/ai/prompt/AiPromptManageDialog.vue'
+import AiPromptCreateDialog from '@/views/ai/prompt/dialog/AiPromptCreateDialog.vue'
+import AiPromptEditDialog from '@/views/ai/prompt/dialog/AiPromptEditDialog.vue'
+import AiPromptToggleDialog from '@/views/ai/prompt/dialog/AiPromptToggleDialog.vue'
+import AiPromptDeleteDialog from '@/views/ai/prompt/dialog/AiPromptDeleteDialog.vue'
 import { useAiPromptManagement } from '@/composables/ai/prompt/useAiPromptManagement'
 
 // =====================================================================
@@ -67,6 +70,7 @@ const manager = reactive(useAiPromptManagement(load))
         <VBtn
           variant="tonal"
           prepend-icon="tabler-edit"
+          :disabled="Boolean(manager.action)"
           @click="manager.open('create')"
         >
           Nhập thủ công
@@ -110,13 +114,35 @@ const manager = reactive(useAiPromptManagement(load))
         @remove="manager.open('delete', $event)"
       />
     </VCard>
-    <AiPromptManageDialog
+    <AiPromptCreateDialog
       :state="manager"
       @update-form="manager.form = $event"
       @save="manager.save"
+      @load="manager.load"
+      @close="manager.close"
+      @after-leave="manager.finishClose('create')"
+    />
+    <AiPromptEditDialog
+      :state="manager"
+      @update-form="manager.form = $event"
+      @save="manager.save"
+      @load="manager.load"
+      @close="manager.close"
+      @after-leave="manager.finishClose('edit')"
+    />
+    <AiPromptToggleDialog
+      :state="manager"
       @confirm="manager.confirm"
       @load="manager.load"
       @close="manager.close"
+      @after-leave="manager.finishClose('toggle')"
+    />
+    <AiPromptDeleteDialog
+      :state="manager"
+      @confirm="manager.confirm"
+      @load="manager.load"
+      @close="manager.close"
+      @after-leave="manager.finishClose('delete')"
     />
   </div>
 </template>

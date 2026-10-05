@@ -1,0 +1,1560 @@
+{
+    "Q01": {
+        "status": "pending_human",
+        "source_sha256": "1068bf4531bce9a9d933018fdc0664a5ce96cc4b6afcdd5aa7503cb6581f8777",
+        "evidence_blocks": [
+            {
+                "id": "S001",
+                "type": "h1",
+                "text": "Reactivity Transform {#reactivity-transform}",
+                "html": "<h1>Reactivity Transform {#reactivity-transform}</h1>"
+            },
+            {
+                "id": "S002",
+                "type": "p",
+                "text": ":::danger Removed Experimental Feature\nReactivity Transform was an experimental feature, and has been removed in the latest 3.4 release. Please read about the reasoning here.",
+                "html": "<p>:::danger Removed Experimental Feature\nReactivity Transform was an experimental feature, and has been removed in the latest 3.4 release. Please read about <a href=\"https://github.com/vuejs/rfcs/discussions/369#discussioncomment-5059028\">the reasoning here</a>.</p>"
+            },
+            {
+                "id": "S003",
+                "type": "p",
+                "text": "If you still intend to use it, it is now available via the Vue Macros plugin.\n:::",
+                "html": "<p>If you still intend to use it, it is now available via the <a href=\"https://vue-macros.sxzz.moe/features/reactivity-transform.html\">Vue Macros</a> plugin.\n:::</p>"
+            },
+            {
+                "id": "S004",
+                "type": "p",
+                "text": ":::tip Composition-API-specific\nReactivity Transform is a Composition-API-specific feature and requires a build step.\n:::",
+                "html": "<p>:::tip Composition-API-specific\nReactivity Transform is a Composition-API-specific feature and requires a build step.\n:::</p>"
+            }
+        ],
+        "source_images": []
+    },
+    "Q02": {
+        "status": "pending_human",
+        "source_sha256": "6884fedc06b7ae1f4e267bbcb02e4917d106e060cdb659a6f2f432c94dc6851d",
+        "evidence_blocks": [
+            {
+                "id": "S001",
+                "type": "h1",
+                "text": "Release Notes",
+                "html": "<h1>Release Notes</h1>"
+            },
+            {
+                "id": "S002",
+                "type": "li",
+                "text": "Versioning Scheme",
+                "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#versioning-scheme\">Versioning Scheme</a></li>"
+            },
+            {
+                "id": "S003",
+                "type": "li",
+                "text": "Support Policy",
+                "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#support-policy\">Support Policy</a></li>"
+            },
+            {
+                "id": "S004",
+                "type": "li",
+                "text": "Laravel 12",
+                "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#laravel-12\">Laravel 12</a></li>"
+            },
+            {
+                "id": "S005",
+                "type": "h2",
+                "text": "Versioning Scheme",
+                "html": "<h2>Versioning Scheme</h2>"
+            },
+            {
+                "id": "S006",
+                "type": "p",
+                "text": "Laravel and its other first-party packages follow Semantic Versioning. Major framework releases are released every year (~Q1), while minor and patch releases may be released as often as every week. Minor and patch releases should never contain breaking changes.",
+                "html": "<p>Laravel and its other first-party packages follow <a href=\"https://semver.org\">Semantic Versioning</a>. Major framework releases are released every year (~Q1), while minor and patch releases may be released as often as every week. Minor and patch releases should <strong>never</strong> contain breaking changes.</p>"
+            },
+            {
+                "id": "S007",
+                "type": "p",
+                "text": "When referencing the Laravel framework or its components from your application or package, you should always use a version constraint such as ^12.0, since major releases of Laravel do include breaking changes. However, we strive to always ensure you may update to a new major release in one day or less.",
+                "html": "<p>When referencing the Laravel framework or its components from your application or package, you should always use a version constraint such as <code>^12.0</code>, since major releases of Laravel do include breaking changes. However, we strive to always ensure you may update to a new major release in one day or less.</p>"
+            },
+            {
+                "id": "S008",
+                "type": "h4",
+                "text": "Named Arguments",
+                "html": "<h4>Named Arguments</h4>"
+            },
+            {
+                "id": "S009",
+                "type": "p",
+                "text": "Named arguments are not covered by Laravel's backwards compatibility guidelines. We may choose to rename function arguments when necessary in order to improve the Laravel codebase. Therefore, using named arguments when calling Laravel methods should be done cautiously and with the understanding that the parameter names may change in the future.",
+                "html": "<p><a href=\"https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments\">Named arguments</a> are not covered by Laravel's backwards compatibility guidelines. We may choose to rename function arguments when necessary in order to improve the Laravel codebase. Therefore, using named arguments when calling Laravel methods should be done cautiously and with the understanding that the parameter names may change in the future.</p>"
+            }
+        ],
+        "source_images": []
+    },
+    "Q03": {
+        "status": "pending_human",
+        "source_sha256": "f9764ab23d536ebde3b70bc4d8b8195a4c64b65d6fccec55cd32ae789cdd73f9",
+        "evidence_blocks": [
+            {
+                "id": "S001",
+                "type": "h1",
+                "text": "Upgrade Guide",
+                "html": "<h1>Upgrade Guide</h1>"
+            },
+            {
+                "id": "S002",
+                "type": "li",
+                "text": "Upgrading To 12.0 From 11.x",
+                "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#upgrade-12.0\">Upgrading To 12.0 From 11.x</a></li>"
+            },
+            {
+                "id": "S003",
+                "type": "h2",
+                "text": "High Impact Changes",
+                "html": "<h2>High Impact Changes</h2>"
+            },
+            {
+                "id": "S004",
+                "type": "li",
+                "text": "Updating Dependencies",
+                "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#updating-dependencies\">Updating Dependencies</a></li>"
+            },
+            {
+                "id": "S005",
+                "type": "li",
+                "text": "Updating the Laravel Installer",
+                "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#updating-the-laravel-installer\">Updating the Laravel Installer</a></li>"
+            }
+        ],
+        "source_images": []
+    },
+    "Q06": {
+        "status": "pending_human",
+        "source_sha256": "0bf99e7c16aa6d8cd08c069e0b3a9bc9c33d52af408e2c26652c8ff07923d03f",
+        "evidence_blocks": [
+            {
+                "id": "S001",
+                "type": "h2",
+                "text": "footer: false",
+                "html": "<h2>footer: false</h2>"
+            },
+            {
+                "id": "S002",
+                "type": "h1",
+                "text": "Quick Start {#quick-start}",
+                "html": "<h1>Quick Start {#quick-start}</h1>"
+            },
+            {
+                "id": "S003",
+                "type": "h2",
+                "text": "Try Vue Online {#try-vue-online}",
+                "html": "<h2>Try Vue Online {#try-vue-online}</h2>"
+            },
+            {
+                "id": "S004",
+                "type": "li",
+                "text": "To quickly get a taste of Vue, you can try it directly in our Playground.",
+                "html": "<li>\n<p>To quickly get a taste of Vue, you can try it directly in our <a href=\"https://play.vuejs.org/#eNo9jcEKwjAMhl/lt5fpQYfXUQfefAMvvRQbddC1pUuHUPrudg4HIcmXjyRZXEM4zYlEJ+T0iEPgXjn6BB8Zhp46WUZWDjCa9f6w9kAkTtH9CRinV4fmRtZ63H20Ztesqiylphqy3R5UYBqD1UyVAPk+9zkvV1CKbCv9poMLiTEfR2/IXpSoXomqZLtti/IFwVtA9A==\">Playground</a>.</p>\n</li>"
+            },
+            {
+                "id": "S005",
+                "type": "li",
+                "text": "If you prefer a plain HTML setup without any build steps, you can use this JSFiddle as your starting point.",
+                "html": "<li>\n<p>If you prefer a plain HTML setup without any build steps, you can use this <a href=\"https://jsfiddle.net/yyx990803/2ke1ab0z/\">JSFiddle</a> as your starting point.</p>\n</li>"
+            },
+            {
+                "id": "S006",
+                "type": "li",
+                "text": "If you are already familiar with Node.js and the concept of build tools, you can also try a complete build setup right within your browser on StackBlitz.",
+                "html": "<li>\n<p>If you are already familiar with Node.js and the concept of build tools, you can also try a complete build setup right within your browser on <a href=\"https://vite.new/vue\">StackBlitz</a>.</p>\n</li>"
+            },
+            {
+                "id": "S007",
+                "type": "li",
+                "text": "To get a walkthrough of the recommended setup, watch this interactive Scrimba tutorial that shows you how to run, edit, and deploy your first Vue app.",
+                "html": "<li>\n<p>To get a walkthrough of the recommended setup, watch this interactive <a href=\"http://scrimba.com/links/vue-quickstart\">Scrimba</a> tutorial that shows you how to run, edit, and deploy your first Vue app.</p>\n</li>"
+            }
+        ],
+        "source_images": []
+    },
+    "Q07": {
+        "status": "pending_human",
+        "source_sha256": "2937d401e81895deae84db701fdbf61b51ed3e897e9f672beaf2c9f5d234d24f",
+        "evidence_blocks": [
+            {
+                "id": "S001",
+                "type": "h1",
+                "text": "Configuration",
+                "html": "<h1>Configuration</h1>"
+            },
+            {
+                "id": "S002",
+                "type": "li",
+                "text": "Introduction",
+                "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#introduction\">Introduction</a></li>"
+            },
+            {
+                "id": "S003",
+                "type": "li",
+                "text": "Environment Configuration\n\nEnvironment Variable Types\nRetrieving Environment Configuration\nDetermining the Current Environment\nEncrypting Environment Files",
+                "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-configuration\">Environment Configuration</a>\n<ul>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-variable-types\">Environment Variable Types</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#retrieving-environment-configuration\">Retrieving Environment Configuration</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#determining-the-current-environment\">Determining the Current Environment</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#encrypting-environment-files\">Encrypting Environment Files</a></li>\n</ul>\n</li>"
+            },
+            {
+                "id": "S004",
+                "type": "li",
+                "text": "Accessing Configuration Values",
+                "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#accessing-configuration-values\">Accessing Configuration Values</a></li>"
+            },
+            {
+                "id": "S005",
+                "type": "li",
+                "text": "Configuration Caching",
+                "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-caching\">Configuration Caching</a></li>"
+            },
+            {
+                "id": "S006",
+                "type": "li",
+                "text": "Configuration Publishing",
+                "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-publishing\">Configuration Publishing</a></li>"
+            },
+            {
+                "id": "S007",
+                "type": "li",
+                "text": "Debug Mode",
+                "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#debug-mode\">Debug Mode</a></li>"
+            },
+            {
+                "id": "S008",
+                "type": "li",
+                "text": "Maintenance Mode",
+                "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#maintenance-mode\">Maintenance Mode</a></li>"
+            },
+            {
+                "id": "S009",
+                "type": "h2",
+                "text": "Introduction",
+                "html": "<h2>Introduction</h2>"
+            },
+            {
+                "id": "S010",
+                "type": "p",
+                "text": "All of the configuration files for the Laravel framework are stored in the config directory. Each option is documented, so feel free to look through the files and get familiar with the options available to you.",
+                "html": "<p>All of the configuration files for the Laravel framework are stored in the <code>config</code> directory. Each option is documented, so feel free to look through the files and get familiar with the options available to you.</p>"
+            },
+            {
+                "id": "S011",
+                "type": "p",
+                "text": "These configuration files allow you to configure things like your database connection information, your mail server information, as well as various other core configuration values such as your application URL and encryption key.",
+                "html": "<p>These configuration files allow you to configure things like your database connection information, your mail server information, as well as various other core configuration values such as your application URL and encryption key.</p>"
+            },
+            {
+                "id": "S012",
+                "type": "h4",
+                "text": "The about Command",
+                "html": "<h4>The <code>about</code> Command</h4>"
+            },
+            {
+                "id": "S013",
+                "type": "p",
+                "text": "Laravel can display an overview of your application's configuration, drivers, and environment via the about Artisan command.",
+                "html": "<p>Laravel can display an overview of your application's configuration, drivers, and environment via the <code>about</code> Artisan command.</p>"
+            },
+            {
+                "id": "S014",
+                "type": "pre",
+                "text": "php artisan about",
+                "html": "<pre><code>php artisan about\n</code></pre>"
+            },
+            {
+                "id": "S015",
+                "type": "p",
+                "text": "If you're only interested in a particular section of the application overview output, you may filter for that section using the --only option:",
+                "html": "<p>If you're only interested in a particular section of the application overview output, you may filter for that section using the <code>--only</code> option:</p>"
+            },
+            {
+                "id": "S016",
+                "type": "pre",
+                "text": "php artisan about --only=environment",
+                "html": "<pre><code>php artisan about --only=environment\n</code></pre>"
+            },
+            {
+                "id": "S017",
+                "type": "p",
+                "text": "Or, to explore a specific configuration file's values in detail, you may use the config:show Artisan command:",
+                "html": "<p>Or, to explore a specific configuration file's values in detail, you may use the <code>config:show</code> Artisan command:</p>"
+            },
+            {
+                "id": "S018",
+                "type": "pre",
+                "text": "php artisan config:show database",
+                "html": "<pre><code>php artisan config:show database\n</code></pre>"
+            }
+        ],
+        "source_images": []
+    },
+    "Q08": {
+        "status": "pending_human",
+        "source_sha256": "4473638d3420d306445ef71a1a1538377de591a9162a7a0ebaac8d72eff1050c",
+        "evidence_blocks": [
+            {
+                "id": "S001",
+                "type": "h2",
+                "text": "outline: deep",
+                "html": "<h2>outline: deep</h2>"
+            },
+            {
+                "id": "S002",
+                "type": "h1",
+                "text": "Using Vue with TypeScript {#using-vue-with-typescript}",
+                "html": "<h1>Using Vue with TypeScript {#using-vue-with-typescript}</h1>"
+            },
+            {
+                "id": "S003",
+                "type": "p",
+                "text": "A type system like TypeScript can detect many common errors via static analysis at build time. This reduces the chance of runtime errors in production, and also allows us to more confidently refactor code in large-scale applications. TypeScript also improves developer ergonomics via type-based auto-completion in IDEs.",
+                "html": "<p>A type system like TypeScript can detect many common errors via static analysis at build time. This reduces the chance of runtime errors in production, and also allows us to more confidently refactor code in large-scale applications. TypeScript also improves developer ergonomics via type-based auto-completion in IDEs.</p>"
+            },
+            {
+                "id": "S004",
+                "type": "p",
+                "text": "Vue is written in TypeScript itself and provides first-class TypeScript support. All official Vue packages come with bundled type declarations that should work out-of-the-box.",
+                "html": "<p>Vue is written in TypeScript itself and provides first-class TypeScript support. All official Vue packages come with bundled type declarations that should work out-of-the-box.</p>"
+            },
+            {
+                "id": "S005",
+                "type": "h2",
+                "text": "Project Setup {#project-setup}",
+                "html": "<h2>Project Setup {#project-setup}</h2>"
+            },
+            {
+                "id": "S006",
+                "type": "p",
+                "text": "create-vue, the official project scaffolding tool, offers the options to scaffold a Vite-powered, TypeScript-ready Vue project.",
+                "html": "<p><a href=\"https://github.com/vuejs/create-vue\"><code>create-vue</code></a>, the official project scaffolding tool, offers the options to scaffold a <a href=\"https://vite.dev/\">Vite</a>-powered, TypeScript-ready Vue project.</p>"
+            },
+            {
+                "id": "S007",
+                "type": "h3",
+                "text": "Overview {#overview}",
+                "html": "<h3>Overview {#overview}</h3>"
+            },
+            {
+                "id": "S008",
+                "type": "p",
+                "text": "With a Vite-based setup, the dev server and the bundler are transpilation-only and do not perform any type-checking. This ensures the Vite dev server stays blazing fast even when using TypeScript.",
+                "html": "<p>With a Vite-based setup, the dev server and the bundler are transpilation-only and do not perform any type-checking. This ensures the Vite dev server stays blazing fast even when using TypeScript.</p>"
+            },
+            {
+                "id": "S009",
+                "type": "li",
+                "text": "During development, we recommend relying on a good IDE setup for instant feedback on type errors.",
+                "html": "<li>\n<p>During development, we recommend relying on a good <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/typescript/overview.md#ide-support\">IDE setup</a> for instant feedback on type errors.</p>\n</li>"
+            },
+            {
+                "id": "S010",
+                "type": "li",
+                "text": "If using SFCs, use the vue-tsc utility for command line type checking and type declaration generation. vue-tsc is a wrapper around tsc, TypeScript's own command line interface. It works largely the same as tsc except that it supports Vue SFCs in addition to TypeScript files. You can run vue-tsc in watch mode in parallel to the Vite dev server, or use a Vite plugin like vite-plugin-checker which runs the checks in a separate worker thread.",
+                "html": "<li>\n<p>If using SFCs, use the <a href=\"https://github.com/vuejs/language-tools/tree/master/packages/tsc\"><code>vue-tsc</code></a> utility for command line type checking and type declaration generation. <code>vue-tsc</code> is a wrapper around <code>tsc</code>, TypeScript's own command line interface. It works largely the same as <code>tsc</code> except that it supports Vue SFCs in addition to TypeScript files. You can run <code>vue-tsc</code> in watch mode in parallel to the Vite dev server, or use a Vite plugin like <a href=\"https://vite-plugin-checker.netlify.app/\">vite-plugin-checker</a> which runs the checks in a separate worker thread.</p>\n</li>"
+            },
+            {
+                "id": "S011",
+                "type": "li",
+                "text": "Vue CLI also provides TypeScript support, but is no longer recommended. See notes below.",
+                "html": "<li>\n<p>Vue CLI also provides TypeScript support, but is no longer recommended. See <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/typescript/overview.md#note-on-vue-cli-and-ts-loader\">notes below</a>.</p>\n</li>"
+            },
+            {
+                "id": "S012",
+                "type": "h3",
+                "text": "IDE Support {#ide-support}",
+                "html": "<h3>IDE Support {#ide-support}</h3>"
+            },
+            {
+                "id": "S013",
+                "type": "li",
+                "text": "Visual Studio Code (VS Code) is strongly recommended for its great out-of-the-box support for TypeScript.\n\n\nVue - Official (previously Volar) is the official VS Code extension that provides TypeScript support inside Vue SFCs, along with many other great features.\n:::tip\nVue - Official extension replaces Vetur, our previous official VS Code extension for Vue 2. If you have Vetur currently installed, make sure to disable it in Vue 3 projects.\n:::",
+                "html": "<li>\n<p><a href=\"https://code.visualstudio.com/\">Visual Studio Code</a> (VS Code) is strongly recommended for its great out-of-the-box support for TypeScript.</p>\n<ul>\n<li>\n<p><a href=\"https://marketplace.visualstudio.com/items?itemName=Vue.volar\">Vue - Official</a> (previously Volar) is the official VS Code extension that provides TypeScript support inside Vue SFCs, along with many other great features.</p>\n<p>:::tip\nVue - Official extension replaces <a href=\"https://marketplace.visualstudio.com/items?itemName=octref.vetur\">Vetur</a>, our previous official VS Code extension for Vue 2. If you have Vetur currently installed, make sure to disable it in Vue 3 projects.\n:::</p>\n</li>\n</ul>\n</li>"
+            },
+            {
+                "id": "S014",
+                "type": "li",
+                "text": "WebStorm also provides out-of-the-box support for both TypeScript and Vue. Other JetBrains IDEs support them too, either out of the box or via a free plugin. As of version 2023.2, WebStorm and the Vue Plugin come with built-in support for the Vue Language Server. You can set the Vue service to use Volar integration on all TypeScript versions, under Settings > Languages & Frameworks > TypeScript > Vue. By default, Volar will be used for TypeScript versions 5.0 and higher.",
+                "html": "<li>\n<p><a href=\"https://www.jetbrains.com/webstorm/\">WebStorm</a> also provides out-of-the-box support for both TypeScript and Vue. Other JetBrains IDEs support them too, either out of the box or via <a href=\"https://plugins.jetbrains.com/plugin/9442-vue-js\">a free plugin</a>. As of version 2023.2, WebStorm and the Vue Plugin come with built-in support for the Vue Language Server. You can set the Vue service to use Volar integration on all TypeScript versions, under Settings &gt; Languages &amp; Frameworks &gt; TypeScript &gt; Vue. By default, Volar will be used for TypeScript versions 5.0 and higher.</p>\n</li>"
+            },
+            {
+                "id": "S015",
+                "type": "h3",
+                "text": "Configuring tsconfig.json {#configuring-tsconfig-json}",
+                "html": "<h3>Configuring <code>tsconfig.json</code> {#configuring-tsconfig-json}</h3>"
+            },
+            {
+                "id": "S016",
+                "type": "p",
+                "text": "Projects scaffolded via create-vue include pre-configured tsconfig.json. The base config is abstracted in the @vue/tsconfig package. Inside the project, we use Project References to ensure correct types for code running in different environments (e.g. app code and test code should have different global variables).",
+                "html": "<p>Projects scaffolded via <code>create-vue</code> include pre-configured <code>tsconfig.json</code>. The base config is abstracted in the <a href=\"https://github.com/vuejs/tsconfig\"><code>@vue/tsconfig</code></a> package. Inside the project, we use <a href=\"https://www.typescriptlang.org/docs/handbook/project-references.html\">Project References</a> to ensure correct types for code running in different environments (e.g. app code and test code should have different global variables).</p>"
+            },
+            {
+                "id": "S017",
+                "type": "p",
+                "text": "When configuring tsconfig.json manually, some notable options include:",
+                "html": "<p>When configuring <code>tsconfig.json</code> manually, some notable options include:</p>"
+            },
+            {
+                "id": "S018",
+                "type": "li",
+                "text": "compilerOptions.isolatedModules is set to true because Vite uses esbuild for transpiling TypeScript and is subject to single-file transpile limitations. compilerOptions.verbatimModuleSyntax is a superset of isolatedModules and is a good choice, too - it's what @vue/tsconfig uses.",
+                "html": "<li>\n<p><a href=\"https://www.typescriptlang.org/tsconfig#isolatedModules\"><code>compilerOptions.isolatedModules</code></a> is set to <code>true</code> because Vite uses <a href=\"https://esbuild.github.io/\">esbuild</a> for transpiling TypeScript and is subject to single-file transpile limitations. <a href=\"https://www.typescriptlang.org/tsconfig#verbatimModuleSyntax\"><code>compilerOptions.verbatimModuleSyntax</code></a> is <a href=\"https://github.com/microsoft/TypeScript/issues/53601\">a superset of <code>isolatedModules</code></a> and is a good choice, too - it's what <a href=\"https://github.com/vuejs/tsconfig\"><code>@vue/tsconfig</code></a> uses.</p>\n</li>"
+            },
+            {
+                "id": "S019",
+                "type": "li",
+                "text": "If you're using Options API, you need to set compilerOptions.strict to true (or at least enable compilerOptions.noImplicitThis, which is a part of the strict flag) to leverage type checking of this in component options. Otherwise this will be treated as any.",
+                "html": "<li>\n<p>If you're using Options API, you need to set <a href=\"https://www.typescriptlang.org/tsconfig#strict\"><code>compilerOptions.strict</code></a> to <code>true</code> (or at least enable <a href=\"https://www.typescriptlang.org/tsconfig#noImplicitThis\"><code>compilerOptions.noImplicitThis</code></a>, which is a part of the <code>strict</code> flag) to leverage type checking of <code>this</code> in component options. Otherwise <code>this</code> will be treated as <code>any</code>.</p>\n</li>"
+            },
+            {
+                "id": "S020",
+                "type": "li",
+                "text": "If you have configured resolver aliases in your build tool, for example the @/* alias configured by default in a create-vue project, you need to also configure it for TypeScript via compilerOptions.paths.",
+                "html": "<li>\n<p>If you have configured resolver aliases in your build tool, for example the <code>@/*</code> alias configured by default in a <code>create-vue</code> project, you need to also configure it for TypeScript via <a href=\"https://www.typescriptlang.org/tsconfig#paths\"><code>compilerOptions.paths</code></a>.</p>\n</li>"
+            },
+            {
+                "id": "S021",
+                "type": "li",
+                "text": "If you intend to use TSX with Vue, set compilerOptions.jsx to \"preserve\", and set compilerOptions.jsxImportSource to \"vue\".",
+                "html": "<li>\n<p>If you intend to use TSX with Vue, set <a href=\"https://www.typescriptlang.org/tsconfig#jsx\"><code>compilerOptions.jsx</code></a> to <code>\"preserve\"</code>, and set <a href=\"https://www.typescriptlang.org/tsconfig#jsxImportSource\"><code>compilerOptions.jsxImportSource</code></a> to <code>\"vue\"</code>.</p>\n</li>"
+            },
+            {
+                "id": "S022",
+                "type": "p",
+                "text": "See also:",
+                "html": "<p>See also:</p>"
+            },
+            {
+                "id": "S023",
+                "type": "li",
+                "text": "Official TypeScript compiler options docs",
+                "html": "<li><a href=\"https://www.typescriptlang.org/docs/handbook/compiler-options.html\">Official TypeScript compiler options docs</a></li>"
+            },
+            {
+                "id": "S024",
+                "type": "li",
+                "text": "esbuild TypeScript compilation caveats",
+                "html": "<li><a href=\"https://esbuild.github.io/content-types/#typescript-caveats\">esbuild TypeScript compilation caveats</a></li>"
+            },
+            {
+                "id": "S025",
+                "type": "h3",
+                "text": "Note on Vue CLI and ts-loader {#note-on-vue-cli-and-ts-loader}",
+                "html": "<h3>Note on Vue CLI and <code>ts-loader</code> {#note-on-vue-cli-and-ts-loader}</h3>"
+            },
+            {
+                "id": "S026",
+                "type": "p",
+                "text": "In webpack-based setups such as Vue CLI, it is common to perform type checking as part of the module transform pipeline, for example with ts-loader. This, however, isn't a clean solution because the type system needs knowledge of the entire module graph to perform type checks. Individual module's transform step simply is not the right place for the task. It leads to the following problems:",
+                "html": "<p>In webpack-based setups such as Vue CLI, it is common to perform type checking as part of the module transform pipeline, for example with <code>ts-loader</code>. This, however, isn't a clean solution because the type system needs knowledge of the entire module graph to perform type checks. Individual module's transform step simply is not the right place for the task. It leads to the following problems:</p>"
+            },
+            {
+                "id": "S027",
+                "type": "li",
+                "text": "ts-loader can only type check post-transform code. This doesn't align with the errors we see in IDEs or from vue-tsc, which map directly back to the source code.",
+                "html": "<li>\n<p><code>ts-loader</code> can only type check post-transform code. This doesn't align with the errors we see in IDEs or from <code>vue-tsc</code>, which map directly back to the source code.</p>\n</li>"
+            },
+            {
+                "id": "S028",
+                "type": "li",
+                "text": "Type checking can be slow. When it is performed in the same thread / process with code transformations, it significantly affects the build speed of the entire application.",
+                "html": "<li>\n<p>Type checking can be slow. When it is performed in the same thread / process with code transformations, it significantly affects the build speed of the entire application.</p>\n</li>"
+            },
+            {
+                "id": "S029",
+                "type": "li",
+                "text": "We already have type checking running right in our IDE in a separate process, so the cost of dev experience slow down simply isn't a good trade-off.",
+                "html": "<li>\n<p>We already have type checking running right in our IDE in a separate process, so the cost of dev experience slow down simply isn't a good trade-off.</p>\n</li>"
+            },
+            {
+                "id": "S030",
+                "type": "p",
+                "text": "If you are currently using Vue 3 + TypeScript via Vue CLI, we strongly recommend migrating over to Vite. We are also working on CLI options to enable transpile-only TS support, so that you can switch to vue-tsc for type checking.",
+                "html": "<p>If you are currently using Vue 3 + TypeScript via Vue CLI, we strongly recommend migrating over to Vite. We are also working on CLI options to enable transpile-only TS support, so that you can switch to <code>vue-tsc</code> for type checking.</p>"
+            }
+        ],
+        "source_images": []
+    },
+    "Q09": {
+        "status": "pending_human",
+        "source_sha256": "e5d1dcb89581d54cc41faf4d5c47b75bcc3eea04463168580ebf754e791e5df9",
+        "evidence_blocks": [
+            {
+                "id": "S001",
+                "type": "h1",
+                "text": "Watchers {#watchers}",
+                "html": "<h1>Watchers {#watchers}</h1>"
+            },
+            {
+                "id": "S002",
+                "type": "h2",
+                "text": "Basic Example {#basic-example}",
+                "html": "<h2>Basic Example {#basic-example}</h2>"
+            },
+            {
+                "id": "S003",
+                "type": "p",
+                "text": "Computed properties allow us to declaratively compute derived values. However, there are cases where we need to perform \"side effects\" in reaction to state changes - for example, mutating the DOM, or changing another piece of state based on the result of an async operation.",
+                "html": "<p>Computed properties allow us to declaratively compute derived values. However, there are cases where we need to perform \"side effects\" in reaction to state changes - for example, mutating the DOM, or changing another piece of state based on the result of an async operation.</p>"
+            },
+            {
+                "id": "S004",
+                "type": "p",
+                "text": "With the Options API, we can use the watch option to trigger a function whenever a reactive property changes:",
+                "html": "<p>With the Options API, we can use the <a href=\"https://github.com/api/options-state#watch\"><code>watch</code> option</a> to trigger a function whenever a reactive property changes:</p>"
+            },
+            {
+                "id": "S005",
+                "type": "pre",
+                "text": "export default {\n  data() {\n    return {\n      question: '',\n      answer: 'Questions usually contain a question mark. ;-)',\n      loading: false\n    }\n  },\n  watch: {\n    // whenever question changes, this function will run\n    question(newQuestion, oldQuestion) {\n      if (newQuestion.includes('?')) {\n        this.getAnswer()\n      }\n    }\n  },\n  methods: {\n    async getAnswer() {\n      this.loading = true\n      this.answer = 'Thinking...'\n      try {\n        const res = await fetch('https://yesno.wtf/api')\n        this.answer = (await res.json()).answer\n      } catch (error) {\n        this.answer = 'Error! Could not reach the API. ' + error\n      } finally {\n        this.loading = false\n      }\n    }\n  }\n}",
+                "html": "<pre><code>export default {\n  data() {\n    return {\n      question: '',\n      answer: 'Questions usually contain a question mark. ;-)',\n      loading: false\n    }\n  },\n  watch: {\n    // whenever question changes, this function will run\n    question(newQuestion, oldQuestion) {\n      if (newQuestion.includes('?')) {\n        this.getAnswer()\n      }\n    }\n  },\n  methods: {\n    async getAnswer() {\n      this.loading = true\n      this.answer = 'Thinking...'\n      try {\n        const res = await fetch('https://yesno.wtf/api')\n        this.answer = (await res.json()).answer\n      } catch (error) {\n        this.answer = 'Error! Could not reach the API. ' + error\n      } finally {\n        this.loading = false\n      }\n    }\n  }\n}\n</code></pre>"
+            },
+            {
+                "id": "S006",
+                "type": "pre",
+                "text": "<p>\n  Ask a yes/no question:\n  <input v-model=\"question\" :disabled=\"loading\" />\n</p>\n<p>{{ answer }}</p>",
+                "html": "<pre><code>&lt;p&gt;\n  Ask a yes/no question:\n  &lt;input v-model=\"question\" :disabled=\"loading\" /&gt;\n&lt;/p&gt;\n&lt;p&gt;{{ answer }}&lt;/p&gt;\n</code></pre>"
+            },
+            {
+                "id": "S007",
+                "type": "p",
+                "text": "Try it in the Playground",
+                "html": "<p><a href=\"https://play.vuejs.org/#eNp9VE1v2zAM/SucLnaw1D70lqUbsiKH7rB1W4++aDYdq5ElTx9xgiD/fbT8lXZFAQO2+Mgn8pH0mW2aJjl4ZCu2trkRjfucKTw22jgosOReOjhnCqDgjseL/hvAoPNGjSeAvx6tE1qtIIqWo5Er26Ih088BteCt51KeINfKcaGAT5FQc7NP4NPNYiaQmhdC7VZQcmlxMF+61yUcWu7yajVmkabQVqjwgGZmzSuudmiX4CphofQqD+ZWSAnGqz5y9I4VtmOuS9CyGA9T3QCihGu3RKhc+gJtHH2JFld+EG5Mdug2QYZ4MSKhgBd11OgqXdipEm5PKoer0Jk2kA66wB044/EF1GtOSPRUCbUnryRJosnFnK4zpC5YR7205M9bLhyUSIrGUeVcY1dpekKrdNK6MuWNiKYKXt8V98FElDxbknGxGLCpZMi7VkGMxmjzv0pz1tvO4QPcay8LULoj5RToKoTN40MCEXyEQDJTl0KFmXpNOqsUxudN+TNFzzqdJp8ODutGcod0Alg34QWwsXsaVtIjVXqe9h5bC9V4B4ebWhco7zI24hmDVSEs/yOxIPOQEFnTnjzt2emS83nYFrhcevM6nRJhS+Ys9aoUu6Av7WqoNWO5rhsh0fxownplbBqhjJEmuv0WbN2UDNtDMRXm+zfsz/bY2TL2SH1Ec8CMTZjjhqaxh7e/v+ORvieQqvaSvN8Bf6HV0veSdG5fvSoo7Su/kO1D3f13SKInuz06VHYsahzzfl0yRj+s+3dKn9O9TW7HPrPLP624lFU=\">Try it in the Playground</a></p>"
+            },
+            {
+                "id": "S008",
+                "type": "p",
+                "text": "The watch option also supports a dot-delimited path as the key:",
+                "html": "<p>The <code>watch</code> option also supports a dot-delimited path as the key:</p>"
+            },
+            {
+                "id": "S009",
+                "type": "pre",
+                "text": "export default {\n  watch: {\n    // Note: only simple paths. Expressions are not supported.\n    'some.nested.key'(newValue) {\n      // ...\n    }\n  }\n}",
+                "html": "<pre><code>export default {\n  watch: {\n    // Note: only simple paths. Expressions are not supported.\n    'some.nested.key'(newValue) {\n      // ...\n    }\n  }\n}\n</code></pre>"
+            },
+            {
+                "id": "S010",
+                "type": "p",
+                "text": "With Composition API, we can use the watch function to trigger a callback whenever a piece of reactive state changes:",
+                "html": "<p>With Composition API, we can use the <a href=\"https://github.com/api/reactivity-core#watch\"><code>watch</code> function</a> to trigger a callback whenever a piece of reactive state changes:</p>"
+            },
+            {
+                "id": "S011",
+                "type": "pre",
+                "text": "<script setup>\nimport { ref, watch } from 'vue'\n\nconst question = ref('')\nconst answer = ref('Questions usually contain a question mark. ;-)')\nconst loading = ref(false)\n\n// watch works directly on a ref\nwatch(question, async (newQuestion, oldQuestion) => {\n  if (newQuestion.includes('?')) {\n    loading.value = true\n    answer.value = 'Thinking...'\n    try {\n      const res = await fetch('https://yesno.wtf/api')\n      answer.value = (await res.json()).answer\n    } catch (error) {\n      answer.value = 'Error! Could not reach the API. ' + error\n    } finally {\n      loading.value = false\n    }\n  }\n})\n</script>\n\n<template>\n  <p>\n    Ask a yes/no question:\n    <input v-model=\"question\" :disabled=\"loading\" />\n  </p>\n  <p>{{ answer }}</p>\n</template>",
+                "html": "<pre><code>&lt;script setup&gt;\nimport { ref, watch } from 'vue'\n\nconst question = ref('')\nconst answer = ref('Questions usually contain a question mark. ;-)')\nconst loading = ref(false)\n\n// watch works directly on a ref\nwatch(question, async (newQuestion, oldQuestion) =&gt; {\n  if (newQuestion.includes('?')) {\n    loading.value = true\n    answer.value = 'Thinking...'\n    try {\n      const res = await fetch('https://yesno.wtf/api')\n      answer.value = (await res.json()).answer\n    } catch (error) {\n      answer.value = 'Error! Could not reach the API. ' + error\n    } finally {\n      loading.value = false\n    }\n  }\n})\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;p&gt;\n    Ask a yes/no question:\n    &lt;input v-model=\"question\" :disabled=\"loading\" /&gt;\n  &lt;/p&gt;\n  &lt;p&gt;{{ answer }}&lt;/p&gt;\n&lt;/template&gt;\n</code></pre>"
+            },
+            {
+                "id": "S012",
+                "type": "p",
+                "text": "Try it in the Playground",
+                "html": "<p><a href=\"https://play.vuejs.org/#eNp9U8Fy0zAQ/ZVFF9tDah96C2mZ0umhHKBAj7oIe52oUSQjyXEyGf87KytyoDC9JPa+p+e3b1cndtd15b5HtmQrV1vZeXDo++6Wa7nrjPVwAovtAgbh6w2M0Fqzg4xOZFxzXRvtPPzq0XlpNNwEbp5lRUKEdgPaVP925jnoXS+UOgKxvJAaxEVjJ+y2hA9XxUVFGdFIvT7LtEI5JIzrqjrbGozdOmikxdqTKqmIQOV6gvOkvQDhjrqGXOOQvCzAqCa9FHBzCyeuAWT7F6uUulZ9gy7PPmZFETmQjJV7oXoke972GJHY+Axkzxupt4FalhRcYHh7TDIQcqA+LTriikFIDy0G59nG+84tq+qITpty8G0lOhmSiedefSaPZ0mnfHFG50VRRkbkj1BPceVorbFzF/+6fQj4O7g3vWpAm6Ao6JzfINw9PZaQwXuYNJJuK/U0z1nxdTLT0M7s8Ec/I3WxquLS0brRi8ddp4RHegNYhR0M/Du3pXFSAJU285osI7aSuus97K92pkF1w1nCOYNlI534qbCh8tkOVasoXkV1+sjplLZ0HGN5Vc1G2IJ5R8Np5XpKlK7J1CJntdl1UqH92k0bzdkyNc8ZRWGGz1MtbMQi1esN1tv/1F/cIdQ4e6LJod0jZzPmhV2jj/DDjy94oOcZpK57Rew3wO/ojOpjJIH2qdcN2f6DN7l9nC47RfTsHg4etUtNpZUeJz5ndPPv32j9Yve6vE6DZuNvu1R2Tg==\">Try it in the Playground</a></p>"
+            },
+            {
+                "id": "S013",
+                "type": "h3",
+                "text": "Watch Source Types {#watch-source-types}",
+                "html": "<h3>Watch Source Types {#watch-source-types}</h3>"
+            },
+            {
+                "id": "S014",
+                "type": "p",
+                "text": "watch's first argument can be different types of reactive \"sources\": it can be a ref (including computed refs), a reactive object, a getter function, or an array of multiple sources:",
+                "html": "<p><code>watch</code>'s first argument can be different types of reactive \"sources\": it can be a ref (including computed refs), a reactive object, a <a href=\"https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get#description\">getter function</a>, or an array of multiple sources:</p>"
+            },
+            {
+                "id": "S015",
+                "type": "pre",
+                "text": "const x = ref(0)\nconst y = ref(0)\n\n// single ref\nwatch(x, (newX) => {\n  console.log(`x is ${newX}`)\n})\n\n// getter\nwatch(\n  () => x.value + y.value,\n  (sum) => {\n    console.log(`sum of x + y is: ${sum}`)\n  }\n)\n\n// array of multiple sources\nwatch([x, () => y.value], ([newX, newY]) => {\n  console.log(`x is ${newX} and y is ${newY}`)\n})",
+                "html": "<pre><code>const x = ref(0)\nconst y = ref(0)\n\n// single ref\nwatch(x, (newX) =&gt; {\n  console.log(`x is ${newX}`)\n})\n\n// getter\nwatch(\n  () =&gt; x.value + y.value,\n  (sum) =&gt; {\n    console.log(`sum of x + y is: ${sum}`)\n  }\n)\n\n// array of multiple sources\nwatch([x, () =&gt; y.value], ([newX, newY]) =&gt; {\n  console.log(`x is ${newX} and y is ${newY}`)\n})\n</code></pre>"
+            },
+            {
+                "id": "S016",
+                "type": "p",
+                "text": "Do note that you can't watch a property of a reactive object like this:",
+                "html": "<p>Do note that you can't watch a property of a reactive object like this:</p>"
+            },
+            {
+                "id": "S017",
+                "type": "pre",
+                "text": "const obj = reactive({ count: 0 })\n\n// this won't work because we are passing a number to watch()\nwatch(obj.count, (count) => {\n  console.log(`Count is: ${count}`)\n})",
+                "html": "<pre><code>const obj = reactive({ count: 0 })\n\n// this won't work because we are passing a number to watch()\nwatch(obj.count, (count) =&gt; {\n  console.log(`Count is: ${count}`)\n})\n</code></pre>"
+            },
+            {
+                "id": "S018",
+                "type": "p",
+                "text": "Instead, use a getter:",
+                "html": "<p>Instead, use a getter:</p>"
+            },
+            {
+                "id": "S019",
+                "type": "pre",
+                "text": "// instead, use a getter:\nwatch(\n  () => obj.count,\n  (count) => {\n    console.log(`Count is: ${count}`)\n  }\n)",
+                "html": "<pre><code>// instead, use a getter:\nwatch(\n  () =&gt; obj.count,\n  (count) =&gt; {\n    console.log(`Count is: ${count}`)\n  }\n)\n</code></pre>"
+            }
+        ],
+        "source_images": []
+    },
+    "Q12": {
+        "status": "pending_human",
+        "source_sha256": "672b41ad5f596d54002422c8a2d24fece323d72575c14145e0fc0ebdfa14a5d7",
+        "evidence_blocks": [
+            {
+                "id": "S001",
+                "type": "h2",
+                "text": "outline: deep",
+                "html": "<h2>outline: deep</h2>"
+            },
+            {
+                "id": "S002",
+                "type": "h1",
+                "text": "Composition API FAQ {#composition-api-faq}",
+                "html": "<h1>Composition API FAQ {#composition-api-faq}</h1>"
+            },
+            {
+                "id": "S003",
+                "type": "p",
+                "text": ":::tip\nThis FAQ assumes prior experience with Vue - in particular, experience with Vue 2 while primarily using Options API.\n:::",
+                "html": "<p>:::tip\nThis FAQ assumes prior experience with Vue - in particular, experience with Vue 2 while primarily using Options API.\n:::</p>"
+            },
+            {
+                "id": "S004",
+                "type": "h2",
+                "text": "What is Composition API? {#what-is-composition-api}",
+                "html": "<h2>What is Composition API? {#what-is-composition-api}</h2>"
+            },
+            {
+                "id": "S005",
+                "type": "p",
+                "text": "Composition API is a set of APIs that allows us to author Vue components using imported functions instead of declaring options. It is an umbrella term that covers the following APIs:",
+                "html": "<p>Composition API is a set of APIs that allows us to author Vue components using imported functions instead of declaring options. It is an umbrella term that covers the following APIs:</p>"
+            },
+            {
+                "id": "S006",
+                "type": "li",
+                "text": "Reactivity API, e.g. ref() and reactive(), that allows us to directly create reactive state, computed state, and watchers.",
+                "html": "<li>\n<p><a href=\"https://github.com/api/reactivity-core\">Reactivity API</a>, e.g. <code>ref()</code> and <code>reactive()</code>, that allows us to directly create reactive state, computed state, and watchers.</p>\n</li>"
+            },
+            {
+                "id": "S007",
+                "type": "li",
+                "text": "Lifecycle Hooks, e.g. onMounted() and onUnmounted(), that allow us to programmatically hook into the component lifecycle.",
+                "html": "<li>\n<p><a href=\"https://github.com/api/composition-api-lifecycle\">Lifecycle Hooks</a>, e.g. <code>onMounted()</code> and <code>onUnmounted()</code>, that allow us to programmatically hook into the component lifecycle.</p>\n</li>"
+            },
+            {
+                "id": "S008",
+                "type": "li",
+                "text": "Dependency Injection, i.e. provide() and inject(), that allow us to leverage Vue's dependency injection system while using Reactivity APIs.",
+                "html": "<li>\n<p><a href=\"https://github.com/api/composition-api-dependency-injection\">Dependency Injection</a>, i.e. <code>provide()</code> and <code>inject()</code>, that allow us to leverage Vue's dependency injection system while using Reactivity APIs.</p>\n</li>"
+            },
+            {
+                "id": "S009",
+                "type": "p",
+                "text": "Composition API is a built-in feature of Vue 3 and Vue 2.7. For older Vue 2 versions, use the officially maintained @vue/composition-api plugin. In Vue 3, it is also primarily used together with the <script setup> syntax in Single-File Components. Here's a basic example of a component using Composition API:",
+                "html": "<p>Composition API is a built-in feature of Vue 3 and <a href=\"https://blog.vuejs.org/posts/vue-2-7-naruto.html\">Vue 2.7</a>. For older Vue 2 versions, use the officially maintained <a href=\"https://github.com/vuejs/composition-api\"><code>@vue/composition-api</code></a> plugin. In Vue 3, it is also primarily used together with the <a href=\"https://github.com/api/sfc-script-setup\"><code>&lt;script setup&gt;</code></a> syntax in Single-File Components. Here's a basic example of a component using Composition API:</p>"
+            },
+            {
+                "id": "S010",
+                "type": "pre",
+                "text": "<script setup>\nimport { ref, onMounted } from 'vue'\n\n// reactive state\nconst count = ref(0)\n\n// functions that mutate state and trigger updates\nfunction increment() {\n  count.value++\n}\n\n// lifecycle hooks\nonMounted(() => {\n  console.log(`The initial count is ${count.value}.`)\n})\n</script>\n\n<template>\n  <button @click=\"increment\">Count is: {{ count }}</button>\n</template>",
+                "html": "<pre><code>&lt;script setup&gt;\nimport { ref, onMounted } from 'vue'\n\n// reactive state\nconst count = ref(0)\n\n// functions that mutate state and trigger updates\nfunction increment() {\n  count.value++\n}\n\n// lifecycle hooks\nonMounted(() =&gt; {\n  console.log(`The initial count is ${count.value}.`)\n})\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;button @click=\"increment\"&gt;Count is: {{ count }}&lt;/button&gt;\n&lt;/template&gt;\n</code></pre>"
+            },
+            {
+                "id": "S011",
+                "type": "p",
+                "text": "Despite an API style based on function composition, Composition API is NOT functional programming. Composition API is based on Vue's mutable, fine-grained reactivity paradigm, whereas functional programming emphasizes immutability.",
+                "html": "<p>Despite an API style based on function composition, <strong>Composition API is NOT functional programming</strong>. Composition API is based on Vue's mutable, fine-grained reactivity paradigm, whereas functional programming emphasizes immutability.</p>"
+            },
+            {
+                "id": "S012",
+                "type": "p",
+                "text": "If you are interested in learning how to use Vue with Composition API, you can set the site-wide API preference to Composition API using the toggle at the top of the left sidebar, and then go through the guide from the beginning.",
+                "html": "<p>If you are interested in learning how to use Vue with Composition API, you can set the site-wide API preference to Composition API using the toggle at the top of the left sidebar, and then go through the guide from the beginning.</p>"
+            }
+        ],
+        "source_images": []
+    },
+    "Q13": {
+        "status": "pending_human",
+        "source_sha256": "18cbccdaa2dc89666ac367a80c0b7e9b9e78e7c97dfaf8db8cc0807cc9d6c414",
+        "evidence_blocks": [
+            {
+                "id": "S001",
+                "type": "h2",
+                "text": "footer: false",
+                "html": "<h2>footer: false</h2>"
+            },
+            {
+                "id": "S002",
+                "type": "h1",
+                "text": "Introduction {#introduction}",
+                "html": "<h1>Introduction {#introduction}</h1>"
+            },
+            {
+                "id": "S003",
+                "type": "p",
+                "text": ":::info You are reading the documentation for Vue 3!",
+                "html": "<p>:::info You are reading the documentation for Vue 3!</p>"
+            },
+            {
+                "id": "S004",
+                "type": "li",
+                "text": "Vue 2 support has ended on Dec 31, 2023. Learn more about Vue 2 EOL.",
+                "html": "<li>Vue 2 support has ended on <strong>Dec 31, 2023</strong>. Learn more about <a href=\"https://v2.vuejs.org/eol/\">Vue 2 EOL</a>.</li>"
+            },
+            {
+                "id": "S005",
+                "type": "li",
+                "text": "Upgrading from Vue 2? Check out the Migration Guide.\n:::",
+                "html": "<li>Upgrading from Vue 2? Check out the <a href=\"https://v3-migration.vuejs.org/\">Migration Guide</a>.\n:::</li>"
+            },
+            {
+                "id": "S006",
+                "type": "h2",
+                "text": "What is Vue? {#what-is-vue}",
+                "html": "<h2>What is Vue? {#what-is-vue}</h2>"
+            },
+            {
+                "id": "S007",
+                "type": "p",
+                "text": "Vue (pronounced /vjuː/, like view) is a JavaScript framework for building user interfaces. It builds on top of standard HTML, CSS, and JavaScript and provides a declarative, component-based programming model that helps you efficiently develop user interfaces of any complexity.",
+                "html": "<p>Vue (pronounced /vjuː/, like <strong>view</strong>) is a JavaScript framework for building user interfaces. It builds on top of standard HTML, CSS, and JavaScript and provides a declarative, component-based programming model that helps you efficiently develop user interfaces of any complexity.</p>"
+            },
+            {
+                "id": "S008",
+                "type": "p",
+                "text": "Here is a minimal example:",
+                "html": "<p>Here is a minimal example:</p>"
+            },
+            {
+                "id": "S009",
+                "type": "pre",
+                "text": "import { createApp } from 'vue'\n\ncreateApp({\n  data() {\n    return {\n      count: 0\n    }\n  }\n}).mount('#app')",
+                "html": "<pre><code>import { createApp } from 'vue'\n\ncreateApp({\n  data() {\n    return {\n      count: 0\n    }\n  }\n}).mount('#app')\n</code></pre>"
+            },
+            {
+                "id": "S010",
+                "type": "pre",
+                "text": "import { createApp, ref } from 'vue'\n\ncreateApp({\n  setup() {\n    return {\n      count: ref(0)\n    }\n  }\n}).mount('#app')",
+                "html": "<pre><code>import { createApp, ref } from 'vue'\n\ncreateApp({\n  setup() {\n    return {\n      count: ref(0)\n    }\n  }\n}).mount('#app')\n</code></pre>"
+            },
+            {
+                "id": "S011",
+                "type": "pre",
+                "text": "<div id=\"app\">\n  <button @click=\"count++\">\n    Count is: {{ count }}\n  </button>\n</div>",
+                "html": "<pre><code>&lt;div id=\"app\"&gt;\n  &lt;button @click=\"count++\"&gt;\n    Count is: {{ count }}\n  &lt;/button&gt;\n&lt;/div&gt;\n</code></pre>"
+            },
+            {
+                "id": "S012",
+                "type": "p",
+                "text": "Result",
+                "html": "<p><strong>Result</strong></p>"
+            },
+            {
+                "id": "S013",
+                "type": "p",
+                "text": "The above example demonstrates the two core features of Vue:",
+                "html": "<p>The above example demonstrates the two core features of Vue:</p>"
+            },
+            {
+                "id": "S014",
+                "type": "li",
+                "text": "Declarative Rendering: Vue extends standard HTML with a template syntax that allows us to declaratively describe HTML output based on JavaScript state.",
+                "html": "<li>\n<p><strong>Declarative Rendering</strong>: Vue extends standard HTML with a template syntax that allows us to declaratively describe HTML output based on JavaScript state.</p>\n</li>"
+            },
+            {
+                "id": "S015",
+                "type": "li",
+                "text": "Reactivity: Vue automatically tracks JavaScript state changes and efficiently updates the DOM when changes happen.",
+                "html": "<li>\n<p><strong>Reactivity</strong>: Vue automatically tracks JavaScript state changes and efficiently updates the DOM when changes happen.</p>\n</li>"
+            },
+            {
+                "id": "S016",
+                "type": "p",
+                "text": "You may already have questions - don't worry. We will cover every little detail in the rest of the documentation. For now, please read along so you can have a high-level understanding of what Vue offers.",
+                "html": "<p>You may already have questions - don't worry. We will cover every little detail in the rest of the documentation. For now, please read along so you can have a high-level understanding of what Vue offers.</p>"
+            },
+            {
+                "id": "S017",
+                "type": "p",
+                "text": ":::tip Prerequisites\nThe rest of the documentation assumes basic familiarity with HTML, CSS, and JavaScript. If you are totally new to frontend development, it might not be the best idea to jump right into a framework as your first step - grasp the basics and then come back! You can check your knowledge level with these overviews for JavaScript, HTML and CSS if needed. Prior experience with other frameworks helps, but is not required.\n:::",
+                "html": "<p>:::tip Prerequisites\nThe rest of the documentation assumes basic familiarity with HTML, CSS, and JavaScript. If you are totally new to frontend development, it might not be the best idea to jump right into a framework as your first step - grasp the basics and then come back! You can check your knowledge level with these overviews for <a href=\"https://developer.mozilla.org/en-US/docs/Web/JavaScript/A_re-introduction_to_JavaScript\">JavaScript</a>, <a href=\"https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML\">HTML</a> and <a href=\"https://developer.mozilla.org/en-US/docs/Learn/CSS/First_steps\">CSS</a> if needed. Prior experience with other frameworks helps, but is not required.\n:::</p>"
+            }
+        ],
+        "source_images": []
+    },
+    "Q14": {
+        "status": "pending_human",
+        "source_sha256": "8675090be7976abaf557dd96f469b772b2f5242e48f6e6df796be3983977c6b1",
+        "evidence_blocks": [
+            {
+                "id": "S001",
+                "type": "h2",
+                "text": "outline: deep",
+                "html": "<h2>outline: deep</h2>"
+            },
+            {
+                "id": "S002",
+                "type": "h1",
+                "text": "Reactivity in Depth {#reactivity-in-depth}",
+                "html": "<h1>Reactivity in Depth {#reactivity-in-depth}</h1>"
+            },
+            {
+                "id": "S003",
+                "type": "p",
+                "text": "One of Vue’s most distinctive features is the unobtrusive reactivity system. Component state consists of reactive JavaScript objects. When you modify them, the view updates. It makes state management simple and intuitive, but it’s also important to understand how it works to avoid some common gotchas. In this section, we are going to dig into some of the lower-level details of Vue’s reactivity system.",
+                "html": "<p>One of Vue’s most distinctive features is the unobtrusive reactivity system. Component state consists of reactive JavaScript objects. When you modify them, the view updates. It makes state management simple and intuitive, but it’s also important to understand how it works to avoid some common gotchas. In this section, we are going to dig into some of the lower-level details of Vue’s reactivity system.</p>"
+            },
+            {
+                "id": "S004",
+                "type": "h2",
+                "text": "What is Reactivity? {#what-is-reactivity}",
+                "html": "<h2>What is Reactivity? {#what-is-reactivity}</h2>"
+            },
+            {
+                "id": "S005",
+                "type": "p",
+                "text": "This term comes up in programming quite a bit these days, but what do people mean when they say it? Reactivity is a programming paradigm that allows us to adjust to changes in a declarative manner. The canonical example that people usually show, because it’s a great one, is an Excel spreadsheet:",
+                "html": "<p>This term comes up in programming quite a bit these days, but what do people mean when they say it? Reactivity is a programming paradigm that allows us to adjust to changes in a declarative manner. The canonical example that people usually show, because it’s a great one, is an Excel spreadsheet:</p>"
+            },
+            {
+                "id": "S006",
+                "type": "p",
+                "text": "Here cell A2 is defined via a formula of = A0 + A1 (you can click on A2 to view or edit the formula), so the spreadsheet gives us 3. No surprises there. But if you update A0 or A1, you'll notice that A2 automagically updates too.",
+                "html": "<p>Here cell A2 is defined via a formula of <code>= A0 + A1</code> (you can click on A2 to view or edit the formula), so the spreadsheet gives us 3. No surprises there. But if you update A0 or A1, you'll notice that A2 automagically updates too.</p>"
+            },
+            {
+                "id": "S007",
+                "type": "p",
+                "text": "JavaScript doesn’t usually work like this. If we were to write something comparable in JavaScript:",
+                "html": "<p>JavaScript doesn’t usually work like this. If we were to write something comparable in JavaScript:</p>"
+            },
+            {
+                "id": "S008",
+                "type": "pre",
+                "text": "let A0 = 1\nlet A1 = 2\nlet A2 = A0 + A1\n\nconsole.log(A2) // 3\n\nA0 = 2\nconsole.log(A2) // Still 3",
+                "html": "<pre><code>let A0 = 1\nlet A1 = 2\nlet A2 = A0 + A1\n\nconsole.log(A2) // 3\n\nA0 = 2\nconsole.log(A2) // Still 3\n</code></pre>"
+            },
+            {
+                "id": "S009",
+                "type": "p",
+                "text": "When we mutate A0, A2 does not change automatically.",
+                "html": "<p>When we mutate <code>A0</code>, <code>A2</code> does not change automatically.</p>"
+            },
+            {
+                "id": "S010",
+                "type": "p",
+                "text": "So how would we do this in JavaScript? First, in order to re-run the code that updates A2, let's wrap it in a function:",
+                "html": "<p>So how would we do this in JavaScript? First, in order to re-run the code that updates <code>A2</code>, let's wrap it in a function:</p>"
+            },
+            {
+                "id": "S011",
+                "type": "pre",
+                "text": "let A2\n\nfunction update() {\n  A2 = A0 + A1\n}",
+                "html": "<pre><code>let A2\n\nfunction update() {\n  A2 = A0 + A1\n}\n</code></pre>"
+            },
+            {
+                "id": "S012",
+                "type": "p",
+                "text": "Then, we need to define a few terms:",
+                "html": "<p>Then, we need to define a few terms:</p>"
+            },
+            {
+                "id": "S013",
+                "type": "li",
+                "text": "The update() function produces a side effect, or effect for short, because it modifies the state of the program.",
+                "html": "<li>\n<p>The <code>update()</code> function produces a <strong>side effect</strong>, or <strong>effect</strong> for short, because it modifies the state of the program.</p>\n</li>"
+            },
+            {
+                "id": "S014",
+                "type": "li",
+                "text": "A0 and A1 are considered dependencies of the effect, as their values are used to perform the effect. The effect is said to be a subscriber to its dependencies.",
+                "html": "<li>\n<p><code>A0</code> and <code>A1</code> are considered <strong>dependencies</strong> of the effect, as their values are used to perform the effect. The effect is said to be a <strong>subscriber</strong> to its dependencies.</p>\n</li>"
+            },
+            {
+                "id": "S015",
+                "type": "p",
+                "text": "What we need is a magic function that can invoke update() (the effect) whenever A0 or A1 (the dependencies) change:",
+                "html": "<p>What we need is a magic function that can invoke <code>update()</code> (the <strong>effect</strong>) whenever <code>A0</code> or <code>A1</code> (the <strong>dependencies</strong>) change:</p>"
+            },
+            {
+                "id": "S016",
+                "type": "pre",
+                "text": "whenDepsChange(update)",
+                "html": "<pre><code>whenDepsChange(update)\n</code></pre>"
+            },
+            {
+                "id": "S017",
+                "type": "p",
+                "text": "This whenDepsChange() function has the following tasks:",
+                "html": "<p>This <code>whenDepsChange()</code> function has the following tasks:</p>"
+            },
+            {
+                "id": "S018",
+                "type": "li",
+                "text": "Track when a variable is read. E.g. when evaluating the expression A0 + A1, both A0 and A1 are read.",
+                "html": "<li>\n<p>Track when a variable is read. E.g. when evaluating the expression <code>A0 + A1</code>, both <code>A0</code> and <code>A1</code> are read.</p>\n</li>"
+            },
+            {
+                "id": "S019",
+                "type": "li",
+                "text": "If a variable is read when there is a currently running effect, make that effect a subscriber to that variable. E.g. because A0 and A1 are read when update() is being executed, update() becomes a subscriber to both A0 and A1 after the first call.",
+                "html": "<li>\n<p>If a variable is read when there is a currently running effect, make that effect a subscriber to that variable. E.g. because <code>A0</code> and <code>A1</code> are read when <code>update()</code> is being executed, <code>update()</code> becomes a subscriber to both <code>A0</code> and <code>A1</code> after the first call.</p>\n</li>"
+            },
+            {
+                "id": "S020",
+                "type": "li",
+                "text": "Detect when a variable is mutated. E.g. when A0 is assigned a new value, notify all its subscriber effects to re-run.",
+                "html": "<li>\n<p>Detect when a variable is mutated. E.g. when <code>A0</code> is assigned a new value, notify all its subscriber effects to re-run.</p>\n</li>"
+            }
+        ],
+        "source_images": []
+    },
+    "Q17": {
+        "status": "pending_human",
+        "source_sha256": "94415de4e7cc383018e7a7f081315dcb0a77a944f5742e8be938b91adab1d6dd",
+        "evidence_blocks": [
+            {
+                "id": "S001",
+                "type": "h1",
+                "text": "Built-in Directives {#built-in-directives}",
+                "html": "<h1>Built-in Directives {#built-in-directives}</h1>"
+            },
+            {
+                "id": "S002",
+                "type": "h2",
+                "text": "v-text {#v-text}",
+                "html": "<h2>v-text {#v-text}</h2>"
+            },
+            {
+                "id": "S003",
+                "type": "p",
+                "text": "Update the element's text content.",
+                "html": "<p>Update the element's text content.</p>"
+            },
+            {
+                "id": "S004",
+                "type": "li",
+                "text": "Expects: string",
+                "html": "<li>\n<p><strong>Expects:</strong> <code>string</code></p>\n</li>"
+            },
+            {
+                "id": "S005",
+                "type": "li",
+                "text": "Details\nv-text works by setting the element's textContent property, so it will overwrite any existing content inside the element. If you need to update only part of the textContent, you should use mustache interpolations instead (ie. <span>Keep this but update a {{dynamicPortion}}</span>).",
+                "html": "<li>\n<p><strong>Details</strong></p>\n<p><code>v-text</code> works by setting the element's <a href=\"https://developer.mozilla.org/en-US/docs/Web/API/Node/textContent\">textContent</a> property, so it will overwrite any existing content inside the element. If you need to update only part of the <code>textContent</code>, you should use <a href=\"https://github.com/guide/essentials/template-syntax#text-interpolation\">mustache interpolations</a> instead (ie. <code>&lt;span&gt;Keep this but update a {{dynamicPortion}}&lt;/span&gt;</code>).</p>\n</li>"
+            },
+            {
+                "id": "S006",
+                "type": "li",
+                "text": "Example\n<span v-text=\"msg\"></span>\n<!-- same as -->\n<span>{{msg}}</span>",
+                "html": "<li>\n<p><strong>Example</strong></p>\n<pre><code>&lt;span v-text=\"msg\"&gt;&lt;/span&gt;\n&lt;!-- same as --&gt;\n&lt;span&gt;{{msg}}&lt;/span&gt;\n</code></pre>\n</li>"
+            },
+            {
+                "id": "S007",
+                "type": "pre",
+                "text": "<span v-text=\"msg\"></span>\n<!-- same as -->\n<span>{{msg}}</span>",
+                "html": "<pre><code>&lt;span v-text=\"msg\"&gt;&lt;/span&gt;\n&lt;!-- same as --&gt;\n&lt;span&gt;{{msg}}&lt;/span&gt;\n</code></pre>"
+            },
+            {
+                "id": "S008",
+                "type": "li",
+                "text": "See also Template Syntax - Text Interpolation",
+                "html": "<li>\n<p><strong>See also</strong> <a href=\"https://github.com/guide/essentials/template-syntax#text-interpolation\">Template Syntax - Text Interpolation</a></p>\n</li>"
+            }
+        ],
+        "source_images": []
+    },
+    "Q18": {
+        "status": "pending_human",
+        "source_sha256": "2299d9d9e3f225898fd8a8348259794be0ca303c6c8064b8c29aa94400ff31be",
+        "evidence_blocks": [
+            {
+                "id": "S001",
+                "type": "p",
+                "text": "Ngày 14/06/2016 vừa qua, Star Travel hân hoan chào đón Ovation of the Seas - Siêu du thuyền 5 sao hiện đại và thông minh nhất thế giới cập cảng tại Việt Nam. Siêu du thuyền này được tích hợp những công nghệ tiên tiến nhất, vượt mặt cả những khu resort 5 sao hiện đại trên đất liền.",
+                "html": "<p>Ngày 14/06/2016 vừa qua, Star Travel hân hoan chào đón Ovation of the Seas - Siêu du thuyền 5 sao hiện đại và thông minh nhất thế giới cập cảng tại Việt Nam. Siêu du thuyền này được tích hợp những công nghệ tiên tiến nhất, vượt mặt cả những khu resort 5 sao hiện đại trên đất liền.</p>"
+            },
+            {
+                "id": "S002",
+                "type": "p",
+                "text": "Tự hào là công ty tiên phong và lâu đời nhất trong lĩnh vực du thuyền 5 sao đưa du khách Việt ra ngước ngoài, Star Travel hiện là đại diện chính thức và đối tác chiến lược tại Việt Nam của Tập đoàn du thuyền hàng đầu thế giới Royal Caribbean. Trong 6 tháng đầu năm 2016, Star Travel dẫn đầu với số lượng khách vô cùng ấn tượng hơn 1.213 lượt khách tham quan những địa điểm du lịch nổi tiếng thế giới bằng hệ thống du thuyền 5 sao của Royal Caribbean. Tháng 6 này, Star Travel tiếp tục mang đến cho du khách Việt Nam những chuyến hải trình thú vị bằng Siêu du thuyền Ovation of the Seas.",
+                "html": "<p>Tự hào là công ty tiên phong và lâu đời nhất trong lĩnh vực du thuyền 5 sao đưa du khách Việt ra ngước ngoài, Star Travel hiện là đại diện chính thức và đối tác chiến lược tại Việt Nam của Tập đoàn du thuyền hàng đầu thế giới Royal Caribbean. Trong 6 tháng đầu năm 2016, Star Travel dẫn đầu với số lượng khách vô cùng ấn tượng hơn 1.213 lượt khách tham quan những địa điểm du lịch nổi tiếng thế giới bằng hệ thống du thuyền 5 sao của Royal Caribbean. Tháng 6 này, Star Travel tiếp tục mang đến cho du khách Việt Nam những chuyến hải trình thú vị bằng Siêu du thuyền Ovation of the Seas.</p>"
+            },
+            {
+                "id": "S003",
+                "type": "p",
+                "text": "Góp mặt vào bộ 3 du thuyền thông minh nhất thế giới dòng Quantum, Ovation of the Seas cao 18 tầng, chiều dài 347 mét, chiều ngang 41 mét, 2090 phòng ngủ, sức chứa 4905 khách, 1500 nhân viên, tải trọng 168.666 tấn. Hãy cùng Star Travel khám phá 8 điều nổi bật mà siêu du thuyền này mang lại nhé.",
+                "html": "<p>Góp mặt vào bộ 3 du thuyền thông minh nhất thế giới dòng Quantum, Ovation of the Seas cao 18 tầng, chiều dài 347 mét, chiều ngang 41 mét, 2090 phòng ngủ, sức chứa 4905 khách, 1500 nhân viên, tải trọng 168.666 tấn. Hãy cùng Star Travel khám phá 8 điều nổi bật mà siêu du thuyền này mang lại nhé.</p>"
+            },
+            {
+                "id": "S004",
+                "type": "p",
+                "text": "1. Đài quan sát “Sao Bắc Đẩu”",
+                "html": "<p><strong>1. Đài quan sát “Sao Bắc Đẩu”</strong></p>"
+            },
+            {
+                "id": "S005",
+                "type": "p",
+                "text": "Với hệ thống cabin nối với cần trục, bạn sẽ được đài quan sát “Sao Bắc Đẩu” di chuyển lên độ cao hơn 90 mét so với mặt nước biển. Như một cánh chim hải âu lướt nhẹ 360 độ trên biển, ngắm nhìn toàn cảnh đại dương xanh vĩ đại và ngoạn mục, bạn sẽ trở thành một nhà thám hiểm thực thụ đang chinh phục biển xanh rộng lớn.",
+                "html": "<p>Với hệ thống cabin nối với cần trục, bạn sẽ được đài quan sát “Sao Bắc Đẩu” di chuyển lên độ cao hơn 90 mét so với mặt nước biển. Như một cánh chim hải âu lướt nhẹ 360 độ trên biển, ngắm nhìn toàn cảnh đại dương xanh vĩ đại và ngoạn mục, bạn sẽ trở thành một nhà thám hiểm thực thụ đang chinh phục biển xanh rộng lớn.</p>"
+            },
+            {
+                "id": "S006",
+                "type": "p",
+                "text": "2. Phòng phức hợp cực lớn – Two700",
+                "html": "<p><strong>2. Phòng phức hợp cực lớn – Two70<sup>0</sup></strong></p>"
+            },
+            {
+                "id": "S007",
+                "type": "p",
+                "text": "Một điểm đáng chú ý khác nữa của Ovation of the Seas là Two700. Căn phòng này là một khu ăn uống và giải trí phức hợp với tầm nhìn 270 độ đẹp ngoạn mục hướng ra đại dương. Ban ngày, ánh sáng mặt trời sẽ rọi vào sáng bừng cả căn phòng, khiến cho không gian ăn uống và trò chuyện trở nên thoáng đãng hơn bao giờ hết. Buổi tối, những cửa sổ tại Two70 biến thành màn hình trình chiếu cỡ lớn, kết hợp với hệ thống âm thanh ánh sáng trở thành một sân khấu hoành tráng phục vụ nhu cầu giải trí của du khách.",
+                "html": "<p>Một điểm đáng chú ý khác nữa của Ovation of the Seas là Two70<sup>0</sup>. Căn phòng này là một khu ăn uống và giải trí phức hợp với tầm nhìn 270 độ đẹp ngoạn mục hướng ra đại dương. Ban ngày, ánh sáng mặt trời sẽ rọi vào sáng bừng cả căn phòng, khiến cho không gian ăn uống và trò chuyện trở nên thoáng đãng hơn bao giờ hết. Buổi tối, những cửa sổ tại Two70 biến thành màn hình trình chiếu cỡ lớn, kết hợp với hệ thống âm thanh ánh sáng trở thành một sân khấu hoành tráng phục vụ nhu cầu giải trí của du khách.</p>"
+            },
+            {
+                "id": "S008",
+                "type": "p",
+                "text": "3. Internet tốc độ cao",
+                "html": "<p><strong>3. Internet tốc độ cao</strong></p>"
+            },
+            {
+                "id": "S009",
+                "type": "p",
+                "text": "Ovation of the Seas được trang bị công nghệ truy cập Internet siêu tốc bằng vệ tinh, có tốc độ khoảng 4,26 km/giây cho mọi ngóc ngách trên du thuyền. Đặc biệt hơn, mỗi hành khách trên du thuyền sẽ được cấp một “Vòng tay thông minh” mang tên WOWband, giúp du khách thực hiện các thao tác check-in, check-out một cách dễ dàng, cho phép người dùng mở cửa phòng và chi trả mọi thứ khi họ quyết định mua một sản phẩm hay dịch vụ trên du thuyền.",
+                "html": "<p>Ovation of the Seas được trang bị công nghệ truy cập Internet siêu tốc bằng vệ tinh, có tốc độ khoảng 4,26 km/giây cho mọi ngóc ngách trên du thuyền. Đặc biệt hơn, mỗi hành khách trên du thuyền sẽ được cấp một “Vòng tay thông minh” mang tên WOWband, giúp du khách thực hiện các thao tác check-in, check-out một cách dễ dàng, cho phép người dùng mở cửa phòng và chi trả mọi thứ khi họ quyết định mua một sản phẩm hay dịch vụ trên du thuyền.</p>"
+            },
+            {
+                "id": "S010",
+                "type": "p",
+                "text": "4. Robot pha chế cocktail",
+                "html": "<p><strong>4. Robot pha chế cocktail</strong></p>"
+            },
+            {
+                "id": "S011",
+                "type": "p",
+                "text": "Tại quầy bar Bionic, du khách chỉ cần chọn món thức uống yêu thích bằng cách chạm nhẹ vào chiếc máy tính bảng, hai chú robot với tốc độ pha chế hai ly mỗi phút sẽ ngay lập tức phục vụ du khách món đồ uống thơm ngon và độc đáo. Trải nghiệm tuyệt vời như trong một bộ phim của tương lai sẽ khiến bạn không khỏi choáng ngợp.",
+                "html": "<p>Tại quầy bar Bionic, du khách chỉ cần chọn món thức uống yêu thích bằng cách chạm nhẹ vào chiếc máy tính bảng, hai chú robot với tốc độ pha chế hai ly mỗi phút sẽ ngay lập tức phục vụ du khách món đồ uống thơm ngon và độc đáo. Trải nghiệm tuyệt vời như trong một bộ phim của tương lai sẽ khiến bạn không khỏi choáng ngợp.</p>"
+            },
+            {
+                "id": "S012",
+                "type": "p",
+                "text": "5. Bay lên cùng Ripcord by iFly",
+                "html": "<p><strong>5. Bay lên cùng Ripcord by iFly</strong></p>"
+            },
+            {
+                "id": "S013",
+                "type": "p",
+                "text": "Nếu như “Sao Bắc Đẩu” chỉ như cánh chim hải âu lướt nhẹ trên mặt biển thì Ripcord by iFly với tính năng bay an toàn sẽ nâng bạn bay lên không trung, cảm giác như một chú đại bàng biển đầy dũng mãnh. Hãy sẳn sàng thử cảm giác tuyệt vời khi được ngọn gió biển thổi vào người, rồi vút bay lơ lửng trên không trung đầy tự do.",
+                "html": "<p>Nếu như “Sao Bắc Đẩu” chỉ như cánh chim hải âu lướt nhẹ trên mặt biển thì Ripcord by iFly với tính năng bay an toàn sẽ nâng bạn bay lên không trung, cảm giác như một chú đại bàng biển đầy dũng mãnh. Hãy sẳn sàng thử cảm giác tuyệt vời khi được ngọn gió biển thổi vào người, rồi vút bay lơ lửng trên không trung đầy tự do.</p>"
+            },
+            {
+                "id": "S014",
+                "type": "p",
+                "text": "6. SeaPlex – Không gian giải trí trong nhà lớn nhất trên biển",
+                "html": "<p><strong>6. SeaPlex – Không gian giải trí trong nhà lớn nhất trên biển</strong></p>"
+            },
+            {
+                "id": "S015",
+                "type": "p",
+                "text": "Với các trò giải trí vô cùng hấp dẫn: Trượt băng nghệ thuật, bóng rổ, xe điện đụng, biểu diễn nhào lộn trên không, SeaPlex thật sự trở thành khu giải trí trong nhà thu hút nhất trong chuyến hành trình khám phá Royal Caribbean – nơi các “nhà thám hiểm nhí” tha hồ vận động, nghịch ngợm trong không gian giải trí hiện đại bậc nhất.",
+                "html": "<p>Với các trò giải trí vô cùng hấp dẫn: Trượt băng nghệ thuật, bóng rổ, xe điện đụng, biểu diễn nhào lộn trên không, SeaPlex thật sự trở thành khu giải trí trong nhà thu hút nhất trong chuyến hành trình khám phá Royal Caribbean – nơi các “nhà thám hiểm nhí” tha hồ vận động, nghịch ngợm trong không gian giải trí hiện đại bậc nhất.</p>"
+            },
+            {
+                "id": "S016",
+                "type": "p",
+                "text": "7. Trang thiết bị nội thất tối tân",
+                "html": "<p><strong>7. Trang thiết bị nội thất tối tân</strong></p>"
+            },
+            {
+                "id": "S017",
+                "type": "p",
+                "text": "Ovation of the Seas có loại phòng nghỉ cao cấp 2 tầng (Loft Suite) dành cho đối tượng khách thượng lưu. Phòng có 2 tầng và một ban công riêng hướng thẳng ra biển. Bên trong phòng còn được trang bị màn hình LED 80-inch và một chiếc piano. Một số phòng nghỉ  được trang bị Ban công màn hình ảo giúp du khách có thể theo dõi toàn bộ quan cảnh đang diễn ra thật sự bên ngoài du thuyền.",
+                "html": "<p>Ovation of the Seas có loại phòng nghỉ cao cấp 2 tầng (Loft Suite) dành cho đối tượng khách thượng lưu. Phòng có 2 tầng và một ban công riêng hướng thẳng ra biển. Bên trong phòng còn được trang bị màn hình LED 80-inch và một chiếc piano. Một số phòng nghỉ  được trang bị Ban công màn hình ảo giúp du khách có thể theo dõi toàn bộ quan cảnh đang diễn ra thật sự bên ngoài du thuyền.</p>"
+            },
+            {
+                "id": "S018",
+                "type": "p",
+                "text": "8. Hệ thống nhà hàng sang trọng",
+                "html": "<p><strong>8. Hệ thống nhà hàng sang trọng</strong></p>"
+            },
+            {
+                "id": "S019",
+                "type": "p",
+                "text": "Có tất cả 18 nhà hàng độc đáo được mở trên không gian của du thuyền để đáp ứng nhu cầu ẩm thực của những thực khách khó tính. Đặc biệt nhất là sự có mặt của nhà hàng Ý sang trọng được chỉ đạo bởi đầu bếp trứ danh Jamie Oliver.",
+                "html": "<p>Có tất cả 18 nhà hàng độc đáo được mở trên không gian của du thuyền để đáp ứng nhu cầu ẩm thực của những thực khách khó tính. Đặc biệt nhất là sự có mặt của nhà hàng Ý sang trọng được chỉ đạo bởi đầu bếp trứ danh Jamie Oliver.</p>"
+            },
+            {
+                "id": "S020",
+                "type": "p",
+                "text": "Tham khảo một số chương trình tour của siêu du thuyền Ovation of the Seas:",
+                "html": "<p><strong>Tham khảo một số chương trình tour của siêu du thuyền Ovation of the Seas:</strong></p>"
+            },
+            {
+                "id": "S021",
+                "type": "p",
+                "text": "Điểm đến: Singapore - Malaysia Ngày khởi hành: 03/04/17 Giá trọn gói: 19.000.000đ Số ngày đi: 4 ngày",
+                "html": "<p>Điểm đến: <strong>Singapore - Malaysia</strong><br> Ngày khởi hành: 03/04/17<br> Giá trọn gói: 19.000.000đ<br> Số ngày đi: 4 ngày</p>"
+            },
+            {
+                "id": "S022",
+                "type": "p",
+                "text": "Điểm đến: Singapore - Malaysia  Ngày khởi hành: 10/04/17 Giá trọn gói: 20.500.000đ Số ngày đi: 5 ngày",
+                "html": "<p>Điểm đến: <strong>Singapore - Malaysia</strong> <br> Ngày khởi hành: 10/04/17<br> Giá trọn gói: 20.500.000đ<br> Số ngày đi: 5 ngày</p>"
+            },
+            {
+                "id": "S023",
+                "type": "p",
+                "text": "Điểm đến: Singapore – Thái Lan Ngày khởi hành: 11/03/17, 06/04/17 Giá trọn gói: 20.900.000đ Số ngày đi: 5 ngày",
+                "html": "<p>Điểm đến: <strong>Singapore – Thái Lan</strong><br> Ngày khởi hành: 11/03/17, 06/04/17<br> Giá trọn gói: 20.900.000đ<br> Số ngày đi: 5 ngày</p>"
+            },
+            {
+                "id": "S024",
+                "type": "p",
+                "text": "Điểm đến: Singapore - Malaysia Ngày khởi hành: 15/03/17 Giá trọn gói: 20.900.000đ Số ngày đi: 5 ngày",
+                "html": "<p>Điểm đến: <strong>Singapore - Malaysia</strong><br> Ngày khởi hành: 15/03/17<br> Giá trọn gói: 20.900.000đ<br> Số ngày đi: 5 ngày</p>"
+            },
+            {
+                "id": "S025",
+                "type": "p",
+                "text": "Điểm đến: Singapore – Thái Lan - Malaysia Ngày khởi hành: 06/03/17, 19/03/17, 29/03/17 Giá trọn gói: 24.900.000đ Số ngày: 6 ngày",
+                "html": "<p>Điểm đến: <strong>Singapore – Thái Lan - Malaysia</strong><br> Ngày khởi hành: 06/03/17, 19/03/17, 29/03/17<br> Giá trọn gói: 24.900.000đ<br> Số ngày: 6 ngày</p>"
+            },
+            {
+                "id": "S026",
+                "type": "p",
+                "text": "Điểm đến: Singapore – Malaysia - Thái Lan Ngày khởi hành: 24/03/17 Giá trọn gói: 25.500.000đ Số ngày: 6 ngày",
+                "html": "<p>Điểm đến: <strong>Singapore – Malaysia - Thái Lan</strong><br> Ngày khởi hành: 24/03/17<br> Giá trọn gói: 25.500.000đ<br> Số ngày: 6 ngày</p>"
+            },
+            {
+                "id": "S027",
+                "type": "p",
+                "text": "Công ty cổ phần Star Travel International: Trụ sở chính: 96 Trần Hưng Đạo, Q.1, Tp. Hồ Chí Minh Hotline: 0925 122 122.  Điện thoại: (08) 39 201 201",
+                "html": "<p><strong>Công ty cổ phần Star Travel International:</strong><br> <strong>Trụ sở chính:</strong> 96 Trần Hưng Đạo, Q.1, Tp. Hồ Chí Minh<br> Hotline: 0925 122 122.  Điện thoại: (08) 39 201 201</p>"
+            },
+            {
+                "id": "S028",
+                "type": "p",
+                "text": "Văn phòng Hà Nội: tầng 3, 59 Xã Đàn, quận Đống Đa, Hà Nội Điện thoại: (04) 39 275 288",
+                "html": "<p><strong>Văn phòng Hà Nội:</strong> tầng 3, 59 Xã Đàn, quận Đống Đa, Hà Nội<br> Điện thoại: (04) 39 275 288</p>"
+            },
+            {
+                "id": "S029",
+                "type": "p",
+                "text": "Văn phòng Phú Mỹ Hưng: SE3-1 Mỹ Khánh 3, Quận 7, Tp.HCM Điện thoại: (08) 54 121 168 Email: info@thegioidulich.com Website: www.thegioidulich.com",
+                "html": "<p><strong>Văn phòng Phú Mỹ Hưng:</strong> SE3-1 Mỹ Khánh 3, Quận 7, Tp.HCM<br> Điện thoại: (08) 54 121 168<br> Email: <a href=\"mailto:info@thegioidulich.com\" target=\"_blank\" rel=\"noopener noreferrer\">info@thegioidulich.com</a><br> Website: <a href=\"https://www.startravel.vn/\" target=\"_blank\" rel=\"noopener noreferrer\">www.thegioidulich.com</a></p>"
+            }
+        ],
+        "source_images": [
+            {
+                "id": "SOURCE_IMAGE_1",
+                "source_url": "./Ovation%20of%20the%20Seas%20-%20Si%C3%AAu%20du%20thuy%E1%BB%81n%20th%C3%B4ng%20minh%20nh%E1%BA%A5t%20th%E1%BA%BF%20gi%E1%BB%9Bi_files/du-thuyen-ovation-of-the-seas-1.jpg",
+                "alt": "Ovation of the Seas - Siêu du thuyền thông minh  nhất thế giới",
+                "context": ""
+            },
+            {
+                "id": "SOURCE_IMAGE_2",
+                "source_url": "./Ovation%20of%20the%20Seas%20-%20Si%C3%AAu%20du%20thuy%E1%BB%81n%20th%C3%B4ng%20minh%20nh%E1%BA%A5t%20th%E1%BA%BF%20gi%E1%BB%9Bi_files/du-thuyen-ovation-of-the-seas-2.jpg",
+                "alt": "Ovation of the Seas - Siêu du thuyền thông minh  nhất thế giới",
+                "context": ""
+            },
+            {
+                "id": "SOURCE_IMAGE_3",
+                "source_url": "./Ovation%20of%20the%20Seas%20-%20Si%C3%AAu%20du%20thuy%E1%BB%81n%20th%C3%B4ng%20minh%20nh%E1%BA%A5t%20th%E1%BA%BF%20gi%E1%BB%9Bi_files/du-thuyen-ovation-of-the-seas-3.jpg",
+                "alt": "Ovation of the Seas - Siêu du thuyền thông minh  nhất thế giới",
+                "context": ""
+            },
+            {
+                "id": "SOURCE_IMAGE_4",
+                "source_url": "./Ovation%20of%20the%20Seas%20-%20Si%C3%AAu%20du%20thuy%E1%BB%81n%20th%C3%B4ng%20minh%20nh%E1%BA%A5t%20th%E1%BA%BF%20gi%E1%BB%9Bi_files/du-thuyen-ovation-of-the-seas-4.jpg",
+                "alt": "Ovation of the Seas - Siêu du thuyền thông minh  nhất thế giới",
+                "context": ""
+            },
+            {
+                "id": "SOURCE_IMAGE_5",
+                "source_url": "./Ovation%20of%20the%20Seas%20-%20Si%C3%AAu%20du%20thuy%E1%BB%81n%20th%C3%B4ng%20minh%20nh%E1%BA%A5t%20th%E1%BA%BF%20gi%E1%BB%9Bi_files/du-thuyen-ovation-of-the-seas-5.jpg",
+                "alt": "Ovation of the Seas - Siêu du thuyền thông minh  nhất thế giới",
+                "context": ""
+            },
+            {
+                "id": "SOURCE_IMAGE_6",
+                "source_url": "./Ovation%20of%20the%20Seas%20-%20Si%C3%AAu%20du%20thuy%E1%BB%81n%20th%C3%B4ng%20minh%20nh%E1%BA%A5t%20th%E1%BA%BF%20gi%E1%BB%9Bi_files/du-thuyen-ovation-of-the-seas-6.jpg",
+                "alt": "Ovation of the Seas - Siêu du thuyền thông minh  nhất thế giới",
+                "context": ""
+            },
+            {
+                "id": "SOURCE_IMAGE_7",
+                "source_url": "./Ovation%20of%20the%20Seas%20-%20Si%C3%AAu%20du%20thuy%E1%BB%81n%20th%C3%B4ng%20minh%20nh%E1%BA%A5t%20th%E1%BA%BF%20gi%E1%BB%9Bi_files/du-thuyen-ovation-of-the-seas-7.jpg",
+                "alt": "Ovation of the Seas - Siêu du thuyền thông minh  nhất thế giới",
+                "context": ""
+            },
+            {
+                "id": "SOURCE_IMAGE_8",
+                "source_url": "./Ovation%20of%20the%20Seas%20-%20Si%C3%AAu%20du%20thuy%E1%BB%81n%20th%C3%B4ng%20minh%20nh%E1%BA%A5t%20th%E1%BA%BF%20gi%E1%BB%9Bi_files/du-thuyen-ovation-of-the-seas-8.jpg",
+                "alt": "Ovation of the Seas - Siêu du thuyền thông minh  nhất thế giới",
+                "context": ""
+            },
+            {
+                "id": "SOURCE_IMAGE_9",
+                "source_url": "./Ovation%20of%20the%20Seas%20-%20Si%C3%AAu%20du%20thuy%E1%BB%81n%20th%C3%B4ng%20minh%20nh%E1%BA%A5t%20th%E1%BA%BF%20gi%E1%BB%9Bi_files/du-thuyen-ovation-of-the-seas-9.jpg",
+                "alt": "Ovation of the Seas - Siêu du thuyền thông minh  nhất thế giới",
+                "context": ""
+            },
+            {
+                "id": "SOURCE_IMAGE_10",
+                "source_url": "./Ovation%20of%20the%20Seas%20-%20Si%C3%AAu%20du%20thuy%E1%BB%81n%20th%C3%B4ng%20minh%20nh%E1%BA%A5t%20th%E1%BA%BF%20gi%E1%BB%9Bi_files/du-thuyen-ovation-of-the-seas-10.jpg",
+                "alt": "Ovation of the Seas - Siêu du thuyền thông minh  nhất thế giới",
+                "context": ""
+            },
+            {
+                "id": "SOURCE_IMAGE_11",
+                "source_url": "./Ovation%20of%20the%20Seas%20-%20Si%C3%AAu%20du%20thuy%E1%BB%81n%20th%C3%B4ng%20minh%20nh%E1%BA%A5t%20th%E1%BA%BF%20gi%E1%BB%9Bi_files/du-thuyen-ovation-of-the-seas-11.jpg",
+                "alt": "Ovation of the Seas - Siêu du thuyền thông minh  nhất thế giới",
+                "context": ""
+            }
+        ]
+    },
+    "Q26": {
+        "status": "pending_human",
+        "source_sha256": "b642546b4c8a12366d70f47de382ef5e9d77fed6124ed9f5f401fe0c736cbe32",
+        "evidence_blocks": [
+            {
+                "id": "S001",
+                "type": "h1",
+                "text": "TPHCM khánh thành tuyến Metro số 1 – khởi nguồn cho sự phát triển giao thông đô thị hiện đại",
+                "html": "<h1>TPHCM khánh thành tuyến Metro số 1 – khởi nguồn cho sự phát triển giao thông đô thị hiện đại</h1>"
+            },
+            {
+                "id": "S002",
+                "type": "p",
+                "text": "09/03/2025 10:55 AM",
+                "html": "<p>\r\n                    <span>09/03/2025 10:55 AM</span>\r\n                </p>"
+            },
+            {
+                "id": "S003",
+                "type": "h2",
+                "text": "(Chinhphu.vn) - Chủ tịch UBND TPHCM nhấn mạnh, lễ khánh thành tuyến Metro số 1 không chỉ là niềm vui, niềm tự hào của TPHCM mà còn là sự khởi nguồn cho một chương mới trên hành trình phát triển giao thông đô thị hiện đại.",
+                "html": "<h2>\r\n                (Chinhphu.vn) - Chủ tịch UBND TPHCM nhấn mạnh, lễ khánh thành tuyến Metro số 1 không chỉ là niềm vui, niềm tự hào của TPHCM mà còn là sự khởi nguồn cho một chương mới trên hành trình phát triển giao thông đô thị hiện đại.\r\n            </h2>"
+            },
+            {
+                "id": "S004",
+                "type": "figcaption",
+                "text": "Các đại biểu thực hiện nghi thức khánh thành Tuyến Metro số 1 - Ảnh: VGP/Vũ Phong",
+                "html": "<figcaption><p>Các đại biểu thực hiện nghi thức khánh thành Tuyến Metro số 1 - Ảnh: VGP/Vũ Phong</p></figcaption>"
+            },
+            {
+                "id": "S005",
+                "type": "p",
+                "text": "Các đại biểu thực hiện nghi thức khánh thành Tuyến Metro số 1 - Ảnh: VGP/Vũ Phong",
+                "html": "<p>Các đại biểu thực hiện nghi thức khánh thành Tuyến Metro số 1 - Ảnh: VGP/Vũ Phong</p>"
+            },
+            {
+                "id": "S006",
+                "type": "p",
+                "text": "Sáng 9/3, tại Công viên 23/9, Quận 1, UBND TPHCM tổ chức lễ khánh thành tuyến Đường sắt đô thị số 1 (Metro số 1) Bến Thành - Suối Tiên. Buổi lễ vinh dự đón tiếp đại diện Chính phủ Nhật Bản; lãnh đạo, nguyên lãnh đạo Đảng, Nhà nước; lãnh đạo các bộ, ban, ngành Trung ương; lãnh đạo, nguyên lãnh đạo Thành phố qua các thời kỳ; lãnh đạo các sở, ban, ngành, quận, huyện thành phố Thủ Đức, các đơn vị đối tác trong và ngoài nước, cùng đông đảo người dân Thành phố.",
+                "html": "<p>Sáng 9/3, tại Công viên 23/9, Quận 1, UBND TPHCM tổ chức lễ khánh thành tuyến Đường sắt đô thị số 1 (Metro số 1) Bến Thành - Suối Tiên. Buổi lễ vinh dự đón tiếp đại diện Chính phủ Nhật Bản; lãnh đạo, nguyên lãnh đạo Đảng, Nhà nước; lãnh đạo các bộ, ban, ngành Trung ương; lãnh đạo, nguyên lãnh đạo Thành phố qua các thời kỳ; lãnh đạo các sở, ban, ngành, quận, huyện thành phố Thủ Đức, các đơn vị đối tác trong và ngoài nước, cùng đông đảo người dân Thành phố.</p>"
+            }
+        ],
+        "source_images": [
+            {
+                "id": "SOURCE_IMAGE_1",
+                "source_url": "https://tphcm.cdnchinhphu.vn/thumb_w/640/334895287454388224/2025/3/9/z6388859525647ee3a9087db122ea6b374be8a1adcef1d-1741491172712551155585.jpg",
+                "alt": "TPHCM khánh thành tuyến Metro số 1 – khởi nguồn cho sự phát triển giao thông đô thị hiện đại- Ảnh 1.",
+                "context": "TPHCM khánh thành tuyến Metro số 1 – khởi nguồn cho sự phát triển giao thông đô thị hiện đại\r\n                    09/03/2025 10:55 AM\r\n                \r\n                (Chinhphu.vn) - Chủ tịch UBND TPHCM nhấn mạnh, lễ khánh thành tuyến Metro số 1 không chỉ là niềm vui, niềm tự hào của TPHCM mà còn là sự khởi nguồn cho một chương mới trên hành trình phát triển giao thông đô thị hiện đại.\r\n            Các đại biểu thực hiện nghi thức khánh thành Tuyến Metro số 1 - Ảnh: VGP/Vũ PhongSáng 9/3, tại Công viên 23/9, Quận 1, UBND TPHCM tổ chức lễ khánh thành tuyến Đường sắt đô thị số 1 (Metro số 1) Bến Thành - Suối Tiên. Buổi lễ vinh dự đón tiếp đại diện Chính phủ Nhật Bản; lãnh đạo, nguyên lãnh đạo Đảng, Nhà nước; lãnh đạo các bộ, ban, ngành Trung ương; lãnh đạo, nguyên lãnh đạo Thành phố qua các thời kỳ; lãnh đạo các sở, ban, ngành, quận, huyện thành phố Thủ Đức, các đơn vị đối tác trong và ngoài nước, cùng đông đảo người dân Thành phố."
+            }
+        ]
+    },
+    "Q27": {
+        "status": "pending_human",
+        "source_sha256": "cf524d11440f1b4115dc227438add3e8a2b00eed009b56469062b53b57643413",
+        "evidence_blocks": [
+            {
+                "id": "S001",
+                "type": "h1",
+                "text": "Năm Du lịch quốc gia 2025: \"Huế - Kinh đô xưa, vận hội mới\"",
+                "html": "<h1>Năm Du lịch quốc gia 2025: \"Huế - Kinh đô xưa, vận hội mới\"</h1>"
+            },
+            {
+                "id": "S002",
+                "type": "h2",
+                "text": "(Chinhphu.vn) - Các hoạt động tổ chức trong khuôn khổ Năm Du lịch quốc gia và Festival Huế năm 2025 sẽ tập trung vào 4 nhóm chương trình chính: Lễ hội mùa Xuân \"Xuân Cố đô\", Lễ hội mùa Hạ \"Kinh thành tỏa sáng\", Lễ hội mùa Thu \"Huế vào Thu\", Lễ hội mùa Đông \"Mùa Đông xứ Huế\", với hơn 170 sự kiện cấp quốc gia, cấp tỉnh.",
+                "html": "<h2>\r\n                        (Chinhphu.vn) - Các hoạt động tổ chức trong khuôn khổ Năm Du lịch quốc gia và Festival Huế năm 2025 sẽ tập trung vào 4 nhóm chương trình chính: Lễ hội mùa Xuân \"Xuân Cố đô\", Lễ hội mùa Hạ \"Kinh thành tỏa sáng\", Lễ hội mùa Thu \"Huế vào Thu\", Lễ hội mùa Đông \"Mùa Đông xứ Huế\", với hơn 170 sự kiện cấp quốc gia, cấp tỉnh.\r\n                    </h2>"
+            },
+            {
+                "id": "S003",
+                "type": "p",
+                "text": "31/12/2024\r\n                                \r\n                                    \r\n                                \r\n                                14:57",
+                "html": "<p>\r\n                                31/12/2024\r\n                                <span>\r\n                                    \r\n                                </span>\r\n                                14:57\r\n                            </p>"
+            },
+            {
+                "id": "S004",
+                "type": "figcaption",
+                "text": "Họp báo thông tin về Năm Du lịch quốc gia 2025 với chủ đề \"Huế - Kinh đô xưa, Vận hội mới\" và Festival Huế năm 2025 - Ảnh: VGP/Nhật Anh",
+                "html": "<figcaption><p>Họp báo thông tin về Năm Du lịch quốc gia 2025 với chủ đề \"Huế - Kinh đô xưa, Vận hội mới\" và Festival Huế năm 2025 - Ảnh: VGP/Nhật Anh</p></figcaption>"
+            },
+            {
+                "id": "S005",
+                "type": "p",
+                "text": "Họp báo thông tin về Năm Du lịch quốc gia 2025 với chủ đề \"Huế - Kinh đô xưa, Vận hội mới\" và Festival Huế năm 2025 - Ảnh: VGP/Nhật Anh",
+                "html": "<p>Họp báo thông tin về Năm Du lịch quốc gia 2025 với chủ đề \"Huế - Kinh đô xưa, Vận hội mới\" và Festival Huế năm 2025 - Ảnh: VGP/Nhật Anh</p>"
+            },
+            {
+                "id": "S006",
+                "type": "p",
+                "text": "Sáng 31/12, tại thành phố Huế, Ban Tổ chức Năm Du lịch quốc gia tổ chức họp báo thông tin về Năm Du lịch quốc gia 2025 với chủ đề \"Huế - Kinh đô xưa, vận hội mới\" và Festival Huế năm 2025.",
+                "html": "<p>Sáng 31/12, tại thành phố Huế, Ban Tổ chức Năm Du lịch quốc gia tổ chức họp báo thông tin về Năm Du lịch quốc gia 2025 với chủ đề \"Huế - Kinh đô xưa, vận hội mới\" và Festival Huế năm 2025.</p>"
+            }
+        ],
+        "source_images": [
+            {
+                "id": "SOURCE_IMAGE_1",
+                "source_url": "https://bcp.cdnchinhphu.vn/thumb_w/777/334894974524682240/2024/12/31/z618326100603859f8794b5ae77523b58665ca8121c4a4-17356278713321575609388.jpg",
+                "alt": "Năm Du lịch quốc gia 2025: \"Huế - Kinh đô xưa, vận hội mới\"- Ảnh 1.",
+                "context": "Năm Du lịch quốc gia 2025: \"Huế - Kinh đô xưa, vận hội mới\"\r\n                        (Chinhphu.vn) - Các hoạt động tổ chức trong khuôn khổ Năm Du lịch quốc gia và Festival Huế năm 2025 sẽ tập trung vào 4 nhóm chương trình chính: Lễ hội mùa Xuân \"Xuân Cố đô\", Lễ hội mùa Hạ \"Kinh thành tỏa sáng\", Lễ hội mùa Thu \"Huế vào Thu\", Lễ hội mùa Đông \"Mùa Đông xứ Huế\", với hơn 170 sự kiện cấp quốc gia, cấp tỉnh.\r\n                    \r\n                                31/12/2024\r\n                                \r\n                                    \r\n                                \r\n                                14:57\r\n                            Họp báo thông tin về Năm Du lịch quốc gia 2025 với chủ đề \"Huế - Kinh đô xưa, Vận hội mới\" và Festival Huế năm 2025 - Ảnh: VGP/Nhật AnhSáng 31/12, tại thành phố Huế, Ban Tổ chức Năm Du lịch quốc gia tổ chức họp báo thông tin về Năm Du lịch quốc gia 2025 với chủ đề \"Huế - Kinh đô xưa, vận hội mới\" và Festival Huế năm 2025."
+            }
+        ]
+    },
+    "Q28": {
+        "status": "pending_human",
+        "source_sha256": "536b7b6210c359fbe674decebec9003daefb917baddcc4b56994b51d5a22e898",
+        "evidence_blocks": [
+            {
+                "id": "S001",
+                "type": "h1",
+                "text": "Lễ hội di sản cà phê toàn cầu tổ chức dịp cuối năm tại Đà Lạt",
+                "html": "<h1>Lễ hội di sản cà phê toàn cầu tổ chức dịp cuối năm tại Đà Lạt</h1>"
+            },
+            {
+                "id": "S002",
+                "type": "p",
+                "text": "25/11/2025 3:15 PM",
+                "html": "<p>\r\n                    <span>25/11/2025 3:15 PM</span>\r\n                </p>"
+            },
+            {
+                "id": "S003",
+                "type": "h2",
+                "text": "(Chinhphu.vn) - Lễ hội di sản cà phê toàn cầu năm 2025 dự kiến diễn ra tại Đà Lạt (tỉnh Lâm Đồng) từ ngày 18/12/2025 đến 02/1/2026. Sự kiện dự kiến quy tụ hơn 500 đại biểu là các chuyên gia hàng đầu, hàng trăm nhà rang xay quốc tế cùng hàng ngàn du khách từ khắp các châu lục.",
+                "html": "<h2>\r\n                (Chinhphu.vn) - Lễ hội di sản cà phê toàn cầu năm 2025 dự kiến diễn ra tại Đà Lạt (tỉnh Lâm Đồng) từ ngày 18/12/2025 đến 02/1/2026. Sự kiện dự kiến quy tụ hơn 500 đại biểu là các chuyên gia hàng đầu, hàng trăm nhà rang xay quốc tế cùng hàng ngàn du khách từ khắp các châu lục.\r\n            </h2>"
+            },
+            {
+                "id": "S004",
+                "type": "figcaption",
+                "text": "Họp báo, giới thiệu Lễ hội Di sản Cà phê Toàn cầu tổ chức dịp cuối năm tại Đà Lạt. Ảnh: VGP/LA",
+                "html": "<figcaption><p>Họp báo, giới thiệu Lễ hội Di sản Cà phê Toàn cầu tổ chức dịp cuối năm tại Đà Lạt. Ảnh: VGP/LA</p></figcaption>"
+            },
+            {
+                "id": "S005",
+                "type": "p",
+                "text": "Họp báo, giới thiệu Lễ hội Di sản Cà phê Toàn cầu tổ chức dịp cuối năm tại Đà Lạt. Ảnh: VGP/LA",
+                "html": "<p>Họp báo, giới thiệu Lễ hội Di sản Cà phê Toàn cầu tổ chức dịp cuối năm tại Đà Lạt. Ảnh: VGP/LA</p>"
+            },
+            {
+                "id": "S006",
+                "type": "p",
+                "text": "Năm 2025 đánh dấu cột mốc 150 năm cây cà phê bén rễ trên đất Việt Nam. Giữa bối cảnh kim ngạch xuất khẩu thiết lập những kỷ lục chưa từng có, khép lại niên vụ 2024-2025 với dấu ấn lịch sử khi kim ngạch xuất khẩu đạt kỷ lục 8,4 tỷ USD, mức cao nhất từ trước đến nay. Hiện nay, Việt Nam là quốc gia xuất khẩu Robusta lớn nhất thế giới, chiếm khoảng 17% tổng sản lượng cà phê toàn cầu.",
+                "html": "<p>Năm 2025 đánh dấu cột mốc 150 năm cây cà phê bén rễ trên đất Việt Nam. Giữa bối cảnh kim ngạch xuất khẩu thiết lập những kỷ lục chưa từng có, khép lại niên vụ 2024-2025 với dấu ấn lịch sử khi kim ngạch xuất khẩu đạt kỷ lục 8,4 tỷ USD, mức cao nhất từ trước đến nay. Hiện nay, Việt Nam là quốc gia xuất khẩu Robusta lớn nhất thế giới, chiếm khoảng 17% tổng sản lượng cà phê toàn cầu.</p>"
+            }
+        ],
+        "source_images": [
+            {
+                "id": "SOURCE_IMAGE_1",
+                "source_url": "https://tphcm.cdnchinhphu.vn/thumb_w/640/334895287454388224/2025/11/25/hop-bao-17640507927631323501103.jpg",
+                "alt": "Lễ hội di sản cà phê toàn cầu tổ chức dịp cuối năm tại Đà Lạt- Ảnh 1.",
+                "context": "Lễ hội di sản cà phê toàn cầu tổ chức dịp cuối năm tại Đà Lạt\r\n                    25/11/2025 3:15 PM\r\n                \r\n                (Chinhphu.vn) - Lễ hội di sản cà phê toàn cầu năm 2025 dự kiến diễn ra tại Đà Lạt (tỉnh Lâm Đồng) từ ngày 18/12/2025 đến 02/1/2026. Sự kiện dự kiến quy tụ hơn 500 đại biểu là các chuyên gia hàng đầu, hàng trăm nhà rang xay quốc tế cùng hàng ngàn du khách từ khắp các châu lục.\r\n            Họp báo, giới thiệu Lễ hội Di sản Cà phê Toàn cầu tổ chức dịp cuối năm tại Đà Lạt. Ảnh: VGP/LANăm 2025 đánh dấu cột mốc 150 năm cây cà phê bén rễ trên đất Việt Nam. Giữa bối cảnh kim ngạch xuất khẩu thiết lập những kỷ lục chưa từng có, khép lại niên vụ 2024-2025 với dấu ấn lịch sử khi kim ngạch xuất khẩu đạt kỷ lục 8,4 tỷ USD, mức cao nhất từ trước đến nay. Hiện nay, Việt Nam là quốc gia xuất khẩu Robusta lớn nhất thế giới, chiếm khoảng 17% tổng sản lượng cà phê toàn cầu."
+            }
+        ]
+    },
+    "Q29": {
+        "status": "pending_human",
+        "source_sha256": "7bfbc627a5988356ba2268075c855ad8e5a1e8a6a197a9eb1f6f86a8df27dfad",
+        "evidence_blocks": [
+            {
+                "id": "S001",
+                "type": "p",
+                "text": "Thông tin du lịch nổi bật năm 2024: Du lịch Việt Nam hoàn thành chỉ tiêu tăng trưởng, là điểm sáng trong phát triển KT-XH",
+                "html": "<p>\n                                    Thông tin du lịch nổi bật năm 2024: Du lịch Việt Nam hoàn thành chỉ tiêu tăng trưởng, là điểm sáng trong phát triển KT-XH                                </p>"
+            },
+            {
+                "id": "S002",
+                "type": "p",
+                "text": "Cập nhật: 07/01/2025",
+                "html": "<p>\n                                    Cập nhật: 07/01/2025                                </p>"
+            },
+            {
+                "id": "S003",
+                "type": "p",
+                "text": "(TITC) - Những sự kiện du lịch tiêu biểu và dấu ấn nổi bật của ngành du lịch Việt Nam năm 2024, kết quả thực hiện các chỉ tiêu tăng trưởng năm 2024, hoạt động của ngành trên các lĩnh vực quản lý nhà nước, truyền thông, xúc tiến quảng bá, hợp tác quốc tế, chuyển đổi số… sẽ được giới thiệu trong tài liệu Thông tin du lịch tháng 12/2024 do Trung tâm Thông tin du lịch (Cục Du lịch Quốc gia Việt Nam) xây dựng.",
+                "html": "<p>\n                                \r\n\t(TITC) - Những sự kiện du lịch tiêu biểu và dấu ấn nổi bật của ngành du lịch Việt Nam năm 2024, kết quả thực hiện các chỉ tiêu tăng trưởng năm 2024, hoạt động của ngành trên các lĩnh vực quản lý nhà nước, truyền thông, xúc tiến quảng bá, hợp tác quốc tế, chuyển đổi số… sẽ được giới thiệu trong tài liệu Thông tin du lịch tháng 12/2024 do Trung tâm Thông tin du lịch (Cục Du lịch Quốc gia Việt Nam) xây dựng.\r\n                            </p>"
+            },
+            {
+                "id": "S004",
+                "type": "p",
+                "text": "Việt Nam kết thúc năm 2024 với con số đón hơn 17,5 triệu khách quốc tế và phục vụ 110 triệu lượt khách du lịch nội địa, tổng thu từ khách du lịch đạt 840 nghìn tỷ đồng, hoàn thành chỉ tiêu kế hoạch đặt ra từ đầu năm. Du lịch được Chính phủ, Thủ tướng Chính phủ đánh giá là một điểm sáng trong tổng thể phát triển kinh tế - xã hội đất nước.",
+                "html": "<p>\r\n\tViệt Nam kết thúc năm 2024 với con số đón hơn 17,5 triệu khách quốc tế và phục vụ 110 triệu lượt khách du lịch nội địa, tổng thu từ khách du lịch đạt 840 nghìn tỷ đồng, hoàn thành chỉ tiêu kế hoạch đặt ra từ đầu năm. Du lịch được Chính phủ, Thủ tướng Chính phủ đánh giá là một điểm sáng trong tổng thể phát triển kinh tế - xã hội đất nước.</p>"
+            }
+        ],
+        "source_images": [
+            {
+                "id": "SOURCE_IMAGE_1",
+                "source_url": "https://thongke.tourism.vn/imguploads/news/FINAL-THONG-TIN-DU-LICH-THANG-12-2024.jpg",
+                "alt": "",
+                "context": "Thông tin du lịch nổi bật năm 2024: Du lịch Việt Nam hoàn thành chỉ tiêu tăng trưởng, là điểm sáng trong phát triển KT-XH                                \n                                    Cập nhật: 07/01/2025                                \n                                \r\n\t(TITC) - Những sự kiện du lịch tiêu biểu và dấu ấn nổi bật của ngành du lịch Việt Nam năm 2024, kết quả thực hiện các chỉ tiêu tăng trưởng năm 2024, hoạt động của ngành trên các lĩnh vực quản lý nhà nước, truyền thông, xúc tiến quảng bá, hợp tác quốc tế, chuyển đổi số… sẽ được giới thiệu trong tài liệu Thông tin du lịch tháng 12/2024 do Trung tâm Thông tin du lịch (Cục Du lịch Quốc gia Việt Nam) xây dựng.\r\n                            \r\n\tViệt Nam kết thúc năm 2024 với con số đón hơn 17,5 triệu khách quốc tế và phục vụ 110 triệu lượt khách du lịch nội địa, tổng thu từ khách du lịch đạt 840 nghìn tỷ đồng, hoàn thành chỉ tiêu kế hoạch đặt ra từ đầu năm. Du lịch được Chính phủ, Thủ tướng Chính phủ đánh giá là một điểm"
+            }
+        ]
+    },
+    "Q30": {
+        "status": "pending_human",
+        "source_sha256": "0fdb47ac0cfdc691f4dc19e8260dd01c88aa50bcc224b967fcff6d7f822d3132",
+        "evidence_blocks": [
+            {
+                "id": "S001",
+                "type": "p",
+                "text": "Để đảm bảo phục vụ ngày càng tốt hơn nhu cầu của khách tham quan, Bảo tàng Lịch sử Việt Nam xin thông báo lịch đón tiếp và giá vé cụ thể cho mọi đối tượng khách tham quan kể từ ngày 01 tháng 03 năm 2010 như sau:",
+                "html": "<p>Để đảm bảo phục vụ ngày càng tốt hơn nhu cầu của khách tham quan, Bảo tàng Lịch sử Việt Nam xin thông báo lịch đón tiếp và giá vé cụ thể cho mọi đối tượng khách tham quan kể từ ngày 01 tháng 03 năm 2010 như sau:</p>"
+            },
+            {
+                "id": "S002",
+                "type": "p",
+                "text": "1. Bảo tàng Lịch sử Việt Nam mở cửa tất cả các ngày trong tuần từ 8h00 đến 16h30 hàng ngày.",
+                "html": "<p>1. Bảo tàng Lịch sử Việt Nam mở cửa tất cả các ngày trong tuần từ 8h00 đến 16h30 hàng ngày.</p>"
+            },
+            {
+                "id": "S003",
+                "type": "p",
+                "text": "2. Đối tượng khách tham quan Bảo tàng Lịch sử Việt Nam (cả khách Việt Nam và khách nước ngoài) phải mua vé theo quy định là: 20.000đ/người/vé.",
+                "html": "<p>2. Đối tượng khách tham quan Bảo tàng Lịch sử Việt Nam (cả khách Việt Nam và khách nước ngoài) phải mua vé theo quy định là: 20.000đ/người/vé.</p>"
+            },
+            {
+                "id": "S004",
+                "type": "p",
+                "text": "3. Đối tượng tham quan là học sinh từ cấp Tiểu học đến Trung học phổ thông được miễn phí vé tham quan 02 ngày trong tuần vào Thứ ba và Thứ sáu đối với đoàn dưới 100 người. Trường hợp trên 100 người thì số người từ 101 trở đi phải mua 50% giá vé theo quy định là 10.000đ/người/vé.",
+                "html": "<p>3. Đối tượng tham quan là học sinh từ cấp Tiểu học đến Trung học phổ thông được miễn phí vé tham quan 02 ngày trong tuần vào Thứ ba và Thứ sáu đối với đoàn dưới 100 người. Trường hợp trên 100 người thì số người từ 101 trở đi phải mua 50% giá vé theo quy định là 10.000đ/người/vé.</p>"
+            },
+            {
+                "id": "S005",
+                "type": "p",
+                "text": "Trường hợp học sinh từ cấp Tiểu học đến Trung học phổ thông đi vào các ngày trong tuần (Thứ hai, thứ tư, thứ năm, thứ bảy, chủ nhật) phải mua 50% theo giá vé quy định là 10.000đ/người/vé.",
+                "html": "<p>Trường hợp học sinh từ cấp Tiểu học đến Trung học phổ thông đi vào các ngày trong tuần (Thứ hai, thứ tư, thứ năm, thứ bảy, chủ nhật) phải mua 50% theo giá vé quy định là 10.000đ/người/vé.</p>"
+            }
+        ],
+        "source_images": [
+            {
+                "id": "SOURCE_IMAGE_1",
+                "source_url": "https://baotanglichsuquocgia.vn/DataFiles/Uploads/anh%20tin%20tuc/bao%20tang%20lich%20su.jpg",
+                "alt": "",
+                "context": "Để đảm bảo phục vụ ngày càng tốt hơn nhu cầu của khách tham quan, Bảo tàng Lịch sử Việt Nam xin thông báo lịch đón tiếp và giá vé cụ thể cho mọi đối tượng khách tham quan kể từ ngày 01 tháng 03 năm 2010 như sau:1. Bảo tàng Lịch sử Việt Nam mở cửa tất cả các ngày trong tuần từ 8h00 đến 16h30 hàng ngày.2. Đối tượng khách tham quan Bảo tàng Lịch sử Việt Nam (cả khách Việt Nam và khách nước ngoài) phải mua vé theo quy định là: 20.000đ/người/vé.3. Đối tượng tham quan là học sinh từ cấp Tiểu học đến Trung học phổ thông được miễn phí vé tham quan 02 ngày trong tuần vào Thứ ba và Thứ sáu đối với đoàn dưới 100 người. Trường hợp trên 100 người thì số người từ 101 trở đi phải mua 50% giá vé theo quy định là 10.000đ/người/vé.Trường hợp học sinh từ cấp Tiểu học đến Trung học phổ thông đi vào các ngày trong tuần (Thứ hai, thứ tư, thứ năm, thứ bảy, chủ nhật) phải mua 50% theo giá vé quy định là 10.000đ/người/vé."
+            }
+        ]
+    },
+    "Q31": {
+        "status": "pending_human",
+        "source_sha256": "e9251a362ad4a7b8be6db1e4668da50a117c2770970f45b41d470535dccd6c1a",
+        "evidence_blocks": [
+            {
+                "id": "S001",
+                "type": "h2",
+                "text": "One of Vietnam's hottest new destinations, Phong Nha is not only home to the world’s largest cave: it also has much to offer avid nature travellers. ",
+                "html": "<h2>One of Vietnam's hottest new destinations, Phong Nha is not only home to the world’s largest cave: it also has much to offer avid nature travellers. </h2>"
+            },
+            {
+                "id": "S002",
+                "type": "p",
+                "text": "In just a few short years, Phong Nha has gone from a sleepy, outpost bordering Laos, to a full-scale tourist centre. The reasons for its rise in popularity are numerous. In addition to possessing the continent’s oldest limestone formations and its jungle-covered scenery, the discovery of Han Son Doong, the largest caves in the world, catapulted the excitement to new heights.",
+                "html": "<p>In just a few short years, <a href=\"https://vietnam.travel/places-to-go/central-vietnam/phong-nha\">Phong Nha</a> has gone from a sleepy, outpost bordering Laos, to a full-scale tourist centre. The reasons for its rise in popularity are numerous. In addition to possessing the continent’s oldest limestone formations and its jungle-covered scenery, the discovery of Han Son Doong, the largest caves in the world, catapulted the excitement to new heights.</p>"
+            },
+            {
+                "id": "S003",
+                "type": "p",
+                "text": "But it’s not just Son Doong that people travel to Phong Nha for -- entrance is restricted to a lucky 200 or so cavers a year who travel on tours organised by Oxalis -- but all the other outdoor-based activities available in the area. When it comes to unadulterated nature, and getting off the beaten track and onto the not-so-beaten trail, Phong Nha stands alone.",
+                "html": "<p>But it’s not just Son Doong that people travel to Phong Nha for -- entrance is restricted to a lucky 200 or so cavers a year who travel on tours organised by <a>Oxalis</a> -- but all the other outdoor-based activities available in the area. When it comes to unadulterated nature, and getting off the beaten track and onto the not-so-beaten trail, Phong Nha stands alone.</p>"
+            },
+            {
+                "id": "S004",
+                "type": "p",
+                "text": "Here is a lowdown of what to do in the area. Most of the tours include the caves. And for those who aren’t into dark, spaces, there are many other options to wile away some time.",
+                "html": "<p>Here is a lowdown of what to do in the area. Most of the tours include the caves. And for those who aren’t into dark, spaces, there are many other options to wile away some time.</p>"
+            },
+            {
+                "id": "S005",
+                "type": "h3",
+                "text": "Phong Nha and Paradise Caves",
+                "html": "<h3><strong>Phong Nha and Paradise Caves</strong></h3>"
+            }
+        ],
+        "source_images": [
+            {
+                "id": "SOURCE_IMAGE_1",
+                "source_url": "https://www.vietnam.travel/sites/default/files/inline-images/TRA%20DSC_2031%20Abandoned%20Dark%20Cave%20SEP16%20NR.jpg",
+                "alt": "Nick Ross Word Vietnam Phong Nha ",
+                "context": "One of Vietnam's hottest new destinations, Phong Nha is not only home to the world’s largest cave: it also has much to offer avid nature travellers. In just a few short years, Phong Nha has gone from a sleepy, outpost bordering Laos, to a full-scale tourist centre. The reasons for its rise in popularity are numerous. In addition to possessing the continent’s oldest limestone formations and its jungle-covered scenery, the discovery of Han Son Doong, the largest caves in the world, catapulted the excitement to new heights.But it’s not just Son Doong that people travel to Phong Nha for -- entrance is restricted to a lucky 200 or so cavers a year who travel on tours organised by Oxalis -- but all the other outdoor-based activities available in the area. When it comes to unadulterated nature, and getting off the beaten track and onto the not-so-beaten trail, Phong Nha stands alone.Here is a lowdown of what to do in the area. Most of the tours include the caves. And for those who aren’t into"
+            }
+        ]
+    },
+    "Q32": {
+        "status": "pending_human",
+        "source_sha256": "abe6bbfae9fc09bf388649c1e5a8b060a0755daed70cf29d33894d81e46863bf",
+        "evidence_blocks": [
+            {
+                "id": "S001",
+                "type": "p",
+                "text": "When Hoi An was named 'Asia's Leading Cultural City Destination 2022’ at the 29th World Travel Awards (Asia & Oceania) in September, it was no surprise. The charming yellow town, with its rich history and varied tourism offerings, beat nominees including Seoul (South Korea) and Kyoto (Japan) to take the title − for the third time.",
+                "html": "<p>When Hoi An was named 'Asia's Leading Cultural City Destination 2022’ at the 29th World Travel Awards (Asia &amp; Oceania) in September, it was no surprise. The charming yellow town, with its rich history and varied tourism offerings, beat nominees including Seoul (South Korea) and Kyoto (Japan) to take the title − for the third time.</p>"
+            },
+            {
+                "id": "S002",
+                "type": "p",
+                "text": "The UNESCO World Heritage site was a trading port as far back as the second century A.D., and it drew together traders from across the world during its 16th century heyday. It was a meeting place where indigenous cultures mixed with cultural influences from Europe, China and Japan, among others. ",
+                "html": "<p>The UNESCO World Heritage site was a trading port as far back as the second century A.D., and it drew together traders from across the world during its 16th century heyday. It was a meeting place where indigenous cultures mixed with cultural influences from Europe, China and Japan, among others. </p>"
+            },
+            {
+                "id": "S003",
+                "type": "p",
+                "text": "While today’s travellers visit Hoi An for many reasons – such as its poetic scenic, beaches, and proximity to other destinations – it’s this cultural value that makes the greatest impression. From ancient My Son Sanctuary ruins and fascinating museums to stunning live performances and authentic excursions, Hoi An is an experience no culture-lover should miss. ",
+                "html": "<p>While today’s travellers visit Hoi An for many reasons – such as its poetic scenic, beaches, and proximity to other destinations – it’s this cultural value that makes the greatest impression. From ancient My Son Sanctuary ruins and fascinating museums to stunning live performances and authentic excursions, Hoi An is an experience no culture-lover should miss. </p>"
+            },
+            {
+                "id": "S004",
+                "type": "p",
+                "text": "Here are seven top things to do…",
+                "html": "<p>Here are seven top things to do…</p>"
+            }
+        ],
+        "source_images": [
+            {
+                "id": "SOURCE_IMAGE_1",
+                "source_url": "https://www.vietnam.travel/sites/default/files/inline-images/shutterstock_2131967667.jpg",
+                "alt": "Hoi An",
+                "context": "When Hoi An was named 'Asia's Leading Cultural City Destination 2022’ at the 29th World Travel Awards (Asia & Oceania) in September, it was no surprise. The charming yellow town, with its rich history and varied tourism offerings, beat nominees including Seoul (South Korea) and Kyoto (Japan) to take the title − for the third time.The UNESCO World Heritage site was a trading port as far back as the second century A.D., and it drew together traders from across the world during its 16th century heyday. It was a meeting place where indigenous cultures mixed with cultural influences from Europe, China and Japan, among others. While today’s travellers visit Hoi An for many reasons – such as its poetic scenic, beaches, and proximity to other destinations – it’s this cultural value that makes the greatest impression. From ancient My Son Sanctuary ruins and fascinating museums to stunning live performances and authentic excursions, Hoi An is an experience no culture-lover should miss. Here are "
+            }
+        ]
+    },
+    "Q33": {
+        "status": "pending_human",
+        "source_sha256": "0e5f82562876bdbf1d54eebb4e7e4e1c00a07eb7944a66cb78ae6f0d4c05e693",
+        "evidence_blocks": [
+            {
+                "id": "S001",
+                "type": "h2",
+                "text": "Existing system limits",
+                "html": "<h2><a href=\"https://docs.github.com/en/actions/reference/limits#existing-system-limits\">Existing system limits<span></span></a></h2>"
+            },
+            {
+                "id": "S002",
+                "type": "p",
+                "text": "These limits are subject to change.",
+                "html": "<p>These limits are subject to change.</p>"
+            },
+            {
+                "id": "S003",
+                "type": "table",
+                "text": "Limit categoryLimitThresholdDescriptionCan GitHub Support increase?Workflow execution limitWorkflow run time35 days / workflow runIf a workflow run reaches this limit, the workflow run is cancelled. This period includes execution duration, and time spent on waiting and approval.Workflow execution limitGate approval time30 daysA workflow may wait for up to 30 days on environment approvals.Workflow execution limitJob Matrix256 jobs / workflow runA job matrix can generate a maximum of 256 jobs per workflow run. This limit applies to both GitHub-hosted and self-hosted runners.Workflow execution limitRe-run50 re-runsA workflow run can be re-run a maximum of 50 times. This limit includes both full re-runs and re-runs of a subset of jobs. Support ticketWorkflow fileWorkflow file size500 KB per fileA workflow file larger than 500 KB will not start runs. See Workflow file size.ChecksCheck runs per check suite50,000 check runs / check suiteA check suite can have a maximum of 50,000 check runs. This limit applies to check runs created through the Checks API and by GitHub Actions workflow runs. When a check suite reaches this limit, additional check runs cannot be created for that check suite. Support ticketWorkflows queuingWorkflow trigger event rate limit1500 events / 10 seconds / repositoryEach repository is limited to events triggering a workflow run. Support ticketWorkflows queuingWorkflow run queued500 workflow runs / 10 secondsWhen the limit is reached, the workflow runs that were supposed to be triggered by the webhook events will be blocked and will not be queued. Reusable workflows are viewed as a single entity. For example, a run with 30 reusable workflows counts as 1 in this instance.Workflows queuingConcurrency group queue100 workflow runs / concurrency groupWhen using queue: max in the concurrency section, up to 100 jobs or workflow runs can be queued per concurrency group. Runs beyond this limit will be rejected.Self-hostedRunner registrations1500 runners / 5 minutes / repository/org/enterpriseRunners can be registered per repository/organization/enterprise. Support ticketSelf-hostedRunners per runner group10,000 runnersRunners registered at the same time per runner group.Self-hostedJob execution time5 daysEach job in a workflow can run for up to 5 days of execution time. If a job reaches this limit, the job is terminated and fails.Self-hostedJob queue time24 hoursA job can be in the queue for 24 hours before it is automatically cancelled.All GitHub-hosted runnersJob ConcurrencyVariesSee Job concurrency limits for GitHub-hosted runners. Support ticketAll GitHub-hosted runnersJob execution time6 hoursEach job in a workflow can run for up to 6 hours of execution time. If a job reaches this limit, the job is terminated and fails.All GitHub-hosted runnersStorage limitsVariesFor more information, see Storage limits for all GitHub-hosted runners.Larger runnersPer runner concurrency limitVaries by runner typeEstablished when setting up a runner. Normally 1,000 max for Linux CPU runners, but varies by type. See Job concurrency limits for GitHub-hosted runners. Support ticketLarger runnersStatic IP limits10 IPs10 IPs per enterprise and organization. Support ticketLarger runnersPrivate IP scaling for vnet injection30% bufferYou need a buffer to accommodate the maximum job concurrency you anticipate. See Private IP scaling for vnet injection on larger runners. Configurable Azure virtual networkDependency cachingUploads per minute200 per minuteEach repository is limited to 200 cache entry uploads per minute. If this limit is exceeded, subsequent cache upload attempts will fail until the rate limit resets.Dependency cachingDownloads per minute1500 per minuteEach repository is limited to 1500 cache entry downloads per minute. If this limit is exceeded, subsequent cache download attempts will fail until the rate limit resets.Dependency cachingDeletes per minute400 per minuteEach repository is limited to 400 cache delete operations per minute. If this limit is exceeded, subsequent cache delete attempts will fail until the rate limit resets. Each request to delete caches either by key or by ID counts towards this limit.",
+                "html": "<table><thead><tr><th scope=\"col\">Limit category</th><th scope=\"col\">Limit</th><th scope=\"col\">Threshold</th><th scope=\"col\">Description</th><th scope=\"col\">Can GitHub Support increase?</th></tr></thead><tbody><tr><td>Workflow execution limit</td><td>Workflow run time</td><td>35 days / workflow run</td><td>If a workflow run reaches this limit, the workflow run is cancelled. This period includes execution duration, and time spent on waiting and approval.</td><td></td></tr><tr><td>Workflow execution limit</td><td>Gate approval time</td><td>30 days</td><td>A workflow may wait for up to <a href=\"https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments#wait-timer\">30 days on environment approvals</a>.</td><td></td></tr><tr><td>Workflow execution limit</td><td>Job Matrix</td><td>256 jobs / workflow run</td><td>A job matrix can generate a maximum of 256 jobs per workflow run. This limit applies to both GitHub-hosted and self-hosted runners.</td><td></td></tr><tr><td>Workflow execution limit</td><td>Re-run</td><td>50 re-runs</td><td>A workflow run can be re-run a maximum of 50 times. This limit includes both full re-runs and re-runs of a subset of jobs.</td><td> Support ticket</td></tr><tr><td>Workflow file</td><td>Workflow file size</td><td>500 KB per file</td><td>A workflow file larger than 500 KB will not start runs. See <a href=\"https://docs.github.com/en/actions/reference/limits#workflow-file-size\">Workflow file size</a>.</td><td></td></tr><tr><td>Checks</td><td>Check runs per check suite</td><td>50,000 check runs / check suite</td><td>A check suite can have a maximum of 50,000 check runs. This limit applies to check runs created through the Checks API and by GitHub Actions workflow runs. When a check suite reaches this limit, additional check runs cannot be created for that check suite.</td><td> Support ticket</td></tr><tr><td>Workflows queuing</td><td>Workflow trigger event rate limit</td><td>1500 events / 10 seconds / repository</td><td>Each repository is limited to events triggering a workflow run.</td><td> Support ticket</td></tr><tr><td>Workflows queuing</td><td>Workflow run queued</td><td>500 workflow runs / 10 seconds</td><td>When the limit is reached, the workflow runs that were supposed to be triggered by the webhook events will be blocked and will not be queued. Reusable workflows are viewed as a single entity. For example, a run with 30 reusable workflows counts as 1 in this instance.</td><td></td></tr><tr><td>Workflows queuing</td><td>Concurrency group queue</td><td>100 workflow runs / concurrency group</td><td>When using <code>queue: max</code> in the <code>concurrency</code> section, up to 100 jobs or workflow runs can be queued per concurrency group. Runs beyond this limit will be rejected.</td><td></td></tr><tr><td>Self-hosted</td><td>Runner registrations</td><td>1500 runners / 5 minutes / repository/org/enterprise</td><td>Runners can be registered per repository/organization/enterprise.</td><td> Support ticket</td></tr><tr><td>Self-hosted</td><td>Runners per runner group</td><td>10,000 runners</td><td>Runners registered at the same time per runner group.</td><td></td></tr><tr><td>Self-hosted</td><td>Job execution time</td><td>5 days</td><td>Each job in a workflow can run for up to 5 days of execution time. If a job reaches this limit, the job is terminated and fails.</td><td></td></tr><tr><td>Self-hosted</td><td>Job queue time</td><td>24 hours</td><td>A job can be in the queue for 24 hours before it is automatically cancelled.</td><td></td></tr><tr><td>All GitHub-hosted runners</td><td>Job Concurrency</td><td>Varies</td><td>See <a href=\"https://docs.github.com/en/actions/reference/limits#job-concurrency-limits-for-github-hosted-runners\">Job concurrency limits for GitHub-hosted runners</a>.</td><td> Support ticket</td></tr><tr><td>All GitHub-hosted runners</td><td>Job execution time</td><td>6 hours</td><td>Each job in a workflow can run for up to 6 hours of execution time. If a job reaches this limit, the job is terminated and fails.</td><td></td></tr><tr><td>All GitHub-hosted runners</td><td>Storage limits</td><td>Varies</td><td>For more information, see <a href=\"https://docs.github.com/en/actions/reference/limits#storage-limits-for-all-github-hosted-runners\">Storage limits for all GitHub-hosted runners</a>.</td><td></td></tr><tr><td>Larger runners</td><td>Per runner concurrency limit</td><td>Varies by runner type</td><td>Established when setting up a runner. Normally 1,000 max for Linux CPU runners, but varies by type. See <a href=\"https://docs.github.com/en/actions/reference/limits#job-concurrency-limits-for-github-hosted-runners\">Job concurrency limits for GitHub-hosted runners</a>.</td><td> Support ticket</td></tr><tr><td>Larger runners</td><td>Static IP limits</td><td>10 IPs</td><td>10 IPs per enterprise and organization.</td><td> Support ticket</td></tr><tr><td>Larger runners</td><td>Private IP scaling for vnet injection</td><td>30% buffer</td><td>You need a buffer to accommodate the maximum job concurrency you anticipate. See <a href=\"https://docs.github.com/en/actions/reference/limits#private-ip-scaling-for-vnet-injection-on-larger-runners\">Private IP scaling for vnet injection on larger runners</a>.</td><td> Configurable Azure virtual network</td></tr><tr><td>Dependency caching</td><td>Uploads per minute</td><td>200 per minute</td><td>Each repository is limited to 200 cache entry uploads per minute. If this limit is exceeded, subsequent cache upload attempts will fail until the rate limit resets.</td><td></td></tr><tr><td>Dependency caching</td><td>Downloads per minute</td><td>1500 per minute</td><td>Each repository is limited to 1500 cache entry downloads per minute. If this limit is exceeded, subsequent cache download attempts will fail until the rate limit resets.</td><td></td></tr><tr><td>Dependency caching</td><td>Deletes per minute</td><td>400 per minute</td><td>Each repository is limited to 400 cache delete operations per minute. If this limit is exceeded, subsequent cache delete attempts will fail until the rate limit resets. Each request to delete caches either by key or by ID counts towards this limit.</td><td></td></tr></tbody></table>"
+            }
+        ],
+        "source_images": []
+    }
+}

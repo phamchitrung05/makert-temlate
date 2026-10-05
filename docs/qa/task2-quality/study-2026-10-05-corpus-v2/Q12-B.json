@@ -1,0 +1,96 @@
+{
+    "arm": "B",
+    "status": "ready",
+    "error_code": null,
+    "final": {
+        "title": "Composition API trong Vue: khái niệm, các API và ví dụ cơ bản",
+        "content_html": "<p>Thay vì khai báo các tùy chọn như khi dùng Options API, Composition API cho phép bạn viết component Vue bằng các hàm được import. Phần giải thích này dành cho người đã có kinh nghiệm với Vue, đặc biệt là Vue 2 và Options API.</p>\n<h2>Composition API gồm những gì?</h2>\n<p>Composition API là tên gọi chung cho một nhóm API, bao gồm:</p>\n<ul>\n<li><strong><a href=\"https://github.com/api/reactivity-core\">Reactivity API</a></strong>: các hàm như <code>ref()</code> và <code>reactive()</code> cho phép tạo trực tiếp trạng thái phản ứng, trạng thái tính toán (computed) và các bộ theo dõi (watcher).</li>\n<li><strong><a href=\"https://github.com/api/composition-api-lifecycle\">Lifecycle Hooks</a></strong>: các hàm như <code>onMounted()</code> và <code>onUnmounted()</code> cho phép đăng ký xử lý tại các thời điểm trong vòng đời component.</li>\n<li><strong><a href=\"https://github.com/api/composition-api-dependency-injection\">Dependency Injection</a></strong>: <code>provide()</code> và <code>inject()</code> cho phép sử dụng hệ thống tiêm phụ thuộc của Vue cùng với các API phản ứng.</li>\n</ul>\n<h2>Phiên bản hỗ trợ và ví dụ sử dụng</h2>\n<p>Composition API được tích hợp sẵn trong Vue 3 và <a href=\"https://blog.vuejs.org/posts/vue-2-7-naruto.html\">Vue 2.7</a>. Với các phiên bản Vue 2 cũ hơn, hãy dùng plugin <a href=\"https://github.com/vuejs/composition-api\"><code>@vue/composition-api</code></a> được duy trì chính thức.</p>\n<p>Trong Vue 3, Composition API thường được dùng cùng cú pháp <a href=\"https://github.com/api/sfc-script-setup\"><code>&lt;script setup&gt;</code></a> trong Single-File Component. Ví dụ cơ bản dưới đây tạo trạng thái đếm, một hàm tăng giá trị và một hook vòng đời:</p>\n<pre><code>&lt;script setup&gt;\nimport { ref, onMounted } from 'vue'\n\n// reactive state\nconst count = ref(0)\n\n// functions that mutate state and trigger updates\nfunction increment() {\n  count.value++\n}\n\n// lifecycle hooks\nonMounted(() =&gt; {\n  console.log(`The initial count is ${count.value}.`)\n})\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;button @click=\"increment\"&gt;Count is: {{ count }}&lt;/button&gt;\n&lt;/template&gt;\n</code></pre>\n<h2>Composition API không phải lập trình hàm</h2>\n<p>Dù cách thiết kế API dựa trên việc kết hợp các hàm, <strong>Composition API không phải là lập trình hàm</strong>. Nó dựa trên mô hình phản ứng với trạng thái có thể thay đổi và khả năng theo dõi thay đổi ở mức chi tiết của Vue, trong khi lập trình hàm nhấn mạnh tính bất biến.</p>\n<p>Nếu muốn học cách dùng Vue với Composition API, bạn có thể chuyển tùy chọn API của toàn bộ trang tài liệu sang Composition API bằng nút chuyển ở đầu thanh bên trái, rồi đọc hướng dẫn từ đầu.</p>"
+    },
+    "quality_checks": [
+        {
+            "check": "copy",
+            "status": "pass"
+        },
+        {
+            "check": "similarity",
+            "status": "pass",
+            "metric": 0.06,
+            "reason": "lexical_metric_not_style_score"
+        },
+        {
+            "check": "language",
+            "status": "pass",
+            "detected": "vi"
+        },
+        {
+            "check": "source_code_links",
+            "status": "pass"
+        },
+        {
+            "check": "important_numbers",
+            "status": "pass"
+        },
+        {
+            "check": "unanchored_numbers",
+            "status": "pass",
+            "count": 0,
+            "reason": "requires_editor_review"
+        },
+        {
+            "check": "semantic_grounding",
+            "status": "undetermined",
+            "reason": "source_anchors_are_not_external_fact_verification"
+        }
+    ],
+    "cost": null,
+    "calls": [
+        {
+            "task": "single_step",
+            "output": {
+                "title": "Composition API trong Vue: khái niệm, các API và ví dụ cơ bản",
+                "content_html": "<p>Thay vì khai báo các tùy chọn như khi dùng Options API, Composition API cho phép bạn viết component Vue bằng các hàm được import. Phần giải thích này dành cho người đã có kinh nghiệm với Vue, đặc biệt là Vue 2 và Options API.</p>\n<h2>Composition API gồm những gì?</h2>\n<p>Composition API là tên gọi chung cho một nhóm API, bao gồm:</p>\n<ul>\n<li><strong><a href=\"https://github.com/api/reactivity-core\">Reactivity API</a></strong>: các hàm như <code>ref()</code> và <code>reactive()</code> cho phép tạo trực tiếp trạng thái phản ứng, trạng thái tính toán (computed) và các bộ theo dõi (watcher).</li>\n<li><strong><a href=\"https://github.com/api/composition-api-lifecycle\">Lifecycle Hooks</a></strong>: các hàm như <code>onMounted()</code> và <code>onUnmounted()</code> cho phép đăng ký xử lý tại các thời điểm trong vòng đời component.</li>\n<li><strong><a href=\"https://github.com/api/composition-api-dependency-injection\">Dependency Injection</a></strong>: <code>provide()</code> và <code>inject()</code> cho phép sử dụng hệ thống tiêm phụ thuộc của Vue cùng với các API phản ứng.</li>\n</ul>\n<h2>Phiên bản hỗ trợ và ví dụ sử dụng</h2>\n<p>Composition API được tích hợp sẵn trong Vue 3 và <a href=\"https://blog.vuejs.org/posts/vue-2-7-naruto.html\">Vue 2.7</a>. Với các phiên bản Vue 2 cũ hơn, hãy dùng plugin <a href=\"https://github.com/vuejs/composition-api\"><code>@vue/composition-api</code></a> được duy trì chính thức.</p>\n<p>Trong Vue 3, Composition API thường được dùng cùng cú pháp <a href=\"https://github.com/api/sfc-script-setup\"><code>&lt;script setup&gt;</code></a> trong Single-File Component. Ví dụ cơ bản dưới đây tạo trạng thái đếm, một hàm tăng giá trị và một hook vòng đời:</p>\n<pre><code>&lt;script setup&gt;\nimport { ref, onMounted } from 'vue'\n\n// reactive state\nconst count = ref(0)\n\n// functions that mutate state and trigger updates\nfunction increment() {\n  count.value++\n}\n\n// lifecycle hooks\nonMounted(() =&gt; {\n  console.log(`The initial count is ${count.value}.`)\n})\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;button @click=\"increment\"&gt;Count is: {{ count }}&lt;/button&gt;\n&lt;/template&gt;\n</code></pre>\n<h2>Composition API không phải lập trình hàm</h2>\n<p>Dù cách thiết kế API dựa trên việc kết hợp các hàm, <strong>Composition API không phải là lập trình hàm</strong>. Nó dựa trên mô hình phản ứng với trạng thái có thể thay đổi và khả năng theo dõi thay đổi ở mức chi tiết của Vue, trong khi lập trình hàm nhấn mạnh tính bất biến.</p>\n<p>Nếu muốn học cách dùng Vue với Composition API, bạn có thể chuyển tùy chọn API của toàn bộ trang tài liệu sang Composition API bằng nút chuyển ở đầu thanh bên trái, rồi đọc hướng dẫn từ đầu.</p>",
+                "content": "<p>Thay vì khai báo các tùy chọn như khi dùng Options API, Composition API cho phép bạn viết component Vue bằng các hàm được import. Phần giải thích này dành cho người đã có kinh nghiệm với Vue, đặc biệt là Vue 2 và Options API.</p>\n<h2>Composition API gồm những gì?</h2>\n<p>Composition API là tên gọi chung cho một nhóm API, bao gồm:</p>\n<ul>\n<li><strong><a href=\"https://github.com/api/reactivity-core\">Reactivity API</a></strong>: các hàm như <code>ref()</code> và <code>reactive()</code> cho phép tạo trực tiếp trạng thái phản ứng, trạng thái tính toán (computed) và các bộ theo dõi (watcher).</li>\n<li><strong><a href=\"https://github.com/api/composition-api-lifecycle\">Lifecycle Hooks</a></strong>: các hàm như <code>onMounted()</code> và <code>onUnmounted()</code> cho phép đăng ký xử lý tại các thời điểm trong vòng đời component.</li>\n<li><strong><a href=\"https://github.com/api/composition-api-dependency-injection\">Dependency Injection</a></strong>: <code>provide()</code> và <code>inject()</code> cho phép sử dụng hệ thống tiêm phụ thuộc của Vue cùng với các API phản ứng.</li>\n</ul>\n<h2>Phiên bản hỗ trợ và ví dụ sử dụng</h2>\n<p>Composition API được tích hợp sẵn trong Vue 3 và <a href=\"https://blog.vuejs.org/posts/vue-2-7-naruto.html\">Vue 2.7</a>. Với các phiên bản Vue 2 cũ hơn, hãy dùng plugin <a href=\"https://github.com/vuejs/composition-api\"><code>@vue/composition-api</code></a> được duy trì chính thức.</p>\n<p>Trong Vue 3, Composition API thường được dùng cùng cú pháp <a href=\"https://github.com/api/sfc-script-setup\"><code>&lt;script setup&gt;</code></a> trong Single-File Component. Ví dụ cơ bản dưới đây tạo trạng thái đếm, một hàm tăng giá trị và một hook vòng đời:</p>\n<pre><code>&lt;script setup&gt;\nimport { ref, onMounted } from 'vue'\n\n// reactive state\nconst count = ref(0)\n\n// functions that mutate state and trigger updates\nfunction increment() {\n  count.value++\n}\n\n// lifecycle hooks\nonMounted(() =&gt; {\n  console.log(`The initial count is ${count.value}.`)\n})\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;button @click=\"increment\"&gt;Count is: {{ count }}&lt;/button&gt;\n&lt;/template&gt;\n</code></pre>\n<h2>Composition API không phải lập trình hàm</h2>\n<p>Dù cách thiết kế API dựa trên việc kết hợp các hàm, <strong>Composition API không phải là lập trình hàm</strong>. Nó dựa trên mô hình phản ứng với trạng thái có thể thay đổi và khả năng theo dõi thay đổi ở mức chi tiết của Vue, trong khi lập trình hàm nhấn mạnh tính bất biến.</p>\n<p>Nếu muốn học cách dùng Vue với Composition API, bạn có thể chuyển tùy chọn API của toàn bộ trang tài liệu sang Composition API bằng nút chuyển ở đầu thanh bên trái, rồi đọc hướng dẫn từ đầu.</p>"
+            },
+            "diagnostics": {
+                "response_id": "resp_0686d03945cc64a8016ac34b0a346087d1b57d903f0a3b3cab",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "post.content.v1",
+                "requested_groups": [
+                    "title",
+                    "content"
+                ],
+                "returned_fields": [
+                    "title",
+                    "content_html"
+                ],
+                "usage": {
+                    "prompt_tokens": 1895,
+                    "completion_tokens": 803,
+                    "total_tokens": 2698
+                }
+            },
+            "latency_ms": 30431
+        }
+    ],
+    "latency_ms": 30436,
+    "input_sha256": "bd24d66602536d82d31fe86faa63dc162ea5da4897555c01418e2f6dbf5c731d",
+    "comparison_input_sha256": "62974da0c98e3bfedbd2b29301cbea50ab0f5daac9668715e93e4f1ff0299240",
+    "writing_profile_sha256": "1267aa8b907b63f12cd8c953c4a6664dbea3f3e7acabb12a28e64293053a7c96",
+    "brief_sha256": "a7f052446c270a2c36979d5688c0edaf10a0f5a164ae6ab255b69d622b3c56c6",
+    "image_evaluation": {
+        "mode": "source_metadata_only",
+        "source_images": 0,
+        "approved_asset_regenerate": "not_evaluated",
+        "pixel_understanding": "not_evaluated"
+    },
+    "source_sha256": "b2382177b64bf38bf1c40be8102c880bd1bae2764d07229665cfe6b713f1b1d7",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Composition API trong Vue: khái niệm, các API và ví dụ cơ bản",
+        "content_html": "<p>Thay vì khai báo các tùy chọn như khi dùng Options API, Composition API cho phép bạn viết component Vue bằng các hàm được import. Phần giải thích này dành cho người đã có kinh nghiệm với Vue, đặc biệt là Vue 2 và Options API.</p>\n<h2>Composition API gồm những gì?</h2>\n<p>Composition API là tên gọi chung cho một nhóm API, bao gồm:</p>\n<ul>\n<li><strong><a href=\"https://github.com/api/reactivity-core\">Reactivity API</a></strong>: các hàm như <code>ref()</code> và <code>reactive()</code> cho phép tạo trực tiếp trạng thái phản ứng, trạng thái tính toán (computed) và các bộ theo dõi (watcher).</li>\n<li><strong><a href=\"https://github.com/api/composition-api-lifecycle\">Lifecycle Hooks</a></strong>: các hàm như <code>onMounted()</code> và <code>onUnmounted()</code> cho phép đăng ký xử lý tại các thời điểm trong vòng đời component.</li>\n<li><strong><a href=\"https://github.com/api/composition-api-dependency-injection\">Dependency Injection</a></strong>: <code>provide()</code> và <code>inject()</code> cho phép sử dụng hệ thống tiêm phụ thuộc của Vue cùng với các API phản ứng.</li>\n</ul>\n<h2>Phiên bản hỗ trợ và ví dụ sử dụng</h2>\n<p>Composition API được tích hợp sẵn trong Vue 3 và <a href=\"https://blog.vuejs.org/posts/vue-2-7-naruto.html\">Vue 2.7</a>. Với các phiên bản Vue 2 cũ hơn, hãy dùng plugin <a href=\"https://github.com/vuejs/composition-api\"><code>@vue/composition-api</code></a> được duy trì chính thức.</p>\n<p>Trong Vue 3, Composition API thường được dùng cùng cú pháp <a href=\"https://github.com/api/sfc-script-setup\"><code>&lt;script setup&gt;</code></a> trong Single-File Component. Ví dụ cơ bản dưới đây tạo trạng thái đếm, một hàm tăng giá trị và một hook vòng đời:</p>\n<pre><code>&lt;script setup&gt;\nimport { ref, onMounted } from 'vue'\n\n// reactive state\nconst count = ref(0)\n\n// functions that mutate state and trigger updates\nfunction increment() {\n  count.value++\n}\n\n// lifecycle hooks\nonMounted(() =&gt; {\n  console.log(`The initial count is ${count.value}.`)\n})\n&lt;/script&gt;\n\n&lt;template&gt;\n  &lt;button @click=\"increment\"&gt;Count is: {{ count }}&lt;/button&gt;\n&lt;/template&gt;\n</code></pre>\n<h2>Composition API không phải lập trình hàm</h2>\n<p>Dù cách thiết kế API dựa trên việc kết hợp các hàm, <strong>Composition API không phải là lập trình hàm</strong>. Nó dựa trên mô hình phản ứng với trạng thái có thể thay đổi và khả năng theo dõi thay đổi ở mức chi tiết của Vue, trong khi lập trình hàm nhấn mạnh tính bất biến.</p>\n<p>Nếu muốn học cách dùng Vue với Composition API, bạn có thể chuyển tùy chọn API của toàn bộ trang tài liệu sang Composition API bằng nút chuyển ở đầu thanh bên trái, rồi đọc hướng dẫn từ đầu.</p>"
+    },
+    "total_tokens": 2698
+}

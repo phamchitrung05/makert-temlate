@@ -1,0 +1,218 @@
+{
+    "arm": "C",
+    "status": "failed",
+    "error_code": "AI_QUALITY_GROUNDING",
+    "final": null,
+    "quality_checks": [],
+    "cost": null,
+    "diagnostics": {
+        "stage": "validate",
+        "validation_errors": [
+            {
+                "group": "content",
+                "field": "content_html",
+                "reason": "important_number_missing"
+            }
+        ]
+    },
+    "calls": [
+        {
+            "task": "article.analysis-plan",
+            "output": {
+                "knowledge": {
+                    "facts": [
+                        {
+                            "id": "F01",
+                            "claim": "Thông báo của Bảo tàng Lịch sử Việt Nam quy định lịch đón tiếp và giá vé áp dụng kể từ ngày 01 tháng 03 năm 2010.",
+                            "source_block_ids": [
+                                "S001"
+                            ],
+                            "evidence": "Bảo tàng Lịch sử Việt Nam xin thông báo lịch đón tiếp và giá vé cụ thể cho mọi đối tượng khách tham quan kể từ ngày 01 tháng 03 năm 2010 như sau:",
+                            "important": true
+                        },
+                        {
+                            "id": "F02",
+                            "claim": "Theo thông báo, bảo tàng mở cửa tất cả các ngày trong tuần, từ 8h00 đến 16h30 hằng ngày.",
+                            "source_block_ids": [
+                                "S002"
+                            ],
+                            "evidence": "Bảo tàng Lịch sử Việt Nam mở cửa tất cả các ngày trong tuần từ 8h00 đến 16h30 hàng ngày.",
+                            "important": true
+                        },
+                        {
+                            "id": "F03",
+                            "claim": "Mức vé quy định là 20.000đ/người/vé, áp dụng cho cả khách Việt Nam và khách nước ngoài; điều kiện dành cho học sinh được nêu riêng.",
+                            "source_block_ids": [
+                                "S003",
+                                "S004",
+                                "S005"
+                            ],
+                            "evidence": "Đối tượng khách tham quan Bảo tàng Lịch sử Việt Nam (cả khách Việt Nam và khách nước ngoài) phải mua vé theo quy định là: 20.000đ/người/vé.",
+                            "important": true
+                        },
+                        {
+                            "id": "F04",
+                            "claim": "Học sinh từ cấp Tiểu học đến Trung học phổ thông được miễn phí vé vào Thứ ba và Thứ sáu đối với đoàn dưới 100 người.",
+                            "source_block_ids": [
+                                "S004"
+                            ],
+                            "evidence": "Đối tượng tham quan là học sinh từ cấp Tiểu học đến Trung học phổ thông được miễn phí vé tham quan 02 ngày trong tuần vào Thứ ba và Thứ sáu đối với đoàn dưới 100 người.",
+                            "important": true
+                        },
+                        {
+                            "id": "F05",
+                            "claim": "Trong điều kiện tham quan của học sinh vào Thứ ba và Thứ sáu, nguồn quy định với đoàn trên 100 người, số người từ 101 trở đi phải mua vé bằng 50% giá quy định, tức 10.000đ/người/vé.",
+                            "source_block_ids": [
+                                "S004"
+                            ],
+                            "evidence": "Trường hợp trên 100 người thì số người từ 101 trở đi phải mua 50% giá vé theo quy định là 10.000đ/người/vé.",
+                            "important": true
+                        },
+                        {
+                            "id": "F06",
+                            "claim": "Học sinh từ cấp Tiểu học đến Trung học phổ thông tham quan vào Thứ hai, thứ tư, thứ năm, thứ bảy và chủ nhật phải mua vé bằng 50% giá quy định, tức 10.000đ/người/vé.",
+                            "source_block_ids": [
+                                "S005"
+                            ],
+                            "evidence": "Trường hợp học sinh từ cấp Tiểu học đến Trung học phổ thông đi vào các ngày trong tuần (Thứ hai, thứ tư, thứ năm, thứ bảy, chủ nhật) phải mua 50% theo giá vé quy định là 10.000đ/người/vé.",
+                            "important": true
+                        }
+                    ],
+                    "terms": [
+                        "Bảo tàng Lịch sử Việt Nam",
+                        "Học sinh từ cấp Tiểu học đến Trung học phổ thông",
+                        "20.000đ/người/vé",
+                        "10.000đ/người/vé",
+                        "Đoàn dưới 100 người",
+                        "Số người từ 101 trở đi"
+                    ],
+                    "uncertainties": [
+                        "Nguồn nêu đoàn dưới 100 người và đoàn trên 100 người, nhưng không nói rõ trường hợp đoàn đúng 100 người. Không tự đổi điều kiện miễn phí thành “đoàn không quá 100 người”.",
+                        "Ngày 01 tháng 03 năm 2010 là mốc bắt đầu áp dụng được nêu trong thông báo, không phải ngày xuất bản đã được xác nhận.",
+                        "Trích đoạn không xác nhận lịch mở cửa và giá vé này còn áp dụng hiện nay; bài viết phải trình bày đây là thông báo lưu trữ với mốc áp dụng năm 2010."
+                    ]
+                },
+                "writing_plan": {
+                    "article_type": "Bài tóm lược thông báo lưu trữ",
+                    "audience": "Người đọc thông báo lưu trữ của bảo tàng",
+                    "angle": "Trình bày ngắn gọn lịch mở cửa và giá vé theo thông báo áp dụng từ ngày 01 tháng 03 năm 2010, làm rõ điều kiện dành cho học sinh mà không biến thông tin lịch sử thành hướng dẫn tham quan hiện hành.",
+                    "outline": [
+                        "Tiêu đề nêu lịch đón tiếp và giá vé của Bảo tàng Lịch sử Việt Nam cùng mốc áp dụng năm 2010.",
+                        "Đoạn mở nêu ngay mốc áp dụng 01 tháng 03 năm 2010, lịch mở cửa tất cả các ngày từ 8h00 đến 16h30 và mức vé 20.000đ/người/vé cho khách Việt Nam lẫn khách nước ngoài. Dẫn nguồn bằng liên kết https://baotanglichsuquocgia.vn/vi/Articles/3090/6038/thong-bao-lich-djon-tiep-va-gia-ve-djoi-voi-khach-tham-quan-bao-tang-lich-su-viet-nam.html.",
+                        "Đoạn tiếp theo trình bày điều kiện dành cho học sinh từ Tiểu học đến Trung học phổ thông vào Thứ ba và Thứ sáu: miễn phí với đoàn dưới 100 người; với đoàn trên 100 người, số người từ 101 trở đi trả 50% giá vé, tức 10.000đ/người/vé. Giữ nguyên các ngưỡng, không suy diễn trường hợp đúng 100 người.",
+                        "Đoạn cuối nêu mức vé học sinh 10.000đ/người/vé, bằng 50% giá quy định, vào Thứ hai, thứ tư, thứ năm, thứ bảy và chủ nhật. Giữ bài trong phạm vi trích đoạn, không bổ sung chính sách hiện hành hoặc lặp lại toàn bộ thông tin."
+                    ],
+                    "coverage_fact_ids": [
+                        "F01",
+                        "F02",
+                        "F03",
+                        "F04",
+                        "F05",
+                        "F06"
+                    ]
+                }
+            },
+            "diagnostics": {
+                "response_id": "resp_00cf3c052c37e769016ac351911b8c87d1a1b23a86b0edc531",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.analysis-plan.v1",
+                "usage": {
+                    "prompt_tokens": 3510,
+                    "completion_tokens": 1494,
+                    "total_tokens": 5004,
+                    "reasoning_tokens": 32
+                }
+            },
+            "latency_ms": 58155
+        },
+        {
+            "task": "article.writer",
+            "output": {
+                "draft": {
+                    "title": "Lịch đón tiếp và giá vé Bảo tàng Lịch sử Việt Nam theo thông báo năm 2010",
+                    "content_html": "<p>Theo <a href=\"https://baotanglichsuquocgia.vn/vi/Articles/3090/6038/thong-bao-lich-djon-tiep-va-gia-ve-djoi-voi-khach-tham-quan-bao-tang-lich-su-viet-nam.html\">thông báo của Bảo tàng Lịch sử Việt Nam</a> áp dụng từ ngày <strong>01 tháng 03 năm 2010</strong>, bảo tàng mở cửa tất cả các ngày trong tuần, từ <strong>8h00 đến 16h30</strong> hằng ngày. Giá vé quy định cho cả khách Việt Nam và khách nước ngoài là <strong>20.000đ/người/vé</strong>, với điều kiện riêng dành cho học sinh như dưới đây. Đây là thông tin lưu trữ; trích đoạn không xác nhận lịch mở cửa và giá vé này còn áp dụng hiện nay.</p>\n<h2>Điều kiện vé dành cho học sinh</h2>\n<p>Đối với học sinh từ cấp Tiểu học đến Trung học phổ thông, thông báo quy định:</p>\n<ul>\n<li><strong>Thứ ba và Thứ sáu:</strong> miễn phí vé tham quan cho đoàn dưới 100 người. Với đoàn trên 100 người, số người từ 101 trở đi phải mua vé bằng 50% giá quy định, tức <strong>10.000đ/người/vé</strong>.</li>\n<li><strong>Thứ hai, Thứ tư, Thứ năm, Thứ bảy và Chủ nhật:</strong> học sinh phải mua vé bằng 50% giá quy định, tức <strong>10.000đ/người/vé</strong>.</li>\n</ul>\n<p>Trích đoạn nêu riêng điều kiện cho đoàn dưới 100 người và đoàn trên 100 người, nhưng không nói rõ trường hợp đoàn đúng 100 người.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04",
+                    "F05",
+                    "F06"
+                ],
+                "used_asset_ids": []
+            },
+            "diagnostics": {
+                "response_id": "resp_087f1e01c2279dec016ac351cb28b887d18c1523fac993921b",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.writer.v1",
+                "usage": {
+                    "prompt_tokens": 4030,
+                    "completion_tokens": 485,
+                    "total_tokens": 4515
+                }
+            },
+            "latency_ms": 23251
+        },
+        {
+            "task": "article.editor",
+            "output": {
+                "final": {
+                    "title": "Lịch đón tiếp và giá vé Bảo tàng Lịch sử Việt Nam theo thông báo năm 2010",
+                    "content_html": "<p>Theo <a href=\"https://baotanglichsuquocgia.vn/vi/Articles/3090/6038/thong-bao-lich-djon-tiep-va-gia-ve-djoi-voi-khach-tham-quan-bao-tang-lich-su-viet-nam.html\">thông báo của Bảo tàng Lịch sử Việt Nam</a> áp dụng từ ngày <strong>01 tháng 03 năm 2010</strong>, bảo tàng mở cửa tất cả các ngày trong tuần, từ <strong>8h00 đến 16h30</strong> hằng ngày. Giá vé quy định cho cả khách Việt Nam và khách nước ngoài là <strong>20.000đ/người/vé</strong>; học sinh có điều kiện vé riêng.</p>\n<p>Đây là thông báo lưu trữ. Trích đoạn không xác nhận lịch mở cửa và giá vé này còn áp dụng hiện nay.</p>\n<h2>Điều kiện vé dành cho học sinh</h2>\n<p>Với học sinh từ cấp Tiểu học đến Trung học phổ thông, mức vé phụ thuộc vào ngày tham quan và quy mô đoàn:</p>\n<ul>\n<li><strong>Thứ ba và Thứ sáu:</strong> miễn phí vé tham quan cho đoàn dưới 100 người. Với đoàn trên 100 người, số người từ 101 trở đi phải mua vé bằng 50% giá quy định, tức <strong>10.000đ/người/vé</strong>.</li>\n<li><strong>Thứ hai, Thứ tư, Thứ năm, Thứ bảy và Chủ nhật:</strong> học sinh phải mua vé bằng 50% giá quy định, tức <strong>10.000đ/người/vé</strong>.</li>\n</ul>\n<p>Trích đoạn không nói rõ điều kiện vé cho đoàn đúng 100 người, mà chỉ nêu trường hợp đoàn dưới 100 người và đoàn trên 100 người.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04",
+                    "F05",
+                    "F06"
+                ],
+                "issues": [
+                    {
+                        "severity": "warning",
+                        "code": "SOURCE_THRESHOLD_AMBIGUITY",
+                        "message": "Nguồn không nêu rõ điều kiện vé cho đoàn đúng 100 người. Bài giữ nguyên các ngưỡng dưới 100 và trên 100 người, không suy diễn thêm."
+                    }
+                ]
+            },
+            "diagnostics": {
+                "response_id": "resp_01689fcbfee721d2016ac351e245a887d1b0ef69a0fe98c1d7",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.editor.v1",
+                "usage": {
+                    "prompt_tokens": 4515,
+                    "completion_tokens": 548,
+                    "total_tokens": 5063
+                }
+            },
+            "latency_ms": 23723
+        }
+    ],
+    "latency_ms": 105132,
+    "input_sha256": "e16d343a8c0db94f8249d8ccbecd18e748e8581bad71b5566122a3718681b682",
+    "comparison_input_sha256": "54977e0d0f0551bd3405e9750878a04004524d11c8ff3c2b5e7b6c04d4862179",
+    "writing_profile_sha256": "1267aa8b907b63f12cd8c953c4a6664dbea3f3e7acabb12a28e64293053a7c96",
+    "brief_sha256": "907ce507f9100e1d03a6be1a9899036ea430540d9b8af54eb3b81f542c9c4d1b",
+    "image_evaluation": {
+        "mode": "source_metadata_only",
+        "source_images": 1,
+        "approved_asset_regenerate": "not_evaluated",
+        "pixel_understanding": "not_evaluated"
+    },
+    "source_sha256": "57218c919e8dfa30d25d690f71166c20fc62ee53753dd7d9bf699f17eeb59a50",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Lịch đón tiếp và giá vé Bảo tàng Lịch sử Việt Nam theo thông báo năm 2010",
+        "content_html": "<p>Theo <a href=\"https://baotanglichsuquocgia.vn/vi/Articles/3090/6038/thong-bao-lich-djon-tiep-va-gia-ve-djoi-voi-khach-tham-quan-bao-tang-lich-su-viet-nam.html\">thông báo của Bảo tàng Lịch sử Việt Nam</a> áp dụng từ ngày <strong>01 tháng 03 năm 2010</strong>, bảo tàng mở cửa tất cả các ngày trong tuần, từ <strong>8h00 đến 16h30</strong> hằng ngày. Giá vé quy định cho cả khách Việt Nam và khách nước ngoài là <strong>20.000đ/người/vé</strong>; học sinh có điều kiện vé riêng.</p>\n<p>Đây là thông báo lưu trữ. Trích đoạn không xác nhận lịch mở cửa và giá vé này còn áp dụng hiện nay.</p>\n<h2>Điều kiện vé dành cho học sinh</h2>\n<p>Với học sinh từ cấp Tiểu học đến Trung học phổ thông, mức vé phụ thuộc vào ngày tham quan và quy mô đoàn:</p>\n<ul>\n<li><strong>Thứ ba và Thứ sáu:</strong> miễn phí vé tham quan cho đoàn dưới 100 người. Với đoàn trên 100 người, số người từ 101 trở đi phải mua vé bằng 50% giá quy định, tức <strong>10.000đ/người/vé</strong>.</li>\n<li><strong>Thứ hai, Thứ tư, Thứ năm, Thứ bảy và Chủ nhật:</strong> học sinh phải mua vé bằng 50% giá quy định, tức <strong>10.000đ/người/vé</strong>.</li>\n</ul>\n<p>Trích đoạn không nói rõ điều kiện vé cho đoàn đúng 100 người, mà chỉ nêu trường hợp đoàn dưới 100 người và đoàn trên 100 người.</p>"
+    },
+    "total_tokens": 14582
+}

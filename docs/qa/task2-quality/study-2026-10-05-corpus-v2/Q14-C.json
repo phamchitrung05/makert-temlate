@@ -1,0 +1,305 @@
+{
+    "arm": "C",
+    "status": "ready",
+    "error_code": null,
+    "final": {
+        "title": "Hiểu cơ chế phản ứng trong Vue qua effect và dependency",
+        "content_html": "<p>Trong Vue, trạng thái của component gồm các đối tượng JavaScript có tính phản ứng: khi bạn chỉnh sửa chúng, giao diện cập nhật. Nhưng một phép gán JavaScript thông thường không tự tạo ra quan hệ cập nhật như vậy. Một phép cộng đơn giản sẽ giúp làm rõ sự khác biệt.</p>\n<h2>Từ công thức bảng tính đến phép gán JavaScript</h2>\n<p><strong>Reactivity</strong>, hay tính phản ứng, là mô hình lập trình cho phép thích ứng với thay đổi theo cách khai báo. Ví dụ quen thuộc là bảng tính: ô <code>A2</code> có công thức <code>= A0 + A1</code> và cho kết quả <code>3</code>. Khi <code>A0</code> hoặc <code>A1</code> thay đổi, <code>A2</code> tự động cập nhật. Bạn khai báo cách tính kết quả, thay vì phải tự tính lại sau mỗi lần sửa dữ liệu.</p>\n<p>Với JavaScript thông thường, đoạn mã tương tự có hành vi khác:</p>\n<pre><code>let A0 = 1\nlet A1 = 2\nlet A2 = A0 + A1\n\nconsole.log(A2) // 3\n\nA0 = 2\nconsole.log(A2) // Still 3\n</code></pre>\n<p>Phép gán ban đầu tính tổng rồi lưu kết quả vào <code>A2</code>, chứ không thiết lập cơ chế tự tính lại. Vì vậy, sau khi <code>A0</code> đổi thành <code>2</code>, <code>A2</code> vẫn là <code>3</code>.</p>\n<h2>Effect, dependency và subscriber là gì?</h2>\n<p>Để có thể chạy lại phép tính, trước hết ta viết lại phần cập nhật <code>A2</code> thành một hàm:</p>\n<pre><code>let A2\n\nfunction update() {\n  A2 = A0 + A1\n}\n</code></pre>\n<p>Ba thuật ngữ dưới đây mô tả các vai trò trong ví dụ:</p>\n<ul>\n<li><strong>Effect:</strong> hàm <code>update()</code> tạo ra một <em>side effect</em>, gọi ngắn là effect, vì nó thay đổi trạng thái chương trình bằng cách cập nhật <code>A2</code>.</li>\n<li><strong>Dependency:</strong> <code>A0</code> và <code>A1</code> là các phụ thuộc của effect, vì effect dùng giá trị của chúng để thực hiện phép tính.</li>\n<li><strong>Subscriber:</strong> effect là bên đăng ký theo dõi các dependency đó để được thông báo khi chúng thay đổi.</li>\n</ul>\n<p>Tách phép tính thành hàm mới chỉ giúp ta có đoạn mã để chạy lại. Điều còn thiếu là cơ chế gọi <code>update()</code> mỗi khi <code>A0</code> hoặc <code>A1</code> thay đổi. Tài liệu minh họa ý tưởng này bằng lời gọi:</p>\n<pre><code>whenDepsChange(update)\n</code></pre>\n<p><code>whenDepsChange()</code> ở đây là hàm giả định để giải thích cơ chế cần có. Đoạn nguồn chưa cung cấp phần triển khai và không giới thiệu hàm này như một API Vue có sẵn.</p>\n<h2>Ba nhiệm vụ của cơ chế phản ứng</h2>\n<p>Cơ chế minh họa trên cần làm ba việc:</p>\n<ol>\n<li><strong>Theo dõi lúc biến được đọc.</strong> Khi tính biểu thức <code>A0 + A1</code>, cả <code>A0</code> lẫn <code>A1</code> đều được đọc.</li>\n<li><strong>Đăng ký effect đang chạy với biến được đọc.</strong> Nếu một biến được đọc trong lúc effect đang thực thi, cơ chế đăng ký effect đó làm subscriber của biến. Trong ví dụ, sau lần gọi <code>update()</code> đầu tiên, <code>update()</code> trở thành subscriber của cả <code>A0</code> và <code>A1</code>.</li>\n<li><strong>Phát hiện thay đổi và thông báo chạy lại.</strong> Khi một biến được gán giá trị mới, chẳng hạn <code>A0</code>, cơ chế thông báo cho tất cả effect đã đăng ký với biến đó để chúng chạy lại.</li>\n</ol>\n<p>Đây là mô hình khái niệm mà đoạn tài liệu dùng để giải thích tính phản ứng, chưa phải phần triển khai hệ thống của Vue.</p>\n<p>Nguồn: <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/extras/reactivity-in-depth.md\">tài liệu Vue — Reactivity in Depth</a>.</p>"
+    },
+    "quality_checks": [
+        {
+            "check": "copy",
+            "status": "pass"
+        },
+        {
+            "check": "similarity",
+            "status": "pass",
+            "metric": 0.021,
+            "reason": "lexical_metric_not_style_score"
+        },
+        {
+            "check": "language",
+            "status": "pass",
+            "detected": "vi"
+        },
+        {
+            "check": "source_code_links",
+            "status": "pass"
+        },
+        {
+            "check": "important_numbers",
+            "status": "pass"
+        },
+        {
+            "check": "unanchored_numbers",
+            "status": "pass",
+            "count": 0,
+            "reason": "requires_editor_review"
+        },
+        {
+            "check": "semantic_grounding",
+            "status": "undetermined",
+            "reason": "source_anchors_are_not_external_fact_verification"
+        }
+    ],
+    "cost": null,
+    "calls": [
+        {
+            "task": "article.analysis-plan",
+            "output": {
+                "knowledge": {
+                    "facts": [
+                        {
+                            "id": "F01",
+                            "claim": "Trong Vue, trạng thái của component gồm các đối tượng JavaScript có tính phản ứng; khi chúng được chỉnh sửa, giao diện cập nhật.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Component state consists of reactive JavaScript objects. When you modify them, the view updates.",
+                            "important": true
+                        },
+                        {
+                            "id": "F02",
+                            "claim": "Reactivity là mô hình lập trình cho phép thích ứng với thay đổi theo cách khai báo.",
+                            "source_block_ids": [
+                                "S005"
+                            ],
+                            "evidence": "Reactivity is a programming paradigm that allows us to adjust to changes in a declarative manner.",
+                            "important": true
+                        },
+                        {
+                            "id": "F03",
+                            "claim": "Trong ví dụ bảng tính, ô A2 có công thức = A0 + A1 và cho kết quả 3; khi A0 hoặc A1 thay đổi, A2 tự động cập nhật.",
+                            "source_block_ids": [
+                                "S006"
+                            ],
+                            "evidence": "Here cell A2 is defined via a formula of = A0 + A1 (you can click on A2 to view or edit the formula), so the spreadsheet gives us 3. No surprises there. But if you update A0 or A1, you'll notice that A2 automagically updates too.",
+                            "important": true
+                        },
+                        {
+                            "id": "F04",
+                            "claim": "Trong đoạn JavaScript thông thường của nguồn, A0 = 1 và A1 = 2 tạo ra A2 = 3. Sau khi gán A0 = 2, A2 vẫn là 3: phép gán ban đầu không thiết lập cơ chế tự tính lại.",
+                            "source_block_ids": [
+                                "S008",
+                                "S009"
+                            ],
+                            "evidence": "let A0 = 1\nlet A1 = 2\nlet A2 = A0 + A1\n\nconsole.log(A2) // 3\n\nA0 = 2\nconsole.log(A2) // Still 3",
+                            "important": true
+                        },
+                        {
+                            "id": "F05",
+                            "claim": "Nguồn đưa phép tính A2 = A0 + A1 vào hàm update() để có thể chạy lại đoạn mã cập nhật A2.",
+                            "source_block_ids": [
+                                "S010",
+                                "S011"
+                            ],
+                            "evidence": "let A2\n\nfunction update() {\n  A2 = A0 + A1\n}",
+                            "important": true
+                        },
+                        {
+                            "id": "F06",
+                            "claim": "Hàm update() tạo ra side effect, gọi ngắn là effect, vì nó thay đổi trạng thái chương trình.",
+                            "source_block_ids": [
+                                "S013"
+                            ],
+                            "evidence": "The update() function produces a side effect, or effect for short, because it modifies the state of the program.",
+                            "important": true
+                        },
+                        {
+                            "id": "F07",
+                            "claim": "A0 và A1 là các dependency của effect vì effect sử dụng giá trị của chúng; effect được gọi là subscriber của các dependency đó.",
+                            "source_block_ids": [
+                                "S014"
+                            ],
+                            "evidence": "A0 and A1 are considered dependencies of the effect, as their values are used to perform the effect. The effect is said to be a subscriber to its dependencies.",
+                            "important": true
+                        },
+                        {
+                            "id": "F08",
+                            "claim": "Nguồn minh họa nhu cầu gọi lại update() mỗi khi A0 hoặc A1 thay đổi bằng lời gọi whenDepsChange(update).",
+                            "source_block_ids": [
+                                "S015",
+                                "S016"
+                            ],
+                            "evidence": "What we need is a magic function that can invoke update() (the effect) whenever A0 or A1 (the dependencies) change:",
+                            "important": true
+                        },
+                        {
+                            "id": "F09",
+                            "claim": "Nhiệm vụ đầu tiên của cơ chế minh họa là theo dõi lúc biến được đọc; biểu thức A0 + A1 đọc cả A0 lẫn A1.",
+                            "source_block_ids": [
+                                "S018"
+                            ],
+                            "evidence": "Track when a variable is read. E.g. when evaluating the expression A0 + A1, both A0 and A1 are read.",
+                            "important": true
+                        },
+                        {
+                            "id": "F10",
+                            "claim": "Nếu biến được đọc khi một effect đang chạy, cơ chế phải đăng ký effect đó làm subscriber của biến. Sau lần gọi update() đầu tiên, update() trở thành subscriber của cả A0 và A1.",
+                            "source_block_ids": [
+                                "S019"
+                            ],
+                            "evidence": "If a variable is read when there is a currently running effect, make that effect a subscriber to that variable. E.g. because A0 and A1 are read when update() is being executed, update() becomes a subscriber to both A0 and A1 after the first call.",
+                            "important": true
+                        },
+                        {
+                            "id": "F11",
+                            "claim": "Cơ chế phải phát hiện khi biến thay đổi và thông báo cho mọi effect đã đăng ký chạy lại; ví dụ, khi A0 được gán giá trị mới.",
+                            "source_block_ids": [
+                                "S020"
+                            ],
+                            "evidence": "Detect when a variable is mutated. E.g. when A0 is assigned a new value, notify all its subscriber effects to re-run.",
+                            "important": true
+                        }
+                    ],
+                    "terms": [
+                        "Reactivity — tính phản ứng",
+                        "Reactive JavaScript objects — các đối tượng JavaScript có tính phản ứng",
+                        "Component state — trạng thái component",
+                        "Declarative — theo cách khai báo",
+                        "Side effect / effect — tác dụng phụ / effect",
+                        "Dependency — phụ thuộc",
+                        "Subscriber — bên đăng ký theo dõi",
+                        "update()",
+                        "whenDepsChange(update)"
+                    ],
+                    "uncertainties": [
+                        "Đoạn nguồn chỉ trình bày mô hình khái niệm và các nhiệm vụ cần có; chưa cung cấp phần triển khai whenDepsChange(). Không giới thiệu hàm này như một API Vue có sẵn.",
+                        "Nguồn không nêu phiên bản Vue, chi tiết kỹ thuật triển khai hệ thống phản ứng, thời điểm cập nhật DOM hay các trường hợp lỗi cụ thể; không bổ sung những nội dung đó.",
+                        "Ví dụ bảng tính nhắc đến thao tác nhấp vào A2, nhưng dữ liệu được cung cấp không có bảng tính tương tác. Bài viết chỉ giải thích công thức, không hứa hẹn khả năng tương tác."
+                    ]
+                },
+                "writing_plan": {
+                    "article_type": "Bài giải thích kỹ thuật ngắn dựa trên đoạn tài liệu Vue",
+                    "audience": "Người phát triển website, đặc biệt người mới tìm hiểu cơ chế reactivity của Vue",
+                    "angle": "Giải thích vì sao phép gán JavaScript thông thường không tự tính lại khi dữ liệu đầu vào đổi, rồi dùng ví dụ bảng tính để dẫn vào mô hình effect–dependency–subscriber và ba nhiệm vụ của cơ chế phản ứng.",
+                    "outline": [
+                        "Đặt tiêu đề tiếng Việt ngắn, thể hiện trọng tâm cơ chế phản ứng trong Vue. Mở ngay bằng đối chiếu: trạng thái phản ứng trong Vue làm giao diện cập nhật, nhưng phép gán JavaScript thông thường không tự tạo quan hệ cập nhật.",
+                        "Giải thích reactivity theo cách khai báo qua ô A2 = A0 + A1 trong bảng tính. Đặt cạnh đoạn mã JavaScript ở S008, giữ nguyên toàn bộ code và chú thích để làm rõ A2 vẫn bằng 3 sau khi A0 đổi thành 2.",
+                        "Đưa phép tính vào update(), giữ nguyên code ở S011. Giải thích ngắn gọn effect, dependency và subscriber ngay trên ví dụ, tránh lặp lại định nghĩa ở nhiều đoạn.",
+                        "Giữ nguyên lời gọi whenDepsChange(update) ở S016 và nêu rõ đây là minh họa cho cơ chế cần có, chưa phải phần triển khai hay API Vue được nguồn xác nhận. Trình bày ba nhiệm vụ theo thứ tự: theo dõi lượt đọc, đăng ký effect đang chạy với biến được đọc, phát hiện thay đổi và thông báo các effect chạy lại.",
+                        "Kết thúc ở phạm vi mô hình khái niệm của đoạn nguồn, không mở rộng sang API hay chi tiết triển khai chưa được cung cấp. Gắn liên kết dẫn nguồn bằng đúng URL https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/extras/reactivity-in-depth.md. Giữ bài gọn với khoảng ba phần nội dung, không thêm bảng hoặc kết luận lặp ý."
+                    ],
+                    "coverage_fact_ids": [
+                        "F01",
+                        "F02",
+                        "F03",
+                        "F04",
+                        "F05",
+                        "F06",
+                        "F07",
+                        "F08",
+                        "F09",
+                        "F10",
+                        "F11"
+                    ]
+                }
+            },
+            "diagnostics": {
+                "response_id": "resp_0ce257fc12dfc876016ac34cdcd54c87d0b1c5419390d1fb4d",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.analysis-plan.v1",
+                "usage": {
+                    "prompt_tokens": 5243,
+                    "completion_tokens": 1985,
+                    "total_tokens": 7228
+                }
+            },
+            "latency_ms": 76003
+        },
+        {
+            "task": "article.writer",
+            "output": {
+                "draft": {
+                    "title": "Hiểu cơ chế phản ứng trong Vue qua effect và dependency",
+                    "content_html": "<p>Trong Vue, trạng thái của component gồm các đối tượng JavaScript có tính phản ứng: khi bạn chỉnh sửa chúng, giao diện cập nhật. Nhưng một phép gán JavaScript thông thường không tự tạo ra quan hệ cập nhật như vậy. Để hiểu sự khác biệt, hãy bắt đầu từ một phép cộng đơn giản.</p>\n<h2>Từ công thức bảng tính đến phép gán JavaScript</h2>\n<p><strong>Reactivity</strong>, hay tính phản ứng, là mô hình lập trình cho phép thích ứng với thay đổi theo cách khai báo. Ví dụ quen thuộc là bảng tính: ô <code>A2</code> được định nghĩa bằng công thức <code>= A0 + A1</code> và cho kết quả <code>3</code>. Khi giá trị ở <code>A0</code> hoặc <code>A1</code> thay đổi, <code>A2</code> tự động cập nhật. Bạn khai báo cách tính kết quả, thay vì phải tự tính lại sau mỗi lần sửa dữ liệu.</p>\n<p>Với JavaScript thông thường, đoạn mã tương tự lại có hành vi khác:</p>\n<pre><code>let A0 = 1\nlet A1 = 2\nlet A2 = A0 + A1\n\nconsole.log(A2) // 3\n\nA0 = 2\nconsole.log(A2) // Still 3\n</code></pre>\n<p>Phép gán ban đầu tính tổng rồi lưu kết quả vào <code>A2</code>. Nó không thiết lập cơ chế tự tính lại, nên sau khi <code>A0</code> đổi thành <code>2</code>, <code>A2</code> vẫn là <code>3</code>.</p>\n<h2>Effect, dependency và subscriber là gì?</h2>\n<p>Muốn chạy lại phép tính khi cần, trước hết ta đưa phần cập nhật <code>A2</code> vào một hàm. Đoạn mã dưới đây là bước tiếp theo của ví dụ, với <code>A0</code> và <code>A1</code> đã được khai báo:</p>\n<pre><code>let A2\n\nfunction update() {\n  A2 = A0 + A1\n}\n</code></pre>\n<p>Trên ví dụ này, ba thuật ngữ có thể hiểu như sau:</p>\n<ul>\n<li><strong>Effect:</strong> hàm <code>update()</code> tạo ra một <em>side effect</em>, gọi ngắn là effect, vì nó thay đổi trạng thái chương trình bằng cách cập nhật <code>A2</code>.</li>\n<li><strong>Dependency:</strong> <code>A0</code> và <code>A1</code> là các phụ thuộc của effect, vì effect dùng giá trị của chúng để thực hiện phép tính.</li>\n<li><strong>Subscriber:</strong> effect là bên đăng ký theo dõi các dependency đó, để có thể được thông báo khi chúng thay đổi.</li>\n</ul>\n<p>Việc tách phép tính thành hàm mới chỉ giúp ta có đoạn mã để chạy lại. Điều còn thiếu là một cơ chế gọi <code>update()</code> mỗi khi <code>A0</code> hoặc <code>A1</code> thay đổi. Tài liệu minh họa ý tưởng này bằng lời gọi:</p>\n<pre><code>whenDepsChange(update)\n</code></pre>\n<p><code>whenDepsChange()</code> ở đây là hàm giả định để giải thích cơ chế cần có, không phải một API Vue có sẵn được đoạn nguồn giới thiệu. Phần triển khai hàm này cũng chưa được cung cấp.</p>\n<h2>Ba nhiệm vụ của cơ chế phản ứng</h2>\n<p>Để lời gọi minh họa trên có thể hoạt động, cơ chế phía sau cần làm ba việc:</p>\n<ol>\n<li><strong>Theo dõi lúc biến được đọc.</strong> Khi tính biểu thức <code>A0 + A1</code>, cả <code>A0</code> lẫn <code>A1</code> đều được đọc.</li>\n<li><strong>Đăng ký effect đang chạy với biến được đọc.</strong> Nếu một biến được đọc trong lúc effect đang thực thi, effect đó trở thành subscriber của biến. Trong ví dụ, sau lần gọi <code>update()</code> đầu tiên, cơ chế sẽ ghi nhận <code>update()</code> là subscriber của cả <code>A0</code> và <code>A1</code>.</li>\n<li><strong>Phát hiện thay đổi và thông báo chạy lại.</strong> Khi một biến được gán giá trị mới, chẳng hạn <code>A0</code>, cơ chế phải thông báo cho tất cả effect đã đăng ký với biến đó để chúng chạy lại.</li>\n</ol>\n<p>Đây là mô hình khái niệm mà đoạn tài liệu dùng để giải thích tính phản ứng; nó chưa đi vào chi tiết triển khai hệ thống của Vue.</p>\n<p>Nguồn: <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/extras/reactivity-in-depth.md\">tài liệu Vue — Reactivity in Depth</a>.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04",
+                    "F05",
+                    "F06",
+                    "F07",
+                    "F08",
+                    "F09",
+                    "F10",
+                    "F11"
+                ],
+                "used_asset_ids": []
+            },
+            "diagnostics": {
+                "response_id": "resp_07286b500aec0c68016ac34d29098487d29df85e895e5b750c",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.writer.v1",
+                "usage": {
+                    "prompt_tokens": 6117,
+                    "completion_tokens": 1231,
+                    "total_tokens": 7348
+                }
+            },
+            "latency_ms": 48724
+        },
+        {
+            "task": "article.editor",
+            "output": {
+                "final": {
+                    "title": "Hiểu cơ chế phản ứng trong Vue qua effect và dependency",
+                    "content_html": "<p>Trong Vue, trạng thái của component gồm các đối tượng JavaScript có tính phản ứng: khi bạn chỉnh sửa chúng, giao diện cập nhật. Nhưng một phép gán JavaScript thông thường không tự tạo ra quan hệ cập nhật như vậy. Một phép cộng đơn giản sẽ giúp làm rõ sự khác biệt.</p>\n<h2>Từ công thức bảng tính đến phép gán JavaScript</h2>\n<p><strong>Reactivity</strong>, hay tính phản ứng, là mô hình lập trình cho phép thích ứng với thay đổi theo cách khai báo. Ví dụ quen thuộc là bảng tính: ô <code>A2</code> có công thức <code>= A0 + A1</code> và cho kết quả <code>3</code>. Khi <code>A0</code> hoặc <code>A1</code> thay đổi, <code>A2</code> tự động cập nhật. Bạn khai báo cách tính kết quả, thay vì phải tự tính lại sau mỗi lần sửa dữ liệu.</p>\n<p>Với JavaScript thông thường, đoạn mã tương tự có hành vi khác:</p>\n<pre><code>let A0 = 1\nlet A1 = 2\nlet A2 = A0 + A1\n\nconsole.log(A2) // 3\n\nA0 = 2\nconsole.log(A2) // Still 3\n</code></pre>\n<p>Phép gán ban đầu tính tổng rồi lưu kết quả vào <code>A2</code>, chứ không thiết lập cơ chế tự tính lại. Vì vậy, sau khi <code>A0</code> đổi thành <code>2</code>, <code>A2</code> vẫn là <code>3</code>.</p>\n<h2>Effect, dependency và subscriber là gì?</h2>\n<p>Để có thể chạy lại phép tính, trước hết ta viết lại phần cập nhật <code>A2</code> thành một hàm:</p>\n<pre><code>let A2\n\nfunction update() {\n  A2 = A0 + A1\n}\n</code></pre>\n<p>Ba thuật ngữ dưới đây mô tả các vai trò trong ví dụ:</p>\n<ul>\n<li><strong>Effect:</strong> hàm <code>update()</code> tạo ra một <em>side effect</em>, gọi ngắn là effect, vì nó thay đổi trạng thái chương trình bằng cách cập nhật <code>A2</code>.</li>\n<li><strong>Dependency:</strong> <code>A0</code> và <code>A1</code> là các phụ thuộc của effect, vì effect dùng giá trị của chúng để thực hiện phép tính.</li>\n<li><strong>Subscriber:</strong> effect là bên đăng ký theo dõi các dependency đó để được thông báo khi chúng thay đổi.</li>\n</ul>\n<p>Tách phép tính thành hàm mới chỉ giúp ta có đoạn mã để chạy lại. Điều còn thiếu là cơ chế gọi <code>update()</code> mỗi khi <code>A0</code> hoặc <code>A1</code> thay đổi. Tài liệu minh họa ý tưởng này bằng lời gọi:</p>\n<pre><code>whenDepsChange(update)\n</code></pre>\n<p><code>whenDepsChange()</code> ở đây là hàm giả định để giải thích cơ chế cần có. Đoạn nguồn chưa cung cấp phần triển khai và không giới thiệu hàm này như một API Vue có sẵn.</p>\n<h2>Ba nhiệm vụ của cơ chế phản ứng</h2>\n<p>Cơ chế minh họa trên cần làm ba việc:</p>\n<ol>\n<li><strong>Theo dõi lúc biến được đọc.</strong> Khi tính biểu thức <code>A0 + A1</code>, cả <code>A0</code> lẫn <code>A1</code> đều được đọc.</li>\n<li><strong>Đăng ký effect đang chạy với biến được đọc.</strong> Nếu một biến được đọc trong lúc effect đang thực thi, cơ chế đăng ký effect đó làm subscriber của biến. Trong ví dụ, sau lần gọi <code>update()</code> đầu tiên, <code>update()</code> trở thành subscriber của cả <code>A0</code> và <code>A1</code>.</li>\n<li><strong>Phát hiện thay đổi và thông báo chạy lại.</strong> Khi một biến được gán giá trị mới, chẳng hạn <code>A0</code>, cơ chế thông báo cho tất cả effect đã đăng ký với biến đó để chúng chạy lại.</li>\n</ol>\n<p>Đây là mô hình khái niệm mà đoạn tài liệu dùng để giải thích tính phản ứng, chưa phải phần triển khai hệ thống của Vue.</p>\n<p>Nguồn: <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/extras/reactivity-in-depth.md\">tài liệu Vue — Reactivity in Depth</a>.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04",
+                    "F05",
+                    "F06",
+                    "F07",
+                    "F08",
+                    "F09",
+                    "F10",
+                    "F11"
+                ],
+                "issues": []
+            },
+            "diagnostics": {
+                "response_id": "resp_0ed4ac9f8e8d3914016ac34d59b36487d0bdfdaa186ec93b03",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.editor.v1",
+                "usage": {
+                    "prompt_tokens": 7333,
+                    "completion_tokens": 1203,
+                    "total_tokens": 8536,
+                    "reasoning_tokens": 39
+                }
+            },
+            "latency_ms": 48519
+        }
+    ],
+    "latency_ms": 173257,
+    "input_sha256": "d2cf45cace68b2aba88410fc6bc2b899c66d75e501a304becf0f88da57989d3c",
+    "comparison_input_sha256": "62974da0c98e3bfedbd2b29301cbea50ab0f5daac9668715e93e4f1ff0299240",
+    "writing_profile_sha256": "1267aa8b907b63f12cd8c953c4a6664dbea3f3e7acabb12a28e64293053a7c96",
+    "brief_sha256": "a7f052446c270a2c36979d5688c0edaf10a0f5a164ae6ab255b69d622b3c56c6",
+    "image_evaluation": {
+        "mode": "source_metadata_only",
+        "source_images": 0,
+        "approved_asset_regenerate": "not_evaluated",
+        "pixel_understanding": "not_evaluated"
+    },
+    "source_sha256": "452e6ca3d18083973217020da4f7535094e935c6f2de78345e108baeb6fe48cc",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Hiểu cơ chế phản ứng trong Vue qua effect và dependency",
+        "content_html": "<p>Trong Vue, trạng thái của component gồm các đối tượng JavaScript có tính phản ứng: khi bạn chỉnh sửa chúng, giao diện cập nhật. Nhưng một phép gán JavaScript thông thường không tự tạo ra quan hệ cập nhật như vậy. Một phép cộng đơn giản sẽ giúp làm rõ sự khác biệt.</p>\n<h2>Từ công thức bảng tính đến phép gán JavaScript</h2>\n<p><strong>Reactivity</strong>, hay tính phản ứng, là mô hình lập trình cho phép thích ứng với thay đổi theo cách khai báo. Ví dụ quen thuộc là bảng tính: ô <code>A2</code> có công thức <code>= A0 + A1</code> và cho kết quả <code>3</code>. Khi <code>A0</code> hoặc <code>A1</code> thay đổi, <code>A2</code> tự động cập nhật. Bạn khai báo cách tính kết quả, thay vì phải tự tính lại sau mỗi lần sửa dữ liệu.</p>\n<p>Với JavaScript thông thường, đoạn mã tương tự có hành vi khác:</p>\n<pre><code>let A0 = 1\nlet A1 = 2\nlet A2 = A0 + A1\n\nconsole.log(A2) // 3\n\nA0 = 2\nconsole.log(A2) // Still 3\n</code></pre>\n<p>Phép gán ban đầu tính tổng rồi lưu kết quả vào <code>A2</code>, chứ không thiết lập cơ chế tự tính lại. Vì vậy, sau khi <code>A0</code> đổi thành <code>2</code>, <code>A2</code> vẫn là <code>3</code>.</p>\n<h2>Effect, dependency và subscriber là gì?</h2>\n<p>Để có thể chạy lại phép tính, trước hết ta viết lại phần cập nhật <code>A2</code> thành một hàm:</p>\n<pre><code>let A2\n\nfunction update() {\n  A2 = A0 + A1\n}\n</code></pre>\n<p>Ba thuật ngữ dưới đây mô tả các vai trò trong ví dụ:</p>\n<ul>\n<li><strong>Effect:</strong> hàm <code>update()</code> tạo ra một <em>side effect</em>, gọi ngắn là effect, vì nó thay đổi trạng thái chương trình bằng cách cập nhật <code>A2</code>.</li>\n<li><strong>Dependency:</strong> <code>A0</code> và <code>A1</code> là các phụ thuộc của effect, vì effect dùng giá trị của chúng để thực hiện phép tính.</li>\n<li><strong>Subscriber:</strong> effect là bên đăng ký theo dõi các dependency đó để được thông báo khi chúng thay đổi.</li>\n</ul>\n<p>Tách phép tính thành hàm mới chỉ giúp ta có đoạn mã để chạy lại. Điều còn thiếu là cơ chế gọi <code>update()</code> mỗi khi <code>A0</code> hoặc <code>A1</code> thay đổi. Tài liệu minh họa ý tưởng này bằng lời gọi:</p>\n<pre><code>whenDepsChange(update)\n</code></pre>\n<p><code>whenDepsChange()</code> ở đây là hàm giả định để giải thích cơ chế cần có. Đoạn nguồn chưa cung cấp phần triển khai và không giới thiệu hàm này như một API Vue có sẵn.</p>\n<h2>Ba nhiệm vụ của cơ chế phản ứng</h2>\n<p>Cơ chế minh họa trên cần làm ba việc:</p>\n<ol>\n<li><strong>Theo dõi lúc biến được đọc.</strong> Khi tính biểu thức <code>A0 + A1</code>, cả <code>A0</code> lẫn <code>A1</code> đều được đọc.</li>\n<li><strong>Đăng ký effect đang chạy với biến được đọc.</strong> Nếu một biến được đọc trong lúc effect đang thực thi, cơ chế đăng ký effect đó làm subscriber của biến. Trong ví dụ, sau lần gọi <code>update()</code> đầu tiên, <code>update()</code> trở thành subscriber của cả <code>A0</code> và <code>A1</code>.</li>\n<li><strong>Phát hiện thay đổi và thông báo chạy lại.</strong> Khi một biến được gán giá trị mới, chẳng hạn <code>A0</code>, cơ chế thông báo cho tất cả effect đã đăng ký với biến đó để chúng chạy lại.</li>\n</ol>\n<p>Đây là mô hình khái niệm mà đoạn tài liệu dùng để giải thích tính phản ứng, chưa phải phần triển khai hệ thống của Vue.</p>\n<p>Nguồn: <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/extras/reactivity-in-depth.md\">tài liệu Vue — Reactivity in Depth</a>.</p>"
+    },
+    "total_tokens": 23112
+}

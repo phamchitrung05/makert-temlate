@@ -1,0 +1,826 @@
+{
+    "mode": "saved_outputs_only",
+    "AI_calls_added": 0,
+    "human_quality": "not_scored",
+    "cases": [
+        {
+            "case_id": "Q01",
+            "original_status": "ready",
+            "original_error_code": null,
+            "artifact_sha256": "54568530e264acb217150f402af9b86fba62b3e5661c1e4576ea3402f2ed8d2e",
+            "current_gate": "pass",
+            "checks": [
+                {
+                    "check": "copy",
+                    "status": "pass"
+                },
+                {
+                    "check": "similarity",
+                    "status": "pass",
+                    "metric": 0.032,
+                    "reason": "lexical_metric_not_style_score"
+                },
+                {
+                    "check": "language",
+                    "status": "pass",
+                    "detected": "vi"
+                },
+                {
+                    "check": "source_code_links",
+                    "status": "pass"
+                },
+                {
+                    "check": "important_numbers",
+                    "status": "pass"
+                },
+                {
+                    "check": "unanchored_numbers",
+                    "status": "pass",
+                    "count": 0,
+                    "reason": "requires_editor_review"
+                },
+                {
+                    "check": "semantic_grounding",
+                    "status": "undetermined",
+                    "reason": "source_anchors_are_not_external_fact_verification"
+                }
+            ]
+        },
+        {
+            "case_id": "Q02",
+            "original_status": "ready",
+            "original_error_code": null,
+            "artifact_sha256": "83366aece5150fef6a715be175673f71b6f52ba5d9af44a5300c022e993abd5b",
+            "current_gate": "pass",
+            "checks": [
+                {
+                    "check": "copy",
+                    "status": "pass"
+                },
+                {
+                    "check": "similarity",
+                    "status": "pass",
+                    "metric": 0.036,
+                    "reason": "lexical_metric_not_style_score"
+                },
+                {
+                    "check": "language",
+                    "status": "pass",
+                    "detected": "vi"
+                },
+                {
+                    "check": "source_code_links",
+                    "status": "pass"
+                },
+                {
+                    "check": "important_numbers",
+                    "status": "pass"
+                },
+                {
+                    "check": "unanchored_numbers",
+                    "status": "pass",
+                    "count": 0,
+                    "reason": "requires_editor_review"
+                },
+                {
+                    "check": "semantic_grounding",
+                    "status": "undetermined",
+                    "reason": "source_anchors_are_not_external_fact_verification"
+                }
+            ]
+        },
+        {
+            "case_id": "Q03",
+            "original_status": "ready",
+            "original_error_code": null,
+            "artifact_sha256": "ea4901fec29f5286a92c8dcb79c9b66e691db28daf750c7024d6cd740739de20",
+            "current_gate": "pass",
+            "checks": [
+                {
+                    "check": "copy",
+                    "status": "skipped",
+                    "reason": "short_prose"
+                },
+                {
+                    "check": "language",
+                    "status": "pass",
+                    "detected": "vi"
+                },
+                {
+                    "check": "source_code_links",
+                    "status": "pass"
+                },
+                {
+                    "check": "important_numbers",
+                    "status": "pass"
+                },
+                {
+                    "check": "unanchored_numbers",
+                    "status": "pass",
+                    "count": 0,
+                    "reason": "requires_editor_review"
+                },
+                {
+                    "check": "semantic_grounding",
+                    "status": "undetermined",
+                    "reason": "source_anchors_are_not_external_fact_verification"
+                }
+            ]
+        },
+        {
+            "case_id": "Q06",
+            "original_status": "ready",
+            "original_error_code": null,
+            "artifact_sha256": "0a38df38ef86d5313a6b33d63faf9de8259077d24ae6bb6904ae225d40f7f2dd",
+            "current_gate": "pass",
+            "checks": [
+                {
+                    "check": "copy",
+                    "status": "pass"
+                },
+                {
+                    "check": "similarity",
+                    "status": "pass",
+                    "metric": 0.027,
+                    "reason": "lexical_metric_not_style_score"
+                },
+                {
+                    "check": "language",
+                    "status": "pass",
+                    "detected": "vi"
+                },
+                {
+                    "check": "source_code_links",
+                    "status": "pass"
+                },
+                {
+                    "check": "important_numbers",
+                    "status": "pass"
+                },
+                {
+                    "check": "unanchored_numbers",
+                    "status": "pass",
+                    "count": 0,
+                    "reason": "requires_editor_review"
+                },
+                {
+                    "check": "semantic_grounding",
+                    "status": "undetermined",
+                    "reason": "source_anchors_are_not_external_fact_verification"
+                }
+            ]
+        },
+        {
+            "case_id": "Q07",
+            "original_status": "ready",
+            "original_error_code": null,
+            "artifact_sha256": "ad9962aa48b4873cd6f755d7425e07fdea753e4e7e5b1ae6158dba675df3a3b8",
+            "current_gate": "pass",
+            "checks": [
+                {
+                    "check": "copy",
+                    "status": "pass"
+                },
+                {
+                    "check": "similarity",
+                    "status": "pass",
+                    "metric": 0.02,
+                    "reason": "lexical_metric_not_style_score"
+                },
+                {
+                    "check": "language",
+                    "status": "pass",
+                    "detected": "vi"
+                },
+                {
+                    "check": "source_code_links",
+                    "status": "pass"
+                },
+                {
+                    "check": "important_numbers",
+                    "status": "pass"
+                },
+                {
+                    "check": "unanchored_numbers",
+                    "status": "pass",
+                    "count": 0,
+                    "reason": "requires_editor_review"
+                },
+                {
+                    "check": "semantic_grounding",
+                    "status": "undetermined",
+                    "reason": "source_anchors_are_not_external_fact_verification"
+                }
+            ]
+        },
+        {
+            "case_id": "Q08",
+            "original_status": "ready",
+            "original_error_code": null,
+            "artifact_sha256": "938464ee57cb3fddc783a2d8b163a5abb2c8cd0721607923ab24db5741f08159",
+            "current_gate": "pass",
+            "checks": [
+                {
+                    "check": "copy",
+                    "status": "pass"
+                },
+                {
+                    "check": "similarity",
+                    "status": "pass",
+                    "metric": 0.076,
+                    "reason": "lexical_metric_not_style_score"
+                },
+                {
+                    "check": "language",
+                    "status": "pass",
+                    "detected": "vi"
+                },
+                {
+                    "check": "source_code_links",
+                    "status": "pass"
+                },
+                {
+                    "check": "important_numbers",
+                    "status": "pass"
+                },
+                {
+                    "check": "unanchored_numbers",
+                    "status": "pass",
+                    "count": 0,
+                    "reason": "requires_editor_review"
+                },
+                {
+                    "check": "semantic_grounding",
+                    "status": "undetermined",
+                    "reason": "source_anchors_are_not_external_fact_verification"
+                }
+            ]
+        },
+        {
+            "case_id": "Q09",
+            "original_status": "ready",
+            "original_error_code": null,
+            "artifact_sha256": "a26e60f8a62655ade934242ec68e6c1e136715f780f8482c2b67cd861d41a6cb",
+            "current_gate": "pass",
+            "checks": [
+                {
+                    "check": "copy",
+                    "status": "pass"
+                },
+                {
+                    "check": "similarity",
+                    "status": "pass",
+                    "metric": 0.02,
+                    "reason": "lexical_metric_not_style_score"
+                },
+                {
+                    "check": "language",
+                    "status": "pass",
+                    "detected": "vi"
+                },
+                {
+                    "check": "source_code_links",
+                    "status": "pass"
+                },
+                {
+                    "check": "important_numbers",
+                    "status": "pass"
+                },
+                {
+                    "check": "unanchored_numbers",
+                    "status": "pass",
+                    "count": 0,
+                    "reason": "requires_editor_review"
+                },
+                {
+                    "check": "semantic_grounding",
+                    "status": "undetermined",
+                    "reason": "source_anchors_are_not_external_fact_verification"
+                }
+            ]
+        },
+        {
+            "case_id": "Q12",
+            "original_status": "ready",
+            "original_error_code": null,
+            "artifact_sha256": "03546c1ddb578c5271a680caa6a41e5b9cddbb5865f37a30aa721a0921d68945",
+            "current_gate": "pass",
+            "checks": [
+                {
+                    "check": "copy",
+                    "status": "pass"
+                },
+                {
+                    "check": "similarity",
+                    "status": "pass",
+                    "metric": 0.057,
+                    "reason": "lexical_metric_not_style_score"
+                },
+                {
+                    "check": "language",
+                    "status": "pass",
+                    "detected": "vi"
+                },
+                {
+                    "check": "source_code_links",
+                    "status": "pass"
+                },
+                {
+                    "check": "important_numbers",
+                    "status": "pass"
+                },
+                {
+                    "check": "unanchored_numbers",
+                    "status": "pass",
+                    "count": 0,
+                    "reason": "requires_editor_review"
+                },
+                {
+                    "check": "semantic_grounding",
+                    "status": "undetermined",
+                    "reason": "source_anchors_are_not_external_fact_verification"
+                }
+            ]
+        },
+        {
+            "case_id": "Q13",
+            "original_status": "ready",
+            "original_error_code": null,
+            "artifact_sha256": "ea6b6e41bd276d17aea49ff174fa8d0f9fe59143a97efad9c7cbb8b26dc0622f",
+            "current_gate": "pass",
+            "checks": [
+                {
+                    "check": "copy",
+                    "status": "pass"
+                },
+                {
+                    "check": "similarity",
+                    "status": "pass",
+                    "metric": 0.043,
+                    "reason": "lexical_metric_not_style_score"
+                },
+                {
+                    "check": "language",
+                    "status": "pass",
+                    "detected": "vi"
+                },
+                {
+                    "check": "source_code_links",
+                    "status": "pass"
+                },
+                {
+                    "check": "important_numbers",
+                    "status": "pass"
+                },
+                {
+                    "check": "unanchored_numbers",
+                    "status": "pass",
+                    "count": 0,
+                    "reason": "requires_editor_review"
+                },
+                {
+                    "check": "semantic_grounding",
+                    "status": "undetermined",
+                    "reason": "source_anchors_are_not_external_fact_verification"
+                }
+            ]
+        },
+        {
+            "case_id": "Q14",
+            "original_status": "ready",
+            "original_error_code": null,
+            "artifact_sha256": "b2de203ecd440fef9a4e5fe569f8aacb44d406dd2f5408bf1ae77228c1292bac",
+            "current_gate": "pass",
+            "checks": [
+                {
+                    "check": "copy",
+                    "status": "pass"
+                },
+                {
+                    "check": "similarity",
+                    "status": "pass",
+                    "metric": 0.021,
+                    "reason": "lexical_metric_not_style_score"
+                },
+                {
+                    "check": "language",
+                    "status": "pass",
+                    "detected": "vi"
+                },
+                {
+                    "check": "source_code_links",
+                    "status": "pass"
+                },
+                {
+                    "check": "important_numbers",
+                    "status": "pass"
+                },
+                {
+                    "check": "unanchored_numbers",
+                    "status": "pass",
+                    "count": 0,
+                    "reason": "requires_editor_review"
+                },
+                {
+                    "check": "semantic_grounding",
+                    "status": "undetermined",
+                    "reason": "source_anchors_are_not_external_fact_verification"
+                }
+            ]
+        },
+        {
+            "case_id": "Q17",
+            "original_status": "ready",
+            "original_error_code": null,
+            "artifact_sha256": "502493cf1494fe3fe852e0875cbaf7a8af8abb6407ad3eda3ad8dc00259fc58b",
+            "current_gate": "pass",
+            "checks": [
+                {
+                    "check": "copy",
+                    "status": "pass"
+                },
+                {
+                    "check": "similarity",
+                    "status": "pass",
+                    "metric": 0.009,
+                    "reason": "lexical_metric_not_style_score"
+                },
+                {
+                    "check": "language",
+                    "status": "pass",
+                    "detected": "vi"
+                },
+                {
+                    "check": "source_code_links",
+                    "status": "pass"
+                },
+                {
+                    "check": "important_numbers",
+                    "status": "pass"
+                },
+                {
+                    "check": "unanchored_numbers",
+                    "status": "pass",
+                    "count": 0,
+                    "reason": "requires_editor_review"
+                },
+                {
+                    "check": "semantic_grounding",
+                    "status": "undetermined",
+                    "reason": "source_anchors_are_not_external_fact_verification"
+                }
+            ]
+        },
+        {
+            "case_id": "Q18",
+            "original_status": "ready",
+            "original_error_code": null,
+            "artifact_sha256": "42ea74dd1f91281e51ac1d961fc1c95b73a691dae9cb98af9d11d0cc7cac74f0",
+            "current_gate": "pass",
+            "checks": [
+                {
+                    "check": "copy",
+                    "status": "pass"
+                },
+                {
+                    "check": "similarity",
+                    "status": "pass",
+                    "metric": 0.376,
+                    "reason": "lexical_metric_not_style_score"
+                },
+                {
+                    "check": "language",
+                    "status": "pass",
+                    "detected": "vi"
+                },
+                {
+                    "check": "source_code_links",
+                    "status": "pass"
+                },
+                {
+                    "check": "important_numbers",
+                    "status": "pass"
+                },
+                {
+                    "check": "unanchored_numbers",
+                    "status": "warning",
+                    "count": 11,
+                    "reason": "requires_editor_review"
+                },
+                {
+                    "check": "semantic_grounding",
+                    "status": "undetermined",
+                    "reason": "source_anchors_are_not_external_fact_verification"
+                }
+            ]
+        },
+        {
+            "case_id": "Q26",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "artifact_sha256": "f47ffd2118a4c2797b062b56f4f559b6f085957e229b37202e0994b744171eee",
+            "current_gate": "pass",
+            "checks": [
+                {
+                    "check": "copy",
+                    "status": "pass"
+                },
+                {
+                    "check": "similarity",
+                    "status": "pass",
+                    "metric": 0.445,
+                    "reason": "lexical_metric_not_style_score"
+                },
+                {
+                    "check": "language",
+                    "status": "pass",
+                    "detected": "vi"
+                },
+                {
+                    "check": "source_code_links",
+                    "status": "pass"
+                },
+                {
+                    "check": "important_numbers",
+                    "status": "pass"
+                },
+                {
+                    "check": "unanchored_numbers",
+                    "status": "pass",
+                    "count": 0,
+                    "reason": "requires_editor_review"
+                },
+                {
+                    "check": "semantic_grounding",
+                    "status": "undetermined",
+                    "reason": "source_anchors_are_not_external_fact_verification"
+                }
+            ]
+        },
+        {
+            "case_id": "Q27",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "artifact_sha256": "3777b0c5ec22839c180584be8426381757848773baff506aeccc40a43fb8d386",
+            "current_gate": "pass",
+            "checks": [
+                {
+                    "check": "copy",
+                    "status": "pass"
+                },
+                {
+                    "check": "similarity",
+                    "status": "pass",
+                    "metric": 0.278,
+                    "reason": "lexical_metric_not_style_score"
+                },
+                {
+                    "check": "language",
+                    "status": "undetermined",
+                    "detected": null
+                },
+                {
+                    "check": "source_code_links",
+                    "status": "pass"
+                },
+                {
+                    "check": "important_numbers",
+                    "status": "pass"
+                },
+                {
+                    "check": "unanchored_numbers",
+                    "status": "pass",
+                    "count": 0,
+                    "reason": "requires_editor_review"
+                },
+                {
+                    "check": "semantic_grounding",
+                    "status": "undetermined",
+                    "reason": "source_anchors_are_not_external_fact_verification"
+                }
+            ]
+        },
+        {
+            "case_id": "Q28",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "artifact_sha256": "dadd7b7a69341dd69f1cd4507823709b7de4791df5aaa16618e312dfd60e885f",
+            "current_gate": "pass",
+            "checks": [
+                {
+                    "check": "copy",
+                    "status": "pass"
+                },
+                {
+                    "check": "similarity",
+                    "status": "pass",
+                    "metric": 0.358,
+                    "reason": "lexical_metric_not_style_score"
+                },
+                {
+                    "check": "language",
+                    "status": "pass",
+                    "detected": "vi"
+                },
+                {
+                    "check": "source_code_links",
+                    "status": "pass"
+                },
+                {
+                    "check": "important_numbers",
+                    "status": "pass"
+                },
+                {
+                    "check": "unanchored_numbers",
+                    "status": "pass",
+                    "count": 0,
+                    "reason": "requires_editor_review"
+                },
+                {
+                    "check": "semantic_grounding",
+                    "status": "undetermined",
+                    "reason": "source_anchors_are_not_external_fact_verification"
+                }
+            ]
+        },
+        {
+            "case_id": "Q29",
+            "original_status": "ready",
+            "original_error_code": null,
+            "artifact_sha256": "e2e57880e97565f2e73c2660c9624dd641a9de86009ae2b932252d46ef759379",
+            "current_gate": "pass",
+            "checks": [
+                {
+                    "check": "copy",
+                    "status": "pass"
+                },
+                {
+                    "check": "similarity",
+                    "status": "pass",
+                    "metric": 0.75,
+                    "reason": "lexical_metric_not_style_score"
+                },
+                {
+                    "check": "language",
+                    "status": "pass",
+                    "detected": "vi"
+                },
+                {
+                    "check": "source_code_links",
+                    "status": "pass"
+                },
+                {
+                    "check": "important_numbers",
+                    "status": "pass"
+                },
+                {
+                    "check": "unanchored_numbers",
+                    "status": "pass",
+                    "count": 0,
+                    "reason": "requires_editor_review"
+                },
+                {
+                    "check": "semantic_grounding",
+                    "status": "undetermined",
+                    "reason": "source_anchors_are_not_external_fact_verification"
+                }
+            ]
+        },
+        {
+            "case_id": "Q30",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "artifact_sha256": "46c722b91af85412351e32409a36a30c9bc14a052d771e7dc49d4762cebf4295",
+            "current_gate": "pass",
+            "checks": [
+                {
+                    "check": "copy",
+                    "status": "pass"
+                },
+                {
+                    "check": "similarity",
+                    "status": "pass",
+                    "metric": 0.463,
+                    "reason": "lexical_metric_not_style_score"
+                },
+                {
+                    "check": "language",
+                    "status": "pass",
+                    "detected": "vi"
+                },
+                {
+                    "check": "source_code_links",
+                    "status": "pass"
+                },
+                {
+                    "check": "important_numbers",
+                    "status": "pass"
+                },
+                {
+                    "check": "unanchored_numbers",
+                    "status": "pass",
+                    "count": 0,
+                    "reason": "requires_editor_review"
+                },
+                {
+                    "check": "semantic_grounding",
+                    "status": "undetermined",
+                    "reason": "source_anchors_are_not_external_fact_verification"
+                }
+            ]
+        },
+        {
+            "case_id": "Q31",
+            "original_status": "ready",
+            "original_error_code": null,
+            "artifact_sha256": "ad7a026462a282f7fb634f8e6e98bce8e00d468d056a0c4a6a8bb8324c01f5e2",
+            "current_gate": "pass",
+            "checks": [
+                {
+                    "check": "copy",
+                    "status": "pass"
+                },
+                {
+                    "check": "similarity",
+                    "status": "pass",
+                    "metric": 0.023,
+                    "reason": "lexical_metric_not_style_score"
+                },
+                {
+                    "check": "language",
+                    "status": "pass",
+                    "detected": "vi"
+                },
+                {
+                    "check": "source_code_links",
+                    "status": "pass"
+                },
+                {
+                    "check": "important_numbers",
+                    "status": "pass"
+                },
+                {
+                    "check": "unanchored_numbers",
+                    "status": "pass",
+                    "count": 0,
+                    "reason": "requires_editor_review"
+                },
+                {
+                    "check": "semantic_grounding",
+                    "status": "undetermined",
+                    "reason": "source_anchors_are_not_external_fact_verification"
+                }
+            ]
+        },
+        {
+            "case_id": "Q32",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "artifact_sha256": "c1c96bc796f940dbee1649fe73b64d7ec9ef800cc8271f04a198766031faf6ca",
+            "current_gate": "pass",
+            "checks": [
+                {
+                    "check": "copy",
+                    "status": "pass"
+                },
+                {
+                    "check": "similarity",
+                    "status": "pass",
+                    "metric": 0.018,
+                    "reason": "lexical_metric_not_style_score"
+                },
+                {
+                    "check": "language",
+                    "status": "pass",
+                    "detected": "vi"
+                },
+                {
+                    "check": "source_code_links",
+                    "status": "pass"
+                },
+                {
+                    "check": "important_numbers",
+                    "status": "pass"
+                },
+                {
+                    "check": "unanchored_numbers",
+                    "status": "warning",
+                    "count": 1,
+                    "reason": "requires_editor_review"
+                },
+                {
+                    "check": "semantic_grounding",
+                    "status": "undetermined",
+                    "reason": "source_anchors_are_not_external_fact_verification"
+                }
+            ]
+        },
+        {
+            "case_id": "Q33",
+            "original_status": "failed",
+            "original_error_code": "AI_PROVIDER_TIMEOUT",
+            "artifact_sha256": "8e6ec98a3aec551cebf9666b11384a62730c74d6a4638d7a151eab6537e71697",
+            "current_gate": "no_final_candidate"
+        }
+    ]
+}

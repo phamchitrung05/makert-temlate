@@ -1,4 +1,13 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: PaymentProvidersDialog dùng khung dialog chung.
+  CÁC HÀM/METHOD TRONG FILE: dialogVisibleUpdate.
+  INPUT/OUTPUT CỦA CLASS (tổng thể): props/model và thao tác UI -> sự kiện của
+  caller; header/footer cố định, content cuộn qua AppDialogLayout.
+  =====================================================================
+-->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 import americanExDark from '@images/icons/payments/img/ae-dark.png'
 import americanExLight from '@images/icons/payments/img/american-express.png'
 import dcDark from '@images/icons/payments/img/dc-dark.png'
@@ -105,22 +114,20 @@ const paymentProvidersData = [
 
 <template>
   <VDialog
+    scrollable
     :model-value="props.isDialogVisible"
     :width="$vuetify.display.smAndDown ? 'auto' : 900"
     @update:model-value="dialogVisibleUpdate"
   >
-    <DialogCloseBtn @click="emit('update:isDialogVisible', false)" />
+    <AppDialogLayout @close="emit('update:isDialogVisible', false)">
+      <template #header>
+        <VCardItem>
+          <VCardTitle>Select Payment Providers</VCardTitle>
+          <VCardSubtitle>Third-party payment providers</VCardSubtitle>
+        </VCardItem>
+      </template>
 
-    <VCard class="pa-2 pa-sm-10">
       <VCardText>
-        <!-- 👉 Title -->
-        <h4 class="text-h4 text-center mb-2">
-          Select Payment Providers
-        </h4>
-        <p class="text-body-1 text-center mb-6">
-          Third-party payment providers
-        </p>
-
         <div
           v-for="(item, index) in paymentProvidersData"
           :key="index"
@@ -142,7 +149,7 @@ const paymentProvidersData = [
           <VDivider v-if="index !== paymentProvidersData.length - 1" />
         </div>
       </VCardText>
-    </VCard>
+    </AppDialogLayout>
   </VDialog>
 </template>
 

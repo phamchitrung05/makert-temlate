@@ -1,27 +1,29 @@
 <!--
   =====================================================================
+  Header/footer cố định qua AppDialogLayout; chỉ content ở giữa được cuộn.
   CHỨC NĂNG FILE: Bọc TinyMCE cho nội dung Post, giữ HTML đồng bộ với SEO.
   CÁC HÀM/METHOD TRONG FILE: onMounted(): tải runtime; editorReady(): kết thúc chờ;
   editorFailed(): báo lỗi và giữ HTML; ensureEditable(): fallback khi editor bị khóa;
   setup(): bắt lỗi tài nguyên và thay đổi trạng thái chỉnh sửa;
   fallbackCaret(): vị trí textarea; usePostInlineMedia(): picker/upload/ref/alt/caption;
+  editorDialogChanged(): báo cửa sổ TinyMCE để dialog cha nhường focus tạm thời;
   onBeforeUnmount(): dọn bộ đếm thời gian và media scope.
-  INPUT/OUTPUT CỦA CLASS (tổng thể): HTML/disabled/placeholder -> HTML và media-busy;
+  INPUT/OUTPUT CỦA CLASS (tổng thể): HTML/disabled/placeholder -> HTML, media-busy, editor-dialog;
   chọn/upload từ editor, backend xác nhận MediaAsset ID/URL khi lưu.
   Chỉ bật self-host khi chủ dự án cấu hình GPL rõ ràng, hoặc dùng Tiny Cloud key.
   =====================================================================
 -->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 import { onBeforeUnmount, onMounted, reactive, shallowRef, useTemplateRef } from 'vue'
 import Editor from '@tinymce/tinymce-vue'
 import MediaLibraryDialog from '@/views/apps/media/field/MediaLibraryDialog.vue'
 import { usePostInlineMedia } from '@/composables/usePostInlineMedia'
 
 const props = defineProps({ disabled: { type: Boolean, default: false }, placeholder: { type: String, default: 'Start writing your post...' } })
-const emit = defineEmits(['mediaBusy'])
+const emit = defineEmits(['mediaBusy', 'editorDialog'])
 const content = defineModel({ type: String, default: '' })
 const fallback = useTemplateRef('fallback')
-
 
 /**
  * =====================================================================
@@ -44,9 +46,21 @@ const initialized = shallowRef(false)
 const error = shallowRef('')
 let disposed = false
 let initTimeout
+let openWindows = 0
+
+/** Input: OpenWindow/CloseWindow. Output: dialog cha nhường focus đúng thời gian cửa sổ Tiny mở. */
+const editorDialogChanged = delta => {
+  if (disposed) return
+  openWindows = Math.max(0, openWindows + delta)
+  emit('editorDialog', openWindows > 0)
+}
 
 const editorOptions = shallowRef({
   height: 420,
+
+  // Menu/popup đi cùng editor trong vùng scroll và nằm trong lớp VDialog hiện tại.
+  // Tiny mặc định gắn popup vào body nên chúng có thể bị scrim của dialog che.
+  'ui_mode': 'split',
   menubar: 'edit view insert format tools table',
   plugins: 'lists link image table code wordcount',
   toolbar: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist | link projectimage projectimageedit table | removeformat code',
@@ -70,6 +84,8 @@ const editorOptions = shallowRef({
     editor.on('SkinLoadError PluginLoadError ThemeLoadError ModelLoadError', editorFailed)
     editor.on('SwitchMode DisabledStateChange', () => ensureEditable(editor))
     editor.on('change SetContent NodeChange input', media.annotate)
+    editor.on('OpenWindow', () => editorDialogChanged(1))
+    editor.on('CloseWindow', () => editorDialogChanged(-1))
     editor.ui?.registry?.addButton('projectimage', { icon: 'image', tooltip: 'Chọn/upload ảnh MediaLibrary', onAction: media.openLibrary })
     editor.ui?.registry?.addButton('projectimageedit', { icon: 'edit-block', tooltip: 'Sửa mô tả và chú thích ảnh', onAction: media.editImage })
     editor.ui?.registry?.addMenuItem('projectimage', { icon: 'image', text: 'Ảnh MediaLibrary', onAction: media.openLibrary })
@@ -127,6 +143,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   disposed = true
   clearTimeout(initTimeout)
+  emit('editorDialog', false)
 })
 </script>
 
@@ -204,11 +221,15 @@ onBeforeUnmount(() => {
       @select="media.selectAsset"
     />
     <VDialog
+      scrollable
       :model-value="media.detailsOpen"
       max-width="560"
       @update:model-value="!$event && media.closeDetails()"
     >
-      <VCard title="Ảnh trong bài viết">
+      <AppDialogLayout
+        title="Ảnh trong bài viết"
+        @close="media.closeDetails()"
+      >
         <VCardText>
           <VImg
             :src="media.selectedAsset?.file?.url"
@@ -219,12 +240,14 @@ onBeforeUnmount(() => {
           <AppTextField
             v-model="media.draft.alt"
             label="Mô tả ảnh (alt)"
+            placeholder="Nhập mô tả nội dung ảnh"
             maxlength="1000"
             class="mb-4"
           />
           <AppTextarea
             v-model="media.draft.caption"
             label="Chú thích dưới ảnh"
+            placeholder="Nhập chú thích hiển thị dưới ảnh"
             maxlength="2000"
             rows="2"
           />
@@ -237,20 +260,31 @@ onBeforeUnmount(() => {
             {{ media.error }}
           </VAlert>
         </VCardText>
-        <VCardActions>
-          <VSpacer /><VBtn
-            variant="tonal"
-            @click="media.closeDetails"
-          >
-            Hủy
-          </VBtn><VBtn
-            :disabled="props.disabled"
-            @click="media.commit"
-          >
-            Lưu ảnh vào bài
-          </VBtn>
-        </VCardActions>
-      </VCard>
+        <template #footer>
+          <VCardActions>
+            <VSpacer /><VBtn
+              variant="tonal"
+              @click="media.closeDetails"
+            >
+              Hủy
+            </VBtn><VBtn
+              variant="flat"
+              :disabled="props.disabled"
+              @click="media.commit"
+            >
+              Lưu ảnh vào bài
+            </VBtn>
+          </VCardActions>
+        </template>
+      </AppDialogLayout>
     </VDialog>
   </div>
 </template>
+
+<style>
+/* Cửa sổ TinyMCE gắn vào body; cao hơn stack VDialog 2400 của ứng dụng.
+   Menu split vẫn ở trong editor, nên dialog MediaLibrary lồng nhau giữ đúng lớp. */
+.tox.tox-tinymce-aux {
+  z-index: 2500;
+}
+</style>

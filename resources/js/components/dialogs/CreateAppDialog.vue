@@ -1,4 +1,13 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: CreateAppDialog dùng khung dialog chung.
+  CÁC HÀM/METHOD TRONG FILE: dialogVisibleUpdate, onSubmit.
+  INPUT/OUTPUT CỦA CLASS (tổng thể): props/model và thao tác UI -> sự kiện của
+  caller; header/footer cố định, content cuộn qua AppDialogLayout.
+  =====================================================================
+-->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 import laptopGirl from '@images/illustrations/laptop-girl.png'
 
 const props = defineProps({
@@ -153,29 +162,24 @@ const onSubmit = () => {
 
 <template>
   <VDialog
+    scrollable
     :model-value="props.isDialogVisible"
     max-width="900"
-    min-height="590"
     @update:model-value="dialogVisibleUpdate"
   >
-    <!-- 👉 dialog close btn -->
-    <DialogCloseBtn
-      size="small"
-      @click="emit('update:isDialogVisible', false)"
-    />
-    <VCard
+    <AppDialogLayout
       class="create-app-dialog"
-      min-height="590"
-    >
-      <VCardText class="pa-5 pa-sm-16">
-        <!-- 👉 Title -->
-        <h4 class="text-h4 text-center mb-2">
-          Create App
-        </h4>
-        <p class="text-body-1 text-center mb-6">
-          Provide data with this form to create your app.
-        </p>
 
+      @close="emit('update:isDialogVisible', false)"
+    >
+      <template #header>
+        <VCardItem>
+          <VCardTitle>Create App</VCardTitle>
+          <VCardSubtitle>Provide data with this form to create your app.</VCardSubtitle>
+        </VCardItem>
+      </template>
+
+      <VCardText class="pa-5 pa-sm-16">
         <VRow>
           <VCol
             cols="12"
@@ -412,47 +416,55 @@ const onSubmit = () => {
                 />
               </VWindowItem>
             </VWindow>
-
-            <div class="d-flex justify-space-between mt-6">
-              <VBtn
-                variant="tonal"
-                color="secondary"
-                :disabled="currentStep === 0"
-                @click="currentStep--"
-              >
-                <VIcon
-                  icon="tabler-arrow-left"
-                  start
-                  class="flip-in-rtl"
-                />
-                Previous
-              </VBtn>
-
-              <VBtn
-                v-if="createApp.length - 1 === currentStep"
-                color="success"
-                @click="onSubmit"
-              >
-                submit
-              </VBtn>
-
-              <VBtn
-                v-else
-                @click="currentStep++"
-              >
-                Next
-
-                <VIcon
-                  icon="tabler-arrow-right"
-                  end
-                  class="flip-in-rtl"
-                />
-              </VBtn>
-            </div>
           </VCol>
         </VRow>
       </VCardText>
-    </VCard>
+      <template #footer>
+        <VCardActions class="justify-end">
+          <VBtn
+            variant="tonal"
+            color="secondary"
+            @click="emit('update:isDialogVisible', false)"
+          >
+            Close
+          </VBtn>
+          <VBtn
+            variant="tonal"
+            color="secondary"
+            :disabled="currentStep === 0"
+            @click="currentStep--"
+          >
+            <VIcon
+              icon="tabler-arrow-left"
+              start
+              class="flip-in-rtl"
+            />
+            Previous
+          </VBtn>
+          <VBtn
+            v-if="createApp.length - 1 === currentStep"
+            variant="flat"
+            color="success"
+            @click="onSubmit"
+          >
+            submit
+          </VBtn>
+          <VBtn
+            v-else
+            variant="flat"
+            @click="currentStep++"
+          >
+            Next
+
+            <VIcon
+              icon="tabler-arrow-right"
+              end
+              class="flip-in-rtl"
+            />
+          </VBtn>
+        </VCardActions>
+      </template>
+    </AppDialogLayout>
   </VDialog>
 </template>
 

@@ -1,9 +1,18 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: Các gói giá dùng chung cho trang và dialog.
+  CÁC HÀM/METHOD TRONG FILE: Không có; chọn chu kỳ giá bằng state cục bộ.
+  INPUT/OUTPUT CỦA CLASS (tổng thể): title/showHeader/breakpoints -> thẻ giá;
+  dialog ẩn heading tại content để dùng header cố định của AppDialogLayout.
+  =====================================================================
+-->
 <script setup>
 import safeBoxWithGoldenCoin from '@images/misc/3d-safe-box-with-golden-dollar-coins.png'
 import spaceRocket from '@images/misc/3d-space-rocket-with-smoke.png'
 import dollarCoinPiggyBank from '@images/misc/dollar-coins-flying-pink-piggy-bank.png'
 
 const props = defineProps({
+  showHeader: { type: Boolean, default: true },
   title: {
     type: String,
     required: false,
@@ -101,7 +110,10 @@ const pricingPlans = [
 
 <template>
   <!-- 👉 Title and subtitle -->
-  <div class="text-center">
+  <div
+    v-if="props.showHeader"
+    class="text-center"
+  >
     <h3 class="text-h3 pricing-title mb-2">
       {{ props.title ? props.title : 'Pricing Plans' }}
     </h3>

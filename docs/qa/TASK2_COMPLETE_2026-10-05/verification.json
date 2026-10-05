@@ -1,0 +1,76 @@
+{
+  "date": "2026-10-05",
+  "task": "FIX 1 / Task 2",
+  "technical_status": "DONE",
+  "fix_1_status": "IN PROGRESS",
+  "human_review": "separate_phase_pending_by_owner_decision",
+  "backend": {
+    "result": "pass",
+    "tests": 374,
+    "assertions": 2530,
+    "duration_seconds": 116.98,
+    "log": "storage/app/qa/task2-complete-backend-final.log"
+  },
+  "frontend": {
+    "result": "pass",
+    "files": 43,
+    "tests": 302,
+    "duration_seconds": 13.66,
+    "log": "storage/app/qa/task2-complete-frontend-final.log"
+  },
+  "number_regression": {
+    "result": "pass",
+    "tests": 36,
+    "assertions": 93,
+    "log": "storage/app/qa/task2-numbers-final.log"
+  },
+  "scoped_pint": "pass",
+  "scoped_eslint": "pass",
+  "scoped_stylelint": "pass",
+  "git_diff_check": {
+    "code_and_plans": "pass",
+    "frozen_source_and_review_HTML": "original_whitespace_preserved"
+  },
+  "build": {
+    "result": "pass",
+    "duration_seconds": 96,
+    "log": "storage/app/qa/task2-complete-build-final.log"
+  },
+  "saved_C_current_blocking_gate": {
+    "candidates": 19,
+    "passed": 19,
+    "AI_calls_added": 0,
+    "historical_Q33": "no_final_candidate"
+  },
+  "fresh_Q33": {
+    "AI_calls": 3,
+    "tokens": 37608,
+    "latency_ms": 321634,
+    "request_timeout_seconds": 600,
+    "original_status": "failed",
+    "original_error_code": "AI_QUALITY_GROUNDING",
+    "current_offline_blocking_gate": "pass",
+    "audit_AI_calls_added": 0,
+    "human_review": "not_scored"
+  },
+  "historical_integrity": {
+    "checked_files": 62,
+    "changed_files": 0,
+    "staged_changed_files": 0,
+    "git_attributes": "frozen_snapshot_bytes_preserved"
+  },
+  "browser": {
+    "origin": "http://localhost:8000",
+    "editor": "Tiny Cloud",
+    "database_driver": "sqlite",
+    "license_changed": false,
+    "post_editor_draft_id": 3,
+    "AI_content_applied_post_draft_id": 4,
+    "media_asset_id": 22,
+    "AI_content_fixture_mode": "saved_Q33_output_replay_for_real_editor_API_QA",
+    "AI_content_fixture_AI_calls_added": 0,
+    "fresh_regenerate_called": false,
+    "screenshot": "TinyMCE-applied-editor.png",
+    "applied_list_screenshot": "AI-Content-applied-list.png"
+  }
+}

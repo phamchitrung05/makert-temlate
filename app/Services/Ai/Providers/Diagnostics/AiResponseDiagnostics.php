@@ -99,7 +99,7 @@ final class AiResponseDiagnostics
             $errors = [];
             $reasons = ['missing', 'null', 'empty', 'invalid_type', 'invalid_value', 'too_long', 'invalid_length', 'unexpected_field',
                 'duplicate_fact_id', 'unknown_source_block', 'evidence_not_in_source', 'unknown_fact_reference', 'missing_important_fact_reference',
-                'exact_copy', 'dominant_language_mismatch', 'source_code_changed', 'source_link_missing', 'important_number_missing'];
+                'exact_copy', 'dominant_language_mismatch', 'source_code_changed', 'source_link_missing', 'source_link_unknown', 'important_number_missing'];
             foreach (array_slice($metadata['validation_errors'], 0, 64) as $error) {
                 if (! is_array($error) || ! in_array($error['group'] ?? null, array_merge($groups, ['task']), true)
                     || ! in_array($error['reason'] ?? null, $reasons, true)) {

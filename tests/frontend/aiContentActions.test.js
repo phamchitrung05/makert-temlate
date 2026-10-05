@@ -134,11 +134,30 @@ describe('AI Content actions', () => {
 
     const pending = s.openEditor(parent)
 
+    expect(s.editorLoading.value).toBe(true)
+    expect(s.editor.value).toMatchObject({ job_id: parent.id, target_type: 'sound', draft: {} })
+    await s.saveEditor({ title: 'Chưa tải xong' })
+    expect(service.updateCandidate).not.toHaveBeenCalled()
     s.closeEditor()
     resolveRequest({ job_id: parent.id, status: 'ready', draft: { title: 'Late' } })
     await pending
     expect(s.editor.value).toBeNull()
     expect(s.items.value[0].title).toBe(parent.title)
+  })
+
+  it('retains the target type after a detail failure so retry reads the same content resource', async () => {
+    const s = state()
+
+    service.status.mockRejectedValueOnce(new Error('Không tải được nội dung'))
+    await s.openEditor(parent)
+    expect(s.editorLoading.value).toBe(false)
+    expect(s.editorError.value).toContain('Không tải được nội dung')
+    await s.saveEditor({ title: 'Chưa có version' })
+    expect(service.updateCandidate).not.toHaveBeenCalled()
+    await s.openEditor({ id: s.editor.value.job_id, targetType: s.editor.value.target_type, status: 'review' })
+    expect(service.status).toHaveBeenLastCalledWith(parent.id, 'sound')
+    expect(s.editor.value.draft_version).toBe('v1')
+    expect(s.editorError.value).toBe('')
   })
 
   it('creates one child, polls its job ID and keeps the parent/form unchanged', async () => {

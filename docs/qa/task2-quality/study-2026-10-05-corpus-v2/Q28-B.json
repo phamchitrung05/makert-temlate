@@ -1,0 +1,96 @@
+{
+    "arm": "B",
+    "status": "ready",
+    "error_code": null,
+    "final": {
+        "title": "Lễ hội Di sản Cà phê Toàn cầu dự kiến diễn ra tại Đà Lạt từ 18/12/2025 đến 02/1/2026",
+        "content_html": "<p>Theo thông tin được Chinhphu.vn đăng ngày 25/11/2025 lúc 15:15, Lễ hội Di sản Cà phê Toàn cầu năm 2025 dự kiến tổ chức tại Đà Lạt, tỉnh Lâm Đồng, từ ngày 18/12/2025 đến 02/1/2026.</p><p>Sự kiện dự kiến quy tụ hơn 500 đại biểu là các chuyên gia hàng đầu, hàng trăm nhà rang xay quốc tế cùng hàng ngàn du khách đến từ khắp các châu lục.</p><p>Năm 2025 đánh dấu cột mốc 150 năm cây cà phê bén rễ trên đất Việt Nam. Niên vụ 2024–2025 khép lại với kim ngạch xuất khẩu cà phê đạt 8,4 tỷ USD, mức cao nhất từ trước đến nay. Theo thông tin trong bài viết, Việt Nam là quốc gia xuất khẩu Robusta lớn nhất thế giới, chiếm khoảng 17% tổng sản lượng cà phê toàn cầu.</p><p>Nguồn: <a href=\"https://tphcm.baochinhphu.vn/le-hoi-di-san-ca-phe-toan-cau-to-chuc-dip-cuoi-nam-tai-da-lat-101251125131136511.htm\">Chinhphu.vn</a>.</p>"
+    },
+    "quality_checks": [
+        {
+            "check": "copy",
+            "status": "pass"
+        },
+        {
+            "check": "similarity",
+            "status": "pass",
+            "metric": 0.445,
+            "reason": "lexical_metric_not_style_score"
+        },
+        {
+            "check": "language",
+            "status": "pass",
+            "detected": "vi"
+        },
+        {
+            "check": "source_code_links",
+            "status": "pass"
+        },
+        {
+            "check": "important_numbers",
+            "status": "pass"
+        },
+        {
+            "check": "unanchored_numbers",
+            "status": "pass",
+            "count": 0,
+            "reason": "requires_editor_review"
+        },
+        {
+            "check": "semantic_grounding",
+            "status": "undetermined",
+            "reason": "source_anchors_are_not_external_fact_verification"
+        }
+    ],
+    "cost": null,
+    "calls": [
+        {
+            "task": "single_step",
+            "output": {
+                "title": "Lễ hội Di sản Cà phê Toàn cầu dự kiến diễn ra tại Đà Lạt từ 18/12/2025 đến 02/1/2026",
+                "content_html": "<p>Theo thông tin được Chinhphu.vn đăng ngày 25/11/2025 lúc 15:15, Lễ hội Di sản Cà phê Toàn cầu năm 2025 dự kiến tổ chức tại Đà Lạt, tỉnh Lâm Đồng, từ ngày 18/12/2025 đến 02/1/2026.</p><p>Sự kiện dự kiến quy tụ hơn 500 đại biểu là các chuyên gia hàng đầu, hàng trăm nhà rang xay quốc tế cùng hàng ngàn du khách đến từ khắp các châu lục.</p><p>Năm 2025 đánh dấu cột mốc 150 năm cây cà phê bén rễ trên đất Việt Nam. Niên vụ 2024–2025 khép lại với kim ngạch xuất khẩu cà phê đạt 8,4 tỷ USD, mức cao nhất từ trước đến nay. Theo thông tin trong bài viết, Việt Nam là quốc gia xuất khẩu Robusta lớn nhất thế giới, chiếm khoảng 17% tổng sản lượng cà phê toàn cầu.</p><p>Nguồn: <a href=\"https://tphcm.baochinhphu.vn/le-hoi-di-san-ca-phe-toan-cau-to-chuc-dip-cuoi-nam-tai-da-lat-101251125131136511.htm\">Chinhphu.vn</a>.</p>",
+                "content": "<p>Theo thông tin được Chinhphu.vn đăng ngày 25/11/2025 lúc 15:15, Lễ hội Di sản Cà phê Toàn cầu năm 2025 dự kiến tổ chức tại Đà Lạt, tỉnh Lâm Đồng, từ ngày 18/12/2025 đến 02/1/2026.</p><p>Sự kiện dự kiến quy tụ hơn 500 đại biểu là các chuyên gia hàng đầu, hàng trăm nhà rang xay quốc tế cùng hàng ngàn du khách đến từ khắp các châu lục.</p><p>Năm 2025 đánh dấu cột mốc 150 năm cây cà phê bén rễ trên đất Việt Nam. Niên vụ 2024–2025 khép lại với kim ngạch xuất khẩu cà phê đạt 8,4 tỷ USD, mức cao nhất từ trước đến nay. Theo thông tin trong bài viết, Việt Nam là quốc gia xuất khẩu Robusta lớn nhất thế giới, chiếm khoảng 17% tổng sản lượng cà phê toàn cầu.</p><p>Nguồn: <a href=\"https://tphcm.baochinhphu.vn/le-hoi-di-san-ca-phe-toan-cau-to-chuc-dip-cuoi-nam-tai-da-lat-101251125131136511.htm\">Chinhphu.vn</a>.</p>"
+            },
+            "diagnostics": {
+                "response_id": "resp_08e525e665c6f409016ac35093d25487d085ebe2ce83c7d9a0",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "post.content.v1",
+                "requested_groups": [
+                    "title",
+                    "content"
+                ],
+                "returned_fields": [
+                    "title",
+                    "content_html"
+                ],
+                "usage": {
+                    "prompt_tokens": 1322,
+                    "completion_tokens": 344,
+                    "total_tokens": 1666
+                }
+            },
+            "latency_ms": 18929
+        }
+    ],
+    "latency_ms": 18932,
+    "input_sha256": "b34a3738f910bf674487505309ca27351f6dee64e3b5074194f45665a454fdde",
+    "comparison_input_sha256": "9e7b22299ad3892b75f3e6e2ae36b2aa2a56e024066c30f3e0cd895abda46af4",
+    "writing_profile_sha256": "1267aa8b907b63f12cd8c953c4a6664dbea3f3e7acabb12a28e64293053a7c96",
+    "brief_sha256": "e482ad6a158b054935cbfff9d1795039b0dd432da7a2cbd5afe33b0eb0d12a56",
+    "image_evaluation": {
+        "mode": "source_metadata_only",
+        "source_images": 1,
+        "approved_asset_regenerate": "not_evaluated",
+        "pixel_understanding": "not_evaluated"
+    },
+    "source_sha256": "4642e55f7450b5da897f85dbde83d04b785e30dea529148aae8305f3c6176340",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Lễ hội Di sản Cà phê Toàn cầu dự kiến diễn ra tại Đà Lạt từ 18/12/2025 đến 02/1/2026",
+        "content_html": "<p>Theo thông tin được Chinhphu.vn đăng ngày 25/11/2025 lúc 15:15, Lễ hội Di sản Cà phê Toàn cầu năm 2025 dự kiến tổ chức tại Đà Lạt, tỉnh Lâm Đồng, từ ngày 18/12/2025 đến 02/1/2026.</p><p>Sự kiện dự kiến quy tụ hơn 500 đại biểu là các chuyên gia hàng đầu, hàng trăm nhà rang xay quốc tế cùng hàng ngàn du khách đến từ khắp các châu lục.</p><p>Năm 2025 đánh dấu cột mốc 150 năm cây cà phê bén rễ trên đất Việt Nam. Niên vụ 2024–2025 khép lại với kim ngạch xuất khẩu cà phê đạt 8,4 tỷ USD, mức cao nhất từ trước đến nay. Theo thông tin trong bài viết, Việt Nam là quốc gia xuất khẩu Robusta lớn nhất thế giới, chiếm khoảng 17% tổng sản lượng cà phê toàn cầu.</p><p>Nguồn: <a href=\"https://tphcm.baochinhphu.vn/le-hoi-di-san-ca-phe-toan-cau-to-chuc-dip-cuoi-nam-tai-da-lat-101251125131136511.htm\">Chinhphu.vn</a>.</p>"
+    },
+    "total_tokens": 1666
+}

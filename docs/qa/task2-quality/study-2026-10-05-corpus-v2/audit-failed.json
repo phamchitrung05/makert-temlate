@@ -1,0 +1,337 @@
+{
+    "mode": "saved_outputs_only",
+    "model_calls": 0,
+    "prompt_version_current": "2.2",
+    "captured_at": "2026-10-05T07:42:26+00:00",
+    "manifest_sha256": "f8104f32e6875589dc6d9ea401fb720d055d9d2140fcbb1c4e78ede63e16cfe2",
+    "human_quality": "not_evaluated",
+    "cases": [
+        {
+            "case": "Q26-C",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "original_diagnostics": {
+                "stage": "validate",
+                "validation_errors": [
+                    {
+                        "group": "content",
+                        "field": "content_html",
+                        "reason": "important_number_missing"
+                    }
+                ]
+            },
+            "source_json_sha256": "b642546b4c8a12366d70f47de382ef5e9d77fed6124ed9f5f401fe0c736cbe32",
+            "artifact_json_sha256": "f47ffd2118a4c2797b062b56f4f559b6f085957e229b37202e0994b744171eee",
+            "link_manifest": {
+                "required_hrefs": [],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://tphcm.chinhphu.vn/tphcm-khanh-thanh-tuyen-metro-so-1-khoi-nguon-cho-su-phat-trien-giao-thong-do-thi-hien-dai-101250309104036732.htm"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "blocked",
+                "error_code": "AI_QUALITY_GROUNDING",
+                "diagnostics": {
+                    "stage": "validate",
+                    "validation_errors": [
+                        {
+                            "group": "content",
+                            "field": "content_html",
+                            "reason": "important_number_missing"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "case": "Q27-C",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "original_diagnostics": {
+                "stage": "validate",
+                "validation_errors": [
+                    {
+                        "group": "content",
+                        "field": "content_html",
+                        "reason": "important_number_missing"
+                    }
+                ]
+            },
+            "source_json_sha256": "cf524d11440f1b4115dc227438add3e8a2b00eed009b56469062b53b57643413",
+            "artifact_json_sha256": "3777b0c5ec22839c180584be8426381757848773baff506aeccc40a43fb8d386",
+            "link_manifest": {
+                "required_hrefs": [],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://baochinhphu.vn/nam-du-lich-quoc-gia-2025-hue-kinh-do-xua-van-hoi-moi-10224123113585751.htm"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "blocked",
+                "error_code": "AI_QUALITY_GROUNDING",
+                "diagnostics": {
+                    "stage": "validate",
+                    "validation_errors": [
+                        {
+                            "group": "content",
+                            "field": "content_html",
+                            "reason": "important_number_missing"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "case": "Q28-C",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "original_diagnostics": {
+                "stage": "validate",
+                "validation_errors": [
+                    {
+                        "group": "content",
+                        "field": "content_html",
+                        "reason": "important_number_missing"
+                    }
+                ]
+            },
+            "source_json_sha256": "536b7b6210c359fbe674decebec9003daefb917baddcc4b56994b51d5a22e898",
+            "artifact_json_sha256": "dadd7b7a69341dd69f1cd4507823709b7de4791df5aaa16618e312dfd60e885f",
+            "link_manifest": {
+                "required_hrefs": [],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://tphcm.baochinhphu.vn/le-hoi-di-san-ca-phe-toan-cau-to-chuc-dip-cuoi-nam-tai-da-lat-101251125131136511.htm"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "blocked",
+                "error_code": "AI_QUALITY_GROUNDING",
+                "diagnostics": {
+                    "stage": "validate",
+                    "validation_errors": [
+                        {
+                            "group": "content",
+                            "field": "content_html",
+                            "reason": "important_number_missing"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "case": "Q30-C",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "original_diagnostics": {
+                "stage": "validate",
+                "validation_errors": [
+                    {
+                        "group": "content",
+                        "field": "content_html",
+                        "reason": "important_number_missing"
+                    }
+                ]
+            },
+            "source_json_sha256": "0fdb47ac0cfdc691f4dc19e8260dd01c88aa50bcc224b967fcff6d7f822d3132",
+            "artifact_json_sha256": "46c722b91af85412351e32409a36a30c9bc14a052d771e7dc49d4762cebf4295",
+            "link_manifest": {
+                "required_hrefs": [],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://baotanglichsuquocgia.vn/vi/Articles/3090/6038/thong-bao-lich-djon-tiep-va-gia-ve-djoi-voi-khach-tham-quan-bao-tang-lich-su-viet-nam.html"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "blocked",
+                "error_code": "AI_QUALITY_GROUNDING",
+                "diagnostics": {
+                    "stage": "validate",
+                    "validation_errors": [
+                        {
+                            "group": "content",
+                            "field": "content_html",
+                            "reason": "important_number_missing"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "case": "Q32-C",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "original_diagnostics": {
+                "stage": "validate",
+                "validation_errors": [
+                    {
+                        "group": "content",
+                        "field": "content_html",
+                        "reason": "important_number_missing"
+                    }
+                ]
+            },
+            "source_json_sha256": "abe6bbfae9fc09bf388649c1e5a8b060a0755daed70cf29d33894d81e46863bf",
+            "artifact_json_sha256": "c1c96bc796f940dbee1649fe73b64d7ec9ef800cc8271f04a198766031faf6ca",
+            "link_manifest": {
+                "required_hrefs": [],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://www.vietnam.travel/things-to-do/7-things-to-do-hoi-an"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "blocked",
+                "error_code": "AI_QUALITY_GROUNDING",
+                "diagnostics": {
+                    "stage": "validate",
+                    "validation_errors": [
+                        {
+                            "group": "content",
+                            "field": "content_html",
+                            "reason": "important_number_missing"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "case": "Q33-C",
+            "original_status": "failed",
+            "original_error_code": "AI_PROVIDER_TIMEOUT",
+            "original_diagnostics": {
+                "stage": "transport",
+                "schema_version": "article.writer.v1"
+            },
+            "source_json_sha256": "0e5f82562876bdbf1d54eebb4e7e4e1c00a07eb7944a66cb78ae6f0d4c05e693",
+            "artifact_json_sha256": "8e6ec98a3aec551cebf9666b11384a62730c74d6a4638d7a151eab6537e71697",
+            "link_manifest": {
+                "required_hrefs": [
+                    "https://docs.github.com/en/actions/reference/limits#existing-system-limits",
+                    "https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments#wait-timer",
+                    "https://docs.github.com/en/actions/reference/limits#workflow-file-size",
+                    "https://docs.github.com/en/actions/reference/limits#job-concurrency-limits-for-github-hosted-runners",
+                    "https://docs.github.com/en/actions/reference/limits#storage-limits-for-all-github-hosted-runners",
+                    "https://docs.github.com/en/actions/reference/limits#private-ip-scaling-for-vnet-injection-on-larger-runners"
+                ],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://docs.github.com/en/actions/reference/limits#existing-system-limits",
+                    "https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments#wait-timer",
+                    "https://docs.github.com/en/actions/reference/limits#workflow-file-size",
+                    "https://docs.github.com/en/actions/reference/limits#job-concurrency-limits-for-github-hosted-runners",
+                    "https://docs.github.com/en/actions/reference/limits#storage-limits-for-all-github-hosted-runners",
+                    "https://docs.github.com/en/actions/reference/limits#private-ip-scaling-for-vnet-injection-on-larger-runners",
+                    "https://docs.github.com/en/actions/reference/limits"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer"
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "no_final_candidate"
+            }
+        }
+    ]
+}

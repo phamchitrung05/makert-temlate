@@ -1,0 +1,986 @@
+{
+    "version": "article.quality.study.v2",
+    "generated_at": "2026-10-05T07:44:30+00:00",
+    "cases": 20,
+    "unique_sources": 20,
+    "source_languages": {
+        "en": 14,
+        "vi": 6
+    },
+    "comparison": "single_step_B_vs_three_step_C",
+    "matched_pairs": 20,
+    "baseline_A": "unavailable",
+    "technical_gate_is_human_accuracy": false,
+    "arms": {
+        "B": {
+            "runs": 20,
+            "ready": 20,
+            "failed": 0,
+            "errors": [],
+            "calls": 20,
+            "tokens": {
+                "n": 20,
+                "min": 1386,
+                "median": 2035,
+                "max": 8363
+            },
+            "known_tokens_sum": 58305,
+            "unknown_usage_runs": 0,
+            "known_call_tokens_sum": 58305,
+            "known_usage_calls": 20,
+            "unknown_usage_calls": 0,
+            "total_tokens": 58305,
+            "latency_ms": {
+                "n": 20,
+                "min": 7558,
+                "median": 20230,
+                "max": 88732
+            },
+            "cost": null,
+            "factual_accuracy": "pending_human"
+        },
+        "C": {
+            "runs": 20,
+            "ready": 14,
+            "failed": 6,
+            "errors": {
+                "AI_QUALITY_GROUNDING": 5,
+                "AI_PROVIDER_TIMEOUT": 1
+            },
+            "calls": 59,
+            "tokens": {
+                "n": 19,
+                "min": 10357,
+                "median": 14675,
+                "max": 47887
+            },
+            "known_tokens_sum": 393376,
+            "unknown_usage_runs": 1,
+            "known_call_tokens_sum": 403038,
+            "known_usage_calls": 58,
+            "unknown_usage_calls": 1,
+            "total_tokens": null,
+            "latency_ms": {
+                "n": 20,
+                "min": 51536,
+                "median": 103505.5,
+                "max": 383689
+            },
+            "cost": null,
+            "factual_accuracy": "pending_human"
+        }
+    },
+    "paired_cases": [
+        {
+            "case_id": "Q01",
+            "group": "Tin thay đổi rất ngắn",
+            "source_language": "en",
+            "source_sha256": "1068bf4531bce9a9d933018fdc0664a5ce96cc4b6afcdd5aa7503cb6581f8777",
+            "matched_inputs": true,
+            "source_images": 0,
+            "source_tables": 0,
+            "B": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 7558,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 1386
+            },
+            "C": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 51536,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 10357
+            },
+            "C_minus_B_latency_ms": 43978,
+            "C_minus_B_tokens": 8971,
+            "C_over_B_tokens": 7.473
+        },
+        {
+            "case_id": "Q02",
+            "group": "Release và phiên bản",
+            "source_language": "en",
+            "source_sha256": "6884fedc06b7ae1f4e267bbcb02e4917d106e060cdb659a6f2f432c94dc6851d",
+            "matched_inputs": true,
+            "source_images": 0,
+            "source_tables": 0,
+            "B": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 16604,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 2244
+            },
+            "C": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 91316,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 16315
+            },
+            "C_minus_B_latency_ms": 74712,
+            "C_minus_B_tokens": 14071,
+            "C_over_B_tokens": 7.27
+        },
+        {
+            "case_id": "Q03",
+            "group": "Migration/breaking changes",
+            "source_language": "en",
+            "source_sha256": "f9764ab23d536ebde3b70bc4d8b8195a4c64b65d6fccec55cd32ae789cdd73f9",
+            "matched_inputs": true,
+            "source_images": 0,
+            "source_tables": 0,
+            "B": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 11881,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 1826
+            },
+            "C": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 60756,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 11935
+            },
+            "C_minus_B_latency_ms": 48875,
+            "C_minus_B_tokens": 10109,
+            "C_over_B_tokens": 6.536
+        },
+        {
+            "case_id": "Q06",
+            "group": "Tutorial CLI",
+            "source_language": "en",
+            "source_sha256": "0bf99e7c16aa6d8cd08c069e0b3a9bc9c33d52af408e2c26652c8ff07923d03f",
+            "matched_inputs": true,
+            "source_images": 0,
+            "source_tables": 0,
+            "B": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 17381,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 2257
+            },
+            "C": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 73076,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 14351
+            },
+            "C_minus_B_latency_ms": 55695,
+            "C_minus_B_tokens": 12094,
+            "C_over_B_tokens": 6.358
+        },
+        {
+            "case_id": "Q07",
+            "group": "Cấu hình PHP/Laravel",
+            "source_language": "en",
+            "source_sha256": "2937d401e81895deae84db701fdbf61b51ed3e897e9f672beaf2c9f5d234d24f",
+            "matched_inputs": true,
+            "source_images": 0,
+            "source_tables": 0,
+            "B": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 13088,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 3464
+            },
+            "C": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 87504,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 21158
+            },
+            "C_minus_B_latency_ms": 74416,
+            "C_minus_B_tokens": 17694,
+            "C_over_B_tokens": 6.108
+        },
+        {
+            "case_id": "Q08",
+            "group": "JavaScript/TypeScript",
+            "source_language": "en",
+            "source_sha256": "4473638d3420d306445ef71a1a1538377de591a9162a7a0ebaac8d72eff1050c",
+            "matched_inputs": true,
+            "source_images": 0,
+            "source_tables": 0,
+            "B": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 70995,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 6452
+            },
+            "C": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 301015,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 45657
+            },
+            "C_minus_B_latency_ms": 230020,
+            "C_minus_B_tokens": 39205,
+            "C_over_B_tokens": 7.076
+        },
+        {
+            "case_id": "Q09",
+            "group": "Async/watchers",
+            "source_language": "en",
+            "source_sha256": "e5d1dcb89581d54cc41faf4d5c47b75bcc3eea04463168580ebf754e791e5df9",
+            "matched_inputs": true,
+            "source_images": 0,
+            "source_tables": 0,
+            "B": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 87913,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 8363
+            },
+            "C": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 295907,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 47887
+            },
+            "C_minus_B_latency_ms": 207994,
+            "C_minus_B_tokens": 39524,
+            "C_over_B_tokens": 5.726
+        },
+        {
+            "case_id": "Q12",
+            "group": "So sánh trade-off",
+            "source_language": "en",
+            "source_sha256": "672b41ad5f596d54002422c8a2d24fece323d72575c14145e0fc0ebdfa14a5d7",
+            "matched_inputs": true,
+            "source_images": 0,
+            "source_tables": 0,
+            "B": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 30436,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 2698
+            },
+            "C": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 171927,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 21443
+            },
+            "C_minus_B_latency_ms": 141491,
+            "C_minus_B_tokens": 18745,
+            "C_over_B_tokens": 7.948
+        },
+        {
+            "case_id": "Q13",
+            "group": "Giải thích cho người mới",
+            "source_language": "en",
+            "source_sha256": "18cbccdaa2dc89666ac367a80c0b7e9b9e78e7c97dfaf8db8cc0807cc9d6c414",
+            "matched_inputs": true,
+            "source_images": 0,
+            "source_tables": 0,
+            "B": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 38728,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 2942
+            },
+            "C": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 182779,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 22343
+            },
+            "C_minus_B_latency_ms": 144051,
+            "C_minus_B_tokens": 19401,
+            "C_over_B_tokens": 7.594
+        },
+        {
+            "case_id": "Q14",
+            "group": "Chuyên sâu",
+            "source_language": "en",
+            "source_sha256": "8675090be7976abaf557dd96f469b772b2f5242e48f6e6df796be3983977c6b1",
+            "matched_inputs": true,
+            "source_images": 0,
+            "source_tables": 0,
+            "B": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 42761,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 2892
+            },
+            "C": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 173257,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 23112
+            },
+            "C_minus_B_latency_ms": 130496,
+            "C_minus_B_tokens": 20220,
+            "C_over_B_tokens": 7.992
+        },
+        {
+            "case_id": "Q17",
+            "group": "Nhiều code/ít prose",
+            "source_language": "en",
+            "source_sha256": "94415de4e7cc383018e7a7f081315dcb0a77a944f5742e8be938b91adab1d6dd",
+            "matched_inputs": true,
+            "source_images": 0,
+            "source_tables": 0,
+            "B": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 15219,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 1740
+            },
+            "C": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 75430,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 13010
+            },
+            "C_minus_B_latency_ms": 60211,
+            "C_minus_B_tokens": 11270,
+            "C_over_B_tokens": 7.477
+        },
+        {
+            "case_id": "Q18",
+            "group": "HTML có navigation/footer/ads",
+            "source_language": "vi",
+            "source_sha256": "2299d9d9e3f225898fd8a8348259794be0ca303c6c8064b8c29aa94400ff31be",
+            "matched_inputs": true,
+            "source_images": 11,
+            "source_tables": 0,
+            "B": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 75646,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 5010
+            },
+            "C": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 383689,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 46142
+            },
+            "C_minus_B_latency_ms": 308043,
+            "C_minus_B_tokens": 41132,
+            "C_over_B_tokens": 9.21
+        },
+        {
+            "case_id": "Q26",
+            "group": "Tin tiếng Việt · Metro khai trương và khánh thành",
+            "source_language": "vi",
+            "source_sha256": "b642546b4c8a12366d70f47de382ef5e9d77fed6124ed9f5f401fe0c736cbe32",
+            "matched_inputs": true,
+            "source_images": 1,
+            "source_tables": 0,
+            "B": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 20876,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 1793
+            },
+            "C": {
+                "status": "failed",
+                "error_code": "AI_QUALITY_GROUNDING",
+                "diagnostics": {
+                    "stage": "validate",
+                    "validation_errors": [
+                        {
+                            "group": "content",
+                            "field": "content_html",
+                            "reason": "important_number_missing"
+                        }
+                    ]
+                },
+                "latency_ms": 96016,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 14675
+            },
+            "C_minus_B_latency_ms": 75140,
+            "C_minus_B_tokens": 12882,
+            "C_over_B_tokens": 8.185
+        },
+        {
+            "case_id": "Q27",
+            "group": "Tin tiếng Việt · Năm Du lịch Huế 2025",
+            "source_language": "vi",
+            "source_sha256": "cf524d11440f1b4115dc227438add3e8a2b00eed009b56469062b53b57643413",
+            "matched_inputs": true,
+            "source_images": 1,
+            "source_tables": 0,
+            "B": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 19765,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 1636
+            },
+            "C": {
+                "status": "failed",
+                "error_code": "AI_QUALITY_GROUNDING",
+                "diagnostics": {
+                    "stage": "validate",
+                    "validation_errors": [
+                        {
+                            "group": "content",
+                            "field": "content_html",
+                            "reason": "important_number_missing"
+                        }
+                    ]
+                },
+                "latency_ms": 90954,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 14294
+            },
+            "C_minus_B_latency_ms": 71189,
+            "C_minus_B_tokens": 12658,
+            "C_over_B_tokens": 8.737
+        },
+        {
+            "case_id": "Q28",
+            "group": "Tin tiếng Việt · Lễ hội cà phê dự kiến",
+            "source_language": "vi",
+            "source_sha256": "536b7b6210c359fbe674decebec9003daefb917baddcc4b56994b51d5a22e898",
+            "matched_inputs": true,
+            "source_images": 1,
+            "source_tables": 0,
+            "B": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 18932,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 1666
+            },
+            "C": {
+                "status": "failed",
+                "error_code": "AI_QUALITY_GROUNDING",
+                "diagnostics": {
+                    "stage": "validate",
+                    "validation_errors": [
+                        {
+                            "group": "content",
+                            "field": "content_html",
+                            "reason": "important_number_missing"
+                        }
+                    ]
+                },
+                "latency_ms": 102603,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 15199
+            },
+            "C_minus_B_latency_ms": 83671,
+            "C_minus_B_tokens": 13533,
+            "C_over_B_tokens": 9.123
+        },
+        {
+            "case_id": "Q29",
+            "group": "Thống kê du lịch tiếng Việt · kỳ báo cáo 2024",
+            "source_language": "vi",
+            "source_sha256": "7bfbc627a5988356ba2268075c855ad8e5a1e8a6a197a9eb1f6f86a8df27dfad",
+            "matched_inputs": true,
+            "source_images": 1,
+            "source_tables": 0,
+            "B": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 13797,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 1521
+            },
+            "C": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 97100,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 13312
+            },
+            "C_minus_B_latency_ms": 83303,
+            "C_minus_B_tokens": 11791,
+            "C_over_B_tokens": 8.752
+        },
+        {
+            "case_id": "Q30",
+            "group": "Thông báo tiếng Việt · điều kiện vé tham quan năm 2010",
+            "source_language": "vi",
+            "source_sha256": "0fdb47ac0cfdc691f4dc19e8260dd01c88aa50bcc224b967fcff6d7f822d3132",
+            "matched_inputs": true,
+            "source_images": 1,
+            "source_tables": 0,
+            "B": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 20695,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 1702
+            },
+            "C": {
+                "status": "failed",
+                "error_code": "AI_QUALITY_GROUNDING",
+                "diagnostics": {
+                    "stage": "validate",
+                    "validation_errors": [
+                        {
+                            "group": "content",
+                            "field": "content_html",
+                            "reason": "important_number_missing"
+                        }
+                    ]
+                },
+                "latency_ms": 105132,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 14582
+            },
+            "C_minus_B_latency_ms": 84437,
+            "C_minus_B_tokens": 12880,
+            "C_over_B_tokens": 8.568
+        },
+        {
+            "case_id": "Q31",
+            "group": "Du lịch · Phong Nha · Anh sang Việt",
+            "source_language": "en",
+            "source_sha256": "e9251a362ad4a7b8be6db1e4668da50a117c2770970f45b41d470535dccd6c1a",
+            "matched_inputs": true,
+            "source_images": 1,
+            "source_tables": 0,
+            "B": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 24784,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 1691
+            },
+            "C": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 106859,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 14259
+            },
+            "C_minus_B_latency_ms": 82075,
+            "C_minus_B_tokens": 12568,
+            "C_over_B_tokens": 8.432
+        },
+        {
+            "case_id": "Q32",
+            "group": "Du lịch văn hóa · Hội An · Anh sang Việt",
+            "source_language": "en",
+            "source_sha256": "abe6bbfae9fc09bf388649c1e5a8b060a0755daed70cf29d33894d81e46863bf",
+            "matched_inputs": true,
+            "source_images": 1,
+            "source_tables": 0,
+            "B": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 19340,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 1604
+            },
+            "C": {
+                "status": "failed",
+                "error_code": "AI_QUALITY_GROUNDING",
+                "diagnostics": {
+                    "stage": "validate",
+                    "validation_errors": [
+                        {
+                            "group": "content",
+                            "field": "content_html",
+                            "reason": "important_number_missing"
+                        }
+                    ]
+                },
+                "latency_ms": 104408,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 13345
+            },
+            "C_minus_B_latency_ms": 85068,
+            "C_minus_B_tokens": 11741,
+            "C_over_B_tokens": 8.32
+        },
+        {
+            "case_id": "Q33",
+            "group": "Bảng số liệu · giới hạn GitHub Actions theo gói",
+            "source_language": "en",
+            "source_sha256": "0e5f82562876bdbf1d54eebb4e7e4e1c00a07eb7944a66cb78ae6f0d4c05e693",
+            "matched_inputs": true,
+            "source_images": 0,
+            "source_tables": 1,
+            "B": {
+                "status": "ready",
+                "error_code": null,
+                "latency_ms": 88732,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": 5418
+            },
+            "C": {
+                "status": "failed",
+                "error_code": "AI_PROVIDER_TIMEOUT",
+                "diagnostics": {
+                    "stage": "transport",
+                    "schema_version": "article.writer.v1"
+                },
+                "latency_ms": 304669,
+                "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+                "model": "gpt-6.1-sol",
+                "total_tokens": null
+            },
+            "C_minus_B_latency_ms": 215937,
+            "C_minus_B_tokens": null,
+            "C_over_B_tokens": null
+        }
+    ],
+    "human_review": {
+        "status": "pending_human",
+        "progress": {
+            "reviewer-1": {
+                "completed": 0,
+                "available": 39,
+                "reviewer": null
+            },
+            "reviewer-2": {
+                "completed": 0,
+                "available": 39,
+                "reviewer": null
+            }
+        },
+        "arms": {
+            "B": {
+                "completed_ratings": 0,
+                "accuracy": {
+                    "pass": 0,
+                    "fail": 0,
+                    "undetermined": 0,
+                    "critical_errors": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "major_errors": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "minor_errors": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "important_facts_preserved": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "important_facts_expected": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    }
+                },
+                "criteria": {
+                    "naturalness_1_5": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "usefulness_1_5": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "structure_1_5": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "repetition_1_5": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "brief_style_1_5": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    }
+                },
+                "editing": {
+                    "fact_edits": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "expression_edits": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "paragraphs_added": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "paragraphs_removed": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "minutes": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    }
+                }
+            },
+            "C": {
+                "completed_ratings": 0,
+                "accuracy": {
+                    "pass": 0,
+                    "fail": 0,
+                    "undetermined": 0,
+                    "critical_errors": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "major_errors": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "minor_errors": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "important_facts_preserved": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "important_facts_expected": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    }
+                },
+                "criteria": {
+                    "naturalness_1_5": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "usefulness_1_5": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "structure_1_5": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "repetition_1_5": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "brief_style_1_5": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    }
+                },
+                "editing": {
+                    "fact_edits": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "expression_edits": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "paragraphs_added": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "paragraphs_removed": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    },
+                    "minutes": {
+                        "n": 0,
+                        "min": null,
+                        "median": null,
+                        "max": null
+                    }
+                }
+            }
+        },
+        "paired_preferences": {
+            "Q01": [],
+            "Q02": [],
+            "Q03": [],
+            "Q06": [],
+            "Q07": [],
+            "Q08": [],
+            "Q09": [],
+            "Q12": [],
+            "Q13": [],
+            "Q14": [],
+            "Q17": [],
+            "Q18": [],
+            "Q26": [],
+            "Q27": [],
+            "Q28": [],
+            "Q29": [],
+            "Q30": [],
+            "Q31": [],
+            "Q32": [],
+            "Q33": []
+        },
+        "fact_disagreements": [],
+        "rollout": "pending_owner_decision"
+    },
+    "image_scope": "source_metadata_and_captions_only_not_pixels_or_approved_asset_regenerate",
+    "coverage_gaps": [
+        "Nguồn web mới là trích đoạn được chọn, không mặc định là toàn bài.",
+        "Facts quan trọng cần hai người đọc xác nhận độc lập từ nguồn.",
+        "Ảnh nguồn chỉ là metadata/chú thích: chưa kiểm pixel hoặc regenerate với asset được duyệt.",
+        "Chưa có benchmark độc lập; bảng giới hạn dịch vụ không đại diện benchmark."
+    ],
+    "rollout": "pending_human_reviews_and_owner_criteria",
+    "manifest_sha256": "f8104f32e6875589dc6d9ea401fb720d055d9d2140fcbb1c4e78ede63e16cfe2",
+    "bundle_sha256": "1a11ea1c16eb515a6cfe16e662872df611a2fc83ef5798011c8160c19005315c",
+    "artifact_sha256": {
+        "Q01-B": "55886ea4ca35d1d6017be2e3b0f4b6aa584a178583bd6331a75553c02027e58c",
+        "Q01-C": "54568530e264acb217150f402af9b86fba62b3e5661c1e4576ea3402f2ed8d2e",
+        "Q02-B": "b0f4df11dda61edf9292158ff83db1a6da20ebeafe61851bb6510af35d0ec45b",
+        "Q02-C": "83366aece5150fef6a715be175673f71b6f52ba5d9af44a5300c022e993abd5b",
+        "Q03-B": "dfd76eccddce62c0ed33a64b2fb1238fb261f745702722381201d34a1f464ed9",
+        "Q03-C": "ea4901fec29f5286a92c8dcb79c9b66e691db28daf750c7024d6cd740739de20",
+        "Q06-B": "15a2fa359788a3a85226b19bccddcc58f9d244d8da4ac985bf1dde125ea644a0",
+        "Q06-C": "0a38df38ef86d5313a6b33d63faf9de8259077d24ae6bb6904ae225d40f7f2dd",
+        "Q07-B": "bafff166e4b1a83ab5c5be4c18f62d880cf80fb1b90cade1d2ef1d7c74f93550",
+        "Q07-C": "ad9962aa48b4873cd6f755d7425e07fdea753e4e7e5b1ae6158dba675df3a3b8",
+        "Q08-B": "94e653a806856cc7ab15008cedbbffaf1ae390d487ab5e18ea6dca2b57b2a43b",
+        "Q08-C": "938464ee57cb3fddc783a2d8b163a5abb2c8cd0721607923ab24db5741f08159",
+        "Q09-B": "aed533f8a167089576a678241fcfbdbf97d748399d71f9ac33a0dab02a5679c5",
+        "Q09-C": "a26e60f8a62655ade934242ec68e6c1e136715f780f8482c2b67cd861d41a6cb",
+        "Q12-B": "5b6f556e1f818085baa172c754b526810f59ce9b6248b61892c0e159c5670329",
+        "Q12-C": "03546c1ddb578c5271a680caa6a41e5b9cddbb5865f37a30aa721a0921d68945",
+        "Q13-B": "c77bac2ce5d6aba20b9b9ed4c18491edfededf65b2c30afc54943bd546c70834",
+        "Q13-C": "ea6b6e41bd276d17aea49ff174fa8d0f9fe59143a97efad9c7cbb8b26dc0622f",
+        "Q14-B": "68586c9d766a091b28a51302aa8f3dfb27a9b2f482dae3b9d45b1c1cc5be6754",
+        "Q14-C": "b2de203ecd440fef9a4e5fe569f8aacb44d406dd2f5408bf1ae77228c1292bac",
+        "Q17-B": "8f0aed7aa863b9c2b8d542dada1582d02ac1e6cf3e838b4b1da909cf1ec15614",
+        "Q17-C": "502493cf1494fe3fe852e0875cbaf7a8af8abb6407ad3eda3ad8dc00259fc58b",
+        "Q18-B": "54a801f20b082e8474fdfff4d03fbc44877a30ce34667d52af61850d2fdf3841",
+        "Q18-C": "42ea74dd1f91281e51ac1d961fc1c95b73a691dae9cb98af9d11d0cc7cac74f0",
+        "Q26-B": "e58a0d0cd74597deb2fcc5e6cd01a6ffe7d6470dbded19e437dca1b672c8f55e",
+        "Q26-C": "f47ffd2118a4c2797b062b56f4f559b6f085957e229b37202e0994b744171eee",
+        "Q27-B": "50af4326632ce61f3099ec32b1034d31d9715b02c7394e450625a7f8d3cf8775",
+        "Q27-C": "3777b0c5ec22839c180584be8426381757848773baff506aeccc40a43fb8d386",
+        "Q28-B": "1b468eb642f3bd9317ff56325f86f48075bb0bf86bf30a3b60c561bc566e17f1",
+        "Q28-C": "dadd7b7a69341dd69f1cd4507823709b7de4791df5aaa16618e312dfd60e885f",
+        "Q29-B": "ab2edd854c9000af59bd591627728caa7936de3fc9954d078b6edf65be83728b",
+        "Q29-C": "e2e57880e97565f2e73c2660c9624dd641a9de86009ae2b932252d46ef759379",
+        "Q30-B": "7fd73d4ba639744efcc70bde0074985607020880be7bb29c9200bc2f8eead707",
+        "Q30-C": "46c722b91af85412351e32409a36a30c9bc14a052d771e7dc49d4762cebf4295",
+        "Q31-B": "b610d1e8c6de8f9c0ddbad99dc39647304b6bb05315b29849546f7aab51afbe5",
+        "Q31-C": "ad7a026462a282f7fb634f8e6e98bce8e00d468d056a0c4a6a8bb8324c01f5e2",
+        "Q32-B": "eea9d52252bf7be813ecbde2ddf1b80160bae4045022e072fd3202de6924a351",
+        "Q32-C": "c1c96bc796f940dbee1649fe73b64d7ec9ef800cc8271f04a198766031faf6ca",
+        "Q33-B": "ee217887d939257f05730f26cb770d490b803cbcf437543e497af0c0e3909d8c",
+        "Q33-C": "8e6ec98a3aec551cebf9666b11384a62730c74d6a4638d7a151eab6537e71697"
+    }
+}

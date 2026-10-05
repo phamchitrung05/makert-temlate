@@ -7,7 +7,7 @@ namespace App\Services\Ai\Runs;
  * CHỨC NĂNG FILE: Tính ngân sách queue theo số lượt AI đã chọn cho run.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE:
- * - calls(): xác định một hoặc ba lượt từ target/fields/pipeline snapshot.
+ * - calls(): ba lượt cho Post content; một lượt cho các trường riêng hoặc target khác.
  * - timeout(): cộng ngân sách HTTP và phần xử lý nguồn/media.
  * =====================================================================
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
@@ -22,20 +22,18 @@ final class AiRunBudget
      * =====================================================================
      * CHỨC NĂNG: Tính số lượt theo nhánh generation thật sự
      * =====================================================================
-     * INPUT: target, fields, provider và pipeline mode của run.
-     * OUTPUT: một lượt cho nhánh cũ/ngắn hoặc ba lượt cho Post content.
+     * INPUT: target, fields và provider của run.
+     * OUTPUT: ba lượt cho Post content kể cả snapshot cũ; một lượt cho fields riêng.
      * SIDE EFFECT: chỉ đọc snapshot/config; không gọi AI.
      * =====================================================================
      */
     public static function calls(array $input): int
     {
         $fields = (array) ($input['fields'] ?? $input['requested_outputs'] ?? ['title', 'content']);
-        $mode = data_get($input, 'pipeline_snapshot.pipeline', config('ai-content.pipeline', 'three_step'));
 
         return ($input['target_type'] ?? 'post') === 'post'
             && ($input['provider'] ?? '') !== 'deterministic'
-            && ($fields === [] || in_array('content', $fields, true))
-            && $mode === 'three_step' ? 3 : 1;
+            && ($fields === [] || in_array('content', $fields, true)) ? 3 : 1;
     }
 
     /**

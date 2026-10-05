@@ -1,3 +1,11 @@
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Kiểm tra form Post, slug/SEO và xác nhận thay thumbnail AI.
+ * CÁC HÀM/METHOD: mountForm() dựng form với field/media và API giả lập.
+ * INPUT/OUTPUT: Post prop và thao tác nhập/chọn ảnh -> payload lưu cùng lineage.
+ * =====================================================================
+ */
+/* eslint-disable camelcase -- Fixture lineage dùng field snake_case của API Laravel. */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
@@ -24,7 +32,9 @@ const mountForm = props => mount(PostForm, {
     plugins: [createPinia()],
     mocks: { requiredValidator: value => Boolean(value) },
     stubs: {
-      ...passthroughStubs(['VTabs', 'VRow', 'VCol', 'VCard', 'VCardText', 'VCardItem', 'VAlert', 'VBtnToggle', 'VProgressCircular', 'VExpansionPanels', 'VExpansionPanel', 'VExpansionPanelText']),
+      ...passthroughStubs(['VTabs', 'VRow', 'VCol', 'VCard', 'VCardText', 'VCardItem', 'VCardActions', 'VAlert', 'VBtnToggle', 'VProgressCircular', 'VExpansionPanels', 'VExpansionPanel', 'VExpansionPanelText']),
+      VDialog: { props: ['modelValue'], template: '<div v-if="modelValue" role="dialog"><slot /></div>' },
+      VSpacer: true,
       AppTextField: Field, AppTextarea: Field, VTab: Button, VDivider: true, VBtn: Button, VForm: Form,
       PostEditor: { props: ['modelValue'], emits: ['update:modelValue'], template: '<textarea aria-label="Content" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />' },
       PostMediaPanel: true, PostSettingsSidebar: true, MoreBtn: true, VTooltip: true,
@@ -197,6 +207,38 @@ describe('Post form integration', () => {
     await wrapper.get('form').trigger('submit')
     await flushPromises()
     expect(wrapper.emitted('submit')[0][0].status).toBe('draft')
+    wrapper.unmount()
+  })
+
+  it.each([true, false])('preserves manual content and thumbnail lineage after overwrite confirmation=%s', async confirm => {
+    const original = { id: 10, title: 'Original image' }
+    const generated = { id: 11, title: 'Generated image' }
+    const wrapper = mountForm({ post: { id: 1, title: 'Article', slug: 'article', media: { thumbnail: original } } })
+
+    await wrapper.get('input[aria-label="Post Title"]').setValue('Manual title')
+    await wrapper.get('textarea[aria-label="Content"]').setValue('<p>Manual content</p>')
+    await wrapper.get('input[aria-label="Excerpt"]').setValue('Manual summary')
+
+    const media = wrapper.getComponent({ name: 'PostMediaPanel' })
+
+    media.vm.$emit('aiImageApplied', generated, { runId: 'thumbnail-run', fields: ['thumbnail'] })
+    await flushPromises()
+
+    const dialog = wrapper.get('[role="dialog"]')
+
+    expect(media.props('thumbnail')).toEqual(original)
+    expect(wrapper.emitted('submit')).toBeUndefined()
+    await dialog.findAll('button').find(button => button.text() === (confirm ? 'Áp dụng' : 'Giữ dữ liệu hiện tại')).trigger('click')
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+    await wrapper.findAll('button').find(button => button.text() === 'Save as Draft').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.emitted('submit')[0][0]).toMatchObject({
+      title: 'Manual title', content: '<p>Manual content</p>', excerpt: 'Manual summary',
+      thumbnail: confirm ? generated : original,
+      aiRuns: confirm ? [{ run_id: 'thumbnail-run', fields: ['thumbnail'] }] : [],
+    })
+    expect(mocks.previewSlug).not.toHaveBeenCalled()
     wrapper.unmount()
   })
 })

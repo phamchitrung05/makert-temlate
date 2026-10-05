@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-05",
+  "scope": "Remove live single-call full-article branch B; keep C and read-only historical evidence",
+  "article_pipeline": "Analyze + Plan -> Write -> Edit",
+  "legacy_config_and_snapshot_cannot_restore_B": true,
+  "writer_error_falls_back_to_B": false,
+  "new_and_regenerated_run_pipeline": "three_step",
+  "full_post_content_call_budget": 3,
+  "job_budget_at_600_seconds_per_request": 1920,
+  "partial_field_requests_preserved": true,
+  "checks": {
+    "backend": {"tests": 337, "assertions": 2425, "status": "passed"},
+    "frontend": {"files": 43, "tests": 302, "status": "passed"},
+    "pint": {"files": 22, "status": "passed"},
+    "eslint_review_scripts": "passed",
+    "stylelint_review_styles": "passed",
+    "git_diff_whitespace": "passed"
+  },
+  "cli": {
+    "corpus_v2_preflight": {"cases": 20, "arms": ["C"], "planned_calls": 60},
+    "B_and_BC_execution": "rejected_before_provider_or_run_lookup",
+    "C_only_report_smoke": {"mode": "saved_outputs_only", "cases": 1, "matched_pairs": 0, "arms": ["C"], "human_review": "pending_human"},
+    "historical_BC_report": {"cases": 20, "matched_pairs": 20, "recorded_calls": 79, "B_ready": 20, "C_ready": 14},
+    "historical_export_smoke": {"cases": ["Q01", "Q13"], "planned_calls": 0, "reviewer_csv_changed": 0},
+    "historical_study_files_checked": 62,
+    "historical_study_files_changed": 0
+  },
+  "browser": {
+    "mode": "read_only_saved_Q01_C_output_in_local_QA_copy",
+    "candidate_count": 1,
+    "paired_preference_control": false,
+    "completed_reviews": "0/1",
+    "human_scores_entered_by_agent": false,
+    "screenshot": "c-only-review.jpg"
+  },
+  "AI_calls_added": 0,
+  "applied_or_published": false,
+  "deployed_to_VPS": false,
+  "quality_acceptance": "still_requires_human_review"
+}

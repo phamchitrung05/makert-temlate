@@ -1,0 +1,96 @@
+{
+    "arm": "B",
+    "status": "ready",
+    "error_code": null,
+    "final": {
+        "title": "Du lịch Việt Nam năm 2024 hoàn thành chỉ tiêu tăng trưởng",
+        "content_html": "<p><strong>Cập nhật: 07/01/2025</strong></p><p>Khép lại năm 2024, du lịch Việt Nam hoàn thành các chỉ tiêu kế hoạch đặt ra từ đầu năm. Ngành đón hơn 17,5 triệu khách quốc tế, phục vụ 110 triệu lượt khách du lịch nội địa và đạt tổng thu từ khách du lịch 840 nghìn tỷ đồng. Chính phủ và Thủ tướng Chính phủ đánh giá du lịch là một điểm sáng trong tổng thể phát triển kinh tế - xã hội đất nước.</p><p>Theo Trung tâm Thông tin du lịch (TITC), những sự kiện tiêu biểu, dấu ấn nổi bật và kết quả thực hiện các chỉ tiêu tăng trưởng của ngành trong năm 2024 sẽ được giới thiệu trong tài liệu <em>Thông tin du lịch tháng 12/2024</em>. Tài liệu do Trung tâm Thông tin du lịch thuộc Cục Du lịch Quốc gia Việt Nam xây dựng, đồng thời tổng hợp hoạt động của ngành trong các lĩnh vực quản lý nhà nước, truyền thông, xúc tiến quảng bá, hợp tác quốc tế và chuyển đổi số.</p>"
+    },
+    "quality_checks": [
+        {
+            "check": "copy",
+            "status": "pass"
+        },
+        {
+            "check": "similarity",
+            "status": "pass",
+            "metric": 0.773,
+            "reason": "lexical_metric_not_style_score"
+        },
+        {
+            "check": "language",
+            "status": "pass",
+            "detected": "vi"
+        },
+        {
+            "check": "source_code_links",
+            "status": "pass"
+        },
+        {
+            "check": "important_numbers",
+            "status": "pass"
+        },
+        {
+            "check": "unanchored_numbers",
+            "status": "pass",
+            "count": 0,
+            "reason": "requires_editor_review"
+        },
+        {
+            "check": "semantic_grounding",
+            "status": "undetermined",
+            "reason": "source_anchors_are_not_external_fact_verification"
+        }
+    ],
+    "cost": null,
+    "calls": [
+        {
+            "task": "single_step",
+            "output": {
+                "title": "Du lịch Việt Nam năm 2024 hoàn thành chỉ tiêu tăng trưởng",
+                "content_html": "<p><strong>Cập nhật: 07/01/2025</strong></p><p>Khép lại năm 2024, du lịch Việt Nam hoàn thành các chỉ tiêu kế hoạch đặt ra từ đầu năm. Ngành đón hơn 17,5 triệu khách quốc tế, phục vụ 110 triệu lượt khách du lịch nội địa và đạt tổng thu từ khách du lịch 840 nghìn tỷ đồng. Chính phủ và Thủ tướng Chính phủ đánh giá du lịch là một điểm sáng trong tổng thể phát triển kinh tế - xã hội đất nước.</p><p>Theo Trung tâm Thông tin du lịch (TITC), những sự kiện tiêu biểu, dấu ấn nổi bật và kết quả thực hiện các chỉ tiêu tăng trưởng của ngành trong năm 2024 sẽ được giới thiệu trong tài liệu <em>Thông tin du lịch tháng 12/2024</em>. Tài liệu do Trung tâm Thông tin du lịch thuộc Cục Du lịch Quốc gia Việt Nam xây dựng, đồng thời tổng hợp hoạt động của ngành trong các lĩnh vực quản lý nhà nước, truyền thông, xúc tiến quảng bá, hợp tác quốc tế và chuyển đổi số.</p>",
+                "content": "<p><strong>Cập nhật: 07/01/2025</strong></p><p>Khép lại năm 2024, du lịch Việt Nam hoàn thành các chỉ tiêu kế hoạch đặt ra từ đầu năm. Ngành đón hơn 17,5 triệu khách quốc tế, phục vụ 110 triệu lượt khách du lịch nội địa và đạt tổng thu từ khách du lịch 840 nghìn tỷ đồng. Chính phủ và Thủ tướng Chính phủ đánh giá du lịch là một điểm sáng trong tổng thể phát triển kinh tế - xã hội đất nước.</p><p>Theo Trung tâm Thông tin du lịch (TITC), những sự kiện tiêu biểu, dấu ấn nổi bật và kết quả thực hiện các chỉ tiêu tăng trưởng của ngành trong năm 2024 sẽ được giới thiệu trong tài liệu <em>Thông tin du lịch tháng 12/2024</em>. Tài liệu do Trung tâm Thông tin du lịch thuộc Cục Du lịch Quốc gia Việt Nam xây dựng, đồng thời tổng hợp hoạt động của ngành trong các lĩnh vực quản lý nhà nước, truyền thông, xúc tiến quảng bá, hợp tác quốc tế và chuyển đổi số.</p>"
+            },
+            "diagnostics": {
+                "response_id": "resp_030f908080cb78b7016ac3510d896887d29b59c4aaf7feef7e",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "post.content.v1",
+                "requested_groups": [
+                    "title",
+                    "content"
+                ],
+                "returned_fields": [
+                    "title",
+                    "content_html"
+                ],
+                "usage": {
+                    "prompt_tokens": 1248,
+                    "completion_tokens": 273,
+                    "total_tokens": 1521
+                }
+            },
+            "latency_ms": 13792
+        }
+    ],
+    "latency_ms": 13797,
+    "input_sha256": "7125377bdd5c4c88cec6a36669abf3b974460728e203ac0714a9d8a1e293ca54",
+    "comparison_input_sha256": "dc4bdcd295fff36dd6bae53d233c941f0f02e8019b3e30f067c97c6078684c61",
+    "writing_profile_sha256": "1267aa8b907b63f12cd8c953c4a6664dbea3f3e7acabb12a28e64293053a7c96",
+    "brief_sha256": "c393f001cd6e15fde430c45a36928082d0c45d9b51967c0d7f4d6e0753502f7a",
+    "image_evaluation": {
+        "mode": "source_metadata_only",
+        "source_images": 1,
+        "approved_asset_regenerate": "not_evaluated",
+        "pixel_understanding": "not_evaluated"
+    },
+    "source_sha256": "24b187abeca644039af40c93e3692d9c3980ae8dc154c3b3805c07ec8b2a6ad2",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Du lịch Việt Nam năm 2024 hoàn thành chỉ tiêu tăng trưởng",
+        "content_html": "<p><strong>Cập nhật: 07/01/2025</strong></p><p>Khép lại năm 2024, du lịch Việt Nam hoàn thành các chỉ tiêu kế hoạch đặt ra từ đầu năm. Ngành đón hơn 17,5 triệu khách quốc tế, phục vụ 110 triệu lượt khách du lịch nội địa và đạt tổng thu từ khách du lịch 840 nghìn tỷ đồng. Chính phủ và Thủ tướng Chính phủ đánh giá du lịch là một điểm sáng trong tổng thể phát triển kinh tế - xã hội đất nước.</p><p>Theo Trung tâm Thông tin du lịch (TITC), những sự kiện tiêu biểu, dấu ấn nổi bật và kết quả thực hiện các chỉ tiêu tăng trưởng của ngành trong năm 2024 sẽ được giới thiệu trong tài liệu <em>Thông tin du lịch tháng 12/2024</em>. Tài liệu do Trung tâm Thông tin du lịch thuộc Cục Du lịch Quốc gia Việt Nam xây dựng, đồng thời tổng hợp hoạt động của ngành trong các lĩnh vực quản lý nhà nước, truyền thông, xúc tiến quảng bá, hợp tác quốc tế và chuyển đổi số.</p>"
+    },
+    "total_tokens": 1521
+}

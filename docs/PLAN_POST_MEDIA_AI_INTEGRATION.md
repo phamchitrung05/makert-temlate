@@ -7,6 +7,12 @@ provider/catalog/settings/image bằng HTTP server-side. Còn smoke test key th�
 Laravel AI SDK adapter, file input, Resource/Sound adapter và browser/staging.
 **Phạm vi:** Admin Post Add/Edit, Media File, Media Asset và AI Content Agent cho Post, Resource, Sound và các model tương lai
 
+> **Quyết định cập nhật 2026-10-05:** tạo nội dung Post tập trung tại trang AI Content.
+> Post List/Add/Edit đã gỡ nút Create With AI/Fill All with AI, dialog và các component
+> chỉ phục vụ dialog đó. Các checklist/snapshot cũ bên dưới về dialog Post ghi lại
+> giai đoạn trước, không yêu cầu khôi phục chức năng đã bỏ. Dialog mới dùng
+> `AppDialogLayout` theo [cấu trúc dialog chung](PROJECT_STRUCTURE.md#431-cấu-trúc-dialog-bắt-buộc).
+
 ## 1. Mục tiêu
 
 Hoàn thiện ba nhóm công việc:
@@ -34,8 +40,8 @@ AI chỉ tạo candidate/bản nháp để người dùng review. Việc apply, 
 - `media/file/index.vue` đã dùng MediaAsset store/API thật.
 - `media/media-asset/index.vue` đã dùng trực tiếp `useMediaAssetStore` làm source of truth.
 - `PostSettingsSidebar.vue` đã tải Category/Tag từ API; các Post option vẫn là UI-only.
-- `CreateWithAiDialog` vẫn giữ hierarchy giao diện cũ (`#view-moi`) nhưng đã có capability,
-  prompt/provider/model, polling, candidate, regenerate và apply chọn lọc.
+- Trang AI Content quản lý nguồn, văn phong/provider/model, polling, candidate,
+  regenerate và Apply. PostForm quản lý nhập/sửa/lưu bài viết, không mở dialog tạo nội dung AI.
 - Category và Tag đã round-trip; các option chưa được gửi lên backend vì vẫn là UI-only.
 
 ### Tài liệu liên quan

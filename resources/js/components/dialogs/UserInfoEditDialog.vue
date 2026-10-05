@@ -1,4 +1,15 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: UserInfoEditDialog dùng khung dialog chung.
+  CÁC HÀM/METHOD TRONG FILE: onFormSubmit, onFormReset, dialogModelValueUpdate.
+  INPUT/OUTPUT CỦA CLASS (tổng thể): props/model và thao tác UI -> sự kiện của
+  caller; header/footer cố định, content cuộn qua AppDialogLayout.
+  =====================================================================
+-->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
+import { useId } from 'vue'
+
 const props = defineProps({
   userData: {
     type: Object,
@@ -32,6 +43,7 @@ const emit = defineEmits([
   'update:isDialogVisible',
 ])
 
+const dialogFormId = useId()
 const userData = ref(structuredClone(toRaw(props.userData)))
 const isUseAsBillingAddress = ref(false)
 
@@ -56,25 +68,23 @@ const dialogModelValueUpdate = val => {
 
 <template>
   <VDialog
+    scrollable
     :width="$vuetify.display.smAndDown ? 'auto' : 900"
     :model-value="props.isDialogVisible"
     @update:model-value="dialogModelValueUpdate"
   >
-    <!-- Dialog close btn -->
-    <DialogCloseBtn @click="dialogModelValueUpdate(false)" />
+    <AppDialogLayout @close="dialogModelValueUpdate(false)">
+      <template #header>
+        <VCardItem>
+          <VCardTitle>Edit User Information</VCardTitle>
+          <VCardSubtitle>Updating user details will receive a privacy audit.</VCardSubtitle>
+        </VCardItem>
+      </template>
 
-    <VCard class="pa-sm-10 pa-2">
       <VCardText>
-        <!-- 👉 Title -->
-        <h4 class="text-h4 text-center mb-2">
-          Edit User Information
-        </h4>
-        <p class="text-body-1 text-center mb-6">
-          Updating user details will receive a privacy audit.
-        </p>
-
         <!-- 👉 Form -->
         <VForm
+          :id="dialogFormId"
           class="mt-6"
           @submit.prevent="onFormSubmit"
         >
@@ -200,25 +210,27 @@ const dialogModelValueUpdate = val => {
             </VCol>
 
             <!-- 👉 Submit and Cancel -->
-            <VCol
-              cols="12"
-              class="d-flex flex-wrap justify-center gap-4"
-            >
-              <VBtn type="submit">
-                Submit
-              </VBtn>
-
-              <VBtn
-                color="secondary"
-                variant="tonal"
-                @click="onFormReset"
-              >
-                Cancel
-              </VBtn>
-            </VCol>
           </VRow>
         </VForm>
       </VCardText>
-    </VCard>
+      <template #footer>
+        <VCardActions class="justify-end">
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            @click="onFormReset"
+          >
+            Cancel
+          </VBtn>
+          <VBtn
+            variant="flat"
+            :form="dialogFormId"
+            type="submit"
+          >
+            Submit
+          </VBtn>
+        </VCardActions>
+      </template>
+    </AppDialogLayout>
   </VDialog>
 </template>

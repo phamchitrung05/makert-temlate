@@ -1,5 +1,6 @@
 <!--
   =====================================================================
+  Header/footer cố định qua AppDialogLayout; chỉ content ở giữa được cuộn.
   CHỨC NĂNG FILE: Điều phối nguồn, phân tích và duyệt lưu văn phong tại Ai Prompt Add.
   =====================================================================
   Giữ layout/theme của giao diện người dùng; dùng API hiện có cho văn phong,
@@ -24,6 +25,7 @@
   =====================================================================
 -->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 import { computed, onMounted, shallowRef } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { getAlertColor } from '@/config/alertColors'
@@ -476,9 +478,13 @@ onBeforeRouteLeave(() => !hasUnsavedChanges.value || window.confirm('Bạn có m
     </VRow>
     <VDialog
       v-model="historyVisible"
+      scrollable
       max-width="680"
     >
-      <VCard title="Lịch sử phân tích">
+      <AppDialogLayout
+        title="Lịch sử phân tích"
+        @close="historyVisible = false"
+      >
         <VCardText>
           <VAlert
             type="info"
@@ -522,34 +528,47 @@ onBeforeRouteLeave(() => !hasUnsavedChanges.value || window.confirm('Bạn có m
             Mở kết quả
           </VBtn>
         </VCardText>
-        <VCardActions>
-          <VSpacer /><VBtn
-            color="secondary"
-            @click="historyVisible = false"
-          >
-            Đóng
-          </VBtn>
-        </VCardActions>
-      </VCard>
+        <template #footer>
+          <VCardActions>
+            <VSpacer /><VBtn
+              variant="flat"
+              color="secondary"
+              @click="historyVisible = false"
+            >
+              Đóng
+            </VBtn>
+          </VCardActions>
+        </template>
+      </AppDialogLayout>
     </VDialog>
     <VDialog
+      scrollable
       :model-value="Boolean(confirmKind)"
       max-width="520"
       @update:model-value="confirmKind = ''"
     >
-      <VCard title="Xác nhận thao tác">
+      <AppDialogLayout
+        title="Xác nhận thao tác"
+        @close="confirmKind = ''"
+      >
         <VCardText>{{ confirmKind === 'new' ? 'Yêu cầu trước chưa xác định đã được tạo hay chưa. Bạn đã kiểm tra và muốn cho phép một lượt phân tích mới?' : 'Thao tác này sẽ thay bản văn phong đang chỉnh sửa. Tiếp tục và bỏ bản chỉnh sửa chưa lưu?' }}</VCardText>
-        <VCardActions>
-          <VSpacer /><VBtn
-            color="secondary"
-            @click="confirmKind = ''"
-          >
-            Giữ bản hiện tại
-          </VBtn><VBtn @click="confirmAction">
-            Tiếp tục
-          </VBtn>
-        </VCardActions>
-      </VCard>
+        <template #footer>
+          <VCardActions>
+            <VSpacer /><VBtn
+              variant="flat"
+              color="secondary"
+              @click="confirmKind = ''"
+            >
+              Giữ bản hiện tại
+            </VBtn><VBtn
+              variant="flat"
+              @click="confirmAction"
+            >
+              Tiếp tục
+            </VBtn>
+          </VCardActions>
+        </template>
+      </AppDialogLayout>
     </VDialog>
     <VSnackbar
       v-model="snackbarVisible"

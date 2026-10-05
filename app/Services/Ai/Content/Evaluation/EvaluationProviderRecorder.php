@@ -99,7 +99,7 @@ final class EvaluationProviderRecorder implements AiProviderContract, AiResponse
      */
     public function generate(string $title, string $content, string $language = 'vi', string $rewriteStyle = 'informative', string $promptKey = 'post.create.from_url', string $instructions = ''): array
     {
-        return $this->record('single_step', fn () => $this->inner->generate($title, $content, $language, $rewriteStyle, $promptKey, $instructions));
+        return $this->record('text.fields', fn () => $this->inner->generate($title, $content, $language, $rewriteStyle, $promptKey, $instructions));
     }
 
     /**

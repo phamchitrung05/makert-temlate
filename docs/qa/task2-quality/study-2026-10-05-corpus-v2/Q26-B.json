@@ -1,0 +1,96 @@
+{
+    "arm": "B",
+    "status": "ready",
+    "error_code": null,
+    "final": {
+        "title": "TPHCM khánh thành tuyến Metro số 1 Bến Thành - Suối Tiên",
+        "content_html": "<p>09/03/2025 10:55 AM</p><p>Sáng 9/3/2025, tại Công viên 23/9, Quận 1, UBND TPHCM tổ chức lễ khánh thành tuyến đường sắt đô thị số 1 (Metro số 1) Bến Thành - Suối Tiên.</p><p>Chủ tịch UBND TPHCM nhấn mạnh, lễ khánh thành không chỉ là niềm vui, niềm tự hào của Thành phố mà còn mở ra một chương mới trên hành trình phát triển giao thông đô thị hiện đại.</p><p>Tham dự buổi lễ có đại diện Chính phủ Nhật Bản; lãnh đạo, nguyên lãnh đạo Đảng và Nhà nước; lãnh đạo các bộ, ban, ngành Trung ương; lãnh đạo, nguyên lãnh đạo TPHCM qua các thời kỳ; lãnh đạo các sở, ban, ngành, quận, huyện và thành phố Thủ Đức. Các đơn vị đối tác trong và ngoài nước cùng đông đảo người dân Thành phố cũng có mặt tại sự kiện.</p><p><em>Chú thích ảnh trong nguồn: Các đại biểu thực hiện nghi thức khánh thành tuyến Metro số 1. Ảnh: VGP/Vũ Phong.</em></p><p>Nguồn: <a href=\"https://tphcm.chinhphu.vn/tphcm-khanh-thanh-tuyen-metro-so-1-khoi-nguon-cho-su-phat-trien-giao-thong-do-thi-hien-dai-101250309104036732.htm\">Chinhphu.vn</a>.</p>"
+    },
+    "quality_checks": [
+        {
+            "check": "copy",
+            "status": "pass"
+        },
+        {
+            "check": "similarity",
+            "status": "pass",
+            "metric": 0.598,
+            "reason": "lexical_metric_not_style_score"
+        },
+        {
+            "check": "language",
+            "status": "pass",
+            "detected": "vi"
+        },
+        {
+            "check": "source_code_links",
+            "status": "pass"
+        },
+        {
+            "check": "important_numbers",
+            "status": "pass"
+        },
+        {
+            "check": "unanchored_numbers",
+            "status": "pass",
+            "count": 0,
+            "reason": "requires_editor_review"
+        },
+        {
+            "check": "semantic_grounding",
+            "status": "undetermined",
+            "reason": "source_anchors_are_not_external_fact_verification"
+        }
+    ],
+    "cost": null,
+    "calls": [
+        {
+            "task": "single_step",
+            "output": {
+                "title": "TPHCM khánh thành tuyến Metro số 1 Bến Thành - Suối Tiên",
+                "content_html": "<p><time datetime=\"2025-03-09T10:55:00\">09/03/2025 10:55 AM</time></p><p>Sáng 9/3/2025, tại Công viên 23/9, Quận 1, UBND TPHCM tổ chức lễ khánh thành tuyến đường sắt đô thị số 1 (Metro số 1) Bến Thành - Suối Tiên.</p><p>Chủ tịch UBND TPHCM nhấn mạnh, lễ khánh thành không chỉ là niềm vui, niềm tự hào của Thành phố mà còn mở ra một chương mới trên hành trình phát triển giao thông đô thị hiện đại.</p><p>Tham dự buổi lễ có đại diện Chính phủ Nhật Bản; lãnh đạo, nguyên lãnh đạo Đảng và Nhà nước; lãnh đạo các bộ, ban, ngành Trung ương; lãnh đạo, nguyên lãnh đạo TPHCM qua các thời kỳ; lãnh đạo các sở, ban, ngành, quận, huyện và thành phố Thủ Đức. Các đơn vị đối tác trong và ngoài nước cùng đông đảo người dân Thành phố cũng có mặt tại sự kiện.</p><p><em>Chú thích ảnh trong nguồn: Các đại biểu thực hiện nghi thức khánh thành tuyến Metro số 1. Ảnh: VGP/Vũ Phong.</em></p><p>Nguồn: <a href=\"https://tphcm.chinhphu.vn/tphcm-khanh-thanh-tuyen-metro-so-1-khoi-nguon-cho-su-phat-trien-giao-thong-do-thi-hien-dai-101250309104036732.htm\">Chinhphu.vn</a>.</p>",
+                "content": "<p><time datetime=\"2025-03-09T10:55:00\">09/03/2025 10:55 AM</time></p><p>Sáng 9/3/2025, tại Công viên 23/9, Quận 1, UBND TPHCM tổ chức lễ khánh thành tuyến đường sắt đô thị số 1 (Metro số 1) Bến Thành - Suối Tiên.</p><p>Chủ tịch UBND TPHCM nhấn mạnh, lễ khánh thành không chỉ là niềm vui, niềm tự hào của Thành phố mà còn mở ra một chương mới trên hành trình phát triển giao thông đô thị hiện đại.</p><p>Tham dự buổi lễ có đại diện Chính phủ Nhật Bản; lãnh đạo, nguyên lãnh đạo Đảng và Nhà nước; lãnh đạo các bộ, ban, ngành Trung ương; lãnh đạo, nguyên lãnh đạo TPHCM qua các thời kỳ; lãnh đạo các sở, ban, ngành, quận, huyện và thành phố Thủ Đức. Các đơn vị đối tác trong và ngoài nước cùng đông đảo người dân Thành phố cũng có mặt tại sự kiện.</p><p><em>Chú thích ảnh trong nguồn: Các đại biểu thực hiện nghi thức khánh thành tuyến Metro số 1. Ảnh: VGP/Vũ Phong.</em></p><p>Nguồn: <a href=\"https://tphcm.chinhphu.vn/tphcm-khanh-thanh-tuyen-metro-so-1-khoi-nguon-cho-su-phat-trien-giao-thong-do-thi-hien-dai-101250309104036732.htm\">Chinhphu.vn</a>.</p>"
+            },
+            "diagnostics": {
+                "response_id": "resp_0c9a0d18725c2af9016ac34fb02dc487d0ae0fea840716c635",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "post.content.v1",
+                "requested_groups": [
+                    "title",
+                    "content"
+                ],
+                "returned_fields": [
+                    "title",
+                    "content_html"
+                ],
+                "usage": {
+                    "prompt_tokens": 1385,
+                    "completion_tokens": 408,
+                    "total_tokens": 1793
+                }
+            },
+            "latency_ms": 20874
+        }
+    ],
+    "latency_ms": 20876,
+    "input_sha256": "7b7e569ae2ed661a7a121d420ddbd2d4b0ef19e8420ece62acda044a96797179",
+    "comparison_input_sha256": "419d282780b3fe66aca4f91b4295afb95efa64211fa11b5ff0fb4e42bd41b138",
+    "writing_profile_sha256": "1267aa8b907b63f12cd8c953c4a6664dbea3f3e7acabb12a28e64293053a7c96",
+    "brief_sha256": "80d0dd612cbf08513ee7a56ef78216aac524bcd87d79fe355a1242a1d2be86db",
+    "image_evaluation": {
+        "mode": "source_metadata_only",
+        "source_images": 1,
+        "approved_asset_regenerate": "not_evaluated",
+        "pixel_understanding": "not_evaluated"
+    },
+    "source_sha256": "fddb33d2d4434cafb56ce1941622ce6190ab9d5d744e17b316fcb0b0c3f7b954",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "TPHCM khánh thành tuyến Metro số 1 Bến Thành - Suối Tiên",
+        "content_html": "<p>09/03/2025 10:55 AM</p><p>Sáng 9/3/2025, tại Công viên 23/9, Quận 1, UBND TPHCM tổ chức lễ khánh thành tuyến đường sắt đô thị số 1 (Metro số 1) Bến Thành - Suối Tiên.</p><p>Chủ tịch UBND TPHCM nhấn mạnh, lễ khánh thành không chỉ là niềm vui, niềm tự hào của Thành phố mà còn mở ra một chương mới trên hành trình phát triển giao thông đô thị hiện đại.</p><p>Tham dự buổi lễ có đại diện Chính phủ Nhật Bản; lãnh đạo, nguyên lãnh đạo Đảng và Nhà nước; lãnh đạo các bộ, ban, ngành Trung ương; lãnh đạo, nguyên lãnh đạo TPHCM qua các thời kỳ; lãnh đạo các sở, ban, ngành, quận, huyện và thành phố Thủ Đức. Các đơn vị đối tác trong và ngoài nước cùng đông đảo người dân Thành phố cũng có mặt tại sự kiện.</p><p><em>Chú thích ảnh trong nguồn: Các đại biểu thực hiện nghi thức khánh thành tuyến Metro số 1. Ảnh: VGP/Vũ Phong.</em></p><p>Nguồn: <a href=\"https://tphcm.chinhphu.vn/tphcm-khanh-thanh-tuyen-metro-so-1-khoi-nguon-cho-su-phat-trien-giao-thong-do-thi-hien-dai-101250309104036732.htm\">Chinhphu.vn</a>.</p>"
+    },
+    "total_tokens": 1793
+}

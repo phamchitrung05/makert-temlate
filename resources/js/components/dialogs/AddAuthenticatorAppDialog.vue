@@ -1,5 +1,14 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: AddAuthenticatorAppDialog dùng khung dialog chung.
+  CÁC HÀM/METHOD TRONG FILE: formSubmit, resetAuthCode.
+  INPUT/OUTPUT CỦA CLASS (tổng thể): props/model và thao tác UI -> sự kiện của
+  caller; header/footer cố định, content cuộn qua AppDialogLayout.
+  =====================================================================
+-->
 <script setup>
-import themeselectionQr from '@images/pages/themeselection-qr.png'
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
+import { useId } from 'vue'
 
 const props = defineProps({
   authCode: {
@@ -16,6 +25,10 @@ const emit = defineEmits([
   'update:isDialogVisible',
   'submit',
 ])
+
+const dialogFormId = useId()
+
+import themeselectionQr from '@images/pages/themeselection-qr.png'
 
 const authCode = ref(structuredClone(toRaw(props.authCode)))
 
@@ -34,19 +47,19 @@ const resetAuthCode = () => {
 
 <template>
   <VDialog
+    scrollable
     :width="$vuetify.display.smAndDown ? 'auto' : 900"
     :model-value="props.isDialogVisible"
     @update:model-value="(val) => $emit('update:isDialogVisible', val)"
   >
-    <!-- Dialog close btn -->
-    <DialogCloseBtn @click="$emit('update:isDialogVisible', false)" />
+    <AppDialogLayout @close="$emit('update:isDialogVisible', false)">
+      <template #header>
+        <VCardItem>
+          <VCardTitle>Add Authenticator App</VCardTitle>
+        </VCardItem>
+      </template>
 
-    <VCard class="pa-2 pa-sm-10">
       <VCardText>
-        <!-- 👉 Title -->
-        <h4 class="text-h4 text-center mb-6">
-          Add Authenticator App
-        </h4>
         <h5 class="text-h5 mb-2">
           Authenticator Apps
         </h5>
@@ -69,7 +82,10 @@ const resetAuthCode = () => {
           variant="tonal"
           color="warning"
         />
-        <VForm @submit.prevent="() => {}">
+        <VForm
+          :id="dialogFormId"
+          @submit.prevent="formSubmit"
+        >
           <AppTextField
             v-model="authCode"
             name="auth-code"
@@ -77,30 +93,31 @@ const resetAuthCode = () => {
             placeholder="123 456"
             class="mt-4 mb-6"
           />
-
-          <div class="d-flex justify-end flex-wrap gap-4">
-            <VBtn
-              color="secondary"
-              variant="tonal"
-              @click="resetAuthCode"
-            >
-              Cancel
-            </VBtn>
-
-            <VBtn
-              type="submit"
-              @click="formSubmit"
-            >
-              Continue
-              <VIcon
-                end
-                icon="tabler-arrow-right"
-                class="flip-in-rtl"
-              />
-            </VBtn>
-          </div>
         </VForm>
       </VCardText>
-    </VCard>
+      <template #footer>
+        <VCardActions class="justify-end">
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            @click="resetAuthCode"
+          >
+            Cancel
+          </VBtn>
+          <VBtn
+            variant="flat"
+            :form="dialogFormId"
+            type="submit"
+          >
+            Continue
+            <VIcon
+              end
+              icon="tabler-arrow-right"
+              class="flip-in-rtl"
+            />
+          </VBtn>
+        </VCardActions>
+      </template>
+    </AppDialogLayout>
   </VDialog>
 </template>

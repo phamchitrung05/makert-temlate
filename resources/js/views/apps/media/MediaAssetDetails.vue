@@ -1,5 +1,6 @@
 <!--
   =====================================================================
+  Header/footer cố định qua AppDialogLayout; chỉ content ở giữa được cuộn.
   CHỨC NĂNG FILE: Hiển thị chi tiết một file trong Media Library
   =====================================================================
 
@@ -17,6 +18,7 @@
   =====================================================================
 -->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 /* eslint-disable camelcase -- Laravel API fields preserve snake_case contract. */
 import { computed, reactive, watch } from 'vue'
 
@@ -84,17 +86,21 @@ const formatDate = value => {
 
 <template>
   <VDialog
+    scrollable
     max-width="680"
     :model-value="props.modelValue"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <DialogCloseBtn @click="emit('update:modelValue', false)" />
-
-    <VCard v-if="props.asset">
-      <VCardItem>
-        <VCardTitle>{{ props.asset.title }}</VCardTitle>
-        <VCardSubtitle>{{ file.original_name || file.file_name || 'File metadata' }}</VCardSubtitle>
-      </VCardItem>
+    <AppDialogLayout
+      v-if="props.asset"
+      @close="emit('update:modelValue', false)"
+    >
+      <template #header>
+        <VCardItem>
+          <VCardTitle>{{ props.asset.title }}</VCardTitle>
+          <VCardSubtitle>{{ file.original_name || file.file_name || 'File metadata' }}</VCardSubtitle>
+        </VCardItem>
+      </template>
 
       <VCardText>
         <VForm @submit.prevent="submit">
@@ -172,22 +178,25 @@ const formatDate = value => {
         </VAlert>
       </VCardText>
 
-      <VCardActions class="justify-end">
-        <VBtn
-          variant="tonal"
-          :disabled="props.loading"
-          @click="emit('update:modelValue', false)"
-        >
-          Close
-        </VBtn>
-        <VBtn
-          color="primary"
-          :loading="props.loading"
-          @click="submit"
-        >
-          Save
-        </VBtn>
-      </VCardActions>
-    </VCard>
+      <template #footer>
+        <VCardActions class="justify-end">
+          <VBtn
+            variant="tonal"
+            :disabled="props.loading"
+            @click="emit('update:modelValue', false)"
+          >
+            Close
+          </VBtn>
+          <VBtn
+            variant="flat"
+            color="primary"
+            :loading="props.loading"
+            @click="submit"
+          >
+            Save
+          </VBtn>
+        </VCardActions>
+      </template>
+    </AppDialogLayout>
   </VDialog>
 </template>

@@ -13,12 +13,13 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+use Tests\ArticlePipelineFixture;
 use Tests\TestCase;
 use Tests\UsesIsolatedDatabase;
 
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Kiểm Settings/default snapshot và nhánh baseline một lượt có chọn field.
+ * CHỨC NĂNG FILE: Kiểm Settings/default snapshot, pipeline ba bước và chọn field riêng.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE:
  * - setUp().
@@ -55,7 +56,6 @@ final class AiContentSettingsApiTest extends TestCase
     {
         parent::setUp();
         // Fixtures một lượt kiểm riêng baseline được giữ để so sánh rollout.
-        config()->set('ai-content.pipeline', 'single_step');
         config()->set('queue.default', 'database');
         $this->useIsolatedDatabase();
         $this->seed(RolePermissionSeeder::class);
@@ -183,23 +183,24 @@ final class AiContentSettingsApiTest extends TestCase
         $this->withToken($token)->putJson('/api/admin/settings/ai/settings', [
             'min_word_count' => 1000, 'default_system_prompt' => 'Thiết lập thay đổi sau khi xếp hàng.', 'auto_seo' => true,
         ])->assertOk();
-        Http::fake(['https://gateway.example/v1/chat/completions' => Http::response(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => json_encode([
+        Http::fake(['https://gateway.example/v1/chat/completions' => fn ($request) => Http::response(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => json_encode(ArticlePipelineFixture::httpOutput($request, [
             'title' => 'Bài viết mới', 'content_html' => '<p>Nội dung.</p>', 'seo_title' => ['value' => 'SEO cần bị bỏ'], 'focus_keyword' => ['keyword'],
-        ])]]]])]);
+        ]))]]]])]);
         (new ProcessAiImportJob($id))->handle(app(ArticleImportService::class));
         $run->refresh();
         $this->assertSame('ready', $run->status);
         $this->assertArrayNotHasKey('seo_title', $run->result_json['draft']);
         $this->assertArrayNotHasKey('focus_keyword', $run->result_json['draft']);
+        $this->assertSame(800, $run->input_json['ai_connection']['min_word_count']);
+        Http::assertSentCount(3);
         Http::assertSent(function ($request): bool {
-            $system = $request['messages'][0]['content'];
             $user = json_decode($request['messages'][1]['content'], true);
 
             return $request['model'] === 'text' && $request['temperature'] === 0.6
-                && str_contains($system, 'Luôn dùng cách viết đơn giản.') && str_contains($system, 'at least 800 words')
-                && ! str_contains($system, 'Thiết lập thay đổi') && str_contains($system, 'Do not generate focus_keyword')
-                && str_contains($system, 'additional_instructions explicitly request a different length')
-                && $user['additional_instructions'] === 'Viết khoảng 200 từ và giữ nguyên thuật ngữ kỹ thuật.';
+                && $user['input']['brief']['website_instructions'] === 'Luôn dùng cách viết đơn giản.'
+                && $user['input']['brief']['requested_fields'] === ['title', 'content']
+                && str_starts_with($user['input']['brief']['additional_instructions'], 'Viết khoảng 200 từ và giữ nguyên thuật ngữ kỹ thuật.')
+                && isset($user['input']['link_requirements']);
         });
         Queue::assertNotPushed(ProcessAiImageGenerationJob::class);
     }
@@ -357,26 +358,27 @@ final class AiContentSettingsApiTest extends TestCase
         ])->assertOk();
         $output = ['title' => 'Mới', 'content_html' => '<p>Nội dung.</p>'];
         Http::fake([
-            'https://openai.example/v1/chat/completions' => Http::response(['choices' => [[
-                'finish_reason' => 'stop', 'message' => ['content' => json_encode($output)],
+            'https://openai.example/v1/chat/completions' => fn ($request) => Http::response(['choices' => [[
+                'finish_reason' => 'stop', 'message' => ['content' => json_encode(ArticlePipelineFixture::httpOutput($request, $output))],
             ]]]),
-            'https://gemini.example/v1beta/*' => Http::response(['candidates' => [[
-                'finishReason' => 'STOP', 'content' => ['parts' => [['text' => json_encode($output)]]],
+            'https://gemini.example/v1beta/*' => fn ($request) => Http::response(['candidates' => [[
+                'finishReason' => 'STOP', 'content' => ['parts' => [['text' => json_encode(ArticlePipelineFixture::httpOutput($request, $output))]]],
             ]]]),
-            'https://custom.example/generate' => Http::response($output),
+            'https://custom.example/generate' => fn ($request) => Http::response(ArticlePipelineFixture::httpOutput($request, $output)),
         ]);
         foreach (['openai', 'gemini', 'http-json'] as $provider) {
             $id = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
                 'provider' => $provider, 'model' => 'env-text', 'text' => 'Nguồn cho provider '.$provider,
+                'writing_brief' => ['length' => 'Khoảng 350 từ, tránh kéo dài hoặc lặp ý'],
             ])->assertStatus(202)->json('data.job_id');
             (new ProcessAiImportJob($id))->handle(app(ArticleImportService::class));
             $this->assertSame('ready', AiImport::findOrFail($id)->status);
         }
-        Http::assertSentCount(3);
+        Http::assertSentCount(9);
         foreach (Http::recorded() as [$request]) {
-            $system = $request['messages'][0]['content'] ?? $request['contents'][0]['parts'][0]['text'] ?? $request['input']['instructions'];
-            $this->assertStringContainsString('Dùng các câu ngắn.', $system);
-            $this->assertStringContainsString('at least 350 words', $system);
+            $context = ArticlePipelineFixture::httpContext($request)['input'];
+            $this->assertSame('Dùng các câu ngắn.', $context['brief']['website_instructions']);
+            $this->assertSame('Khoảng 350 từ, tránh kéo dài hoặc lặp ý', $context['brief']['length']);
             $this->assertSame(0.9, $request['temperature'] ?? $request['generationConfig']['temperature']);
         }
     }

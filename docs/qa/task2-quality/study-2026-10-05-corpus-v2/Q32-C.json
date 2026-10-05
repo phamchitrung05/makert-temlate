@@ -1,0 +1,214 @@
+{
+    "arm": "C",
+    "status": "failed",
+    "error_code": "AI_QUALITY_GROUNDING",
+    "final": null,
+    "quality_checks": [],
+    "cost": null,
+    "diagnostics": {
+        "stage": "validate",
+        "validation_errors": [
+            {
+                "group": "content",
+                "field": "content_html",
+                "reason": "important_number_missing"
+            }
+        ]
+    },
+    "calls": [
+        {
+            "task": "article.analysis-plan",
+            "output": {
+                "knowledge": {
+                    "facts": [
+                        {
+                            "id": "F01",
+                            "claim": "Theo nguồn, Hội An được vinh danh là “Điểm đến thành phố văn hóa hàng đầu châu Á 2022” tại lễ trao Giải thưởng Du lịch Thế giới lần thứ 29 dành cho châu Á và châu Đại Dương vào tháng 9.",
+                            "source_block_ids": [
+                                "S001"
+                            ],
+                            "evidence": "When Hoi An was named 'Asia's Leading Cultural City Destination 2022’ at the 29th World Travel Awards (Asia & Oceania) in September, it was no surprise.",
+                            "important": true
+                        },
+                        {
+                            "id": "F02",
+                            "claim": "Nguồn cho biết đây là lần thứ ba Hội An giành danh hiệu này, vượt qua các đề cử gồm Seoul (Hàn Quốc) và Kyoto (Nhật Bản).",
+                            "source_block_ids": [
+                                "S001"
+                            ],
+                            "evidence": "The charming yellow town, with its rich history and varied tourism offerings, beat nominees including Seoul (South Korea) and Kyoto (Japan) to take the title − for the third time.",
+                            "important": true
+                        },
+                        {
+                            "id": "F03",
+                            "claim": "Nguồn giới thiệu Hội An là di sản thế giới UNESCO, cho biết nơi đây đã là thương cảng từ thế kỷ II sau Công nguyên và thu hút thương nhân khắp thế giới trong thời kỳ hưng thịnh ở thế kỷ XVI.",
+                            "source_block_ids": [
+                                "S002"
+                            ],
+                            "evidence": "The UNESCO World Heritage site was a trading port as far back as the second century A.D., and it drew together traders from across the world during its 16th century heyday.",
+                            "important": true
+                        },
+                        {
+                            "id": "F04",
+                            "claim": "Hội An được mô tả là nơi văn hóa bản địa giao thoa với các ảnh hưởng văn hóa từ châu Âu, Trung Quốc, Nhật Bản và những nơi khác.",
+                            "source_block_ids": [
+                                "S002"
+                            ],
+                            "evidence": "It was a meeting place where indigenous cultures mixed with cultural influences from Europe, China and Japan, among others.",
+                            "important": true
+                        },
+                        {
+                            "id": "F05",
+                            "claim": "Bên cạnh cảnh sắc, bãi biển và vị trí gần các điểm đến khác, nguồn nhấn mạnh giá trị văn hóa là yếu tố để lại ấn tượng nổi bật ở Hội An.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "While today’s travellers visit Hoi An for many reasons – such as its poetic scenic, beaches, and proximity to other destinations – it’s this cultural value that makes the greatest impression.",
+                            "important": true
+                        },
+                        {
+                            "id": "F06",
+                            "claim": "Nguồn gợi mở trải nghiệm văn hóa qua di tích Mỹ Sơn, bảo tàng, các buổi biểu diễn trực tiếp và những chuyến tham quan, nhưng không cung cấp chi tiết từng hoạt động trong trích đoạn.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "From ancient My Son Sanctuary ruins and fascinating museums to stunning live performances and authentic excursions, Hoi An is an experience no culture-lover should miss.",
+                            "important": true
+                        }
+                    ],
+                    "terms": [
+                        "Hội An",
+                        "Điểm đến thành phố văn hóa hàng đầu châu Á 2022",
+                        "World Travel Awards — Giải thưởng Du lịch Thế giới",
+                        "UNESCO",
+                        "Thương cảng",
+                        "Giao thoa văn hóa",
+                        "Mỹ Sơn"
+                    ],
+                    "uncertainties": [
+                        "Nguồn không cung cấp ngày xuất bản; không diễn đạt giải thưởng năm 2022 như một tin mới hoặc danh hiệu hiện tại.",
+                        "Mốc thương cảng từ thế kỷ II sau Công nguyên là khẳng định của nguồn, chưa được kiểm chứng độc lập trong dữ liệu cung cấp; khi viết cần giữ cách dẫn “theo nguồn”.",
+                        "S004 chỉ báo hiệu danh sách bảy hoạt động, nhưng trích đoạn không chứa danh sách đó; không đặt tiêu đề hứa hẹn bảy hoạt động hoặc tự bổ sung các mục còn thiếu.",
+                        "Trích đoạn không nêu tên bảo tàng, chương trình biểu diễn, tuyến tham quan, giá vé, giờ mở cửa hay điều kiện tham gia; không suy diễn các chi tiết này.",
+                        "Việc nhắc đến Mỹ Sơn không đủ để khẳng định di tích nằm trong Hội An; chỉ trình bày như một trải nghiệm được nguồn gợi mở."
+                    ]
+                },
+                "writing_plan": {
+                    "article_type": "Bài giới thiệu ngắn về văn hóa điểm đến",
+                    "audience": "Người đọc giới thiệu văn hóa điểm đến",
+                    "angle": "Giải thích sức hút văn hóa của Hội An qua danh hiệu năm 2022 và lịch sử giao thương, giao thoa văn hóa; chỉ gợi mở các trải nghiệm có trong trích đoạn, không triển khai danh sách bảy hoạt động.",
+                    "outline": [
+                        "Đặt tiêu đề ngắn nhấn mạnh dấu ấn văn hóa Hội An, không hứa hẹn danh sách bảy điều nên làm.",
+                        "Đoạn mở: nêu ngay danh hiệu văn hóa năm 2022 tại lễ trao giải lần thứ 29 vào tháng 9; giữ thông tin lần thứ ba giành giải và các đề cử Seoul, Kyoto. Không dùng cách diễn đạt mang tính cập nhật hiện tại.",
+                        "Đoạn tiếp: giới thiệu di sản thế giới UNESCO và lịch sử thương cảng theo nguồn, giữ mốc thế kỷ II sau Công nguyên và thời kỳ hưng thịnh thế kỷ XVI; giải thích sự giao thoa giữa văn hóa bản địa với ảnh hưởng từ châu Âu, Trung Quốc, Nhật Bản.",
+                        "Đoạn kết: chuyển từ cảnh sắc và bãi biển sang giá trị văn hóa; nhắc Mỹ Sơn, bảo tàng, biểu diễn trực tiếp và các chuyến tham quan ở mức khái quát. Dẫn nguồn bằng liên kết https://www.vietnam.travel/things-to-do/7-things-to-do-hoi-an; không thêm lịch trình, thông tin thực dụng hay trải nghiệm cá nhân."
+                    ],
+                    "coverage_fact_ids": [
+                        "F01",
+                        "F02",
+                        "F03",
+                        "F04",
+                        "F05",
+                        "F06"
+                    ]
+                }
+            },
+            "diagnostics": {
+                "response_id": "resp_0e9d9745fab142aa016ac352922f9487d084022156b571d689",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.analysis-plan.v1",
+                "usage": {
+                    "prompt_tokens": 3202,
+                    "completion_tokens": 1498,
+                    "total_tokens": 4700,
+                    "reasoning_tokens": 92
+                }
+            },
+            "latency_ms": 61424
+        },
+        {
+            "task": "article.writer",
+            "output": {
+                "draft": {
+                    "title": "Hội An: dấu ấn văn hóa từ một thương cảng giao thoa",
+                    "content_html": "<p>Tháng 9 năm 2022, Hội An được vinh danh là “Điểm đến thành phố văn hóa hàng đầu châu Á 2022” tại lễ trao Giải thưởng Du lịch Thế giới (World Travel Awards) lần thứ 29 dành cho châu Á và châu Đại Dương. Theo <a href=\"https://www.vietnam.travel/things-to-do/7-things-to-do-hoi-an\">bài giới thiệu trên Vietnam Travel</a>, đây là lần thứ ba Hội An giành danh hiệu này, vượt qua các đề cử gồm Seoul (Hàn Quốc) và Kyoto (Nhật Bản).</p><p>Sức hút văn hóa ấy gắn với lịch sử giao thương lâu đời. Bài viết giới thiệu Hội An là di sản thế giới UNESCO và cho biết nơi đây đã là thương cảng từ thế kỷ II sau Công nguyên. Đến thời kỳ hưng thịnh ở thế kỷ XVI, Hội An thu hút thương nhân từ khắp thế giới, trở thành nơi văn hóa bản địa giao thoa với những ảnh hưởng từ châu Âu, Trung Quốc, Nhật Bản và nhiều nơi khác.</p><p>Cảnh sắc nên thơ, bãi biển và vị trí gần các điểm đến khác đều là lý do để du khách tìm đến Hội An. Tuy vậy, bài viết nhấn mạnh giá trị văn hóa mới là yếu tố để lại ấn tượng nổi bật. Những trải nghiệm được gợi mở gồm khám phá di tích Mỹ Sơn, tìm hiểu các bảo tàng, thưởng thức biểu diễn trực tiếp và tham gia những chuyến tham quan. Trích đoạn chỉ giới thiệu các hướng khám phá này ở mức khái quát, chưa cung cấp chi tiết cho từng hoạt động.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04",
+                    "F05",
+                    "F06"
+                ],
+                "used_asset_ids": []
+            },
+            "diagnostics": {
+                "response_id": "resp_008f30ef4360a5c4016ac352ceb85487d18c4ea69d6b0582e4",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.writer.v1",
+                "usage": {
+                    "prompt_tokens": 3667,
+                    "completion_tokens": 431,
+                    "total_tokens": 4098
+                }
+            },
+            "latency_ms": 21140
+        },
+        {
+            "task": "article.editor",
+            "output": {
+                "final": {
+                    "title": "Hội An: sức hút văn hóa từ lịch sử giao thương",
+                    "content_html": "<p>Tháng 9 năm 2022, Hội An được vinh danh là “Điểm đến thành phố văn hóa hàng đầu châu Á 2022” tại lễ trao Giải thưởng Du lịch Thế giới (World Travel Awards) lần thứ 29 dành cho châu Á và châu Đại Dương. Theo <a href=\"https://www.vietnam.travel/things-to-do/7-things-to-do-hoi-an\">bài giới thiệu trên Vietnam Travel</a>, đây là lần thứ ba Hội An giành danh hiệu này, vượt qua các đề cử gồm Seoul (Hàn Quốc) và Kyoto (Nhật Bản).</p><p>Sức hút văn hóa ấy gắn với lịch sử giao thương lâu đời. Bài viết giới thiệu Hội An là di sản thế giới UNESCO và cho biết nơi đây đã là thương cảng từ thế kỷ II sau Công nguyên. Trong thời kỳ hưng thịnh ở thế kỷ XVI, Hội An thu hút thương nhân từ khắp thế giới. Nơi đây trở thành điểm gặp gỡ của văn hóa bản địa với những ảnh hưởng từ châu Âu, Trung Quốc, Nhật Bản và nhiều nơi khác.</p><p>Cảnh sắc nên thơ, bãi biển và vị trí gần các điểm đến khác đều là lý do để du khách tìm đến Hội An. Tuy vậy, bài viết nhấn mạnh giá trị văn hóa là yếu tố để lại ấn tượng sâu sắc nhất. Di tích Mỹ Sơn, các bảo tàng, những buổi biểu diễn trực tiếp và các chuyến tham quan là những trải nghiệm được nguồn gợi mở cho người yêu văn hóa.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04",
+                    "F05",
+                    "F06"
+                ],
+                "issues": []
+            },
+            "diagnostics": {
+                "response_id": "resp_046156c643550442016ac352e3aad087d2ac7d417880ca0afe",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.editor.v1",
+                "usage": {
+                    "prompt_tokens": 4098,
+                    "completion_tokens": 449,
+                    "total_tokens": 4547,
+                    "reasoning_tokens": 46
+                }
+            },
+            "latency_ms": 21835
+        }
+    ],
+    "latency_ms": 104408,
+    "input_sha256": "68cd7802ec0db7f7ac1a4d7a2de06d1f4a838d12a3d3a7fb9a4faa5a231add58",
+    "comparison_input_sha256": "c7cc6c3a74a8654108e16433f3315020c8cfa82f23c13bf96c9eb81ef99096ef",
+    "writing_profile_sha256": "1267aa8b907b63f12cd8c953c4a6664dbea3f3e7acabb12a28e64293053a7c96",
+    "brief_sha256": "5b23c9e7f19a65fdad4d662e2ae74bc4a3e2ebf9c3fc2dd9f75eb6ba772bd6b9",
+    "image_evaluation": {
+        "mode": "source_metadata_only",
+        "source_images": 1,
+        "approved_asset_regenerate": "not_evaluated",
+        "pixel_understanding": "not_evaluated"
+    },
+    "source_sha256": "c87ee01abc11461b3709a4fa6502b5259ecf029f528c1b8f864ba3cd3b176b47",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Hội An: sức hút văn hóa từ lịch sử giao thương",
+        "content_html": "<p>Tháng 9 năm 2022, Hội An được vinh danh là “Điểm đến thành phố văn hóa hàng đầu châu Á 2022” tại lễ trao Giải thưởng Du lịch Thế giới (World Travel Awards) lần thứ 29 dành cho châu Á và châu Đại Dương. Theo <a href=\"https://www.vietnam.travel/things-to-do/7-things-to-do-hoi-an\">bài giới thiệu trên Vietnam Travel</a>, đây là lần thứ ba Hội An giành danh hiệu này, vượt qua các đề cử gồm Seoul (Hàn Quốc) và Kyoto (Nhật Bản).</p><p>Sức hút văn hóa ấy gắn với lịch sử giao thương lâu đời. Bài viết giới thiệu Hội An là di sản thế giới UNESCO và cho biết nơi đây đã là thương cảng từ thế kỷ II sau Công nguyên. Trong thời kỳ hưng thịnh ở thế kỷ XVI, Hội An thu hút thương nhân từ khắp thế giới. Nơi đây trở thành điểm gặp gỡ của văn hóa bản địa với những ảnh hưởng từ châu Âu, Trung Quốc, Nhật Bản và nhiều nơi khác.</p><p>Cảnh sắc nên thơ, bãi biển và vị trí gần các điểm đến khác đều là lý do để du khách tìm đến Hội An. Tuy vậy, bài viết nhấn mạnh giá trị văn hóa là yếu tố để lại ấn tượng sâu sắc nhất. Di tích Mỹ Sơn, các bảo tàng, những buổi biểu diễn trực tiếp và các chuyến tham quan là những trải nghiệm được nguồn gợi mở cho người yêu văn hóa.</p>"
+    },
+    "total_tokens": 13345
+}

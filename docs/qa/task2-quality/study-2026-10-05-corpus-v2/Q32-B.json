@@ -1,0 +1,96 @@
+{
+    "arm": "B",
+    "status": "ready",
+    "error_code": null,
+    "final": {
+        "title": "Hội An: Điểm đến văn hóa giàu sức hút của châu Á",
+        "content_html": "<p>Vào tháng 9 năm 2022, Hội An được vinh danh là “Điểm đến thành phố văn hóa hàng đầu châu Á 2022” tại lễ trao Giải thưởng Du lịch Thế giới lần thứ 29 dành cho khu vực châu Á và châu Đại Dương. Với những nếp nhà vàng duyên dáng, bề dày lịch sử và các trải nghiệm du lịch đa dạng, Hội An vượt qua những ứng viên như Seoul (Hàn Quốc) và Kyoto (Nhật Bản) để lần thứ ba giành danh hiệu này.</p><p>Được UNESCO công nhận là Di sản Thế giới, Hội An từng là thương cảng từ thế kỷ II sau Công nguyên. Đến thời kỳ hưng thịnh vào thế kỷ XVI, nơi đây thu hút thương nhân từ khắp thế giới, trở thành điểm giao thoa giữa văn hóa bản địa và những ảnh hưởng văn hóa từ châu Âu, Trung Quốc, Nhật Bản cùng nhiều nơi khác.</p><p>Ngày nay, du khách đến Hội An vì cảnh sắc thơ mộng, những bãi biển và vị trí thuận tiện để khám phá các điểm đến lân cận. Tuy nhiên, giá trị văn hóa vẫn là điều để lại dấu ấn sâu đậm nhất. Từ những phế tích cổ tại Thánh địa Mỹ Sơn, các bảo tàng hấp dẫn đến những chương trình biểu diễn trực tiếp ấn tượng và các chuyến khám phá đời sống địa phương chân thực, Hội An mang đến nhiều trải nghiệm đáng khám phá cho người yêu văn hóa.</p><p>Đó cũng là nền tảng cho bảy gợi ý trải nghiệm tại Hội An được giới thiệu trong bài viết gốc.</p>"
+    },
+    "quality_checks": [
+        {
+            "check": "copy",
+            "status": "pass"
+        },
+        {
+            "check": "similarity",
+            "status": "pass",
+            "metric": 0.013,
+            "reason": "lexical_metric_not_style_score"
+        },
+        {
+            "check": "language",
+            "status": "pass",
+            "detected": "vi"
+        },
+        {
+            "check": "source_code_links",
+            "status": "pass"
+        },
+        {
+            "check": "important_numbers",
+            "status": "pass"
+        },
+        {
+            "check": "unanchored_numbers",
+            "status": "warning",
+            "count": 1,
+            "reason": "requires_editor_review"
+        },
+        {
+            "check": "semantic_grounding",
+            "status": "undetermined",
+            "reason": "source_anchors_are_not_external_fact_verification"
+        }
+    ],
+    "cost": null,
+    "calls": [
+        {
+            "task": "single_step",
+            "output": {
+                "title": "Hội An: Điểm đến văn hóa giàu sức hút của châu Á",
+                "content_html": "<p>Vào tháng 9 năm 2022, Hội An được vinh danh là “Điểm đến thành phố văn hóa hàng đầu châu Á 2022” tại lễ trao Giải thưởng Du lịch Thế giới lần thứ 29 dành cho khu vực châu Á và châu Đại Dương. Với những nếp nhà vàng duyên dáng, bề dày lịch sử và các trải nghiệm du lịch đa dạng, Hội An vượt qua những ứng viên như Seoul (Hàn Quốc) và Kyoto (Nhật Bản) để lần thứ ba giành danh hiệu này.</p><p>Được UNESCO công nhận là Di sản Thế giới, Hội An từng là thương cảng từ thế kỷ II sau Công nguyên. Đến thời kỳ hưng thịnh vào thế kỷ XVI, nơi đây thu hút thương nhân từ khắp thế giới, trở thành điểm giao thoa giữa văn hóa bản địa và những ảnh hưởng văn hóa từ châu Âu, Trung Quốc, Nhật Bản cùng nhiều nơi khác.</p><p>Ngày nay, du khách đến Hội An vì cảnh sắc thơ mộng, những bãi biển và vị trí thuận tiện để khám phá các điểm đến lân cận. Tuy nhiên, giá trị văn hóa vẫn là điều để lại dấu ấn sâu đậm nhất. Từ những phế tích cổ tại Thánh địa Mỹ Sơn, các bảo tàng hấp dẫn đến những chương trình biểu diễn trực tiếp ấn tượng và các chuyến khám phá đời sống địa phương chân thực, Hội An mang đến nhiều trải nghiệm đáng khám phá cho người yêu văn hóa.</p><p>Đó cũng là nền tảng cho bảy gợi ý trải nghiệm tại Hội An được giới thiệu trong bài viết gốc.</p>",
+                "content": "<p>Vào tháng 9 năm 2022, Hội An được vinh danh là “Điểm đến thành phố văn hóa hàng đầu châu Á 2022” tại lễ trao Giải thưởng Du lịch Thế giới lần thứ 29 dành cho khu vực châu Á và châu Đại Dương. Với những nếp nhà vàng duyên dáng, bề dày lịch sử và các trải nghiệm du lịch đa dạng, Hội An vượt qua những ứng viên như Seoul (Hàn Quốc) và Kyoto (Nhật Bản) để lần thứ ba giành danh hiệu này.</p><p>Được UNESCO công nhận là Di sản Thế giới, Hội An từng là thương cảng từ thế kỷ II sau Công nguyên. Đến thời kỳ hưng thịnh vào thế kỷ XVI, nơi đây thu hút thương nhân từ khắp thế giới, trở thành điểm giao thoa giữa văn hóa bản địa và những ảnh hưởng văn hóa từ châu Âu, Trung Quốc, Nhật Bản cùng nhiều nơi khác.</p><p>Ngày nay, du khách đến Hội An vì cảnh sắc thơ mộng, những bãi biển và vị trí thuận tiện để khám phá các điểm đến lân cận. Tuy nhiên, giá trị văn hóa vẫn là điều để lại dấu ấn sâu đậm nhất. Từ những phế tích cổ tại Thánh địa Mỹ Sơn, các bảo tàng hấp dẫn đến những chương trình biểu diễn trực tiếp ấn tượng và các chuyến khám phá đời sống địa phương chân thực, Hội An mang đến nhiều trải nghiệm đáng khám phá cho người yêu văn hóa.</p><p>Đó cũng là nền tảng cho bảy gợi ý trải nghiệm tại Hội An được giới thiệu trong bài viết gốc.</p>"
+            },
+            "diagnostics": {
+                "response_id": "resp_05946d32701dc420016ac3527db68c87d08b802107d1d9e34b",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "post.content.v1",
+                "requested_groups": [
+                    "title",
+                    "content"
+                ],
+                "returned_fields": [
+                    "title",
+                    "content_html"
+                ],
+                "usage": {
+                    "prompt_tokens": 1204,
+                    "completion_tokens": 400,
+                    "total_tokens": 1604
+                }
+            },
+            "latency_ms": 19337
+        }
+    ],
+    "latency_ms": 19340,
+    "input_sha256": "c0af6a3484abaa8b55ed36fd6239bf4c99dcd4570cf638e38235d1691bad0df0",
+    "comparison_input_sha256": "c7cc6c3a74a8654108e16433f3315020c8cfa82f23c13bf96c9eb81ef99096ef",
+    "writing_profile_sha256": "1267aa8b907b63f12cd8c953c4a6664dbea3f3e7acabb12a28e64293053a7c96",
+    "brief_sha256": "5b23c9e7f19a65fdad4d662e2ae74bc4a3e2ebf9c3fc2dd9f75eb6ba772bd6b9",
+    "image_evaluation": {
+        "mode": "source_metadata_only",
+        "source_images": 1,
+        "approved_asset_regenerate": "not_evaluated",
+        "pixel_understanding": "not_evaluated"
+    },
+    "source_sha256": "c87ee01abc11461b3709a4fa6502b5259ecf029f528c1b8f864ba3cd3b176b47",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Hội An: Điểm đến văn hóa giàu sức hút của châu Á",
+        "content_html": "<p>Vào tháng 9 năm 2022, Hội An được vinh danh là “Điểm đến thành phố văn hóa hàng đầu châu Á 2022” tại lễ trao Giải thưởng Du lịch Thế giới lần thứ 29 dành cho khu vực châu Á và châu Đại Dương. Với những nếp nhà vàng duyên dáng, bề dày lịch sử và các trải nghiệm du lịch đa dạng, Hội An vượt qua những ứng viên như Seoul (Hàn Quốc) và Kyoto (Nhật Bản) để lần thứ ba giành danh hiệu này.</p><p>Được UNESCO công nhận là Di sản Thế giới, Hội An từng là thương cảng từ thế kỷ II sau Công nguyên. Đến thời kỳ hưng thịnh vào thế kỷ XVI, nơi đây thu hút thương nhân từ khắp thế giới, trở thành điểm giao thoa giữa văn hóa bản địa và những ảnh hưởng văn hóa từ châu Âu, Trung Quốc, Nhật Bản cùng nhiều nơi khác.</p><p>Ngày nay, du khách đến Hội An vì cảnh sắc thơ mộng, những bãi biển và vị trí thuận tiện để khám phá các điểm đến lân cận. Tuy nhiên, giá trị văn hóa vẫn là điều để lại dấu ấn sâu đậm nhất. Từ những phế tích cổ tại Thánh địa Mỹ Sơn, các bảo tàng hấp dẫn đến những chương trình biểu diễn trực tiếp ấn tượng và các chuyến khám phá đời sống địa phương chân thực, Hội An mang đến nhiều trải nghiệm đáng khám phá cho người yêu văn hóa.</p><p>Đó cũng là nền tảng cho bảy gợi ý trải nghiệm tại Hội An được giới thiệu trong bài viết gốc.</p>"
+    },
+    "total_tokens": 1604
+}

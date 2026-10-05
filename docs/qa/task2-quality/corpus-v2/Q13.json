@@ -1,0 +1,114 @@
+{
+    "source_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/introduction.md",
+    "title": "Giải thích cho người mới",
+    "source_format": "html",
+    "version": "article.source.v1",
+    "content_html": "<hr>\n<h2>footer: false</h2>\n<h1>Introduction {#introduction}</h1>\n<p>:::info You are reading the documentation for Vue 3!</p>\n<ul>\n<li>Vue 2 support has ended on <strong>Dec 31, 2023</strong>. Learn more about <a href=\"https://v2.vuejs.org/eol/\">Vue 2 EOL</a>.</li>\n<li>Upgrading from Vue 2? Check out the <a href=\"https://v3-migration.vuejs.org/\">Migration Guide</a>.\n:::</li>\n</ul>\n\n\n<h2>What is Vue? {#what-is-vue}</h2>\n<p>Vue (pronounced /vjuː/, like <strong>view</strong>) is a JavaScript framework for building user interfaces. It builds on top of standard HTML, CSS, and JavaScript and provides a declarative, component-based programming model that helps you efficiently develop user interfaces of any complexity.</p>\n<p>Here is a minimal example:</p>\n\n<pre><code>import { createApp } from 'vue'\n\ncreateApp({\n  data() {\n    return {\n      count: 0\n    }\n  }\n}).mount('#app')\n</code></pre>\n\n<pre><code>import { createApp, ref } from 'vue'\n\ncreateApp({\n  setup() {\n    return {\n      count: ref(0)\n    }\n  }\n}).mount('#app')\n</code></pre>\n\n<pre><code>&lt;div id=\"app\"&gt;\n  &lt;button @click=\"count++\"&gt;\n    Count is: {{ count }}\n  &lt;/button&gt;\n&lt;/div&gt;\n</code></pre>\n<p><strong>Result</strong></p>\n\n\n<p>The above example demonstrates the two core features of Vue:</p>\n<ul>\n<li>\n<p><strong>Declarative Rendering</strong>: Vue extends standard HTML with a template syntax that allows us to declaratively describe HTML output based on JavaScript state.</p>\n</li>\n<li>\n<p><strong>Reactivity</strong>: Vue automatically tracks JavaScript state changes and efficiently updates the DOM when changes happen.</p>\n</li>\n</ul>\n<p>You may already have questions - don't worry. We will cover every little detail in the rest of the documentation. For now, please read along so you can have a high-level understanding of what Vue offers.</p>\n<p>:::tip Prerequisites\nThe rest of the documentation assumes basic familiarity with HTML, CSS, and JavaScript. If you are totally new to frontend development, it might not be the best idea to jump right into a framework as your first step - grasp the basics and then come back! You can check your knowledge level with these overviews for <a href=\"https://developer.mozilla.org/en-US/docs/Web/JavaScript/A_re-introduction_to_JavaScript\">JavaScript</a>, <a href=\"https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML\">HTML</a> and <a href=\"https://developer.mozilla.org/en-US/docs/Learn/CSS/First_steps\">CSS</a> if needed. Prior experience with other frameworks helps, but is not required.\n:::</p>",
+    "blocks": [
+        {
+            "id": "S001",
+            "type": "h2",
+            "text": "footer: false",
+            "html": "<h2>footer: false</h2>"
+        },
+        {
+            "id": "S002",
+            "type": "h1",
+            "text": "Introduction {#introduction}",
+            "html": "<h1>Introduction {#introduction}</h1>"
+        },
+        {
+            "id": "S003",
+            "type": "p",
+            "text": ":::info You are reading the documentation for Vue 3!",
+            "html": "<p>:::info You are reading the documentation for Vue 3!</p>"
+        },
+        {
+            "id": "S004",
+            "type": "li",
+            "text": "Vue 2 support has ended on Dec 31, 2023. Learn more about Vue 2 EOL.",
+            "html": "<li>Vue 2 support has ended on <strong>Dec 31, 2023</strong>. Learn more about <a href=\"https://v2.vuejs.org/eol/\">Vue 2 EOL</a>.</li>"
+        },
+        {
+            "id": "S005",
+            "type": "li",
+            "text": "Upgrading from Vue 2? Check out the Migration Guide.\n:::",
+            "html": "<li>Upgrading from Vue 2? Check out the <a href=\"https://v3-migration.vuejs.org/\">Migration Guide</a>.\n:::</li>"
+        },
+        {
+            "id": "S006",
+            "type": "h2",
+            "text": "What is Vue? {#what-is-vue}",
+            "html": "<h2>What is Vue? {#what-is-vue}</h2>"
+        },
+        {
+            "id": "S007",
+            "type": "p",
+            "text": "Vue (pronounced /vjuː/, like view) is a JavaScript framework for building user interfaces. It builds on top of standard HTML, CSS, and JavaScript and provides a declarative, component-based programming model that helps you efficiently develop user interfaces of any complexity.",
+            "html": "<p>Vue (pronounced /vjuː/, like <strong>view</strong>) is a JavaScript framework for building user interfaces. It builds on top of standard HTML, CSS, and JavaScript and provides a declarative, component-based programming model that helps you efficiently develop user interfaces of any complexity.</p>"
+        },
+        {
+            "id": "S008",
+            "type": "p",
+            "text": "Here is a minimal example:",
+            "html": "<p>Here is a minimal example:</p>"
+        },
+        {
+            "id": "S009",
+            "type": "pre",
+            "text": "import { createApp } from 'vue'\n\ncreateApp({\n  data() {\n    return {\n      count: 0\n    }\n  }\n}).mount('#app')",
+            "html": "<pre><code>import { createApp } from 'vue'\n\ncreateApp({\n  data() {\n    return {\n      count: 0\n    }\n  }\n}).mount('#app')\n</code></pre>"
+        },
+        {
+            "id": "S010",
+            "type": "pre",
+            "text": "import { createApp, ref } from 'vue'\n\ncreateApp({\n  setup() {\n    return {\n      count: ref(0)\n    }\n  }\n}).mount('#app')",
+            "html": "<pre><code>import { createApp, ref } from 'vue'\n\ncreateApp({\n  setup() {\n    return {\n      count: ref(0)\n    }\n  }\n}).mount('#app')\n</code></pre>"
+        },
+        {
+            "id": "S011",
+            "type": "pre",
+            "text": "<div id=\"app\">\n  <button @click=\"count++\">\n    Count is: {{ count }}\n  </button>\n</div>",
+            "html": "<pre><code>&lt;div id=\"app\"&gt;\n  &lt;button @click=\"count++\"&gt;\n    Count is: {{ count }}\n  &lt;/button&gt;\n&lt;/div&gt;\n</code></pre>"
+        },
+        {
+            "id": "S012",
+            "type": "p",
+            "text": "Result",
+            "html": "<p><strong>Result</strong></p>"
+        },
+        {
+            "id": "S013",
+            "type": "p",
+            "text": "The above example demonstrates the two core features of Vue:",
+            "html": "<p>The above example demonstrates the two core features of Vue:</p>"
+        },
+        {
+            "id": "S014",
+            "type": "li",
+            "text": "Declarative Rendering: Vue extends standard HTML with a template syntax that allows us to declaratively describe HTML output based on JavaScript state.",
+            "html": "<li>\n<p><strong>Declarative Rendering</strong>: Vue extends standard HTML with a template syntax that allows us to declaratively describe HTML output based on JavaScript state.</p>\n</li>"
+        },
+        {
+            "id": "S015",
+            "type": "li",
+            "text": "Reactivity: Vue automatically tracks JavaScript state changes and efficiently updates the DOM when changes happen.",
+            "html": "<li>\n<p><strong>Reactivity</strong>: Vue automatically tracks JavaScript state changes and efficiently updates the DOM when changes happen.</p>\n</li>"
+        },
+        {
+            "id": "S016",
+            "type": "p",
+            "text": "You may already have questions - don't worry. We will cover every little detail in the rest of the documentation. For now, please read along so you can have a high-level understanding of what Vue offers.",
+            "html": "<p>You may already have questions - don't worry. We will cover every little detail in the rest of the documentation. For now, please read along so you can have a high-level understanding of what Vue offers.</p>"
+        },
+        {
+            "id": "S017",
+            "type": "p",
+            "text": ":::tip Prerequisites\nThe rest of the documentation assumes basic familiarity with HTML, CSS, and JavaScript. If you are totally new to frontend development, it might not be the best idea to jump right into a framework as your first step - grasp the basics and then come back! You can check your knowledge level with these overviews for JavaScript, HTML and CSS if needed. Prior experience with other frameworks helps, but is not required.\n:::",
+            "html": "<p>:::tip Prerequisites\nThe rest of the documentation assumes basic familiarity with HTML, CSS, and JavaScript. If you are totally new to frontend development, it might not be the best idea to jump right into a framework as your first step - grasp the basics and then come back! You can check your knowledge level with these overviews for <a href=\"https://developer.mozilla.org/en-US/docs/Web/JavaScript/A_re-introduction_to_JavaScript\">JavaScript</a>, <a href=\"https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML\">HTML</a> and <a href=\"https://developer.mozilla.org/en-US/docs/Learn/CSS/First_steps\">CSS</a> if needed. Prior experience with other frameworks helps, but is not required.\n:::</p>"
+        }
+    ],
+    "source_images": [],
+    "fetched_at": "2026-10-04T17:47:28+00:00",
+    "hash": "d5c7deeda6aae23442bef5bd8fdebcb07e6ed77f84ffbb16b82ba7b4c55b3d83"
+}

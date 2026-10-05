@@ -1,0 +1,96 @@
+{
+    "arm": "B",
+    "status": "ready",
+    "error_code": null,
+    "final": {
+        "title": "Năm Du lịch quốc gia 2025 tại Huế: Bốn nhóm lễ hội với hơn 170 sự kiện",
+        "content_html": "<p>Năm Du lịch quốc gia 2025 với chủ đề “Huế - Kinh đô xưa, vận hội mới” và Festival Huế năm 2025 dự kiến tập trung vào bốn nhóm chương trình theo mùa, với hơn 170 sự kiện cấp quốc gia và cấp tỉnh.</p><p>Thông tin được Ban Tổ chức Năm Du lịch quốc gia công bố tại cuộc họp báo diễn ra sáng 31/12/2024 ở thành phố Huế. Theo kế hoạch, các hoạt động trong khuôn khổ Năm Du lịch quốc gia và Festival Huế năm 2025 gồm:</p><ul><li>Lễ hội mùa Xuân: “Xuân Cố đô”.</li><li>Lễ hội mùa Hạ: “Kinh thành tỏa sáng”.</li><li>Lễ hội mùa Thu: “Huế vào Thu”.</li><li>Lễ hội mùa Đông: “Mùa Đông xứ Huế”.</li></ul><p><em>Nguồn: <a href=\"https://baochinhphu.vn/nam-du-lich-quoc-gia-2025-hue-kinh-do-xua-van-hoi-moi-10224123113585751.htm\">Báo điện tử Chính phủ</a>, đăng lúc 14:57 ngày 31/12/2024.</em></p>"
+    },
+    "quality_checks": [
+        {
+            "check": "copy",
+            "status": "pass"
+        },
+        {
+            "check": "similarity",
+            "status": "pass",
+            "metric": 0.245,
+            "reason": "lexical_metric_not_style_score"
+        },
+        {
+            "check": "language",
+            "status": "pass",
+            "detected": "vi"
+        },
+        {
+            "check": "source_code_links",
+            "status": "pass"
+        },
+        {
+            "check": "important_numbers",
+            "status": "pass"
+        },
+        {
+            "check": "unanchored_numbers",
+            "status": "pass",
+            "count": 0,
+            "reason": "requires_editor_review"
+        },
+        {
+            "check": "semantic_grounding",
+            "status": "undetermined",
+            "reason": "source_anchors_are_not_external_fact_verification"
+        }
+    ],
+    "cost": null,
+    "calls": [
+        {
+            "task": "single_step",
+            "output": {
+                "title": "Năm Du lịch quốc gia 2025 tại Huế: Bốn nhóm lễ hội với hơn 170 sự kiện",
+                "content_html": "<p>Năm Du lịch quốc gia 2025 với chủ đề “Huế - Kinh đô xưa, vận hội mới” và Festival Huế năm 2025 dự kiến tập trung vào bốn nhóm chương trình theo mùa, với hơn 170 sự kiện cấp quốc gia và cấp tỉnh.</p><p>Thông tin được Ban Tổ chức Năm Du lịch quốc gia công bố tại cuộc họp báo diễn ra sáng 31/12/2024 ở thành phố Huế. Theo kế hoạch, các hoạt động trong khuôn khổ Năm Du lịch quốc gia và Festival Huế năm 2025 gồm:</p><ul><li>Lễ hội mùa Xuân: “Xuân Cố đô”.</li><li>Lễ hội mùa Hạ: “Kinh thành tỏa sáng”.</li><li>Lễ hội mùa Thu: “Huế vào Thu”.</li><li>Lễ hội mùa Đông: “Mùa Đông xứ Huế”.</li></ul><p><em>Nguồn: <a href=\"https://baochinhphu.vn/nam-du-lich-quoc-gia-2025-hue-kinh-do-xua-van-hoi-moi-10224123113585751.htm\">Báo điện tử Chính phủ</a>, đăng lúc 14:57 ngày 31/12/2024.</em></p>",
+                "content": "<p>Năm Du lịch quốc gia 2025 với chủ đề “Huế - Kinh đô xưa, vận hội mới” và Festival Huế năm 2025 dự kiến tập trung vào bốn nhóm chương trình theo mùa, với hơn 170 sự kiện cấp quốc gia và cấp tỉnh.</p><p>Thông tin được Ban Tổ chức Năm Du lịch quốc gia công bố tại cuộc họp báo diễn ra sáng 31/12/2024 ở thành phố Huế. Theo kế hoạch, các hoạt động trong khuôn khổ Năm Du lịch quốc gia và Festival Huế năm 2025 gồm:</p><ul><li>Lễ hội mùa Xuân: “Xuân Cố đô”.</li><li>Lễ hội mùa Hạ: “Kinh thành tỏa sáng”.</li><li>Lễ hội mùa Thu: “Huế vào Thu”.</li><li>Lễ hội mùa Đông: “Mùa Đông xứ Huế”.</li></ul><p><em>Nguồn: <a href=\"https://baochinhphu.vn/nam-du-lich-quoc-gia-2025-hue-kinh-do-xua-van-hoi-moi-10224123113585751.htm\">Báo điện tử Chính phủ</a>, đăng lúc 14:57 ngày 31/12/2024.</em></p>"
+            },
+            "diagnostics": {
+                "response_id": "resp_0db5930b85abf04d016ac35025517c87d0bb36cad85f1546b7",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "post.content.v1",
+                "requested_groups": [
+                    "title",
+                    "content"
+                ],
+                "returned_fields": [
+                    "title",
+                    "content_html"
+                ],
+                "usage": {
+                    "prompt_tokens": 1307,
+                    "completion_tokens": 329,
+                    "total_tokens": 1636
+                }
+            },
+            "latency_ms": 19759
+        }
+    ],
+    "latency_ms": 19765,
+    "input_sha256": "7d317f4a93ca35a7ccc8ad5c4162383fee920ffd92c58be060b22bf7ee006441",
+    "comparison_input_sha256": "d3479214ead99e47bc9d32ec665a00b407668edf30be1ee31ebebce29c5310c4",
+    "writing_profile_sha256": "1267aa8b907b63f12cd8c953c4a6664dbea3f3e7acabb12a28e64293053a7c96",
+    "brief_sha256": "9cb1a5080c3d5decd315ec5276943276f16876ea67d33f96fc728f9cf0b0cdc5",
+    "image_evaluation": {
+        "mode": "source_metadata_only",
+        "source_images": 1,
+        "approved_asset_regenerate": "not_evaluated",
+        "pixel_understanding": "not_evaluated"
+    },
+    "source_sha256": "9465a731220d77bdf278fdfbffd58d5d07cafdac7b711c18876933b79bd28302",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Năm Du lịch quốc gia 2025 tại Huế: Bốn nhóm lễ hội với hơn 170 sự kiện",
+        "content_html": "<p>Năm Du lịch quốc gia 2025 với chủ đề “Huế - Kinh đô xưa, vận hội mới” và Festival Huế năm 2025 dự kiến tập trung vào bốn nhóm chương trình theo mùa, với hơn 170 sự kiện cấp quốc gia và cấp tỉnh.</p><p>Thông tin được Ban Tổ chức Năm Du lịch quốc gia công bố tại cuộc họp báo diễn ra sáng 31/12/2024 ở thành phố Huế. Theo kế hoạch, các hoạt động trong khuôn khổ Năm Du lịch quốc gia và Festival Huế năm 2025 gồm:</p><ul><li>Lễ hội mùa Xuân: “Xuân Cố đô”.</li><li>Lễ hội mùa Hạ: “Kinh thành tỏa sáng”.</li><li>Lễ hội mùa Thu: “Huế vào Thu”.</li><li>Lễ hội mùa Đông: “Mùa Đông xứ Huế”.</li></ul><p><em>Nguồn: <a href=\"https://baochinhphu.vn/nam-du-lich-quoc-gia-2025-hue-kinh-do-xua-van-hoi-moi-10224123113585751.htm\">Báo điện tử Chính phủ</a>, đăng lúc 14:57 ngày 31/12/2024.</em></p>"
+    },
+    "total_tokens": 1636
+}

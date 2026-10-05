@@ -12,7 +12,6 @@ use App\Models\MediaAsset;
 use App\Models\Tag;
 use App\Models\User;
 use App\Services\Ai\Content\Pipelines\ArticleGenerationPipeline;
-use App\Services\Ai\Content\Quality\ArticleQualityGate;
 use App\Services\Ai\Contracts\AiProviderContract;
 use App\Services\Ai\Contracts\AiResponseMetadataProvider;
 use App\Services\Ai\Providers\Diagnostics\AiResponseDiagnostics;
@@ -170,9 +169,8 @@ class ArticleImportService
             if ($needsTextGeneration && $provider->configured()) {
                 $diagnostics['stage'] = 'transport';
                 $generationCalled = true;
-                $pipelineMode = data_get($input, 'pipeline_snapshot.pipeline', config('ai-content.pipeline', 'three_step'));
                 $fullPostContent = ($input['target_type'] ?? 'post') === 'post' && (! $hasFieldSelection || in_array('content', $requestedFields, true));
-                if ($fullPostContent && $pipelineMode === 'three_step') {
+                if ($fullPostContent) {
                     $generated = (new ArticleGenerationPipeline)->run($import, $provider, $snapshot, $hasFieldSelection ? $requestedFields : ['title', 'content']);
                 } else {
                     $this->progress($import, 'rewriting', 55);
@@ -189,22 +187,7 @@ class ArticleImportService
                 // Source URLs and uploaded media are pipeline results, never model output.
                 unset($generated['thumbnail']);
                 $diagnostics['returned_fields'] = array_keys($generated);
-                $imageWarnings = [];
-                if ($fullPostContent && $pipelineMode === 'single_step') {
-                    $generated = $validator->validate($generated, $validationGroups);
-                    if (isset($generated['content_html'])) {
-                        [$generated['content_html'], $imageWarnings] = (new ArticleGenerationPipeline)->restoreImages($generated['content_html'], (array) $snapshot['inline_image_refs']);
-                        $generated['content'] = $generated['content_html'];
-                    }
-                }
                 $generated = $validator->validate($generated, $validationGroups, sanitizeContent: true);
-                if ($fullPostContent && $pipelineMode === 'single_step') {
-                    $checks = (new ArticleQualityGate)->inspect($snapshot, $generated, (string) ($input['language'] ?? 'vi'), settings: (array) data_get($input, 'pipeline_snapshot.quality', config('ai-content.quality', [])));
-                    if ($import->exists) {
-                        $import->refresh();
-                        $import->forceFill(['source_meta_json' => array_replace((array) $import->source_meta_json, ['article_pipeline' => ['pipeline' => 'single_step', 'quality' => $checks, 'image_warnings' => $imageWarnings]])])->save();
-                    }
-                }
                 $draft = $hasFieldSelection
                     ? $this->mergeRequestedFields($draft, $generated, $requestedFields)
                     : array_replace($draft, $generated);

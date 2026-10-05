@@ -1,12 +1,13 @@
 <!--
   =====================================================================
+  Header/footer cố định qua AppDialogLayout; chỉ content ở giữa được cuộn.
   CHỨC NĂNG FILE: Dialog AI dùng chung theo target capability, có preview
   candidate, regenerate và apply chọn lọc trước khi lưu tài nguyên.
   =====================================================================
 
   Đây là component logic/UI dùng cho các target được Target Registry cho phép.
-  CreateWithAiDialog giữ layout Post hiện tại; component này cung cấp contract
-  tổng quát cho màn hình mới mà không gọi provider trực tiếp.
+  Component cung cấp contract tổng quát cho các màn hình tài nguyên;
+  việc tạo nội dung Post được quản lý tại trang AI Content.
 
   CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
   - load(): tải capability và khởi tạo form theo target/operation.
@@ -23,6 +24,7 @@
   =====================================================================
 -->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 /* eslint-disable camelcase */
 import { computed, onBeforeUnmount, reactive, shallowRef, watch } from 'vue'
 import { useAiAgentStore } from '@/stores/aiAgent'
@@ -248,12 +250,13 @@ onBeforeUnmount(stopPolling)
     scrollable
     data-testid="ai-agent-dialog"
   >
-    <DialogCloseBtn @click="visible = false" />
-    <VCard>
-      <VCardItem
-        title="Tạo nội dung bằng AI"
-        :subtitle="`Tài nguyên: ${props.targetType} — kết quả chỉ là đề xuất, không tự publish.`"
-      />
+    <AppDialogLayout @close="visible = false">
+      <template #header>
+        <VCardItem
+          title="Tạo nội dung bằng AI"
+          :subtitle="`Tài nguyên: ${props.targetType} — kết quả chỉ là đề xuất, không tự publish.`"
+        />
+      </template>
       <VCardText>
         <VAlert
           v-if="message"
@@ -405,46 +408,50 @@ onBeforeUnmount(stopPolling)
           </p>
         </template>
       </VCardText>
-      <VDivider />
-      <VCardActions class="justify-end flex-wrap gap-2 pa-4">
-        <VBtn
-          variant="text"
-          @click="visible = false"
-        >
-          Đóng
-        </VBtn>
-        <VBtn
-          v-if="busy && sessionId"
-          color="error"
-          variant="tonal"
-          @click="cancel"
-        >
-          Hủy tác vụ
-        </VBtn>
-        <VBtn
-          v-if="store.candidates.length"
-          variant="tonal"
-          :disabled="busy"
-          @click="regenerate"
-        >
-          Tạo lại với lựa chọn mới
-        </VBtn>
-        <VBtn
-          :loading="busy"
-          :disabled="busy || !form.inputValue.trim() || !form.outputs.length"
-          @click="run"
-        >
-          Tạo nội dung
-        </VBtn>
-        <VBtn
-          v-if="currentCandidate"
-          color="success"
-          :disabled="busy || !selectedFields.length"
-          @click="apply"
-        >
-          Áp dụng field đã chọn
-        </VBtn>
-      </VCardActions>
-    </VCard>
+
+      <template #footer>
+        <VCardActions class="justify-end flex-wrap gap-2 pa-4">
+          <VBtn
+            variant="text"
+            @click="visible = false"
+          >
+            Đóng
+          </VBtn>
+          <VBtn
+            v-if="busy && sessionId"
+            color="error"
+            variant="tonal"
+            @click="cancel"
+          >
+            Hủy tác vụ
+          </VBtn>
+          <VBtn
+            v-if="store.candidates.length"
+            variant="tonal"
+            :disabled="busy"
+            @click="regenerate"
+          >
+            Tạo lại với lựa chọn mới
+          </VBtn>
+          <VBtn
+            variant="flat"
+            :loading="busy"
+            :disabled="busy || !form.inputValue.trim() || !form.outputs.length"
+            @click="run"
+          >
+            Tạo nội dung
+          </VBtn>
+          <VBtn
+            v-if="currentCandidate"
+            variant="flat"
+            color="success"
+            :disabled="busy || !selectedFields.length"
+            @click="apply"
+          >
+            Áp dụng field đã chọn
+          </VBtn>
+        </VCardActions>
+      </template>
+    </AppDialogLayout>
   </VDialog>
 </template>

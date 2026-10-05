@@ -157,16 +157,6 @@ const copyPermalink = async () => {
               Preview
             </VBtn>
           </VBtnToggle>
-          <VBtn
-            color="primary"
-            variant="tonal"
-            size="small"
-            prepend-icon="tabler-wand"
-            class="text-none"
-            disabled
-          >
-            AI Assistant
-          </VBtn>
         </div>
       </template>
     </VCardItem>

@@ -40,7 +40,7 @@ describe('AI provider timeout form', () => {
 
     expect(field.element.value).toBe('240')
     await field.setValue('600')
-    await wrapper.findAll('button')[1].trigger('click')
+    await wrapper.findAll('button').find(button => button.text() === 'Lưu connection').trigger('click')
     expect(wrapper.emitted('save')[0][0].request_timeout).toBe(600)
     expect(wrapper.emitted('save')[0][0]).not.toHaveProperty('api_key')
     wrapper.unmount()
@@ -62,7 +62,7 @@ describe('AI provider timeout form', () => {
   it('blocks empty, fractional or out-of-range timeout and duplicate save while saving', async () => {
     const wrapper = renderDialog()
     const field = wrapper.get('[aria-label="Thời gian chờ (giây)"]')
-    const save = wrapper.findAll('button')[1]
+    const save = wrapper.findAll('button').find(button => button.text() === 'Lưu connection')
 
     for (const invalid of ['', '4', '601', '5.5']) {
       await field.setValue(invalid)

@@ -1,0 +1,42 @@
+{
+    "source_url": "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md",
+    "title": "Migration/breaking changes",
+    "source_format": "html",
+    "version": "article.source.v1",
+    "content_html": "<h1>Upgrade Guide</h1>\n<ul>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#upgrade-12.0\">Upgrading To 12.0 From 11.x</a></li>\n</ul>\n<p></p>\n<h2>High Impact Changes</h2>\n\n<ul>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#updating-dependencies\">Updating Dependencies</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#updating-the-laravel-installer\">Updating the Laravel Installer</a></li>\n</ul>\n\n<p></p>",
+    "blocks": [
+        {
+            "id": "S001",
+            "type": "h1",
+            "text": "Upgrade Guide",
+            "html": "<h1>Upgrade Guide</h1>"
+        },
+        {
+            "id": "S002",
+            "type": "li",
+            "text": "Upgrading To 12.0 From 11.x",
+            "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#upgrade-12.0\">Upgrading To 12.0 From 11.x</a></li>"
+        },
+        {
+            "id": "S003",
+            "type": "h2",
+            "text": "High Impact Changes",
+            "html": "<h2>High Impact Changes</h2>"
+        },
+        {
+            "id": "S004",
+            "type": "li",
+            "text": "Updating Dependencies",
+            "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#updating-dependencies\">Updating Dependencies</a></li>"
+        },
+        {
+            "id": "S005",
+            "type": "li",
+            "text": "Updating the Laravel Installer",
+            "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#updating-the-laravel-installer\">Updating the Laravel Installer</a></li>"
+        }
+    ],
+    "source_images": [],
+    "fetched_at": "2026-10-04T17:47:19+00:00",
+    "hash": "99853adb6700c923e08a7eef580104b10e6da1fa95c9f6c44484bd89ab7e7e9c"
+}

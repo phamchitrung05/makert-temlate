@@ -1,4 +1,13 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: ShareProjectDialog dùng khung dialog chung.
+  CÁC HÀM/METHOD TRONG FILE: dialogVisibleUpdate.
+  INPUT/OUTPUT CỦA CLASS (tổng thể): props/model và thao tác UI -> sự kiện của
+  caller; header/footer cố định, content cuộn qua AppDialogLayout.
+  =====================================================================
+-->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 import avatar1 from '@images/avatars/avatar-1.png'
 import avatar2 from '@images/avatars/avatar-2.png'
 import avatar3 from '@images/avatars/avatar-3.png'
@@ -75,22 +84,23 @@ const membersList = [
 
 <template>
   <VDialog
+    scrollable
     :model-value="props.isDialogVisible"
     :width="$vuetify.display.smAndDown ? 'auto' : 900"
     @update:model-value="dialogVisibleUpdate"
   >
-    <!-- 👉 Dialog close btn -->
-    <DialogCloseBtn @click="$emit('update:isDialogVisible', false)" />
+    <AppDialogLayout
+      class="share-project-dialog"
+      @close="$emit('update:isDialogVisible', false)"
+    >
+      <template #header>
+        <VCardItem>
+          <VCardTitle>Share Project</VCardTitle>
+          <VCardSubtitle>Share project with a team members</VCardSubtitle>
+        </VCardItem>
+      </template>
 
-    <VCard class="share-project-dialog pa-2 pa-sm-10">
       <VCardText>
-        <h4 class="text-h4 text-center mb-2">
-          Share Project
-        </h4>
-        <p class="text-body-1 text-center mb-6">
-          Share project with a team members
-        </p>
-
         <AppAutocomplete
           label="Add Members"
           :items="membersList"
@@ -164,16 +174,27 @@ const membersList = [
             />
             <div>Public to Vuexy - Pixinvent</div>
           </h6>
-
+        </div>
+      </VCardText>
+      <template #footer>
+        <VCardActions class="justify-end">
           <VBtn
+            variant="tonal"
+            color="secondary"
+            @click="$emit('update:isDialogVisible', false)"
+          >
+            Close
+          </VBtn>
+          <VBtn
+            variant="flat"
             class="text-capitalize"
             prepend-icon="tabler-link"
           >
             Copy Project Link
           </VBtn>
-        </div>
-      </VCardText>
-    </VCard>
+        </VCardActions>
+      </template>
+    </AppDialogLayout>
   </VDialog>
 </template>
 

@@ -99,6 +99,7 @@ final class AiRunService
             );
         }
         $input['pipeline_snapshot'] ??= (array) config('ai-content', []);
+        $input['pipeline_snapshot']['pipeline'] = 'three_step';
         $input['pipeline_snapshot']['output_definitions'] ??= (array) config('ai-agent.output_definitions', []);
         $input['taxonomy_origin'] = 'manual';
         $attributes['input_json'] = $input;

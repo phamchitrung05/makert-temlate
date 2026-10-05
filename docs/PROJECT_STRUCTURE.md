@@ -3,7 +3,7 @@
 **Mục đích:** tài liệu tham chiếu kiến trúc và vị trí file cho developer, reviewer
 và Codex khi bắt đầu một phiên làm việc mới.
 
-**Cập nhật lần cuối:** 2026-09-27  
+**Cập nhật lần cuối:** 2026-10-05
 **Tài liệu tiến độ:** [PLAN.md](./PLAN.md)  
 **Kế hoạch Media Library:** [PLAN_MEDIA_LIBRARY.md](./PLAN_MEDIA_LIBRARY.md)  
 **Tài liệu môi trường:** [ENVIRONMENT.md](./ENVIRONMENT.md)
@@ -256,6 +256,93 @@ chỉnh sửa và chạy ESLint.
 Page nên là composition surface: giữ route/query state và nối các component;
 table, form, filter và dialog nên tách ra khi có logic đáng kể.
 
+### 4.3.1. Cấu trúc dialog bắt buộc
+
+`AppDialogLayout` là mẫu bố cục. Tất cả dialog của ứng dụng phải dùng
+`resources/js/components/dialogs/AppDialogLayout.vue` bên trong
+`VDialog scrollable`, gồm ba vùng luôn hiện diện:
+
+```text
+VDialog scrollable               giới hạn chiều cao theo viewport, quản lý focus/overlay
+└── AppDialogLayout
+    ├── DialogCloseBtn          nút X nổi ngoài góc trên bên phải của card
+    └── VCard                   flex column, min-height: 0, overflow: hidden
+        ├── header              tiêu đề + mô tả tùy chọn; không cuộn
+        ├── body (default slot) form, dữ liệu, lỗi/loading; chỉ vùng này được cuộn
+        └── footer (#footer)    Hủy/Đóng + thao tác chính; không cuộn
+```
+
+- Header và footer không được đặt trong `VCardText`, `VForm`, `PerfectScrollbar`
+  hoặc container cuộn của content. Header/footer dùng `flex: 0 0 auto`;
+  body có `min-block-size: 0` và `overflow-y: auto`.
+- Dùng `title`/`subtitle` cho header mặc định; `#header` chỉ dùng khi cần icon,
+  thông tin hoặc control đặc thù. `AppDialogLayout` quản lý vị trí nút đóng,
+  `close-label` và `close-disabled`; caller xử lý event `close`.
+- Nút X dùng `DialogCloseBtn` theo mẫu Vuexy, là sibling của `VCard` để nổi
+  ngoài góc card mà không bị `overflow: hidden` cắt. Không đặt X trong header
+  hoặc body, không thêm nút X riêng ở feature. Attrs/class/style của layout
+  được chuyển vào card; vị trí X theo CSS Vuexy dùng chung, kể cả RTL.
+- Đặt nút Hủy/Đóng và Lưu/Xác nhận/Tạo/Áp dụng trong `#footer`. Nếu chỉ xem thông
+  tin, có thể dùng footer Đóng mặc định. Footer được wrap trên màn hình nhỏ,
+  không tạo cuộn ngang hoặc chiều cao dialog vượt màn hình.
+  Control cục bộ như preview nguồn, tải lại, toolbar editor hoặc bước chạy AI
+  có thể nằm cạnh field trong content; action kết thúc dialog phải ở footer.
+- Khi chuyển nút submit ra khỏi form, giữ handler validation hiện có: dùng
+  `type="submit" :form="formId"` với `VForm :id="formId"` (`useId()` tạo ID
+  riêng cho mỗi instance), hoặc gọi handler có guard bằng nút `type="button"`.
+  Kiểm tra cả nhấn nút và Enter; không mất validation hoặc gửi request hai lần.
+- Form dài chỉ có một vùng cuộn chính. Picker nhiều panel như Media Library
+  dùng `:body-scroll="false"`; scrollbar từng panel vẫn nằm trong body. Trên
+  mobile hoặc viewport thấp, content cuộn trong body và header/footer luôn ở ngoài vùng cuộn.
+- Loading/error không thay toàn bộ card bằng spinner. Giữ khung và các field,
+  hiện đủ ngay khi mở và disable khi chưa sẵn sàng, kể cả khi GET lỗi. Vòng
+  xoay ở `#overlay` phải nằm trên toolbar editor, dùng `pointer-events: none`
+  để nút Hủy/X vẫn hoạt động khi tải; lỗi và tải lại nằm trong content.
+  Khi lưu, khóa các đường đóng cần thiết bằng `persistent` và `close-disabled`.
+- Không reset form/title/action trong lúc hiệu ứng đóng còn chạy. Caller giữ
+  dữ liệu cho đến `VDialog @after-leave`; cảnh báo bản chưa lưu cũng dùng khung
+  ba vùng này. Bỏ qua event `after-leave` cũ nếu dialog đã mở lại.
+  Layout chung không tự sửa state hoặc gọi API.
+- Dialog chứa `PostEditor` dùng Tiny Cloud với `ui_mode: 'split'` để menu của
+  TinyMCE nằm trong vùng editor. Cửa sổ riêng như Source Code được TinyMCE
+  gắn vào body; CSS dùng chung trong `PostEditor.vue` đặt `.tox.tox-tinymce-aux`
+  ở `z-index: 2500`, phía trên stack dialog 2400 của ứng dụng. Không thêm CSS
+  scoped ở caller để sửa portal ngoài component.
+- Caller nhận `PostEditor @editor-dialog` và dùng
+  `VDialog :retain-focus="!editorDialogOpen"`. Chỉ nhường focus khi cửa sổ
+  TinyMCE mở; đóng/unmount editor phải trả trạng thái về false. MediaLibrary
+  vẫn là dialog theo khung ba vùng ở trên, giữ focus và thứ tự overlay riêng.
+
+Vị trí file: dialog đặc thù nằm trong `views/<feature>/dialog/`, tên kết thúc
+bằng `Dialog.vue`; nội dung dùng chung có thể là `<Feature>DialogContent.vue`.
+`components/dialogs/` dành cho layout và dialog tái sử dụng toàn ứng dụng.
+Các dialog mẫu minh họa API Vuetify trong `views/demos/` giữ hành vi demo;
+khi đưa mẫu vào luồng ứng dụng phải chuyển sang cấu trúc trên.
+
+Mẫu tối thiểu cho dialog mới:
+
+```vue
+<VDialog v-model="open" max-width="680" scrollable :persistent="saving">
+  <AppDialogLayout title="Chỉnh sửa nội dung" :close-disabled="saving" @close="requestClose">
+    <VCardText>
+      <VForm :id="formId" @submit.prevent="submit">
+        <!-- Các field; formId = useId(), submit giữ validation/guard. -->
+      </VForm>
+    </VCardText>
+    <template #footer>
+      <VCardActions class="justify-end">
+        <VBtn variant="tonal" color="secondary" :disabled="saving" @click="requestClose">Hủy</VBtn>
+        <VBtn type="submit" :form="formId" variant="flat" :loading="saving" :disabled="!canSave">Lưu</VBtn>
+      </VCardActions>
+    </template>
+  </AppDialogLayout>
+</VDialog>
+```
+
+Acceptance trước khi hoàn tất dialog: cuộn content dài vẫn thấy header/footer,
+nút đóng/Hủy/Lưu hoạt động đúng, loading giữ kích thước và dữ liệu, cảnh báo bản
+chưa lưu/after-leave không bị phá, màn hình nhỏ không cuộn cả dialog hoặc mất nút.
+
 ### 4.4. Pinia hiện tại
 
 Project đang có các nhóm store sau:
@@ -459,6 +546,7 @@ app/Services/Ai/Content/Agents/         Analyze + Plan, Write, Edit cho Post con
 app/Services/Ai/Content/Pipelines/      điều phối/checkpoint ba bước
 app/Services/Ai/Content/Prompts/        prompt và schema theo bước
 app/Services/Ai/Content/Quality/        evidence/references và quality gates
+app/Services/Ai/Content/Quality/ArticleSourceLinkPolicy.php  manifest link nguồn dùng chung
 app/Services/Ai/Data/                  request/response DTO độc lập target
 app/Services/Ai/WritingProfiles/       profile/version/snapshot/phân tích bài mẫu
 app/Services/Ai/Providers/Adapters/      structured provider adapters
@@ -480,7 +568,7 @@ database/migrations/*ai_import*         lifecycle và lineage fields
 resources/js/services/aiAgent.js
 resources/js/stores/aiAgent.js
 resources/js/components/ai/              dialog/preview dùng chung
-resources/js/views/apps/blog/post/dialog/CreateWithAiDialog.vue
+resources/js/views/ai/content/           tạo/review/regenerate/apply nội dung Post
 ```
 
 Capability được đọc từ `GET /api/admin/ai-agent/capabilities/{target}`. Generic
@@ -488,6 +576,53 @@ session dùng `/api/admin/ai-agent/sessions/*`, còn các route dưới
 `/api/admin/posts/ai/import` được giữ để tương thích. Candidate chưa tạo slug hoặc
 Post thật, chỉ thao tác Apply mới gọi Post Action/SlugService. API key luôn ở
 backend; deterministic chỉ chạy khi được chọn rõ ràng, provider cấu hình lỗi không tự fallback che lỗi.
+
+Tạo toàn bộ bài Post chỉ dùng C: Analyze + Plan → Write → Edit. Luồng B và
+switch `AI_CONTENT_PIPELINE` đã gỡ; snapshot/config cũ không đổi routing hoặc
+giảm ngân sách ba request. Các trường riêng title/SEO/excerpt giữ request theo
+hợp đồng trường, không phải nhánh B tạo bài. C lỗi không fallback sang B.
+
+Prompt bài viết **2.2** đưa cùng `link_requirements` tới Analyze, Write và Edit.
+`ArticleSourceLinkPolicy` phân biệt mục lục đầu bài với link
+tham khảo, giữ URL nguyên vẹn; một link cũng xuất hiện trong prose vẫn bắt buộc.
+Quality gate chặn thiếu link tham khảo hoặc href ngoài allowlist nguồn, không
+suy đoán/sửa URL. Schema tách source blocks `S...`, facts `F...` và ảnh `I...`;
+Writer/Editor chỉ dùng fact IDs từ Analyze đã validate. Schema/prompt/context
+của snapshot **2.0/2.1** giữ nguyên để checkpoint tiếp tục khớp hash.
+
+`ArticleNumberNormalizer` thuộc `Content/Quality`, được `ArticleQualityGate`
+gọi khi đối chiếu token số. Chỉ nhận biểu diễn tương đương có ngữ cảnh rõ:
+ngày hợp lệ, giờ 12/24, thế kỷ, số đếm theo đơn vị, tập thứ trong tuần và dấu
+phân nhóm hàng nghìn của số đếm nguyên. Phiên bản, số thập phân, tiền và giá
+trị khác không được gộp bằng quy tắc này. HTML/candidate và artifacts gốc
+không bị sửa; regression gồm cả ca sai giá trị/ngữ cảnh phải bị chặn.
+
+Đối chiếu pilot lỗi offline tại `scripts/ai-quality/audit.php`; chạy model/export
+gói chấm tại `scripts/ai-quality/evaluate.php`. Nguồn/hash/calls ở
+`docs/qa/task2-quality`; kết quả tự động chỉ là gate kỹ thuật, chấm văn phong và
+facts bằng người đọc được chủ dự án chuyển sang đợt riêng ngày 2026-10-05.
+Task 2 đã nghiệm thu kỹ thuật tại FIX 1 mục 12.35; chưa có điểm người đọc hoặc
+kết luận chất lượng/rollout từ gate tự động.
+
+Nhóm `app/Services/Ai/Content/Evaluation` có `ArticleQualityEvaluation` và
+`EvaluationProviderRecorder` để chạy/ghi artifacts; `ArticleQualityReviewBundle`
+render hai bộ chấm mù, `ArticleQualityHumanReview` kiểm CSV độc lập và
+`ArticleQualityStudyReport` tổng hợp kỹ thuật/người đọc riêng. Runner không ghi
+AiImport/Post/Settings. Đánh giá mới chỉ nhận C; report/CSV hỗ trợ một ứng viên
+không có preference giữa hai bài hoặc tỷ lệ so sánh. B/C chỉ còn được đọc từ
+study lịch sử với source/model/profile/brief/hash khớp; không đổi corpus,
+artifacts hoặc nhãn khi người đọc đã bắt đầu chấm.
+
+`scripts/ai-quality/freeze-v2.php`/`sources-v2.json` tạo corpus bổ sung mới;
+`report.php` xuất HTML/CSV và report offline, dùng `review.js`/`review.css`.
+Các assets này phục vụ QA, không thuộc giao diện AI Content production.
+Ô chưa chấm là `null`; lỗi factual không hòa vào điểm văn phong, tên người đọc
+phải khác nhau, CSV mang hash của bộ chấm. Ảnh nguồn chỉ có metadata/chú thích,
+không tự tạo hoặc gán MediaAsset. Mọi kết luận rollout vẫn cần người đọc/owner.
+
+Từ 2026-10-05, Post List/Add/Edit không có nút hoặc dialog tạo nội dung AI.
+Luồng tạo/review/regenerate/Apply tập trung ở trang AI Content; PostForm phụ trách
+nhập/sửa/lưu bài viết. Khung dialog bắt buộc vẫn là `AppDialogLayout` ở mục 4.3.1.
 
 `ai-agent.targets.<target>.outputs` là allowlist nhóm đầu ra của từng tài nguyên:
 `title`, `excerpt`, `content`, `seo`, `thumbnail` cho Post. Taxonomy do người dùng chọn thủ công; không thuộc generation schema/outputs.

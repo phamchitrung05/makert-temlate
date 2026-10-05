@@ -1,0 +1,174 @@
+<!doctype html><html lang="vi"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; img-src &#39;none&#39;"><title>Task 2 · Gói chấm mù chất lượng</title><style>body{font:16px/1.65 system-ui;background:#f5f5fb;color:#27253e;max-width:1440px;margin:24px auto;padding:20px}h1,h2{line-height:1.3}.pair{display:grid;grid-template-columns:1fr 1fr;gap:20px}article,details{padding:24px;background:white;border:1px solid #ddd;border-radius:12px;margin:16px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{border-collapse:collapse;display:block;overflow:auto}td,th{border:1px solid #aaa;padding:8px}section{margin:40px 0}a{color:#6552ca}@media(max-width:800px){.pair{grid-template-columns:1fr}}</style><body><h1>Task 2 · Chấm chất lượng bài viết</h1><p>Đọc nguồn và brief rồi chấm X/Y độc lập. Hai người đọc dùng hai CSV riêng. Ghi lỗi facts/điều kiện trước khi chấm văn phong; không dùng AI thay người đánh giá. Chưa có điểm hoặc kết luận rollout. Không mở blind-key/summary trong lúc chấm.</p><section><h2>Q02 · Release và phiên bản</h2><p>Brief: {&quot;audience&quot;:&quot;Người phát triển website&quot;,&quot;purpose&quot;:&quot;Hiểu nội dung và điều kiện nguồn&quot;,&quot;length&quot;:&quot;Theo lượng thông tin nguồn, tránh kéo dài\/lặp ý&quot;}</p><p>Nguồn: Taylor Otwell and Laravel documentation contributors · MIT. Phần chọn: first-section; HTML được chuyển đổi để kiểm pipeline.</p><p><a href="https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md">Nguồn gốc tại commit đã đóng băng</a> · <a href="https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/license.md">License/attribution</a></p><details><summary>Đọc nguồn đã đóng băng</summary><h1>Release Notes</h1>
+<ul>
+<li><a href="https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#versioning-scheme">Versioning Scheme</a></li>
+<li><a href="https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#support-policy">Support Policy</a></li>
+<li><a href="https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#laravel-12">Laravel 12</a></li>
+</ul>
+<p></p>
+<h2>Versioning Scheme</h2>
+<p>Laravel and its other first-party packages follow <a href="https://semver.org">Semantic Versioning</a>. Major framework releases are released every year (~Q1), while minor and patch releases may be released as often as every week. Minor and patch releases should <strong>never</strong> contain breaking changes.</p>
+<p>When referencing the Laravel framework or its components from your application or package, you should always use a version constraint such as <code>^12.0</code>, since major releases of Laravel do include breaking changes. However, we strive to always ensure you may update to a new major release in one day or less.</p>
+<p></p>
+<h4>Named Arguments</h4>
+<p><a href="https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments">Named arguments</a> are not covered by Laravel's backwards compatibility guidelines. We may choose to rename function arguments when necessary in order to improve the Laravel codebase. Therefore, using named arguments when calling Laravel methods should be done cautiously and with the understanding that the parameter names may change in the future.</p>
+<p></p></details><div class="pair"><article><h3>X</h3><h4>Quy tắc phiên bản Laravel và lưu ý khi nâng cấp</h4><p>Khi nâng cấp Laravel, cần phân biệt phiên bản chính (major) với phiên bản phụ (minor) và bản vá (patch): major có những thay đổi phá vỡ tương thích, còn minor và patch theo nguyên tắc <strong>không được chứa những thay đổi này</strong>. Laravel và các gói chính thức khác của Laravel tuân theo <a href="https://semver.org">Semantic Versioning</a>. Các phiên bản major của framework được phát hành hằng năm, khoảng quý I; các bản minor và patch có thể được phát hành hằng tuần.</p>
+<p>Khi khai báo phụ thuộc vào Laravel hoặc các thành phần của framework trong ứng dụng hay gói, tài liệu khuyến nghị luôn dùng ràng buộc phiên bản như <code>^12.0</code>, vì các bản major có thay đổi phá vỡ tương thích. Nhóm phát triển Laravel đặt mục tiêu giúp việc nâng cấp lên bản major mới có thể hoàn thành trong <strong>một ngày hoặc ít hơn</strong>. Đây là mục tiêu nhóm nỗ lực đạt được, không phải bảo đảm về thời gian nâng cấp cho mọi dự án.</p>
+<p>Một ngoại lệ cần chú ý là <a href="https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments">named arguments</a> — cách truyền đối số theo tên. Named arguments không thuộc phạm vi bảo đảm tương thích ngược của Laravel. Nhóm phát triển có thể đổi tên tham số của hàm khi cần cải thiện mã nguồn. Vì vậy, khi dùng named arguments để gọi phương thức Laravel, bạn cần thận trọng: tên tham số có thể thay đổi trong tương lai.</p>
+<p>Nguồn: <a href="https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md">Tài liệu Release Notes của Laravel</a>.</p></article><article><h3>Y</h3><h4>Phiên bản Laravel: quy tắc phát hành và lưu ý khi nâng cấp</h4><p>Khi sử dụng Laravel trong ứng dụng hoặc package, bạn cần phân biệt các loại bản phát hành để đặt ràng buộc phiên bản phù hợp. Bản phát hành lớn có thể chứa thay đổi phá vỡ tính tương thích, còn bản phát hành nhỏ và bản vá thì không được chứa những thay đổi này.</p>
+<h2>Quy tắc phiên bản và lịch phát hành</h2>
+<p>Laravel và các package chính thức của Laravel tuân theo <a href="https://semver.org">Semantic Versioning</a>. Lịch phát hành được quy định như sau:</p>
+<ul>
+<li><strong>Bản phát hành lớn (major):</strong> được phát hành hằng năm, thường vào khoảng quý 1.</li>
+<li><strong>Bản phát hành nhỏ (minor) và bản vá (patch):</strong> có thể được phát hành thường xuyên, lên đến hằng tuần, và <strong>không bao giờ</strong> được chứa thay đổi phá vỡ tính tương thích.</li>
+</ul>
+<p>Khi khai báo phụ thuộc vào Laravel framework hoặc các thành phần của framework trong ứng dụng hay package, bạn nên luôn dùng ràng buộc phiên bản như <code>^12.0</code>, vì các bản phát hành lớn của Laravel có thể chứa thay đổi phá vỡ tính tương thích. Dù vậy, Laravel luôn cố gắng để việc nâng cấp lên một phiên bản lớn mới có thể hoàn thành trong một ngày hoặc ít hơn.</p>
+<h2>Lưu ý về đối số có tên</h2>
+<p><a href="https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments">Đối số có tên (named arguments)</a> không nằm trong phạm vi cam kết tương thích ngược của Laravel. Khi cần cải thiện mã nguồn, Laravel có thể đổi tên các tham số của hàm.</p>
+<p>Vì vậy, hãy thận trọng khi dùng đối số có tên để gọi các phương thức của Laravel: tên tham số mà bạn sử dụng có thể thay đổi trong tương lai.</p></article></div></section><section><h2>Q07 · Cấu hình PHP/Laravel</h2><p>Brief: {&quot;audience&quot;:&quot;Người phát triển website&quot;,&quot;purpose&quot;:&quot;Hiểu nội dung và điều kiện nguồn&quot;,&quot;length&quot;:&quot;Theo lượng thông tin nguồn, tránh kéo dài\/lặp ý&quot;}</p><p>Nguồn: Taylor Otwell and Laravel documentation contributors · MIT. Phần chọn: first-section; HTML được chuyển đổi để kiểm pipeline.</p><p><a href="https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md">Nguồn gốc tại commit đã đóng băng</a> · <a href="https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/license.md">License/attribution</a></p><details><summary>Đọc nguồn đã đóng băng</summary><h1>Configuration</h1>
+<ul>
+<li><a href="https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#introduction">Introduction</a></li>
+<li><a href="https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-configuration">Environment Configuration</a>
+<ul>
+<li><a href="https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-variable-types">Environment Variable Types</a></li>
+<li><a href="https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#retrieving-environment-configuration">Retrieving Environment Configuration</a></li>
+<li><a href="https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#determining-the-current-environment">Determining the Current Environment</a></li>
+<li><a href="https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#encrypting-environment-files">Encrypting Environment Files</a></li>
+</ul>
+</li>
+<li><a href="https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#accessing-configuration-values">Accessing Configuration Values</a></li>
+<li><a href="https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-caching">Configuration Caching</a></li>
+<li><a href="https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-publishing">Configuration Publishing</a></li>
+<li><a href="https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#debug-mode">Debug Mode</a></li>
+<li><a href="https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#maintenance-mode">Maintenance Mode</a></li>
+</ul>
+<p></p>
+<h2>Introduction</h2>
+<p>All of the configuration files for the Laravel framework are stored in the <code>config</code> directory. Each option is documented, so feel free to look through the files and get familiar with the options available to you.</p>
+<p>These configuration files allow you to configure things like your database connection information, your mail server information, as well as various other core configuration values such as your application URL and encryption key.</p>
+<p></p>
+<h4>The <code>about</code> Command</h4>
+<p>Laravel can display an overview of your application's configuration, drivers, and environment via the <code>about</code> Artisan command.</p>
+<pre><code>php artisan about
+</code></pre>
+<p>If you're only interested in a particular section of the application overview output, you may filter for that section using the <code>--only</code> option:</p>
+<pre><code>php artisan about --only=environment
+</code></pre>
+<p>Or, to explore a specific configuration file's values in detail, you may use the <code>config:show</code> Artisan command:</p>
+<pre><code>php artisan config:show database
+</code></pre>
+<p></p></details><div class="pair"><article><h3>X</h3><h4>Cấu hình PHP/Laravel</h4><h1>Cấu hình</h1>
+<p>Các tệp cấu hình của framework Laravel được lưu trong thư mục <code>config</code>. Mỗi tùy chọn đều có phần mô tả, vì vậy bạn có thể xem qua các tệp này để làm quen với những thiết lập hiện có.</p>
+<p>Thông qua các tệp cấu hình, bạn có thể thiết lập thông tin kết nối cơ sở dữ liệu, máy chủ thư điện tử và nhiều giá trị cốt lõi khác, chẳng hạn như URL của ứng dụng và khóa mã hóa.</p>
+<h2>Lệnh <code>about</code></h2>
+<p>Laravel có thể hiển thị thông tin tổng quan về cấu hình, driver và môi trường của ứng dụng bằng lệnh Artisan <code>about</code>:</p>
+<pre><code>php artisan about
+</code></pre>
+<p>Nếu chỉ quan tâm đến một phần cụ thể trong thông tin tổng quan, bạn có thể lọc kết quả bằng tùy chọn <code>--only</code>:</p>
+<pre><code>php artisan about --only=environment
+</code></pre>
+<p>Để xem chi tiết các giá trị trong một tệp cấu hình cụ thể, hãy sử dụng lệnh Artisan <code>config:show</code>:</p>
+<pre><code>php artisan config:show database
+</code></pre></article><article><h3>Y</h3><h4>Cấu hình Laravel: thư mục config và cách kiểm tra bằng Artisan</h4><p>Các tệp cấu hình của Laravel nằm trong thư mục <code>config</code>, và mỗi tùy chọn đều có phần giải thích. Tại đây, bạn có thể thiết lập thông tin kết nối cơ sở dữ liệu, máy chủ thư và các giá trị cốt lõi như URL ứng dụng, khóa mã hóa.</p>
+<h2>Kiểm tra cấu hình bằng Artisan</h2>
+<p>Để xem tổng quan về cấu hình, driver và môi trường của ứng dụng, dùng lệnh Artisan <code>about</code>:</p>
+<pre><code>php artisan about
+</code></pre>
+<p>Nếu chỉ cần xem một phần của thông tin tổng quan, bạn có thể lọc bằng tùy chọn <code>--only</code>. Ví dụ, lệnh sau chỉ hiển thị phần môi trường:</p>
+<pre><code>php artisan about --only=environment
+</code></pre>
+<p>Để xem chi tiết các giá trị của một tệp cấu hình cụ thể, dùng lệnh <code>config:show</code>. Ví dụ dưới đây dùng để xem cấu hình <code>database</code>:</p>
+<pre><code>php artisan config:show database
+</code></pre>
+<p>Nguồn: <a href="https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md">Tài liệu cấu hình Laravel</a>.</p></article></div></section><section><h2>Q18 · HTML có navigation/footer/ads</h2><p>Brief: {&quot;audience&quot;:&quot;Người tìm hiểu du thuyền&quot;,&quot;purpose&quot;:&quot;Hiểu trải nghiệm và giới hạn nguồn cũ&quot;,&quot;length&quot;:&quot;Theo lượng thông tin nguồn&quot;}</p><p>Nguồn: Star Travel / Star International; HTML supplied by project owner · User supplied; local evaluation only. Phần chọn: backend extracts main article; HTML được chuyển đổi để kiểm pipeline.</p><details><summary>Đọc nguồn đã đóng băng</summary><p>
+
+
+
+
+</p><p>Ngày 14/06/2016 vừa qua, Star Travel hân hoan chào đón Ovation of the Seas - Siêu du thuyền 5 sao hiện đại và thông minh nhất thế giới cập cảng tại Việt Nam. Siêu du thuyền này được tích hợp những công nghệ tiên tiến nhất, vượt mặt cả những khu resort 5 sao hiện đại trên đất liền.</p>
+
+<p></p>
+                                            
+
+
+
+
+<p>Tự hào là công ty tiên phong và lâu đời nhất trong lĩnh vực du thuyền 5 sao đưa du khách Việt ra ngước ngoài, Star Travel hiện là đại diện chính thức và đối tác chiến lược tại Việt Nam của Tập đoàn du thuyền hàng đầu thế giới Royal Caribbean. Trong 6 tháng đầu năm 2016, Star Travel dẫn đầu với số lượng khách vô cùng ấn tượng hơn 1.213 lượt khách tham quan những địa điểm du lịch nổi tiếng thế giới bằng hệ thống du thuyền 5 sao của Royal Caribbean. Tháng 6 này, Star Travel tiếp tục mang đến cho du khách Việt Nam những chuyến hải trình thú vị bằng Siêu du thuyền Ovation of the Seas.</p>
+<p>Góp mặt vào bộ 3 du thuyền thông minh nhất thế giới dòng Quantum, Ovation of the Seas cao 18 tầng, chiều dài 347 mét, chiều ngang 41 mét, 2090 phòng ngủ, sức chứa 4905 khách, 1500 nhân viên, tải trọng 168.666 tấn. Hãy cùng Star Travel khám phá 8 điều nổi bật mà siêu du thuyền này mang lại nhé.</p>
+<p><strong>1. Đài quan sát “Sao Bắc Đẩu”</strong></p>
+<p>Với hệ thống cabin nối với cần trục, bạn sẽ được đài quan sát “Sao Bắc Đẩu” di chuyển lên độ cao hơn 90 mét so với mặt nước biển. Như một cánh chim hải âu lướt nhẹ 360 độ trên biển, ngắm nhìn toàn cảnh đại dương xanh vĩ đại và ngoạn mục, bạn sẽ trở thành một nhà thám hiểm thực thụ đang chinh phục biển xanh rộng lớn.</p>
+<div></div>
+<p><strong>2. Phòng phức hợp cực lớn – Two70<sup>0</sup></strong></p>
+<p>Một điểm đáng chú ý khác nữa của Ovation of the Seas là Two70<sup>0</sup>. Căn phòng này là một khu ăn uống và giải trí phức hợp với tầm nhìn 270 độ đẹp ngoạn mục hướng ra đại dương. Ban ngày, ánh sáng mặt trời sẽ rọi vào sáng bừng cả căn phòng, khiến cho không gian ăn uống và trò chuyện trở nên thoáng đãng hơn bao giờ hết. Buổi tối, những cửa sổ tại Two70 biến thành màn hình trình chiếu cỡ lớn, kết hợp với hệ thống âm thanh ánh sáng trở thành một sân khấu hoành tráng phục vụ nhu cầu giải trí của du khách.</p>
+<div></div>
+<div></div>
+<p><strong>3. Internet tốc độ cao</strong></p>
+<p>Ovation of the Seas được trang bị công nghệ truy cập Internet siêu tốc bằng vệ tinh, có tốc độ khoảng 4,26 km/giây cho mọi ngóc ngách trên du thuyền. Đặc biệt hơn, mỗi hành khách trên du thuyền sẽ được cấp một “Vòng tay thông minh” mang tên WOWband, giúp du khách thực hiện các thao tác check-in, check-out một cách dễ dàng, cho phép người dùng mở cửa phòng và chi trả mọi thứ khi họ quyết định mua một sản phẩm hay dịch vụ trên du thuyền.</p>
+<div></div>
+<div></div>
+<p><strong>4. Robot pha chế cocktail</strong></p>
+<p>Tại quầy bar Bionic, du khách chỉ cần chọn món thức uống yêu thích bằng cách chạm nhẹ vào chiếc máy tính bảng, hai chú robot với tốc độ pha chế hai ly mỗi phút sẽ ngay lập tức phục vụ du khách món đồ uống thơm ngon và độc đáo. Trải nghiệm tuyệt vời như trong một bộ phim của tương lai sẽ khiến bạn không khỏi choáng ngợp.</p>
+<div></div>
+<p><strong>5. Bay lên cùng Ripcord by iFly</strong></p>
+<p>Nếu như “Sao Bắc Đẩu” chỉ như cánh chim hải âu lướt nhẹ trên mặt biển thì Ripcord by iFly với tính năng bay an toàn sẽ nâng bạn bay lên không trung, cảm giác như một chú đại bàng biển đầy dũng mãnh. Hãy sẳn sàng thử cảm giác tuyệt vời khi được ngọn gió biển thổi vào người, rồi vút bay lơ lửng trên không trung đầy tự do.</p>
+<div></div>
+<p><strong>6. SeaPlex – Không gian giải trí trong nhà lớn nhất trên biển</strong></p>
+<p>Với các trò giải trí vô cùng hấp dẫn: Trượt băng nghệ thuật, bóng rổ, xe điện đụng, biểu diễn nhào lộn trên không, SeaPlex thật sự trở thành khu giải trí trong nhà thu hút nhất trong chuyến hành trình khám phá Royal Caribbean – nơi các “nhà thám hiểm nhí” tha hồ vận động, nghịch ngợm trong không gian giải trí hiện đại bậc nhất.</p>
+<div></div>
+<p><strong>7. Trang thiết bị nội thất tối tân</strong></p>
+<p>Ovation of the Seas có loại phòng nghỉ cao cấp 2 tầng (Loft Suite) dành cho đối tượng khách thượng lưu. Phòng có 2 tầng và một ban công riêng hướng thẳng ra biển. Bên trong phòng còn được trang bị màn hình LED 80-inch và một chiếc piano. Một số phòng nghỉ  được trang bị Ban công màn hình ảo giúp du khách có thể theo dõi toàn bộ quan cảnh đang diễn ra thật sự bên ngoài du thuyền.</p>
+<div></div>
+<p><strong>8. Hệ thống nhà hàng sang trọng</strong></p>
+<p>Có tất cả 18 nhà hàng độc đáo được mở trên không gian của du thuyền để đáp ứng nhu cầu ẩm thực của những thực khách khó tính. Đặc biệt nhất là sự có mặt của nhà hàng Ý sang trọng được chỉ đạo bởi đầu bếp trứ danh Jamie Oliver.</p>
+<div></div>
+<div></div>
+<p><strong>Tham khảo một số chương trình tour của siêu du thuyền Ovation of the Seas:</strong></p>
+<p>Điểm đến: <strong>Singapore - Malaysia</strong><br> Ngày khởi hành: 03/04/17<br> Giá trọn gói: 19.000.000đ<br> Số ngày đi: 4 ngày</p>
+<p>Điểm đến: <strong>Singapore - Malaysia</strong> <br> Ngày khởi hành: 10/04/17<br> Giá trọn gói: 20.500.000đ<br> Số ngày đi: 5 ngày</p>
+<p>Điểm đến: <strong>Singapore – Thái Lan</strong><br> Ngày khởi hành: 11/03/17, 06/04/17<br> Giá trọn gói: 20.900.000đ<br> Số ngày đi: 5 ngày</p>
+<p>Điểm đến: <strong>Singapore - Malaysia</strong><br> Ngày khởi hành: 15/03/17<br> Giá trọn gói: 20.900.000đ<br> Số ngày đi: 5 ngày</p>
+<p>Điểm đến: <strong>Singapore – Thái Lan - Malaysia</strong><br> Ngày khởi hành: 06/03/17, 19/03/17, 29/03/17<br> Giá trọn gói: 24.900.000đ<br> Số ngày: 6 ngày</p>
+<p>Điểm đến: <strong>Singapore – Malaysia - Thái Lan</strong><br> Ngày khởi hành: 24/03/17<br> Giá trọn gói: 25.500.000đ<br> Số ngày: 6 ngày</p>
+<p><strong>Công ty cổ phần Star Travel International:</strong><br> <strong>Trụ sở chính:</strong> 96 Trần Hưng Đạo, Q.1, Tp. Hồ Chí Minh<br> Hotline: 0925 122 122.  Điện thoại: (08) 39 201 201</p>
+<p><strong>Văn phòng Hà Nội:</strong> tầng 3, 59 Xã Đàn, quận Đống Đa, Hà Nội<br> Điện thoại: (04) 39 275 288</p>
+<p><strong>Văn phòng Phú Mỹ Hưng:</strong> SE3-1 Mỹ Khánh 3, Quận 7, Tp.HCM<br> Điện thoại: (08) 54 121 168<br> Email: <a href="mailto:info@thegioidulich.com" target="_blank" rel="noopener noreferrer">info@thegioidulich.com</a><br> Website: <a href="https://www.startravel.vn/" target="_blank" rel="noopener noreferrer">www.thegioidulich.com</a></p></details><div class="pair"><article><h3>X</h3><h4>Ovation of the Seas: trải nghiệm nổi bật qua tư liệu năm 2016–2017</h4><p>Đài quan sát trên cao, không gian giải trí Two70 và robot pha chế là những điểm nổi bật trong tư liệu về Ovation of the Seas. Tuy nhiên, nguồn gắn với sự kiện Star Travel đón tàu cập cảng Việt Nam ngày <strong>14/06/2016</strong> và các tour năm 2017. Những mô tả này giúp hình dung trải nghiệm trên tàu, nhưng không xác nhận tiện ích, giá tour hay điều kiện sử dụng hiện nay.</p>
+<p>Các danh xưng như “5 sao”, “hiện đại và thông minh nhất thế giới” hay lời so sánh với resort trên đất liền là nội dung quảng bá của nguồn, không phải kết luận đã được kiểm chứng độc lập.</p>
+<h2>Quy mô tàu theo nguồn</h2>
+<p>Ovation of the Seas được giới thiệu là tàu thuộc dòng Quantum, cao <strong>18 tầng</strong>, dài <strong>347 mét</strong>, ngang <strong>41 mét</strong>, có <strong>2.090 phòng ngủ</strong>, sức chứa <strong>4.905 khách</strong> và <strong>1.500 nhân viên</strong>. Nguồn còn ghi <strong>168.666 tấn</strong> dưới tên gọi “tải trọng”. Loại thông số và cách gọi này chưa được xác minh, nên không tự chuyển thành lượng giãn nước hay một chỉ số kỹ thuật khác.</p>
+<h2>Ngắm biển từ Sao Bắc Đẩu và Two70</h2>
+<p>Đài quan sát <strong>“Sao Bắc Đẩu”</strong> có cabin nối với cần trục, được nguồn mô tả là đưa khách lên độ cao <strong>hơn 90 mét so với mặt nước biển</strong>. Bài giới thiệu nhắc đến chuyển động 360 độ và khả năng ngắm toàn cảnh đại dương từ trên cao.</p>
+<p><strong>Two70</strong> là không gian kết hợp ăn uống và giải trí với tầm nhìn <strong>270 độ</strong> ra biển. Ban ngày, ánh sáng tự nhiên chiếu vào khu vực ăn uống, trò chuyện. Buổi tối, theo nguồn, các cửa sổ trở thành màn hình trình chiếu cỡ lớn, kết hợp âm thanh và ánh sáng để biến nơi này thành sân khấu giải trí.</p>
+<h2>Internet, WOWband và robot pha chế</h2>
+<p>Nguồn nói tàu có Internet vệ tinh, nhưng ghi tốc độ là <strong>“khoảng 4,26 km/giây”</strong>. Đây là điểm bất thường: km/giây là đơn vị vận tốc, không phải đơn vị tốc độ truyền dữ liệu. Không thể dùng con số này để đánh giá hiệu năng Internet trên tàu, cũng không có cơ sở để tự sửa sang Mbps.</p>
+<p>Vòng tay thông minh <strong>WOWband</strong> được giới thiệu là cấp cho mỗi hành khách để check-in, check-out, mở cửa phòng và thanh toán khi mua sản phẩm hoặc dịch vụ trên tàu. Nguồn không làm rõ điều kiện cấp vòng tay hay phạm vi chức năng áp dụng hiện nay.</p>
+<p>Tại quầy <strong>Bionic</strong>, khách chọn thức uống bằng máy tính bảng rồi robot thực hiện việc pha chế. Nguồn ghi có <strong>hai robot</strong> với tốc độ <strong>hai ly mỗi phút</strong>, nhưng không nói rõ đây là tốc độ tổng hay tốc độ của từng robot.</p>
+<h2>Hoạt động vận động và giải trí trong nhà</h2>
+<p><strong>Ripcord by iFly</strong> được mô tả là trải nghiệm nâng người lên, tạo cảm giác lơ lửng trên không. Cụm từ “bay an toàn” trong nguồn là lời quảng bá, không phải bảo đảm an toàn tuyệt đối hoặc xác nhận mọi hành khách đều có thể tham gia.</p>
+<p>Ở <strong>SeaPlex</strong>, nguồn liệt kê trượt băng nghệ thuật, bóng rổ, xe điện đụng và biểu diễn nhào lộn trên không, đồng thời nhấn mạnh không gian vận động dành cho trẻ em. Danh sách này chưa được đối chiếu với thông tin vận hành hiện tại. Danh xưng “không gian giải trí trong nhà lớn nhất trên biển” cũng chưa được xác minh độc lập.</p>
+<p>Tư liệu không nêu giới hạn tuổi, chiều cao, cân nặng, sức khỏe, phí tham gia, yêu cầu đặt chỗ hay giờ hoạt động của các tiện ích. Người chuẩn bị đi cần xác nhận những điều này, thay vì mặc định các hoạt động đều miễn phí hoặc phù hợp với tất cả mọi người.</p>
+<h2>Phòng nghỉ và ẩm thực</h2>
+<p>Nguồn giới thiệu <strong>Loft Suite</strong> là phòng nghỉ cao cấp hai tầng, có ban công riêng hướng ra biển, màn hình <strong>LED 80-inch</strong> và một chiếc piano. Tư liệu không chỉ rõ hạng phòng cụ thể áp dụng từng trang bị, nên không thể coi đây là danh sách tiện nghi chung cho mọi phòng suite.</p>
+<p><strong>Một số phòng nghỉ</strong> được mô tả là có ban công màn hình ảo để theo dõi cảnh thực tế bên ngoài tàu. Nguồn không nói tiện ích này có ở tất cả các phòng.</p>
+<p>Về ẩm thực, nguồn ghi tàu có <strong>18 nhà hàng</strong>, trong đó có nhà hàng Ý được giới thiệu là do đầu bếp <strong>Jamie Oliver</strong> chỉ đạo. Bài không cung cấp thực đơn, mức phí hay xác nhận về số lượng và cách vận hành nhà hàng hiện tại.</p>
+<h2>Lịch tour và giá niêm yết năm 2017</h2>
+<p>Bảng dưới giữ lại sáu chương trình trong nguồn. <strong>Tất cả ngày khởi hành đều thuộc năm 2017</strong>; đây là dữ liệu lịch sử, không phải lịch mở bán hay báo giá hiện hành.</p>
+<table>
+<thead><tr><th scope="col">Điểm đến</th><th scope="col">Ngày khởi hành</th><th scope="col">Giá trọn gói theo nguồn</th><th scope="col">Thời lượng</th></tr></thead>
+<tbody>
+<tr><td>Singapore - Malaysia</td><td>03/04/17</td><td>19.000.000đ</td><td>4 ngày</td></tr>
+<tr><td>Singapore - Malaysia</td><td>10/04/17</td><td>20.500.000đ</td><td>5 ngày</td></tr>
+<tr><td>Singapore – Thái Lan</td><td>11/03/17, 06/04/17</td><td>20.900.000đ</td><td>5 ngày</td></tr>
+<tr><td>Singapore - Malaysia</td><td>15/03/17</td><td>20.900.000đ</td><td>5 ngày</td></tr>
+<tr><td>Singapore – Thái Lan - Malaysia</td><td>06/03/17, 19/03/17, 29/03/17</td><td>24.900.000đ</td><td>6 ngày</td></tr>
+<tr><td>Singapore – Malaysia - Thái Lan</td><td>24/03/17</td><td>25.500.000đ</td><td>6 ngày</td></tr>
+</tbody>
+</table>
+<p>Dù dùng cụm từ “giá trọn gói”, nguồn không giải thích các khoản bao gồm, khoản loại trừ, loại phòng, thuế phí hay điều kiện áp dụng. Những mức giá này không đủ để tính chi phí cho một chuyến đi mới.</p>
+<h2>Thông tin liên hệ trong tư liệu cũ</h2>
+<p>Nguồn ghi thông tin liên hệ của <strong>Công ty cổ phần Star Travel International</strong> như dưới đây. Đây là dữ liệu lịch sử, chưa được xác nhận còn sử dụng; địa chỉ và số điện thoại được giữ theo nguồn.</p>
+<ul>
+<li><strong>Trụ sở chính:</strong> 96 Trần Hưng Đạo, Q.1, TP. Hồ Chí Minh. Hotline: 0925 122 122. Điện thoại: (08) 39 201 201.</li>
+<li><strong>Văn phòng Hà Nội:</strong> tầng 3, 59 Xã Đàn, quận Đống Đa, Hà Nội. Điện thoại: (04) 39 275 288.</li>
+<li><strong>Văn phòng Phú Mỹ Hưng:</strong> SE3-1 Mỹ Khánh 3, Quận 7, TP.HCM. Điện thoại: (08) 54 121 168.</li>
+</ul>
+<p>Email: <a href="mailto:info@thegioidulich.com">info@thegioidulich.com</a>. Website hiển thị trong nguồn là <a href="https://www.startravel.vn/">www.thegioidulich.com</a>, nhưng liên kết thực tế trỏ tới https://www.startravel.vn/. Đích liên kết được giữ nguyên như dữ liệu cung cấp.</p>
+<p>Tư liệu này hữu ích để tìm hiểu những trải nghiệm từng được quảng bá trên Ovation of the Seas. Khi lập kế hoạch chuyến đi, cần xác nhận lại lịch trình, tiện ích đang hoạt động, điều kiện tham gia, trang bị của đúng hạng phòng và chi phí; không nên xem mô tả năm 2016–2017 là cam kết hiện tại.</p></article><article><h3>Y</h3><h4>Ovation of the Seas: 8 trải nghiệm nổi bật và thông tin hải trình từ nguồn năm 2016</h4><p>Ovation of the Seas kết hợp các hoạt động ngắm cảnh, giải trí, ẩm thực và công nghệ trên cùng một du thuyền. Bài giới thiệu của Star Travel nhân dịp tàu cập cảng Việt Nam ngày 14/06/2016 nêu tám điểm nổi bật, từ đài quan sát trên cao đến quầy bar có robot pha chế.</p><p><strong>Lưu ý về thời điểm:</strong> Các thông số, tiện ích và thông tin liên hệ dưới đây được giữ theo nguồn cũ. Những chương trình tour được giới thiệu có ngày khởi hành trong năm 2017, không phải lịch trình hay báo giá hiện tại.</p><h2>Thông tin chung về Ovation of the Seas</h2><p>Theo bài giới thiệu, Ovation of the Seas thuộc bộ ba du thuyền dòng Quantum được mô tả là những du thuyền thông minh nhất thế giới vào thời điểm đó. Tàu cao 18 tầng, dài 347 mét, rộng 41 mét, có 2.090 phòng ngủ, sức chứa 4.905 khách và 1.500 nhân viên, với tải trọng 168.666 tấn. Nguồn giới thiệu đây là siêu du thuyền 5 sao tích hợp công nghệ tiên tiến, với mức độ hiện đại được so sánh vượt cả các khu resort 5 sao trên đất liền.</p><p>Trong nguồn năm 2016, Star Travel giới thiệu mình là công ty tiên phong và lâu đời nhất trong lĩnh vực du thuyền 5 sao đưa du khách Việt ra nước ngoài, đồng thời là đại diện chính thức và đối tác chiến lược tại Việt Nam của Royal Caribbean. Trong sáu tháng đầu năm 2016, công ty cho biết đã dẫn đầu với hơn 1.213 lượt khách tham quan các điểm đến nổi tiếng thế giới bằng hệ thống du thuyền 5 sao của tập đoàn này. Tháng 6/2016, Star Travel tiếp tục giới thiệu các hải trình trên Ovation of the Seas cho du khách Việt Nam.</p><h2>8 điểm nổi bật trên du thuyền</h2><h3>1. Đài quan sát “Sao Bắc Đẩu”</h3><p>Đài quan sát sử dụng cabin nối với cần trục để đưa hành khách lên độ cao hơn 90 mét so với mặt nước biển. Với chuyển động 360 độ được mô tả trong nguồn, trải nghiệm này cho phép du khách ngắm toàn cảnh đại dương từ trên cao.</p><h3>2. Không gian ăn uống và giải trí Two70</h3><p>Two70 là khu phức hợp có tầm nhìn 270 độ hướng ra biển. Ban ngày, ánh sáng tự nhiên qua các cửa sổ tạo không gian thoáng đãng để ăn uống và trò chuyện. Buổi tối, các cửa sổ trở thành màn hình trình chiếu cỡ lớn, kết hợp với hệ thống âm thanh và ánh sáng để biến nơi đây thành sân khấu giải trí.</p><h3>3. Internet vệ tinh và vòng tay thông minh WOWband</h3><p>Nguồn cho biết Ovation of the Seas được trang bị Internet tốc độ cao qua vệ tinh, phủ tới mọi khu vực trên tàu, và nêu tốc độ khoảng <strong>4,26 km/giây</strong>. Đây là số liệu và đơn vị được giữ nguyên từ bài giới thiệu cũ, không nên coi là thông số tốc độ truyền dữ liệu đã được xác minh.</p><p>Theo nguồn, mỗi hành khách được cấp vòng tay thông minh WOWband để thực hiện các thao tác check-in, check-out, mở cửa phòng và thanh toán khi mua sản phẩm hoặc dịch vụ trên du thuyền.</p><h3>4. Robot pha chế cocktail tại Bionic</h3><p>Tại quầy bar Bionic, du khách chọn đồ uống trên máy tính bảng. Hai robot đảm nhiệm việc pha chế; nguồn giới thiệu tốc độ phục vụ là hai ly mỗi phút. Đây là một trong những tiện ích công nghệ được nhấn mạnh trong bài viết.</p><h3>5. Trải nghiệm bay cùng Ripcord by iFly</h3><p>Ripcord by iFly được giới thiệu là hoạt động mô phỏng cảm giác bay, đưa người tham gia lơ lửng trong không trung nhờ luồng gió. Nguồn mô tả trải nghiệm này có tính năng bay an toàn, khác với việc ngồi trong cabin để ngắm cảnh tại đài quan sát “Sao Bắc Đẩu”.</p><h3>6. Khu giải trí trong nhà SeaPlex</h3><p>SeaPlex được nguồn mô tả là không gian giải trí trong nhà lớn nhất trên biển. Các hoạt động được liệt kê gồm trượt băng nghệ thuật, bóng rổ, xe điện đụng và biểu diễn nhào lộn trên không. Bài giới thiệu nhấn mạnh đây là nơi trẻ em có thể vận động và vui chơi trong hành trình.</p><h3>7. Phòng nghỉ và trang thiết bị nội thất</h3><p>Ovation of the Seas có hạng phòng cao cấp Loft Suite gồm hai tầng và ban công riêng hướng ra biển. Theo nguồn, bên trong phòng có màn hình LED 80 inch và một chiếc piano.</p><p>Một số phòng nghỉ được trang bị ban công màn hình ảo, cho phép hành khách theo dõi hình ảnh quang cảnh thực tế bên ngoài du thuyền.</p><h3>8. Hệ thống 18 nhà hàng</h3><p>Nguồn giới thiệu tàu có tổng cộng 18 nhà hàng phục vụ nhiều nhu cầu ẩm thực khác nhau. Trong số đó có nhà hàng Ý sang trọng do đầu bếp Jamie Oliver chỉ đạo.</p><h2>Các chương trình tour được giới thiệu cho năm 2017</h2><p>Bảng dưới đây tổng hợp lịch khởi hành, thời lượng và giá trọn gói trong nguồn. Các ngày khởi hành đều thuộc năm 2017; mức giá chỉ phản ánh thông tin của bài giới thiệu cũ.</p><table><thead><tr><th>Điểm đến</th><th>Ngày khởi hành</th><th>Giá trọn gói</th><th>Thời lượng</th></tr></thead><tbody><tr><td>Singapore – Malaysia</td><td>03/04/17</td><td>19.000.000đ</td><td>4 ngày</td></tr><tr><td>Singapore – Malaysia</td><td>10/04/17</td><td>20.500.000đ</td><td>5 ngày</td></tr><tr><td>Singapore – Thái Lan</td><td>11/03/17, 06/04/17</td><td>20.900.000đ</td><td>5 ngày</td></tr><tr><td>Singapore – Malaysia</td><td>15/03/17</td><td>20.900.000đ</td><td>5 ngày</td></tr><tr><td>Singapore – Thái Lan – Malaysia</td><td>06/03/17, 19/03/17, 29/03/17</td><td>24.900.000đ</td><td>6 ngày</td></tr><tr><td>Singapore – Malaysia – Thái Lan</td><td>24/03/17</td><td>25.500.000đ</td><td>6 ngày</td></tr></tbody></table><h2>Thông tin liên hệ Star Travel trong nguồn</h2><p><strong>Công ty cổ phần Star Travel International</strong></p><p><strong>Trụ sở chính:</strong> 96 Trần Hưng Đạo, Q.1, TP. Hồ Chí Minh<br>Hotline: 0925 122 122<br>Điện thoại: (08) 39 201 201</p><p><strong>Văn phòng Hà Nội:</strong> Tầng 3, 59 Xã Đàn, quận Đống Đa, Hà Nội<br>Điện thoại: (04) 39 275 288</p><p><strong>Văn phòng Phú Mỹ Hưng:</strong> SE3-1 Mỹ Khánh 3, Quận 7, TP. Hồ Chí Minh<br>Điện thoại: (08) 54 121 168<br>Email: <a href="mailto:info@thegioidulich.com" target="_blank" rel="noopener noreferrer">info@thegioidulich.com</a><br>Website: <a href="https://www.startravel.vn/" target="_blank" rel="noopener noreferrer">www.thegioidulich.com</a></p><p>Tên website hiển thị và địa chỉ liên kết ở trên được giữ như nguồn: dòng chữ là www.thegioidulich.com, còn liên kết dẫn tới https://www.startravel.vn/. Khi tìm hiểu một chuyến đi hiện nay, cần kiểm tra lại lịch trình, giá, tiện ích và thông tin liên hệ thay vì sử dụng trực tiếp dữ liệu từ bài giới thiệu năm 2016.</p></article></div></section></body></html>

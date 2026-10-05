@@ -1,0 +1,182 @@
+{
+    "mode": "saved_outputs_only",
+    "AI_calls_added": 0,
+    "semantic_accuracy": "pending_human",
+    "original_artifacts_changed": false,
+    "cases": [
+        {
+            "case": "Q26-C",
+            "artifact_sha256": "f47ffd2118a4c2797b062b56f4f559b6f085957e229b37202e0994b744171eee",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "original_diagnostics": {
+                "stage": "validate",
+                "validation_errors": [
+                    {
+                        "group": "content",
+                        "field": "content_html",
+                        "reason": "important_number_missing"
+                    }
+                ]
+            },
+            "important_facts_with_unmatched_tokens": [
+                {
+                    "fact_id": "F02",
+                    "unmatched_numeric_tokens": [
+                        "3"
+                    ]
+                }
+            ],
+            "candidate_numeric_tokens": [
+                "09",
+                "03",
+                "2025",
+                "1",
+                "23",
+                "9",
+                "10",
+                "55"
+            ]
+        },
+        {
+            "case": "Q27-C",
+            "artifact_sha256": "3777b0c5ec22839c180584be8426381757848773baff506aeccc40a43fb8d386",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "original_diagnostics": {
+                "stage": "validate",
+                "validation_errors": [
+                    {
+                        "group": "content",
+                        "field": "content_html",
+                        "reason": "important_number_missing"
+                    }
+                ]
+            },
+            "important_facts_with_unmatched_tokens": [
+                {
+                    "fact_id": "F02",
+                    "unmatched_numeric_tokens": [
+                        "4"
+                    ]
+                }
+            ],
+            "candidate_numeric_tokens": [
+                "2025",
+                "170",
+                "14",
+                "57",
+                "31",
+                "12",
+                "2024"
+            ]
+        },
+        {
+            "case": "Q28-C",
+            "artifact_sha256": "dadd7b7a69341dd69f1cd4507823709b7de4791df5aaa16618e312dfd60e885f",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "original_diagnostics": {
+                "stage": "validate",
+                "validation_errors": [
+                    {
+                        "group": "content",
+                        "field": "content_html",
+                        "reason": "important_number_missing"
+                    }
+                ]
+            },
+            "important_facts_with_unmatched_tokens": [
+                {
+                    "fact_id": "F01",
+                    "unmatched_numeric_tokens": [
+                        "3"
+                    ]
+                }
+            ],
+            "candidate_numeric_tokens": [
+                "2025",
+                "18",
+                "12",
+                "02",
+                "1",
+                "2026",
+                "25",
+                "11",
+                "15",
+                "500",
+                "150",
+                "2024",
+                "8,4",
+                "17"
+            ]
+        },
+        {
+            "case": "Q30-C",
+            "artifact_sha256": "46c722b91af85412351e32409a36a30c9bc14a052d771e7dc49d4762cebf4295",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "original_diagnostics": {
+                "stage": "validate",
+                "validation_errors": [
+                    {
+                        "group": "content",
+                        "field": "content_html",
+                        "reason": "important_number_missing"
+                    }
+                ]
+            },
+            "important_facts_with_unmatched_tokens": [
+                {
+                    "fact_id": "F04",
+                    "unmatched_numeric_tokens": [
+                        "02"
+                    ]
+                }
+            ],
+            "candidate_numeric_tokens": [
+                "01",
+                "03",
+                "2010",
+                "8",
+                "00",
+                "16",
+                "30",
+                "20.000",
+                "100",
+                "101",
+                "50",
+                "10.000"
+            ]
+        },
+        {
+            "case": "Q32-C",
+            "artifact_sha256": "c1c96bc796f940dbee1649fe73b64d7ec9ef800cc8271f04a198766031faf6ca",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "original_diagnostics": {
+                "stage": "validate",
+                "validation_errors": [
+                    {
+                        "group": "content",
+                        "field": "content_html",
+                        "reason": "important_number_missing"
+                    }
+                ]
+            },
+            "important_facts_with_unmatched_tokens": [
+                {
+                    "fact_id": "F03",
+                    "unmatched_numeric_tokens": [
+                        "16"
+                    ]
+                }
+            ],
+            "candidate_numeric_tokens": [
+                "9",
+                "2022",
+                "29"
+            ]
+        }
+    ]
+}

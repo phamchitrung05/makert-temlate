@@ -1,0 +1,223 @@
+{
+    "arm": "C",
+    "status": "ready",
+    "error_code": null,
+    "final": {
+        "title": "v-text trong Vue: cập nhật văn bản và lưu ý ghi đè nội dung",
+        "content_html": "<p><code>v-text</code> cập nhật văn bản bằng cách gán thuộc tính <a href=\"https://developer.mozilla.org/en-US/docs/Web/API/Node/textContent\"><code>textContent</code></a> của phần tử, nên sẽ ghi đè toàn bộ nội dung hiện có bên trong. Giá trị mà <code>v-text</code> mong đợi là <code>string</code> (chuỗi). Trong ví dụ dưới đây, hai cách viết tương đương nhau:</p>\n<pre><code>&lt;span v-text=\"msg\"&gt;&lt;/span&gt;\n&lt;!-- same as --&gt;\n&lt;span&gt;{{msg}}&lt;/span&gt;\n</code></pre>\n<p>Nếu cần giữ phần chữ cố định và chỉ cập nhật một phần văn bản, hãy dùng <a href=\"https://github.com/guide/essentials/template-syntax#text-interpolation\">nội suy mustache</a> thay vì <code>v-text</code>. Trong ví dụ sau, phần chữ phía trước được giữ nguyên, còn <code>{{dynamicPortion}}</code> là phần cần cập nhật:</p>\n<pre><code>&lt;span&gt;Keep this but update a {{dynamicPortion}}&lt;/span&gt;</code></pre>\n<p>Nguồn: <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/api/built-in-directives.md\">Tài liệu Vue — Built-in Directives, mục v-text</a>.</p>"
+    },
+    "quality_checks": [
+        {
+            "check": "copy",
+            "status": "pass"
+        },
+        {
+            "check": "similarity",
+            "status": "pass",
+            "metric": 0.009,
+            "reason": "lexical_metric_not_style_score"
+        },
+        {
+            "check": "language",
+            "status": "pass",
+            "detected": "vi"
+        },
+        {
+            "check": "source_code_links",
+            "status": "pass"
+        },
+        {
+            "check": "important_numbers",
+            "status": "pass"
+        },
+        {
+            "check": "unanchored_numbers",
+            "status": "pass",
+            "count": 0,
+            "reason": "requires_editor_review"
+        },
+        {
+            "check": "semantic_grounding",
+            "status": "undetermined",
+            "reason": "source_anchors_are_not_external_fact_verification"
+        }
+    ],
+    "cost": null,
+    "calls": [
+        {
+            "task": "article.analysis-plan",
+            "output": {
+                "knowledge": {
+                    "facts": [
+                        {
+                            "id": "F01",
+                            "claim": "v-text cập nhật nội dung văn bản của phần tử.",
+                            "source_block_ids": [
+                                "S003"
+                            ],
+                            "evidence": "Update the element's text content.",
+                            "important": true
+                        },
+                        {
+                            "id": "F02",
+                            "claim": "Kiểu giá trị mà v-text mong đợi là string.",
+                            "source_block_ids": [
+                                "S004"
+                            ],
+                            "evidence": "Expects: string",
+                            "important": true
+                        },
+                        {
+                            "id": "F03",
+                            "claim": "v-text hoạt động bằng cách gán thuộc tính textContent của phần tử, vì vậy sẽ ghi đè toàn bộ nội dung hiện có bên trong phần tử.",
+                            "source_block_ids": [
+                                "S005"
+                            ],
+                            "evidence": "v-text works by setting the element's textContent property, so it will overwrite any existing content inside the element.",
+                            "important": true
+                        },
+                        {
+                            "id": "F04",
+                            "claim": "Nếu chỉ cần cập nhật một phần nội dung văn bản, nguồn khuyên dùng nội suy mustache thay vì v-text; ví dụ giữ nguyên phần chữ cố định trong <span>Keep this but update a {{dynamicPortion}}</span>.",
+                            "source_block_ids": [
+                                "S005"
+                            ],
+                            "evidence": "If you need to update only part of the textContent, you should use mustache interpolations instead (ie. <span>Keep this but update a {{dynamicPortion}}</span>).",
+                            "important": true
+                        },
+                        {
+                            "id": "F05",
+                            "claim": "Trong ví dụ của nguồn, <span v-text=\"msg\"></span> tương đương với <span>{{msg}}</span>.",
+                            "source_block_ids": [
+                                "S007"
+                            ],
+                            "evidence": "<span v-text=\"msg\"></span>\n<!-- same as -->\n<span>{{msg}}</span>",
+                            "important": true
+                        }
+                    ],
+                    "terms": [
+                        "v-text",
+                        "string",
+                        "textContent",
+                        "Nội suy mustache",
+                        "{{msg}}",
+                        "{{dynamicPortion}}"
+                    ],
+                    "uncertainties": [
+                        "Đoạn nguồn không nêu phiên bản Vue cụ thể; không tự bổ sung số phiên bản hay khẳng định phạm vi tương thích.",
+                        "Nguồn chỉ giải thích chức năng, kiểu giá trị mong đợi và cách chọn giữa v-text với nội suy; không cung cấp benchmark hoặc hành vi khi truyền giá trị không phải string."
+                    ]
+                },
+                "writing_plan": {
+                    "article_type": "Giải thích kỹ thuật ngắn về v-text",
+                    "audience": "Người phát triển website, kể cả người mới tìm hiểu cú pháp template của Vue.",
+                    "angle": "Đi thẳng vào điểm dễ nhầm: v-text thay toàn bộ nội dung bên trong phần tử, còn nội suy mustache phù hợp khi cần giữ chữ cố định và chỉ cập nhật một phần.",
+                    "outline": [
+                        "Đặt tiêu đề ngắn nêu chức năng và lưu ý ghi đè của v-text. Mở bài bằng lưu ý này, giải thích cơ chế gán textContent và kiểu giá trị mong đợi là string; gắn liên kết thật vào textContent với href chính xác https://developer.mozilla.org/en-US/docs/Web/API/Node/textContent.",
+                        "Giữ nguyên khối code minh họa hai cách viết tương đương: <span v-text=\"msg\"></span>\\n<!-- same as -->\\n<span>{{msg}}</span>. Giải thích ngắn, không suy rộng thành tương đương trong mọi tình huống.",
+                        "Kết bằng trường hợp cần giữ nội dung cố định: dùng nội suy mustache và giữ nguyên ví dụ <span>Keep this but update a {{dynamicPortion}}</span>. Gắn liên kết thật vào phần giải thích nội suy với href chính xác https://github.com/guide/essentials/template-syntax#text-interpolation. Ghi nguồn bằng liên kết https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/api/built-in-directives.md. Toàn bài chỉ cần hai đoạn giải thích ngắn cùng các ví dụ code, không thêm phần tổng kết lặp ý."
+                    ],
+                    "coverage_fact_ids": [
+                        "F01",
+                        "F02",
+                        "F03",
+                        "F04",
+                        "F05"
+                    ]
+                }
+            },
+            "diagnostics": {
+                "response_id": "resp_008abea6f061e2c0016ac34d997c7087d2905200d032396a7e",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.analysis-plan.v1",
+                "usage": {
+                    "prompt_tokens": 3576,
+                    "completion_tokens": 977,
+                    "total_tokens": 4553
+                }
+            },
+            "latency_ms": 38399
+        },
+        {
+            "task": "article.writer",
+            "output": {
+                "draft": {
+                    "title": "v-text trong Vue: cập nhật văn bản và lưu ý ghi đè nội dung",
+                    "content_html": "<p><code>v-text</code> cập nhật văn bản bằng cách gán thuộc tính <a href=\"https://developer.mozilla.org/en-US/docs/Web/API/Node/textContent\"><code>textContent</code></a> của phần tử, nên toàn bộ nội dung đang có bên trong sẽ bị ghi đè. Giá trị mà directive này mong đợi là <code>string</code>. Trong ví dụ dưới đây, hai cách viết cho kết quả tương đương:</p>\n<pre><code>&lt;span v-text=\"msg\"&gt;&lt;/span&gt;\n&lt;!-- same as --&gt;\n&lt;span&gt;{{msg}}&lt;/span&gt;\n</code></pre>\n<p>Nếu muốn giữ phần chữ cố định và chỉ cập nhật một phần văn bản, hãy dùng <a href=\"https://github.com/guide/essentials/template-syntax#text-interpolation\">nội suy mustache</a> thay vì <code>v-text</code>. Trong ví dụ của nguồn, phần chữ phía trước được giữ nguyên, còn <code>{{dynamicPortion}}</code> là phần cần cập nhật:</p>\n<pre><code>&lt;span&gt;Keep this but update a {{dynamicPortion}}&lt;/span&gt;</code></pre>\n<p>Nguồn: <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/api/built-in-directives.md\">Tài liệu Vue — Built-in Directives, mục v-text</a>.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04",
+                    "F05"
+                ],
+                "used_asset_ids": []
+            },
+            "diagnostics": {
+                "response_id": "resp_01ed0dd9c8b5da28016ac34dbfcb2c87d09c9bdb9b0a686bdf",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.writer.v1",
+                "usage": {
+                    "prompt_tokens": 3616,
+                    "completion_tokens": 406,
+                    "total_tokens": 4022
+                }
+            },
+            "latency_ms": 17854
+        },
+        {
+            "task": "article.editor",
+            "output": {
+                "final": {
+                    "title": "v-text trong Vue: cập nhật văn bản và lưu ý ghi đè nội dung",
+                    "content_html": "<p><code>v-text</code> cập nhật văn bản bằng cách gán thuộc tính <a href=\"https://developer.mozilla.org/en-US/docs/Web/API/Node/textContent\"><code>textContent</code></a> của phần tử, nên sẽ ghi đè toàn bộ nội dung hiện có bên trong. Giá trị mà <code>v-text</code> mong đợi là <code>string</code> (chuỗi). Trong ví dụ dưới đây, hai cách viết tương đương nhau:</p>\n<pre><code>&lt;span v-text=\"msg\"&gt;&lt;/span&gt;\n&lt;!-- same as --&gt;\n&lt;span&gt;{{msg}}&lt;/span&gt;\n</code></pre>\n<p>Nếu cần giữ phần chữ cố định và chỉ cập nhật một phần văn bản, hãy dùng <a href=\"https://github.com/guide/essentials/template-syntax#text-interpolation\">nội suy mustache</a> thay vì <code>v-text</code>. Trong ví dụ sau, phần chữ phía trước được giữ nguyên, còn <code>{{dynamicPortion}}</code> là phần cần cập nhật:</p>\n<pre><code>&lt;span&gt;Keep this but update a {{dynamicPortion}}&lt;/span&gt;</code></pre>\n<p>Nguồn: <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/api/built-in-directives.md\">Tài liệu Vue — Built-in Directives, mục v-text</a>.</p>"
+                },
+                "used_fact_ids": [
+                    "F01",
+                    "F02",
+                    "F03",
+                    "F04",
+                    "F05"
+                ],
+                "issues": []
+            },
+            "diagnostics": {
+                "response_id": "resp_0c420c90a38eae13016ac34dd1b75087d1ac04f95f326d0796",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "article.editor.v1",
+                "usage": {
+                    "prompt_tokens": 4025,
+                    "completion_tokens": 410,
+                    "total_tokens": 4435
+                }
+            },
+            "latency_ms": 19166
+        }
+    ],
+    "latency_ms": 75430,
+    "input_sha256": "d2cf45cace68b2aba88410fc6bc2b899c66d75e501a304becf0f88da57989d3c",
+    "comparison_input_sha256": "62974da0c98e3bfedbd2b29301cbea50ab0f5daac9668715e93e4f1ff0299240",
+    "writing_profile_sha256": "1267aa8b907b63f12cd8c953c4a6664dbea3f3e7acabb12a28e64293053a7c96",
+    "brief_sha256": "a7f052446c270a2c36979d5688c0edaf10a0f5a164ae6ab255b69d622b3c56c6",
+    "image_evaluation": {
+        "mode": "source_metadata_only",
+        "source_images": 0,
+        "approved_asset_regenerate": "not_evaluated",
+        "pixel_understanding": "not_evaluated"
+    },
+    "source_sha256": "ee2aeae44120e13807b679628fdf5387153ef4d6816cbf1fecbd09bb12d863b3",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "v-text trong Vue: cập nhật văn bản và lưu ý ghi đè nội dung",
+        "content_html": "<p><code>v-text</code> cập nhật văn bản bằng cách gán thuộc tính <a href=\"https://developer.mozilla.org/en-US/docs/Web/API/Node/textContent\"><code>textContent</code></a> của phần tử, nên sẽ ghi đè toàn bộ nội dung hiện có bên trong. Giá trị mà <code>v-text</code> mong đợi là <code>string</code> (chuỗi). Trong ví dụ dưới đây, hai cách viết tương đương nhau:</p>\n<pre><code>&lt;span v-text=\"msg\"&gt;&lt;/span&gt;\n&lt;!-- same as --&gt;\n&lt;span&gt;{{msg}}&lt;/span&gt;\n</code></pre>\n<p>Nếu cần giữ phần chữ cố định và chỉ cập nhật một phần văn bản, hãy dùng <a href=\"https://github.com/guide/essentials/template-syntax#text-interpolation\">nội suy mustache</a> thay vì <code>v-text</code>. Trong ví dụ sau, phần chữ phía trước được giữ nguyên, còn <code>{{dynamicPortion}}</code> là phần cần cập nhật:</p>\n<pre><code>&lt;span&gt;Keep this but update a {{dynamicPortion}}&lt;/span&gt;</code></pre>\n<p>Nguồn: <a href=\"https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/api/built-in-directives.md\">Tài liệu Vue — Built-in Directives, mục v-text</a>.</p>"
+    },
+    "total_tokens": 13010
+}

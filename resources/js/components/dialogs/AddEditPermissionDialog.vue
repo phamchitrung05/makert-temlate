@@ -1,4 +1,14 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: AddEditPermissionDialog dùng khung dialog chung.
+  CÁC HÀM/METHOD TRONG FILE: onReset, onSubmit.
+  INPUT/OUTPUT CỦA CLASS (tổng thể): props/model và thao tác UI -> sự kiện của
+  caller; header/footer cố định, content cuộn qua AppDialogLayout.
+  =====================================================================
+-->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
+
 const props = defineProps({
   isDialogVisible: {
     type: Boolean,
@@ -35,23 +45,20 @@ watch(() => props, () => {
 
 <template>
   <VDialog
+    scrollable
     :width="$vuetify.display.smAndDown ? 'auto' : 600"
     :model-value="props.isDialogVisible"
     @update:model-value="onReset"
   >
-    <!-- 👉 dialog close btn -->
-    <DialogCloseBtn @click="onReset" />
+    <AppDialogLayout @close="onReset">
+      <template #header>
+        <VCardItem>
+          <VCardTitle>{{ props.permissionName ? 'Edit' : 'Add' }} Permission</VCardTitle>
+          <VCardSubtitle>{{ props.permissionName ? 'Edit' : 'Add' }}  permission as per your requirements.</VCardSubtitle>
+        </VCardItem>
+      </template>
 
-    <VCard class="pa-2 pa-sm-10">
       <VCardText>
-        <!-- 👉 Title -->
-        <h4 class="text-h4 text-center mb-2">
-          {{ props.permissionName ? 'Edit' : 'Add' }} Permission
-        </h4>
-        <p class="text-body-1 text-center mb-6">
-          {{ props.permissionName ? 'Edit' : 'Add' }}  permission as per your requirements.
-        </p>
-
         <!-- 👉 Form -->
         <VForm>
           <VAlert
@@ -71,16 +78,29 @@ watch(() => props, () => {
               v-model="currentPermissionName"
               placeholder="Enter Permission Name"
             />
-
-            <VBtn @click="onSubmit">
-              {{ props.permissionName ? 'Update' : 'Add' }}
-            </VBtn>
           </div>
 
           <VCheckbox label="Set as core permission" />
         </VForm>
       </VCardText>
-    </VCard>
+      <template #footer>
+        <VCardActions class="justify-end">
+          <VBtn
+            variant="tonal"
+            color="secondary"
+            @click="onReset"
+          >
+            Cancel
+          </VBtn>
+          <VBtn
+            variant="flat"
+            @click="onSubmit"
+          >
+            {{ props.permissionName ? 'Update' : 'Add' }}
+          </VBtn>
+        </VCardActions>
+      </template>
+    </AppDialogLayout>
   </VDialog>
 </template>
 

@@ -1,0 +1,49 @@
+{
+    "mode": "saved_outputs_only",
+    "AI_calls_added": 0,
+    "human_quality": "not_scored",
+    "original_status": "failed",
+    "original_error_code": "AI_QUALITY_GROUNDING",
+    "artifact_sha256": "c0537db4ffd94889aa19d12ef4b9da479d0ad1a867e6ea661f64ddd1c3ae70e9",
+    "current_gate": "pass",
+    "checks": [
+        {
+            "check": "copy",
+            "status": "pass"
+        },
+        {
+            "check": "similarity",
+            "status": "pass",
+            "metric": 0.124,
+            "reason": "lexical_metric_not_style_score"
+        },
+        {
+            "check": "language",
+            "status": "pass",
+            "detected": "vi"
+        },
+        {
+            "check": "source_code_links",
+            "status": "pass"
+        },
+        {
+            "check": "important_numbers",
+            "status": "pass"
+        },
+        {
+            "check": "unanchored_numbers",
+            "status": "warning",
+            "count": 6,
+            "reason": "requires_editor_review"
+        },
+        {
+            "check": "semantic_grounding",
+            "status": "undetermined",
+            "reason": "source_anchors_are_not_external_fact_verification"
+        }
+    ],
+    "request_timeout": 600,
+    "actual_model_calls": 3,
+    "total_tokens": 37608,
+    "latency_ms": 321634
+}

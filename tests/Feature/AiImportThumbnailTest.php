@@ -14,6 +14,7 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Tests\ArticlePipelineFixture;
 use Tests\TestCase;
 use Tests\UsesIsolatedDatabase;
 
@@ -49,8 +50,6 @@ class AiImportThumbnailTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Fixtures một lượt kiểm riêng baseline được giữ để so sánh rollout.
-        config()->set('ai-content.pipeline', 'single_step');
         config()->set('queue.default', 'database');
         $this->useIsolatedDatabase();
         Queue::fake();
@@ -77,11 +76,10 @@ class AiImportThumbnailTest extends TestCase
                 200,
                 ['Content-Type' => 'text/html'],
             ),
-            'https://provider.test/generate' => Http::response([
+            'https://provider.test/generate' => fn ($request) => Http::response(ArticlePipelineFixture::httpOutput($request, [
                 'title' => 'Rewritten article',
                 'content_html' => '<p>Rewritten article content.</p>',
-                'thumbnail_alt_text' => 'Article cover illustration',
-            ]),
+            ])),
             'https://example.test/cover.png' => Http::response(
                 base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='),
                 200,
@@ -119,20 +117,20 @@ class AiImportThumbnailTest extends TestCase
         $media = $asset->getFirstMedia('library');
         $this->assertSame($asset->id, data_get($result, 'draft.thumbnail.media_asset_id'));
         $this->assertSame('https://example.test/cover.png', data_get($result, 'draft.thumbnail.source_url'));
-        $this->assertSame('Article cover illustration', data_get($result, 'draft.thumbnail.alt_text'));
+        $this->assertSame('Source article', data_get($result, 'draft.thumbnail.alt_text'));
         $this->assertSame('Rewritten article', data_get($result, 'draft.title'));
         $this->assertSame('http-json', $result['provider']);
         $this->assertSame('test-model', $result['model']);
         $this->assertSame(MediaAssetKind::Image, $asset->kind);
         $this->assertSame(MediaAssetVisibility::Public, $asset->visibility);
         $this->assertSame($import->created_by, $asset->created_by);
-        $this->assertSame('Article cover illustration', $asset->alt_text);
+        $this->assertSame('Source article', $asset->alt_text);
         $this->assertNotNull($media);
         $this->assertSame('image/webp', $media->mime_type);
         $this->assertSame('media_public', $media->disk);
         Storage::disk('media_public')->assertExists($media->getPathRelativeToRoot());
         Http::assertSent(fn (Request $request): bool => $request->url() === 'https://example.test/cover.png');
-        Http::assertSentCount(3);
+        Http::assertSentCount(5);
     }
 
     /**
@@ -150,7 +148,7 @@ class AiImportThumbnailTest extends TestCase
         $this->assertDatabaseCount('media_assets', 0);
         $this->assertDatabaseCount('media', 0);
         Http::assertNotSent(fn (Request $request): bool => $request->url() === 'https://example.test/cover.png');
-        Http::assertSentCount(2);
+        Http::assertSentCount(4);
     }
 
     /**

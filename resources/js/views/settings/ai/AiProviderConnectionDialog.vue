@@ -1,5 +1,6 @@
 <!--
   =====================================================================
+  Header/footer cố định qua AppDialogLayout; chỉ content ở giữa được cuộn.
   CHỨC NĂNG FILE: Dialog tạo/sửa connection AI với API key write-only
   =====================================================================
   CÁC HÀM/METHOD TRONG FILE: resetDraft(), selectedPreset/timeoutValid (computed), submit().
@@ -11,6 +12,7 @@
   =====================================================================
 -->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 /* eslint-disable camelcase -- Provider payload uses Laravel field names. */
 import { computed, ref, watch } from 'vue'
 
@@ -37,7 +39,7 @@ const draft = ref({})
 function resetDraft() {
   if (!props.modelValue) {
     draft.value.api_key = ''
-    
+
     return
   }
   const driver = props.provider?.driver ?? props.presets[0]?.key ?? 'openai-compatible'
@@ -90,12 +92,17 @@ function submit() {
 
 <template>
   <VDialog
+    scrollable
     :model-value="modelValue"
     max-width="620"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <VCard>
-      <VCardTitle>{{ provider ? 'Chỉnh sửa provider AI' : 'Thêm provider AI' }}</VCardTitle>
+    <AppDialogLayout @close="emit('update:modelValue', false)">
+      <template #header>
+        <VCardItem>
+          <VCardTitle>{{ provider ? 'Chỉnh sửa provider AI' : 'Thêm provider AI' }}</VCardTitle>
+        </VCardItem>
+      </template>
       <VCardText>
         <VTextField
           v-model="draft.name"
@@ -151,22 +158,25 @@ function submit() {
           hide-details
         />
       </VCardText>
-      <VCardActions class="justify-end">
-        <VBtn
-          variant="text"
-          @click="emit('update:modelValue', false)"
-        >
-          Hủy
-        </VBtn>
-        <VBtn
-          color="primary"
-          :loading="saving"
-          :disabled="saving || !timeoutValid"
-          @click="submit"
-        >
-          Lưu connection
-        </VBtn>
-      </VCardActions>
-    </VCard>
+      <template #footer>
+        <VCardActions class="justify-end">
+          <VBtn
+            variant="text"
+            @click="emit('update:modelValue', false)"
+          >
+            Hủy
+          </VBtn>
+          <VBtn
+            variant="flat"
+            color="primary"
+            :loading="saving"
+            :disabled="saving || !timeoutValid"
+            @click="submit"
+          >
+            Lưu connection
+          </VBtn>
+        </VCardActions>
+      </template>
+    </AppDialogLayout>
   </VDialog>
 </template>

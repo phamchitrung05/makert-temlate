@@ -1,4 +1,15 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: EnableOneTimePasswordDialog dùng khung dialog chung.
+  CÁC HÀM/METHOD TRONG FILE: formSubmit, resetPhoneNumber, dialogModelValueUpdate.
+  INPUT/OUTPUT CỦA CLASS (tổng thể): props/model và thao tác UI -> sự kiện của
+  caller; header/footer cố định, content cuộn qua AppDialogLayout.
+  =====================================================================
+-->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
+import { useId } from 'vue'
+
 const props = defineProps({
   mobileNumber: {
     type: String,
@@ -15,6 +26,7 @@ const emit = defineEmits([
   'submit',
 ])
 
+const dialogFormId = useId()
 const phoneNumber = ref(structuredClone(toRaw(props.mobileNumber)))
 
 const formSubmit = () => {
@@ -36,24 +48,24 @@ const dialogModelValueUpdate = val => {
 
 <template>
   <VDialog
+    scrollable
     :width="$vuetify.display.smAndDown ? 'auto' : 900"
     :model-value="props.isDialogVisible"
     @update:model-value="dialogModelValueUpdate"
   >
-    <!-- Dialog close btn -->
-    <DialogCloseBtn @click="dialogModelValueUpdate(false)" />
+    <AppDialogLayout @close="dialogModelValueUpdate(false)">
+      <template #header>
+        <VCardItem>
+          <VCardTitle>Verify Your Mobile Number for SMS</VCardTitle>
+          <VCardSubtitle>Enter your mobile phone number with country code and  we will send you a verification code.</VCardSubtitle>
+        </VCardItem>
+      </template>
 
-    <VCard class="pa-2 pa-sm-10">
       <VCardText>
-        <!-- 👉 Title -->
-        <h5 class="text-h5 mb-2">
-          Verify Your Mobile Number for SMS
-        </h5>
-        <p class="text-body-1 mb-6">
-          Enter your mobile phone number with country code and  we will send you a verification code.
-        </p>
-
-        <VForm @submit.prevent="() => {}">
+        <VForm
+          :id="dialogFormId"
+          @submit.prevent="formSubmit"
+        >
           <AppTextField
             v-model="phoneNumber"
             name="mobile"
@@ -62,29 +74,31 @@ const dialogModelValueUpdate = val => {
             type="number"
             class="mb-6"
           />
-
-          <div class="d-flex flex-wrap justify-end gap-4">
-            <VBtn
-              color="secondary"
-              variant="tonal"
-              @click="resetPhoneNumber"
-            >
-              Cancel
-            </VBtn>
-            <VBtn
-              type="submit"
-              @click="formSubmit"
-            >
-              continue
-              <VIcon
-                end
-                icon="tabler-arrow-right"
-                class="flip-in-rtl"
-              />
-            </VBtn>
-          </div>
         </VForm>
       </VCardText>
-    </VCard>
+      <template #footer>
+        <VCardActions class="justify-end">
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            @click="resetPhoneNumber"
+          >
+            Cancel
+          </VBtn>
+          <VBtn
+            variant="flat"
+            :form="dialogFormId"
+            type="submit"
+          >
+            continue
+            <VIcon
+              end
+              icon="tabler-arrow-right"
+              class="flip-in-rtl"
+            />
+          </VBtn>
+        </VCardActions>
+      </template>
+    </AppDialogLayout>
   </VDialog>
 </template>

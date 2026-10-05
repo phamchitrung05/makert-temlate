@@ -7,12 +7,16 @@ use App\Models\AiImport;
 use App\Models\AiImportStep;
 use App\Models\AiWritingProfile;
 use App\Models\Category;
+use App\Models\Post;
 use App\Models\Tag;
 use App\Models\User;
+use App\Services\Ai\Content\ArticleImportService;
+use App\Services\Ai\Providers\Adapters\DeterministicAiProvider;
 use App\Services\Ai\Runs\AiRunBudget;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -154,7 +158,7 @@ class AiTask2RunApiTest extends TestCase
         $this->assertSame(1, data_get($run->input_json, 'writing_profile_snapshot.version'));
         $this->assertSame([$category->id], $run->input_json['category_ids']);
         $this->assertSame('manual', $run->input_json['taxonomy_origin']);
-        $draft = (new \App\Services\Ai\Content\ArticleImportService(new \App\Services\Ai\Providers\Adapters\DeterministicAiProvider))->run($run)['draft'];
+        $draft = (new ArticleImportService(new DeterministicAiProvider))->run($run)['draft'];
         $this->assertSame('manual', $draft['taxonomy_origin']);
         $this->assertSame([$category->id], $draft['category_ids']);
         $this->assertSame([$tag->id], $draft['tag_ids']);
@@ -336,6 +340,16 @@ class AiTask2RunApiTest extends TestCase
         $this->assertSame(1920, $job->timeout);
         $this->assertGreaterThan($job->timeout, config('queue.connections.database.retry_after'));
         $this->assertSame(1, AiRunBudget::calls(['provider' => 'openai', 'fields' => ['title']]));
+        $this->assertSame(3, AiRunBudget::calls(['provider' => 'openai', 'fields' => ['content'], 'pipeline_snapshot' => ['pipeline' => 'single_step']]));
+    }
+
+    /** Input: cấu hình cũ còn mode B. Output: run mới snapshot C và budget ba lượt. */
+    public function test_new_run_forces_three_steps_even_with_legacy_configuration(): void
+    {
+        config()->set('ai-content.pipeline', 'single_step');
+        $run = $this->createRun($this->token());
+        $this->assertSame('three_step', $run->input_json['pipeline_snapshot']['pipeline']);
+        $this->assertSame(3, AiRunBudget::calls(array_replace((array) $run->input_json, ['provider' => 'openai'])));
     }
 
     /**
@@ -381,7 +395,7 @@ class AiTask2RunApiTest extends TestCase
         $this->withToken($token)->postJson($url, ['fields' => ['title', 'content', 'taxonomy'], 'expected_version' => str_repeat('0', 64)])->assertConflict();
         $this->assertDatabaseCount('posts', 0);
         $postId = $this->withToken($token)->postJson($url, ['fields' => ['title', 'content', 'taxonomy'], 'expected_version' => hash('sha256', json_encode($draft))])->assertOk()->json('data.post_id');
-        $post = \App\Models\Post::findOrFail($postId);
+        $post = Post::findOrFail($postId);
         $this->assertSame('draft', $post->status->value ?? $post->status);
         $this->assertSame([$category->id], $post->categories()->pluck('categories.id')->all());
     }
@@ -437,7 +451,7 @@ class AiTask2RunApiTest extends TestCase
         $input['image_connection'] = ['provider' => 'fixture', 'model' => 'image'];
         $run->update(['input_json' => $input, 'provider' => 'deterministic']);
         $event = 'eloquent.created: '.AiImport::class;
-        \Illuminate\Support\Facades\Event::listen($event, function (AiImport $child) use ($run): void {
+        Event::listen($event, function (AiImport $child) use ($run): void {
             if ($child->operation !== 'image' || $child->parent_id !== $run->id) {
                 return;
             }
@@ -448,9 +462,9 @@ class AiTask2RunApiTest extends TestCase
             $parent->update(['result_json' => $result]);
         });
         try {
-            (new ProcessAiImportJob($run->id))->handle(app(\App\Services\Ai\Content\ArticleImportService::class));
+            (new ProcessAiImportJob($run->id))->handle(app(ArticleImportService::class));
         } finally {
-            \Illuminate\Support\Facades\Event::forget($event);
+            Event::forget($event);
         }
         $this->assertSame('ready', $run->fresh()->status);
         $this->assertSame('Đã sửa trong editor', data_get($run->fresh()->result_json, 'draft.title'));

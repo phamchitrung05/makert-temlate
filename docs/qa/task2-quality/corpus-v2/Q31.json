@@ -1,0 +1,50 @@
+{
+    "source_url": "https://www.vietnam.travel/things-to-do/cave-country-phong-nha",
+    "source_format": "html",
+    "title": "Du lịch · Phong Nha · Anh sang Việt",
+    "published_at": null,
+    "version": "article.source.v1",
+    "content_html": "<h2>One of Vietnam's hottest new destinations, Phong Nha is not only home to the world’s largest cave: it also has much to offer avid nature travellers. </h2><p>In just a few short years, <a href=\"https://vietnam.travel/places-to-go/central-vietnam/phong-nha\">Phong Nha</a> has gone from a sleepy, outpost bordering Laos, to a full-scale tourist centre. The reasons for its rise in popularity are numerous. In addition to possessing the continent’s oldest limestone formations and its jungle-covered scenery, the discovery of Han Son Doong, the largest caves in the world, catapulted the excitement to new heights.</p><p>But it’s not just Son Doong that people travel to Phong Nha for -- entrance is restricted to a lucky 200 or so cavers a year who travel on tours organised by <a>Oxalis</a> -- but all the other outdoor-based activities available in the area. When it comes to unadulterated nature, and getting off the beaten track and onto the not-so-beaten trail, Phong Nha stands alone.</p><p>Here is a lowdown of what to do in the area. Most of the tours include the caves. And for those who aren’t into dark, spaces, there are many other options to wile away some time.</p><h3><strong>Phong Nha and Paradise Caves</strong></h3>",
+    "blocks": [
+        {
+            "id": "S001",
+            "type": "h2",
+            "text": "One of Vietnam's hottest new destinations, Phong Nha is not only home to the world’s largest cave: it also has much to offer avid nature travellers. ",
+            "html": "<h2>One of Vietnam's hottest new destinations, Phong Nha is not only home to the world’s largest cave: it also has much to offer avid nature travellers. </h2>"
+        },
+        {
+            "id": "S002",
+            "type": "p",
+            "text": "In just a few short years, Phong Nha has gone from a sleepy, outpost bordering Laos, to a full-scale tourist centre. The reasons for its rise in popularity are numerous. In addition to possessing the continent’s oldest limestone formations and its jungle-covered scenery, the discovery of Han Son Doong, the largest caves in the world, catapulted the excitement to new heights.",
+            "html": "<p>In just a few short years, <a href=\"https://vietnam.travel/places-to-go/central-vietnam/phong-nha\">Phong Nha</a> has gone from a sleepy, outpost bordering Laos, to a full-scale tourist centre. The reasons for its rise in popularity are numerous. In addition to possessing the continent’s oldest limestone formations and its jungle-covered scenery, the discovery of Han Son Doong, the largest caves in the world, catapulted the excitement to new heights.</p>"
+        },
+        {
+            "id": "S003",
+            "type": "p",
+            "text": "But it’s not just Son Doong that people travel to Phong Nha for -- entrance is restricted to a lucky 200 or so cavers a year who travel on tours organised by Oxalis -- but all the other outdoor-based activities available in the area. When it comes to unadulterated nature, and getting off the beaten track and onto the not-so-beaten trail, Phong Nha stands alone.",
+            "html": "<p>But it’s not just Son Doong that people travel to Phong Nha for -- entrance is restricted to a lucky 200 or so cavers a year who travel on tours organised by <a>Oxalis</a> -- but all the other outdoor-based activities available in the area. When it comes to unadulterated nature, and getting off the beaten track and onto the not-so-beaten trail, Phong Nha stands alone.</p>"
+        },
+        {
+            "id": "S004",
+            "type": "p",
+            "text": "Here is a lowdown of what to do in the area. Most of the tours include the caves. And for those who aren’t into dark, spaces, there are many other options to wile away some time.",
+            "html": "<p>Here is a lowdown of what to do in the area. Most of the tours include the caves. And for those who aren’t into dark, spaces, there are many other options to wile away some time.</p>"
+        },
+        {
+            "id": "S005",
+            "type": "h3",
+            "text": "Phong Nha and Paradise Caves",
+            "html": "<h3><strong>Phong Nha and Paradise Caves</strong></h3>"
+        }
+    ],
+    "source_images": [
+        {
+            "id": "SOURCE_IMAGE_1",
+            "source_url": "https://www.vietnam.travel/sites/default/files/inline-images/TRA%20DSC_2031%20Abandoned%20Dark%20Cave%20SEP16%20NR.jpg",
+            "alt": "Nick Ross Word Vietnam Phong Nha ",
+            "context": "One of Vietnam's hottest new destinations, Phong Nha is not only home to the world’s largest cave: it also has much to offer avid nature travellers. In just a few short years, Phong Nha has gone from a sleepy, outpost bordering Laos, to a full-scale tourist centre. The reasons for its rise in popularity are numerous. In addition to possessing the continent’s oldest limestone formations and its jungle-covered scenery, the discovery of Han Son Doong, the largest caves in the world, catapulted the excitement to new heights.But it’s not just Son Doong that people travel to Phong Nha for -- entrance is restricted to a lucky 200 or so cavers a year who travel on tours organised by Oxalis -- but all the other outdoor-based activities available in the area. When it comes to unadulterated nature, and getting off the beaten track and onto the not-so-beaten trail, Phong Nha stands alone.Here is a lowdown of what to do in the area. Most of the tours include the caves. And for those who aren’t into"
+        }
+    ],
+    "fetched_at": "2026-10-05T06:39:06+00:00",
+    "hash": "55939acf3d96ebfcd20b206c00d5ab95b4c4b84ca595837712677ae05293d9f6"
+}

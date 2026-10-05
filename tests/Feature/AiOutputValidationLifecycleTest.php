@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\ArticlePipelineFixture;
 use Tests\TestCase;
 use Tests\UsesIsolatedDatabase;
 
@@ -78,7 +79,6 @@ final class AiOutputValidationLifecycleTest extends TestCase
             'media-library.asset_disks.private' => 'media_private',
             'media-assets.temporary_disk' => 'media_private',
             'ai-providers.allowed_hosts' => [],
-            'ai-content.pipeline' => 'single_step',
             'queue.default' => 'database',
         ]);
         $actor = User::factory()->create(['status' => 'active']);
@@ -124,7 +124,7 @@ final class AiOutputValidationLifecycleTest extends TestCase
         string $errorCode,
         string $missingField,
     ): void {
-        Http::fake(['https://validation-provider.test/*' => Http::response($this->response($output))]);
+        Http::fake(['https://validation-provider.test/*' => fn ($request) => Http::response($this->response(ArticlePipelineFixture::httpOutput($request, $output)))]);
         $run = $this->createRun($groups);
 
         $this->process($run);
@@ -134,9 +134,11 @@ final class AiOutputValidationLifecycleTest extends TestCase
         $this->assertSame($errorCode, $run->error_code);
         $this->assertNull(data_get($run->result_json, 'draft'));
         $errors = data_get($run->source_meta_json, 'ai_response.validation_errors', []);
-        $this->assertContains($missingField, array_column($errors, 'field'));
+        $this->assertTrue(collect($errors)->contains(fn (array $error): bool => $errorCode === 'AI_PROVIDER_SCHEMA'
+            ? $error['field'] === 'task_output' && $error['reason'] === 'missing'
+            : str_ends_with($error['field'], $missingField)));
         $this->assertDatabaseCount('media_assets', 0);
-        Http::assertSentCount(1);
+        Http::assertSentCount(in_array('content', $groups, true) ? 2 : 1);
         Queue::assertPushed(ProcessAiImportJob::class, 1);
         Queue::assertNotPushed(ProcessAiImageGenerationJob::class);
         $this->withToken($this->token)->getJson('/api/admin/ai-agent/sessions/'.$run->id)
@@ -155,7 +157,7 @@ final class AiOutputValidationLifecycleTest extends TestCase
         return [
             'content missing despite valid source' => [
                 ['title', 'content'], ['title' => 'Generated title'],
-                'AI_PROVIDER_MISSING_FIELDS', 'content_html',
+                'AI_PROVIDER_SCHEMA', 'content_html',
             ],
             'selected title is null' => [
                 ['title'], ['title' => null], 'AI_PROVIDER_MISSING_FIELDS', 'title',
@@ -180,9 +182,9 @@ final class AiOutputValidationLifecycleTest extends TestCase
     {
         Http::fake([
             'https://source.test/article' => Http::response($this->sourceHtml(), 200, ['Content-Type' => 'text/html']),
-            'https://validation-provider.test/*' => Http::response($this->response([
+            'https://validation-provider.test/*' => fn ($request) => Http::response($this->response(ArticlePipelineFixture::httpOutput($request, [
                 'content_html' => '<script>unsafe()</script><p>&nbsp; &#160; </p>',
-            ])),
+            ]))),
         ]);
         $run = $this->createRun(['content', 'thumbnail'], [
             'input' => ['type' => 'url', 'url' => 'https://source.test/article'],
@@ -194,7 +196,7 @@ final class AiOutputValidationLifecycleTest extends TestCase
         $this->assertSame('AI_PROVIDER_EMPTY_CONTENT', $run->fresh()->error_code);
         $this->assertDatabaseCount('media_assets', 0);
         Http::assertNotSent(fn (Request $request): bool => $request->url() === 'https://source.test/cover.png');
-        Http::assertSentCount(2);
+        Http::assertSentCount(4);
         Queue::assertNotPushed(ProcessAiImageGenerationJob::class);
     }
 
@@ -264,7 +266,8 @@ final class AiOutputValidationLifecycleTest extends TestCase
             $response = $this->withToken($this->token)->getJson('/api/admin/ai-agent/sessions/'.$run->id)->assertOk();
             $this->assertArrayNotHasKey('source_meta_json', $response->json('data'));
             $this->assertArrayNotHasKey('ai_response', $response->json('data'));
-            $this->assertStringNotContainsString('response-validation-123', $response->getContent());
+            // Task 2 công khai diagnostics allowlist; raw metadata/key vẫn phải được ẩn.
+            $this->assertSame('response-validation-123', $response->json('data.response_diagnostics.response_id'));
             $this->assertStringNotContainsString($secret, $response->getContent());
         }
         $errors = $invalid->fresh()->source_meta_json['ai_response']['validation_errors'];
@@ -344,25 +347,25 @@ final class AiOutputValidationLifecycleTest extends TestCase
         $parent = $this->readyParent();
         $before = $parent->result_json;
         $version = $this->withToken($this->token)->getJson('/api/admin/ai-agent/sessions/'.$parent->id)->json('data.draft_version');
-        Http::fake(['https://validation-provider.test/*' => Http::response($this->response(['title' => 'Unselected title']))]);
+        Http::fake(['https://validation-provider.test/*' => fn ($request) => Http::response($this->response(ArticlePipelineFixture::httpOutput($request, ['title' => 'Unselected title'])))]);
         $child = $this->regenerate($parent, ['content']);
 
         $this->process($child);
 
         $this->assertSame('failed', $child->fresh()->status);
-        $this->assertSame('AI_PROVIDER_MISSING_FIELDS', $child->fresh()->error_code);
+        $this->assertSame('AI_PROVIDER_SCHEMA', $child->fresh()->error_code);
         $this->assertSame($before, $parent->fresh()->result_json);
         $this->assertSame('ready', $parent->fresh()->status);
         $this->withToken($this->token)->getJson('/api/admin/ai-agent/sessions/'.$parent->id)->assertOk()
             ->assertJsonPath('data.draft_version', $version)->assertJsonPath('data.status', 'ready');
         $this->withToken($this->token)->getJson('/api/admin/ai-agent/sessions/'.$child->id)->assertOk()
-            ->assertJsonPath('data.status', 'failed')->assertJsonPath('data.error_code', 'AI_PROVIDER_MISSING_FIELDS');
+            ->assertJsonPath('data.status', 'failed')->assertJsonPath('data.error_code', 'AI_PROVIDER_SCHEMA');
         $this->withToken($this->token)->postJson('/api/admin/ai-agent/candidates/'.$child->id.'/apply', [
             'fields' => ['content'],
         ])->assertStatus(409);
         $this->assertDatabaseCount('posts', 0);
         $this->assertDatabaseCount('media_assets', 0);
-        Http::assertSentCount(1);
+        Http::assertSentCount(2);
         Queue::assertNotPushed(ProcessAiImageGenerationJob::class);
     }
 

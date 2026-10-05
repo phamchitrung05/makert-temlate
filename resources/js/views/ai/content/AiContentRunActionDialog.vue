@@ -1,5 +1,6 @@
 <!--
   =====================================================================
+  Header/footer cố định qua AppDialogLayout; chỉ content ở giữa được cuộn.
   CHỨC NĂNG FILE: Xác nhận regenerate/Apply draft/xóa/hủy một run riêng biệt.
   CÁC HÀM/METHOD TRONG FILE: removing/applying/cancelling/regenerating/fieldOptions/blocked
   (computed), confirm(), watcher action identity/session/capability.
@@ -8,6 +9,7 @@
   =====================================================================
 -->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 /* eslint-disable camelcase -- Contract candidate Laravel. */
 import { computed, ref, shallowRef, watch } from 'vue'
 import { aiAgentService } from '@/services/aiAgent'
@@ -104,12 +106,12 @@ function confirm() {
     scrollable
     @update:model-value="!$event && emit('close')"
   >
-    <DialogCloseBtn
-      :disabled="props.busy"
-      aria-label="Đóng hộp thoại content AI"
-      @click="emit('close')"
-    />
-    <VCard :title="removing ? 'Xóa content AI' : cancelling ? 'Hủy tác vụ AI' : applying ? 'Tạo Post nháp' : 'Tạo lại content AI'">
+    <AppDialogLayout
+      :title="removing ? 'Xóa content AI' : cancelling ? 'Hủy tác vụ AI' : applying ? 'Tạo Post nháp' : 'Tạo lại content AI'"
+      :close-disabled="props.busy"
+      close-label="Đóng hộp thoại content AI"
+      @close="emit('close')"
+    >
       <VCardText>
         <p class="font-weight-medium text-wrap">
           {{ props.action?.item.title }}
@@ -196,24 +198,27 @@ function confirm() {
           {{ props.error || capabilityError }}
         </VAlert>
       </VCardText>
-      <VCardText class="d-flex justify-end gap-3">
-        <VBtn
-          variant="tonal"
-          color="secondary"
-          :disabled="props.busy"
-          @click="emit('close')"
-        >
-          Hủy
-        </VBtn>
-        <VBtn
-          :color="removing || cancelling ? 'error' : 'primary'"
-          :loading="props.busy"
-          :disabled="blocked"
-          @click="confirm"
-        >
-          {{ removing ? 'Xóa' : cancelling ? 'Hủy tác vụ' : applying ? 'Tạo Post nháp' : 'Tạo lại' }}
-        </VBtn>
-      </VCardText>
-    </VCard>
+      <template #footer>
+        <VCardActions class="d-flex justify-end gap-3">
+          <VBtn
+            variant="tonal"
+            color="secondary"
+            :disabled="props.busy"
+            @click="emit('close')"
+          >
+            Hủy
+          </VBtn>
+          <VBtn
+            variant="flat"
+            :color="removing || cancelling ? 'error' : 'primary'"
+            :loading="props.busy"
+            :disabled="blocked"
+            @click="confirm"
+          >
+            {{ removing ? 'Xóa' : cancelling ? 'Hủy tác vụ' : applying ? 'Tạo Post nháp' : 'Tạo lại' }}
+          </VBtn>
+        </VCardActions>
+      </template>
+    </AppDialogLayout>
   </VDialog>
 </template>

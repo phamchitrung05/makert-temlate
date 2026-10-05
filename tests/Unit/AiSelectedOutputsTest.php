@@ -13,6 +13,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
+use Tests\ArticlePipelineFixture;
 use Tests\TestCase;
 
 /**
@@ -32,7 +33,7 @@ use Tests\TestCase;
  * - test_regenerate_only_merges_selected_group_into_parent().
  * - test_empty_regenerate_selection_preserves_legacy_complete_generation().
  * - test_regeneration_merges_into_queued_parent_snapshot_even_if_live_parent_was_edited().
- * - test_single_step_regeneration_preserves_approved_parent_inline_images().
+ * - test_three_step_regeneration_preserves_approved_parent_inline_images().
  * - inlineImport().
  * - __construct().
  * - configured().
@@ -62,7 +63,6 @@ final class AiSelectedOutputsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config()->set('ai-content.pipeline', 'single_step');
         config()->set('database.connections.selected_outputs_test', [
             'driver' => 'sqlite', 'database' => ':memory:', 'prefix' => '',
         ]);
@@ -302,7 +302,7 @@ final class AiSelectedOutputsTest extends TestCase
      * SIDE EFFECT: database SQLite/HTTP provider fixture đã cô lập.
      * =====================================================================
      */
-    public function test_single_step_regeneration_preserves_approved_parent_inline_images(): void
+    public function test_three_step_regeneration_preserves_approved_parent_inline_images(): void
     {
         $draft = ['title' => 'Parent', 'content_html' => '<p>Parent content.</p><img src="/storage/media/7.webp" data-media-asset-id="7" alt="Ảnh">'];
         $parent = AiImport::query()->create(['result_json' => ['draft' => $draft]]);
@@ -394,7 +394,9 @@ final class SelectedOutputsStructuredProvider extends AbstractStructuredAiProvid
     {
         $this->captured->input = $input;
 
-        return $this->response;
+        return isset($input['task'])
+            ? ArticlePipelineFixture::output($input['task'], $input['task_input'], $this->response)
+            : $this->response;
     }
 }
 
@@ -431,7 +433,7 @@ final class SelectedOutputsRawProvider implements AiProviderContract
      */
     public function execute(AiTaskRequest $request): AiTaskResponse
     {
-        throw new \LogicException('Fixture kiểm baseline một lượt; không dùng cho pipeline ba bước.');
+        return new AiTaskResponse(ArticlePipelineFixture::output($request->task, $request->input, $this->response, $request->schema));
     }
 
     /**

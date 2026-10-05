@@ -1,0 +1,66 @@
+{
+    "source_url": "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md",
+    "title": "Release và phiên bản",
+    "source_format": "html",
+    "version": "article.source.v1",
+    "content_html": "<h1>Release Notes</h1>\n<ul>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#versioning-scheme\">Versioning Scheme</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#support-policy\">Support Policy</a></li>\n<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#laravel-12\">Laravel 12</a></li>\n</ul>\n<p></p>\n<h2>Versioning Scheme</h2>\n<p>Laravel and its other first-party packages follow <a href=\"https://semver.org\">Semantic Versioning</a>. Major framework releases are released every year (~Q1), while minor and patch releases may be released as often as every week. Minor and patch releases should <strong>never</strong> contain breaking changes.</p>\n<p>When referencing the Laravel framework or its components from your application or package, you should always use a version constraint such as <code>^12.0</code>, since major releases of Laravel do include breaking changes. However, we strive to always ensure you may update to a new major release in one day or less.</p>\n<p></p>\n<h4>Named Arguments</h4>\n<p><a href=\"https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments\">Named arguments</a> are not covered by Laravel's backwards compatibility guidelines. We may choose to rename function arguments when necessary in order to improve the Laravel codebase. Therefore, using named arguments when calling Laravel methods should be done cautiously and with the understanding that the parameter names may change in the future.</p>\n<p></p>",
+    "blocks": [
+        {
+            "id": "S001",
+            "type": "h1",
+            "text": "Release Notes",
+            "html": "<h1>Release Notes</h1>"
+        },
+        {
+            "id": "S002",
+            "type": "li",
+            "text": "Versioning Scheme",
+            "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#versioning-scheme\">Versioning Scheme</a></li>"
+        },
+        {
+            "id": "S003",
+            "type": "li",
+            "text": "Support Policy",
+            "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#support-policy\">Support Policy</a></li>"
+        },
+        {
+            "id": "S004",
+            "type": "li",
+            "text": "Laravel 12",
+            "html": "<li><a href=\"https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#laravel-12\">Laravel 12</a></li>"
+        },
+        {
+            "id": "S005",
+            "type": "h2",
+            "text": "Versioning Scheme",
+            "html": "<h2>Versioning Scheme</h2>"
+        },
+        {
+            "id": "S006",
+            "type": "p",
+            "text": "Laravel and its other first-party packages follow Semantic Versioning. Major framework releases are released every year (~Q1), while minor and patch releases may be released as often as every week. Minor and patch releases should never contain breaking changes.",
+            "html": "<p>Laravel and its other first-party packages follow <a href=\"https://semver.org\">Semantic Versioning</a>. Major framework releases are released every year (~Q1), while minor and patch releases may be released as often as every week. Minor and patch releases should <strong>never</strong> contain breaking changes.</p>"
+        },
+        {
+            "id": "S007",
+            "type": "p",
+            "text": "When referencing the Laravel framework or its components from your application or package, you should always use a version constraint such as ^12.0, since major releases of Laravel do include breaking changes. However, we strive to always ensure you may update to a new major release in one day or less.",
+            "html": "<p>When referencing the Laravel framework or its components from your application or package, you should always use a version constraint such as <code>^12.0</code>, since major releases of Laravel do include breaking changes. However, we strive to always ensure you may update to a new major release in one day or less.</p>"
+        },
+        {
+            "id": "S008",
+            "type": "h4",
+            "text": "Named Arguments",
+            "html": "<h4>Named Arguments</h4>"
+        },
+        {
+            "id": "S009",
+            "type": "p",
+            "text": "Named arguments are not covered by Laravel's backwards compatibility guidelines. We may choose to rename function arguments when necessary in order to improve the Laravel codebase. Therefore, using named arguments when calling Laravel methods should be done cautiously and with the understanding that the parameter names may change in the future.",
+            "html": "<p><a href=\"https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments\">Named arguments</a> are not covered by Laravel's backwards compatibility guidelines. We may choose to rename function arguments when necessary in order to improve the Laravel codebase. Therefore, using named arguments when calling Laravel methods should be done cautiously and with the understanding that the parameter names may change in the future.</p>"
+        }
+    ],
+    "source_images": [],
+    "fetched_at": "2026-10-04T17:47:18+00:00",
+    "hash": "2ae403e51abcff4a4170bc39bce53f3398f3114c87a1f74c5c5d91730fac5f84"
+}

@@ -1,10 +1,12 @@
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 /* eslint-disable camelcase -- Model payload uses Laravel field names. */
 import { computed, ref, watch } from 'vue'
 
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Dialog khai báo model và capability explicit của provider
+ * Header/footer cố định qua AppDialogLayout; chỉ content ở giữa được cuộn.
+  CHỨC NĂNG FILE: Dialog khai báo model và capability explicit của provider
  * =====================================================================
  * CÁC HÀM/METHOD: resetDraft(), submit(), hasUnknownCapability().
  * INPUT: provider, model catalog hiện tại và capability admin xác nhận.
@@ -73,12 +75,17 @@ const submit = () => {
 
 <template>
   <VDialog
+    scrollable
     :model-value="modelValue"
     max-width="620"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <VCard>
-      <VCardTitle>{{ model ? 'Chỉnh sửa model' : 'Thêm model thủ công' }}</VCardTitle>
+    <AppDialogLayout @close="emit('update:modelValue', false)">
+      <template #header>
+        <VCardItem>
+          <VCardTitle>{{ model ? 'Chỉnh sửa model' : 'Thêm model thủ công' }}</VCardTitle>
+        </VCardItem>
+      </template>
       <VCardText>
         <VTextField
           v-model="draft.remote_model_id"
@@ -113,22 +120,25 @@ const submit = () => {
           Hãy xác nhận ít nhất một capability trước khi lưu model.
         </VAlert>
       </VCardText>
-      <VCardActions class="justify-end">
-        <VBtn
-          variant="text"
-          @click="emit('update:modelValue', false)"
-        >
-          Hủy
-        </VBtn>
-        <VBtn
-          color="primary"
-          :loading="saving"
-          :disabled="hasUnknownCapability"
-          @click="submit"
-        >
-          Lưu model
-        </VBtn>
-      </VCardActions>
-    </VCard>
+      <template #footer>
+        <VCardActions class="justify-end">
+          <VBtn
+            variant="text"
+            @click="emit('update:modelValue', false)"
+          >
+            Hủy
+          </VBtn>
+          <VBtn
+            variant="flat"
+            color="primary"
+            :loading="saving"
+            :disabled="hasUnknownCapability"
+            @click="submit"
+          >
+            Lưu model
+          </VBtn>
+        </VCardActions>
+      </template>
+    </AppDialogLayout>
   </VDialog>
 </template>

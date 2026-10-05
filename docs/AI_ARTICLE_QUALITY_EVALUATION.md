@@ -1,24 +1,26 @@
 # Đánh giá chất lượng bài AI — Task 2
 
-**Trạng thái 2026-10-05:** đã có regression kỹ thuật, corpus v1 đóng băng 25 ca từ 24 nguồn và pilot model thật B/C. Artifacts, hashes, license/attribution, kết quả lỗi và gói chấm tại [QA chất lượng](qa/task2-quality/README.md). Chưa có điểm của hai người đọc, chưa chạy đủ nghiên cứu 20–30 nguồn đại diện và chưa quyết định rollout; không suy chất lượng văn phong từ việc qua gate kỹ thuật.
+**Trạng thái 2026-10-05:** theo quyết định của người dùng, luồng B đã được gỡ khỏi tạo bài và chạy đánh giá mới. Tạo toàn bộ bài chỉ dùng C: Analyze + Plan → Write → Edit. Cấu hình/snapshot cũ không bật lại B, và lỗi C không fallback sang B. Phiên mới có ngân sách tối đa ba call mỗi ca; `evaluate.php` mặc định C và từ chối `--arms=B`/`B,C` trước khi gọi provider.
+
+**Dữ liệu lịch sử được giữ nguyên:** 20 cặp B/C trên corpus v2 đã thực hiện 79 call; B ready 20/20, C ready 14/20. [Báo cáo đầy đủ](qa/task2-quality/study-2026-10-05-corpus-v2/report-final/report.md) giữ cả lỗi và usage thiếu. Report/export có thể đọc artifacts cũ nhưng không chạy lại B. Hai phiếu chấm lịch sử chưa có điểm người đọc; không suy chất lượng văn phong từ việc qua gate kỹ thuật.
 
 Ba bước không tự chứng minh bài hay hơn. Đánh giá phải trả lời: diễn đạt có tự nhiên và hữu ích hơn không, có giữ thông tin quan trọng không, công biên tập giảm bao nhiêu, với mức tăng thời gian/token nào.
 
 Regression có 20 nguồn tổng hợp cố định tại `tests/Fixtures/AiContent/evaluation-sources.json` để kiểm source anchors/code/điều kiện/ngân sách. Đây là dữ liệu giả định offline. Corpus thật v1 đã có [manifest/hash](qa/task2-quality/corpus-v1/manifest.json), còn chờ người đọc xác nhận tính đại diện và lập facts chuẩn. Corpus chủ yếu docs kỹ thuật; Q18/Q21 dùng cùng một bài du lịch. Chưa đủ benchmark số liệu/gói trả phí, nguồn tiếng Việt và ảnh; không coi 25 ca này đã đáp ứng toàn bộ coverage dự kiến dưới đây.
 
-## Ba phương án so sánh
+## Luồng hiện tại và tên nhánh trong báo cáo lịch sử
 
 | Nhánh | Cấu hình | Mục đích |
 | --- | --- | --- |
 | A | Một call và prompt cũ được lưu nguyên phiên bản trước Task 2 | Baseline hành vi người dùng đang chê |
-| B | `AI_CONTENT_PIPELINE=single_step`, brief/profile và nguyên tắc prompt mới | Tách lợi ích prompt khỏi lợi ích ba call |
-| C | `AI_CONTENT_PIPELINE=three_step`, Analyze + Plan → Write → Edit | Kiểm hiệu quả pipeline ba bước |
+| B | Một call với brief/profile và prompt mới; đã gỡ khỏi thực thi | Chỉ đọc kết quả đã lưu trước khi gỡ |
+| C | `three_step` bắt buộc, Analyze + Plan → Write → Edit | Luồng tạo toàn bộ bài và đánh giá mới |
 
-Switch `single_step` hiện tại đại diện B, không tự tái tạo prompt cũ A. A cần fixture prompt cũ có hash/version và harness đánh giá riêng; không rollback website hoặc ghi đè code đang triển khai để làm baseline. Nếu chưa thu được A, báo rõ chỉ so sánh B–C.
+`AI_CONTENT_PIPELINE` không còn được đọc. A chưa có baseline được phục hồi; B chỉ tồn tại trong artifacts lịch sử. Không dùng cấu hình hoặc snapshot cũ để khôi phục đường chạy B.
 
-Giữ nguyên source snapshot/hash, output fields, ngôn ngữ, brief, model/provider, temperature và lựa chọn độ dài cho cùng ca. B/C dùng cùng approved profile snapshot; A chỉ nhận thông tin tương đương nếu baseline hỗ trợ, mọi khác biệt phải ghi lại. Không đổi nguồn URL giữa các lượt để tránh so hai bài khác nhau. Không Apply/Publish output đánh giá.
+Phiên mới giữ nguyên source snapshot/hash, output fields, ngôn ngữ, brief, model/provider, temperature và lựa chọn độ dài cho cùng ca. Report kiểm profile/brief/source/hash và chỉ tổng hợp C. Các kiểm tra đầu vào giữa B/C chỉ áp dụng khi đọc study lịch sử. Không Apply/Publish output đánh giá.
 
-Chạy một lượt mỗi nhánh cho 25 nguồn cần A25 + B25 + C75 = **125 call** nếu chạy đủ cả ba nhánh; chỉ B–C là 100 call, chưa tính retry/lỗi. Quota/chi phí phải lập theo số call thực, không chỉ số run. Chưa tự chạy provider từ tài liệu này. Khi làm thử nghiệm thật, ưu tiên pilot 5 bài rồi quyết định có chạy đủ corpus; pilot không được dùng để khẳng định toàn bộ corpus đã đạt.
+Ngân sách mới: năm ca C tối đa **15 call**, corpus v2 20 ca tối đa **60 call**, corpus v1 25 ca tối đa **75 call**. Run bị chặn có thể dùng ít hơn; vẫn giữ lỗi/usage thiếu trong mẫu số. Phiếu C chỉ có một ứng viên mỗi ca, không hỏi ưu tiên X/Y hoặc tính tỷ lệ B/C; hai người đọc vẫn chấm độc lập. Không tự gọi provider từ tài liệu này hoặc dùng pilot để khẳng định toàn bộ corpus đã đạt.
 
 ## Coverage 25 ca và snapshot đã chuẩn bị
 
@@ -129,10 +131,78 @@ Provider không trả usage thì ghi **không có dữ liệu**, không coi là 
 
 ## Quyết định rollout
 
+**Quyết định phạm vi ngày 2026-10-05:** chủ dự án chuyển hai người đọc chấm
+sang đợt riêng sau khi hoàn tất code Task 2. Đây là việc còn chờ của đánh giá
+chất lượng và rollout, không phải điều kiện giữ nghiệm thu kỹ thuật Task 2
+mở. Các điểm facts/văn phong/phút sửa vẫn trống đến khi người đọc thực sự
+chấm; gate, model call và regression không được dùng làm điểm thay thế.
+
 Trước khi xem kết quả, chốt tiêu chí nghiệm thu với owner: không tăng factual critical errors; coverage quan trọng không giảm; ưu tiên của human reviewer/công sửa có cải thiện đủ lớn để chấp nhận latency/cost. Không tự tuyên bố một mức phần trăm là chuẩn nếu chưa được chốt.
 
 Báo riêng số run failed bởi gate/provider/input, số bài đạt accuracy, median/phân bố từng tiêu chí, paired preference theo nguồn, median công sửa và latency/tokens. Không gộp critical error thành điểm chất lượng trung bình hoặc chỉ chọn bài C hay nhất để báo cáo. Giữ cả output lỗi và bài cần sửa trong artifact riêng có quyền truy cập phù hợp.
 
-Nếu C không tốt hơn B hoặc tăng lỗi/công sửa, điều chỉnh prompt/coverage/threshold theo nhóm nguồn và chạy lại tập pilot/corpus đã version. Version mới là thử nghiệm mới, không sửa kết quả cũ. AI evaluator nếu thêm sau chỉ là tín hiệu phụ; không thay chấm người và không chứng minh factual correctness.
+Nếu C chưa đạt các tiêu chí đã chốt hoặc tăng lỗi/công sửa, điều chỉnh prompt/coverage/threshold theo nhóm nguồn và chạy lại tập pilot/corpus đã version. Phiên mới chỉ chạy C; B đã gỡ và chỉ còn trong study lịch sử. Version mới là thử nghiệm mới, không sửa kết quả cũ. AI evaluator nếu thêm sau chỉ là tín hiệu phụ; không thay chấm người và không chứng minh factual correctness.
 
-**Còn chờ:** owner/người đọc xác nhận corpus và facts chuẩn, hoàn thiện coverage nguồn, phục hồi request baseline A nếu có, hai reviewer chấm độc lập và chạy nghiên cứu đầy đủ sau pilot. B/C có thể chấm riêng khi A chưa phục hồi. Harness và artifacts thật đã có; không dùng AI tự chấm hoặc test HTTP fake để thay nghiệm thu chất lượng.
+## Corpus v2 và công cụ chấm độc lập — 2026-10-05
+
+[Corpus v2](qa/task2-quality/corpus-v2/manifest.json) giữ 12 nguồn v1 (11 phần
+tài liệu kỹ thuật và một bài du lịch do người dùng cung cấp), thêm 8 nguồn web
+chính thức. Tổng **20 nguồn độc lập**, gồm **6 nguồn tiếng Việt**: tin Metro,
+chương trình Huế, lễ hội cà phê dự kiến, thống kê du lịch theo kỳ báo cáo, thông
+báo bảo tàng lưu trữ và bài du thuyền. Bổ sung hai trích đoạn du lịch tiếng Anh
+để viết tiếng Việt và bảng giới hạn thật của GitHub Actions. Các số liệu giá vé,
+sự kiện và thống kê lịch sử giữ đúng năm nguồn, không dùng làm thông tin hiện hành.
+
+Nguồn mới do `scripts/ai-quality/freeze-v2.php` chọn theo
+`scripts/ai-quality/sources-v2.json`. Web opening chọn đoạn hoàn chỉnh tối đa
+200 từ; ca bảng giữ nguyên bảng đầu và giải thích liền trước. Snapshot, hash
+raw/excerpt, URL, thời điểm, phạm vi trích và attribution được ghi riêng. Không
+sửa corpus v1. Metadata **18 ảnh ở 8 nguồn** có URL/alt/chú thích; không tải ảnh,
+không coi là đã nhìn pixel hoặc đã kiểm regenerate với MediaAsset được duyệt.
+Corpus vẫn thiếu benchmark độc lập và cần người đọc xác nhận tính đại diện.
+
+`source-checklists.json` giữ toàn bộ source blocks để người đọc lập dữ kiện
+quan trọng từ nguồn. Đây là dẫn chứng chờ duyệt, **không phải facts chuẩn lấy từ
+Analyzer**. Mỗi người ghi claim/điều kiện kèm mã đoạn, số dữ kiện cần giữ và số
+được giữ đúng; sự khác nhau giữa hai bộ facts được giữ để đối chiếu.
+
+Phiên B/C lịch sử dùng cùng frozen source, model/provider, profile, brief và fields
+title/content. Provider được resolve một lần rồi clone riêng từng nhánh; input
+hash so sánh chỉ loại lựa chọn `single_step`/`three_step`. Profile/brief/source
+hash phải khớp khi tổng hợp. Một lượt mỗi nhánh, B trước C; chưa đo biến thiên
+nhiều lần hoặc tách ảnh hưởng cache/tải provider. 20 cặp cần tối đa **80 call**;
+run bị chặn vẫn giữ trong mẫu số, token và thời gian.
+
+`scripts/ai-quality/report.php` tạo **hai HTML/CSV riêng** ở `review-v2/`.
+HTML chỉ hiện X/Y, bản nguồn, brief/văn phong và rubric; không lộ model, nhánh,
+usage, prompt kỹ thuật hoặc trạng thái gate của ứng viên còn có bài. Chấm lỗi
+critical/major/minor, coverage, năm tiêu chí 1–5, phút sửa thật, số sửa và
+preference. Người đọc phải tự xác nhận đã đối chiếu nguồn; không tự điền 0/điểm
+hoặc lấy output Analyzer làm đáp án.
+
+Bản nháp trình duyệt tách theo mã phiên/người chấm. Tải CSV hoặc dùng **Xem CSV
+để sao chép** khi trình duyệt chặn tải; lưu UTF-8. CSV gắn hash nguồn, output,
+experiment/profile và nhãn; bảng của phiên khác hoặc nhãn lặp/thiếu phải báo
+lỗi. Hai bảng hoàn thành phải mang danh tính khác nhau. `completed` thiếu dữ
+kiện/điểm/phút sửa không được nhận; gate `pass` không thể che lỗi critical/major
+hay thiếu dữ kiện quan trọng. Các ô trống giữ `null`, không biến thành điểm 0.
+
+Báo cáo tổng hợp lỗi kỹ thuật, phân bố/median token/latency và từng cặp riêng;
+facts, diễn đạt, công sửa và bất đồng của người đọc là phần riêng. Tổng hợp
+lại chỉ đọc files, **0 model call**, không ghi đè CSV/artifacts/báo cáo trước.
+Chưa có hai bảng chấm thật thì báo `pending_human`; chưa quyết định rollout.
+
+**Kết quả corpus v2:** B gọi 20 lần, có đủ usage 58.305 token; C gọi 59 lần, có usage 403.038 token từ 58 call và một call Writer timeout chưa có usage. Tổng token C vẫn `null`. Trung vị latency B/C là 20,2/103,5 giây trên đủ 20 run mỗi nhánh; trung vị token B/C là 2.035/14.675 trên 20/19 run có tổng usage đầy đủ. Năm ca C bị gate số liệu chặn và một ca timeout vẫn thuộc mẫu số 20, không chạy lại hoặc sửa output để đổi kết quả. [Audit offline](qa/task2-quality/study-2026-10-05-corpus-v2/audit-failed.json) không gọi model thêm.
+
+Mỗi reviewer hiện có **0/39 bài được chấm**; Q33-C chưa có candidate nên giữ phiếu trống/disabled. Bài có candidate nhưng bị gate chặn vẫn xuất cho người đọc đối chiếu. [Bộ chấm 1](qa/task2-quality/study-2026-10-05-corpus-v2/review-v2/reviewer-1.html) và [bộ chấm 2](qa/task2-quality/study-2026-10-05-corpus-v2/review-v2/reviewer-2.html) phải được chấm độc lập trước khi xem báo cáo/nhãn thật.
+
+**Còn chờ:** owner/người đọc xác nhận corpus và facts chuẩn, bổ sung coverage còn thiếu nếu cần và hai reviewer chấm độc lập. Người dùng đã chọn C và yêu cầu gỡ B; việc này không đồng nghĩa C đã đạt nghiệm thu chất lượng. Phiên B/C chỉ còn lịch sử; chưa đo nhiều lần hoặc chốt ngưỡng nghiệm thu. Không dùng AI tự chấm hoặc test HTTP fake để thay nghiệm thu chất lượng.
+
+**Hiệu chỉnh gate/prompt 2.2 (2026-10-05):** phân biệt link mục lục đầu nguồn
+với link tham khảo trong body; link body phải giữ đúng href, link ngoài allowlist
+nguồn bị chặn. Snapshot nguồn không bị sửa để làm output đạt. Source block,
+fact và asset có namespace riêng; schema Writer/Editor giới hạn fact IDs vào
+ledger Analyze đã validate. Q1–Q4 được đối chiếu với quý I–IV; số tầng 1–9 có
+dạng chữ tương ứng nhưng không nhận thành phần của số lớn/thập phân hoặc tầng
+rưỡi. Không đổi tùy ý số/phiên bản. Audit offline và phiên model mới ghi riêng
+tại [bộ QA](qa/task2-quality/README.md); báo cáo triển khai ở FIX 1 mục 12.31.

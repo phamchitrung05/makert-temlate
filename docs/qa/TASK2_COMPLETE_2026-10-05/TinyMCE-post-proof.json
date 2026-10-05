@@ -1,0 +1,28 @@
+{
+    "mode": "real_browser_UI_and_readonly_database",
+    "origin": "http://localhost:8000",
+    "editor": "Tiny Cloud",
+    "license_changed": false,
+    "post_id": 3,
+    "title": "QA Task 2 Tiny Cloud 2026-10-05",
+    "status": "draft",
+    "published_at": null,
+    "actor_id": 2,
+    "content": "<figure class=\"image\"><img src=\"http://127.0.0.1:8000/storage/media/22/task2-inline-image.png\" alt=\"Ảnh QA kiểm tra TinyMCE v&agrave; MediaLibrary\" data-media-asset-id=\"22\">\n<figcaption>Ch&uacute; th&iacute;ch QA Task 2 đ&atilde; sửa trong TinyMCE.</figcaption>\n</figure>\n<p>Đoạn mở đầu của bản nh&aacute;p QA Task 2.<br>Đoạn cuối d&ugrave;ng để kiểm tra vị tr&iacute; ảnh v&agrave; dữ liệu lưu lại.</p>",
+    "images": [
+        {
+            "id": "22",
+            "src": "http://127.0.0.1:8000/storage/media/22/task2-inline-image.png",
+            "alt": "Ảnh QA kiểm tra TinyMCE và MediaLibrary",
+            "caption": "Chú thích QA Task 2 đã sửa trong TinyMCE."
+        }
+    ],
+    "media_usages": [
+        {
+            "asset_id": 22,
+            "field": "post.content_images",
+            "sort_order": 0
+        }
+    ],
+    "HTML_sha256": "7e536c51430cef97af5ab5df07bc7d0c969034dfc61bd7e5e06220c43da9b0cd"
+}

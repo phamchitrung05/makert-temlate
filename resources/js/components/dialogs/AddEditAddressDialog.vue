@@ -1,4 +1,14 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: AddEditAddressDialog dùng khung dialog chung.
+  CÁC HÀM/METHOD TRONG FILE: resetForm, onFormSubmit.
+  INPUT/OUTPUT CỦA CLASS (tổng thể): props/model và thao tác UI -> sự kiện của
+  caller; header/footer cố định, content cuộn qua AppDialogLayout.
+  =====================================================================
+-->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
+import { useId } from 'vue'
 import home from '@images/svg/home.svg'
 import office from '@images/svg/office.svg'
 
@@ -30,6 +40,8 @@ const emit = defineEmits([
   'update:isDialogVisible',
   'submit',
 ])
+
+const dialogFormId = useId()
 
 const billingAddress = ref(structuredClone(toRaw(props.billingAddress)))
 
@@ -69,26 +81,24 @@ const addressTypes = [
 
 <template>
   <VDialog
+    scrollable
     :width="$vuetify.display.smAndDown ? 'auto' : 900 "
     :model-value="props.isDialogVisible"
     @update:model-value="val => $emit('update:isDialogVisible', val)"
   >
-    <!-- 👉 Dialog close btn -->
-    <DialogCloseBtn @click="$emit('update:isDialogVisible', false)" />
-
-    <VCard
+    <AppDialogLayout
       v-if="props.billingAddress"
-      class="pa-sm-10 pa-2"
-    >
-      <VCardText>
-        <!-- 👉 Title -->
-        <h4 class="text-h4 text-center mb-2">
-          {{ (props.billingAddress.addressLine1 || props.billingAddress.addressLine2) ? 'Edit' : 'Add New' }} Address
-        </h4>
-        <p class="text-body-1 text-center mb-6">
-          Add new address for express delivery
-        </p>
 
+      @close="$emit('update:isDialogVisible', false)"
+    >
+      <template #header>
+        <VCardItem>
+          <VCardTitle>{{ (props.billingAddress.addressLine1 || props.billingAddress.addressLine2) ? 'Edit' : 'Add New' }} Address</VCardTitle>
+          <VCardSubtitle>Add new address for express delivery</VCardSubtitle>
+        </VCardItem>
+      </template>
+
+      <VCardText>
         <div class="d-flex mb-6">
           <CustomRadiosWithIcon
             v-model:selected-radio="selectedAddress"
@@ -98,7 +108,10 @@ const addressTypes = [
         </div>
 
         <!-- 👉 Form -->
-        <VForm @submit.prevent="onFormSubmit">
+        <VForm
+          :id="dialogFormId"
+          @submit.prevent="onFormSubmit"
+        >
           <VRow>
             <!-- 👉 First Name -->
             <VCol
@@ -204,30 +217,28 @@ const addressTypes = [
             <VCol cols="12">
               <VSwitch label="Use as a billing address?" />
             </VCol>
-
-            <!-- 👉 Submit and Cancel button -->
-            <VCol
-              cols="12"
-              class="text-center"
-            >
-              <VBtn
-                type="submit"
-                class="me-3"
-              >
-                submit
-              </VBtn>
-
-              <VBtn
-                variant="tonal"
-                color="secondary"
-                @click="resetForm"
-              >
-                Cancel
-              </VBtn>
-            </VCol>
           </VRow>
         </VForm>
       </VCardText>
-    </VCard>
+      <template #footer>
+        <VCardActions class="justify-end">
+          <VBtn
+            variant="tonal"
+            color="secondary"
+            @click="resetForm"
+          >
+            Cancel
+          </VBtn>
+          <VBtn
+            variant="flat"
+            :form="dialogFormId"
+            type="submit"
+            class="me-3"
+          >
+            submit
+          </VBtn>
+        </VCardActions>
+      </template>
+    </AppDialogLayout>
   </VDialog>
 </template>

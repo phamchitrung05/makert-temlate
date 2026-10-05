@@ -1,0 +1,54 @@
+{
+    "source_url": "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/quick-start.md",
+    "title": "Tutorial CLI",
+    "source_format": "html",
+    "version": "article.source.v1",
+    "content_html": "<hr>\n<h2>footer: false</h2>\n\n<h1>Quick Start {#quick-start}</h1>\n<h2>Try Vue Online {#try-vue-online}</h2>\n<ul>\n<li>\n<p>To quickly get a taste of Vue, you can try it directly in our <a href=\"https://play.vuejs.org/#eNo9jcEKwjAMhl/lt5fpQYfXUQfefAMvvRQbddC1pUuHUPrudg4HIcmXjyRZXEM4zYlEJ+T0iEPgXjn6BB8Zhp46WUZWDjCa9f6w9kAkTtH9CRinV4fmRtZ63H20Ztesqiylphqy3R5UYBqD1UyVAPk+9zkvV1CKbCv9poMLiTEfR2/IXpSoXomqZLtti/IFwVtA9A==\">Playground</a>.</p>\n</li>\n<li>\n<p>If you prefer a plain HTML setup without any build steps, you can use this <a href=\"https://jsfiddle.net/yyx990803/2ke1ab0z/\">JSFiddle</a> as your starting point.</p>\n</li>\n<li>\n<p>If you are already familiar with Node.js and the concept of build tools, you can also try a complete build setup right within your browser on <a href=\"https://vite.new/vue\">StackBlitz</a>.</p>\n</li>\n<li>\n<p>To get a walkthrough of the recommended setup, watch this interactive <a href=\"http://scrimba.com/links/vue-quickstart\">Scrimba</a> tutorial that shows you how to run, edit, and deploy your first Vue app.</p>\n</li>\n</ul>",
+    "blocks": [
+        {
+            "id": "S001",
+            "type": "h2",
+            "text": "footer: false",
+            "html": "<h2>footer: false</h2>"
+        },
+        {
+            "id": "S002",
+            "type": "h1",
+            "text": "Quick Start {#quick-start}",
+            "html": "<h1>Quick Start {#quick-start}</h1>"
+        },
+        {
+            "id": "S003",
+            "type": "h2",
+            "text": "Try Vue Online {#try-vue-online}",
+            "html": "<h2>Try Vue Online {#try-vue-online}</h2>"
+        },
+        {
+            "id": "S004",
+            "type": "li",
+            "text": "To quickly get a taste of Vue, you can try it directly in our Playground.",
+            "html": "<li>\n<p>To quickly get a taste of Vue, you can try it directly in our <a href=\"https://play.vuejs.org/#eNo9jcEKwjAMhl/lt5fpQYfXUQfefAMvvRQbddC1pUuHUPrudg4HIcmXjyRZXEM4zYlEJ+T0iEPgXjn6BB8Zhp46WUZWDjCa9f6w9kAkTtH9CRinV4fmRtZ63H20Ztesqiylphqy3R5UYBqD1UyVAPk+9zkvV1CKbCv9poMLiTEfR2/IXpSoXomqZLtti/IFwVtA9A==\">Playground</a>.</p>\n</li>"
+        },
+        {
+            "id": "S005",
+            "type": "li",
+            "text": "If you prefer a plain HTML setup without any build steps, you can use this JSFiddle as your starting point.",
+            "html": "<li>\n<p>If you prefer a plain HTML setup without any build steps, you can use this <a href=\"https://jsfiddle.net/yyx990803/2ke1ab0z/\">JSFiddle</a> as your starting point.</p>\n</li>"
+        },
+        {
+            "id": "S006",
+            "type": "li",
+            "text": "If you are already familiar with Node.js and the concept of build tools, you can also try a complete build setup right within your browser on StackBlitz.",
+            "html": "<li>\n<p>If you are already familiar with Node.js and the concept of build tools, you can also try a complete build setup right within your browser on <a href=\"https://vite.new/vue\">StackBlitz</a>.</p>\n</li>"
+        },
+        {
+            "id": "S007",
+            "type": "li",
+            "text": "To get a walkthrough of the recommended setup, watch this interactive Scrimba tutorial that shows you how to run, edit, and deploy your first Vue app.",
+            "html": "<li>\n<p>To get a walkthrough of the recommended setup, watch this interactive <a href=\"http://scrimba.com/links/vue-quickstart\">Scrimba</a> tutorial that shows you how to run, edit, and deploy your first Vue app.</p>\n</li>"
+        }
+    ],
+    "source_images": [],
+    "fetched_at": "2026-10-04T17:47:20+00:00",
+    "hash": "6084700f3002683279cde2ac32779c7425ea861399da7e0fe217ce5a633395e2"
+}

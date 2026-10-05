@@ -1,0 +1,96 @@
+{
+    "arm": "B",
+    "status": "ready",
+    "error_code": null,
+    "final": {
+        "title": "Phong Nha: Khám phá hang động và thiên nhiên",
+        "content_html": "<p>Phong Nha không chỉ thu hút du khách nhờ hang động lớn nhất thế giới. Với cảnh quan phủ rừng và nhiều hoạt động ngoài trời, nơi đây còn là điểm đến hấp dẫn cho những người yêu thiên nhiên, muốn rời xa các tuyến du lịch quen thuộc.</p><p>Chỉ trong vài năm, <a href=\"https://vietnam.travel/places-to-go/central-vietnam/phong-nha\">Phong Nha</a> đã chuyển mình từ một vùng đất yên ắng giáp Lào thành một trung tâm du lịch. Sức hút ấy đến từ những hệ tầng đá vôi lâu đời nhất châu Á, cảnh quan rừng rậm và việc phát hiện Sơn Đoòng — hang động lớn nhất thế giới.</p><p>Tuy nhiên, Sơn Đoòng không phải lý do duy nhất khiến du khách tìm đến Phong Nha. Theo bài viết nguồn, mỗi năm chỉ khoảng 200 người may mắn được vào khám phá hang qua các tour do Oxalis tổ chức. Bên cạnh đó, khu vực này còn có nhiều hoạt động ngoài trời dành cho những ai muốn gần gũi với thiên nhiên và khám phá những lối mòn ít người qua lại.</p><p>Phần lớn các tour trong khu vực có hoạt động tham quan hang động. Với những người không thích không gian tối, Phong Nha vẫn có nhiều lựa chọn khác để dành thời gian khám phá.</p><h3>Động Phong Nha và động Thiên Đường</h3>"
+    },
+    "quality_checks": [
+        {
+            "check": "copy",
+            "status": "pass"
+        },
+        {
+            "check": "similarity",
+            "status": "pass",
+            "metric": 0.02,
+            "reason": "lexical_metric_not_style_score"
+        },
+        {
+            "check": "language",
+            "status": "pass",
+            "detected": "vi"
+        },
+        {
+            "check": "source_code_links",
+            "status": "pass"
+        },
+        {
+            "check": "important_numbers",
+            "status": "pass"
+        },
+        {
+            "check": "unanchored_numbers",
+            "status": "pass",
+            "count": 0,
+            "reason": "requires_editor_review"
+        },
+        {
+            "check": "semantic_grounding",
+            "status": "undetermined",
+            "reason": "source_anchors_are_not_external_fact_verification"
+        }
+    ],
+    "cost": null,
+    "calls": [
+        {
+            "task": "single_step",
+            "output": {
+                "title": "Phong Nha: Khám phá hang động và thiên nhiên",
+                "content_html": "<p>Phong Nha không chỉ thu hút du khách nhờ hang động lớn nhất thế giới. Với cảnh quan phủ rừng và nhiều hoạt động ngoài trời, nơi đây còn là điểm đến hấp dẫn cho những người yêu thiên nhiên, muốn rời xa các tuyến du lịch quen thuộc.</p><p>Chỉ trong vài năm, <a href=\"https://vietnam.travel/places-to-go/central-vietnam/phong-nha\">Phong Nha</a> đã chuyển mình từ một vùng đất yên ắng giáp Lào thành một trung tâm du lịch. Sức hút ấy đến từ những hệ tầng đá vôi lâu đời nhất châu Á, cảnh quan rừng rậm và việc phát hiện Sơn Đoòng — hang động lớn nhất thế giới.</p><p>Tuy nhiên, Sơn Đoòng không phải lý do duy nhất khiến du khách tìm đến Phong Nha. Theo bài viết nguồn, mỗi năm chỉ khoảng 200 người may mắn được vào khám phá hang qua các tour do Oxalis tổ chức. Bên cạnh đó, khu vực này còn có nhiều hoạt động ngoài trời dành cho những ai muốn gần gũi với thiên nhiên và khám phá những lối mòn ít người qua lại.</p><p>Phần lớn các tour trong khu vực có hoạt động tham quan hang động. Với những người không thích không gian tối, Phong Nha vẫn có nhiều lựa chọn khác để dành thời gian khám phá.</p><h3>Động Phong Nha và động Thiên Đường</h3>",
+                "content": "<p>Phong Nha không chỉ thu hút du khách nhờ hang động lớn nhất thế giới. Với cảnh quan phủ rừng và nhiều hoạt động ngoài trời, nơi đây còn là điểm đến hấp dẫn cho những người yêu thiên nhiên, muốn rời xa các tuyến du lịch quen thuộc.</p><p>Chỉ trong vài năm, <a href=\"https://vietnam.travel/places-to-go/central-vietnam/phong-nha\">Phong Nha</a> đã chuyển mình từ một vùng đất yên ắng giáp Lào thành một trung tâm du lịch. Sức hút ấy đến từ những hệ tầng đá vôi lâu đời nhất châu Á, cảnh quan rừng rậm và việc phát hiện Sơn Đoòng — hang động lớn nhất thế giới.</p><p>Tuy nhiên, Sơn Đoòng không phải lý do duy nhất khiến du khách tìm đến Phong Nha. Theo bài viết nguồn, mỗi năm chỉ khoảng 200 người may mắn được vào khám phá hang qua các tour do Oxalis tổ chức. Bên cạnh đó, khu vực này còn có nhiều hoạt động ngoài trời dành cho những ai muốn gần gũi với thiên nhiên và khám phá những lối mòn ít người qua lại.</p><p>Phần lớn các tour trong khu vực có hoạt động tham quan hang động. Với những người không thích không gian tối, Phong Nha vẫn có nhiều lựa chọn khác để dành thời gian khám phá.</p><h3>Động Phong Nha và động Thiên Đường</h3>"
+            },
+            "diagnostics": {
+                "response_id": "resp_07027e3d0247dcff016ac351fde81087d0b6672e97ceb79a3e",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "post.content.v1",
+                "requested_groups": [
+                    "title",
+                    "content"
+                ],
+                "returned_fields": [
+                    "title",
+                    "content_html"
+                ],
+                "usage": {
+                    "prompt_tokens": 1340,
+                    "completion_tokens": 351,
+                    "total_tokens": 1691
+                }
+            },
+            "latency_ms": 24780
+        }
+    ],
+    "latency_ms": 24784,
+    "input_sha256": "609f666422daddeae63fb6aa10f006a48261aa5e278cdd63f87867142bcfe4f6",
+    "comparison_input_sha256": "cb23d726297f4c9c6fdefe138036834d5acbe1c3cec4cfd473b4316423940d4c",
+    "writing_profile_sha256": "1267aa8b907b63f12cd8c953c4a6664dbea3f3e7acabb12a28e64293053a7c96",
+    "brief_sha256": "1bad7c2ad15a337340189521251f25ae6bedb45f2846dda38223e4f20720cc6c",
+    "image_evaluation": {
+        "mode": "source_metadata_only",
+        "source_images": 1,
+        "approved_asset_regenerate": "not_evaluated",
+        "pixel_understanding": "not_evaluated"
+    },
+    "source_sha256": "824d03999d597538ea6c539ec69eb25e677f2069a68d6931d7364b8de9030374",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Phong Nha: Khám phá hang động và thiên nhiên",
+        "content_html": "<p>Phong Nha không chỉ thu hút du khách nhờ hang động lớn nhất thế giới. Với cảnh quan phủ rừng và nhiều hoạt động ngoài trời, nơi đây còn là điểm đến hấp dẫn cho những người yêu thiên nhiên, muốn rời xa các tuyến du lịch quen thuộc.</p><p>Chỉ trong vài năm, <a href=\"https://vietnam.travel/places-to-go/central-vietnam/phong-nha\">Phong Nha</a> đã chuyển mình từ một vùng đất yên ắng giáp Lào thành một trung tâm du lịch. Sức hút ấy đến từ những hệ tầng đá vôi lâu đời nhất châu Á, cảnh quan rừng rậm và việc phát hiện Sơn Đoòng — hang động lớn nhất thế giới.</p><p>Tuy nhiên, Sơn Đoòng không phải lý do duy nhất khiến du khách tìm đến Phong Nha. Theo bài viết nguồn, mỗi năm chỉ khoảng 200 người may mắn được vào khám phá hang qua các tour do Oxalis tổ chức. Bên cạnh đó, khu vực này còn có nhiều hoạt động ngoài trời dành cho những ai muốn gần gũi với thiên nhiên và khám phá những lối mòn ít người qua lại.</p><p>Phần lớn các tour trong khu vực có hoạt động tham quan hang động. Với những người không thích không gian tối, Phong Nha vẫn có nhiều lựa chọn khác để dành thời gian khám phá.</p><h3>Động Phong Nha và động Thiên Đường</h3>"
+    },
+    "total_tokens": 1691
+}

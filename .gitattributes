@@ -205,3 +205,11 @@ Procfile          text
 
 # Ignore files (like .npmignore or .gitignore)
 *.*ignore         text
+
+# Frozen QA snapshots: preserve exact bytes used by corpus/review SHA-256 checks.
+docs/qa/task2-quality/corpus-v2/** -text
+docs/qa/task2-quality/pilot-2026-10-05-prompt22/** -text
+docs/qa/task2-quality/study-2026-10-05-corpus-v2/** -text
+docs/qa/TASK2_COMPLETE_2026-10-05/Q33-corpus/** -text
+docs/qa/TASK2_COMPLETE_2026-10-05/Q33-C-600s/** -text
+docs/qa/TASK2_COMPLETE_2026-10-05/Q33-review/** -text

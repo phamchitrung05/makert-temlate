@@ -1,0 +1,88 @@
+{
+    "arm": "B",
+    "status": "ready",
+    "error_code": null,
+    "final": {
+        "title": "Cấu hình PHP/Laravel",
+        "content_html": "<h1>Cấu hình</h1>\n<p>Các tệp cấu hình của framework Laravel được lưu trong thư mục <code>config</code>. Mỗi tùy chọn đều có phần mô tả, vì vậy bạn có thể xem qua các tệp này để làm quen với những thiết lập hiện có.</p>\n<p>Thông qua các tệp cấu hình, bạn có thể thiết lập thông tin kết nối cơ sở dữ liệu, máy chủ thư điện tử và nhiều giá trị cốt lõi khác, chẳng hạn như URL của ứng dụng và khóa mã hóa.</p>\n<h2>Lệnh <code>about</code></h2>\n<p>Laravel có thể hiển thị thông tin tổng quan về cấu hình, driver và môi trường của ứng dụng bằng lệnh Artisan <code>about</code>:</p>\n<pre><code>php artisan about\n</code></pre>\n<p>Nếu chỉ quan tâm đến một phần cụ thể trong thông tin tổng quan, bạn có thể lọc kết quả bằng tùy chọn <code>--only</code>:</p>\n<pre><code>php artisan about --only=environment\n</code></pre>\n<p>Để xem chi tiết các giá trị trong một tệp cấu hình cụ thể, hãy sử dụng lệnh Artisan <code>config:show</code>:</p>\n<pre><code>php artisan config:show database\n</code></pre>"
+    },
+    "quality_checks": [
+        {
+            "check": "copy",
+            "status": "pass"
+        },
+        {
+            "check": "similarity",
+            "status": "pass",
+            "metric": 0.022,
+            "reason": "lexical_metric_not_style_score"
+        },
+        {
+            "check": "language",
+            "status": "pass",
+            "detected": "vi"
+        },
+        {
+            "check": "source_code_links",
+            "status": "pass"
+        },
+        {
+            "check": "important_numbers",
+            "status": "pass"
+        },
+        {
+            "check": "unanchored_numbers",
+            "status": "pass",
+            "count": 0,
+            "reason": "requires_editor_review"
+        },
+        {
+            "check": "semantic_grounding",
+            "status": "undetermined",
+            "reason": "source_anchors_are_not_external_fact_verification"
+        }
+    ],
+    "cost": null,
+    "calls": [
+        {
+            "task": "single_step",
+            "output": {
+                "title": "Cấu hình PHP/Laravel",
+                "content_html": "<h1>Cấu hình</h1>\n<p>Các tệp cấu hình của framework Laravel được lưu trong thư mục <code>config</code>. Mỗi tùy chọn đều có phần mô tả, vì vậy bạn có thể xem qua các tệp này để làm quen với những thiết lập hiện có.</p>\n<p>Thông qua các tệp cấu hình, bạn có thể thiết lập thông tin kết nối cơ sở dữ liệu, máy chủ thư điện tử và nhiều giá trị cốt lõi khác, chẳng hạn như URL của ứng dụng và khóa mã hóa.</p>\n<h2>Lệnh <code>about</code></h2>\n<p>Laravel có thể hiển thị thông tin tổng quan về cấu hình, driver và môi trường của ứng dụng bằng lệnh Artisan <code>about</code>:</p>\n<pre><code>php artisan about\n</code></pre>\n<p>Nếu chỉ quan tâm đến một phần cụ thể trong thông tin tổng quan, bạn có thể lọc kết quả bằng tùy chọn <code>--only</code>:</p>\n<pre><code>php artisan about --only=environment\n</code></pre>\n<p>Để xem chi tiết các giá trị trong một tệp cấu hình cụ thể, hãy sử dụng lệnh Artisan <code>config:show</code>:</p>\n<pre><code>php artisan config:show database\n</code></pre>",
+                "content": "<h1>Cấu hình</h1>\n<p>Các tệp cấu hình của framework Laravel được lưu trong thư mục <code>config</code>. Mỗi tùy chọn đều có phần mô tả, vì vậy bạn có thể xem qua các tệp này để làm quen với những thiết lập hiện có.</p>\n<p>Thông qua các tệp cấu hình, bạn có thể thiết lập thông tin kết nối cơ sở dữ liệu, máy chủ thư điện tử và nhiều giá trị cốt lõi khác, chẳng hạn như URL của ứng dụng và khóa mã hóa.</p>\n<h2>Lệnh <code>about</code></h2>\n<p>Laravel có thể hiển thị thông tin tổng quan về cấu hình, driver và môi trường của ứng dụng bằng lệnh Artisan <code>about</code>:</p>\n<pre><code>php artisan about\n</code></pre>\n<p>Nếu chỉ quan tâm đến một phần cụ thể trong thông tin tổng quan, bạn có thể lọc kết quả bằng tùy chọn <code>--only</code>:</p>\n<pre><code>php artisan about --only=environment\n</code></pre>\n<p>Để xem chi tiết các giá trị trong một tệp cấu hình cụ thể, hãy sử dụng lệnh Artisan <code>config:show</code>:</p>\n<pre><code>php artisan config:show database\n</code></pre>"
+            },
+            "diagnostics": {
+                "response_id": "resp_0ec105163fa8f0c9016ac33c7abbfc87d09c3852bb96d837ac",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "post.content.v1",
+                "requested_groups": [
+                    "title",
+                    "content"
+                ],
+                "returned_fields": [
+                    "title",
+                    "content_html"
+                ],
+                "usage": {
+                    "prompt_tokens": 3125,
+                    "completion_tokens": 391,
+                    "total_tokens": 3516,
+                    "reasoning_tokens": 62
+                }
+            },
+            "latency_ms": 22069
+        }
+    ],
+    "latency_ms": 22074,
+    "input_sha256": "bd24d66602536d82d31fe86faa63dc162ea5da4897555c01418e2f6dbf5c731d",
+    "source_sha256": "c12f5cd330f099dff7f19be96ce14d905ec8ce7db45e944b41bba5bbeeee170b",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Cấu hình PHP/Laravel",
+        "content_html": "<h1>Cấu hình</h1>\n<p>Các tệp cấu hình của framework Laravel được lưu trong thư mục <code>config</code>. Mỗi tùy chọn đều có phần mô tả, vì vậy bạn có thể xem qua các tệp này để làm quen với những thiết lập hiện có.</p>\n<p>Thông qua các tệp cấu hình, bạn có thể thiết lập thông tin kết nối cơ sở dữ liệu, máy chủ thư điện tử và nhiều giá trị cốt lõi khác, chẳng hạn như URL của ứng dụng và khóa mã hóa.</p>\n<h2>Lệnh <code>about</code></h2>\n<p>Laravel có thể hiển thị thông tin tổng quan về cấu hình, driver và môi trường của ứng dụng bằng lệnh Artisan <code>about</code>:</p>\n<pre><code>php artisan about\n</code></pre>\n<p>Nếu chỉ quan tâm đến một phần cụ thể trong thông tin tổng quan, bạn có thể lọc kết quả bằng tùy chọn <code>--only</code>:</p>\n<pre><code>php artisan about --only=environment\n</code></pre>\n<p>Để xem chi tiết các giá trị trong một tệp cấu hình cụ thể, hãy sử dụng lệnh Artisan <code>config:show</code>:</p>\n<pre><code>php artisan config:show database\n</code></pre>"
+    },
+    "total_tokens": 3516
+}

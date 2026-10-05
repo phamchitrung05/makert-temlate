@@ -1,4 +1,14 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: PricingPlanDialog dùng khung dialog chung.
+  CÁC HÀM/METHOD TRONG FILE: dialogVisibleUpdate.
+  INPUT/OUTPUT CỦA CLASS (tổng thể): props/model và thao tác UI -> sự kiện của
+  caller; header/footer cố định, content cuộn qua AppDialogLayout.
+  =====================================================================
+-->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
+
 const props = defineProps({
   isDialogVisible: {
     type: Boolean,
@@ -15,17 +25,23 @@ const dialogVisibleUpdate = val => {
 
 <template>
   <VDialog
+    scrollable
     :model-value="props.isDialogVisible"
     :width="$vuetify.display.smAndDown ? 'auto' : 1200"
     @update:model-value="dialogVisibleUpdate"
   >
-    <!-- 👉 Dialog close btn -->
-    <DialogCloseBtn @click="$emit('update:isDialogVisible', false)" />
-
-    <VCard class="pricing-dialog pa-2 pa-sm-10">
+    <AppDialogLayout
+      class="pricing-dialog"
+      title="Pricing Plans"
+      subtitle="Choose the best plan to fit your needs."
+      @close="$emit('update:isDialogVisible', false)"
+    >
       <VCardText>
-        <AppPricing md="4" />
+        <AppPricing
+          md="4"
+          :show-header="false"
+        />
       </VCardText>
-    </VCard>
+    </AppDialogLayout>
   </VDialog>
 </template>

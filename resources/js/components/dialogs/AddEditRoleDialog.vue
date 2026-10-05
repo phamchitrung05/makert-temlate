@@ -1,4 +1,13 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: AddEditRoleDialog dùng khung dialog chung.
+  CÁC HÀM/METHOD TRONG FILE: onSubmit, onReset.
+  INPUT/OUTPUT CỦA CLASS (tổng thể): props/model và thao tác UI -> sự kiện của
+  caller; header/footer cố định, content cuộn qua AppDialogLayout.
+  =====================================================================
+-->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 import { VForm } from 'vuetify/components/VForm'
 
 const props = defineProps({
@@ -20,7 +29,6 @@ const emit = defineEmits([
   'update:isDialogVisible',
   'update:rolePermissions',
 ])
-
 
 // 👉 Permission List
 const permissions = ref([
@@ -92,7 +100,7 @@ const checkedCount = computed(() => {
         counter++
     })
   })
-  
+
   return counter
 })
 
@@ -132,7 +140,7 @@ watch(() => props, () => {
           ...rolePermission,
         }
       }
-      
+
       return permission
     })
   }
@@ -159,23 +167,20 @@ const onReset = () => {
 
 <template>
   <VDialog
+    scrollable
     :width="$vuetify.display.smAndDown ? 'auto' : 900"
     :model-value="props.isDialogVisible"
     @update:model-value="onReset"
   >
-    <!-- 👉 Dialog close btn -->
-    <DialogCloseBtn @click="onReset" />
+    <AppDialogLayout @close="onReset">
+      <template #header>
+        <VCardItem>
+          <VCardTitle>{{ props.rolePermissions.name ? 'Edit' : 'Add New' }} Role</VCardTitle>
+          <VCardSubtitle>Set Role Permissions</VCardSubtitle>
+        </VCardItem>
+      </template>
 
-    <VCard class="pa-sm-10 pa-2">
       <VCardText>
-        <!-- 👉 Title -->
-        <h4 class="text-h4 text-center mb-2">
-          {{ props.rolePermissions.name ? 'Edit' : 'Add New' }} Role
-        </h4>
-        <p class="text-body-1 text-center mb-6">
-          Set Role Permissions
-        </p>
-
         <!-- 👉 Form -->
         <VForm ref="refPermissionForm">
           <!-- 👉 Role name -->
@@ -248,24 +253,26 @@ const onReset = () => {
               </tr>
             </template>
           </VTable>
-
-          <!-- 👉 Actions button -->
-          <div class="d-flex align-center justify-center gap-4">
-            <VBtn @click="onSubmit">
-              Submit
-            </VBtn>
-
-            <VBtn
-              color="secondary"
-              variant="tonal"
-              @click="onReset"
-            >
-              Cancel
-            </VBtn>
-          </div>
         </VForm>
       </VCardText>
-    </VCard>
+      <template #footer>
+        <VCardActions class="justify-end">
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            @click="onReset"
+          >
+            Cancel
+          </VBtn>
+          <VBtn
+            variant="flat"
+            @click="onSubmit"
+          >
+            Submit
+          </VBtn>
+        </VCardActions>
+      </template>
+    </AppDialogLayout>
   </VDialog>
 </template>
 

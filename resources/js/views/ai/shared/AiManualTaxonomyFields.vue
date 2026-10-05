@@ -67,10 +67,7 @@ onBeforeUnmount(() => { sequence += 1; controller?.abort() })
 
 <template>
   <div class="mb-4">
-    <div class="d-flex align-center justify-space-between gap-2 mb-2">
-      <div class="text-subtitle-2">
-        Danh mục và tag · chọn thủ công
-      </div>
+    <div class="d-flex justify-end mb-2">
       <VBtn
         icon="tabler-refresh"
         size="small"
@@ -92,6 +89,7 @@ onBeforeUnmount(() => { sequence += 1; controller?.abort() })
           item-value="id"
           :return-object="false"
           label="Danh mục"
+          placeholder="Chọn danh mục"
           multiple
           chips
           closable-chips
@@ -112,6 +110,7 @@ onBeforeUnmount(() => { sequence += 1; controller?.abort() })
           item-value="id"
           :return-object="false"
           label="Tag"
+          placeholder="Chọn tag"
           multiple
           chips
           closable-chips

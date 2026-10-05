@@ -1,4 +1,14 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: ConfirmDialog dùng khung dialog chung.
+  CÁC HÀM/METHOD TRONG FILE: updateModelValue, onConfirmation, onCancel.
+  INPUT/OUTPUT CỦA CLASS (tổng thể): props/model và thao tác UI -> sự kiện của
+  caller; header/footer cố định, content cuộn qua AppDialogLayout.
+  =====================================================================
+-->
 <script setup>
+import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
+
 const props = defineProps({
   confirmationQuestion: {
     type: String,
@@ -54,11 +64,15 @@ const onCancel = () => {
 <template>
   <!-- 👉 Confirm Dialog -->
   <VDialog
+    scrollable
     max-width="500"
     :model-value="props.isDialogVisible"
     @update:model-value="updateModelValue"
   >
-    <VCard class="text-center px-10 py-6">
+    <AppDialogLayout
+      title="Confirm action"
+      @close="updateModelValue(false)"
+    >
       <VCardText>
         <VBtn
           icon
@@ -75,31 +89,40 @@ const onCancel = () => {
         </h6>
       </VCardText>
 
-      <VCardText class="d-flex align-center justify-center gap-2">
-        <VBtn
-          variant="elevated"
-          @click="onConfirmation"
-        >
-          Confirm
-        </VBtn>
-
-        <VBtn
-          color="secondary"
-          variant="tonal"
-          @click="onCancel"
-        >
-          Cancel
-        </VBtn>
-      </VCardText>
-    </VCard>
+      <template #footer>
+        <VCardActions class="justify-end">
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            @click="onCancel"
+          >
+            Cancel
+          </VBtn>
+          <VBtn
+            variant="elevated"
+            @click="onConfirmation"
+          >
+            Confirm
+          </VBtn>
+        </VCardActions>
+      </template>
+    </AppDialogLayout>
   </VDialog>
 
   <!-- Unsubscribed -->
   <VDialog
     v-model="unsubscribed"
+    scrollable
     max-width="500"
   >
-    <VCard>
+    <AppDialogLayout @close="unsubscribed = false">
+      <template #header>
+        <VCardItem>
+          <VCardTitle>{{ props.confirmTitle }}</VCardTitle>
+          <VCardSubtitle>{{ props.confirmMsg }}</VCardSubtitle>
+        </VCardItem>
+      </template>
+
       <VCardText class="text-center px-10 py-6">
         <VBtn
           icon
@@ -113,29 +136,35 @@ const onCancel = () => {
             size="38"
           />
         </VBtn>
-
-        <h1 class="text-h4 mb-4">
-          {{ props.confirmTitle }}
-        </h1>
-
-        <p>{{ props.confirmMsg }}</p>
-
-        <VBtn
-          color="success"
-          @click="unsubscribed = false"
-        >
-          Ok
-        </VBtn>
       </VCardText>
-    </VCard>
+      <template #footer>
+        <VCardActions class="justify-end">
+          <VBtn
+            variant="flat"
+            color="success"
+            @click="unsubscribed = false"
+          >
+            Ok
+          </VBtn>
+        </VCardActions>
+      </template>
+    </AppDialogLayout>
   </VDialog>
 
   <!-- Cancelled -->
   <VDialog
     v-model="cancelled"
+    scrollable
     max-width="500"
   >
-    <VCard>
+    <AppDialogLayout @close="cancelled = false">
+      <template #header>
+        <VCardItem>
+          <VCardTitle>{{ props.cancelTitle }}</VCardTitle>
+          <VCardSubtitle>{{ props.cancelMsg }}</VCardSubtitle>
+        </VCardItem>
+      </template>
+
       <VCardText class="text-center px-10 py-6">
         <VBtn
           icon
@@ -146,20 +175,18 @@ const onCancel = () => {
         >
           <span class="text-5xl font-weight-light">X</span>
         </VBtn>
-
-        <h1 class="text-h4 mb-4">
-          {{ props.cancelTitle }}
-        </h1>
-
-        <p>{{ props.cancelMsg }}</p>
-
-        <VBtn
-          color="success"
-          @click="cancelled = false"
-        >
-          Ok
-        </VBtn>
       </VCardText>
-    </VCard>
+      <template #footer>
+        <VCardActions class="justify-end">
+          <VBtn
+            variant="flat"
+            color="success"
+            @click="cancelled = false"
+          >
+            Ok
+          </VBtn>
+        </VCardActions>
+      </template>
+    </AppDialogLayout>
   </VDialog>
 </template>

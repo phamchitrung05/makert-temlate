@@ -1,9 +1,17 @@
 # FIX 1 — Ổn định AI Content và quy trình duyệt bài
 
 **Ngày lập:** 2026-10-02
-**Trạng thái 2026-10-05:** Task 1 đã có regression/local smoke. Task 2 đã triển khai backend và sáu nhóm UI/API còn thiếu tại 12.23: văn phong/brief, raw HTML/preview, taxonomy thủ công, MediaLibrary trong editor, báo cáo từng bước và quản lý profile. Model thật, Apply Post draft và MySQL/cache đã kiểm trên localhost theo lựa chọn của người dùng; báo cáo 12.24. Corpus/pilot/gói chấm chất lượng đã có, nhưng chấm hai người đọc và nghiên cứu đầy đủ còn mở; toolbar TinyMCE thật chưa nghiệm thu do Tiny Cloud từ chối origin localhost. Phần Ai Prompt chưa API giữ minh họa rõ nhãn. VPS/Reverb, lớp duyệt riêng và Settings ngoài AI thuộc phần khác; toàn FIX 1 chưa hoàn tất.
+**Trạng thái 2026-10-05:** Task 1 `DONE`; Task 2 `DONE` trong phạm vi kỹ thuật đã chốt tại 12.35. Đã sửa gate số liệu, kiểm lại 19 output C đã lưu và chạy riêng Q33 bằng C ba bước; artifacts/status của study cũ giữ nguyên. Tiny Cloud thật đã kiểm trên `http://localhost:8000`, gồm toolbar, MediaLibrary, sửa/di chuyển/xóa ảnh, lưu/reload và Apply Post nháp. Theo lựa chọn của chủ dự án, hai người đọc chấm chất lượng được chuyển sang đợt riêng; chưa có điểm hoặc kết luận rollout. Toàn FIX 1 vẫn `IN PROGRESS`: workflow biên tập/duyệt, thumbnail generate, Reverb/VPS và Settings ngoài AI còn chờ. Phần Ai Prompt chưa API giữ minh họa rõ nhãn.
 **Mục tiêu:** Gom các lỗi đã xác nhận trong lúc test, chốt một lần rồi triển khai đồng bộ.
 **Điều chỉnh phạm vi:** Bỏ nhóm Provider/9Router khỏi công việc FIX 1 theo yêu cầu ngày 2026-10-03.
+
+**Mốc hiện tại:** UX tới 12.29, đối chiếu tiến độ tại 12.30; chất lượng bài
+bước 1–2 tại 12.31, bước 3–5 tại 12.32; gỡ B và bắt buộc C tại 12.33;
+đối chiếu phần làm tiếp tại 12.34; hoàn tất kỹ thuật Task 2 tại 12.35. Các mốc
+12.17–12.23 là báo cáo lịch sử, phần còn thiếu khi đó được cập nhật bởi 12.24.
+Từ 12.27, tạo nội dung Post tập trung ở AI Content; nút/dialog tạo bài AI trong
+Post đã gỡ. Báo cáo 12.17–12.34 giữ hiện trạng lịch sử; mốc 12.35 là tiến độ
+hiện tại. Toàn FIX 1 vẫn `IN PROGRESS`.
 
 ## 1. Nguyên tắc đã thống nhất
 
@@ -40,25 +48,25 @@ Chi tiết triển khai và bằng chứng kiểm thử của task này ở mụ
 
 ### B. Prompt và chất lượng nội dung
 
-Task 2 được tổng hợp tại mục 12. Backend, Ai Prompt List/Add/CRUD và các form tạo bài/biên tập đã nối API. Báo cáo hoàn thiện và nghiệm thu localhost tại 12.24; chất lượng văn phong cần người đọc đánh giá và toolbar TinyMCE thật còn chờ cấu hình origin/license hợp lệ.
+Task 2 đã hoàn tất kỹ thuật tại mục 12.35. Backend, Ai Prompt List/Add/CRUD và các form tạo bài/biên tập đã nối API. Toolbar Tiny Cloud thật đã kiểm trên localhost; chất lượng văn phong/facts bằng người đọc thuộc đợt riêng theo quyết định của chủ dự án.
 
 - [x] Prompt yêu cầu giữ sự thật/code, coi nguồn là dữ liệu không tin cậy và dùng hướng dẫn theo target.
 - [x] Tích hợp Analyze + Plan → Write → Edit cho tác vụ tạo `content`; kiểm source anchors, facts quan trọng, code, số liệu và liên kết. Semantic grounding toàn diện vẫn cần người biên tập kiểm.
 - [x] Tạo brief và prompt riêng từng bước; bố cục phù hợp nguồn, không áp một outline cố định.
 - [x] Bỏ taxonomy khỏi prompt/schema/alias/nhóm đầu ra AI; danh mục/tag chỉ nhận lựa chọn thủ công và được backend kiểm tra.
 - [x] Backend CRUD/version/enable/options/default mẫu văn phong và nhận brief/yêu cầu riêng qua API.
-- [x] Nối select văn phong/mặc định, brief/yêu cầu riêng ở AI Content, dialog Post và regenerate; inheritance/override rõ ràng. Xem 12.24.
+- [x] Nối select văn phong/mặc định, brief/yêu cầu riêng ở AI Content và regenerate; inheritance/override rõ ràng. Dialog tạo bài AI trong Post đã gỡ tại 12.27.
 - [x] Quản lý mẫu từ List: sửa, xóa có xác nhận, bật/tắt, tạo thủ công và default; version conflict giữ bản sửa. Xem 12.24.
 - [x] Tạo mục `Ai Prompt` trong Systerm AI tại `/admin/ai/prompt`; custom theo theme project và nối API hiện có, phần chưa API có nhãn minh họa.
 - [x] API phân tích bài tham khảo qua queue → trả kết quả/evidence → lưu profile khi người dùng POST duyệt.
-- [x] Nối API dán bài/URL/file, xem/sửa/lưu mẫu hiện tại — tests/HTTP mock, lint/build và browser UI tại 12.19; phần chưa API giữ minh họa tĩnh, model thật chưa nghiệm thu.
+- [x] Nối API dán bài/URL/file, xem/sửa/lưu mẫu hiện tại — tests/HTTP mock, lint/build và browser UI tại 12.19; model thật đã chạy tại 12.24. Phần chưa API giữ minh họa tĩnh; nghiệm thu chất lượng bằng người đọc còn mở.
 - [x] Tách Ai Prompt → List/Add; List dùng datatable tìm tên/phân trang/xem prompt đã lưu, Add giữ trang phân tích hiện tại; báo cáo 12.21.
 - [x] Add tự reset sau khi lưu thành công, có nút Văn phong mới và giữ bản khi lưu lỗi/chưa xác định; báo cáo 12.22.
-- [x] Nối hook MediaLibrary/upload và bảo toàn ID/URL/alt/caption qua save/regenerate/Apply; backend/composable và editor dự phòng đã kiểm. Browser toolbar TinyMCE thật còn chờ origin/license tại 12.24.
+- [x] Nối hook MediaLibrary/upload và bảo toàn ID/URL/alt/caption qua save/regenerate/Apply. Toolbar Tiny Cloud thật đã kiểm tại 12.35; regenerate giữ ảnh có regression và bằng chứng browser/API kế thừa tại 12.24.
 - [x] Thêm gate output mới trước merge: exact-copy, similarity warning, language detector vi/en có trạng thái chưa rõ, code/link/số liệu và source references; không coi lexical metric là điểm văn phong hoặc fact verification bên ngoài.
 - [x] Backend lưu source/profile/prompt/schema/parent snapshot, checkpoint, timeout/lease, hủy/retry và safe step metadata.
 - [x] Hiển thị Analyze/Write/Edit/Validate, checkpoint/gates/profile/usage thật sau reload; nhánh ngắn dùng diagnostics một lượt. Xem 12.24.
-- [ ] So sánh chất lượng thực tế với luồng một lượt AI trên bộ bài mẫu, đo cả công biên tập, thời gian và token.
+- [ ] Nghiệm thu chất lượng thực tế của C trên bộ bài mẫu: facts, diễn đạt, công biên tập, thời gian và token. B đã gỡ tại 12.33; so sánh B/C đã chạy chỉ giữ lịch sử, không yêu cầu chạy mới B.
 - [x] Cho phép tạo lại toàn bài hoặc từng nhóm field sau khi sửa contract regenerate.
 
 ### C. Timeout, queue và realtime
@@ -120,7 +128,7 @@ Trang `AI Drafts` là luồng dự kiến. Hiện trang `AI Content` dùng candi
 - [x] API apply ép Post `status=draft` và lưu provenance/liên kết với tác vụ AI.
 - [ ] Nối nút duyệt/apply và từ chối trên trang AI Content vào workflow biên tập riêng.
 - [x] Danh sách hiển thị thời gian tạo.
-- [ ] Hiển thị provider/model/prompt version và lỗi từng tác vụ an toàn từ metadata, kể cả sau reload; lưu và hiển thị usage/token.
+- [x] Hiển thị provider/model/prompt version và lỗi từng tác vụ an toàn từ metadata, kể cả sau reload; lưu và hiển thị usage/token qua báo cáo checkpoint/diagnostics. Bằng chứng 12.24; workflow biên tập riêng vẫn chưa triển khai.
 - [ ] Không trộn trạng thái kỹ thuật với trạng thái biên tập.
 
 ## 4. Thứ tự triển khai phần còn lại sau audit
@@ -279,22 +287,22 @@ Task 2 quản lý mẫu văn phong tại Systerm AI → Ai Prompt; tab AI & Cont
 - [x] Kiểm thử config/registry, lựa chọn theo target, snapshot, lọc kết quả provider và giao diện select. Build production được cập nhật.
 - [ ] Browser QA select với tài khoản đăng nhập của người dùng.
 
-## 10. Tổng hợp phần còn lại — audit 2026-10-03, cập nhật plan 2026-10-04
+## 10. Tổng hợp phần còn lại — audit 2026-10-03, cập nhật tiến độ 2026-10-05
 
 Các checkbox bên trên gồm cả task, tiêu chí và quyết định. Không cộng checkbox trống thành số task độc lập. Những nhóm chưa hoàn thành:
 
 | Nhóm | Phần còn thiếu | Tham chiếu |
 | --- | --- | --- |
 | Structured output | Tuning temperature và quyết định debug raw response ở đợt riêng. Task 1 đã xong code, diagnostics, regression, build, restart worker và browser smoke local với output được kiểm soát | 2A, 11.6 |
-| Task 2 — AI Content | Cập nhật 2026-10-05: backend và sáu nhóm UI/API đã triển khai, model/MySQL/Post draft kiểm trên localhost. Còn nghiệm thu toolbar TinyMCE theo origin/license và nghiên cứu chất lượng/corpus/người đọc | 2B, 12.24 |
-| Extractor/nguồn | Backend extractor/preview và Ai Prompt URL/file đã có; AI Content còn chuyển file HTML thành text, chưa nối raw HTML/preview; cần kiểm thêm layout lạ | 2D, 12.3, 12.8, 12.20, 12.23 |
-| Biên tập AI | `ai_content_drafts`, lưu dài hạn, approve/reject UI/API, lịch sử/lý do, so sánh nguồn/kết quả, metadata và lỗi từng tác vụ sau reload | 3 |
+| Đánh giá chất lượng C — đợt riêng | Task 2 đã `DONE` kỹ thuật tại 12.35. Hai người đọc chưa chấm; tiếp tục xác nhận facts/coverage, văn phong và công biên tập trước kết luận chất lượng/rollout | 2B, 12.15, 12.35 |
+| Extractor/nguồn | Raw HTML/file multipart/encoding và preview đã nối AI Content tại 12.24, không flatten file ở client. Còn mở rộng coverage nguồn/layout trong nghiên cứu chất lượng; không còn là hạng mục UI/API chưa nối | 2D, 12.15, 12.24 |
+| Biên tập AI | `ai_content_drafts`, lưu dài hạn, approve/reject UI/API, người duyệt/lịch sử/lý do và so sánh nguồn/kết quả. Apply Post draft và báo cáo metadata/usage/lỗi của tác vụ kỹ thuật đã có | 3, 12.24 |
 | Thumbnail sinh bằng AI | Nối lựa chọn generate và kết quả ảnh vào thumbnail của candidate/Post; hiện luồng tạo bài chỉ lấy ảnh nguồn hoặc để trống | 9.7 |
 | Realtime/VPS | Broadcast, Echo/Reverb, process manager, worker/scheduler production và QA reboot/reconnect | 2C |
 | Settings ngoài AI | Chín tab: Tổng quan, Media, SEO, Email, Cron Jobs, Webhooks, Languages, Security, System Info; API, typed settings, quyền, runtime và tests tương ứng | 9.1–9.6 |
 | Settings workflow/QA | Concurrency/409 (cả AI), dirty/conflict/stale-response handling và browser QA đăng nhập desktop/mobile/dark mode | 9.3, 9.5, 9.7, 9.8 |
 
-**Đã có, không nằm trong phần chờ:** chuẩn hóa ba config AI, select nhiều tag từ config, AI Settings động, model thumbnail selector, nguồn HTML/paste, editor/regenerate, API apply Post draft/provenance, thumbnail nguồn và hiển thị trong danh sách, model catalog sync/test từng model, timeout/queue budget, polling backoff, kiểm kết quả AI trước `ready`, diagnostics theo allowlist và lỗi validation sau reload.
+**Đã có, không nằm trong phần chờ:** chuẩn hóa ba config AI, select nhiều tag từ config, AI Settings động, model thumbnail selector, raw HTML/file/encoding và preview, editor/regenerate, API apply Post draft/provenance, thumbnail nguồn và hiển thị trong danh sách, model catalog sync/test từng model, timeout/queue budget, polling backoff, kiểm kết quả AI trước `ready`, diagnostics/usage theo allowlist và lỗi validation sau reload. Sáu nhóm UI/API tại 12.23 đã triển khai ở 12.24; CRUD văn phong và chuẩn dialog/loading tại 12.25–12.29 đã xong.
 
 **Phạm vi cần chốt nếu mở rộng:** Resource/Sound hiện chỉ tạo candidate văn bản, chưa apply sang domain tương ứng hoặc tạo file audio. Chưa coi phần mở rộng này là task bắt buộc của FIX 1.
 
@@ -430,7 +438,7 @@ Request legacy không có selection giữ cách suy ra full-generation hiện t�
 ## 12. Task 2 — Nâng chất lượng AI Content, văn phong và ảnh nội dung
 
 **Audit ban đầu:** 2026-10-03. **Cập nhật tổng hợp:** 2026-10-04.
-**Trạng thái 2026-10-05:** Backend và sáu nhóm UI/API theo audit 12.23 đã triển khai, nghiệm thu trên localhost tại 12.24. Model thật, MySQL/cache và Post draft đã kiểm; Task 2 còn chấm chất lượng/corpus đầy đủ và browser toolbar TinyMCE bị khóa do origin. Không đánh dấu toàn Task 2 hoàn tất từ tests hoặc pilot. Các báo cáo 12.17–12.23 giữ lịch sử từng đợt.
+**Trạng thái 2026-10-05:** `DONE` kỹ thuật tại 12.35, gồm nguồn/profile/pipeline C/checkpoint/gates/UI/TinyMCE–MediaLibrary/Apply. Chủ dự án đã chuyển chấm người đọc sang đợt riêng và chọn giữ Tiny Cloud trên domain được phép. Browser QA mới dùng localhost và SQLite; model/MySQL/cache của 12.24 là bằng chứng lịch sử riêng. Chưa kết luận chất lượng văn phong hoặc rollout. Các báo cáo 12.17–12.34 giữ lịch sử từng đợt.
 
 **Bước đầu đã làm — 2026-10-04:** mục `Ai Prompt` trên menu dọc/ngang thuộc Systerm AI, route `/admin/ai/prompt` (`ai-prompt`) và trang trống tại `resources/js/pages/ai/prompt/index.vue`. Giao diện sẽ do người dùng bổ sung sau; chưa có API/model/queue phân tích mẫu ở bước này.
 
@@ -801,7 +809,7 @@ Mã lỗi cụ thể, ngưỡng similarity/language, minimum prose length, danh 
 
 ### 12.14 Thứ tự triển khai task 2
 
-Các đợt dưới đây là thứ tự triển khai của thiết kế ban đầu, không phải danh sách tất cả việc đang thiếu. Backend đã có tại 12.17, Ai Prompt tại 12.19–12.22; trạng thái còn lại theo audit 12.23.
+Các đợt dưới đây là thứ tự triển khai, không phải danh sách tất cả việc đang thiếu. Các đợt 1–6 và nghiệm thu kỹ thuật đã hoàn tất tại 12.35. Đợt 7 chấm người đọc/rollout được chủ dự án tách riêng. So sánh một lượt/ba lượt và switch rollout trong thiết kế cũ đã được thay bằng C bắt buộc tại 12.33.
 
 | Đợt | Công việc | Kết quả kiểm tra được |
 | --- | --- | --- |
@@ -811,31 +819,42 @@ Các đợt dưới đây là thứ tự triển khai của thiết kế ban đ�
 | 4 — Vận hành | Checkpoint/attempt/progress, cancel/resume, hashes, timeout/retry_after, diagnostics/usage và cleanup | Không dùng lại checkpoint sai input hoặc chạy trùng; reload xem được tiến độ/lỗi từng bước |
 | 5 — Quality | Exact-copy/similarity/language/grounding/ref gates, ngoại lệ và lỗi/warning có lý do | Output mới được kiểm trước merge/thumbnail; không có fallback che selected field sai |
 | 6 — TinyMCE và media | Picker/upload trong editor, sanitizer ảnh, asset refs/usage, regenerate bảo toàn inline image | Chèn ảnh tại con trỏ, lưu/reload/Apply/regenerate giữ ảnh; không cần chọn lại ngoài editor |
-| 7 — Đánh giá và rollout | Bộ bài mẫu, so sánh một lượt/ba lượt, regression, browser QA; bật qua cấu hình rollout có theo dõi cost/latency | Có bằng chứng chất lượng và vận hành trước khi dùng mặc định |
+| 7 — Đánh giá chất lượng C, đợt riêng | Người đọc chấm facts/văn phong/công sửa trên nguồn/profile/model cố định; theo dõi cost/latency. Study B/C chỉ giữ lịch sử | Có điểm người đọc và quyết định owner trước kết luận chất lượng/rollout; không giữ Task 2 kỹ thuật mở |
 
 Budget/timeout/cancellation tối thiểu phải có cùng đợt 3 trước khi chạy ba request thật; đợt 4 hoàn thiện resume/quan sát và production checks. Gate contract/ref validity chạy ngay mỗi bước, không đợi đợt 5 mới validate intermediate. Bộ bài mẫu được chuẩn bị từ đợt 1 để không đánh giá chỉ bằng bài dễ.
 
-Luồng một lượt có thể được giữ như baseline/rollout option rõ ràng. Không âm thầm fallback sang luồng đó hoặc deterministic khi ba bước lỗi rồi báo thành công. Nếu ba bước không cải thiện đủ so với một lượt có brief/profile tốt thì điều chỉnh prompt/luồng trước khi chọn làm mặc định.
+Cập nhật phạm vi tại 12.33: chỉ C tạo toàn bộ bài. B không còn là baseline
+chạy mới hoặc lựa chọn rollout; không fallback sang B hoặc deterministic khi
+C lỗi rồi báo thành công. Kết quả B/C cũ vẫn được đọc từ artifacts. Hiệu chỉnh
+tiếp tập trung vào facts, diễn đạt và công sửa của C, giữ lỗi thật để đánh giá.
 
 ### 12.15 Tiêu chí nghiệm thu và kiểm thử
 
 **Chức năng bắt buộc:**
 
-Các ô dưới đây phản ánh kết quả tới đợt 12.24. Tests backend/frontend kết hợp browser và model thật trên localhost; tiêu chí toolbar TinyMCE giữ mở khi chỉ kiểm được editor dự phòng. Nghiệm thu chất lượng bằng người đọc bên dưới vẫn mở.
+Các ô dưới đây phản ánh nghiệm thu kỹ thuật tới 12.35, kết hợp tests, browser và model thật. Tiny Cloud đã hoạt động trên `http://localhost:8000`; bằng chứng mới tách rõ với MySQL/fallback editor của 12.24. Chấm người đọc bên dưới thuộc đợt riêng theo quyết định của chủ dự án.
 
 - [x] URL/text/HTML normalize, source snapshot/anchors, code/table/link/quote/form; fixture tests và file Ovation trên browser localhost.
 - [x] `content` chạy Analyze + Plan → Write → Edit; nhánh ngắn/thumbnail-only không gọi thừa. Ba bước và excerpt-only đã chạy model thật.
 - [x] Select profile/mặc định, brief/yêu cầu riêng và snapshot/version; regenerate giữ snapshot cũ, override rõ ràng.
 - [x] Phân tích văn phong thật từ nguồn tham khảo → 13 dẫn chứng → sửa/lưu → List/select; CRUD thủ công/quyền/version có regression.
 - [x] Không AI taxonomy; danh mục/tag thủ công giữ qua edit/regenerate/Apply vào Post #6, legacy/version được kiểm.
-- [ ] Chèn/upload ảnh trong TinyMCE dùng MediaLibrary, giữ asset ID/URL/alt/vị trí qua save/reload/Apply; regenerate không làm mất ảnh hoặc tạo URL giả.
+- [x] Chèn/upload/sửa/di chuyển/xóa/undo ảnh trong Tiny Cloud thật qua MediaLibrary; save/reload/Apply giữ asset ID/URL/alt/caption/vị trí tại 12.35. Regenerate giữ ảnh có backend/frontend regression và QA browser/API kế thừa tại 12.24; không gọi regenerate mới từ fixture QA editor.
 - [x] Gates kiểm output mới trước merge/thumbnail; ngoại lệ code/quote/đoạn ngắn và parent preservation có regression; lỗi thật hiện sau reload, không fallback che lỗi.
 - [x] Queue budget/cancel/checkpoint/resume/claim kiểm bằng tests và MySQL/cache probe; progress/usage sau reload. Windows hard-kill và production checks vẫn giới hạn tại 12.24/2C.
 - [x] Apply vào Post draft, actor/provenance/media usage đúng; regression Post/Resource/Sound đạt.
 
 **Regression cần có khi triển khai:** HTTP fake cho adapter từng schema/finish reason/refusal/tool calls/JSON lỗi; output từng bước sai schema/ref hoặc thiếu selected field; snapshot/hash/version; facts có số liệu/điều kiện/code/link/quote; prompt injection từ nguồn/bài mẫu; title/SEO-only và partial regenerate; profile CRUD/quyền/disable/concurrency; lifecycle cancel/timeout/resume; HTML ảnh/quyền asset/URL mismatch/usage/cleanup và UI TinyMCE. Automated tests không gửi request AI thật.
 
-**Đánh giá chất lượng:** chuẩn bị 20–30 nguồn cố định đại diện tin cập nhật, hướng dẫn có code/ảnh/bảng, so sánh và giải thích khái niệm; có nguồn ngắn/dài, tiếng Việt/ngoại ngữ và trường hợp nhiều điều kiện kỹ thuật. So sánh ba phương án cùng nguồn/brief: pipeline hiện tại một lượt, một lượt với brief/profile tốt, pipeline ba bước. Người đánh giá được đọc nguồn nhưng không biết phương án nào sinh bài.
+**Đánh giá chất lượng — đợt riêng sau code:** chủ dự án đã chọn chuyển hai
+người đọc chấm sang đợt riêng ngày 2026-10-05. Tiêu chí này không giữ nghiệm
+thu kỹ thuật Task 2 mở; điểm facts/văn phong/công sửa và quyết định rollout
+vẫn chưa được chốt. Không dùng tests/gate hoặc AI tự chấm để điền phiếu.
+Corpus v2 đã freeze 20 nguồn và study thật tại 12.32;
+coverage/facts chuẩn vẫn cần người đọc xác nhận. Từ 12.33, phiên mới chỉ chạy
+C trên nguồn/brief/profile/model cố định. Người đọc đối chiếu nguồn và chấm
+độc lập; phiếu C có một ứng viên mỗi ca. Study so sánh B/C cũ giữ lịch sử,
+không chạy lại B hoặc bắt buộc phục hồi baseline A để nghiệm thu C.
 
 Chấm tự nhiên tiếng Việt, đúng/đủ facts và điều kiện, hữu ích với người đọc, lặp ý/bố cục, mức chỉnh sửa cần thiết; ghi riêng lỗi bịa/mất thông tin, thời gian và token/chi phí. Một bài trôi chảy nhưng sai điều kiện sử dụng không được coi là đạt nhờ điểm văn phong cao. Ghi rubric và kết quả, hiệu chỉnh threshold trên bộ này rồi mới quyết định rollout.
 
@@ -1053,3 +1072,467 @@ Chỉ sửa frontend và tài liệu, giữ backend/API/migration hiện có. CR
 - [ ] Chất lượng và rollout: pilot còn lỗi, corpus v1 thiếu coverage; cần owner/người đọc xác nhận nguồn/facts, hai người chấm, tuning tiếp và nghiên cứu đầy đủ theo 12.15. Gói review đã cụ thể; không dùng AI tự chấm để đóng tiêu chí người đọc hoặc kết luận ba bước tốt hơn một lượt.
 
 Sáu nhóm code/UI/API ở audit 12.23 đã có kết quả kiểm được. Hai điều kiện trên vẫn giữ mở rõ ràng; không đánh dấu toàn Task 2 hoặc toàn FIX 1 hoàn tất chỉ từ test/build hay các call model thành công.
+
+### 12.25 Ai Prompt List: dialog riêng và tải/đóng ổn định — 2026-10-05
+
+Theo yêu cầu sửa UX, tách dialog nhập thủ công, chỉnh sửa, bật/tắt và xóa. Form tạo/sửa luôn hiện đầy đủ, khóa nhập và có vòng xoay khi tải; lỗi GET giữ form khóa để tải lại. Giữ nội dung/loading trong lúc đóng, chỉ dọn dữ liệu tại `afterLeave`; hủy request khi đóng và bỏ response muộn. Các xác nhận bỏ bản sửa, version 409/default lỗi/POST bất định được giữ.
+
+Toàn frontend **43 files/296 tests** đạt; scoped ESLint/build đạt. Browser localhost kiểm form/loading và đóng/mở lại, không ghi profile hoặc gọi AI. Các dialog sửa/trạng thái/xóa kiểm bằng HTTP giả vì danh sách local hiện rỗng. Chi tiết tại [plan Ai Prompt mục 0.8](PLAN_AI_PROMPT_API.md#08-tách-dialog-và-ổn-định-tảiđóng--2026-10-05). Không thay đổi hai điều kiện nghiệm thu Task 2 còn mở ở 12.24.
+
+### 12.26 Chuẩn hóa header/content/footer dialog — 2026-10-05
+
+Đã chuẩn hóa **39 dialog ứng dụng** bằng `components/dialogs/AppDialogLayout.vue`,
+lấy Post Create with AI làm mẫu: header có tiêu đề/nút đóng, content ở giữa cuộn,
+footer luôn hiện Hủy/Đóng và thao tác chính. Bao gồm AI, Prompt, Post, Media,
+Settings, tìm kiếm và các dialog tái sử dụng. Demo API Vuetify trong `views/demos/`
+giữ hành vi minh họa; khi đưa vào ứng dụng phải chuyển sang khung chuẩn.
+
+Nút tạo/lưu văn phong được đưa khỏi form dài xuống footer. Các form có submit
+dùng ID riêng từ `useId()` và nút footer liên kết tới form; các handler guard/
+validation hiện có được giữ. Footer wrap, tiêu đề/mô tả wrap; Media Library giữ
+scrollbar panel trong content ở desktop, cuộn content chung trên mobile hoặc
+viewport thấp. Không tự reset state trong layout hoặc thay contract API.
+
+Kiểm chứng: **44 frontend files/300 tests**, scoped ESLint và production build
+**1 phút 30 giây** đạt. Regression mới kiểm vùng header/body/footer, khóa nút đóng,
+footer mặc định, hai form độc lập và submit đúng một lần; regression Prompt giữ
+loading/after-leave/bản chưa lưu và xác nhận nút tạo nằm trong footer.
+
+Browser kiểm component thật với API giả, chặn mutation/model: Post/Prompt cuộn
+giữ nguyên tọa độ header/footer ở **1280×720**, Prompt/Media không tràn ngang ở
+**390×844**, Media ở **1280×400** vẫn có footer và cuộn được nội dung. Enter và
+nút Submit của form có footer đều phát sự kiện. Phiên kiểm bố cục dùng harness
+tạm vì tài khoản admin seed trong code không đăng nhập được vào database local;
+harness đã dọn sau kiểm tra. Quy tắc và mẫu cho dialog mới đã ghi vào
+[PROJECT_STRUCTURE mục 4.3.1](PROJECT_STRUCTURE.md#431-cấu-trúc-dialog-bắt-buộc)
+và [PLAN](PLAN.md#chuẩn-cấu-trúc-dialog-bắt-buộc).
+
+### 12.27 Tập trung tạo nội dung ở AI Content — 2026-10-05
+
+Theo yêu cầu mới, đã gỡ **Create With AI** ở Post List và **Fill All with AI**
+ở Post Add/Edit, dọn cả nút **AI Assistant** minh họa trong khung soạn bài.
+Xóa `CreateWithAiDialog.vue`, hai component chỉ phục vụ dialog
+(`ArticleSourcePreviewCard.vue`, `AiImportProgressCard.vue`) và hai bộ test cũ.
+Không còn import hoặc điểm mở dialog tạo nội dung AI trong mã nguồn Post/tests.
+Luồng tạo, review, regenerate và Apply nội dung Post tập trung tại AI Content.
+
+PostForm dùng handler riêng cho thumbnail; xác nhận thay ảnh và lineage khi lưu
+đã có regression cho cả Áp dụng và Giữ dữ liệu hiện tại. Các ca này kiểm title,
+content và excerpt người dùng nhập vẫn được lưu đúng sau khi chọn ảnh.
+Plan, inventory và component map đã cập nhật. Chuẩn dialog ở mục 12.26 tiếp tục
+dùng `AppDialogLayout` làm mẫu: header/footer cố định, chỉ content ở giữa cuộn.
+Các snapshot cũ về dialog Post là lịch sử triển khai.
+
+Kiểm chứng: toàn frontend **42 files/285 tests** đạt; scoped ESLint không có lỗi
+hoặc cảnh báo; production build **51.44 giây** đạt. Điều kiện nghiệm thu Task 2
+còn mở tại 12.24 tiếp tục được theo dõi riêng.
+
+### 12.28 Nút X theo mẫu dialog Vuexy — 2026-10-05
+
+Đã chuẩn hóa nút đóng của `AppDialogLayout` bằng `DialogCloseBtn` có sẵn:
+nổi ngoài góc trên bên phải của card theo CSS Vuexy. Nút là sibling của card,
+không bị `overflow: hidden` cắt; header/footer cố định và content vẫn cuộn.
+Layout chuyển attrs/class/style vào card và tiếp tục xử lý `closeLabel`,
+`closeDisabled`, event `close` qua cùng handler. Edit AI Content, xác nhận tải
+bản mới và toàn bộ dialog thêm/sửa provider/model ở AI Settings nhận chuẩn chung.
+Quy tắc vị trí X đã ghi vào PLAN và PROJECT_STRUCTURE mục 4.3.1.
+
+Kiểm chứng: **42 frontend files/285 tests**, scoped ESLint và production build
+**1 phút 39 giây** đạt. Regression khung chung kiểm nút X nằm ngoài card,
+attrs vẫn thuộc card, khóa đóng/footer và submit đúng một lần.
+
+Browser dùng component thật, dữ liệu mẫu và API giả chặn mutation/model:
+edit AI Content tại **1280×720** cuộn content giữ nguyên tọa độ header/footer/X;
+thêm/sửa provider/model có nút X nổi ngoài card và đóng đúng; ở **390×844**
+nút/footers vẫn trong viewport, không tràn ngang. Provider tại **1280×400** có
+body cuộn riêng và footer/X luôn hiện. Harness đã dọn, viewport đã reset.
+Ảnh kiểm chứng: [AI Content](qa/AI_DIALOG_CLOSE_2026-10-05/ai-content.jpg)
+và [AI Settings](qa/AI_DIALOG_CLOSE_2026-10-05/ai-settings.jpg).
+
+### 12.29 Loading form edit AI Content — 2026-10-05
+
+Dialog chỉnh sửa danh sách AI Content hiện đủ tiêu đề, tóm tắt, editor, taxonomy
+cho Post và SEO ngay khi mở. Trong lúc GET, các field/Lưu bị khóa và vòng xoay
+hiển thị trên form, phía trên cả toolbar TinyMCE; Hủy/X vẫn đóng được. Khi tải
+xong, dữ liệu được điền vào cùng form. GET lỗi giữ đủ field bị khóa và có xác
+nhận tải lại; loading summary giữ `target_type` để retry đúng loại nội dung.
+Lỗi lưu giữ nguyên bản đang sửa; candidate đã Apply tiếp tục chỉ đọc.
+
+Snapshot session/loading/error và form được giữ đến `after-leave`. Event đóng
+cũ sau khi mở lại bị bỏ qua; response GET muộn tiếp tục được guard ở composable.
+Không gửi Save khi thiếu draft/version, đang tải hoặc đang upload ảnh.
+Đã bỏ dòng “Danh mục và tag · chọn thủ công” trong `AiManualTaxonomyFields`;
+các trường Danh mục/Tag và nút tải lại vẫn hoạt động. Placeholder cho các trường
+text và taxonomy được bổ sung. Quy tắc loading/after-leave được cập nhật trong
+PLAN và PROJECT_STRUCTURE mục 4.3.1.
+
+Kiểm chứng: toàn frontend **42 files/292 tests**, scoped ESLint/Stylelint và
+production build đạt. Regression kiểm tải chậm → ready giữ cùng field, lỗi GET/
+tải lại, khóa Save, giữ bản sửa khi lỗi lưu, đóng lúc tải/đã tải và mở lại trước
+event `after-leave` cũ; retry API giữ đúng target. Run lỗi không có draft vẫn
+hiện báo cáo pipeline để người dùng đọc nguyên nhân.
+
+Browser kiểm component thật với dữ liệu mẫu/API giả, không mutation/model:
+desktop **1280×720** có đủ field bị khóa, vòng xoay rõ; sau GET các input được
+điền/mở khóa, bỏ heading taxonomy, header/footer giữ tọa độ khi cuộn. Mobile
+**390×844** giữ X/footer/loading trong viewport, không tràn ngang. Tiny Cloud
+vẫn cảnh báo origin/key đã biết ở 12.24; phiên này không nghiệm thu khả năng
+chỉnh sửa toolbar TinyMCE. Harness đã dọn và viewport đã reset.
+
+Ảnh kiểm chứng: [đang tải](qa/AI_CONTENT_EDITOR_LOADING_2026-10-05/loading.jpg),
+[đã tải và taxonomy](qa/AI_CONTENT_EDITOR_LOADING_2026-10-05/ready.jpg),
+[mobile](qa/AI_CONTENT_EDITOR_LOADING_2026-10-05/loading-mobile.jpg).
+Các điều kiện nghiệm thu Task 2 còn mở ở 12.24 được giữ nguyên.
+
+### 12.30 Đối chiếu tiến độ FIX 1 — 2026-10-05
+
+Đọc lại plan, báo cáo QA và đối chiếu code hiện tại; không triển khai tính năng
+mới, gọi model hoặc chạy lại tests/build trong đợt cập nhật tài liệu này.
+Sửa mục tổng hợp 10 còn ghi raw HTML/preview chưa nối và mục 3 còn để báo cáo
+metadata/usage ở trạng thái chưa làm; các phần này đã có bằng chứng tại 12.24.
+Giữ nguyên báo cáo lịch sử 12.17–12.23 và các tiêu chí còn mở.
+
+| Nhóm | Trạng thái hiện tại | Phần tiếp theo |
+| --- | --- | --- |
+| Task 1 — kiểm output trước ready | `DONE` cho phạm vi triển khai/regression/local smoke | Tuning temperature/raw debug thuộc đợt riêng, không mở lại Task 1 |
+| Task 2 — pipeline/content/profile/media | `IN PROGRESS`: code/backend và sáu nhóm UI/API đã triển khai, có QA localhost/model thật/MySQL | Nghiệm thu toolbar TinyMCE thật và nghiên cứu chất lượng bằng người đọc |
+| UX Ai Prompt/AI Content/dialog | `DONE` tới mốc code 12.29 | List/manual/edit/trạng thái riêng, header/footer, X/loading/placeholder, dọn tạo bài AI khỏi Post đã xong |
+| Workflow biên tập AI | `TODO` | Lớp draft biên tập riêng, lưu dài hạn, approve/reject, lịch sử/lý do và so sánh nguồn |
+| Thumbnail AI trong luồng content | `TODO` cho phần kết nối còn thiếu | Nối generate vào thumbnail candidate/Post; ảnh nguồn đã có |
+| Realtime/VPS | `TODO` | Broadcast/Echo/Reverb, process manager, timeout production và QA reconnect/reboot |
+| Chín tab Settings ngoài AI | `TODO` cho API/runtime | Hiện fixture; còn typed settings/API/quyền/runtime/tests, concurrency và QA đăng nhập |
+
+Hai điểm nghiệm thu Task 2 chưa đóng:
+
+1. **TinyMCE:** Tiny Cloud đang từ chối origin/key localhost. Có picker/upload,
+   backend/media và editor dự phòng, nhưng cần origin được phép hoặc cấu hình
+   license được chủ dự án chọn trước khi kiểm toolbar/chèn-di chuyển-xóa ảnh thật.
+2. **Chất lượng:** pilot năm ca đã chạy B/C nhưng còn 4/10 output bị chặn.
+   Hai CSV chấm mù hiện có 10 dòng mỗi người, 0 dòng đã có điểm/lỗi facts;
+   summary ghi `human_review=pending`, baseline A chưa phục hồi đủ cấu hình.
+   Cần bổ sung coverage/facts nguồn, hai người chấm, tuning và quyết định rollout.
+
+Kiểm chứng gần nhất giữ đúng nguồn: backend tại 12.24 **299 tests/2078 assertions**
+(API diagnostics **14 tests/79 assertions** kiểm bổ sung); frontend tại 12.29
+**42 files/292 tests**, scoped ESLint/Stylelint và build đạt. Không cộng các bộ
+test trùng hoặc tính checkbox thành phần trăm hoàn thành.
+
+Bước tiếp theo theo plan là hoàn tất hai điều kiện nghiệm thu Task 2; các nhóm
+workflow biên tập, thumbnail, Reverb/VPS và Settings là phạm vi còn lại của FIX 1.
+Phần lịch sử/nguồn/điểm minh họa chưa có API ở Ai Prompt vẫn để sau theo phạm vi
+đã chốt; Resource/Sound apply/audio và V2 không được tự đưa vào phần bắt buộc.
+
+### 12.31 Chất lượng bài — triển khai bước 1–2 — 2026-10-05
+
+**Phạm vi:** điều tra bốn output bị chặn của pilot 2.1 rồi sửa prompt/luồng
+Analyze → Write → Edit theo nguyên nhân. Giữ nguyên corpus, artifacts lỗi và
+CSV chấm cũ; không Apply/Publish bài hoặc đổi Settings/default.
+
+**Bước 1 — đối chiếu nguồn và từng call.** Audit tái chạy bằng
+`scripts/ai-quality/audit.php`, 0 model call; dữ liệu chi tiết và hash tại
+[audit 2.2](qa/task2-quality/audit-2026-10-05-prompt22.json).
+
+| Output cũ | Nguyên nhân xác nhận | Kiểm lại offline sau sửa |
+| --- | --- | --- |
+| Q02-B | Bài giữ link tham khảo nhưng chép thiếu một phần commit hash trong link mục lục `#laravel-12`. Gate cũ cũng bắt mọi link mục lục như tham khảo. URL chép sai là lỗi output thật. | Vẫn chặn `source_link_unknown`; không suy đoán/sửa URL |
+| Q02-C | Giữ đủ SemVer/PHP Manual, bỏ ba link mục lục. Gate bắt mục lục là tham khảo; sau lỗi này còn lộ Q1 → quý I bị coi là mất số 1. | Qua gate với nguyên HTML và facts cũ |
+| Q07-C | Bỏ 11 link mục lục, giữ citation đúng URL nguồn. Phần đã chọn chỉ là Introduction, không phải toàn bộ các mục được liệt kê. | Qua gate với nguyên HTML và facts cũ |
+| Q18-C | Ledger có F01–F18; Writer thêm source block `S029` vào `used_fact_ids`. Global prompt cũ đồng thời cấm “IDs” dù schema yêu cầu provenance IDs. | Vẫn chặn unknown fact reference; không xóa/đổi ID để cho qua |
+
+Pilot 2.2 còn tìm được một false positive mới: F12 ghi Loft Suite **2 tầng**,
+Writer/Editor đều giữ **hai tầng** cùng LED 80-inch và piano. Gate cũ chỉ tìm
+token chữ số nên chặn `important_number_missing`. Đã thêm đối chiếu số tầng
+đơn giản 1–9 bằng chữ; giá trị khác, thành phần của số lớn, số thập phân bằng
+chữ và tầng rưỡi vẫn bị chặn. Không sửa candidate để làm kết quả đạt.
+
+**Bước 2 — thay đổi triển khai.**
+
+- `ArticleSourceLinkPolicy` tạo manifest dùng chung trong prompt B/C và gate.
+  Link body phải có href đúng nguyên bản, kể cả URL dài/query/fragment. Chỉ
+  nhận diện TOC khi list đầu bài sau H1/heading Mục lục, không có prose và toàn
+  link fragment của đúng tài liệu; list tham khảo, link trang khác hoặc link
+  body trùng TOC vẫn bắt buộc. URL nguồn/canonical được phép dùng cho citation.
+- Prompt **2.2** đưa cùng manifest tới Analyze/Write/Edit và nhánh một lượt;
+  phân biệt block `S...`, fact `F...`, asset `I...`. Analyzer có pattern fact ID
+  và enum source blocks; Writer/Editor có enum fact IDs từ analysis đã validate;
+  Writer chỉ dùng images đã cấp, mảng rỗng khi không có ảnh. Dữ liệu sai dừng
+  sớm, không gọi bước kế hoặc lọc ID để che lỗi.
+- Q1–Q4 tương đương quý I–IV và số tầng 1–9 có dạng chữ tương ứng ở phép đối
+  chiếu số liệu; giá trị khác vẫn fail. Không đổi HTML, code/version hoặc nới
+  quy tắc nhóm nghìn đã có; không suy diễn số lớn/năm từ từ ngữ.
+- Snapshot **2.0/2.1** giữ nguyên prompt/schema/context; sáu request hashes được
+  chụp trước sửa và so lại bằng regression. Nhánh B cũ cũng giữ instructions
+  nguyên vẹn. Source/facts/conditions/previous draft và image refs không bị cắt.
+- Diagnostics giữ reason `source_link_unknown` qua redaction, không lộ href,
+  source excerpt hoặc credential. Hai regression API được cập nhật theo
+  contract hiện tại: instructions bổ sung manifest; detail có diagnostics
+  allowlist còn list không trả response ID. Kiểm không lộ raw metadata/key giữ nguyên.
+- Harness kiểm hash JSON LF tương thích Git checkout CRLF; đổi nội dung vẫn
+  fail trước AI và CLI trả exit 1. `--input-snapshot` chỉ đọc profile/pipeline
+  đã freeze, không lấy connection/key từ file hoặc ghi lại profile vào DB.
+
+**Kiểm chứng:** backend **317 tests/2264 assertions**, scoped Pint và
+`git diff --check` đạt. Regression dùng outputs thật đã lưu cùng các ca âm:
+mất/sai body href, query/fragment/hash; đổi quý/số lượng/version; fact ID lẫn
+source/asset ID; chặn trước call tiếp theo; byte/hash checkpoint cũ và source
+tampering. HTTP fake/replay offline không được tính là call model hay chấm văn phong.
+
+**Pilot model 2.2:** đã chạy Q02/Q07/Q18, hai nhánh B/C, đúng **12 call,
+93.809 token**, không retry hoặc mở rộng corpus. Kết quả phiên chạy giữ nguyên:
+**B ready 3/3, C ready 2/3**; Q18-C bị chặn bởi false positive “hai tầng” ở trên.
+Sau sửa, [audit sáu outputs](qa/task2-quality/audit-2026-10-05-prompt22-runs.json)
+cho **6/6 qua gate hiện tại**, 0 call thêm, giữ nguyên HTML/facts. Đây là kiểm
+lại output đã lưu, không đổi status/summary của phiên model hoặc giả là lượt
+chạy model mới. [Artifacts/usage](qa/task2-quality/pilot-2026-10-05-prompt22/summary.json)
+và [gói chấm](qa/task2-quality/pilot-2026-10-05-prompt22/review/index.html) đều giữ
+output thành công/lỗi; hai reviewer chưa chấm. Chi phí tiền vẫn null.
+
+Nguồn và
+profile QA id 3/version 4 giữ như bản freeze, connection local lấy từ prototype
+`01a10043-503f-7030-a167-2d9facfedc1c`. Connection local khác phiên 2.1; Settings
+của phiên cũ chưa có snapshot đủ để đối chiếu. Đây là kiểm chứng gate mới,
+chưa phải so sánh văn phong giữa phiên.
+
+**Kết luận bước 1–2:** đã hoàn tất điều tra và sửa lỗi thuộc phạm vi này;
+source/ID/URL sai vẫn bị chặn, các cách diễn đạt số tương đương đã có kiểm
+chứng bằng output thật và ca âm. Chưa coi gate tự động là kiểm chứng ngữ nghĩa.
+
+**Còn lại:** bổ sung corpus/facts chuẩn, hai người chấm độc lập và quyết định
+rollout; baseline A vẫn unavailable. Hai điều kiện nghiệm thu Task 2 tại 12.24
+vẫn mở; không đóng Task 2 chỉ vì pilot qua gate kỹ thuật.
+
+### 12.32 Chất lượng bài — triển khai bước 3–5 — 2026-10-05
+
+**Phạm vi:** triển khai theo yêu cầu tiếp tục bước 3–4–5, kế thừa prompt 2.2
+và sửa lỗi của 12.31. Bước 3 và phiên so sánh bước 4 đã hoàn tất; công cụ bước
+5 đã hoàn tất, nhưng hai người đọc chưa chấm nên chưa có nghiệm thu chất lượng.
+
+**Bước 3 — corpus v2.** [Manifest](qa/task2-quality/corpus-v2/manifest.json)
+đóng băng **20 nguồn khác nhau**, 12 đơn vị nguồn giữ nguyên từ v1 và 8 nguồn
+bổ sung từ Chính phủ, Cục Du lịch, bảo tàng, Vietnam Travel và GitHub Docs.
+Có **6 nguồn tiếng Việt**, tin tức/du lịch/thông báo có điều kiện, một bảng
+giới hạn dịch vụ và **18 metadata ảnh trên 8 nguồn**. Các nguồn mới ghi URL,
+attribution/license, ngày đăng, hash raw/trích đoạn/snapshot và phạm vi chọn.
+Tin dự kiến vẫn là dự kiến; thông báo giá vé năm 2010 không biến thành giá hiện tại.
+
+Ảnh chỉ có URL/alt/chú thích, chưa đánh giá pixel hoặc regenerate với asset
+được duyệt. Phần web mới là trích đoạn hoàn chỉnh tối đa 200 từ, không phải
+toàn bài dài. Chưa có benchmark độc lập. [Checklist nguồn](qa/task2-quality/corpus-v2/source-checklists.json)
+để người đọc xác nhận facts quan trọng từ source blocks; không lấy facts do
+Analyze tạo ra làm đáp án chuẩn. Corpus/pilots/CSV cũ giữ nguyên.
+
+**Bước 4 — phiên B/C cùng đầu vào.** Model `gpt-6.1-sol`, prompt 2.2,
+profile QA id 3/version 4 và cùng connection local. Mỗi cặp được đối chiếu
+hash nguồn/profile/brief/input; chỉ lựa chọn pipeline khác nhau. Provider
+resolve một lần rồi clone cho mỗi nhánh. Một lượt mỗi nhánh, B trước C;
+chưa đo biến thiên nhiều lần hoặc tách ảnh hưởng thứ tự/cache/tải provider.
+
+Phiên gọi model thật **79 lần trong giới hạn 80**, không retry/fallback,
+không Apply/Publish hoặc đổi Settings/default. [Báo cáo chính](qa/task2-quality/study-2026-10-05-corpus-v2/report-final/report.md),
+[JSON tổng hợp](qa/task2-quality/study-2026-10-05-corpus-v2/report-final/report.json)
+và [summary gốc](qa/task2-quality/study-2026-10-05-corpus-v2/summary.json) giữ
+cả run thành công/lỗi:
+
+| Chỉ số | B: một lượt | C: Analyze → Write → Edit |
+| --- | --- | --- |
+| Ready qua gate / tổng | 20/20 | 14/20 |
+| Bị chặn hoặc lỗi | 0 | 5 gate số liệu, 1 timeout Writer |
+| Lượt gọi thực tế | 20 | 59 |
+| Token đã được provider báo theo call | 58.305 từ 20/20 call | 403.038 từ 58/59 call |
+| Tổng token toàn nhánh | 58.305 | Chưa xác định: một call thiếu usage |
+| Token trung vị của run có tổng usage đầy đủ | 2.035, n=20 | 14.675, n=19 |
+| Thời gian trung vị, tính cả lỗi | 20,2 giây, n=20 | 103,5 giây, n=20 |
+
+Chi phí tiền vẫn `null`. Không thay token timeout bằng 0 hoặc loại bài bị
+chặn để làm tỷ lệ đẹp hơn. Thời gian/token chưa đo công sửa và không chứng minh
+nhánh nào giữ facts hoặc viết hay hơn.
+
+**Đối chiếu các ca bị chặn, 0 call thêm.** [Audit](qa/task2-quality/study-2026-10-05-corpus-v2/audit-failed.json)
+và [token số chưa khớp](qa/task2-quality/study-2026-10-05-corpus-v2/numeric-diagnostics.json)
+giữ nguyên output/status model. Các cách biểu diễn cần người đọc đối chiếu:
+
+| Ca C | Bằng chứng nguồn → ứng viên | Kết quả kỹ thuật giữ nguyên |
+| --- | --- | --- |
+| Q26 | Ngày 9/3 → 09/03; token `3` chưa khớp `03` | `AI_QUALITY_GROUNDING` |
+| Q27 | 4 nhóm → bốn nhóm, có liệt kê nhóm | `AI_QUALITY_GROUNDING` |
+| Q28 | 3:15 PM → 15:15 | `AI_QUALITY_GROUNDING` |
+| Q30 | 02 ngày miễn phí → nêu Thứ ba/Thứ sáu, không lặp token `02` | `AI_QUALITY_GROUNDING` |
+| Q32 | 16th century → thế kỷ XVI | `AI_QUALITY_GROUNDING` |
+| Q33 | Writer hết thời gian chờ, không có candidate cuối; Edit chưa chạy | `AI_PROVIDER_TIMEOUT` |
+
+Đây là dấu hiệu gate số liệu đang nhạy với cách biểu diễn, không phải năm
+bài đã được xác nhận accuracy. Không sửa gate/prompt giữa phiên hoặc đánh dấu
+lại run lỗi thành ready. Bài thiếu output không được tạo candidate giả.
+
+**Bước 5 — công cụ cho hai người chấm độc lập.** Đã tạo [phiếu người 1](qa/task2-quality/study-2026-10-05-corpus-v2/review-v2/reviewer-1.html),
+[phiếu người 2](qa/task2-quality/study-2026-10-05-corpus-v2/review-v2/reviewer-2.html)
+và [hướng dẫn](qa/task2-quality/study-2026-10-05-corpus-v2/review-v2/README.md).
+Mỗi người có 40 nhãn X/Y thuộc 20 nguồn; **39 bài có output để chấm**, Q33-C
+để trống/disabled. HTML có nguồn, source blocks, brief, văn phong và rubric,
+ẩn nhánh/model/prompt/usage/gate; bài bị chặn có output vẫn được chấm.
+
+Phiếu ghi riêng lỗi critical/major/minor, facts được giữ, evidence, năm tiêu
+chí diễn đạt 1–5, phút sửa thực tế, số sửa câu/facts/đoạn và ưu tiên X/Y. Bản
+nháp tách theo mã phiên/người đọc; tải CSV hoặc xem CSV để sao chép. Hai bảng
+phải có danh tính khác nhau và đúng hash của nguồn/output/nhãn. Ô trống không
+thành điểm 0; hoàn thành thiếu dữ kiện/điểm/phút sửa hoặc accuracy pass che lỗi
+critical/major/coverage đều bị từ chối. Bất đồng facts được giữ để đối chiếu.
+
+`scripts/ai-quality/report.php` đọc hai CSV và tổng hợp vào thư mục báo cáo
+mới, **0 AI call**; không ghi đè CSV/artifacts/báo cáo trước. Đã kiểm xuất lại
+từ hai CSV trống, hash CSV giữ nguyên. Hiện cả hai reviewer **0/39**, mọi điểm
+diễn đạt và phút sửa chưa có dữ liệu; agent không tự chấm thay người.
+
+**Kiểm chứng:** backend **331 tests / 2380 assertions**, frontend **43 files /
+301 tests** đạt; Pint 10 file PHP, ESLint và Stylelint phần chấm đạt, diff
+không có lỗi whitespace. Browser kiểm hai bộ chấm thật, nguồn/nhãn, tất cả
+ô điểm trống, ứng viên thiếu, vùng cuộn và màn hình 390 px không tràn ngang.
+CSV export/quotes/multiline và phương án sao chép có regression; trình duyệt
+trong app chưa xác nhận file tải Blob về nên đã có nút xem CSV dự phòng.
+[Ảnh bộ chấm](qa/task2-quality/study-2026-10-05-corpus-v2/review-v2-pair-preview.png).
+
+**Phần còn chờ:** hai người đọc lập/xác nhận facts và chấm độc lập, đối chiếu
+bất đồng, owner chốt tiêu chí/rollout. Baseline A chưa phục hồi; coverage pixel
+ảnh/asset regenerate và benchmark còn thiếu. Bước 5 chưa thể đánh dấu đã
+nghiệm thu; Task 2 và toàn FIX 1 vẫn `IN PROGRESS`.
+
+### 12.33 Gỡ luồng B, tạo bài chỉ dùng C — 2026-10-05
+
+**Yêu cầu đã hoàn thành:** người dùng chọn bỏ luồng B tạo toàn bộ bài bằng một
+call. Tạo nội dung Post bằng AI luôn đi qua **Analyze + Plan → Write → Edit**.
+Đây là quyết định sử dụng của người dùng, không phải kết luận C đã đạt điểm
+chất lượng từ nghiên cứu B/C.
+
+**Thay đổi thực thi:** xóa nhánh B và phần xử lý riêng của B trong
+`ArticleImportService`; không còn switch môi trường `AI_CONTENT_PIPELINE`.
+Run mới/chạy lại luôn snapshot `three_step`, kể cả input cũ có `single_step`.
+Config/snapshot cũ không thể bật lại B; C lỗi dừng ở bước lỗi, không fallback
+sang một call. Ngân sách queue cho toàn bộ Post content luôn tính ba request;
+600 giây mỗi request tương ứng 1920 giây/job. Các trường riêng như title,
+excerpt/SEO vẫn giữ request theo hợp đồng trường. Nhập thủ công và trích xuất
+nguồn không có AI tiếp tục hoạt động theo luồng hiện có.
+
+**Công cụ đánh giá:** `evaluate.php` mặc định C, từ chối B hoặc B,C trước
+provider/DB run lookup. Preflight corpus v2 20 nguồn báo tối đa **60 call**.
+Report/phiếu mới chỉ có C và một ứng viên mỗi ca; không hỏi preference giữa
+hai bài hoặc tạo thống kê B giả. Hai người đọc vẫn chấm độc lập, ô chưa chấm
+giữ trống. Report/export chỉ đọc B/C từ artifacts lịch sử và không chạy lại B.
+
+**Kiểm chứng:** backend **337 tests / 2425 assertions** và frontend **43 files /
+302 tests** đạt. Pint 22 file PHP, ESLint/Stylelint phần chấm và diff whitespace
+đạt. Regression kiểm config/snapshot B cũ, lỗi Writer không fallback, budget,
+title/SEO riêng, output thiếu/rỗng, ảnh đại diện và giữ field chưa chọn.
+
+CLI xuất report C từ bản sao output Q01-C đã lưu: một ca, không có cặp B/C,
+hai phiếu trống; **0 model call mới**, không tính là phiên chất lượng mới.
+CLI cũng tổng hợp lại study B/C 20 cặp và export pilot cũ trên bản sao;
+**62 file study gốc và hai CSV chấm được kiểm hash, không thay đổi**.
+Browser kiểm phiếu C một cột/một ứng viên, không có lựa chọn giữa hai bài,
+điểm trống; chỉ đọc, không chấm thay người. Bằng chứng tại
+[verification.json](qa/AI_CONTENT_C_ONLY_2026-10-05/verification.json) và
+[ảnh phiếu C](qa/AI_CONTENT_C_ONLY_2026-10-05/c-only-review.jpg).
+
+**Tài liệu:** đã cập nhật API pipeline, protocol đánh giá, hướng dẫn QA,
+PLAN, inventory và cấu trúc project. Các kết quả model/CSV/báo cáo B/C cũ
+giữ nguyên để truy vết. Lần gỡ B này không gọi model thật, không Apply/Publish
+hoặc triển khai VPS. Chất lượng C bằng người đọc và các phần còn mở ở 12.30
+vẫn cần nghiệm thu; toàn FIX 1 giữ `IN PROGRESS`.
+
+### 12.34 Đối chiếu tiến độ và task tiếp theo sau khi gỡ B — 2026-10-05
+
+Đã đọc lại plan, code và báo cáo gần nhất sau 12.33. Đây là đợt audit/cập nhật
+tài liệu; không sửa tính năng, không gọi model hoặc chạy lại tests/build.
+Các số kiểm thử dưới đây là kết quả đã ghi của 12.33, không phải một lượt mới.
+
+| Nhóm | Trạng thái đã xác nhận | Phần làm tiếp |
+| --- | --- | --- |
+| Task 1 — kiểm output trước ready | `DONE` trong phạm vi đã chốt | Không mở lại; temperature/raw debug thuộc đợt riêng |
+| Task 2 — nguồn/profile/ba bước/checkpoint/UX | Code đã triển khai; tổng thể `IN PROGRESS` vì còn nghiệm thu | Xử lý các ca C chưa đạt, chấm chất lượng và kiểm toolbar ảnh TinyMCE thật |
+| Gỡ B | `DONE` tại 12.33; config/snapshot cũ không bật lại B | Chỉ C cho mọi phiên tạo toàn bộ bài/chạy đánh giá mới |
+| Workflow biên tập AI | `TODO`; chưa có model/migration `ai_content_drafts` hoặc approve/reject API | Lớp draft dài hạn, quyền/người duyệt, lịch sử/lý do, compare và UI duyệt/từ chối |
+| Thumbnail sinh bằng AI | `TODO` phần kết nối; request hiện dùng `thumbnail_mode=source`, job ảnh ghi `result.image` | Nối lựa chọn generate và asset vào `draft.thumbnail` để list/Apply Post dùng được |
+| Realtime/VPS | `TODO`; chưa có event broadcast/Echo/Reverb cho AI | Broadcast, polling fallback, process manager và QA môi trường triển khai |
+| Settings ngoài AI | `TODO`; chín tab vẫn có dữ liệu minh họa, routes ghi Settings mới chỉ thuộc AI | Typed settings/API/quyền/runtime, concurrency và browser QA |
+
+**Task nên làm tiếp: hoàn thiện chất lượng C, vẫn thuộc Task 2.** Study gần
+nhất C ready **14/20**, còn Q26/Q27/Q28/Q30/Q32 bị `important_number_missing`
+và Q33 Writer timeout. Audit trên output đã lưu vẫn giữ năm ca blocked và
+Q33 không có final candidate. Đây là kết quả kỹ thuật; chưa xác nhận năm ca
+là lỗi nội dung hay gate chặn cách diễn đạt tương đương.
+
+1. Đối chiếu từng ca số liệu với source/facts/output: giá trị, đơn vị, điều
+   kiện và cách viết số. Chỉ sửa prompt/gate khi có bằng chứng; thêm regression
+   để số tương đương hợp lệ nhưng giá trị/đơn vị/điều kiện sai vẫn bị chặn.
+2. Rà lại Writer timeout Q33, kích thước đầu vào/đầu ra và budget; không dùng
+   B hoặc candidate giả để che lỗi. Khi kiểm bằng model, dùng phiên C mới và
+   ngân sách rõ ràng; giữ nguyên study cũ.
+3. Hoàn tất đánh giá facts/diễn đạt/công sửa bằng người đọc. Hai phiếu lịch sử
+   hiện đều **0/39** bài đã chấm; agent không điền điểm thay người.
+
+**Điều kiện còn lại của Task 2:** nghiệm thu chèn/upload/di chuyển/xóa ảnh
+qua toolbar TinyMCE, save/reload/regenerate/Apply giữ ID/URL/alt/vị trí.
+QA localhost gần nhất chỉ kiểm editor dự phòng do Tiny Cloud từ chối origin;
+cần cấu hình origin/license phù hợp trước khi xác nhận toolbar thật. Không
+coi hook/composable tests là nghiệm thu thao tác thật trên editor.
+
+**Thứ tự sau Task 2 theo mục 4:** workflow draft biên tập và approve/reject
+backend → UI duyệt/từ chối/so sánh nguồn → thumbnail generate → Realtime/VPS
+→ chín tab Settings ngoài AI. Có thể tách workflow thành đợt độc lập trong
+khi chờ người đọc/editor, nhưng không đánh dấu Task 2 `DONE` vì đã chuyển việc.
+
+**Kiểm chứng kế thừa:** 12.33 có **337 backend tests/2425 assertions**,
+**43 frontend files/302 tests** đạt; Pint/ESLint/Stylelint/CLI/browser QA có
+bằng chứng. Không cộng checkbox thành phần trăm hoặc gộp lịch sử thành lượt
+test mới. FIX 1 vẫn `IN PROGRESS`; sửa các hướng dẫn còn yêu cầu chạy B trong
+2B/12.14/12.15 và cập nhật mốc hoàn thành gần nhất trong `PLAN.md`.
+
+### 12.35 Hoàn tất kỹ thuật Task 2 — 2026-10-05
+
+**Kết luận:** Task 2 `DONE` trong phạm vi kỹ thuật đã chốt. Chủ dự án chọn
+chuyển hai người đọc chấm sang đợt riêng, giữ Tiny Cloud và tự đăng nhập tab
+kiểm thử. Toàn FIX 1 vẫn `IN PROGRESS`; chưa có điểm người đọc hoặc kết luận
+chất lượng/rollout. Mốc này cập nhật trạng thái hiện tại, không viết lại các
+báo cáo 12.17–12.34 hoặc study lịch sử.
+
+**Gate số liệu:** tách `ArticleNumberNormalizer` khỏi gate để nhận biểu diễn
+tương đương có ngữ cảnh: ngày hợp lệ, giờ 12/24, thế kỷ, số đếm theo đơn vị,
+tập thứ trong tuần và dấu hàng nghìn của số đếm nguyên. Giá trị/ngữ cảnh sai,
+phiên bản, tiền và số thập phân vẫn được bảo vệ; không sửa HTML đã lưu.
+19 output C cũ qua blocking gate hiện tại, 0 calls mới; Q33 cũ vẫn timeout và
+không có final candidate. Năm ca bị chặn ở 12.34 có bằng chứng tương đương và
+regression dương/âm; không nới gate chỉ để đổi status.
+
+**Q33 mới:** chạy C ba bước ở thư mục riêng với timeout 600 giây/request,
+tối đa ba calls; 3 calls thật, 37.608 tokens, tổng 321.634 ms. Từng bước dưới
+200 giây nên không kết luận 600 là bắt buộc; Settings của provider không đổi.
+Raw artifact mới giữ `failed / AI_QUALITY_GROUNDING` do dấu hàng nghìn; sau
+sửa parser, audit offline qua blocking gate với 0 calls thêm. Report raw
+giữ failed, không viết lại ready. Warning sáu số và semantic grounding chưa
+xác định vẫn cần editor/người đọc rà soát.
+
+**Tiny Cloud thật:** giữ license/key hiện có, dùng `http://localhost:8000`.
+Sửa menu/cửa sổ TinyMCE bị lớp dialog che bằng split UI, portal z-index 2500
+và event `editorDialog` để cha nhường focus khi cửa sổ riêng mở. Source Code
+nhập được và Cancel trả focus; marker QA không được lưu. Quy chuẩn mới đã ghi
+vào `PROJECT_STRUCTURE.md` mục 4.3.1.
+
+Browser/API thật kiểm upload/chọn ảnh, alt/caption, di chuyển figure, xóa/undo,
+save/reopen/sửa caption ở Post #3; edit/save/reopen/Apply ở AI Content tạo
+Post #4 draft. Cả hai giữ asset #22/URL/alt/caption/usage, `published_at=null`.
+AI Content dùng fixture QA replay Q33 có nhãn, 0 calls thêm và không tạo
+checkpoint giả; không tính là phiên model ready mới. Database mới là SQLite,
+taxonomy rỗng giữ []/manual. Regenerate không được gọi từ fixture này; tests
+và QA browser/API tại 12.24 là bằng chứng riêng cho bảo toàn ảnh regenerate.
+
+**Kiểm chứng cuối:** backend **374 tests / 2530 assertions**; frontend
+**43 files / 302 tests**; riêng số liệu **36 tests / 93 assertions**. Pint,
+ESLint/Stylelint scoped và production build **1 phút 36 giây** đạt.
+Đối chiếu SHA-256 **62 files lịch sử, 0 thay đổi**; study cũ vẫn 79 calls,
+C ready 14/20 và hai CSV 0/39. Không gộp kết quả kiểm lại offline vào status
+model gốc hoặc chấm thay người đọc.
+
+Báo cáo/bằng chứng/screenshot: [Task 2 hoàn tất kỹ thuật](qa/TASK2_COMPLETE_2026-10-05/README.md).
+`PLAN.md`, inventory, contract và cấu trúc dialog đã cập nhật. Task tiếp theo
+theo mục 4: workflow draft dài hạn và API duyệt/từ chối → UI biên tập/compare
+→ thumbnail generate → Realtime/VPS → chín tab Settings ngoài AI. Chấm người
+đọc/rollout vẫn theo đợt chất lượng riêng.

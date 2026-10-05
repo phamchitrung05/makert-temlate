@@ -1,0 +1,87 @@
+{
+    "arm": "B",
+    "status": "ready",
+    "error_code": null,
+    "final": {
+        "title": "Phiên bản Laravel: quy tắc phát hành và lưu ý khi nâng cấp",
+        "content_html": "<p>Khi sử dụng Laravel trong ứng dụng hoặc package, bạn cần phân biệt các loại bản phát hành để đặt ràng buộc phiên bản phù hợp. Bản phát hành lớn có thể chứa thay đổi phá vỡ tính tương thích, còn bản phát hành nhỏ và bản vá thì không được chứa những thay đổi này.</p>\n<h2>Quy tắc phiên bản và lịch phát hành</h2>\n<p>Laravel và các package chính thức của Laravel tuân theo <a href=\"https://semver.org\">Semantic Versioning</a>. Lịch phát hành được quy định như sau:</p>\n<ul>\n<li><strong>Bản phát hành lớn (major):</strong> được phát hành hằng năm, thường vào khoảng quý 1.</li>\n<li><strong>Bản phát hành nhỏ (minor) và bản vá (patch):</strong> có thể được phát hành thường xuyên, lên đến hằng tuần, và <strong>không bao giờ</strong> được chứa thay đổi phá vỡ tính tương thích.</li>\n</ul>\n<p>Khi khai báo phụ thuộc vào Laravel framework hoặc các thành phần của framework trong ứng dụng hay package, bạn nên luôn dùng ràng buộc phiên bản như <code>^12.0</code>, vì các bản phát hành lớn của Laravel có thể chứa thay đổi phá vỡ tính tương thích. Dù vậy, Laravel luôn cố gắng để việc nâng cấp lên một phiên bản lớn mới có thể hoàn thành trong một ngày hoặc ít hơn.</p>\n<h2>Lưu ý về đối số có tên</h2>\n<p><a href=\"https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments\">Đối số có tên (named arguments)</a> không nằm trong phạm vi cam kết tương thích ngược của Laravel. Khi cần cải thiện mã nguồn, Laravel có thể đổi tên các tham số của hàm.</p>\n<p>Vì vậy, hãy thận trọng khi dùng đối số có tên để gọi các phương thức của Laravel: tên tham số mà bạn sử dụng có thể thay đổi trong tương lai.</p>"
+    },
+    "quality_checks": [
+        {
+            "check": "copy",
+            "status": "pass"
+        },
+        {
+            "check": "similarity",
+            "status": "pass",
+            "metric": 0.028,
+            "reason": "lexical_metric_not_style_score"
+        },
+        {
+            "check": "language",
+            "status": "pass",
+            "detected": "vi"
+        },
+        {
+            "check": "source_code_links",
+            "status": "pass"
+        },
+        {
+            "check": "important_numbers",
+            "status": "pass"
+        },
+        {
+            "check": "unanchored_numbers",
+            "status": "pass",
+            "count": 0,
+            "reason": "requires_editor_review"
+        },
+        {
+            "check": "semantic_grounding",
+            "status": "undetermined",
+            "reason": "source_anchors_are_not_external_fact_verification"
+        }
+    ],
+    "cost": null,
+    "calls": [
+        {
+            "task": "single_step",
+            "output": {
+                "title": "Phiên bản Laravel: quy tắc phát hành và lưu ý khi nâng cấp",
+                "content_html": "<p>Khi sử dụng Laravel trong ứng dụng hoặc package, bạn cần phân biệt các loại bản phát hành để đặt ràng buộc phiên bản phù hợp. Bản phát hành lớn có thể chứa thay đổi phá vỡ tính tương thích, còn bản phát hành nhỏ và bản vá thì không được chứa những thay đổi này.</p>\n<h2>Quy tắc phiên bản và lịch phát hành</h2>\n<p>Laravel và các package chính thức của Laravel tuân theo <a href=\"https://semver.org\">Semantic Versioning</a>. Lịch phát hành được quy định như sau:</p>\n<ul>\n<li><strong>Bản phát hành lớn (major):</strong> được phát hành hằng năm, thường vào khoảng quý 1.</li>\n<li><strong>Bản phát hành nhỏ (minor) và bản vá (patch):</strong> có thể được phát hành thường xuyên, lên đến hằng tuần, và <strong>không bao giờ</strong> được chứa thay đổi phá vỡ tính tương thích.</li>\n</ul>\n<p>Khi khai báo phụ thuộc vào Laravel framework hoặc các thành phần của framework trong ứng dụng hay package, bạn nên luôn dùng ràng buộc phiên bản như <code>^12.0</code>, vì các bản phát hành lớn của Laravel có thể chứa thay đổi phá vỡ tính tương thích. Dù vậy, Laravel luôn cố gắng để việc nâng cấp lên một phiên bản lớn mới có thể hoàn thành trong một ngày hoặc ít hơn.</p>\n<h2>Lưu ý về đối số có tên</h2>\n<p><a href=\"https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments\">Đối số có tên (named arguments)</a> không nằm trong phạm vi cam kết tương thích ngược của Laravel. Khi cần cải thiện mã nguồn, Laravel có thể đổi tên các tham số của hàm.</p>\n<p>Vì vậy, hãy thận trọng khi dùng đối số có tên để gọi các phương thức của Laravel: tên tham số mà bạn sử dụng có thể thay đổi trong tương lai.</p>",
+                "content": "<p>Khi sử dụng Laravel trong ứng dụng hoặc package, bạn cần phân biệt các loại bản phát hành để đặt ràng buộc phiên bản phù hợp. Bản phát hành lớn có thể chứa thay đổi phá vỡ tính tương thích, còn bản phát hành nhỏ và bản vá thì không được chứa những thay đổi này.</p>\n<h2>Quy tắc phiên bản và lịch phát hành</h2>\n<p>Laravel và các package chính thức của Laravel tuân theo <a href=\"https://semver.org\">Semantic Versioning</a>. Lịch phát hành được quy định như sau:</p>\n<ul>\n<li><strong>Bản phát hành lớn (major):</strong> được phát hành hằng năm, thường vào khoảng quý 1.</li>\n<li><strong>Bản phát hành nhỏ (minor) và bản vá (patch):</strong> có thể được phát hành thường xuyên, lên đến hằng tuần, và <strong>không bao giờ</strong> được chứa thay đổi phá vỡ tính tương thích.</li>\n</ul>\n<p>Khi khai báo phụ thuộc vào Laravel framework hoặc các thành phần của framework trong ứng dụng hay package, bạn nên luôn dùng ràng buộc phiên bản như <code>^12.0</code>, vì các bản phát hành lớn của Laravel có thể chứa thay đổi phá vỡ tính tương thích. Dù vậy, Laravel luôn cố gắng để việc nâng cấp lên một phiên bản lớn mới có thể hoàn thành trong một ngày hoặc ít hơn.</p>\n<h2>Lưu ý về đối số có tên</h2>\n<p><a href=\"https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments\">Đối số có tên (named arguments)</a> không nằm trong phạm vi cam kết tương thích ngược của Laravel. Khi cần cải thiện mã nguồn, Laravel có thể đổi tên các tham số của hàm.</p>\n<p>Vì vậy, hãy thận trọng khi dùng đối số có tên để gọi các phương thức của Laravel: tên tham số mà bạn sử dụng có thể thay đổi trong tương lai.</p>"
+            },
+            "diagnostics": {
+                "response_id": "resp_0d4ae450bc659df3016ac33c0c300c87d08ecc0d8894820860",
+                "reported_model": "gpt-6.1-sol",
+                "finish_reason": "stop",
+                "stage": "validate",
+                "schema_version": "post.content.v1",
+                "requested_groups": [
+                    "title",
+                    "content"
+                ],
+                "returned_fields": [
+                    "title",
+                    "content_html"
+                ],
+                "usage": {
+                    "prompt_tokens": 1799,
+                    "completion_tokens": 483,
+                    "total_tokens": 2282
+                }
+            },
+            "latency_ms": 18583
+        }
+    ],
+    "latency_ms": 18590,
+    "input_sha256": "bd24d66602536d82d31fe86faa63dc162ea5da4897555c01418e2f6dbf5c731d",
+    "source_sha256": "3a0301916ee8607e3f5764fa705babeb7028ba6d2798adaf7cd8ac1b6a32d466",
+    "provider": "connection-a59172b6-441d-414c-a093-4fe28f725060",
+    "model": "gpt-6.1-sol",
+    "candidate_for_review": {
+        "title": "Phiên bản Laravel: quy tắc phát hành và lưu ý khi nâng cấp",
+        "content_html": "<p>Khi sử dụng Laravel trong ứng dụng hoặc package, bạn cần phân biệt các loại bản phát hành để đặt ràng buộc phiên bản phù hợp. Bản phát hành lớn có thể chứa thay đổi phá vỡ tính tương thích, còn bản phát hành nhỏ và bản vá thì không được chứa những thay đổi này.</p>\n<h2>Quy tắc phiên bản và lịch phát hành</h2>\n<p>Laravel và các package chính thức của Laravel tuân theo <a href=\"https://semver.org\">Semantic Versioning</a>. Lịch phát hành được quy định như sau:</p>\n<ul>\n<li><strong>Bản phát hành lớn (major):</strong> được phát hành hằng năm, thường vào khoảng quý 1.</li>\n<li><strong>Bản phát hành nhỏ (minor) và bản vá (patch):</strong> có thể được phát hành thường xuyên, lên đến hằng tuần, và <strong>không bao giờ</strong> được chứa thay đổi phá vỡ tính tương thích.</li>\n</ul>\n<p>Khi khai báo phụ thuộc vào Laravel framework hoặc các thành phần của framework trong ứng dụng hay package, bạn nên luôn dùng ràng buộc phiên bản như <code>^12.0</code>, vì các bản phát hành lớn của Laravel có thể chứa thay đổi phá vỡ tính tương thích. Dù vậy, Laravel luôn cố gắng để việc nâng cấp lên một phiên bản lớn mới có thể hoàn thành trong một ngày hoặc ít hơn.</p>\n<h2>Lưu ý về đối số có tên</h2>\n<p><a href=\"https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments\">Đối số có tên (named arguments)</a> không nằm trong phạm vi cam kết tương thích ngược của Laravel. Khi cần cải thiện mã nguồn, Laravel có thể đổi tên các tham số của hàm.</p>\n<p>Vì vậy, hãy thận trọng khi dùng đối số có tên để gọi các phương thức của Laravel: tên tham số mà bạn sử dụng có thể thay đổi trong tương lai.</p>"
+    },
+    "total_tokens": 2282
+}

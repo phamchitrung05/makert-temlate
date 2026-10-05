@@ -117,8 +117,8 @@ Chưa có trang blog public. Metadata admin chưa tự xuất ra HTML public. Kh
 - [ ] Chủ dự án điền key, khởi động lại Vite/build và kiểm thử TinyMCE trực tiếp trên trình duyệt. Chưa kiểm chứng key/domain thật.
 
 - [x] Post form round-trip category/tag và SEO metadata được đồng bộ qua API;
-  dialog `CreateWithAiDialog` giữ nguyên hierarchy cũ và chỉ bổ sung capability,
-  prompt/provider/model, candidate và apply chọn lọc. Chi tiết AI nằm ở plan hợp nhất.
+  từ 2026-10-05 tạo nội dung AI tập trung tại trang AI Content. Đã gỡ nút tạo/điền
+  nội dung AI và dialog riêng khỏi Post List/Add/Edit. Chi tiết AI nằm ở plan hợp nhất.
 
 Component map đợt điều chỉnh: PostForm giữ dữ liệu; PostContentPanel hiển thị Title/Slug; PostEditor bọc TinyMCE; PostSeoTabs điều phối ba tab; useSlug giữ vòng đời request riêng của form và gọi useSlugStore; Pinia slug phụ trách request API chung, không chia sẻ slug kết quả giữa các form.
 

@@ -1,0 +1,360 @@
+{
+    "mode": "saved_outputs_only",
+    "model_calls": 0,
+    "prompt_version_current": "2.2",
+    "captured_at": "2026-10-05T05:47:17+00:00",
+    "manifest_sha256": "730195fcd5d6231c629a9cffa077220cecc154423ff6f3f9986d9132ead28740",
+    "human_quality": "not_evaluated",
+    "cases": [
+        {
+            "case": "Q02-B",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "original_diagnostics": {
+                "stage": "validate",
+                "validation_errors": [
+                    {
+                        "group": "content",
+                        "field": "content_html",
+                        "reason": "source_link_missing"
+                    }
+                ]
+            },
+            "source_json_sha256": "6884fedc06b7ae1f4e267bbcb02e4917d106e060cdb659a6f2f432c94dc6851d",
+            "artifact_json_sha256": "ce17949ab51878a438ffcef33823aa82a580830f889bcc4ecc278fc4c95d704a",
+            "link_manifest": {
+                "required_hrefs": [
+                    "https://semver.org",
+                    "https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments"
+                ],
+                "optional_navigation_hrefs": [
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#versioning-scheme",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#support-policy",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#laravel-12"
+                ],
+                "allowed_hrefs": [
+                    "https://semver.org",
+                    "https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#versioning-scheme",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#support-policy",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#laravel-12",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "single_step",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#laravel-12"
+                    ],
+                    "links_outside_allowlist": [
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37dc40aee9/releases.md#laravel-12"
+                    ]
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "blocked",
+                "error_code": "AI_QUALITY_GROUNDING",
+                "diagnostics": {
+                    "stage": "validate",
+                    "validation_errors": [
+                        {
+                            "group": "content",
+                            "field": "content_html",
+                            "reason": "source_link_unknown"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "case": "Q02-C",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "original_diagnostics": {
+                "stage": "validate",
+                "validation_errors": [
+                    {
+                        "group": "content",
+                        "field": "content_html",
+                        "reason": "source_link_missing"
+                    }
+                ]
+            },
+            "source_json_sha256": "6884fedc06b7ae1f4e267bbcb02e4917d106e060cdb659a6f2f432c94dc6851d",
+            "artifact_json_sha256": "dcbbb31e38c7788d9c7d1ccf32a92e6cde96df5be96d521aa5abe0a12857627d",
+            "link_manifest": {
+                "required_hrefs": [
+                    "https://semver.org",
+                    "https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments"
+                ],
+                "optional_navigation_hrefs": [
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#versioning-scheme",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#support-policy",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#laravel-12"
+                ],
+                "allowed_hrefs": [
+                    "https://semver.org",
+                    "https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#versioning-scheme",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#support-policy",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#laravel-12",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#versioning-scheme",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#support-policy",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#laravel-12"
+                    ],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#versioning-scheme",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#support-policy",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#laravel-12"
+                    ],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "pass",
+                "checks": [
+                    {
+                        "check": "copy",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "similarity",
+                        "status": "pass",
+                        "metric": 0.045,
+                        "reason": "lexical_metric_not_style_score"
+                    },
+                    {
+                        "check": "language",
+                        "status": "pass",
+                        "detected": "vi"
+                    },
+                    {
+                        "check": "source_code_links",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "important_numbers",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "unanchored_numbers",
+                        "status": "pass",
+                        "count": 0,
+                        "reason": "requires_editor_review"
+                    },
+                    {
+                        "check": "semantic_grounding",
+                        "status": "undetermined",
+                        "reason": "source_anchors_are_not_external_fact_verification"
+                    }
+                ]
+            }
+        },
+        {
+            "case": "Q07-C",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "original_diagnostics": {
+                "stage": "validate",
+                "validation_errors": [
+                    {
+                        "group": "content",
+                        "field": "content_html",
+                        "reason": "source_link_missing"
+                    }
+                ]
+            },
+            "source_json_sha256": "2937d401e81895deae84db701fdbf61b51ed3e897e9f672beaf2c9f5d234d24f",
+            "artifact_json_sha256": "f954598f9c811e7fae36406203b07a8307de6689999f1fc2a89b604e9c9d2d62",
+            "link_manifest": {
+                "required_hrefs": [],
+                "optional_navigation_hrefs": [
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#introduction",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-configuration",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-variable-types",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#retrieving-environment-configuration",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#determining-the-current-environment",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#encrypting-environment-files",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#accessing-configuration-values",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-caching",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-publishing",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#debug-mode",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#maintenance-mode"
+                ],
+                "allowed_hrefs": [
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#introduction",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-configuration",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-variable-types",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#retrieving-environment-configuration",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#determining-the-current-environment",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#encrypting-environment-files",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#accessing-configuration-values",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-caching",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-publishing",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#debug-mode",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#maintenance-mode",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#introduction",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-configuration",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-variable-types",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#retrieving-environment-configuration",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#determining-the-current-environment",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#encrypting-environment-files",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#accessing-configuration-values",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-caching",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-publishing",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#debug-mode",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#maintenance-mode"
+                    ],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#introduction",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-configuration",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-variable-types",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#retrieving-environment-configuration",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#determining-the-current-environment",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#encrypting-environment-files",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#accessing-configuration-values",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-caching",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-publishing",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#debug-mode",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#maintenance-mode"
+                    ],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "pass",
+                "checks": [
+                    {
+                        "check": "copy",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "similarity",
+                        "status": "pass",
+                        "metric": 0.014,
+                        "reason": "lexical_metric_not_style_score"
+                    },
+                    {
+                        "check": "language",
+                        "status": "pass",
+                        "detected": "vi"
+                    },
+                    {
+                        "check": "source_code_links",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "important_numbers",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "unanchored_numbers",
+                        "status": "pass",
+                        "count": 0,
+                        "reason": "requires_editor_review"
+                    },
+                    {
+                        "check": "semantic_grounding",
+                        "status": "undetermined",
+                        "reason": "source_anchors_are_not_external_fact_verification"
+                    }
+                ]
+            }
+        },
+        {
+            "case": "Q18-C",
+            "original_status": "failed",
+            "original_error_code": "AI_SOURCE_REFERENCE",
+            "original_diagnostics": {
+                "stage": "validate",
+                "validation_errors": [
+                    {
+                        "group": "task",
+                        "field": "task_output",
+                        "reason": "unknown_fact_reference"
+                    }
+                ]
+            },
+            "source_json_sha256": "2299d9d9e3f225898fd8a8348259794be0ca303c6c8064b8c29aa94400ff31be",
+            "artifact_json_sha256": "7a1a1dd4b75b783a22182b442b559967ca4d28a3979416b72a36e59213b241d9",
+            "link_manifest": {
+                "required_hrefs": [
+                    "mailto:info@thegioidulich.com",
+                    "https://www.startravel.vn/"
+                ],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "mailto:info@thegioidulich.com",
+                    "https://www.startravel.vn/"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": [
+                        "S029"
+                    ]
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "blocked",
+                "task": "article.writer",
+                "error_code": "AI_SOURCE_REFERENCE",
+                "diagnostics": {
+                    "stage": "validate",
+                    "validation_errors": [
+                        {
+                            "group": "task",
+                            "field": "task_output",
+                            "reason": "unknown_fact_reference"
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}

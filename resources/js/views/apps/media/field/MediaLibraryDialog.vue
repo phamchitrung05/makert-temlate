@@ -277,8 +277,6 @@ watch(
     content-class="media-library-dialog-overlay"
     @update:model-value="handleDialogUpdate"
   >
-    <DialogCloseBtn @click="close" />
-
     <MediaLibraryDialogLayout
       id="view-moi"
       v-model:search-query="searchQuery"
@@ -328,4 +326,3 @@ watch(
   margin: 12px !important;
 }
 </style>
-
