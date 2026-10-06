@@ -79,8 +79,11 @@ declare global {
   const injectLocal: typeof import('@vueuse/core')['injectLocal']
   const inlineAssetUrl: typeof import('./resources/js/utils/inlineMedia.js')['inlineAssetUrl']
   const inlineImageHtml: typeof import('./resources/js/utils/inlineMedia.js')['inlineImageHtml']
+  const inlineUrlImageHtml: typeof import('./resources/js/utils/inlineMedia.js')['inlineUrlImageHtml']
   const integerValidator: typeof import('./resources/js/@core/utils/validators.js')['integerValidator']
+  const isAiContentPending: typeof import('./resources/js/utils/aiThumbnail.js')['isAiContentPending']
   const isAiSuccess: typeof import('./resources/js/utils/aiErrors.js')['isAiSuccess']
+  const isAiThumbnailPending: typeof import('./resources/js/utils/aiThumbnail.js')['isAiThumbnailPending']
   const isDefined: typeof import('@vueuse/core')['isDefined']
   const isEmpty: typeof import('./resources/js/@core/utils/helpers.js')['isEmpty']
   const isEmptyArray: typeof import('./resources/js/@core/utils/helpers.js')['isEmptyArray']
@@ -338,6 +341,8 @@ declare global {
   const useScrollLock: typeof import('@vueuse/core')['useScrollLock']
   const useSeoMetadata: typeof import('./resources/js/composables/useSeoMetadata.js')['useSeoMetadata']
   const useSessionStorage: typeof import('@vueuse/core')['useSessionStorage']
+  const useSettings: typeof import('./resources/js/composables/useSettings.js')['useSettings']
+  const useSettingsLocales: typeof import('./resources/js/composables/useSettingsLocales.js')['useSettingsLocales']
   const useShare: typeof import('@vueuse/core')['useShare']
   const useSkins: typeof import('./resources/js/@core/composable/useSkins.js')['useSkins']
   const useSlots: typeof import('vue')['useSlots']
@@ -492,8 +497,11 @@ declare module 'vue' {
     readonly injectLocal: UnwrapRef<typeof import('@vueuse/core')['injectLocal']>
     readonly inlineAssetUrl: UnwrapRef<typeof import('./resources/js/utils/inlineMedia.js')['inlineAssetUrl']>
     readonly inlineImageHtml: UnwrapRef<typeof import('./resources/js/utils/inlineMedia.js')['inlineImageHtml']>
+    readonly inlineUrlImageHtml: UnwrapRef<typeof import('./resources/js/utils/inlineMedia.js')['inlineUrlImageHtml']>
     readonly integerValidator: UnwrapRef<typeof import('./resources/js/@core/utils/validators.js')['integerValidator']>
+    readonly isAiContentPending: UnwrapRef<typeof import('./resources/js/utils/aiThumbnail.js')['isAiContentPending']>
     readonly isAiSuccess: UnwrapRef<typeof import('./resources/js/utils/aiErrors.js')['isAiSuccess']>
+    readonly isAiThumbnailPending: UnwrapRef<typeof import('./resources/js/utils/aiThumbnail.js')['isAiThumbnailPending']>
     readonly isDefined: UnwrapRef<typeof import('@vueuse/core')['isDefined']>
     readonly isEmpty: UnwrapRef<typeof import('./resources/js/@core/utils/helpers.js')['isEmpty']>
     readonly isEmptyArray: UnwrapRef<typeof import('./resources/js/@core/utils/helpers.js')['isEmptyArray']>
@@ -751,6 +759,8 @@ declare module 'vue' {
     readonly useScrollLock: UnwrapRef<typeof import('@vueuse/core')['useScrollLock']>
     readonly useSeoMetadata: UnwrapRef<typeof import('./resources/js/composables/useSeoMetadata.js')['useSeoMetadata']>
     readonly useSessionStorage: UnwrapRef<typeof import('@vueuse/core')['useSessionStorage']>
+    readonly useSettings: UnwrapRef<typeof import('./resources/js/composables/useSettings.js')['useSettings']>
+    readonly useSettingsLocales: UnwrapRef<typeof import('./resources/js/composables/useSettingsLocales.js')['useSettingsLocales']>
     readonly useShare: UnwrapRef<typeof import('@vueuse/core')['useShare']>
     readonly useSkins: UnwrapRef<typeof import('./resources/js/@core/composable/useSkins.js')['useSkins']>
     readonly useSlots: UnwrapRef<typeof import('vue')['useSlots']>

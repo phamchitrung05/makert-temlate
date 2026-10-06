@@ -5,7 +5,7 @@ import { db as mediaDb } from '@db/apps/media/db'
 
 const error = (errors, status = 422) => HttpResponse.json({ success: false, message: 'Dữ liệu bài viết không hợp lệ.', data: null, errors, meta: {} }, { status })
 const find = id => db.posts.find(item => item.id === Number(id))
-const toPost = post => ({ ...structuredClone(post), media: { thumbnail: post.media.thumbnail_id ? mediaDb.mediaAssets.find(asset => asset.id === post.media.thumbnail_id) ?? null : null, content_images: post.media.content_image_ids.map(id => mediaDb.mediaAssets.find(asset => asset.id === id)).filter(Boolean) } })
+const toPost = post => ({ ...structuredClone(post), media: { thumbnail: post.media.thumbnail_id ? mediaDb.mediaAssets.find(asset => asset.id === post.media.thumbnail_id) ?? null : null, gallery_images: post.media.gallery_image_ids.map(id => mediaDb.mediaAssets.find(asset => asset.id === id)).filter(Boolean) } })
 const parse = async request => { try { return await request.json() } catch { return {} } }
 
 export const handlerAppsPosts = [
@@ -26,7 +26,7 @@ export const handlerAppsPosts = [
     if (!payload.title)
       return error({ title: ['Title là bắt buộc.'] })
     const now = new Date().toISOString()
-    const post = { id: Math.max(0, ...db.posts.map(item => item.id)) + 1, title: payload.title, content: payload.content ?? '', status: payload.status ?? 'draft', media: { thumbnail_id: payload.media?.thumbnail_id ?? null, content_image_ids: payload.media?.content_image_ids ?? [] }, created_at: now, updated_at: now }
+    const post = { id: Math.max(0, ...db.posts.map(item => item.id)) + 1, title: payload.title, content: payload.content ?? '', status: payload.status ?? 'draft', media: { thumbnail_id: payload.media?.thumbnail_id ?? null, gallery_image_ids: payload.media?.gallery_image_ids ?? [] }, created_at: now, updated_at: now }
 
     db.posts.unshift(post)
     
@@ -39,8 +39,10 @@ export const handlerAppsPosts = [
     const payload = await parse(request)
 
     Object.assign(post, { title: payload.title ?? post.title, content: payload.content ?? post.content, status: payload.status ?? post.status, updated_at: new Date().toISOString() })
-    if (payload.media !== undefined)
-      post.media = { thumbnail_id: payload.media?.thumbnail_id ?? null, content_image_ids: payload.media?.content_image_ids ?? [] }
+    if (payload.media !== undefined) {
+      if (Object.hasOwn(payload.media, 'thumbnail_id')) post.media.thumbnail_id = payload.media.thumbnail_id
+      if (Object.hasOwn(payload.media, 'gallery_image_ids')) post.media.gallery_image_ids = payload.media.gallery_image_ids
+    }
     
     return HttpResponse.json({ success: true, message: 'Cập nhật bài viết giả lập thành công.', data: toPost(post), errors: [], meta: {} })
   }),

@@ -93,6 +93,35 @@ Khi chọn `content` cho Post và provider AI, mặc định chạy Analyze + Pl
 
 Thumbnail là chức năng riêng: `generate_thumbnail`, `thumbnail_mode=auto|source|generate`, `image_model_id` hoặc cặp `image_provider`/`image_model`. Khi có `requested_outputs`, nhóm `thumbnail` quyết định có yêu cầu thumbnail. Ảnh sinh tùy chọn dùng child job riêng sau content ready; image thất bại không làm mất bài đã tạo.
 
+### Thumbnail AI — cập nhật 2026-10-06
+
+- UI chọn `source` (URL) hoặc `generate` (URL/text/HTML/file/đề bài). Model ảnh
+  được chọn độc lập model bài viết; default/fallback ảnh lấy từ AI Settings.
+- `thumbnail_prompt` tùy chọn, tối đa 4.000 ký tự; bỏ trống dùng prompt/tiêu đề
+  của draft. `generate` cần `media.upload`; sai quyền trả 403, model ảnh không
+  khả dụng/sai capability/driver trả 422 ở `image_model_id` trước khi tạo run.
+- `POST /ai-agent/sessions/{id}/regenerate` nhận thêm `thumbnail_mode`,
+  `thumbnail_prompt`, `image_model_id` hoặc `image_provider`/`image_model`.
+  `fields=["thumbnail"]` giữ nội dung snapshot và bỏ lượt model text.
+- Content `ready` và child ảnh queued được lưu trong cùng transaction, dispatch
+  sau commit. Kết quả ảnh gắn vào `draft.thumbnail` với `media_asset_id`,
+  `origin=generated`, `image_run_id`, `alt_text`, `source_url=null`.
+- Summary/detail/review trả `thumbnail_generation`: `job_id`, `status`
+  (`queued/generating/ready/failed/cancelled/expired`), `progress`, `error_code`,
+  `error` an toàn, `provider`, `model`. Detail có `thumbnail_options`
+  (`mode/model_id/prompt`) để khởi tạo regenerate. Không trả key/connection/raw response.
+- Frontend đọc **parent** tới khi ảnh terminal dù nội dung đã `ready`. Retry
+  hoặc cancel dùng endpoint session hiện có với **child job_id** trong
+  `thumbnail_generation`; sau đó GET parent. Retry chỉ chạy ảnh, chặn child cũ,
+  sai owner, parent hết hạn hoặc đã quyết định; không tự retry POST timeout.
+- Review thêm `thumbnail`, `thumbnail_generation`, `can_approve`. Có thể edit
+  hoặc reject khi chờ ảnh; approve trả 409 khi ảnh pending. Sau lỗi/hủy có thể
+  duyệt mà bỏ field thumbnail. Ảnh về sau edit làm đổi draft/review version;
+  quyết định dùng version cũ trả 409. Kết quả trễ không đổi bài đã quyết định.
+- Provenance thumbnail lấy provider/model/run từ **image run**, kể cả thumbnail
+  kế thừa trong snapshot regenerate; parent vẫn ghi applied fields đầy đủ.
+  Duyệt/Apply và lưu Post bằng `ai_runs` dùng cùng boundary provenance.
+
 ## Preview nguồn
 
 Gửi cùng một loại nguồn đến `/ai-agent/source-preview`, không cần model/profile. Trả snapshot gồm:
@@ -190,7 +219,7 @@ PATCH /api/admin/ai-agent/candidates/{uuid}
 
 Title và content bắt buộc, các field excerpt/SEO/taxonomy là tùy chọn. Backend lock row, so sánh `expected_version`, validate ảnh trước/sau sanitize và trả draft/version mới; stale/đã Apply/chưa ready/hết hạn trả `409`. Lấy token từ server, không tự tính SHA-256 ở client.
 
-Ảnh inline cần `img` có `data-media-asset-id` và URL chính xác thuộc MediaAsset **public**, đúng quyền attach, có file thật. Lấy từ `/api/admin/media-assets` hoặc upload bằng API hiện có; `asset.id` là ref, `asset.file.url`/conversion đã sẵn sàng là URL. Backend không tin `content_image_ids` tự khai báo: suy từ HTML và đồng bộ usage `post.content_images` khi Apply/lưu Post. Chặn ID/URL giả, event handler, `srcset`/`picture` chưa hỗ trợ, URL tạm blob/base64. Xóa ảnh khỏi nội dung không tự xóa file toàn cục.
+Ảnh trong candidate AI cần `img` có `data-media-asset-id` và URL chính xác thuộc MediaAsset **public**, đúng quyền attach, có file thật. Ref nội bộ phục vụ kiểm nguồn và regenerate; không trở thành Gallery khi Apply. Post lưu HTML/link ảnh, không tạo usage content; Gallery dùng `media.gallery_image_ids`/`post.gallery` độc lập. Candidate chặn ID/URL giả, event handler, `srcset`/`picture` chưa hỗ trợ và URL tạm blob/base64. Xóa ảnh khỏi nội dung không tự xóa file toàn cục. Contract Post cập nhật 2026-10-06 tại [ảnh content/Gallery](TASK2_INLINE_MEDIA_API.md).
 
 Picker/upload TinyMCE đã nối MediaLibrary trong editor dùng chung của Post và AI Content: chọn/upload ngay trong editor, nhập alt/caption, giữ ref attribute và chặn lưu khi upload chưa xong. Tiny Cloud giữ nguyên license; local QA dùng `localhost` với key hiện có. Regenerate ảnh parent dùng placeholder ID do backend cung cấp; AI không tạo URL/ID mới. Figure có một ảnh giữ cả caption khi khôi phục; ảnh thiếu vị trí hợp lệ được khôi phục cuối bài để bảo toàn asset, cần editor rà vị trí. Tự nhập toàn bộ ảnh nguồn/vision/AI sinh ảnh inline để giai đoạn sau.
 
@@ -225,6 +254,22 @@ GET review chỉ trả nguồn snapshot đã sanitize (fallback `source_text` n�
 draft allowlist, `review`, `draft_version`, `review_version`, `can_review`,
 `can_edit`, `has_thumbnail`, `applied_target_id`, thời hạn và provider/model.
 Không fetch lại URL, không gọi AI, không trả key/profile/checkpoint thô.
+
+Ý nghĩa hai cột đối chiếu (2026-10-06):
+
+- **Nguồn đã lưu:** snapshot nội dung đầu vào đã extract/làm sạch tại
+  `ai_imports.source_meta_json.article_source.content_html`; thiếu snapshot thì
+  dùng `ai_imports.source_text` nếu có. Không phải toàn bộ HTML trang web hoặc
+  nội dung mới nhất từ URL. Viết tự do có thể hiển thị yêu cầu đầu vào đã lưu.
+- **Nội dung AI sau biên tập:** bản nháp hiện tại tại
+  `ai_imports.result_json.draft.content_html` (`content` là alias), gồm kết quả AI
+  và chỉnh sửa thủ công đã lưu qua PATCH candidate. Không phải bản output ban đầu
+  bất biến hoặc bản lịch sử của từng lần sửa.
+- Lịch sử sự kiện sửa/duyệt/từ chối ở `activity_log`, log name `ai-content`,
+  UUID trong `properties.candidate_id`; sự kiện sửa chỉ lưu field đã thay đổi.
+  Trạng thái quyết định hiện tại ở `source_meta_json.editorial`. Approve ghi nội
+  dung được chọn vào `posts.content` với status draft. Nguồn/draft trong
+  `ai_imports` vẫn chịu `expires_at` và cleanup hiện hành.
 
 ```http
 POST /api/admin/ai-agent/candidates/{uuid}/approve

@@ -1,5 +1,16 @@
 <?php
 
+use App\Settings\AiSettings;
+use App\Settings\LanguageSettings;
+use App\Settings\MailSettings;
+use App\Settings\MediaSettings;
+use App\Settings\SecuritySettings;
+use App\Settings\SeoSettings;
+use App\Settings\SiteSettings;
+use Spatie\LaravelSettings\SettingsCasts\DateTimeInterfaceCast;
+use Spatie\LaravelSettings\SettingsCasts\DateTimeZoneCast;
+use Spatie\LaravelSettings\SettingsRepositories\DatabaseSettingsRepository;
+
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Cấu hình repository và class của Spatie Laravel Settings.
@@ -10,13 +21,21 @@
  * =====================================================================
  */
 return [
-    'settings' => [App\Settings\AiSettings::class],
+    'settings' => [
+        AiSettings::class,
+        SiteSettings::class,
+        MediaSettings::class,
+        SeoSettings::class,
+        MailSettings::class,
+        SecuritySettings::class,
+        LanguageSettings::class,
+    ],
     'setting_class_path' => app_path('Settings'),
     'migrations_paths' => [database_path('settings')],
     'default_repository' => 'database',
     'repositories' => [
         'database' => [
-            'type' => Spatie\LaravelSettings\SettingsRepositories\DatabaseSettingsRepository::class,
+            'type' => DatabaseSettingsRepository::class,
             'model' => null,
             'table' => 'settings',
             'connection' => null,
@@ -26,8 +45,8 @@ return [
     'decoder' => null,
     'cache' => ['enabled' => false, 'store' => null, 'prefix' => null, 'ttl' => null, 'memo' => false],
     'global_casts' => [
-        DateTimeInterface::class => Spatie\LaravelSettings\SettingsCasts\DateTimeInterfaceCast::class,
-        DateTimeZone::class => Spatie\LaravelSettings\SettingsCasts\DateTimeZoneCast::class,
+        DateTimeInterface::class => DateTimeInterfaceCast::class,
+        DateTimeZone::class => DateTimeZoneCast::class,
     ],
     'auto_discover_settings' => [],
     'discovered_settings_cache_path' => base_path('bootstrap/cache'),

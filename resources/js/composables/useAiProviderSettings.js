@@ -13,6 +13,7 @@ import { aiProviderSettingsService } from '@/services/aiProviderSettings'
 export function useAiProviderSettings() {
   const providers = ref([])
   const presets = ref([])
+  const writingProfiles = ref([])
   const settings = ref({})
   const loading = ref(false)
   const error = ref('')
@@ -45,6 +46,7 @@ export function useAiProviderSettings() {
 
       providers.value = data.providers ?? []
       presets.value = data.presets ?? []
+      writingProfiles.value = data.writing_profiles ?? []
       settings.value = { ...settings.value, ...(data.settings ?? {}) }
     }
     catch (reason) {
@@ -162,12 +164,15 @@ export function useAiProviderSettings() {
    * =====================================================================
    */
   async function updateSettings(payload) {
-    const result = await aiProviderSettingsService.updateSettings(payload)
+    const result = await aiProviderSettingsService.updateSettings({
+      ...payload,
+      ...(settings.value.settings_version ? { settings_version: settings.value.settings_version } : {}),
+    })
 
     settings.value = { ...settings.value, ...(result?.settings ?? result) }
     
     return settings.value
   }
 
-  return { providers, presets, settings, modelOptions, loading, saving, error, load, saveProvider, disableProvider, testProvider, syncProvider, saveModel, updateSettings }
+  return { providers, presets, writingProfiles, settings, modelOptions, loading, saving, error, load, saveProvider, disableProvider, testProvider, syncProvider, saveModel, updateSettings }
 }

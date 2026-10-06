@@ -307,14 +307,11 @@ final class AiContentSettingsApiTest extends TestCase
         User::firstOrFail()->revokePermissionTo('media.upload');
         $this->flushPermissionCache();
         Auth::forgetGuards();
-        $childId = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions/'.$id.'/regenerate', [
+        $this->withToken($token)->postJson('/api/admin/ai-agent/sessions/'.$id.'/regenerate', [
             'fields' => ['thumbnail'],
             'refresh_source' => true,
-        ])->assertStatus(202)->json('data.job_id');
-        $this->assertNull(AiImport::findOrFail($childId)->input_json['image_connection']);
-        Http::fake(fn () => Http::response(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => json_encode(['title' => 'New', 'content_html' => '<p>New</p>'])]]]]));
-        (new ProcessAiImportJob($childId))->handle(app(ArticleImportService::class));
-        $this->assertSame('ready', AiImport::findOrFail($childId)->status);
+        ])->assertForbidden();
+        $this->assertDatabaseCount('ai_imports', 1);
         Queue::assertNotPushed(ProcessAiImageGenerationJob::class);
     }
 

@@ -72,7 +72,7 @@ describe('fake Media API contract', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          field: 'post.content_images',
+          field: 'post.gallery',
           linkable_type: 'post',
           linkable_id: 7,
           sort_order: 0,
@@ -84,7 +84,7 @@ describe('fake Media API contract', () => {
       expect(attachResponse.status).toBe(201)
       expect(attached).toEqual(expect.objectContaining({
         success: true,
-        data: expect.objectContaining({ field: 'post.content_images', media_asset_id: 2 }),
+        data: expect.objectContaining({ field: 'post.gallery', media_asset_id: 2 }),
       }))
 
       const usageId = attached.data.id

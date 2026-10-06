@@ -3,7 +3,7 @@
 **Mục đích:** tài liệu tham chiếu kiến trúc và vị trí file cho developer, reviewer
 và Codex khi bắt đầu một phiên làm việc mới.
 
-**Cập nhật lần cuối:** 2026-10-05
+**Cập nhật lần cuối:** 2026-10-06
 **Tài liệu tiến độ:** [PLAN.md](./PLAN.md)  
 **Kế hoạch Media Library:** [PLAN_MEDIA_LIBRARY.md](./PLAN_MEDIA_LIBRARY.md)  
 **Tài liệu môi trường:** [ENVIRONMENT.md](./ENVIRONMENT.md)
@@ -519,7 +519,8 @@ ResourceVersion
   media.documentation_ids → resource_version.documentation (document, multiple)
 Post
   media.thumbnail_id   → post.thumbnail (image, single)
-  media.content_image_ids → post.content_images (image, multiple)
+  media.gallery_image_ids → post.gallery (image, multiple, ordered, public)
+  content HTML/img.src → URL thuần, không tạo media_asset_usages
 ```
 
 Create/update actions gọi `MediaAssetUsageService::syncFields()` trong cùng
@@ -679,13 +680,44 @@ tại là `posts.manage` + owner, chưa duyệt chéo owner. Tests nằm tại
 `aiContentReviewDialog.test.js` và `aiAgentService.test.js`.
 Bảng/model `ai_content_drafts` và thay đổi retention tạm hoãn theo chủ dự án;
 run vẫn có hạn, Activitylog/Post không bị cleanup run xóa.
+FIX 1 mục 12.39: review dialog dùng hiệu ứng `VDialog` mặc định của project và
+`AppDialogLayout` với header/footer cố định, body cuộn. CSS scoped trả lại fade
+cho scrim của riêng dialog này, cùng easing/thời lượng mở 225 ms, đóng 125 ms
+với khung Vuetify khi người dùng không yêu cầu giảm chuyển động.
+GET bắt đầu ngay; `AiContentComparison.active` chỉ bật parse/render văn bản dài
+sau `after-enter`, giữ nội dung qua hiệu ứng đóng và dọn ở `after-leave`.
+Tiến trình tải nằm inline trong body, không thêm loading overlay phủ tối card.
+Prop `loading` giữ hai tiêu đề và chưa kết luận thiếu nguồn khi GET chưa xong.
+Nguồn là snapshot `source_meta_json.article_source`; bản AI là `result_json.draft`
+hiện tại, gồm các chỉnh sửa đã lưu. Giải pháp tắt transition ở 12.38 đã được thay thế.
 Provider/model đọc từ `GET /api/admin/settings/ai`, dùng provider active/có key,
 model enabled/available; ưu tiên model text ban đầu và kiểm tra capability thật.
 Nút tạo có lý do validation, chống gửi trùng và progress/error/polling cleanup.
-URL dùng input URL; file HTML tối đa 5 MB được đọc bằng template DOM trơ và bỏ
-script/navigation để gửi text; nội dung nguồn/đề bài dùng input text (200.000 ký tự).
-Độ dài/ngôn ngữ/tiêu đề/SEO/rewrite được chuyển thành instructions. Thumbnail là
-ảnh lấy từ URL nguồn, không ngầm gọi thêm tác vụ tạo ảnh.
+URL dùng input URL; file HTML tối đa 5 MB được gửi nguyên bản bằng multipart,
+khai báo encoding và extract/sanitize tại backend; nội dung nguồn/đề bài dùng
+input text (200.000 ký tự).
+Độ dài/ngôn ngữ/tiêu đề/SEO/rewrite được chuyển thành instructions. Thumbnail
+có lựa chọn ảnh URL nguồn hoặc sinh AI với model ảnh riêng. `generate` hỗ trợ
+mọi nguồn; child image chỉ chạy khi nhóm thumbnail được yêu cầu. Thumbnail-only
+regenerate không gọi lại model nội dung.
+
+Luồng thumbnail AI (FIX 1 mục 12.37):
+
+```text
+AiThumbnailOptions.vue → aiContentInput.js → AiImportController
+ProcessAiImportJob → AiThumbnailService.schedule (parent ready + image queued atomic)
+ProcessAiImageGenerationJob → MediaLibrary → AiThumbnailService.sync
+draft.thumbnail.media_asset_id + thumbnail_generation → summary/detail/review
+AiContentReviewService → Post draft + provenance từ image run
+```
+
+`AiThumbnailStatus.vue` trình bày preview/progress/lỗi và emit retry/check/cancel.
+`useAiContentGeneration` tiếp tục đọc parent sau content ready khi ảnh đang chạy;
+`useAiContentActions` theo dõi lại sau reload và thao tác child ảnh riêng, không
+thêm image run vào danh sách bài. Sync khóa parent, giữ edit và bỏ ảnh trễ khi
+đã duyệt/từ chối/hết hạn/sai owner/child cũ. Metadata public không query child
+theo từng dòng. Tạo ảnh lỗi giữ bài ready; duyệt chờ ảnh terminal, có thể hủy
+ảnh để duyệt bài không ảnh. Không có migration/đổi retention.
 `POST /api/admin/ai-agent/sessions` lưu run và queue, `GET /sessions/{id}` polling;
 `GET /sessions` phân trang summary root còn hạn của chính actor. Page đọc mọi trang,
 merge lifecycle mới vào list và không tự apply/publish Post. Các session vẫn theo
@@ -873,8 +905,17 @@ php artisan test
 - `useAiContentActions` điều phối dialog edit/remove/regenerate và child polling.
   `AiContentEditorDialog` dùng `PostEditor`; `AiContentRunActionDialog` xác nhận
   xóa hoặc chọn nhóm field. Các action không thay nguồn của form tạo mới.
-- `resources/js/pages/settings/index.vue`: route `settings` trống, được dùng bởi
+- `resources/js/pages/settings/index.vue`: route `settings` compose panel/API thật, được dùng bởi
   menu `SYSTERM SETTING` / `SETTING` ở cả navigation dọc và ngang.
+
+### Settings chuẩn hóa — 2026-10-06
+
+- `app/Settings/{Site,Media,Seo,Mail,Security,Language}Settings.php`: sáu nhóm typed lưu trong bảng settings; null fallback config, mail password mã hóa.
+- `app/Services/Settings/`: ProjectSettingsService đọc/lưu/audit/version; ProjectMailService refresh transport; SettingsDiagnosticsService probe runtime; ProjectScheduleRegistry là nguồn lịch chung HTTP/console.
+- `SettingsController` và FormRequests giữ boundary HTTP/permission/validation; AI writer vẫn là AiSettingsService.
+- `services/settings.js`, `useSettings`, `useSettingsLocales` và `views/settings/Settings*.vue`: state theo nhóm, panel tập trung, locale menu runtime. Không thêm Tailwind hoặc TypeScript vào flow JavaScript/Vuetify.
+- Upload/conversion, SEO/public/robots và login token/rate limiter dùng cùng nhóm Settings. Capability chưa có không được biến thành toggle lưu giả.
+- Contract và kiểm chứng tại FIX 1 mục 9.9/12.40, docs/qa/SETTINGS_2026-10-06/README.md.
 
 - `docs/PLAN.md`: cập nhật trạng thái, checklist và mốc tiến độ.
 - `docs/PROJECT_STRUCTURE.md`: cập nhật khi thêm boundary, thư mục kiến trúc,

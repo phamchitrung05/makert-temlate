@@ -47,6 +47,25 @@ beforeEach(() => {
 afterEach(() => { scope.stop(); vi.useRealTimers() })
 
 describe('Ai Content creation input', () => {
+  it.each(['text', 'prompt', 'html', 'file', 'url'])('supports AI thumbnail for %s with separate image model and prompt', async type => {
+    const source = { ...validSource(), type, thumbnailMode: 'generate', imageModelId: 91, thumbnailPrompt: ' Minh họa ',
+      text: 'Nguồn text', html: '<article>Nguồn HTML</article>', url: 'https://example.test/article',
+      file: new File(['<article>File</article>'], 'source.html', { type: 'text/html' }) }
+
+    const imageCatalog = { ...catalog(), imageModelOptions: [{ value: 91, title: 'Image model' }] }
+
+    expect(validateAiContentSource(source, imageCatalog)).toBe('')
+    expect(validateAiContentSource({ ...source, imageModelId: 30 }, imageCatalog)).toContain('model ảnh')
+
+    const payload = await buildAiContentRequest(source, textModel)
+    const body = payload instanceof FormData ? Object.fromEntries(payload.entries()) : payload
+
+    expect(Number(body.image_model_id)).toBe(91)
+    expect(Number(body.model_id)).toBe(30)
+    expect(body.thumbnail_mode).toBe('generate')
+    expect(body.thumbnail_prompt).toBe('Minh họa')
+    expect(payload instanceof FormData ? [...payload.entries()].filter(([key]) => key.startsWith('requested_outputs[')).map(([, value]) => value) : payload.requested_outputs).toContain('thumbnail')
+  })
   it('requires a source and a known text capability, with a visible reason', () => {
     const source = validSource()
 
@@ -212,6 +231,24 @@ describe('Ai Content generation lifecycle', () => {
     state.resetSource()
     expect(state.source.value).toMatchObject({ prompt: '', url: '', provider: 'content', model: 'text-model' })
     expect(state.items.value).toHaveLength(1)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('continues polling the article after text is ready until its thumbnail finishes', async () => {
+    const s = createState()
+    const ready = { job_id: 'one', status: 'ready', draft: { title: 'Bài viết đã xong' }, thumbnail_generation: { job_id: 'image-one', status: 'queued' } }
+
+    service.createSession.mockResolvedValue(ready)
+    service.status.mockResolvedValueOnce({ ...ready, thumbnail_generation: { job_id: 'image-one', status: 'generating', progress: 35 } })
+      .mockResolvedValueOnce({ ...ready, thumbnail: { id: 77 }, thumbnail_generation: { job_id: 'image-one', status: 'ready', progress: 100 } })
+    await s.generate()
+    expect(s.generation.value.busy).toBe(false)
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(s.items.value[0].thumbnailGeneration.status).toBe('generating')
+    await vi.advanceTimersByTimeAsync(1500)
+    expect(s.items.value[0].thumbnail).toEqual({ id: 77 })
+    expect(service.status).toHaveBeenCalledTimes(2)
+    expect(service.status).toHaveBeenLastCalledWith('one', 'post')
     expect(vi.getTimerCount()).toBe(0)
   })
 

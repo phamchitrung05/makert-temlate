@@ -17,6 +17,7 @@ use App\Models\MediaAsset;
 use App\Services\Ai\Content\AiContentReviewService;
 use App\Services\Ai\Content\AiContentSanitizer;
 use App\Services\Ai\Content\ArticleSourceFetcher;
+use App\Services\Ai\Images\AiThumbnailService;
 use App\Services\Ai\Providers\Catalog\ModelResolver;
 use App\Services\Ai\Providers\Diagnostics\AiResponseDiagnostics;
 use App\Services\Ai\Registries\PromptRegistry;
@@ -234,23 +235,16 @@ class AiImportController extends Controller
         ], static fn (mixed $value): bool => filled($value)));
         $connection['generate_seo'] = $generateSeo;
         $imageConnection = null;
-        if (($data['thumbnail_mode'] ?? 'auto') === 'generate' && $generateThumbnail
-            && $request->user()->can('media.upload')) {
+        if (($data['thumbnail_mode'] ?? 'auto') === 'generate' && $generateThumbnail) {
+            abort_unless($request->user()->can('media.upload'), 403, 'Cần quyền tải media để tạo thumbnail AI.');
             try {
                 $imageConnection = $resolver->resolve(AiCapability::Image, array_filter([
                     'provider' => $data['image_provider'] ?? null,
                     'model' => $data['image_model'] ?? null,
                     'model_id' => $data['image_model_id'] ?? null,
                 ], static fn (mixed $value): bool => filled($value)));
-            } catch (ValidationException) {
-                /**
-                 * =================================================================
-                 * GHI CHÚ: Ảnh là capability tùy chọn; content run vẫn hợp lệ.
-                 * =================================================================
-                 * Không ghi secret vào input khi image model chưa resolve được.
-                 * =================================================================
-                 */
-                $imageConnection = null;
+            } catch (ValidationException $exception) {
+                throw ValidationException::withMessages(['image_model_id' => 'Chọn model ảnh đã bật, khả dụng và có provider hỗ trợ tạo ảnh.']);
             }
         }
         $providerKey = (string) $connection['provider'];
@@ -277,6 +271,7 @@ class AiImportController extends Controller
             'generate_thumbnail' => $generateThumbnail,
             'generate_seo' => $generateSeo,
             'thumbnail_mode' => $data['thumbnail_mode'] ?? 'auto',
+            'thumbnail_prompt' => $data['thumbnail_prompt'] ?? '',
             'prompt_key' => $promptKey,
             'instructions' => $data['instructions'] ?? '',
             'writing_brief' => $data['writing_brief'] ?? [],
@@ -366,6 +361,11 @@ class AiImportController extends Controller
             'provider' => ['sometimes', 'nullable', 'string', 'max:80'],
             'model' => ['sometimes', 'nullable', 'string', 'max:190'],
             'model_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'thumbnail_mode' => ['sometimes', 'in:auto,source,generate'],
+            'thumbnail_prompt' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'image_provider' => ['sometimes', 'nullable', 'string', 'max:80'],
+            'image_model' => ['sometimes', 'nullable', 'string', 'max:190'],
+            'image_model_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'fields' => ['sometimes', 'array'],
             'fields.*' => ['string', 'distinct', Rule::in((array) config('ai-agent.targets.'.($aiImport->input_json['target_type'] ?? 'post').'.outputs', []))],
         ]);
@@ -422,18 +422,22 @@ class AiImportController extends Controller
             $childInput['generate_seo'] = true;
             $childInput['ai_connection']['generate_seo'] = true;
         }
-        if (in_array('thumbnail', $options['fields'], true)) {
+        if (in_array('thumbnail', $options['fields'], true)
+            || ($options['fields'] === [] && ($options['thumbnail_mode'] ?? null) === 'generate')) {
             $childInput['generate_thumbnail'] = true;
+        }
+        if (($options['fields'] === [] || in_array('thumbnail', $options['fields'], true)) && ($childInput['generate_thumbnail'] ?? true)) {
             if (($childInput['thumbnail_mode'] ?? 'auto') === 'generate') {
-                if (! $request->user()->can('media.upload')) {
-                    $childInput['image_connection'] = null;
-                } elseif (empty($childInput['image_connection'])) {
-                    try {
-                        $childInput['image_connection'] = $resolver->resolve(AiCapability::Image);
-                    } catch (ValidationException) {
-                        // Image generation is optional; keep the content candidate available.
-                        $childInput['image_connection'] = null;
-                    }
+                abort_unless($request->user()->can('media.upload'), 403, 'Cần quyền tải media để tạo thumbnail AI.');
+                $hasImageOverride = filled($options['image_provider'] ?? null) || filled($options['image_model'] ?? null) || filled($options['image_model_id'] ?? null);
+                $selection = $hasImageOverride ? [
+                    'provider' => $options['image_provider'] ?? null, 'model' => $options['image_model'] ?? null, 'model_id' => $options['image_model_id'] ?? null,
+                ] : array_intersect_key((array) ($childInput['image_connection'] ?? []), array_flip(['provider', 'model', 'model_id']));
+                $selection = array_filter($selection, static fn (mixed $value): bool => filled($value));
+                try {
+                    $childInput['image_connection'] = $resolver->resolve(AiCapability::Image, $selection);
+                } catch (ValidationException) {
+                    throw ValidationException::withMessages(['image_model_id' => 'Chọn model ảnh hợp lệ trước khi tạo lại thumbnail.']);
                 }
             }
         }
@@ -469,6 +473,7 @@ class AiImportController extends Controller
             abort_unless($request->user()->can('media.upload'), 403);
         }
         $aiImport = DB::transaction(function () use ($aiImport, $runs, $providers): AiImport {
+            app(AiThumbnailService::class)->prepareRetry($aiImport);
             $run = AiImport::query()->lockForUpdate()->findOrFail($aiImport->id);
             abort_unless(in_array($run->status, ['failed', 'cancelled', 'expired'], true), 409, 'Chỉ có thể retry run đã kết thúc lỗi.');
             $input = (array) $run->input_json;
@@ -489,6 +494,7 @@ class AiImportController extends Controller
                 'input_json' => $input, 'error_code' => null, 'error_message' => null, 'completed_at' => null,
                 'expires_at' => now()->addDays((int) config('ai-import.retention_days', 2)),
             ])->save();
+            app(AiThumbnailService::class)->sync($run);
             DB::afterCommit(fn () => $runs->dispatch($run));
 
             return $run;
@@ -606,6 +612,7 @@ class AiImportController extends Controller
             return $run;
         });
         if ($run->status === 'cancelled') {
+            app(AiThumbnailService::class)->sync($run);
             $this->cleanupThumbnail($run);
         }
 
@@ -688,6 +695,10 @@ class AiImportController extends Controller
             'expires_at' => $import->expires_at?->toIso8601String(),
             'applied_target_id' => $import->applied_target_id, 'applied_fields' => $import->applied_fields,
             'thumbnail' => $thumbnail ? MediaAssetResource::make($thumbnail) : null,
+            'thumbnail_generation' => AiThumbnailService::state($import),
+            'thumbnail_options' => ['mode' => data_get($import->input_json, 'thumbnail_mode', 'source'),
+                'model_id' => data_get($import->input_json, 'image_connection.model_id'),
+                'prompt' => data_get($import->input_json, 'thumbnail_prompt', '')],
         ];
     }
 

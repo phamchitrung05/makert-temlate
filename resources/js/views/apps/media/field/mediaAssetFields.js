@@ -23,8 +23,8 @@ export const mediaAssetFieldConfig = Object.freeze({
     kind: 'image',
     multiple: false,
   }),
-  'post.content_images': Object.freeze({
-    title: 'Post content images',
+  'post.gallery': Object.freeze({
+    title: 'Post image gallery',
     kind: 'image',
     multiple: true,
   }),

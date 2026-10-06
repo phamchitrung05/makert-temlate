@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import PostForm from '@/views/apps/blog/post/PostForm.vue'
+import PostMediaPanel from '@/views/apps/blog/post/PostMediaPanel.vue'
 import { passthroughStubs } from './testStubs'
 
 const mocks = vi.hoisted(() => ({ previewSlug: vi.fn() }))
@@ -45,6 +46,28 @@ const mountForm = props => mount(PostForm, {
 
 describe('Post form integration', () => {
   beforeEach(() => mocks.previewSlug.mockReset())
+
+  it('keeps gallery selection independent from content links and old inline usage data', async () => {
+    const gallery = [{ id: 2 }, { id: 1 }]
+
+    const wrapper = mountForm({ post: {
+      id: 5, title: 'Post', slug: 'post', content: '<p>Ban đầu</p>',
+      media: { gallery_images: gallery, content_images: [{ id: 99 }] },
+    } })
+
+    const panel = wrapper.findComponent(PostMediaPanel)
+    const html = '<img src="https://example.test/a.jpg" alt="Một"><img src="https://example.test/a.jpg" alt="Hai">'
+
+    expect(panel.props('galleryImages')).toEqual(gallery)
+    await wrapper.get('textarea[aria-label="Content"]').setValue(html)
+    expect(panel.props('galleryImages')).toEqual(gallery)
+    panel.vm.$emit('update:galleryImages', [gallery[1], gallery[0]])
+    await wrapper.findAll('button').find(button => button.text().includes('Save as Draft')).trigger('click')
+    await flushPromises()
+    expect(wrapper.emitted('submit')[0][0]).toMatchObject({ content: html, galleryImages: [gallery[1], gallery[0]] })
+    expect(wrapper.emitted('submit')[0][0]).not.toHaveProperty('contentImages')
+    wrapper.unmount()
+  })
 
   it.each([
     [401, 'Phiên đăng nhập đã hết hạn'],

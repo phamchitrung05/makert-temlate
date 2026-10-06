@@ -4,6 +4,7 @@ namespace App\Services\Media;
 
 use App\Enums\MediaAssetKind;
 use App\Exceptions\MediaSecurityException;
+use App\Services\Settings\ProjectSettingsService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 
@@ -152,7 +153,7 @@ class MediaUploadValidator
      */
     private function kindConfig(MediaAssetKind $kind): array
     {
-        $config = config('media-assets.kinds.'.$kind->value);
+        $config = app(ProjectSettingsService::class)->mediaPolicy($kind->value);
 
         if (! is_array($config)) {
             throw new MediaSecurityException('MediaAsset kind chưa có security policy.');

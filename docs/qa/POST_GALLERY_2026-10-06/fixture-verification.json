@@ -1,0 +1,15 @@
+{
+    "post_id": 2,
+    "status": "draft",
+    "inline_image_count": 2,
+    "repeated_url_occurrences": 2,
+    "content_has_asset_marker": false,
+    "content_edit_saved": true,
+    "post_usages": [
+        {
+            "field": "post.gallery",
+            "media_asset_id": 1,
+            "sort_order": 0
+        }
+    ]
+}

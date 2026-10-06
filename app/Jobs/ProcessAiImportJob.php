@@ -5,9 +5,9 @@ namespace App\Jobs;
 use App\Exceptions\AiImportException;
 use App\Models\AiImport;
 use App\Services\Ai\Content\ArticleImportService;
+use App\Services\Ai\Images\AiThumbnailService;
 use App\Services\Ai\Providers\Diagnostics\AiResponseDiagnostics;
 use App\Services\Ai\Runs\AiRunBudget;
-use App\Services\Ai\Runs\AiRunService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -99,17 +99,21 @@ class ProcessAiImportJob implements ShouldQueue
             if ($import->fresh()?->status === 'cancelled') {
                 return;
             }
-            $completion = (new AiImport)->forceFill([
+            $completion = [
                 'status' => 'ready', 'current_step' => 'ready', 'progress' => 100,
                 'result_json' => $result, 'provider' => $result['provider'],
                 'prompt_version' => $result['prompt_version'], 'completed_at' => now(),
                 'expires_at' => now()->addDays((int) config('ai-import.retention_days', 2)),
                 'error_code' => null, 'error_message' => null,
-            ])->getAttributes();
-            $completed = AiImport::query()->whereKey($import->id)->whereNotIn('status', AiImport::TERMINAL_STATUSES)->update($completion);
-            if ($completed > 0) {
-                $this->queueOptionalImage($import->fresh());
-            }
+            ];
+            DB::transaction(function () use ($import, $completion): void {
+                $parent = AiImport::query()->lockForUpdate()->find($import->id);
+                if (! $parent || in_array($parent->status, AiImport::TERMINAL_STATUSES, true) || $parent->expires_at?->isPast()) {
+                    return;
+                }
+                $parent->forceFill($completion)->save();
+                $this->queueOptionalImage($parent);
+            });
         } catch (AiImportException $exception) {
             $shouldRetry = DB::transaction(function () use ($exception): bool {
                 $run = AiImport::query()->lockForUpdate()->find($this->importId);
@@ -194,47 +198,17 @@ class ProcessAiImportJob implements ShouldQueue
      */
     private function queueOptionalImage(?AiImport $import): void
     {
-        $requestedFields = (array) ($import?->input_json['fields'] ?? []);
-        if (! $import || ($import->input_json['thumbnail_mode'] ?? 'auto') !== 'generate'
-            || ! ($import->input_json['generate_thumbnail'] ?? true)
-            || ($requestedFields !== [] && ! in_array('thumbnail', $requestedFields, true))
-            || empty($import->input_json['image_connection'])) {
+        if (! $import || ! AiThumbnailService::requested($import)) {
             return;
         }
         try {
-            $input = (array) $import->input_json;
-            $draft = (array) data_get($import->result_json, 'draft', []);
-            $child = DB::transaction(function () use ($import, $input, $draft): AiImport {
-                $child = AiImport::query()->create([
-                    'id' => (string) Str::uuid(), 'created_by' => $import->created_by,
-                    'source_url' => '', 'source_hash' => hash('sha256', 'image|'.$import->id),
-                    'status' => 'queued', 'current_step' => 'queued', 'progress' => 0,
-                    'input_json' => [
-                        'prompt' => (string) ($draft['thumbnail_prompt'] ?? $draft['title'] ?? 'Tạo ảnh đại diện'),
-                        'title' => (string) ($draft['title'] ?? 'AI generated image'),
-                        'alt_text' => (string) ($draft['thumbnail']['alt_text'] ?? $draft['title'] ?? ''),
-                        'ai_connection' => $input['image_connection'],
-                    ],
-                    'provider' => data_get($input, 'image_connection.provider'),
-                    'prompt_version' => 'image-v1', 'session_id' => $import->session_id ?: $import->id,
-                    'parent_id' => $import->id, 'operation' => 'image',
-                ]);
-
-                return $child;
-            });
-            app(AiRunService::class)->dispatch($child);
-            DB::transaction(function () use ($import, $child): void {
-                $parent = AiImport::query()->lockForUpdate()->find($import->id);
-                if (! $parent) {
-                    return;
-                }
-                $result = (array) $parent->result_json;
-                $result['image_job_id'] = $child->id;
-                $parent->update(['result_json' => $result]);
-            });
+            DB::transaction(fn () => app(AiThumbnailService::class)->schedule($import));
         } catch (Throwable $exception) {
             report($exception);
-            $import->update(['error_code' => 'AI_IMAGE_QUEUE_FAILED', 'error_message' => 'Không thể xếp hàng tạo ảnh tự động; nội dung vẫn sẵn sàng.']);
+            $result = (array) $import->fresh()->result_json;
+            $result['thumbnail_generation'] = ['job_id' => null, 'status' => 'failed', 'progress' => 0,
+                'error_code' => 'AI_IMAGE_QUEUE_FAILED', 'error' => 'Không thể xếp hàng tạo ảnh; nội dung vẫn sẵn sàng. Hãy tạo lại thumbnail.'];
+            $import->update(['result_json' => $result]);
         }
     }
 }

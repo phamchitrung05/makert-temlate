@@ -20,6 +20,7 @@ import { computed, shallowRef } from 'vue'
 import AiWritingPreferences from '@/views/ai/shared/AiWritingPreferences.vue'
 import AiManualTaxonomyFields from '@/views/ai/shared/AiManualTaxonomyFields.vue'
 import AiSourcePreview from '@/views/ai/shared/AiSourcePreview.vue'
+import AiThumbnailOptions from '@/views/ai/shared/AiThumbnailOptions.vue'
 import { useAiSourcePreview } from '@/composables/ai/useAiSourcePreview'
 
 const props = defineProps({
@@ -286,6 +287,16 @@ const updateProvider = provider => {
                 chips
                 closable-chips
                 @update:model-value="update('outputs', $event)"
+              />
+            </VCol>
+            <VCol
+              v-if="props.catalog.outputOptions?.some(option => option.value === 'thumbnail')"
+              cols="12"
+            >
+              <AiThumbnailOptions
+                v-model="source"
+                :catalog="props.catalog"
+                :disabled="props.disabled"
               />
             </VCol>
             <VCol

@@ -43,7 +43,7 @@ const locked = computed(() => props.busy || props.loading || props.blocked)
 const legacyTaxonomy = computed(() => props.detail?.draft?.taxonomy_origin !== 'manual')
 
 const canSubmit = computed(() => ['approve', 'reject'].includes(props.kind) && !locked.value && reason.value.trim().length <= 2000
-  && (props.kind === 'reject' ? Boolean(reason.value.trim()) : fields.value.includes('title')
+  && (props.kind === 'reject' ? Boolean(reason.value.trim()) : props.detail?.can_approve !== false && fields.value.includes('title')
     && (!fields.value.includes('taxonomy') || !legacyTaxonomy.value || taxonomyConfirmed.value)))
 
 // Input: mở quyết định mới. Output: khởi tạo form một lần; GET lại cùng bài giữ bản nhập.

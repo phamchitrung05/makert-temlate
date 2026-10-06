@@ -139,7 +139,7 @@ export const handlerAppsMedia = [
 
     const fieldKinds = {
       'post.thumbnail': 'image',
-      'post.content_images': 'image',
+      'post.gallery': 'image',
       'resource.cover': 'image',
       'resource.preview': 'image',
       'resource_version.package': 'archive',

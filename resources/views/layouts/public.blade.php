@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="csrf-token" content="{{ csrf_token() }}" />
 
-  <title>@yield('title', config('app.name'))</title>
-  <meta name="description" content="@yield('meta_description', config('app.name'))" />
+  <title>@yield('title', $site['site_name'] ?? config('app.name'))</title>
+  <meta name="description" content="@yield('meta_description', $seo['default_description'] ?? '')" />
 
   @stack('meta')
   @vite(['resources/css/public.css'])
@@ -20,7 +20,7 @@
   <header class="site-header">
     <div class="container site-header__inner">
       <a class="site-brand" href="{{ route('home') }}">
-        {{ config('app.name') }}
+        {{ $site['site_name'] ?? config('app.name') }}
       </a>
 
       <nav class="site-nav" aria-label="{{ __('Điều hướng chính') }}">
@@ -39,7 +39,10 @@
 
   <footer class="site-footer">
     <div class="container">
-      <p>&copy; {{ date('Y') }} {{ config('app.name') }}</p>
+      <p>&copy; {{ now($site['timezone'] ?? config('app.timezone'))->year }} {{ $site['site_name'] ?? config('app.name') }}</p>
+      @if (!empty($site['contact_email']))
+        <a href="mailto:{{ $site['contact_email'] }}">{{ $site['contact_email'] }}</a>
+      @endif
     </div>
   </footer>
 </body>

@@ -6,6 +6,7 @@ use App\Enums\MediaAssetKind;
 use App\Enums\MediaAssetVisibility;
 use App\Models\AiImport;
 use App\Models\MediaAsset;
+use App\Models\Post;
 use App\Models\User;
 use DOMDocument;
 use Illuminate\Support\Facades\DB;
@@ -17,10 +18,11 @@ use Illuminate\Validation\ValidationException;
  * CHỨC NĂNG FILE: Xác thực ảnh MediaLibrary thật xuất hiện trong HTML bài viết.
  * =====================================================================
  * HTML client phải mang asset ID và URL thuộc đúng file public. Service chỉ
- * đọc dữ liệu; caller đồng bộ usage trong transaction lưu Post/candidate.
+ * đọc dữ liệu; refs phục vụ candidate AI. Post lưu ảnh bằng URL, không tạo usage content.
  *
  * CÁC HÀM/METHOD TRONG FILE:
- * - validate(): kiểm ảnh, quyền attach, URL và trả ID theo thứ tự nội dung.
+ * - validate(): kiểm ref ảnh của candidate AI, quyền attach và URL.
+ * - isLinkedInHtml()/isLinkedFromPost(): đọc URL để cleanup không làm hỏng ảnh đã lưu trong Post.
  * - referencedIds(): đọc ID để bảo vệ asset khi dọn candidate, không cấp quyền.
  * - isReferencedByRetainedAiRun(): tìm tham chiếu trong run/snapshot còn retention.
  * - references(): đọc ref bảo thủ trong JSON đã lưu, không thay authorization.
@@ -38,7 +40,7 @@ final class ContentMediaReferenceService
 {
     /**
      * =====================================================================
-     * CHỨC NĂNG: Kiểm ảnh inline và suy ra usage từ HTML, không tin gallery client.
+     * CHỨC NĂNG: Kiểm ảnh có ref của candidate AI, không suy ra Gallery của Post.
      * =====================================================================
      * INPUT: HTML và User đang lưu/apply.
      * OUTPUT: ID không trùng theo thứ tự ảnh; ValidationException hoặc lỗi quyền.
@@ -94,6 +96,43 @@ final class ContentMediaReferenceService
         }
 
         return array_values(array_unique($ids));
+    }
+
+    /** Input: HTML và asset. Output: URL file xuất hiện trong img; không tạo liên kết database. */
+    public function isLinkedInHtml(string $html, MediaAsset $asset): bool
+    {
+        $urls = $this->urls($asset);
+        if ($urls === []) {
+            return false;
+        }
+        foreach (app(ContentImageUrlValidator::class)->imageUrls($html) as $url) {
+            if (in_array($url, $urls, true)) {
+                return true;
+            }
+            if (str_starts_with($url, '/') && ! str_starts_with($url, '//')) {
+                foreach ($urls as $absolute) {
+                    $path = parse_url($absolute, PHP_URL_PATH);
+                    $query = parse_url($absolute, PHP_URL_QUERY);
+                    if ($url === $path.($query !== null ? '?'.$query : '')) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /** Input: asset tạm của AI. Output: Post đang giữ link ảnh; chỉ đọc HTML khi cleanup orphan. */
+    public function isLinkedFromPost(MediaAsset $asset): bool
+    {
+        foreach (Post::query()->select(['id', 'content'])->where('content', 'like', '%<img%')->lazyById(100) as $post) {
+            if ($this->isLinkedInHtml((string) $post->content, $asset)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

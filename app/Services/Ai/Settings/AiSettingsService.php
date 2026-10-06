@@ -68,7 +68,9 @@ final class AiSettingsService
         }
 
         // Spatie bind singleton; refresh bắt buộc để worker không giữ giá trị cũ.
-        return app(AiSettings::class)->refresh()->toArray();
+        $values = app(AiSettings::class)->refresh()->toArray();
+
+        return $values + ['settings_version' => hash('sha256', json_encode($values, JSON_THROW_ON_ERROR))];
     }
 
     /**
@@ -83,6 +85,7 @@ final class AiSettingsService
      */
     public function update(array $values, int $actorId): array
     {
+        $expectedVersion = $values['settings_version'] ?? null;
         $values = array_intersect_key($values, $this->defaults());
         foreach (['default_text_model_id', 'fallback_text_model_id', 'default_image_model_id', 'fallback_image_model_id'] as $key) {
             if (array_key_exists($key, $values) && $values[$key] !== null) {
@@ -123,8 +126,10 @@ final class AiSettingsService
         if (array_key_exists('default_system_prompt', $values)) {
             $values['default_system_prompt'] = (string) ($values['default_system_prompt'] ?? '');
         }
-        DB::transaction(function () use ($values, $actorId): void {
+        DB::transaction(function () use ($values, $actorId, $expectedVersion): void {
             DB::table('settings')->where('group', AiSettings::group())->lockForUpdate()->get();
+            abort_if($expectedVersion !== null && $expectedVersion !== $this->all()['settings_version'], 409,
+                'Cấu hình AI đã thay đổi ở cửa sổ khác. Tải lại trước khi lưu.');
             // =====================================================================
             // Khóa Settings trước profile theo cùng thứ tự CRUD để tránh default
             // trỏ tới mẫu vừa bị tắt/xóa ở request đồng thời.

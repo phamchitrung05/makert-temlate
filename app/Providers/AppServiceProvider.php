@@ -24,7 +24,11 @@ use App\Services\Ai\Registries\PromptRegistry;
 use App\Services\Ai\Registries\ProviderRegistry;
 use App\Services\Ai\Registries\SchemaRegistry;
 use App\Services\Ai\Registries\TargetRegistry;
+use App\Services\Settings\ProjectSettingsService;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -98,6 +102,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Chỉ query khi xử lý đăng nhập, không đọc DB tại thời điểm provider boot.
+        RateLimiter::for('admin-login', function (Request $request) {
+            $security = app(ProjectSettingsService::class)->effective('security');
+
+            return Limit::perMinutes($security['login_decay_minutes'], $security['login_max_attempts'])
+                ->by($request->ip());
+        });
         $this->enforceMorphMap();
     }
 

@@ -170,7 +170,7 @@ describe('MediaLibraryDialog', () => {
 
     serviceMocks.service.list.mockResolvedValue({ items: [first, second], itemsLength: 2 })
 
-    const wrapper = mountDialog({ field: 'post.content_images', multiple: true, initialSelection: [first] })
+    const wrapper = mountDialog({ field: 'post.gallery', multiple: true, initialSelection: [first] })
 
     await flushPromises()
     expect(wrapper.text()).toContain('1 file đã chọn')
@@ -192,7 +192,7 @@ describe('MediaLibraryDialog', () => {
 
     serviceMocks.service.list.mockResolvedValue({ items: [second], itemsLength: 2 })
 
-    const wrapper = mountDialog({ field: 'post.content_images', multiple: true, initialSelection: [first, first] })
+    const wrapper = mountDialog({ field: 'post.gallery', multiple: true, initialSelection: [first, first] })
 
     await flushPromises()
     await wrapper.find('[data-testid="asset-2"]').trigger('click')

@@ -1,4 +1,7 @@
 <script setup>
+import { onMounted, computed } from 'vue'
+import { useSettingsLocales } from '@/composables/useSettingsLocales'
+
 const props = defineProps({
   languages: {
     type: Array,
@@ -12,6 +15,10 @@ const props = defineProps({
 })
 
 const { locale } = useI18n({ useScope: 'global' })
+const { languages: configuredLanguages, load } = useSettingsLocales()
+const availableLanguages = computed(() => configuredLanguages.value ?? props.languages)
+
+onMounted(load)
 </script>
 
 <template>
@@ -32,7 +39,7 @@ const { locale } = useI18n({ useScope: 'global' })
       >
         <!-- List item -->
         <VListItem
-          v-for="lang in props.languages"
+          v-for="lang in availableLanguages"
           :key="lang.i18nLang"
           :value="lang.i18nLang"
           @click="locale = lang.i18nLang"

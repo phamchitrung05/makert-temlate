@@ -141,12 +141,10 @@ export function analyzeSeo({ form = {}, slug = '', checked = false, url = '', co
   const keyword = normalizeKeyword(seo.focusKeyword ?? seo.focus_keyword ?? '')
   const contains = text => Boolean(keyword) && (` ${normalizeKeyword(text)} `).includes(` ${keyword} `)
   const featuredImage = form.thumbnail ?? form.featuredImage ?? form.cover ?? null
-  const contentImages = form.contentImages ?? form.imageGallery ?? form.content_images ?? form.preview ?? []
-  const inlineIds = new Set(content?.inlineAssetIds ?? [])
+  const galleryImages = form.galleryImages ?? form.imageGallery ?? form.gallery_images ?? form.preview ?? []
 
-  // Gallery chứa cả usage suy từ HTML; mỗi vị trí inline được kiểm alt trên HTML thật.
-  // Thumbnail vẫn là một vai trò riêng, còn gallery legacy chưa có trong HTML vẫn được kiểm.
-  const assets = [featuredImage, ...(Array.isArray(contentImages) ? contentImages : []).filter(asset => !inlineIds.has(String(asset?.id)))]
+  // Mỗi vị trí ảnh content kiểm alt trong HTML; gallery có metadata và vai trò riêng.
+  const assets = [featuredImage, ...(Array.isArray(galleryImages) ? galleryImages : [])]
   const uniqueAssets = [...new Map(assets.filter(Boolean).map(asset => [asset.id, asset])).values()]
   const images = [...(content?.images ?? []), ...uniqueAssets.map(asset => ({ alt: asset.alt_text?.trim() || asset.altText?.trim() || '' }))]
   const altCount = images.filter(image => image.alt).length
@@ -186,7 +184,7 @@ export function analyzeSeo({ form = {}, slug = '', checked = false, url = '', co
   add('heading', 'Có tiêu đề H2', headingCount >= 1, `${headingCount}/1`, 5, 'Chia nội dung thành các phần có tiêu đề H2.')
   add('links', 'Có liên kết nội bộ', linkCount >= 1, `${linkCount}/1`, 5, 'Thêm liên kết hữu ích đến trang cùng website.')
   add('thumbnail', 'Có Featured Image', Boolean(featuredImage?.id), `${featuredImage?.id ? 1 : 0}/1`, 5, 'Chọn ảnh đại diện từ Media Library.')
-  add('alt', 'Ảnh nội dung có mô tả alt', images.length > 0 && altCount === images.length, images.length ? `${altCount}/${images.length}` : 'Không áp dụng', 5, 'Bổ sung alt cho ảnh trong editor hoặc Media Library.', images.length > 0)
+  add('alt', 'Ảnh bài viết có mô tả alt', images.length > 0 && altCount === images.length, images.length ? `${altCount}/${images.length}` : 'Không áp dụng', 5, 'Bổ sung alt tại từng vị trí ảnh trong content và cho Thumbnail/Gallery.', images.length > 0)
 
   const applicable = rules.filter(rule => rule.status !== 'na')
   const total = applicable.reduce((sum, rule) => sum + rule.weight, 0)

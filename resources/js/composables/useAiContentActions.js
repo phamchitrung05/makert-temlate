@@ -4,7 +4,7 @@
  * CHỨC NĂNG FILE: Điều phối sửa, xóa và tạo lại candidate độc lập form tạo mới.
  * CÁC HÀM/METHOD TRONG FILE: useAiContentActions(), openEditor(), closeEditor(),
  * saveEditor(), requestAction(), closeAction(), confirmAction(), monitor(), checkRun(),
- * resumeRun(), messageOf(), runError(), busyId (computed), scope dispose.
+ * resumeRun(), trackRuns(), thumbnailAction(), messageOf(), runError(), busyId (computed), scope dispose.
  * INPUT/OUTPUT CỦA CLASS (tổng thể): item/action -> dialog, API và cập nhật list.
  * SIDE EFFECT: API candidate/Apply Post draft theo xác nhận; dọn timer khi unmount.
  * =====================================================================
@@ -13,6 +13,7 @@ import { computed, onScopeDispose, shallowRef } from 'vue'
 import { aiAgentService } from '@/services/aiAgent'
 import { buildAiContentRegenerateRequest } from '@/utils/aiContentInput'
 import { formatAiError, isAiSuccess } from '@/utils/aiErrors'
+import { isAiContentPending } from '@/utils/aiThumbnail'
 
 const terminal = ['ready', 'completed', 'succeeded', 'failed', 'cancelled', 'expired']
 
@@ -40,10 +41,11 @@ export function useAiContentActions({ updateSession, removeItem, onFeedback = ()
   const notice = shallowRef(null)
   const monitoring = new Map()
   const pendingChecks = new Set()
+  const thumbnailActionId = shallowRef(null)
   let editorVersion = 0
   let actionVersion = 0
   let disposed = false
-  const busyId = computed(() => editorSaving.value ? editor.value?.job_id : actionBusy.value ? action.value?.item.id : null)
+  const busyId = computed(() => thumbnailActionId.value ?? (editorSaving.value ? editor.value?.job_id : actionBusy.value ? action.value?.item.id : null))
   const runError = value => formatAiError(value, undefined, getOutputOptions())
 
   /**
@@ -147,8 +149,9 @@ export function useAiContentActions({ updateSession, removeItem, onFeedback = ()
    * =====================================================================
    */
   function monitor(session, attempts = 0) {
-    if (disposed || terminal.includes(session.status)) return
+    if (disposed || !isAiContentPending(session)) return
     if (attempts >= 120) {
+      monitoring.set(session.job_id, null)
       notice.value = { type: 'warning', message: 'Tác vụ vẫn đang xử lý. Bấm Kiểm tra tiến trình ở dòng bài để đọc tiếp.' }
 
       return
@@ -171,6 +174,7 @@ export function useAiContentActions({ updateSession, removeItem, onFeedback = ()
   async function checkRun(session, attempts = 0) {
     const id = session.job_id
     if (disposed || pendingChecks.has(id)) return
+    clearTimeout(monitoring.get(id))
     pendingChecks.add(id)
     try {
       const value = await aiAgentService.status(id, session.target_type ?? 'post')
@@ -179,7 +183,7 @@ export function useAiContentActions({ updateSession, removeItem, onFeedback = ()
       onFeedback(value)
       if (notice.value?.type === 'warning') notice.value = null
       if (value.status === 'failed') notice.value = { type: 'error', message: runError(value) }
-      if (terminal.includes(value.status)) monitoring.delete(id)
+      if (!isAiContentPending(value)) monitoring.delete(id)
       else monitor(value, attempts + 1)
     }
     catch {
@@ -200,6 +204,33 @@ export function useAiContentActions({ updateSession, removeItem, onFeedback = ()
     clearTimeout(monitoring.get(item.id))
 
     return checkRun({ job_id: item.id, target_type: item.targetType }, 0)
+  }
+
+  /** INPUT: list sau reload/poll và UUID đang theo dõi ở form. OUTPUT: resume run còn chạy, không POST hoặc gửi trùng GET. */
+  function trackRuns(items, ignoredJobId) {
+    for (const item of items) {
+      if (item.id === ignoredJobId || monitoring.has(item.id) || pendingChecks.has(item.id)) continue
+
+      const session = { job_id: item.id, target_type: item.targetType, status: item.status === 'generating' ? 'queued' : 'ready',
+        applied_target_id: item.status === 'applied' ? true : null, review: item.review, thumbnail_generation: item.thumbnailGeneration }
+
+      if ((item.status === 'generating' || item.status === 'review') && isAiContentPending(session)) monitor(session)
+    }
+  }
+
+  /** INPUT: thao tác retry/cancel riêng thumbnail. OUTPUT: parent mới và polling; không thêm image run vào list hay gọi lại model text. */
+  async function thumbnailAction(item, kind = 'retry') {
+    if (!item.thumbnailGeneration?.job_id || thumbnailActionId.value) return
+    thumbnailActionId.value = item.id
+    try {
+      if (kind === 'cancel') await aiAgentService.cancel(item.thumbnailGeneration.job_id)
+      else await aiAgentService.retry(item.thumbnailGeneration.job_id)
+      if (disposed) return
+      await checkRun({ job_id: item.id, target_type: item.targetType })
+      notice.value = { type: 'success', message: kind === 'cancel' ? 'Đã hủy tạo ảnh. Bài viết được giữ nguyên.' : 'Đã xếp hàng thử lại thumbnail AI.' }
+    }
+    catch (error) { if (!disposed) notice.value = { type: 'error', message: messageOf(error) } }
+    finally { if (!disposed) thumbnailActionId.value = null }
   }
 
   /**
@@ -259,5 +290,5 @@ export function useAiContentActions({ updateSession, removeItem, onFeedback = ()
   })
 
   return { editor, editorLoading, editorSaving, editorError, action, actionBusy, actionError, notice, busyId,
-    openEditor, closeEditor, saveEditor, requestAction, closeAction, confirmAction, resumeRun }
+    openEditor, closeEditor, saveEditor, requestAction, closeAction, confirmAction, resumeRun, trackRuns, thumbnailAction }
 }

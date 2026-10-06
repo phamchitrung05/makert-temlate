@@ -40,6 +40,7 @@ export const withoutAiTaxonomyOutputs = (outputs = []) => outputs.filter(output 
 export const createAiContentSource = (defaults = {}) => ({
   targetType: 'post', type: 'url', url: '', text: '', html: '', prompt: '', file: null,
   provider: '', model: '', language: 'vi', length: 'medium',
+  thumbnailMode: 'source', imageModelId: null, thumbnailPrompt: '',
   outputs: Array.isArray(defaults.outputs) ? withoutAiTaxonomyOutputs(defaults.outputs) : null,
   title: '', instructions: '', sourceEncoding: 'UTF-8', writing: emptyWritingPreferences(), category_ids: [], tag_ids: [],
 })
@@ -66,6 +67,10 @@ export function validateAiContentSource(source, catalog) {
 
   if (!outputs.length) return 'Chọn ít nhất một hạng mục AI sẽ tạo.'
   if (outputs.some(output => !availableOutputs.includes(output))) return 'Chọn các hạng mục AI được hỗ trợ cho tài nguyên và nguồn này.'
+  if (outputs.includes('thumbnail') && source.thumbnailMode === 'generate'
+    && !(catalog.imageModelOptions ?? []).some(option => option.value === source.imageModelId))
+    return 'Chọn model ảnh đã bật và khả dụng để tạo thumbnail AI.'
+  if ((source.thumbnailPrompt ?? '').length > 4000) return 'Yêu cầu tạo ảnh tối đa 4.000 ký tự.'
   if (!outputs.includes('title') && !source.title.trim()) return 'Nhập tiêu đề hoặc chọn hạng mục Tiêu đề để AI tạo.'
   if (source.title.length > 255) return 'Tiêu đề không được dài quá 255 ký tự.'
   if (source.type === 'url') {
@@ -128,7 +133,7 @@ export function extractHtmlText(html) {
  * =====================================================================
  */
 export async function buildAiContentRequest(source, model) {
-  const outputs = withoutAiTaxonomyOutputs([...new Set(source.outputs ?? [])]).filter(output => output !== 'thumbnail' || source.type === 'url')
+  const outputs = withoutAiTaxonomyOutputs([...new Set(source.outputs ?? [])]).filter(output => output !== 'thumbnail' || source.type === 'url' || source.thumbnailMode === 'generate')
   let input
   let rawSource = {}
   if (source.type === 'url') input = { type: 'url', url: source.url.trim() }
@@ -165,7 +170,8 @@ export async function buildAiContentRequest(source, model) {
     ...(source.type === 'html' ? { source_encoding: source.sourceEncoding || 'UTF-8' } : {}),
     requested_outputs: outputs,
     generate_seo: outputs.includes('seo'),
-    generate_thumbnail: outputs.includes('thumbnail') && source.type === 'url', thumbnail_mode: 'source',
+    generate_thumbnail: outputs.includes('thumbnail'), thumbnail_mode: source.thumbnailMode || 'source',
+    ...(outputs.includes('thumbnail') && source.thumbnailMode === 'generate' ? { image_model_id: source.imageModelId, thumbnail_prompt: source.thumbnailPrompt?.trim() || '' } : {}),
   })
 }
 
@@ -204,7 +210,7 @@ export function buildAiContentRegenerateRequest(options = {}) {
   if (options.fields?.length && !payload.fields.length)
     throw new Error('Chọn hạng mục AI được hỗ trợ để tạo lại; danh mục và tag được chọn thủ công.')
 
-  for (const key of ['instructions', 'prompt_key', 'provider', 'model', 'model_id']) {
+  for (const key of ['instructions', 'prompt_key', 'provider', 'model', 'model_id', 'thumbnail_mode', 'thumbnail_prompt', 'image_model_id']) {
     const value = options[key]
     if (value !== null && value !== undefined && value !== '') payload[key] = value
   }

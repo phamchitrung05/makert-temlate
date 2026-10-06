@@ -69,6 +69,7 @@ describe('AI & Content persisted settings', () => {
     expect(state.form.value).toEqual({
       defaultProviderId: 1,
       defaultTextModelId: 10,
+      defaultWritingProfileId: null,
       defaultImageModelId: 11,
       temperature: 1.1,
       minWordCount: 250,
@@ -251,6 +252,31 @@ describe('AI & Content persisted settings', () => {
     expect(state.fieldErrors.value.default_system_prompt).toEqual(['Prompt quá dài.'])
     expect(await state.saveSettings()).toBe(true)
     expect(state.fieldErrors.value).toEqual({})
+  })
+
+  it('saves writing defaults using the shared version and keeps edits on conflict', async () => {
+    service.list.mockResolvedValueOnce({
+      ...fixture(),
+      writing_profiles: [{ id: 7, name: 'Văn phong kỹ thuật' }],
+      settings: { ...fixture().settings, default_writing_profile_id: 7, settings_version: 'a'.repeat(64) },
+    })
+
+    const state = useAiContentSettings()
+
+    await state.loadSettings()
+    expect(state.form.value.defaultWritingProfileId).toBe(7)
+    expect(state.writingProfileOptions.value).toEqual([{ title: 'Văn phong kỹ thuật', value: 7 }])
+    expect(state.dirty.value).toBe(false)
+    state.updateField('defaultWritingProfileId', null)
+    service.updateSettings.mockRejectedValueOnce({ status: 409, data: { message: 'Đã thay đổi' } })
+    await state.saveSettings()
+    expect(service.updateSettings).toHaveBeenCalledWith(expect.objectContaining({
+      default_writing_profile_id: null, settings_version: 'a'.repeat(64),
+    }))
+    expect(state.dirty.value).toBe(true)
+    expect(state.conflict.value).toBe(true)
+    expect(await state.saveSettings()).toBe(false)
+    expect(service.updateSettings).toHaveBeenCalledOnce()
   })
 
   it('prevents duplicate writes and freezes field editing until the write completes', async () => {

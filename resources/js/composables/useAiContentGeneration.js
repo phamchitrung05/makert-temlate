@@ -14,6 +14,7 @@ import { computed, onScopeDispose, shallowRef } from 'vue'
 import { aiAgentService } from '@/services/aiAgent'
 import { buildAiContentRequest, validateAiContentSource } from '@/utils/aiContentInput'
 import { formatAiError } from '@/utils/aiErrors'
+import { isAiContentPending } from '@/utils/aiThumbnail'
 
 const terminalStatuses = ['ready', 'completed', 'succeeded', 'failed', 'cancelled', 'expired']
 
@@ -66,7 +67,7 @@ export function useAiContentGeneration(source, catalog, onSession, onFeedback = 
    */
   function schedulePoll(token) {
     clearTimeout(timer)
-    if (!busy.value || token !== version) return
+    if (!session.value || !isAiContentPending(session.value) || token !== version) return
     if (attempts >= 120) {
       monitorMessage.value = 'Tác vụ vẫn đang xử lý. Bấm Cập nhật trạng thái để kiểm tra tiếp.'
 

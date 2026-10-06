@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
+use App\Services\Settings\ProjectSettingsService;
 use Illuminate\Contracts\View\View;
 
 /**
@@ -43,8 +44,10 @@ class HomeController extends Controller
      * - Không mở transaction và không ném exception nghiệp vụ
      * =====================================================================
      */
-    public function index(): View
+    public function index(ProjectSettingsService $settings): View
     {
-        return view('public.home');
+        return view('public.home', [
+            'site' => $settings->effective('site'), 'seo' => $settings->effective('seo'),
+        ]);
     }
 }

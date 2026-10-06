@@ -20,7 +20,7 @@
   =====================================================================
 -->
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import AiContentList from '@/views/ai/content/AiContentList.vue'
 import AiContentCreateForm from '@/views/ai/content/AiContentCreateForm.vue'
 import { useAiContentWorkspace } from '@/composables/useAiContentWorkspace'
@@ -44,9 +44,12 @@ const onRunFeedback = (run, fallback, options = catalog.value.outputOptions) => 
 const { generation, generate, retryRun, reset, resumePolling, cancel } = useAiContentGeneration(source, catalog, updateSession, onRunFeedback)
 
 const { editor, editorLoading, editorSaving, editorError, action, actionBusy, actionError, notice, busyId,
-  openEditor, closeEditor, saveEditor, requestAction, closeAction, confirmAction, resumeRun } = useAiContentActions({
+  openEditor, closeEditor, saveEditor, requestAction, closeAction, confirmAction, resumeRun, trackRuns, thumbnailAction } = useAiContentActions({
   updateSession, removeItem, onFeedback: onRunFeedback, getOutputOptions: () => catalog.value.outputOptions,
 })
+
+// INPUT: list/form hiện hành. OUTPUT: theo dõi lại thumbnail còn chạy sau reload.
+watch([items, () => generation.value.session?.job_id], () => trackRuns(items.value, generation.value.session?.job_id))
 
 const { state: reviewState, notice: reviewNotice, openReview, loadReview, loadHistory, requestDecision,
   closeDecision, confirmDecision, closeReview, finishClose } = useAiContentReview(updateSession, notice)
@@ -133,6 +136,8 @@ function createNew() {
           @apply="openReview"
           @review="openReview"
           @cancel="requestAction('cancel', $event)"
+          @retry-thumbnail="thumbnailAction($event)"
+          @cancel-thumbnail="thumbnailAction($event, 'cancel')"
         />
       </VCol>
       <VCol
@@ -164,6 +169,7 @@ function createNew() {
       :action="action"
       :busy="actionBusy"
       :error="actionError"
+      :catalog="catalog"
       @confirm="confirmAction"
       @close="closeAction"
     />

@@ -5,6 +5,9 @@ import { themeConfig } from '@themeConfig'
 const messages = Object.fromEntries(Object.entries(import.meta.glob('./locales/*.json', { eager: true }))
   .map(([key, value]) => [key.slice(10, -5), value.default]))
 
+// Chụp trước initCore ghi cookie mặc định để phân biệt khách chưa chọn ngôn ngữ.
+export const hasLanguagePreference = Boolean(cookieRef('language', null).value)
+
 let _i18n = null
 export const getI18n = () => {
   if (_i18n === null) {

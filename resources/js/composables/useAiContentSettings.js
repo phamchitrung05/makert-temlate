@@ -15,6 +15,7 @@ const fieldKeys = {
   defaultProviderId: 'default_text_model_id',
   defaultTextModelId: 'default_text_model_id',
   defaultImageModelId: 'default_image_model_id',
+  defaultWritingProfileId: 'default_writing_profile_id',
   temperature: 'default_temperature',
   minWordCount: 'min_word_count',
   systemPrompt: 'default_system_prompt',
@@ -29,10 +30,13 @@ const numericValue = value => value === '' || value === null || value === undefi
 
 /** Canonical settings stay on the server; provider selection is derived from the model catalog. */
 export function useAiContentSettings() {
-  const { providers, presets, settings, loading, error, load, updateSettings } = useAiProviderSettings()
+  const { providers, presets, writingProfiles, settings, loading, error, load, updateSettings } = useAiProviderSettings()
   const loaded = shallowRef(false)
   const saving = shallowRef(false)
   const form = shallowRef({})
+  const baseline = shallowRef('')
+  const dirty = computed(() => JSON.stringify(form.value) !== baseline.value && loaded.value)
+  const conflict = shallowRef(false)
   const fieldErrors = shallowRef({})
   const notice = shallowRef(null)
   const catalogNotice = shallowRef('')
@@ -40,6 +44,15 @@ export function useAiContentSettings() {
 
   const availableProviders = computed(() => providers.value.filter(provider => provider.is_active
     && provider.has_api_key && textModels(provider).length))
+
+  const writingProfileOptions = computed(() => {
+    const available = writingProfiles.value.map(profile => ({ title: profile.name, value: profile.id }))
+    const savedId = settings.value.default_writing_profile_id
+    if (savedId && !available.some(profile => profile.value === savedId))
+      available.push({ title: `Mẫu #${savedId} hiện không khả dụng`, value: savedId, props: { disabled: true } })
+
+    return available
+  })
 
   const providerOptions = computed(() => availableProviders.value.map(provider => ({ title: provider.name, value: provider.id })))
   const selectedProvider = computed(() => availableProviders.value.find(provider => provider.id === form.value.defaultProviderId))
@@ -71,12 +84,15 @@ export function useAiContentSettings() {
       defaultProviderId: provider?.id ?? null,
       defaultTextModelId: provider ? defaultModelId : null,
       defaultImageModelId: imageModelAvailable ? defaultImageModelId : null,
+      defaultWritingProfileId: settings.value.default_writing_profile_id ?? null,
       temperature: settings.value.default_temperature ?? 0.2,
       minWordCount: settings.value.min_word_count ?? 0,
       systemPrompt: settings.value.default_system_prompt ?? '',
       autoThumbnail: settings.value.auto_thumbnail ?? true,
       autoSeo: settings.value.auto_seo ?? true,
     }
+    baseline.value = JSON.stringify(form.value)
+    conflict.value = false
   }
 
   /** Load/retry without rejecting an event handler; editing stays disabled until data is loaded. */
@@ -125,7 +141,7 @@ export function useAiContentSettings() {
 
   /** Save only this tab's canonical fields; keep edits and field errors when the API rejects them. */
   async function saveSettings() {
-    if (!canSave.value) return false
+    if (!canSave.value || conflict.value) return false
     saving.value = true
     notice.value = null
     fieldErrors.value = {}
@@ -133,6 +149,7 @@ export function useAiContentSettings() {
       await updateSettings({
         default_text_model_id: form.value.defaultTextModelId,
         default_image_model_id: form.value.defaultImageModelId,
+        ...(Object.hasOwn(settings.value, 'default_writing_profile_id') ? { default_writing_profile_id: form.value.defaultWritingProfileId } : {}),
         default_temperature: numericValue(form.value.temperature),
         min_word_count: numericValue(form.value.minWordCount),
         default_system_prompt: form.value.systemPrompt,
@@ -145,6 +162,7 @@ export function useAiContentSettings() {
       return true
     }
     catch (reason) {
+      conflict.value = reason?.status === 409 || reason?.response?.status === 409
       fieldErrors.value = reason?.data?.errors ?? {}
       notice.value = {
         type: 'error',
@@ -160,5 +178,13 @@ export function useAiContentSettings() {
     }
   }
 
-  return { form, loading, loaded, error, saving, notice, catalogNotice, imageCatalogNotice, fieldErrors, providerOptions, modelOptions, imageModelOptions, canSave, loadSettings, updateField, saveSettings }
+  /** Reset form về snapshot, không gọi API hoặc thay provider catalog. */
+  function resetSettings() {
+    if (saving.value || !baseline.value) return
+    form.value = JSON.parse(baseline.value)
+    notice.value = null
+    fieldErrors.value = {}
+  }
+
+  return { form, loading, loaded, error, saving, notice, catalogNotice, imageCatalogNotice, fieldErrors, providerOptions, modelOptions, imageModelOptions, writingProfileOptions, canSave, dirty, conflict, resetSettings, loadSettings, updateField, saveSettings }
 }

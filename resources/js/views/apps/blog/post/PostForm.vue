@@ -79,7 +79,7 @@ const form = reactive({
   tags: [],
   options: createPostOptions(),
   thumbnail: null,
-  contentImages: [],
+  galleryImages: [],
   aiLineage: [],
 })
 
@@ -131,7 +131,7 @@ const sync = post => {
   form.tags = Array.isArray(post?.tags) ? post.tags.map(tag => typeof tag === 'object' ? tag.id : tag) : []
   form.options = createPostOptions()
   form.thumbnail = post?.media?.thumbnail ?? null
-  form.contentImages = Array.isArray(post?.media?.content_images) ? post.media.content_images : []
+  form.galleryImages = Array.isArray(post?.media?.gallery_images) ? post.media.gallery_images : []
   form.aiLineage = []
   resetSlug(post)
 }
@@ -168,7 +168,7 @@ const submit = async (status = form.status) => {
     categories: [...form.categories],
     tags: [...form.tags],
     thumbnail: form.thumbnail,
-    contentImages: form.contentImages,
+    galleryImages: [...form.galleryImages],
     aiRuns: activeAiLineage(form.aiLineage, form),
   })
 }
@@ -341,7 +341,7 @@ const commitAiThumbnail = () => {
         >
           <PostMediaPanel
             v-model:thumbnail="form.thumbnail"
-            v-model:content-images="form.contentImages"
+            v-model:gallery-images="form.galleryImages"
             :title="form.title"
             :disabled="props.loading || props.saving"
             @ai-image-applied="applyAiThumbnail"

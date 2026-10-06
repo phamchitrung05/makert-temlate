@@ -1,11 +1,15 @@
 @extends('layouts.public')
 
-@section('title', config('app.name'))
-@section('meta_description', 'Nền tảng bán và phân phối tài nguyên số cho developer và designer.')
+@section('title', $site['site_name'])
+@section('meta_description', $seo['default_description'] ?: $site['site_description'])
+
+@push('meta')
+  <link rel="canonical" href="{{ rtrim($site['site_url'], '/') }}/" />
+@endpush
 
 @section('content')
   <section class="container">
-    <h1>{{ config('app.name') }}</h1>
+    <h1>{{ $site['site_name'] }}</h1>
 
     <p>
       Trang chủ public đã được tách khỏi admin dashboard. Nội dung catalog, blog và

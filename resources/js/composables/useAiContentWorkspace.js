@@ -36,6 +36,7 @@ function toListItem(summary, previous) {
     errorCode: summary.error_code ?? null,
     validationErrors: summary.validation_errors ?? [],
     thumbnail: summary.thumbnail === undefined ? previous?.thumbnail ?? null : summary.thumbnail,
+    thumbnailGeneration: summary.thumbnail_generation === undefined ? previous?.thumbnailGeneration ?? null : summary.thumbnail_generation,
     review: summary.review ?? previous?.review ?? null,
     source: summary.source_host || previous?.source || (summary.source_type === 'url' ? 'Nguồn URL' : 'Nội dung văn bản'),
     date: date.toLocaleDateString('vi-VN'), time: date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
@@ -107,7 +108,7 @@ export function useAiContentWorkspace() {
 
   /** Input: lựa chọn tự động mặc định hiện tại. Output: nguồn trống giữ provider/model; không thêm bản ghi giả vào list. */
   function resetSource(defaults = {}) {
-    source.value = { ...createAiContentSource(defaults), targetType: source.value.targetType, provider: source.value.provider, model: source.value.model }
+    source.value = { ...createAiContentSource(defaults), targetType: source.value.targetType, provider: source.value.provider, model: source.value.model, imageModelId: source.value.imageModelId }
   }
 
   onScopeDispose(() => { loadVersion += 1 })

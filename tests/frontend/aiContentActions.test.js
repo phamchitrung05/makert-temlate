@@ -15,7 +15,7 @@ import { buildAiContentRegenerateRequest, buildAiContentRequest, createAiContent
 import { useAiRunFeedback } from '@/composables/useAiRunFeedback'
 
 const { service } = vi.hoisted(() => ({ service: {
-  status: vi.fn(), updateCandidate: vi.fn(), regenerate: vi.fn(), removeSession: vi.fn(), listSessions: vi.fn(), applyCandidate: vi.fn(), cancel: vi.fn(),
+  status: vi.fn(), updateCandidate: vi.fn(), regenerate: vi.fn(), removeSession: vi.fn(), listSessions: vi.fn(), applyCandidate: vi.fn(), cancel: vi.fn(), retry: vi.fn(),
 } }))
 
 vi.mock('@/services/aiAgent', () => ({ aiAgentService: service }))
@@ -50,6 +50,41 @@ beforeEach(() => {
 afterEach(() => { scope.stop(); vi.useRealTimers() })
 
 describe('AI Content actions', () => {
+  it('retries only the image child and monitors its parent without adding an image row', async () => {
+    const s = state()
+    const item = { ...parent, thumbnailGeneration: { job_id: 'image-1', status: 'failed' } }
+    const ready = { job_id: parent.id, status: 'ready', target_type: 'sound', draft: { title: parent.title }, thumbnail_generation: { job_id: 'image-1', status: 'queued' } }
+
+    service.retry.mockResolvedValue({ job_id: 'image-1', status: 'queued', operation: 'image' })
+    service.status.mockResolvedValueOnce(ready).mockResolvedValueOnce({ ...ready, thumbnail: { id: 88 }, thumbnail_generation: { job_id: 'image-1', status: 'ready' } })
+    await s.thumbnailAction(item)
+    expect(service.retry).toHaveBeenCalledExactlyOnceWith('image-1')
+    expect(s.items.value).toHaveLength(1)
+    await vi.advanceTimersByTimeAsync(1500)
+    expect(s.items.value[0].thumbnail.id).toBe(88)
+    expect(service.regenerate).not.toHaveBeenCalled()
+    expect(service.status).toHaveBeenLastCalledWith(parent.id, 'sound')
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('resumes pending thumbnail after reload and cancels only its child', async () => {
+    const s = state()
+    const item = { ...parent, thumbnailGeneration: { job_id: 'image-1', status: 'queued' } }
+
+    service.status.mockResolvedValue({ job_id: parent.id, status: 'ready', thumbnail_generation: { job_id: 'image-1', status: 'generating' } })
+    s.trackRuns([item])
+    s.trackRuns([item])
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(service.status).toHaveBeenCalledOnce()
+    service.cancel.mockResolvedValue({ job_id: 'image-1', status: 'cancelled' })
+    service.status.mockResolvedValue({ job_id: parent.id, status: 'ready', thumbnail_generation: { job_id: 'image-1', status: 'cancelled' } })
+    await s.thumbnailAction(item, 'cancel')
+    expect(service.cancel).toHaveBeenCalledExactlyOnceWith('image-1')
+    expect(s.items.value[0].thumbnailGeneration.status).toBe('cancelled')
+    expect(service.retry).not.toHaveBeenCalled()
+    scope.stop()
+    expect(vi.getTimerCount()).toBe(0)
+  })
   it('reports an immediately failed child without a queued success notice and preserves the parent', async () => {
     const s = state()
 

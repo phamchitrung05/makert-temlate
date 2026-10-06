@@ -6,7 +6,7 @@ export const db = {
       title: 'Welcome to the Media Library',
       content: 'Demo post',
       status: 'draft',
-      media: { thumbnail_id: null, content_image_ids: [] },
+      media: { thumbnail_id: null, gallery_image_ids: [] },
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     },

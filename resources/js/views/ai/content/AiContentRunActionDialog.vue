@@ -18,8 +18,9 @@ import { emptyWritingPreferences, writingOptions } from '@/utils/aiArticleOption
 import AiWritingPreferences from '@/views/ai/shared/AiWritingPreferences.vue'
 import AiManualTaxonomyFields from '@/views/ai/shared/AiManualTaxonomyFields.vue'
 import AiPipelineReport from '@/views/ai/shared/AiPipelineReport.vue'
+import AiThumbnailOptions from '@/views/ai/shared/AiThumbnailOptions.vue'
 
-const props = defineProps({ action: { type: Object, default: null }, busy: Boolean, error: { type: String, default: '' } })
+const props = defineProps({ action: { type: Object, default: null }, busy: Boolean, error: { type: String, default: '' }, catalog: { type: Object, default: () => ({}) } })
 const emit = defineEmits(['confirm', 'close'])
 const fields = ref([])
 const instructions = ref('')
@@ -29,6 +30,7 @@ const tagIds = ref([])
 const manualOverride = ref(false)
 const taxonomyConfirmed = ref(false)
 const refreshSource = ref(false)
+const thumbnail = ref({ thumbnailMode: 'source', imageModelId: null, thumbnailPrompt: '' })
 const capability = shallowRef({})
 const loadingCapabilities = shallowRef(false)
 const capabilityError = shallowRef('')
@@ -37,6 +39,7 @@ const applying = computed(() => props.action?.kind === 'apply')
 const cancelling = computed(() => props.action?.kind === 'cancel')
 const regenerating = computed(() => props.action?.kind === 'regenerate')
 const legacyTaxonomy = computed(() => applying.value && props.action?.session?.draft?.taxonomy_origin !== 'manual')
+const thumbnailRequested = computed(() => regenerating.value && capability.value.outputs?.includes('thumbnail') && (!fields.value.length || fields.value.includes('thumbnail')))
 
 const fieldOptions = computed(() => applying.value
   ? ['title', 'excerpt', 'content', 'seo', 'taxonomy', ...(props.action?.session?.thumbnail ? ['thumbnail'] : [])].map(value => ({ title: { title: 'Tiêu đề', excerpt: 'Tóm tắt', content: 'Nội dung', seo: 'SEO', taxonomy: 'Danh mục và tag thủ công', thumbnail: 'Ảnh đại diện' }[value], value }))
@@ -44,6 +47,7 @@ const fieldOptions = computed(() => applying.value
 
 const blocked = computed(() => props.busy || props.action?.loading || props.action?.loadFailed
   || (regenerating.value && (loadingCapabilities.value || Boolean(capabilityError.value)))
+  || (thumbnailRequested.value && thumbnail.value.thumbnailMode === 'generate' && !(props.catalog.imageModelOptions ?? []).some(option => option.value === thumbnail.value.imageModelId))
   || (applying.value && (!fields.value.length || props.action?.session?.status !== 'ready' || props.action?.session?.applied_target_id || props.action?.session?.review?.status === 'rejected' || (legacyTaxonomy.value && fields.value.includes('taxonomy') && !taxonomyConfirmed.value))))
 
 // =====================================================================
@@ -80,6 +84,8 @@ watch(() => props.action?.session, session => {
   if (!session) return
   categoryIds.value = session.draft?.taxonomy_origin === 'manual' ? [...(session.draft.category_ids ?? [])] : []
   tagIds.value = session.draft?.taxonomy_origin === 'manual' ? [...(session.draft.tag_ids ?? [])] : []
+  thumbnail.value = { thumbnailMode: session.thumbnail_options?.mode || 'source', imageModelId: session.thumbnail_options?.model_id ?? props.catalog.defaultImageModelId ?? null,
+    thumbnailPrompt: session.thumbnail_options?.prompt || '' }
 }, { immediate: true })
 
 /**
@@ -93,6 +99,8 @@ function confirm() {
   emit('confirm', {
     fields: fields.value ?? [],
     ...(regenerating.value ? { instructions: instructions.value, ...writingOptions(writing.value, true), ...(refreshSource.value ? { refresh_source: true } : {}) } : {}),
+    ...(thumbnailRequested.value ? { thumbnail_mode: thumbnail.value.thumbnailMode,
+      ...(thumbnail.value.thumbnailMode === 'generate' ? { image_model_id: thumbnail.value.imageModelId, thumbnail_prompt: thumbnail.value.thumbnailPrompt } : {}) } : {}),
     ...(applying.value || manualOverride.value ? { category_ids: categoryIds.value ?? [], tag_ids: tagIds.value ?? [] } : {}),
   })
 }
@@ -141,6 +149,13 @@ function confirm() {
             :disabled="props.busy || props.action?.loading || loadingCapabilities"
           />
           <template v-if="regenerating">
+            <AiThumbnailOptions
+              v-if="thumbnailRequested"
+              v-model="thumbnail"
+              :catalog="props.catalog"
+              :disabled="props.busy || props.action?.loading"
+              class="mb-4"
+            />
             <AiWritingPreferences
               v-model="writing"
               regenerate

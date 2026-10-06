@@ -3,14 +3,21 @@
   CHỨC NĂNG FILE: So sánh văn bản nguồn đã lưu và bài AI mà không chạy HTML nguồn.
   =====================================================================
   CÁC HÀM/METHOD TRONG FILE: plainText(); sourceText/resultText (computed).
-  INPUT/OUTPUT CỦA CLASS (tổng thể): source/draft -> hai panel text đã escape.
+  INPUT/OUTPUT CỦA CLASS (tổng thể): source/draft/loading/active -> hai panel text đã escape.
+  Khi chưa tải xong, hiện trạng thái chờ thay vì kết luận nguồn không tồn tại.
+  active=false giữ khung, trì hoãn parse/render text dài trong hiệu ứng mở dialog.
   SIDE EFFECT: chỉ parse DOM rời để lấy text; không fetch hoặc gọi API/AI.
   =====================================================================
 -->
 <script setup>
 import { computed } from 'vue'
 
-const props = defineProps({ source: { type: Object, default: null }, draft: { type: Object, default: null } })
+const props = defineProps({
+  source: { type: Object, default: null },
+  draft: { type: Object, default: null },
+  loading: { type: Boolean, default: false },
+  active: { type: Boolean, default: true },
+})
 
 /** Input: HTML đã lưu. Output: text giữ ranh giới đoạn/code, bỏ script/style; không attach DOM. */
 function plainText(html) {
@@ -27,8 +34,8 @@ function plainText(html) {
   return (parsed.textContent || '').replace(/\n{3,}/g, '\n\n').trim()
 }
 
-const sourceText = computed(() => plainText(props.source?.content_html))
-const resultText = computed(() => plainText(props.draft?.content_html ?? props.draft?.content))
+const sourceText = computed(() => props.active ? plainText(props.source?.content_html) : '')
+const resultText = computed(() => props.active ? plainText(props.draft?.content_html ?? props.draft?.content) : '')
 </script>
 
 <template>
@@ -40,6 +47,9 @@ const resultText = computed(() => plainText(props.draft?.content_html ?? props.d
       <h3 class="text-subtitle-1 mb-2">
         Nguồn đã lưu
       </h3>
+      <p class="text-caption text-medium-emphasis">
+        Bản chụp nội dung đầu vào lúc tạo bài.
+      </p>
       <p
         v-if="props.source?.title"
         class="text-body-2 font-weight-medium"
@@ -47,10 +57,16 @@ const resultText = computed(() => plainText(props.draft?.content_html ?? props.d
         {{ props.source.title }}
       </p>
       <pre
-        v-if="props.source?.available"
+        v-if="props.active && props.source?.available"
         class="ai-content-comparison__text"
         aria-label="Văn bản nguồn"
       >{{ sourceText }}</pre>
+      <p
+        v-else-if="props.loading"
+        class="text-body-2"
+      >
+        Đang tải nguồn đã lưu…
+      </p>
       <VAlert
         v-else
         type="info"
@@ -66,6 +82,9 @@ const resultText = computed(() => plainText(props.draft?.content_html ?? props.d
       <h3 class="text-subtitle-1 mb-2">
         Nội dung AI sau biên tập
       </h3>
+      <p class="text-caption text-medium-emphasis">
+        Bản nháp hiện tại, gồm những chỉnh sửa đã lưu.
+      </p>
       <p
         v-if="props.draft?.title"
         class="text-body-2 font-weight-medium"
@@ -75,7 +94,7 @@ const resultText = computed(() => plainText(props.draft?.content_html ?? props.d
       <pre
         class="ai-content-comparison__text"
         aria-label="Văn bản AI"
-      >{{ resultText || 'Chưa có nội dung sẵn sàng.' }}</pre>
+      >{{ resultText || (props.loading ? 'Đang tải nội dung AI…' : 'Chưa có nội dung sẵn sàng.') }}</pre>
     </VCol>
   </VRow>
 </template>

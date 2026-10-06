@@ -27,6 +27,8 @@ namespace App\Enums;
 enum MediaAssetField: string
 {
     case PostThumbnail = 'post.thumbnail';
+    case PostGallery = 'post.gallery';
+    // Chỉ giữ để đọc dữ liệu/rollback cũ; không còn là field được phép attach.
     case PostContentImages = 'post.content_images';
     case PostOgImage = 'post.og_image';
     case ResourceCover = 'resource.cover';
@@ -44,7 +46,8 @@ enum MediaAssetField: string
      */
     public static function values(): array
     {
-        return array_column(self::cases(), 'value');
+        return array_values(array_filter(array_column(self::cases(), 'value'),
+            fn (string $field): bool => $field !== self::PostContentImages->value));
     }
 
     /**
@@ -59,7 +62,7 @@ enum MediaAssetField: string
     {
         return [
             'post.thumbnail' => 'Post thumbnail',
-            'post.content_images' => 'Post content images',
+            'post.gallery' => 'Post image gallery',
             'post.og_image' => 'Post Open Graph image',
             'resource.cover' => 'Resource cover',
             'resource.preview' => 'Resource preview',
@@ -80,6 +83,7 @@ enum MediaAssetField: string
     {
         return match ($this) {
             self::PostThumbnail,
+            self::PostGallery,
             self::PostContentImages,
             self::PostOgImage,
             self::ResourceCover,
@@ -100,6 +104,7 @@ enum MediaAssetField: string
     public function allowsMultiple(): bool
     {
         return match ($this) {
+            self::PostGallery,
             self::PostContentImages,
             self::ResourcePreview,
             self::ResourceVersionDocumentation => true,

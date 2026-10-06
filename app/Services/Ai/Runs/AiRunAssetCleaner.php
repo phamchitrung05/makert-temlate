@@ -23,11 +23,11 @@ final class AiRunAssetCleaner
 {
     /**
      * =====================================================================
-     * CHỨC NĂNG: Dọn asset tạm không còn usage hoặc candidate đang giữ
+     * CHỨC NĂNG: Dọn asset tạm không còn usage, link trong Post hoặc candidate đang giữ.
      * =====================================================================
      * INPUT: AiImport hết hạn/bị xóa hoặc bị hủy.
      * OUTPUT: không trả giá trị; giữ asset vẫn được dùng bởi Post/candidate khác.
-     * SIDE EFFECT: Query usage/candidate, clear media collection và soft-delete orphan asset.
+     * SIDE EFFECT: Đọc usage/HTML Post/candidate, clear media collection và soft-delete orphan asset.
      * EXCEPTION/TRANSACTION: Transaction/row lock cho từng asset; lỗi DB/storage truyền lên caller.
      * =====================================================================
      */
@@ -38,10 +38,14 @@ final class AiRunAssetCleaner
             data_get($import->result_json, 'image.media_asset_id'),
         ]));
         foreach ($ids as $id) {
-            // INPUT: asset tạm. OUTPUT: quyết định xóa dưới cùng row lock với lưu Post/candidate.
+            // INPUT: asset tạm. OUTPUT: quyết định cleanup dưới row lock của asset, không tạo usage content.
             DB::transaction(function () use ($id, $import): void {
                 $asset = MediaAsset::query()->whereKey($id)->lockForUpdate()->first();
                 if (! $asset || $asset->usages()->exists()) {
+                    return;
+                }
+                // Post chỉ giữ URL trong HTML; cleanup đọc link để giữ file, không tạo usage content.
+                if (app(ContentMediaReferenceService::class)->isLinkedFromPost($asset)) {
                     return;
                 }
                 if (! app(ContentMediaReferenceService::class)->isReferencedByRetainedAiRun((int) $id, $import->id)) {

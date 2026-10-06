@@ -9,7 +9,7 @@
   editorDialogChanged(): báo cửa sổ TinyMCE để dialog cha nhường focus tạm thời;
   onBeforeUnmount(): dọn bộ đếm thời gian và media scope.
   INPUT/OUTPUT CỦA CLASS (tổng thể): HTML/disabled/placeholder -> HTML, media-busy, editor-dialog;
-  chọn/upload từ editor, backend xác nhận MediaAsset ID/URL khi lưu.
+  Post chèn link ảnh không tạo quan hệ; candidate AI giữ ref nội bộ khi được yêu cầu.
   Chỉ bật self-host khi chủ dự án cấu hình GPL rõ ràng, hoặc dùng Tiny Cloud key.
   =====================================================================
 -->
@@ -20,7 +20,12 @@ import Editor from '@tinymce/tinymce-vue'
 import MediaLibraryDialog from '@/views/apps/media/field/MediaLibraryDialog.vue'
 import { usePostInlineMedia } from '@/composables/usePostInlineMedia'
 
-const props = defineProps({ disabled: { type: Boolean, default: false }, placeholder: { type: String, default: 'Start writing your post...' } })
+const props = defineProps({
+  disabled: { type: Boolean, default: false },
+  placeholder: { type: String, default: 'Start writing your post...' },
+  mediaReferences: { type: Boolean, default: false },
+})
+
 const emit = defineEmits(['mediaBusy', 'editorDialog'])
 const content = defineModel({ type: String, default: '' })
 const fallback = useTemplateRef('fallback')
@@ -36,7 +41,7 @@ const fallbackCaret = () => {
   return input ? { start: input.selectionStart, end: input.selectionEnd } : null
 }
 
-const media = reactive(usePostInlineMedia({ content, disabled: () => props.disabled, fallbackCaret, onBusy: value => emit('mediaBusy', value) }))
+const media = reactive(usePostInlineMedia({ content, disabled: () => props.disabled, mediaReferences: () => props.mediaReferences, fallbackCaret, onBusy: value => emit('mediaBusy', value) }))
 const apiKey = import.meta.env.VITE_TINYMCE_API_KEY?.trim() || ''
 const licenseKey = import.meta.env.VITE_TINYMCE_LICENSE_KEY?.trim() || ''
 const selfHosted = licenseKey === 'gpl'
@@ -63,7 +68,7 @@ const editorOptions = shallowRef({
   'ui_mode': 'split',
   menubar: 'edit view insert format tools table',
   plugins: 'lists link image table code wordcount',
-  toolbar: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist | link projectimage projectimageedit table | removeformat code',
+  toolbar: `undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist | link ${props.mediaReferences ? '' : 'projectimageurl '}projectimage projectimageedit table | removeformat code`,
   'block_formats': 'Paragraph=p; Heading 2=h2; Heading 3=h3; Heading 4=h4',
   placeholder: props.placeholder,
   promotion: false,
@@ -74,7 +79,7 @@ const editorOptions = shallowRef({
   'images_upload_handler': media.upload,
   'extended_valid_elements': 'img[src|alt|title|width|height|class|style|data-media-asset-id],figure[class],figcaption[class]',
   contextmenu: 'link table projectimageedit',
-  menu: { insert: { title: 'Insert', items: 'projectimage projectimageedit link table' } },
+  menu: { insert: { title: 'Insert', items: `${props.mediaReferences ? '' : 'projectimageurl '}projectimage projectimageedit link table` } },
   'image_description': true,
   'content_style': 'body { font-family: sans-serif; font-size: 16px; } img { max-width: 100%; height: auto; }',
 
@@ -90,6 +95,10 @@ const editorOptions = shallowRef({
     editor.ui?.registry?.addButton('projectimageedit', { icon: 'edit-block', tooltip: 'Sửa mô tả và chú thích ảnh', onAction: media.editImage })
     editor.ui?.registry?.addMenuItem('projectimage', { icon: 'image', text: 'Ảnh MediaLibrary', onAction: media.openLibrary })
     editor.ui?.registry?.addMenuItem('projectimageedit', { icon: 'edit-block', text: 'Mô tả và chú thích ảnh', onAction: media.editImage })
+    if (!props.mediaReferences) {
+      editor.ui?.registry?.addButton('projectimageurl', { icon: 'link', tooltip: 'Chèn ảnh bằng link', onAction: media.openUrl })
+      editor.ui?.registry?.addMenuItem('projectimageurl', { icon: 'link', text: 'Chèn ảnh bằng link', onAction: media.openUrl })
+    }
   },
 })
 
@@ -186,16 +195,28 @@ onBeforeUnmount(() => {
       :disabled="props.disabled || (configured && !error)"
       rows="12"
     />
-    <VBtn
+    <div
       v-if="!ready"
-      variant="tonal"
-      prepend-icon="tabler-photo"
-      class="mt-3"
-      :disabled="props.disabled"
-      @click="media.openLibrary"
+      class="d-flex flex-wrap gap-2 mt-3"
     >
-      Chọn ảnh MediaLibrary
-    </VBtn>
+      <VBtn
+        v-if="!props.mediaReferences"
+        variant="tonal"
+        prepend-icon="tabler-link"
+        :disabled="props.disabled"
+        @click="media.openUrl"
+      >
+        Chèn ảnh bằng link
+      </VBtn>
+      <VBtn
+        variant="tonal"
+        prepend-icon="tabler-photo"
+        :disabled="props.disabled"
+        @click="media.openLibrary"
+      >
+        Chọn ảnh MediaLibrary
+      </VBtn>
+    </div>
     <VAlert
       v-if="media.error"
       type="error"
@@ -216,7 +237,6 @@ onBeforeUnmount(() => {
       v-if="media.libraryOpen"
       v-model:open="media.libraryOpen"
       kind="image"
-      field="post.content_images"
       visibility="public"
       @select="media.selectAsset"
     />
@@ -232,9 +252,17 @@ onBeforeUnmount(() => {
       >
         <VCardText>
           <VImg
-            :src="media.selectedAsset?.file?.url"
+            v-if="media.selectedAsset"
+            :src="media.selectedAsset.file?.url"
             max-height="200"
             contain
+            class="mb-4"
+          />
+          <AppTextField
+            v-if="!props.mediaReferences"
+            v-model="media.draft.url"
+            label="Link ảnh"
+            placeholder="https://example.com/image.jpg"
             class="mb-4"
           />
           <AppTextField

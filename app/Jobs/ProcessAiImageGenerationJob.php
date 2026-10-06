@@ -7,6 +7,7 @@ use App\Exceptions\AiImportException;
 use App\Models\AiImport;
 use App\Models\MediaAsset;
 use App\Services\Ai\Images\AiImageGenerationService;
+use App\Services\Ai\Images\AiThumbnailService;
 use App\Services\Ai\Registries\ProviderRegistry;
 use App\Services\Media\ContentMediaReferenceService;
 use Illuminate\Bus\Queueable;
@@ -15,6 +16,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
@@ -25,8 +27,9 @@ use Throwable;
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE:
  * - __construct(), uniqueId(): ngân sách job và khóa dispatch riêng theo run.
- * - handle(), complete(): gọi provider và commit kết quả nếu run còn active.
- * - mergeParentImage(): khóa/đọc lại parent trước khi merge metadata ảnh.
+ * - handle(), process(), complete(): khóa độc quyền, gọi provider và commit khi run còn active.
+ * - mergeParentImage(): thumbnail mới dùng AiThumbnailService để sync ref canonical;
+ *   image legacy chỉ merge metadata, giữ nguyên draft.
  * - failed(), discardUnattachedAsset(): giữ terminal state và dọn asset orphan.
  * INPUT: UUID image run đã lưu connection snapshot không có key.
  * OUTPUT: lifecycle/result có MediaAsset ID hoặc lỗi an toàn.
@@ -89,16 +92,46 @@ final class ProcessAiImageGenerationJob implements ShouldBeUnique, ShouldQueue
      */
     public function handle(AiImageGenerationService $service, ProviderRegistry $providers): void
     {
+        $lock = Cache::lock('ai-image-process-'.$this->importId, $this->timeout + 60);
+        if (! $lock->get()) {
+            // Queue redelivery/manual retry phải còn trong queue khi worker cũ giữ lock.
+            $this->release($this->timeout + 60);
+
+            return;
+        }
+        try {
+            $this->process($service, $providers);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /** INPUT: services inject. OUTPUT: lifecycle dưới lock độc quyền; HTTP ngoài DB transaction. */
+    private function process(AiImageGenerationService $service, ProviderRegistry $providers): void
+    {
         $import = AiImport::query()->find($this->importId);
-        if (! $import || in_array($import->status, AiImport::TERMINAL_STATUSES, true) || $import->expires_at?->isPast()) {
+        if (! $import || in_array($import->status, AiImport::TERMINAL_STATUSES, true)) {
+            return;
+        }
+        if ($import->expires_at?->isPast()) {
+            $import->update(['status' => 'expired', 'current_step' => 'expired', 'completed_at' => now()]);
+            app(AiThumbnailService::class)->sync($import);
+
             return;
         }
         $input = (array) $import->input_json;
+        $thumbnails = app(AiThumbnailService::class);
+        if (($input['purpose'] ?? null) === 'thumbnail' && ! $thumbnails->accepts($import, AiImport::find($import->parent_id))) {
+            $import->update(['status' => 'cancelled', 'current_step' => 'cancelled', 'completed_at' => now()]);
+
+            return;
+        }
         $asset = null;
         try {
             $snapshot = (array) ($input['ai_connection'] ?? []);
             $connection = $providers->connectionForRun($snapshot, AiCapability::Image);
             $import->advance('generating', 35);
+            $thumbnails->sync($import);
             if (in_array($import->status, AiImport::TERMINAL_STATUSES, true) || $import->expires_at?->isPast()) {
                 return;
             }
@@ -109,7 +142,10 @@ final class ProcessAiImageGenerationJob implements ShouldBeUnique, ShouldQueue
                 'image' => ['media_asset_id' => $asset->getKey()],
             ];
             if (! $this->complete($import, $asset, $result)) {
+                AiImport::query()->whereKey($import->id)->whereNotIn('status', AiImport::TERMINAL_STATUSES)
+                    ->where('expires_at', '<=', now())->update(['status' => 'expired', 'current_step' => 'expired', 'completed_at' => now()]);
                 $this->discardUnattachedAsset($asset);
+                $thumbnails->sync($import->fresh());
 
                 return;
             }
@@ -124,7 +160,8 @@ final class ProcessAiImageGenerationJob implements ShouldBeUnique, ShouldQueue
             if ($asset instanceof MediaAsset) {
                 $this->discardUnattachedAsset($asset);
             }
-            if ($recorded > 0 && $import->parent_id) {
+            $thumbnails->sync($import->fresh());
+            if ($recorded > 0 && $import->parent_id && ($input['purpose'] ?? null) !== 'thumbnail') {
                 AiImport::query()->whereKey($import->parent_id)->where('status', 'ready')->update([
                     'error_code' => $exception->errorCode,
                     'error_message' => 'Tạo thumbnail AI không thành công; nội dung vẫn được giữ nguyên.',
@@ -143,6 +180,7 @@ final class ProcessAiImageGenerationJob implements ShouldBeUnique, ShouldQueue
             if ($asset instanceof MediaAsset) {
                 $this->discardUnattachedAsset($asset);
             }
+            $thumbnails->sync($import->fresh());
         }
     }
 
@@ -180,7 +218,8 @@ final class ProcessAiImageGenerationJob implements ShouldBeUnique, ShouldQueue
      * CHỨC NĂNG: Merge metadata ảnh vào parent đã đọc lại dưới row lock
      * =====================================================================
      * INPUT: Image run đã ready và result chứa image ref.
-     * OUTPUT: Không trả giá trị; chỉ merge image/image_job_id, giữ draft hiện tại.
+     * OUTPUT: Thumbnail được gắn canonical qua service, image legacy chỉ merge metadata;
+     * giữ title/content/taxonomy hiện tại của parent.
      * SIDE EFFECT: Transaction riêng khóa parent; không giữ đồng thời child lock
      * hoặc gọi provider, bỏ qua parent đã hủy/hết hạn/không còn tồn tại.
      * =====================================================================
@@ -190,9 +229,14 @@ final class ProcessAiImageGenerationJob implements ShouldBeUnique, ShouldQueue
         if (! $import->parent_id) {
             return;
         }
+        if (data_get($import->input_json, 'purpose') === 'thumbnail') {
+            app(AiThumbnailService::class)->sync($import->fresh());
+
+            return;
+        }
         DB::transaction(function () use ($import, $result): void {
             $parent = AiImport::query()->whereKey($import->parent_id)->lockForUpdate()->first();
-            if (! $parent || in_array($parent->status, ['cancelled', 'expired'], true) || $parent->expires_at?->isPast()) {
+            if (! $parent || ! AiThumbnailService::editable($parent) || (int) $parent->created_by !== (int) $import->created_by) {
                 return;
             }
             $parentResult = (array) $parent->result_json;
@@ -219,6 +263,7 @@ final class ProcessAiImageGenerationJob implements ShouldBeUnique, ShouldQueue
             'error_message' => 'Tạo ảnh thất bại. Hãy kiểm tra cấu hình provider rồi thử lại.',
             'completed_at' => now(),
         ]);
+        app(AiThumbnailService::class)->sync(AiImport::find($this->importId));
     }
 
     /**

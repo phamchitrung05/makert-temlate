@@ -1,6 +1,6 @@
 # Project Inventory — Makert Template
 
-**Cập nhật:** 2026-09-30
+**Cập nhật:** 2026-10-06
 **Mục đích:** Tài liệu tóm tắt để AI/developer mới nắm cấu trúc, domain, API, frontend, test và trạng thái project nhanh trước khi sửa code.
 
 ### Thống kê nhanh tại thời điểm cập nhật
@@ -17,7 +17,8 @@
 | PHP (`.php`) | 248 |
 | JavaScript (`.js`) | 227 |
 
-Các số liệu trên được đếm bằng `rg --files` và cần cập nhật khi project thay đổi lớn.
+Các số liệu trên là snapshot 2026-09-30 từ `rg --files`; các đợt bổ sung bên dưới
+là nguồn tiến độ hiện tại, không dùng snapshot cũ để suy số module đã hoàn tất.
 
 ## 1. Thông tin tổng quát
 
@@ -94,7 +95,9 @@ docs/                      Plans, handoff notes and this inventory
 - Frontend services/store: `resources/js/services/post.js`, `resources/js/stores/post.js`
 - SEO: `app/Services/SeoMetadataService.php`, `app/Support/SeoRules.php`, `resources/js/composables/seoMetadata.js`, `useSeoMetadata.js`
 - Slug: `app/Services/SlugService.php`, `resources/js/composables/useSlug.js`, `resources/js/stores/slug.js`
-- Media fields: `post.thumbnail`, `post.content_images`
+- Media fields: `post.thumbnail`, `post.gallery`; ảnh content chỉ lưu URL trong HTML, không có media usage.
+- Content URL validator: `app/Services/Media/ContentImageUrlValidator.php`; ref của candidate AI và kiểm link khi cleanup ở `ContentMediaReferenceService.php`.
+- Gallery migration: `database/migrations/2026_10_06_100000_separate_post_gallery_from_content_images.php`; bỏ usage inline legacy, giữ HTML/file và chuyển ảnh chọn riêng sang `post.gallery`.
 - Status enum: `draft`, `published`, `archived`
 
 ### Taxonomy
@@ -284,8 +287,33 @@ Workflow review bổ sung ngày 2026-10-05 (FIX 1 mục 12.36):
 - Chủ dự án tạm hoãn `ai_content_drafts`/lưu dài hạn: không migration/permission
   mới hoặc đổi cleanup/retention; audit Spatie không bị cleanup run xóa.
 
+Thumbnail AI bổ sung ngày 2026-10-06 (FIX 1 mục 12.37):
+
+- Quy ước: ảnh trong content minh họa cho đoạn/phần của bài; thumbnail đại diện
+  cho toàn bộ Post và nằm ở trường Thumbnail/Featured Image.
+- Phạm vi DONE: sinh thumbnail của Post tại AI Content → duyệt/Apply
+  gắn vào `post.thumbnail`. Add/Edit Post có dialog tạo ảnh thủ công nhận
+  prompt/tiêu đề; phân tích nội dung Post để sinh thumbnail phù hợp chưa triển khai,
+  tạm hoãn theo chủ dự án. Mốc 12.37 không sinh ảnh inline trong bài.
+- `AiThumbnailService` tạo child ảnh atomically khi content ready, đồng bộ
+  `thumbnail_generation` và ref canonical `draft.thumbnail.media_asset_id`.
+  `ProcessAiImageGenerationJob` khóa theo run, giữ edit mới nhất và chặn kết quả trễ.
+- Sessions create/regenerate nhận mode, model ảnh riêng và prompt tùy chọn;
+  retry/cancel dùng image UUID hiện hành. Review khóa approve khi ảnh pending;
+  Apply/approve lưu Post draft, media usage và provenance từ image run.
+- UI dùng `AiThumbnailOptions.vue`, `AiThumbnailStatus.vue`, helper
+  `utils/aiThumbnail.js` và composables AI Content hiện có; hỗ trợ URL/text/prompt/HTML/file.
+- Tests: `AiGeneratedThumbnailTest`, `aiThumbnailStatus.test.js` và regression
+  catalog/input/generation/actions/review. Không migration hoặc đổi retention.
+- Kiểm chứng: backend 390 tests/2727 assertions; frontend 46 files/333 tests;
+  lint scoped, build và browser fixture đạt. Xem
+  [AI Thumbnail QA](qa/AI_THUMBNAIL_2026-10-06/README.md); chưa gọi provider ảnh thật.
+
 | Date | Change | Files/area | Tests/build |
 |---|---|---|---|
+| 2026-10-06 | Tách ảnh content bằng link khỏi Gallery có thứ tự; bỏ usage inline legacy local, giữ HTML/file; post_type gallery ở backlog | Post request/action/resource/editor, Media field và migration, AI cleanup | 49 backend tests/432 assertions; 55 frontend tests; lint/Pint/build/browser đạt |
+| 2026-10-06 | Chuẩn hóa 10 tab Settings; sáu nhóm typed mới, version/quyền/SMTP secret, runtime và capability thật | Settings API/UI, Media/SEO/login/locale/scheduler | 64 backend regression tests; lượt cuối 8 Settings tests/77 assertions; 32 frontend tests; lint/Pint/build/browser đạt |
+| 2026-10-06 | Completed AI thumbnails from generation through Post draft approval | AI Content, image jobs, media/provenance, shared thumbnail UI | Backend 390 tests/2727 assertions; frontend 46 files/333 tests; lint/build/browser fixture pass |
 | 2026-09-30 | Created central project inventory | `docs/PROJECT_INVENTORY.md` | `git diff --check` |
 | 2026-09-30 | Implemented Post taxonomy, Media UI integration and AI import vertical slice | Post, Media, AI | Backend 96 tests/539 assertions; frontend 59 tests; build pass |
 | 2026-09-30 | Restored original Media Asset layout, removed folder counters and stabilized item selection | Media Asset UI/composable | Targeted Media tests and build pass |

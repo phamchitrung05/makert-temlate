@@ -4,14 +4,17 @@ namespace Tests\Feature;
 
 use App\Models\AiImport;
 use App\Models\MediaAsset;
+use App\Models\Post;
 use App\Models\User;
 use App\Services\Ai\Runs\AiRunAssetCleaner;
 use App\Services\Media\ContentMediaReferenceService;
 use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 use Tests\UsesIsolatedDatabase;
 
@@ -132,11 +135,11 @@ class ContentMediaReferenceTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: Hai ảnh + ID gallery giả.
-     * OUTPUT: usage đúng thứ tự HTML, không tin gallery client.
+     * INPUT: Hai link ảnh, một link lặp ở nhiều vị trí.
+     * OUTPUT: HTML giữ nguyên; ảnh content không có usage hoặc tự thêm vào gallery.
      * =====================================================================
      */
-    public function test_post_derives_ordered_distinct_image_usage_from_content(): void
+    public function test_post_keeps_repeated_image_links_without_media_relationships(): void
     {
         $token = $this->token();
         $first = $this->image();
@@ -144,12 +147,11 @@ class ContentMediaReferenceTest extends TestCase
         $html = '<p>Nội dung</p>'.$this->html($second).$this->html($first).$this->html($second);
         $created = $this->withToken($token)->postJson('/api/admin/posts', [
             'title' => 'Bài có ảnh', 'content' => $html,
-            'media' => ['content_image_ids' => [999999]],
         ])->assertCreated()->assertJsonPath('data.content', $html)
-            ->assertJsonPath('data.media.content_images.0.id', $second->id)
-            ->assertJsonPath('data.media.content_images.1.id', $first->id);
+            ->assertJsonPath('data.media.gallery_images', [])
+            ->assertJsonMissingPath('data.media.content_images');
 
-        $this->assertDatabaseCount('media_asset_usages', 2);
+        $this->assertDatabaseCount('media_asset_usages', 0);
         $this->withToken($token)->getJson('/api/admin/posts/'.$created->json('data.id'))
             ->assertOk()->assertJsonPath('data.content', $html);
     }
@@ -157,7 +159,7 @@ class ContentMediaReferenceTest extends TestCase
     /**
      * =====================================================================
      * INPUT: Xóa ảnh inline và cập nhật title partial.
-     * OUTPUT: usage đồng bộ, file chung không bị xóa.
+     * OUTPUT: thumbnail giữ nguyên, không có quan hệ ảnh inline hoặc xóa file.
      * =====================================================================
      */
     public function test_content_update_detaches_removed_images_without_deleting_files(): void
@@ -170,9 +172,10 @@ class ContentMediaReferenceTest extends TestCase
         ])->assertCreated();
         $id = $created->json('data.id');
         $this->withToken($token)->putJson('/api/admin/posts/'.$id, ['title' => 'Tiêu đề sửa'])
-            ->assertOk()->assertJsonPath('data.media.content_images.0.id', $image->id);
+            ->assertOk()->assertJsonPath('data.content', $this->html($image))
+            ->assertJsonPath('data.media.gallery_images', []);
         $this->withToken($token)->putJson('/api/admin/posts/'.$id, ['content' => '<p>Đã xóa ảnh</p>'])
-            ->assertOk()->assertJsonPath('data.media.content_images', [])
+            ->assertOk()->assertJsonPath('data.media.gallery_images', [])
             ->assertJsonPath('data.media.thumbnail.id', $image->id);
         $this->assertNotNull(MediaAsset::find($image->id));
     }
@@ -180,16 +183,14 @@ class ContentMediaReferenceTest extends TestCase
     /**
      * =====================================================================
      * INPUT: Asset đúng nhưng URL khác/blob/data.
-     * OUTPUT: 422, không ghi Post hoặc usage.
+     * OUTPUT: validator candidate AI từ chối ref sai, không ghi Post hoặc usage.
      * =====================================================================
      */
     public function test_image_url_must_match_the_referenced_public_asset(): void
     {
-        $token = $this->token();
         $image = $this->image();
         foreach (['https://example.com/forged.png', 'blob:temporary', 'data:image/png;base64,AAAA'] as $url) {
-            $this->withToken($token)->postJson('/api/admin/posts', ['title' => 'Ảnh giả', 'content' => $this->html($image, $url)])
-                ->assertUnprocessable()->assertJsonValidationErrors('content');
+            $this->assertInvalidAiReference($this->html($image, $url));
         }
         $this->assertDatabaseCount('posts', 0);
         $this->assertDatabaseCount('media_asset_usages', 0);
@@ -203,7 +204,6 @@ class ContentMediaReferenceTest extends TestCase
      */
     public function test_image_requires_valid_existing_public_image_with_file(): void
     {
-        $token = $this->token();
         $image = $this->image();
         $private = $this->image(['visibility' => 'private']);
         $empty = MediaAsset::factory()->image()->create();
@@ -216,8 +216,7 @@ class ContentMediaReferenceTest extends TestCase
             '<img data-media-asset-id="'.$empty->id.'" src="https://example.com/a.png">',
             '<img data-media-asset-id="999999" src="'.e($image->getFirstMedia('library')->getUrl()).'">',
         ] as $html) {
-            $this->withToken($token)->postJson('/api/admin/posts', ['title' => 'Ảnh sai', 'content' => $html])
-                ->assertUnprocessable()->assertJsonValidationErrors('content');
+            $this->assertInvalidAiReference($html);
         }
     }
 
@@ -227,13 +226,14 @@ class ContentMediaReferenceTest extends TestCase
      * OUTPUT: 403 dù ID/URL ảnh đều đúng.
      * =====================================================================
      */
-    public function test_content_image_requires_media_attach_permission(): void
+    public function test_ai_candidate_image_reference_requires_media_attach_permission(): void
     {
         $image = $this->image();
-        $this->withToken($this->token(['posts.manage']))->postJson('/api/admin/posts', [
-            'title' => 'Không có quyền', 'content' => $this->html($image),
-        ])->assertForbidden();
-        $this->assertDatabaseCount('posts', 0);
+        $actor = User::factory()->create();
+        $actor->givePermissionTo('posts.manage');
+        $this->flushPermissionCache();
+        $this->expectException(AuthorizationException::class);
+        app(ContentMediaReferenceService::class)->validate($this->html($image), $actor);
     }
 
     /**
@@ -271,13 +271,44 @@ class ContentMediaReferenceTest extends TestCase
      */
     public function test_only_completed_conversion_urls_are_accepted(): void
     {
-        $token = $this->token();
         $image = $this->image();
         $media = $image->getFirstMedia('library');
         $html = $this->html($image, $media->getUrl('web'));
-        $this->withToken($token)->postJson('/api/admin/posts', ['title' => 'Chưa xong', 'content' => $html])->assertUnprocessable();
+        $this->assertInvalidAiReference($html);
         $media->update(['generated_conversions' => ['web' => true]]);
-        $this->withToken($token)->postJson('/api/admin/posts', ['title' => 'Conversion', 'content' => $html])->assertCreated();
+        $actor = User::factory()->create();
+        $actor->givePermissionTo('media.attach');
+        $this->flushPermissionCache();
+        $this->assertSame([$image->id], app(ContentMediaReferenceService::class)->validate($html, $actor));
+    }
+
+    /** Input: ref candidate sai. Output: lỗi content từ validator AI; không gọi Post API hoặc tạo usage. */
+    private function assertInvalidAiReference(string $html): void
+    {
+        $actor = User::factory()->create();
+        $actor->givePermissionTo('media.attach');
+        $this->flushPermissionCache();
+        try {
+            app(ContentMediaReferenceService::class)->validate($html, $actor);
+            $this->fail('Candidate AI phải từ chối ảnh có ref sai.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('content', $exception->errors());
+        }
+    }
+
+    /** Input: ảnh AI được chèn bằng link trong Post. Output: cleanup giữ file dù không có media usage. */
+    public function test_cleanup_keeps_an_image_linked_from_post_without_creating_a_relationship(): void
+    {
+        $image = $this->image();
+        $post = Post::factory()->create(['content' => '<img src="'.e($image->getFirstMediaUrl('library')).'" alt="Ảnh link">']);
+        $expired = $this->aiRun(['expires_at' => now()->subDay(), 'result_json' => ['draft' => ['thumbnail' => ['media_asset_id' => $image->id]]]]);
+
+        app(AiRunAssetCleaner::class)->cleanup($expired);
+        $this->assertNotNull(MediaAsset::find($image->id));
+        $this->assertDatabaseCount('media_asset_usages', 0);
+        $post->update(['content' => '<p>Đã bỏ link ảnh</p>']);
+        app(AiRunAssetCleaner::class)->cleanup($expired);
+        $this->assertNull(MediaAsset::find($image->id));
     }
 
     /**

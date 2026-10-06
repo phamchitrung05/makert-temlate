@@ -10,6 +10,7 @@
  * - activeProviders/selectedProvider/catalog: options, capability và trạng thái tải.
  * - reconcileSelection(): giữ lựa chọn hợp lệ hoặc dùng default/option đầu tiên.
  * - reconcileOutputs()/resetContentDefaults(): đồng bộ nhóm đầu ra từ config và defaults đã lưu.
+ * - imageModelOptions/watcher ảnh: capability/driver/default ảnh riêng với model text.
  * - loadCatalog(): tải lại qua service chung và giữ lỗi để form hiển thị/retry.
  * - watcher catalog/source: loại lựa chọn không còn thuộc provider/catalog.
  *
@@ -29,7 +30,7 @@ const availableModels = provider => (provider?.models ?? []).filter(model => mod
 
 /** Input: source ref của page. Output: catalog và hàm tải lại; watcher cập nhật lựa chọn cục bộ. */
 export function useAiContentCatalog(source) {
-  const { providers, settings, loading, error, load } = useAiProviderSettings()
+  const { providers, presets, settings, loading, error, load } = useAiProviderSettings()
   const targets = shallowRef([])
   const targetsLoading = shallowRef(false)
   const targetsError = shallowRef('')
@@ -41,7 +42,14 @@ export function useAiContentCatalog(source) {
   const outputDefinitions = computed(() => (selectedTarget.value?.output_options ?? [])
     .filter(option => selectedTarget.value.outputs?.includes(option.value)))
 
-  const supportsSource = option => !option.source_types?.length || option.source_types.includes(source.value.type)
+  const supportsSource = option => option.value === 'thumbnail'
+    ? source.value.thumbnailMode === 'generate' || source.value.type === 'url'
+    : !option.source_types?.length || option.source_types.includes(source.value.type)
+
+  const imageModelOptions = computed(() => activeProviders.value
+    .filter(provider => presets.value.some(preset => preset.key === provider.driver && preset.image_supported))
+    .flatMap(provider => availableModels(provider).filter(model => model.capabilities?.includes('image_generation'))
+      .map(model => ({ title: `${provider.name} · ${model.label || model.remote_model_id}`, value: model.id }))))
 
   const outputOptions = computed(() => outputDefinitions.value.map(option => ({
     ...option, props: { disabled: !supportsSource(option) },
@@ -65,7 +73,7 @@ export function useAiContentCatalog(source) {
     if (value.outputs === previous.outputs) return
     outputsEdited = Array.isArray(value.outputs)
     restrictedPreferences = new Set(outputDefinitions.value
-      .filter(option => option.source_types?.length && value.outputs?.includes(option.value))
+      .filter(option => (option.source_types?.length || option.value === 'thumbnail') && value.outputs?.includes(option.value))
       .map(option => option.value))
   }, { flush: 'sync' })
 
@@ -75,7 +83,7 @@ export function useAiContentCatalog(source) {
     const current = source.value.outputs ?? []
 
     for (const option of outputDefinitions.value) {
-      if (option.source_types?.length && current.includes(option.value)) restrictedPreferences.add(option.value)
+      if ((option.source_types?.length || option.value === 'thumbnail') && current.includes(option.value)) restrictedPreferences.add(option.value)
     }
 
     const outputs = !outputsEdited || source.value.outputs === null ? contentDefaults.value.outputs
@@ -97,7 +105,7 @@ export function useAiContentCatalog(source) {
     reconcileOutputs()
   }
 
-  watch([selectedTarget, () => source.value.type, settings, loading, targetsLoading], reconcileOutputs, { flush: 'sync' })
+  watch([selectedTarget, () => source.value.type, () => source.value.thumbnailMode, settings, loading, targetsLoading], reconcileOutputs, { flush: 'sync' })
 
   const catalog = computed(() => ({
     loading: loading.value || targetsLoading.value,
@@ -111,6 +119,9 @@ export function useAiContentCatalog(source) {
       value: model.remote_model_id,
     })),
     selectedModel: availableModels(selectedProvider.value).find(model => model.remote_model_id === source.value.model) ?? null,
+    imageModelOptions: imageModelOptions.value,
+    defaultImageModelId: imageModelOptions.value.find(option => option.value === settings.value.default_image_model_id)?.value
+      ?? imageModelOptions.value.find(option => option.value === settings.value.fallback_image_model_id)?.value ?? null,
   }))
 
   /**
@@ -143,6 +154,14 @@ export function useAiContentCatalog(source) {
   }
 
   watch([activeProviders, settings, () => source.value.provider, () => source.value.model], reconcileSelection)
+
+  /** INPUT: catalog ảnh/default mới. OUTPUT: giữ model ảnh hợp lệ; mặc định ảnh độc lập model viết bài. */
+  watch([imageModelOptions, settings, loading, () => source.value.imageModelId], () => {
+    if (loading.value || imageModelOptions.value.some(option => option.value === source.value.imageModelId)) return
+    const imageModelId = catalog.value.defaultImageModelId
+
+    if (source.value.imageModelId !== imageModelId) source.value = { ...source.value, imageModelId }
+  })
 
   /** Input: mở page/tải lại. Output: catalog mới hoặc error để retry; không reject event handler. */
   async function loadCatalog() {

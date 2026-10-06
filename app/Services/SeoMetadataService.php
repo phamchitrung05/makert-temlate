@@ -7,6 +7,7 @@ use App\Enums\MediaAssetVisibility;
 use App\Models\MediaAsset;
 use App\Models\SeoMetadata;
 use App\Models\User;
+use App\Services\Settings\ProjectSettingsService;
 use App\Support\SeoRules;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -89,10 +90,15 @@ class SeoMetadataService
             ? $seoable->seoFallbacks()
             : [];
         $raw = $this->raw($seoable);
+        // Global defaults chỉ áp dụng fallback, không ghi đè SEO riêng của nội dung.
+        $projectSettings = app(ProjectSettingsService::class);
+        $global = $projectSettings->effective('seo');
+        $site = $projectSettings->effective('site');
+        $fallbackTitle = str_replace(['%title%', '%sitename%'], [$fallbacks['title'] ?? '', $site['site_name']], $global['title_format']);
         // Input: giá trị ghi đè và fallback. Output: chuỗi không rỗng hoặc fallback.
         $value = static fn ($override, $fallback) => is_string($override) && trim($override) !== '' ? trim($override) : $fallback;
-        $title = $value($raw['seo_title'], $fallbacks['title'] ?? null);
-        $description = $value($raw['seo_description'], $fallbacks['description'] ?? null);
+        $title = $value($raw['seo_title'], $fallbackTitle);
+        $description = $value($raw['seo_description'], ($fallbacks['description'] ?? null) ?: $global['default_description']);
 
         return array_replace($raw, [
             'seo_title' => $title,

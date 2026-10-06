@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Services\Ai\Content\AiContentReviewService;
+use App\Services\Ai\Images\AiThumbnailService;
 use App\Services\Ai\Providers\Diagnostics\AiResponseDiagnostics;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -39,6 +40,7 @@ class AiSessionSummaryResource extends JsonResource
             'parent_id' => $this->parent_id,
             'title' => mb_substr((string) data_get($this->result_json, 'draft.title', ''), 0, 255),
             'thumbnail' => $this->whenLoaded('thumbnail', fn () => MediaAssetResource::make($this->thumbnail), null),
+            'thumbnail_generation' => AiThumbnailService::state($this->resource),
             'status' => $this->status,
             'current_step' => $this->current_step,
             'progress' => (int) $this->progress,

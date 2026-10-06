@@ -4,9 +4,12 @@ namespace App\Services\Ai\Content;
 
 use App\Actions\Posts\CreatePostAction;
 use App\Actions\Posts\UpdatePostAction;
+use App\Http\Resources\MediaAssetResource;
 use App\Models\AiImport;
+use App\Models\MediaAsset;
 use App\Models\Post;
 use App\Models\User;
+use App\Services\Ai\Images\AiThumbnailService;
 use App\Services\Ai\Provenance\AiProvenanceService;
 use App\Services\Ai\Registries\TargetRegistry;
 use Illuminate\Support\Facades\DB;
@@ -115,21 +118,25 @@ final class AiContentReviewService
         }
         $review = self::state($run);
         $canReview = $review['status'] === 'pending_review' && ! $run->expires_at?->isPast();
+        $thumbnail = MediaAsset::query()->with('media')->find(data_get($run->result_json, 'draft.thumbnail.media_asset_id'));
 
         return [
             'job_id' => $run->id,
             'status' => $run->status,
             'target_type' => 'post',
             'draft' => $run->status === 'ready' ? array_intersect_key((array) data_get($run->result_json, 'draft', []), array_flip([
-                'title', 'content', 'content_html', 'excerpt', 'seo_title', 'seo_description', 'focus_keyword', 'category_ids', 'tag_ids', 'taxonomy_origin',
+                'title', 'content', 'content_html', 'excerpt', 'seo_title', 'seo_description', 'focus_keyword', 'category_ids', 'tag_ids', 'taxonomy_origin', 'thumbnail',
             ])) : null,
             'draft_version' => hash('sha256', json_encode(data_get($run->result_json, 'draft', []))),
             'review' => $review,
             'review_version' => self::version($run),
             'can_review' => $canReview,
+            'can_approve' => $canReview && ! AiThumbnailService::pending($run),
             'can_edit' => $canReview,
             'applied_target_id' => $run->applied_target_id,
             'has_thumbnail' => filled(data_get($run->result_json, 'draft.thumbnail.media_asset_id')),
+            'thumbnail' => $thumbnail ? MediaAssetResource::make($thumbnail) : null,
+            'thumbnail_generation' => AiThumbnailService::state($run),
             'expires_at' => $run->expires_at?->toIso8601String(),
             'source' => ['title' => (string) ($source['title'] ?? ''), 'content_html' => $this->sanitizer->sanitize($html), 'available' => $html !== ''],
             'provider' => $run->provider,
@@ -186,6 +193,7 @@ final class AiContentReviewService
             $run = AiImport::query()->lockForUpdate()->findOrFail($candidate->id);
             $this->authorize($actor, $run);
             $this->assertPending($run, $data);
+            abort_if(AiThumbnailService::pending($run), 409, 'Thumbnail đang được tạo. Hãy chờ ảnh hoặc hủy tác vụ ảnh trước khi duyệt.');
             $outputs = (array) data_get($run->result_json, 'draft', []);
             if (in_array('taxonomy', $data['fields'], true)) {
                 $explicit = array_key_exists('category_ids', $data) || array_key_exists('tag_ids', $data);

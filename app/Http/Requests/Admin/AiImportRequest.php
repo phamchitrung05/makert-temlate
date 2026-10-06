@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin;
 use App\Services\Ai\Registries\TargetRegistry;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
  * =====================================================================
@@ -105,6 +106,7 @@ class AiImportRequest extends FormRequest
             'generate_thumbnail' => ['nullable', 'boolean'],
             'generate_seo' => ['nullable', 'boolean'],
             'thumbnail_mode' => ['nullable', 'in:auto,source,generate'],
+            'thumbnail_prompt' => ['nullable', 'string', 'max:4000'],
             'prompt_key' => ['nullable', 'string', 'max:120'],
             'instructions' => ['nullable', 'string', 'max:4000'],
             'writing_profile_id' => ['nullable', 'integer', 'min:1', 'exists:ai_writing_profiles,id'],
@@ -140,7 +142,7 @@ class AiImportRequest extends FormRequest
      */
     public function after(): array
     {
-        return [function (\Illuminate\Validation\Validator $validator): void {
+        return [function (Validator $validator): void {
             $sourceCount = (int) filled($this->input('url')) + (int) filled($this->input('text'))
                 + (int) filled($this->input('html')) + (int) $this->hasFile('html_file');
             if ($sourceCount > 1) {

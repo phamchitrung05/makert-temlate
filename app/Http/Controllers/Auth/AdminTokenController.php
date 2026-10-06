@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\AdminLoginRequest;
 use App\Http\Responses\BaseResponse;
 use App\Models\User;
+use App\Services\Settings\ProjectSettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -63,7 +64,8 @@ class AdminTokenController extends Controller
 
         $user->forceFill(['last_login_at' => now()])->saveQuietly();
 
-        $expiresAt = now()->addDays((int) config('sanctum.token_expiration_days', 30));
+        // Thời hạn mới chỉ áp dụng token được cấp sau khi đổi Settings.
+        $expiresAt = now()->addDays((int) app(ProjectSettingsService::class)->effective('security')['token_expiration_days']);
         $token = $user->createToken(
             $credentials['device_name'] ?? 'admin-web',
             ['admin'],

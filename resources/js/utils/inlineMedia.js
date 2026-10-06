@@ -1,10 +1,10 @@
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Tạo markup ảnh inline có ID MediaAsset và kiểm URL tạm.
+ * CHỨC NĂNG FILE: Tạo markup ảnh bằng URL; candidate AI có thể giữ ref nội bộ để kiểm nguồn.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: inlineAssetUrl(), inlineImageHtml(), hasTemporaryImages().
+ * CÁC HÀM/METHOD TRONG FILE: inlineAssetUrl(), inlineUrlImageHtml(), inlineImageHtml(), hasTemporaryImages().
  * INPUT/OUTPUT CỦA CLASS (tổng thể): asset/alt/caption -> HTML escaped/ref ổn định.
- * SIDE EFFECT: DOM tách rời; backend vẫn kiểm file/quyền/usage khi lưu.
+ * SIDE EFFECT: DOM tách rời; ảnh trong Post chỉ lưu link, không tạo usage.
  * =====================================================================
  */
 
@@ -31,10 +31,31 @@ export function inlineAssetUrl(asset) {
  * =====================================================================
  */
 export function inlineImageHtml(asset, alt = '', caption = '') {
+  return imageHtml(inlineAssetUrl(asset), alt, caption, asset.id)
+}
+
+/** Input: link/alt/caption. Output: HTML ảnh Post không có ID hoặc quan hệ MediaAsset. */
+export function inlineUrlImageHtml(url, alt = '', caption = '') {
+  const value = String(url ?? '').trim()
+  const hasUnsafeCharacter = [...value].some(character => character.charCodeAt(0) <= 32 || character.charCodeAt(0) === 127)
+
+  try {
+    if (!value || hasUnsafeCharacter || value.includes('\\')
+      || (!value.startsWith('/') && !/^https?:\/\//i.test(value))
+      || !['http:', 'https:'].includes(new URL(value, 'https://url-validation.example').protocol))
+      throw new Error('URL')
+  }
+  catch { throw new Error('Nhập link ảnh HTTP/HTTPS hoặc đường dẫn từ gốc website.') }
+
+  return imageHtml(value, alt, caption)
+}
+
+/** Input: URL đã kiểm và metadata. Output: img/figure escaped; ref chỉ dành cho candidate AI. */
+function imageHtml(url, alt, caption, assetId = null) {
   const image = document.createElement('img')
 
-  image.setAttribute('src', inlineAssetUrl(asset))
-  image.setAttribute('data-media-asset-id', String(asset.id))
+  image.setAttribute('src', url)
+  if (assetId !== null) image.setAttribute('data-media-asset-id', String(assetId))
   image.setAttribute('alt', alt)
   if (!caption.trim()) return image.outerHTML
   const figure = document.createElement('figure')

@@ -107,7 +107,8 @@ export function useAiContentReview(updateSession, sharedNotice) {
 
   /** Input: approve/reject. Output: mở xác nhận cho bản đã GET, không mutation. */
   function requestDecision(kind) {
-    if (!['approve', 'reject'].includes(kind) || loading.value || busy.value || error.value || !detail.value?.can_review) return
+    if (!['approve', 'reject'].includes(kind) || loading.value || busy.value || error.value || !detail.value?.can_review
+      || (kind === 'approve' && detail.value.can_approve === false)) return
     decision.value = kind
     decisionError.value = ''
   }
@@ -117,7 +118,7 @@ export function useAiContentReview(updateSession, sharedNotice) {
 
   /** Input: fields/taxonomy/reason đã xác nhận. Output: quyết định và list mới, giữ form khi lỗi. */
   async function confirmDecision(options) {
-    if (!decision.value || busy.value || state.value.decisionBlocked || error.value) return
+    if (!decision.value || busy.value || state.value.decisionBlocked || error.value || (decision.value === 'approve' && detail.value?.can_approve === false)) return
     const current = detail.value
     const kind = decision.value
 

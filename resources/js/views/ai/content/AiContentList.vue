@@ -19,6 +19,7 @@
 /* eslint-disable camelcase -- Public error fields follow the Laravel API contract. */
 import { computed, shallowRef, watch } from 'vue'
 import { formatAiError } from '@/utils/aiErrors'
+import AiThumbnailStatus from '@/views/ai/shared/AiThumbnailStatus.vue'
 
 const props = defineProps({
   items: { type: Array, required: true },
@@ -29,7 +30,7 @@ const props = defineProps({
   outputOptions: { type: Array, default: () => [] },
 })
 
-const emit = defineEmits(['reload', 'edit', 'review', 'remove', 'regenerate', 'refreshStatus', 'apply', 'cancel'])
+const emit = defineEmits(['reload', 'edit', 'review', 'remove', 'regenerate', 'refreshStatus', 'apply', 'cancel', 'retryThumbnail', 'cancelThumbnail'])
 const search = shallowRef('')
 const status = shallowRef('all')
 const page = shallowRef(1)
@@ -264,6 +265,15 @@ watch(() => filteredItems.value.length, total => {
             >
               {{ failureMessage(item) }}
             </div>
+            <AiThumbnailStatus
+              :generation="item.thumbnailGeneration"
+              :preview="false"
+              :interactive="item.status === 'review'"
+              :busy="props.busyId === item.id"
+              @retry="emit('retryThumbnail', item)"
+              @cancel="emit('cancelThumbnail', item)"
+              @check="emit('refreshStatus', item)"
+            />
             <div
               v-if="item.status === 'rejected' && item.review?.reason"
               class="text-caption text-error text-wrap mt-1"

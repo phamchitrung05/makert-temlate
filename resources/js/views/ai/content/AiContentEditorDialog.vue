@@ -132,6 +132,7 @@ function finishClose() {
         </div>
         <PostEditor
           v-model="form.content_html"
+          media-references
           :disabled="readOnly"
           placeholder="Chỉnh sửa nội dung AI..."
           @media-busy="mediaBusy = $event"

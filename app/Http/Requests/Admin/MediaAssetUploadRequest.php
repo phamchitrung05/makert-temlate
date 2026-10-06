@@ -5,6 +5,7 @@ namespace App\Http\Requests\Admin;
 use App\Enums\MediaAssetField;
 use App\Enums\MediaAssetKind;
 use App\Enums\MediaAssetVisibility;
+use App\Services\Settings\ProjectSettingsService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -98,8 +99,9 @@ class MediaAssetUploadRequest extends FormRequest
      */
     private function maxUploadSizeKb(): int
     {
-        return (int) collect(config('media-assets.kinds', []))
-            ->pluck('max_size_kb')
-            ->max();
+        $settings = app(ProjectSettingsService::class);
+
+        return (int) collect(array_keys(config('media-assets.kinds', [])))
+            ->map(fn (string $kind) => $settings->mediaPolicy($kind)['max_size_kb'])->max();
     }
 }

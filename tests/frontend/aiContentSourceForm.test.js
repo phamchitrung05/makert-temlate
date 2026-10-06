@@ -8,7 +8,7 @@ const Passthrough = { template: '<div><slot /></div>' }
 
 const Select = {
   props: {
-    modelValue: [Array, String], items: Array, label: String,
+    modelValue: [Array, String, Number], items: Array, label: String,
     disabled: Boolean, multiple: Boolean,
   },
   emits: ['update:modelValue'],
@@ -46,6 +46,19 @@ function renderForm() {
 }
 
 describe('Ai Content output tags', () => {
+  it('exposes AI mode and a separate image selector without changing text model selection', async () => {
+    const wrapper = renderForm()
+
+    await wrapper.get('select[aria-label="Cách tạo ảnh đại diện"]').setValue('generate')
+
+    const value = wrapper.emitted('update:modelValue').at(-1)[0]
+
+    expect(value.thumbnailMode).toBe('generate')
+    await wrapper.setProps({ modelValue: value, catalog: { ...wrapper.props('catalog'), imageModelOptions: [{ title: 'Images · Fixture', value: 91 }] } })
+    expect(wrapper.get('select[aria-label="Model tạo ảnh"]').text()).toContain('Images · Fixture')
+    expect(wrapper.get('select[aria-label="Model"]').element.value).toBe('')
+    wrapper.unmount()
+  })
   it('uses config labels in one multiple select and emits the exact selected groups', async () => {
     const wrapper = renderForm()
     const select = wrapper.get('select[aria-label="AI sẽ tạo"]')

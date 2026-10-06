@@ -451,7 +451,13 @@ class MediaAssetUsageService
             ]);
         }
 
-        if (in_array($field, [MediaAssetField::PostThumbnail, MediaAssetField::PostContentImages, MediaAssetField::PostOgImage], true)
+        if ($field === MediaAssetField::PostContentImages) {
+            throw ValidationException::withMessages([
+                'field' => 'Ảnh trong content chỉ lưu link. Bộ ảnh của Post dùng field post.gallery.',
+            ]);
+        }
+
+        if (in_array($field, [MediaAssetField::PostThumbnail, MediaAssetField::PostGallery, MediaAssetField::PostOgImage], true)
             && $asset->visibility !== MediaAssetVisibility::Public) {
             throw ValidationException::withMessages([
                 'media_asset_id' => 'Ảnh bài viết phải có visibility public.',

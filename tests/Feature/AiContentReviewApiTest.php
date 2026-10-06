@@ -276,7 +276,8 @@ class AiContentReviewApiTest extends TestCase
         $run->update(['result_json' => $result]);
         $response = $this->withToken($token)->postJson('/api/admin/ai-agent/candidates/'.$run->id.'/approve', [...$this->versions($run), 'fields' => ['title', 'content', 'thumbnail']])->assertOk();
         $postId = $response->json('data.post_id');
-        $this->assertDatabaseHas('media_asset_usages', ['media_asset_id' => $asset->id, 'field' => 'post.content_images']);
+        $this->assertDatabaseMissing('media_asset_usages', ['media_asset_id' => $asset->id, 'field' => 'post.content_images']);
+        $this->assertDatabaseMissing('media_asset_usages', ['linkable_id' => $postId, 'field' => 'post.gallery']);
         $this->assertDatabaseHas('media_asset_usages', ['media_asset_id' => $asset->id, 'field' => 'post.thumbnail']);
         $run->update(['expires_at' => now()->subMinute()]);
         $this->artisan('ai-import:cleanup')->assertSuccessful();

@@ -134,7 +134,7 @@ Payload create/update đề xuất:
   "tag_ids": [3, 4],
   "media": {
     "thumbnail_id": 10,
-    "content_image_ids": [11, 12]
+    "gallery_image_ids": [11, 12]
   }
 }
 ```

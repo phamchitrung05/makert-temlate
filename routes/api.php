@@ -21,26 +21,43 @@ use App\Http\Controllers\Admin\MediaAssetController;
 use App\Http\Controllers\Admin\PostController;
 use App\Http\Controllers\Admin\ResourceController;
 use App\Http\Controllers\Admin\ResourceVersionController;
+use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\SlugPreviewController;
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\TechnologyController;
 use App\Http\Controllers\Auth\AdminTokenController;
 use App\Http\Controllers\Auth\SanctumTokenController;
 use App\Http\Controllers\HealthController;
 use App\Http\Responses\BaseResponse;
+use App\Services\Settings\ProjectSettingsService;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', HealthController::class)->name('api.health');
 
 Route::post('/admin/login', [AdminTokenController::class, 'login'])
-    ->middleware('throttle:10,1');
+    ->middleware('throttle:admin-login');
 
 Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
     ->prefix('admin')
     ->group(function (): void {
         Route::get('/me', [AdminTokenController::class, 'me']);
 
+        // Locale là preference an toàn; cấu hình vận hành dùng quyền Settings riêng.
+        Route::get('/settings/preferences', [SettingsController::class, 'preferences']);
+        Route::middleware('permission:settings.view|settings.manage,admin')->group(function (): void {
+            Route::get('/settings', [SettingsController::class, 'index']);
+            Route::get('/settings/cron', [SettingsController::class, 'cron']);
+            Route::get('/settings/webhooks', [SettingsController::class, 'webhooks']);
+            Route::get('/settings/system-info', [SettingsController::class, 'system']);
+        });
+        Route::patch('/settings/{group}', [SettingsController::class, 'update'])
+            ->whereIn('group', array_keys(ProjectSettingsService::CLASSES))
+            ->middleware('permission:settings.manage,admin');
+        Route::post('/settings/mail/test', [SettingsController::class, 'testMail'])
+            ->middleware(['permission:settings.manage,admin', 'throttle:3,1']);
+
         // Input: alias/title/ID; quyền theo model kiểm tra tại controller.
-        Route::post('/slugs/preview', \App\Http\Controllers\Admin\SlugPreviewController::class)
+        Route::post('/slugs/preview', SlugPreviewController::class)
             ->middleware('throttle:60,1');
 
         Route::middleware('permission:media.view,admin')->group(function (): void {

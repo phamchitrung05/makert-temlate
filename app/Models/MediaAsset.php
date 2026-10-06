@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Enums\MediaAssetKind;
 use App\Enums\MediaAssetVisibility;
+use App\Services\Settings\ProjectSettingsService;
+use Database\Factories\MediaAssetFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -46,7 +48,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  */
 class MediaAsset extends Model implements HasMedia
 {
-    /** @use HasFactory<\Database\Factories\MediaAssetFactory> */
+    /** @use HasFactory<MediaAssetFactory> */
     use HasFactory, InteractsWithMedia, LogsActivity, SoftDeletes;
 
     /**
@@ -231,7 +233,7 @@ class MediaAsset extends Model implements HasMedia
      */
     private function registerCanonicalImageConversion(string $name): void
     {
-        $profile = config("media-assets.image_conversions.{$name}", []);
+        $profile = app(ProjectSettingsService::class)->imageProfile($name);
         $width = (int) ($profile['width'] ?? 0);
         $height = (int) ($profile['height'] ?? 0);
 

@@ -1,0 +1,28 @@
+{
+    "fixture_only": true,
+    "posts": [
+        {
+            "title": "QA Ảnh hoàn tất",
+            "status": "draft"
+        }
+    ],
+    "thumbnail_usage_count": 1,
+    "thumbnail_provenance": [
+        {
+            "provider": "qa-thumbnail",
+            "model": "qa-image"
+        }
+    ],
+    "image_runs": [
+        {
+            "status": "queued"
+        },
+        {
+            "status": "cancelled"
+        },
+        {
+            "status": "ready"
+        }
+    ],
+    "article_count": 3
+}

@@ -64,7 +64,7 @@ Field picker dự kiến:
 | Field | `kind` | Multiple |
 |---|---|---:|
 | `post.thumbnail` | `image` | Không |
-| `post.content_images` | `image` | Có |
+| `post.gallery` | `image` | Có, theo thứ tự |
 | `resource.cover` | `image` | Không |
 | `resource.preview` | `image` | Có |
 | `resource_version.package` | `archive` | Không |

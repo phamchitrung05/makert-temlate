@@ -413,6 +413,11 @@
     "inlineAssetUrl": true,
     "inlineImageHtml": true,
     "usePostInlineMedia": true,
-    "useAiContentReview": true
+    "useAiContentReview": true,
+    "isAiContentPending": true,
+    "isAiThumbnailPending": true,
+    "useSettings": true,
+    "useSettingsLocales": true,
+    "inlineUrlImageHtml": true
   }
 }

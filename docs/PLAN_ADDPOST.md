@@ -79,7 +79,7 @@
 - Page add/index: tải/lưu Post và điều hướng, giữ mỏng.
 - PostForm: state chung, đồng bộ dữ liệu, submit; kết nối slug composable.
 - PostContentPanel: v-model title/content/excerpt, phát title-blur; nhận trạng thái slug.
-- PostMediaPanel: v-model thumbnail/contentImages; nhận disabled.
+- PostMediaPanel: v-model thumbnail/galleryImages; nhận disabled. Content chèn link ảnh và không tạo quan hệ media.
 - PostSeoSettings: v-model SEO metadata riêng.
 - PostSeoAnalysis: nhận kết quả rules và hiển thị score/checklist.
 - PostSeoPreview: nhận metadata hiệu lực và URL, hiển thị preview.

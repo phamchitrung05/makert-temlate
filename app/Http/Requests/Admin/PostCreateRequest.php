@@ -3,6 +3,9 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\PostStatus;
+use App\Http\Requests\Admin\Concerns\ValidatesAiProvenance;
+use App\Http\Requests\Admin\Concerns\ValidatesContentMedia;
+use App\Http\Requests\Admin\Concerns\ValidatesPostSeo;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -15,9 +18,9 @@ use Illuminate\Validation\Rule;
  */
 class PostCreateRequest extends FormRequest
 {
-    use \App\Http\Requests\Admin\Concerns\ValidatesAiProvenance;
-    use \App\Http\Requests\Admin\Concerns\ValidatesPostSeo;
-    use \App\Http\Requests\Admin\Concerns\ValidatesContentMedia;
+    use ValidatesAiProvenance;
+    use ValidatesContentMedia;
+    use ValidatesPostSeo;
 
     /**
      * =====================================================================
@@ -56,10 +59,10 @@ class PostCreateRequest extends FormRequest
             'category_ids.*' => ['integer', 'distinct', 'exists:categories,id'],
             'tag_ids' => ['sometimes', 'array'],
             'tag_ids.*' => ['integer', 'distinct', 'exists:tags,id'],
-            'media' => ['sometimes', 'array'],
+            'media' => ['sometimes', 'array:thumbnail_id,gallery_image_ids'],
             'media.thumbnail_id' => ['nullable', 'integer', 'min:1'],
-            'media.content_image_ids' => ['sometimes', 'array'],
-            'media.content_image_ids.*' => ['integer', 'distinct', 'min:1'],
+            'media.gallery_image_ids' => ['sometimes', 'array'],
+            'media.gallery_image_ids.*' => ['integer', 'distinct', 'min:1'],
         ];
     }
 }

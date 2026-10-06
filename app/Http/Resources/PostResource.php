@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Enums\MediaAssetField;
+use App\Models\Slug;
 use App\Services\SeoMetadataService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -27,8 +28,8 @@ class PostResource extends JsonResource
         $thumbnail = $usages
             ->first(fn ($usage): bool => $usage->field === MediaAssetField::PostThumbnail)
             ?->mediaAsset;
-        $contentImages = $usages
-            ->filter(fn ($usage): bool => $usage->field === MediaAssetField::PostContentImages)
+        $galleryImages = $usages
+            ->filter(fn ($usage): bool => $usage->field === MediaAssetField::PostGallery)
             ->sortBy('sort_order')
             ->map(fn ($usage) => $usage->mediaAsset)
             ->filter();
@@ -71,7 +72,7 @@ class PostResource extends JsonResource
             'published_at' => $this->published_at?->toIso8601String(),
             'media' => [
                 'thumbnail' => $thumbnail ? MediaAssetResource::make($thumbnail) : null,
-                'content_images' => MediaAssetResource::collection($contentImages),
+                'gallery_images' => MediaAssetResource::collection($galleryImages),
             ],
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
@@ -83,7 +84,7 @@ class PostResource extends JsonResource
      * fallback về model helper cho các caller chỉ hydrate một Post.
      * Input: relation slugs. Output: slug primary của locale hoặc null.
      */
-    private function primarySlugFromLoadedRelation(): ?\App\Models\Slug
+    private function primarySlugFromLoadedRelation(): ?Slug
     {
         if (! $this->resource->relationLoaded('slugs')) {
             return $this->primarySlug();

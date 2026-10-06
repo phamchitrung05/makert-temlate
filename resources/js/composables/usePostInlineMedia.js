@@ -4,27 +4,27 @@
  * CHỨC NĂNG FILE: Kết nối TinyMCE với picker/upload MediaLibrary tại con trỏ.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE: usePostInlineMedia(), setEditor(), openLibrary(), selectAsset(),
- * editImage(), commit(), annotate(), upload(), closeDetails(), watcher busy/HTML,
+ * openUrl(), editImage(), commit(), annotate(), upload(), closeDetails(), watcher busy/HTML,
  * onScopeDispose().
- * INPUT/OUTPUT CỦA CLASS (tổng thể): content/disabled/fallback caret/emitter -> ảnh
- * có ref và alt/caption, media busy/error; mutation file qua MediaAsset API hiện có.
+ * INPUT/OUTPUT CỦA CLASS (tổng thể): content/disabled/fallback caret/emitter -> link ảnh
+ * Post hoặc ref candidate AI với alt/caption; upload qua MediaAsset API hiện có.
  * =====================================================================
  */
 import { computed, onScopeDispose, ref, shallowRef, toValue, watch } from 'vue'
 import { mediaAssetService } from '@/services/mediaAsset'
-import { hasTemporaryImages, inlineAssetUrl, inlineImageHtml } from '@/utils/inlineMedia'
+import { hasTemporaryImages, inlineAssetUrl, inlineImageHtml, inlineUrlImageHtml } from '@/utils/inlineMedia'
 import { formatAiError } from '@/utils/aiErrors'
 
 /**
  * =====================================================================
- * Input: HTML model, disabled getter, caret getter và busy callback.
- * Output: picker/details, TinyMCE hooks; không attach usage trước lưu Post/candidate.
+ * Input: HTML model, disabled/caret/ref getters và busy callback.
+ * Output: ảnh Post bằng link; ref tùy chọn chỉ phục vụ candidate AI, không attach usage.
  * =====================================================================
  */
-export function usePostInlineMedia({ content, disabled, fallbackCaret = () => null, onBusy = () => {} }) {
+export function usePostInlineMedia({ content, disabled, mediaReferences = false, fallbackCaret = () => null, onBusy = () => {} }) {
   const libraryOpen = ref(false)
   const detailsOpen = ref(false)
-  const draft = ref({ alt: '', caption: '' })
+  const draft = ref({ url: '', alt: '', caption: '' })
   const selectedAsset = shallowRef(null)
   const error = shallowRef('')
   const uploads = ref(0)
@@ -58,6 +58,18 @@ export function usePostInlineMedia({ content, disabled, fallbackCaret = () => nu
     libraryOpen.value = true
   }
 
+  /** Input: click chèn link. Output: giữ con trỏ và mở form URL/alt/caption; không gọi Media API. */
+  function openUrl() {
+    if (toValue(disabled) || toValue(mediaReferences) || disposed || uploads.value) return
+    bookmark = editor?.selection?.getBookmark(2, true)
+    caret = fallbackCaret()
+    existingImage = null
+    selectedAsset.value = null
+    draft.value = { url: '', alt: '', caption: '' }
+    error.value = ''
+    detailsOpen.value = true
+  }
+
   /**
    * =====================================================================
    * Input: asset người dùng chọn. Output: form alt/caption; không chèn URL chưa ready.
@@ -66,9 +78,10 @@ export function usePostInlineMedia({ content, disabled, fallbackCaret = () => nu
   function selectAsset(asset) {
     if (toValue(disabled) || disposed) return
     try {
-      inlineAssetUrl(asset)
+      const url = inlineAssetUrl(asset)
+
       selectedAsset.value = asset
-      draft.value = { alt: asset.alt_text || '', caption: '' }
+      draft.value = { url, alt: asset.alt_text || '', caption: '' }
       detailsOpen.value = true
       libraryOpen.value = false
     }
@@ -77,7 +90,7 @@ export function usePostInlineMedia({ content, disabled, fallbackCaret = () => nu
 
   /**
    * =====================================================================
-   * Input: ảnh đang chọn trong editor. Output: form sửa alt/caption; URL/ID khóa.
+   * Input: ảnh đang chọn trong editor. Output: form URL/alt/caption; candidate AI giữ ref đã xác thực.
    * =====================================================================
    */
   function editImage() {
@@ -89,7 +102,7 @@ export function usePostInlineMedia({ content, disabled, fallbackCaret = () => nu
       return }
     existingImage = image
     selectedAsset.value = { id: Number(image.getAttribute('data-media-asset-id')), kind: 'image', visibility: 'public', file: { url: image.getAttribute('src') } }
-    draft.value = { alt: image.getAttribute('alt') || '', caption: image.closest('figure')?.querySelector('figcaption')?.textContent || '' }
+    draft.value = { url: image.getAttribute('src') || '', alt: image.getAttribute('alt') || '', caption: image.closest('figure')?.querySelector('figcaption')?.textContent || '' }
     detailsOpen.value = true
   }
 
@@ -102,7 +115,10 @@ export function usePostInlineMedia({ content, disabled, fallbackCaret = () => nu
   function commit() {
     if (toValue(disabled) || disposed) return
     try {
-      const html = inlineImageHtml(selectedAsset.value, draft.value.alt, draft.value.caption)
+      const html = toValue(mediaReferences)
+        ? inlineImageHtml(selectedAsset.value, draft.value.alt, draft.value.caption)
+        : inlineUrlImageHtml(draft.value.url, draft.value.alt, draft.value.caption)
+
       if (editor) {
         editor.undoManager.transact(() => {
           if (existingImage) {
@@ -137,7 +153,7 @@ export function usePostInlineMedia({ content, disabled, fallbackCaret = () => nu
    * =====================================================================
    */
   function annotate() {
-    if (!editor || disposed || !refsByUrl.size) return
+    if (!toValue(mediaReferences) || !editor || disposed || !refsByUrl.size) return
     let changed = false
     editor.getBody()?.querySelectorAll('img').forEach(image => {
       const id = refsByUrl.get(image.getAttribute('src'))
@@ -158,11 +174,11 @@ export function usePostInlineMedia({ content, disabled, fallbackCaret = () => nu
     error.value = ''
     try {
       const file = new File([blobInfo.blob()], blobInfo.filename(), { type: blobInfo.blob().type })
-      const asset = await mediaAssetService.upload({ file, kind: 'image', visibility: 'public', field: 'post.content_images' }, progress)
+      const asset = await mediaAssetService.upload({ file, kind: 'image', visibility: 'public' }, progress)
       if (disposed) throw new Error('Editor đã đóng; file upload được giữ trong MediaLibrary.')
       const url = inlineAssetUrl(asset)
 
-      refsByUrl.set(url, asset.id)
+      if (toValue(mediaReferences)) refsByUrl.set(url, asset.id)
 
       return url
     }
@@ -185,5 +201,5 @@ export function usePostInlineMedia({ content, disabled, fallbackCaret = () => nu
   watch(content, () => annotate(), { flush: 'post' })
   onScopeDispose(() => { disposed = true; editor = null; refsByUrl.clear(); onBusy(false) })
 
-  return { libraryOpen, detailsOpen, draft, selectedAsset, error, busy, setEditor, openLibrary, selectAsset, editImage, commit, annotate, upload, closeDetails }
+  return { libraryOpen, detailsOpen, draft, selectedAsset, error, busy, setEditor, openLibrary, openUrl, selectAsset, editImage, commit, annotate, upload, closeDetails }
 }

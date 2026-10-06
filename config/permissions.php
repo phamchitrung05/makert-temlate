@@ -54,7 +54,7 @@ return [
         'analytics' => ['view'],
 
         // Settings: quản lý cấu hình hệ thống.
-        'settings' => ['manage'],
+        'settings' => ['view', 'manage'],
 
         // AI Settings: quản lý provider, model catalog và thông số AI.
         'ai_settings' => ['manage'],

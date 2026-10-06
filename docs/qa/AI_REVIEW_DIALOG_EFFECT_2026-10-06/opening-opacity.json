@@ -1,0 +1,70 @@
+[
+  {
+    "ms": 56,
+    "parts": []
+  },
+  {
+    "ms": 118,
+    "parts": []
+  },
+  {
+    "ms": 143,
+    "parts": []
+  },
+  {
+    "ms": 164,
+    "parts": []
+  },
+  {
+    "ms": 253,
+    "parts": [
+      {
+        "opacity": "0",
+        "part": "backdrop"
+      },
+      {
+        "opacity": "0",
+        "part": "dialog"
+      }
+    ]
+  },
+  {
+    "ms": 487,
+    "parts": [
+      {
+        "opacity": "0.852497",
+        "part": "backdrop"
+      },
+      {
+        "opacity": "0.852497",
+        "part": "dialog"
+      }
+    ]
+  },
+  {
+    "ms": 574,
+    "parts": [
+      {
+        "opacity": "1",
+        "part": "backdrop"
+      },
+      {
+        "opacity": "1",
+        "part": "dialog"
+      }
+    ]
+  },
+  {
+    "ms": 651,
+    "parts": [
+      {
+        "opacity": "1",
+        "part": "backdrop"
+      },
+      {
+        "opacity": "1",
+        "part": "dialog"
+      }
+    ]
+  }
+]

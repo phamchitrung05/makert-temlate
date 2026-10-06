@@ -1,6 +1,6 @@
 <!--
   =====================================================================
-  CHỨC NĂNG FILE: Chọn thumbnail và content images cho Post
+  CHỨC NĂNG FILE: Chọn thumbnail và bộ ảnh Gallery độc lập của Post
   =====================================================================
 
   Component giữ phần media của giao diện Post mới và tái sử dụng MediaAssetField
@@ -10,7 +10,7 @@
   - handleAiImage(): chuyển asset/provenance cho PostForm review trước khi ghi đè.
 
   INPUT/OUTPUT CỦA CLASS (tổng thể):
-  - INPUT : v-model thumbnail/contentImages, disabled khi form tải/lưu
+  - INPUT : v-model thumbnail/galleryImages, disabled khi form tải/lưu
   - OUTPUT: cập nhật asset đã chọn cho PostForm
   =====================================================================
 -->
@@ -23,7 +23,7 @@ import { useMediaCapabilities } from '@/views/apps/media/field/useMediaCapabilit
 const props = defineProps({ disabled: { type: Boolean, default: false }, title: { type: String, default: '' } })
 const emit = defineEmits(['aiImageApplied'])
 const thumbnail = defineModel('thumbnail', { type: Object, default: null })
-const contentImages = defineModel('contentImages', { type: Array, default: () => [] })
+const galleryImages = defineModel('galleryImages', { type: Array, default: () => [] })
 const imageDialog = ref(false)
 const { canUpload, canAttach } = useMediaCapabilities()
 
@@ -88,20 +88,20 @@ const handleAiImage = (asset, provenance) => {
         Image Gallery
       </template>
       <template #subtitle>
-        Optional
+        Bộ ảnh riêng của Post, sắp xếp theo thứ tự bạn chọn.
       </template>
     </VCardItem>
 
     <VCardText>
       <div class="media-picker-shell pa-4 rounded-lg">
         <MediaAssetField
-          v-model="contentImages"
+          v-model="galleryImages"
           :disabled="props.disabled"
           :can-attach="canAttach"
-          field="post.content_images"
+          field="post.gallery"
           multiple
           visibility="public"
-          label="Post content images"
+          label="Post image gallery"
         />
       </div>
     </VCardText>

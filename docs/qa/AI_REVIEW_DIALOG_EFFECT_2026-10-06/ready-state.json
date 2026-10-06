@@ -1,0 +1,18 @@
+{
+  "backdrops": 1,
+  "body": {
+    "clientHeight": 502,
+    "scrollHeight": 787,
+    "scrollTop": 285
+  },
+  "closeDisabled": false,
+  "footer": {
+    "bottom": 696,
+    "top": 626
+  },
+  "header": {
+    "bottom": 122,
+    "top": 24
+  },
+  "sourceRendered": true
+}

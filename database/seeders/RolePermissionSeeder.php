@@ -58,6 +58,7 @@ class RolePermissionSeeder extends Seeder
                 'posts.manage', 'media.view', 'media.upload', 'media.attach',
                 'media.delete', 'media.retry',
                 'ai_settings.manage',
+                'settings.view', 'settings.manage',
             ]),
             'editor' => $permissions->only([
                 'resources.view', 'resources.create', 'resources.update',

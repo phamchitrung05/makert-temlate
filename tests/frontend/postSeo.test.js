@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Kiểm checklist SEO và tránh đếm trùng ảnh inline/gallery.
+ * CHỨC NĂNG FILE: Kiểm checklist SEO theo vị trí ảnh content và Gallery độc lập.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE: evaluate(), các test word/keyword/URL/alt/fallback.
  * INPUT/OUTPUT CỦA CLASS (tổng thể): HTML/form/media giả -> checklist/score;
@@ -19,7 +19,7 @@ const origin = 'https://example.test'
  * =====================================================================
  */
 const evaluate = (overrides = {}, checked = false) => {
-  const form = { title: '', excerpt: '', content: '', seo: createSeo(), thumbnail: null, contentImages: [], ...overrides }
+  const form = { title: '', excerpt: '', content: '', seo: createSeo(), thumbnail: null, galleryImages: [], ...overrides }
 
   return analyzeSeo({ form, slug: 'duong-den-thanh-cong', checked, url: `${origin}/blog/test`, content: analyzeContent(form.content, origin) })
 }
@@ -70,23 +70,23 @@ describe('Post SEO rules', () => {
 
   it('counts alt per content image and unique media asset, ignoring decorative images', () => {
     const asset = { id: 1, alt_text: 'Ảnh' }
-    const result = evaluate({ thumbnail: asset, contentImages: [asset, { id: 2, alt_text: '' }], content: '<img alt="Mô tả"><img alt="" role="presentation">' })
+    const result = evaluate({ thumbnail: asset, galleryImages: [asset, { id: 2, alt_text: '' }], content: '<img alt="Mô tả"><img alt="" role="presentation">' })
 
     expect(result.rules.find(rule => rule.id === 'alt').progress).toBe('2/3')
     expect(result.rules.find(rule => rule.id === 'alt').passed).toBe(false)
   })
 
-  it('uses inline alt once when the same asset is also returned in the content gallery', () => {
-    const result = evaluate({ contentImages: [{ id: 7, alt_text: '' }], content: '<figure><img data-media-asset-id="7" src="https://example.test/image.png" alt="Mô tả tại vị trí chèn"><figcaption>Chú thích</figcaption></figure>' })
+  it('checks inline alt and gallery metadata independently when an image is explicitly selected for both roles', () => {
+    const result = evaluate({ galleryImages: [{ id: 7, alt_text: '' }], content: '<figure><img data-media-asset-id="7" src="https://example.test/image.png" alt="Mô tả tại vị trí chèn"><figcaption>Chú thích</figcaption></figure>' })
 
-    expect(result.rules.find(rule => rule.id === 'alt').progress).toBe('1/1')
-    expect(result.rules.find(rule => rule.id === 'alt').passed).toBe(true)
+    expect(result.rules.find(rule => rule.id === 'alt').progress).toBe('1/2')
+    expect(result.rules.find(rule => rule.id === 'alt').passed).toBe(false)
   })
 
-  it('checks each inline occurrence while keeping a separate legacy gallery image', () => {
-    const result = evaluate({ contentImages: [{ id: 7, alt_text: 'Metadata không thay thế alt HTML' }, { id: 8, alt_text: 'Ảnh trang trí' }, { id: 9, alt_text: 'Ảnh gallery riêng' }], content: '<img data-media-asset-id="7" alt="Mô tả"><img data-media-asset-id="7" alt=""><img data-media-asset-id="8" role="presentation" alt="">' })
+  it('checks every repeated content occurrence and the independent gallery images', () => {
+    const result = evaluate({ galleryImages: [{ id: 7, alt_text: 'Metadata không thay thế alt HTML' }, { id: 8, alt_text: 'Ảnh trang trí' }, { id: 9, alt_text: 'Ảnh gallery riêng' }], content: '<img data-media-asset-id="7" alt="Mô tả"><img data-media-asset-id="7" alt=""><img data-media-asset-id="8" role="presentation" alt="">' })
 
-    expect(result.rules.find(rule => rule.id === 'alt').progress).toBe('2/3')
+    expect(result.rules.find(rule => rule.id === 'alt').progress).toBe('4/5')
     expect(result.rules.find(rule => rule.id === 'alt').passed).toBe(false)
   })
 

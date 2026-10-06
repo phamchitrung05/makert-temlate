@@ -5,6 +5,7 @@ namespace App\Services\Ai\Provenance;
 use App\Models\AiImport;
 use App\Models\AiProvenance;
 use App\Models\Post;
+use App\Services\Ai\Images\AiThumbnailService;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 
@@ -110,6 +111,9 @@ final class AiProvenanceService
             }
             $import = $this->candidate($actorId, $runId);
             $result = (array) $import->result_json;
+            if ($import->operation !== 'image' && AiThumbnailService::pending($import)) {
+                throw ValidationException::withMessages(['ai_run_id' => 'Thumbnail đang được tạo. Hãy chờ ảnh trước khi lưu Post.']);
+            }
             if ($import->operation === 'image' && array_diff($fields, ['thumbnail']) !== []) {
                 throw ValidationException::withMessages(['ai_runs' => 'Image run chỉ được ghi provenance cho thumbnail.']);
             }
@@ -121,7 +125,25 @@ final class AiProvenanceService
                     throw ValidationException::withMessages(['ai_runs' => 'Thumbnail phải là asset đã được tạo bởi image run.']);
                 }
             }
-            $this->writeRunProvenance($actorId, $post, $import, $fields, $values, $result);
+            $textFields = $fields;
+            $imageRunId = data_get($result, 'draft.thumbnail.image_run_id');
+            if ($import->operation !== 'image' && in_array('thumbnail', $fields, true) && $imageRunId) {
+                $image = $this->candidate($actorId, $imageRunId);
+                $ownImage = $image->parent_id === $import->id && data_get($result, 'image_job_id') === $image->id;
+                $inheritedImage = $import->operation === 'regenerate'
+                    && data_get($import->input_json, 'parent_draft_snapshot.thumbnail.image_run_id') === $image->id
+                    && (string) data_get($import->input_json, 'parent_draft_snapshot.thumbnail.media_asset_id') === (string) data_get($image->result_json, 'image.media_asset_id');
+                if ($image->operation !== 'image' || (! $ownImage && ! $inheritedImage)
+                    || (string) data_get($image->result_json, 'image.media_asset_id') !== (string) data_get($result, 'draft.thumbnail.media_asset_id')) {
+                    throw ValidationException::withMessages(['ai_runs' => 'Nguồn thumbnail AI không khớp candidate.']);
+                }
+                $this->writeRunProvenance($actorId, $post, $image, ['thumbnail'], $values, (array) $image->result_json);
+                $textFields = array_values(array_diff($fields, ['thumbnail']));
+            }
+            $this->writeRunProvenance($actorId, $post, $import, $textFields, $values, $result);
+            if ($textFields !== $fields) {
+                $import->forceFill(['applied_fields' => $fields])->save();
+            }
         }
     }
 

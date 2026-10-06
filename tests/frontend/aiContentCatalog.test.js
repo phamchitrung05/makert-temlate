@@ -57,6 +57,38 @@ const createState = (selection = {}) => {
 }
 
 describe('Ai Content live catalog', () => {
+  it('selects the saved image default independently and filters capability, driver and availability', async () => {
+    const data = fixture()
+
+    data.presets = [{ key: 'openai-compatible', image_supported: true }, { key: 'text-only', image_supported: false }]
+    data.providers[1].driver = 'openai-compatible'
+    data.providers[1].models[0].capabilities = ['image_generation']
+    data.providers[1].models[1].capabilities = ['image_generation']
+    data.providers[1].models[2].capabilities = ['image_generation']
+    data.providers[1].models[2].is_enabled = false
+    data.providers[2].driver = 'text-only'
+    data.providers[2].models.push({ id: 99, remote_model_id: 'wrong-driver', capabilities: ['image_generation'], is_enabled: true, is_available: true })
+    data.settings = { default_text_model_id: 30, default_image_model_id: 20 }
+    service.list.mockResolvedValue(data)
+
+    const state = createState({ type: 'text', thumbnailMode: 'generate' })
+
+    await state.loadCatalog()
+    await nextTick()
+    expect(state.source.value).toMatchObject({ provider: 'content', model: 'text-model', imageModelId: 20 })
+    expect(state.catalog.value.imageModelOptions.map(option => option.value)).toEqual([20, 21])
+    expect(state.source.value.outputs).toContain('thumbnail')
+    state.source.value = { ...state.source.value, imageModelId: 21, model: 'text-model' }
+    await state.loadCatalog()
+    await nextTick()
+    expect(state.source.value.imageModelId).toBe(21)
+    state.source.value = { ...state.source.value, thumbnailMode: 'source' }
+    await nextTick()
+    expect(state.source.value.outputs).not.toContain('thumbnail')
+    state.source.value = { ...state.source.value, thumbnailMode: 'generate' }
+    await nextTick()
+    expect(state.source.value.outputs).toContain('thumbnail')
+  })
   beforeEach(() => {
     vi.resetAllMocks()
     scope = effectScope()

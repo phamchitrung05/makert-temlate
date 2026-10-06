@@ -12,6 +12,7 @@ use App\Http\Resources\AiProviderResource;
 use App\Http\Responses\BaseResponse;
 use App\Models\AiModel;
 use App\Models\AiProvider;
+use App\Models\AiWritingProfile;
 use App\Services\Ai\Providers\Catalog\AiProviderCatalogService;
 use App\Services\Ai\Settings\AiSettingsService;
 use Illuminate\Http\JsonResponse;
@@ -47,6 +48,8 @@ final class AiProviderController extends Controller
         return BaseResponse::success([
             'providers' => AiProviderResource::collection(AiProvider::query()->with('models')->orderBy('name')->get()),
             'settings' => $settings->all(),
+            'writing_profiles' => AiWritingProfile::query()->where('is_enabled', true)
+                ->orderBy('name')->orderBy('id')->get(['id', 'name'])->toArray(),
             'presets' => collect((array) config('ai-providers.presets', []))->map(fn (array $preset, string $key): array => [
                 'key' => $key, 'label' => $preset['label'] ?? $key, 'kind' => $preset['kind'] ?? 'custom',
                 'driver' => $preset['driver'] ?? $key, 'base_url' => $preset['base_url'] ?? null,

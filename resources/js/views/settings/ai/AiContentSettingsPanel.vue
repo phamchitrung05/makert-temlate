@@ -7,10 +7,12 @@
 import { getAlertColor } from '@/config/alertColors'
 
 defineProps({
+  hideHeading: Boolean,
   form: { type: Object, required: true },
   providerOptions: { type: Array, required: true },
   modelOptions: { type: Array, required: true },
   imageModelOptions: { type: Array, required: true },
+  writingProfileOptions: { type: Array, default: () => [] },
   loading: Boolean,
   loaded: Boolean,
   saving: Boolean,
@@ -26,7 +28,10 @@ const emit = defineEmits(['changeField', 'retry'])
 
 <template>
   <div>
-    <div class="d-flex align-center mb-1">
+    <div
+      v-if="!hideHeading"
+      class="d-flex align-center mb-1"
+    >
       <VIcon
         color="primary"
         size="22"
@@ -37,7 +42,10 @@ const emit = defineEmits(['changeField', 'retry'])
         Thiết lập AI &amp; Tạo nội dung
       </h2>
     </div>
-    <div class="text-caption text-medium-emphasis mb-6">
+    <div
+      v-if="!hideHeading"
+      class="text-caption text-medium-emphasis mb-6"
+    >
       Cấu hình mô hình sinh bài viết, prompt mẫu mặc định và các tự động hóa.
     </div>
 
@@ -104,6 +112,19 @@ const emit = defineEmits(['changeField', 'retry'])
       </VAlert>
 
       <VRow dense>
+        <VCol cols="12">
+          <AppSelect
+            :model-value="form.defaultWritingProfileId"
+            :items="writingProfileOptions"
+            label="Mẫu văn phong mặc định"
+            clearable
+            :disabled="saving"
+            :error-messages="fieldErrors.default_writing_profile_id"
+            hint="Các mẫu đang bật từ AI Prompt. Để trống nếu không áp dụng văn phong mặc định."
+            persistent-hint
+            @update:model-value="emit('changeField', 'defaultWritingProfileId', $event)"
+          />
+        </VCol>
         <VCol
           cols="12"
           sm="6"
@@ -138,12 +159,12 @@ const emit = defineEmits(['changeField', 'retry'])
         <VCol cols="12">
           <AppSelect
             :model-value="form.defaultImageModelId"
-            label="Model AI tạo ảnh thumbnail"
+            label="Model AI tạo thumbnail Post"
             :items="imageModelOptions"
             :disabled="saving || !imageModelOptions.length"
             :error-messages="fieldErrors.default_image_model_id"
             placeholder="Chọn model tạo ảnh"
-            hint="Model ảnh được dùng khi chọn tạo thumbnail bằng AI."
+            hint="Dùng khi chọn tạo thumbnail Post bằng AI trong luồng AI Content."
             persistent-hint
             clearable
             variant="outlined"
@@ -240,7 +261,7 @@ const emit = defineEmits(['changeField', 'retry'])
             :model-value="form.autoThumbnail"
             :disabled="saving"
             :error-messages="fieldErrors.auto_thumbnail"
-            label="Tự động xử lý thumbnail khi import link"
+            label="Mặc định bật thumbnail Post cho tác vụ AI Content"
             color="primary"
             density="compact"
             inset
@@ -256,7 +277,7 @@ const emit = defineEmits(['changeField', 'retry'])
             :model-value="form.autoSeo"
             :disabled="saving"
             :error-messages="fieldErrors.auto_seo"
-            label="Tự động tạo thẻ Meta và tối ưu điểm SEO"
+            label="Mặc định tạo metadata SEO cho nội dung"
             color="primary"
             density="compact"
             inset

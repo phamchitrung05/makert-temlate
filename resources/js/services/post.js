@@ -28,7 +28,7 @@ const unwrap = response => response?.success && 'data' in response ? response.da
  * CHỨC NĂNG: Chuẩn hóa Post cho form kể cả khi thiếu media/taxonomy
  * =====================================================================
  * INPUT: Post nullable từ API.
- * OUTPUT: Shape có thumbnail/content_images/categories/tags ổn định.
+ * OUTPUT: Shape có thumbnail/gallery_images/categories/tags ổn định; content giữ HTML/link.
  * SIDE EFFECT: Tạo object mới; không mutate Post đầu vào.
  * EXCEPTION/TRANSACTION: Không gọi API hoặc mở transaction.
  * =====================================================================
@@ -37,7 +37,7 @@ const normalize = post => post ? {
   ...post,
   media: {
     thumbnail: post.media?.thumbnail ?? null,
-    'content_images': Array.isArray(post.media?.content_images) ? post.media.content_images : [],
+    'gallery_images': Array.isArray(post.media?.gallery_images) ? post.media.gallery_images : [],
   },
   categories: Array.isArray(post.categories) ? post.categories : [],
   tags: Array.isArray(post.tags) ? post.tags : [],
@@ -75,8 +75,8 @@ const toPayload = payload => ({
     : [],
   media: {
     'thumbnail_id': payload.thumbnail?.id ?? null,
-    'content_image_ids': Array.isArray(payload.contentImages)
-      ? payload.contentImages.map(asset => asset.id).filter(Boolean)
+    'gallery_image_ids': Array.isArray(payload.galleryImages)
+      ? payload.galleryImages.map(asset => asset.id).filter(Boolean)
       : [],
   },
   ...(payload.aiProvenance?.runId ? {

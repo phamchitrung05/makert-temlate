@@ -16,6 +16,7 @@ use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Tests\TestCase;
 use Tests\UsesIsolatedDatabase;
 
@@ -121,7 +122,7 @@ class MediaTask8IntegrationTest extends TestCase
 
     /**
      * Nếu một media id sai, transaction Resource create rollback cả bản ghi
- * domain lẫn usage cover đã được ghi trước đó.
+     * domain lẫn usage cover đã được ghi trước đó.
      */
     public function test_resource_media_sync_rolls_back_when_one_asset_is_invalid(): void
     {
@@ -202,7 +203,7 @@ class MediaTask8IntegrationTest extends TestCase
     }
 
     /**
-     * Post dùng thumbnail/content_images riêng; update thay usage và delete
+     * Post dùng thumbnail/gallery riêng; content lưu link, update thay usage và delete
      * không xoá asset dùng chung.
      */
     public function test_post_media_fields_are_independent_and_detach_on_delete(): void
@@ -217,18 +218,18 @@ class MediaTask8IntegrationTest extends TestCase
             'content' => $this->inlineHtml($contentImage),
             'media' => [
                 'thumbnail_id' => $thumbnail->id,
-                'content_image_ids' => [$contentImage->id],
+                'gallery_image_ids' => [$contentImage->id],
             ],
         ])->assertCreated()
             ->assertJsonPath('data.media.thumbnail.id', $thumbnail->id)
-            ->assertJsonPath('data.media.content_images.0.id', $contentImage->id);
+            ->assertJsonPath('data.media.gallery_images.0.id', $contentImage->id);
 
         $post = Post::query()->findOrFail($created->json('data.id'));
 
         $this->withToken($token)->putJson("/api/admin/posts/{$post->id}", [
             'media' => [
                 'thumbnail_id' => $replacement->id,
-                'content_image_ids' => [$replacement->id],
+                'gallery_image_ids' => [$replacement->id],
             ],
         ])->assertOk()
             ->assertJsonPath('data.media.thumbnail.id', $replacement->id);
@@ -286,7 +287,7 @@ class MediaTask8IntegrationTest extends TestCase
     /**
      * Tạo file Spatie tối thiểu để ready gate đọc scan_status.
      */
-    private function mediaFor(MediaAsset $asset, string $fileName, string $scanStatus): \Spatie\MediaLibrary\MediaCollections\Models\Media
+    private function mediaFor(MediaAsset $asset, string $fileName, string $scanStatus): Media
     {
         return $asset->addMediaFromString('task-8-content')
             ->usingFileName($fileName)

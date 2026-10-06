@@ -22,6 +22,7 @@
 
 use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Responses\BaseResponse;
+use App\Services\Settings\ProjectScheduleRegistry;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -44,11 +45,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // =====================================================================
         // INPUT: scheduler Laravel. OUTPUT: cleanup định kỳ, khóa chống chạy trùng.
         // =====================================================================
-        $schedule->command('ai-import:cleanup')->daily()->withoutOverlapping(30);
-        $schedule->command('ai:cleanup-writing-profile-analyses')->daily()->withoutOverlapping(30);
-        if (config('ai-providers.sync_enabled', false)) {
-            $schedule->command('ai-providers:sync-models')->hourly()->withoutOverlapping(60);
-        }
+        app(ProjectScheduleRegistry::class)->register($schedule);
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
@@ -68,7 +65,7 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request): bool => $request->is('api/*') || $request->expectsJson(),
         );
 
-        $exceptions->render(function (\Throwable $exception, Request $request) {
+        $exceptions->render(function (Throwable $exception, Request $request) {
             if (! $request->is('api/*') && ! $request->expectsJson()) {
                 return null;
             }

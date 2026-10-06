@@ -1,9 +1,22 @@
 # FIX 1 — Ổn định AI Content và quy trình duyệt bài
 
 **Ngày lập:** 2026-10-02
-**Trạng thái 2026-10-05:** Task 1 `DONE`; Task 2 `DONE` trong phạm vi kỹ thuật đã chốt tại 12.35. Đã sửa gate số liệu, kiểm lại 19 output C đã lưu và chạy riêng Q33 bằng C ba bước; artifacts/status của study cũ giữ nguyên. Tiny Cloud thật đã kiểm trên `http://localhost:8000`, gồm toolbar, MediaLibrary, sửa/di chuyển/xóa ảnh, lưu/reload và Apply Post nháp. Theo lựa chọn của chủ dự án, hai người đọc chấm chất lượng được chuyển sang đợt riêng; chưa có điểm hoặc kết luận rollout. Toàn FIX 1 vẫn `IN PROGRESS`: workflow biên tập/duyệt, thumbnail generate, Reverb/VPS và Settings ngoài AI còn chờ. Phần Ai Prompt chưa API giữ minh họa rõ nhãn.
+**Trạng thái 2026-10-06:** Task 1 `DONE`; Task 2 `DONE` kỹ thuật theo 12.35. Workflow biên tập/duyệt trên `ai_imports` đã `DONE` tại 12.36; thumbnail sinh bằng AI đã `DONE` tại 12.37. Kho `ai_content_drafts` và lưu dài hạn tạm hoãn theo chủ dự án. Hai người đọc chấm chất lượng vẫn là đợt riêng; chưa có điểm hoặc kết luận rollout. Artifacts/status study lịch sử và QA Tiny Cloud tại 12.35 được giữ. Toàn FIX 1 vẫn `IN PROGRESS`: Reverb/VPS, chín tab Settings ngoài AI và QA Settings còn chờ. Phần Ai Prompt chưa API giữ minh họa rõ nhãn.
 **Mục tiêu:** Gom các lỗi đã xác nhận trong lúc test, chốt một lần rồi triển khai đồng bộ.
 **Điều chỉnh phạm vi:** Bỏ nhóm Provider/9Router khỏi công việc FIX 1 theo yêu cầu ngày 2026-10-03.
+
+**Quy ước gọi tên ảnh theo chủ dự án:**
+
+- **Ảnh trong content:** ảnh minh họa cho một đoạn hoặc phần của bài viết,
+  đặt bên trong nội dung; còn gọi là ảnh inline.
+- **Thumbnail của Post:** ảnh đại diện cho toàn bộ Post, nằm ở trường
+  Thumbnail/Featured Image.
+
+**Làm rõ thumbnail, 2026-10-06:** `DONE` tại 12.37 là sinh **thumbnail của Post**
+tại trang **AI Content**, rồi gắn vào Featured Image của Post nháp khi
+duyệt/Apply. Add/Edit Post đã có
+nút tạo ảnh thủ công bằng prompt/tiêu đề; luồng đọc nội dung Post đã biên tập
+để xây ý tưởng và sinh thumbnail phù hợp chưa triển khai, tạm để sau theo chủ dự án.
 
 **Mốc hiện tại:** UX tới 12.29, đối chiếu tiến độ tại 12.30; chất lượng bài
 bước 1–2 tại 12.31, bước 3–5 tại 12.32; gỡ B và bắt buộc C tại 12.33;
@@ -105,40 +118,40 @@ Task 2 đã hoàn tất kỹ thuật tại mục 12.35. Backend, Ai Prompt List/
 
 ## 3. Trang quản lý bài viết AI
 
-Luồng đề xuất:
+Luồng hiện tại (12.36–12.37):
 
 ```text
 URL / text / HTML file
         ↓
 ai_imports: queued → processing → ready / failed
         ↓
-ai_content_drafts: pending_review
+ai_imports.source_meta_json.editorial: pending_review
         ↓
 approve → posts.status=draft → editor Publish
 reject  → giữ lịch sử và lý do từ chối
 ```
 
-Trang `AI Drafts` là luồng dự kiến. Hiện trang `AI Content` dùng candidate trong `ai_imports`, chưa có lớp biên tập lưu riêng. Các việc cần tối thiểu:
+Trang `AI Content` dùng candidate và metadata biên tập trong `ai_imports` theo 12.36. Kho `AI Drafts` dài hạn là hướng dự kiến, đã tạm hoãn theo chủ dự án. Tiến độ hiện tại:
 
 - [x] Danh sách hiển thị đang xử lý/chờ duyệt/đã áp dụng/lỗi/hủy/hết hạn; chờ duyệt và đã áp dụng hiện là trạng thái suy ra từ tác vụ.
-- [ ] Thêm `ai_content_drafts`, trạng thái duyệt/từ chối thực sự, người duyệt, lịch sử/lý do và chính sách lưu dài hạn độc lập với retention tác vụ.
-- [ ] Giao diện so sánh nguồn/kết quả và lưu nguồn dài hạn theo bản biên tập; source snapshot kỹ thuật tối thiểu cho pipeline/checkpoint thuộc task 2, mục 12.12.
+- [ ] Thêm kho `ai_content_drafts` và lưu dài hạn độc lập retention — tạm hoãn. Trạng thái duyệt/từ chối, người duyệt và lịch sử/lý do đã có trên `ai_imports` tại 12.36.
+- [x] Giao diện so sánh nguồn snapshot/kết quả, người duyệt, lịch sử và lý do tại 12.36; lưu nguồn dài hạn độc lập retention vẫn tạm hoãn.
 - [x] Chỉnh sửa candidate trước khi duyệt.
 - [x] Tạo lại toàn bài hoặc từng phần.
 - [x] API apply ép Post `status=draft` và lưu provenance/liên kết với tác vụ AI.
-- [ ] Nối nút duyệt/apply và từ chối trên trang AI Content vào workflow biên tập riêng.
+- [x] Nối nút duyệt/apply và từ chối trên trang AI Content vào workflow biên tập trên bản ghi hiện có tại 12.36.
 - [x] Danh sách hiển thị thời gian tạo.
-- [x] Hiển thị provider/model/prompt version và lỗi từng tác vụ an toàn từ metadata, kể cả sau reload; lưu và hiển thị usage/token qua báo cáo checkpoint/diagnostics. Bằng chứng 12.24; workflow biên tập riêng vẫn chưa triển khai.
-- [ ] Không trộn trạng thái kỹ thuật với trạng thái biên tập.
+- [x] Hiển thị provider/model/prompt version và lỗi từng tác vụ an toàn từ metadata, kể cả sau reload; lưu và hiển thị usage/token qua báo cáo checkpoint/diagnostics. Bằng chứng 12.24 và workflow biên tập tại 12.36.
+- [x] Không trộn trạng thái kỹ thuật với trạng thái biên tập; metadata `editorial` độc lập lifecycle job tại 12.36.
 
 ## 4. Thứ tự triển khai phần còn lại sau audit
 
 1. Task 1 parser/validator đã hoàn thành; giữ các kiểm tra đó khi mở rộng provider contract sang schema theo từng nhiệm vụ.
 2. Triển khai task 2 theo các đợt tại 12.14: taxonomy thủ công, nguồn/contract, profile, pipeline ba bước, checkpoint/gate, TinyMCE và đánh giá chất lượng.
 3. Hoàn thiện extractor, validation MIME/encoding và preview nguồn trong cùng đợt nguồn của task 2; HTML file input và regenerate contract đã có.
-4. Thêm migration/model/API cho `ai_content_drafts`, lưu dài hạn và thao tác approve/reject.
-5. Nối UI duyệt/từ chối, compare/similarity và metadata; editor/regenerate đã có.
-6. Hoàn thiện nhánh thumbnail generate nếu dùng model ảnh trong luồng AI Content/Post (xem 9.7).
+4. Kho `ai_content_drafts` và lưu dài hạn tạm hoãn theo chủ dự án; API approve/reject đã xong trên `ai_imports` tại 12.36.
+5. UI duyệt/từ chối, so sánh nguồn/kết quả và lịch sử đã xong tại 12.36; đánh giá similarity/chất lượng người đọc thuộc đợt riêng.
+6. Thumbnail generate trong luồng AI Content → Post đã xong tại 12.37 (xem 9.7).
 7. Thêm event broadcast, Echo/Reverb và polling fallback; cấu hình process manager trên VPS, smoke test queue/reboot/reconnect.
 8. Nối chín tab Settings còn lại và hoàn thành browser QA theo mục 9.
 
@@ -200,12 +213,15 @@ tạo file audio. Danh sách vẫn theo retention của `ai_imports` (mặc đ�
 
 - [x] Shell Settings đã có tại `resources/js/pages/settings/index.vue`.
 - [x] Tab AI & Content đọc/lưu API thật; typed settings, validation, transaction, audit và redaction đã có, dùng chung service với AI Providers.
-- [ ] Thay fixture của chín tab ngoài AI bằng dữ liệu từ API admin có xác thực Sanctum.
+- [x] Thay fixture của chín tab ngoài AI bằng API Sanctum/capability thật tại 9.9; Webhooks ghi rõ chưa hỗ trợ.
 - [ ] Áp dụng redaction/write-only secret cho các nhóm ngoài AI: SMTP password, reCAPTCHA và webhook secret; không để frontend đọc `.env`.
-- [ ] Áp dụng ưu tiên database → config/env cho các nhóm ngoài AI; AI Settings đã có cơ chế lưu/default riêng.
-- [ ] Áp dụng allowlist, transaction, audit actor/key và bảo vệ secret cho mọi đường ghi Settings ngoài AI.
+- [x] Áp dụng ưu tiên database → config/env cho site/media/seo/mail/security/languages; AI giữ cơ chế riêng.
+- [x] Nhóm mới dùng allowlist, transaction, audit actor/key và bảo vệ SMTP secret; capability chưa có không bật từ UI.
 
-### 9.2 Bản đồ dữ liệu theo tab
+### 9.2 Bản đồ dữ liệu ban đầu theo tab
+
+Bản đồ dưới đây là thiết kế ngày 2026-10-03; trạng thái đã triển khai ở 9.9.
+Các mục ngoài capability hiện có vẫn là backlog, không còn fixture trong UI.
 
 | Tab | Dữ liệu hiện tại | Nguồn dữ liệu mục tiêu |
 | --- | --- | --- |
@@ -222,17 +238,17 @@ tạo file audio. Danh sách vẫn theo retention của `ai_imports` (mặc đ�
 
 `AiSettings` hiện đã có API riêng và đang được worker dùng. Không tạo một đường ghi thứ hai cho provider/model; Settings page phải dùng chung service/composable với AI Providers.
 
-Task 2 quản lý mẫu văn phong tại Systerm AI → Ai Prompt; tab AI & Content dùng `default_writing_profile_id` (12.6–12.7). Backend CRUD/profile analysis/default profile setting đã có. Trang Ai Prompt đã custom theo theme và dùng dữ liệu minh họa; plan nối API, quản lý mẫu và các phần còn thiếu ở 12.18. Select mẫu mặc định trong Settings chưa nối giao diện.
+Task 2 quản lý mẫu văn phong tại Systerm AI → Ai Prompt; tab AI & Content dùng `default_writing_profile_id` (12.6–12.7). Backend CRUD/profile analysis/default profile setting đã có. Trang Ai Prompt đã custom theo theme và dùng dữ liệu minh họa; plan nối API, quản lý mẫu và các phần còn thiếu ở 12.18. Select mẫu mặc định trong Settings đã nối catalog/writer AI chung tại 9.9.
 
 ### 9.3 API và quyền
 
-- [ ] Thêm `GET /api/admin/settings` trả envelope theo section, options, capability và `updated_at`; secret chỉ có cờ `configured`.
-- [ ] Thêm `PATCH /api/admin/settings/{group}` cho `site`, `media`, `seo`, `mail`, `security`; mỗi group có FormRequest và resource/transform riêng. Không thêm writer thứ hai cho AI.
+- [x] GET /api/admin/settings trả section/options/quyền ghi/version/updated_at; SMTP secret chỉ có cờ password_configured.
+- [x] PATCH /api/admin/settings/{group} cho site/media/seo/mail/security/languages; FormRequest chọn rules theo nhóm, service transform/redaction. AI giữ writer riêng hiện có.
 - [x] Giữ và dùng các route AI hiện có: `GET /api/admin/settings/ai`, `PUT /api/admin/settings/ai/settings`.
 - [ ] Aggregate Settings endpoint compose dữ liệu AI từ service hiện có.
-- [ ] Thêm endpoint riêng cho `webhooks`, `cron`, `languages` và `system-info` khi dữ liệu không phải typed setting.
-- [ ] Bổ sung `settings.view` vào permission catalog, cấp `settings.manage` cho role phù hợp bằng migration/seeder; `ai_settings.manage` vẫn tách riêng.
-- [ ] Thêm optimistic concurrency bằng `updated_at` hoặc version để tránh ghi đè khi mở nhiều tab; trả `409` khi xung đột.
+- [x] Endpoint đọc Cron/Webhooks/System Info và preferences locale; Languages lưu typed trong API nhóm. Webhooks hiện chỉ trả capability chưa hỗ trợ.
+- [x] Bổ sung settings.view/manage, grant admin/super-admin bằng migration/seeder và giữ quyền đã tùy chỉnh; quyền AI riêng.
+- [x] Nhóm mới bắt buộc version; AI nhận settings_version từ client mới. Stale trả 409; client AI cũ vẫn tương thích.
 
 ### 9.4 Thứ tự triển khai
 
@@ -249,18 +265,18 @@ Task 2 quản lý mẫu văn phong tại Systerm AI → Ai Prompt; tab AI & Cont
 
 - [x] Feature tests cho AI Settings/provider: auth/permission, defaults, partial update, validation, snapshot và secret redaction.
 - [x] Frontend tests cho AI Settings/catalog: hydrate, options động, save success/error, retry, field errors và chống lưu trùng.
-- [ ] Feature tests cho các nhóm Settings còn lại: validation, transaction, audit, redaction và `409` concurrency, kể cả concurrency của AI Settings.
-- [ ] Test runtime cho media/SEO/mail/security sau refresh; AI snapshot/worker refresh đã có, kiểm chứng runtime trên VPS vẫn chờ.
-- [ ] Frontend tests cho các nhóm còn lại, dirty state, conflict handling và stale response.
+- [x] Feature tests typed Settings: quyền/validation/persistence/audit/redaction/409 và concurrency writer AI; webhook CRUD/run history vẫn chờ.
+- [x] Test runtime Media/SEO/mail/security sau refresh local; AI snapshot/worker refresh đã có. Kiểm VPS/SMTP thật vẫn chờ.
+- [x] Frontend tests cho nhóm typed/operational, dirty/conflict/stale response, SMTP secret, locale và mẫu văn phong.
 - [ ] Browser QA: đủ 10 tab ở desktop/mobile, dark mode, refresh sau save, thiếu quyền, timeout API và empty state.
-- [ ] Hoàn thành khi không còn giá trị nghiệp vụ hard-code trong `index.vue`, mọi field editable có API + validation + audit, field read-only có nguồn runtime rõ ràng.
+- [x] Page không còn fixture nghiệp vụ; input editable có API/validation/audit, read-only lấy runtime hoặc ghi rõ capability chưa hỗ trợ.
 
 ### 9.6 Điểm cần chốt trước khi code
 
-- [ ] Cron chỉ đọc scheduler/run history ở đợt đầu hay cho tạo/sửa schedule trong DB?
-- [ ] Languages dùng danh sách locale trong config hay cần bảng quản trị locale riêng?
-- [ ] SMTP/GA/GSC/reCAPTCHA cho phép ghi DB có mã hóa hay vẫn bắt buộc env ở production?
-- [ ] Nút “Lưu thay đổi” lưu tuần tự từng group hay có endpoint bulk transaction?
+- [x] Cron chỉ đọc registry chung ở đợt này; không cho nhập command/sửa lịch, run history chưa có.
+- [x] Languages dùng config + file dịch, enabled/default lưu typed Settings.
+- [x] SMTP cho ghi DB với password mã hóa; GA/GSC/CAPTCHA chưa tích hợp nên không có input.
+- [x] Lưu riêng group đang xem; version/dirty và dialog bảo vệ draft.
 
 ### 9.7 Đợt 1: AI & Content đã nối dữ liệu — 2026-10-03
 
@@ -271,8 +287,8 @@ Task 2 quản lý mẫu văn phong tại Systerm AI → Ai Prompt; tab AI & Cont
 - [x] Migration bổ sung bốn property còn thiếu đã chạy ở local; đối chiếu xác nhận sáu setting cũ và catalog provider/model được giữ nguyên.
 - [x] Tác vụ mới chụp model, temperature, system prompt và số từ khuyến nghị vào snapshot; lựa chọn SEO/thumbnail riêng của tác vụ được ưu tiên. Số từ là khuyến nghị trong prompt, có thể điều chỉnh bằng yêu cầu độ dài riêng.
 - [x] Form AI Content và dialog tạo Post nhận mặc định SEO/thumbnail đã lưu, giữ lựa chọn đã sửa khi API tải muộn và áp dụng mặc định khi tạo form mới.
-- [x] AI Content và dialog tạo Post hiện lấy thumbnail từ URL nguồn; thiếu ảnh nguồn thì để trống, không tự chuyển sang model ảnh. Tắt SEO loại field SEO tự tạo; regenerate field riêng theo lựa chọn.
-- [ ] Hoàn thiện thumbnail `generate` trong luồng AI Content/Post: mở lựa chọn trên UI và nối ảnh sinh ra vào `draft.thumbnail` để list/apply dùng được. Backend nhánh ảnh hiện ghi `parent.result_json.image.media_asset_id`, còn list/apply đọc `draft.thumbnail.media_asset_id`.
+- [x] Với mode `source`, AI Content và dialog tạo Post lấy thumbnail từ URL nguồn; thiếu ảnh nguồn thì để trống, không tự chuyển sang model ảnh. Tắt SEO loại field SEO tự tạo; regenerate field riêng theo lựa chọn. Mode `generate` được nối riêng tại 12.37.
+- [x] Hoàn thiện thumbnail `generate` trong luồng AI Content → Post tại 12.37: UI chọn ảnh nguồn/AI, model ảnh riêng và prompt tùy chọn; child ảnh gắn vào `draft.thumbnail.media_asset_id`. List/review hiển thị ảnh và tiến trình/lỗi; thử lại/hủy riêng ảnh, duyệt Post draft và provenance model ảnh đã kiểm thử.
 - [x] Feature/frontend tests kiểm tra lưu rồi đọc lại, validation/quyền, catalog và lựa chọn model, snapshot, automation flags và regenerate.
 - [ ] Browser QA lưu/tải lại với tài khoản đăng nhập của người dùng.
 
@@ -283,11 +299,33 @@ Task 2 quản lý mẫu văn phong tại Systerm AI → Ai Prompt; tab AI & Cont
 - [x] `targets.*.outputs` là các nhóm được phép chọn. `output_definitions` chứa nhãn, trường canonical và loại nguồn phù hợp; API trả options từ config.
 - [x] Bỏ bốn checkbox trong Tùy chọn AI, thay bằng một `AppSelect` chọn nhiều tag. Lựa chọn được giữ khi tải lại, giới hạn theo tài nguyên và đặt lại theo defaults khi mở form mới.
 - [x] Tác vụ chụp `requested_outputs`/`fields`; prompt và kết quả chỉ cập nhật nhóm được chọn. Nhóm không chọn giữ dữ liệu nguồn hoặc candidate cha; tiêu đề nhập tay được giữ. Request cũ không có lựa chọn vẫn được hỗ trợ.
-- [x] Thumbnail trong AI Content vẫn lấy từ URL nguồn; không tự chuyển sang model tạo ảnh khi thiếu ảnh nguồn.
+- [x] Mode `source` lấy thumbnail từ URL nguồn; không tự chuyển sang model tạo ảnh khi thiếu ảnh nguồn. Người dùng chọn `generate` để tạo ảnh AI tại 12.37.
 - [x] Kiểm thử config/registry, lựa chọn theo target, snapshot, lọc kết quả provider và giao diện select. Build production được cập nhật.
 - [ ] Browser QA select với tài khoản đăng nhập của người dùng.
 
-## 10. Tổng hợp phần còn lại — audit 2026-10-03, cập nhật tiến độ 2026-10-05
+### 9.9 Chuẩn hóa toàn bộ trang Settings — 2026-10-06
+
+- [x] Tách route thành navigation, form theo schema, locale panel, mail test và operational panel; giữ Vuetify/Vuexy, màu alert và AppDialogLayout.
+- [x] Sáu nhóm typed ngoài AI: site/media/seo/mail/security/languages. Null fallback config, refresh khi đọc, allowlist/transaction/audit keys, SMTP password encrypted/write-only.
+- [x] GET /api/admin/settings và PATCH /api/admin/settings/{group}, Sanctum + settings.view/manage; quyền AI riêng. Có loading/retry, dirty từng tab, reset, giữ draft khi đổi tab/422/409, chặn response cũ/lưu trùng.
+- [x] AI & Content giữ catalog/writer cũ; mẫu văn phong mặc định từ catalog thật, có version và nhãn thumbnail Post rõ ràng.
+- [x] Media dùng giới hạn/extension subset trong upload validator và profile thumbnail/OG trong conversion; giữ MIME, dangerous extension, private ZIP và ảnh gốc.
+- [x] Site/SEO áp dụng tên/meta/canonical/contact trên public, global metadata fallback và /robots.txt. Website URL không đổi địa chỉ kết nối ứng dụng.
+- [x] Email dùng ProjectMailService refresh transport khi gửi thử; log/array không báo giao thư thành công. Bảo mật dùng thời hạn token mới và rate limit login.
+- [x] Locale lấy config + file dịch thực, menu dùng enabled/default. Chỉ en/fr/ar có bản dịch; các trang quản trị custom vẫn là tiếng Việt.
+- [x] Cron dùng ProjectScheduleRegistry chung web/console; System Info đọc phiên bản/DB/disk/queue thật. Webhooks là empty state capability chưa hỗ trợ.
+- [x] Backend/frontend tests, lint/Pint/build và browser đủ 10 tab desktop sáng/tối + mobile. Save/reload/draft/reset được kiểm; hai migration thêm nhóm/quyền đã chạy local.
+
+Backlog mở rộng còn lại: webhook CRUD/delivery/history, scheduler run history/worker
+heartbeat, logo/favicon upload, GA/GSC/2FA/CAPTCHA và kiểm SMTP/VPS. Chưa cho phép
+bật các tính năng này từ UI. AI vẫn dùng endpoint riêng theo quyền riêng.
+Lỗi/quyền/timeout/empty state đã kiểm bằng test tự động; browser chưa mô phỏng
+mọi trạng thái lỗi API. Những checkbox thiết kế ở 9.2–9.6 chỉ được hoàn thành
+trong phạm vi đã triển khai ở mốc này.
+
+Bằng chứng: [Settings QA](qa/SETTINGS_2026-10-06/README.md).
+
+## 10. Tổng hợp phần còn lại — audit 2026-10-03, cập nhật tiến độ 2026-10-06
 
 Các checkbox bên trên gồm cả task, tiêu chí và quyết định. Không cộng checkbox trống thành số task độc lập. Những nhóm chưa hoàn thành:
 
@@ -296,13 +334,12 @@ Các checkbox bên trên gồm cả task, tiêu chí và quyết định. Không
 | Structured output | Tuning temperature và quyết định debug raw response ở đợt riêng. Task 1 đã xong code, diagnostics, regression, build, restart worker và browser smoke local với output được kiểm soát | 2A, 11.6 |
 | Đánh giá chất lượng C — đợt riêng | Task 2 đã `DONE` kỹ thuật tại 12.35. Hai người đọc chưa chấm; tiếp tục xác nhận facts/coverage, văn phong và công biên tập trước kết luận chất lượng/rollout | 2B, 12.15, 12.35 |
 | Extractor/nguồn | Raw HTML/file multipart/encoding và preview đã nối AI Content tại 12.24, không flatten file ở client. Còn mở rộng coverage nguồn/layout trong nghiên cứu chất lượng; không còn là hạng mục UI/API chưa nối | 2D, 12.15, 12.24 |
-| Biên tập AI | `ai_content_drafts`, lưu dài hạn, approve/reject UI/API, người duyệt/lịch sử/lý do và so sánh nguồn/kết quả. Apply Post draft và báo cáo metadata/usage/lỗi của tác vụ kỹ thuật đã có | 3, 12.24 |
-| Thumbnail sinh bằng AI | Nối lựa chọn generate và kết quả ảnh vào thumbnail của candidate/Post; hiện luồng tạo bài chỉ lấy ảnh nguồn hoặc để trống | 9.7 |
+| Biên tập AI — tạm hoãn | Kho `ai_content_drafts`, lưu nguồn/bản nháp dài hạn và duyệt chéo owner chờ đợt riêng. Approve/reject UI/API, người duyệt/lịch sử/lý do và so sánh nguồn đã xong trên `ai_imports` | 3, 12.36 |
 | Realtime/VPS | Broadcast, Echo/Reverb, process manager, worker/scheduler production và QA reboot/reconnect | 2C |
 | Settings ngoài AI | Chín tab: Tổng quan, Media, SEO, Email, Cron Jobs, Webhooks, Languages, Security, System Info; API, typed settings, quyền, runtime và tests tương ứng | 9.1–9.6 |
 | Settings workflow/QA | Concurrency/409 (cả AI), dirty/conflict/stale-response handling và browser QA đăng nhập desktop/mobile/dark mode | 9.3, 9.5, 9.7, 9.8 |
 
-**Đã có, không nằm trong phần chờ:** chuẩn hóa ba config AI, select nhiều tag từ config, AI Settings động, model thumbnail selector, raw HTML/file/encoding và preview, editor/regenerate, API apply Post draft/provenance, thumbnail nguồn và hiển thị trong danh sách, model catalog sync/test từng model, timeout/queue budget, polling backoff, kiểm kết quả AI trước `ready`, diagnostics/usage theo allowlist và lỗi validation sau reload. Sáu nhóm UI/API tại 12.23 đã triển khai ở 12.24; CRUD văn phong và chuẩn dialog/loading tại 12.25–12.29 đã xong.
+**Đã có, không nằm trong phần chờ:** chuẩn hóa ba config AI, select nhiều tag từ config, AI Settings động, raw HTML/file/encoding và preview, editor/regenerate, duyệt/từ chối/so sánh/lịch sử, Apply Post draft/provenance, thumbnail nguồn hoặc sinh bằng AI (12.37), model catalog sync/test từng model, timeout/queue budget, polling backoff, kiểm kết quả AI trước `ready`, diagnostics/usage theo allowlist và lỗi validation sau reload. Sáu nhóm UI/API tại 12.23 đã triển khai ở 12.24; CRUD văn phong và chuẩn dialog/loading tại 12.25–12.29 đã xong.
 
 **Phạm vi cần chốt nếu mở rộng:** Resource/Sound hiện chỉ tạo candidate văn bản, chưa apply sang domain tương ứng hoặc tạo file audio. Chưa coi phần mở rộng này là task bắt buộc của FIX 1.
 
@@ -671,13 +708,13 @@ Sửa/tắt profile không thay đổi run đang chạy hoặc lịch sử. Run 
 
 Ảnh inline thuộc nội dung bài, khác vai trò thumbnail. Người dùng chọn/upload ảnh ngay trong TinyMCE tại con trỏ; không phải mở thêm một media dialog độc lập bên ngoài editor hoặc chọn lại ảnh trong một gallery thứ hai.
 
-**Luồng V1:** tạo bài → sửa trong TinyMCE → nút ảnh cho chọn asset có sẵn hoặc upload qua MediaLibrary → editor chèn URL và asset ID → lưu candidate/Post → backend xác thực và đồng bộ usage. `PostEditor.vue` là điểm tích hợp chung để cả Post editor và AI candidate dùng cùng hành vi.
+**Contract cập nhật tại 12.41:** Post chèn ảnh bằng link, có thể lặp cùng link ở nhiều vị trí; HTML không tạo quan hệ media. Gallery lưu bộ ảnh riêng có thứ tự qua `post.gallery`. `PostEditor.vue` dùng URL thuần cho Post; candidate AI bật `media-references` để giữ ref nội bộ phục vụ kiểm nguồn và regenerate.
 
 1. Nối `file_picker_callback`/`images_upload_handler` hoặc hook tương đương của editor với API MediaLibrary hiện có; validate loại/kích thước/quyền upload bằng backend.
-2. Upload/chọn trả `MediaAsset` ID và URL, chèn `img` có tham chiếu ổn định, ví dụ `data-media-asset-id`, alt/caption người dùng có thể sửa. Cấu hình editor giữ thuộc tính tham chiếu này.
-3. Backend parse HTML khi lưu, kiểm quyền asset và URL khớp asset; không tin ID/URL từ HTML client. Đồng bộ vào contract media hiện có (`media.content_image_ids`/usage `post.content_images`) theo asset thực sự xuất hiện.
+2. Upload/chọn trả URL public để Post chèn `img`, hoặc người dùng nhập link trực tiếp; alt/caption theo từng vị trí. Candidate AI giữ thêm `data-media-asset-id` trong HTML của bản nháp.
+3. Post request/action kiểm URL/markup bằng `ContentImageUrlValidator`, không tạo usage từ content. Gallery nhận `media.gallery_image_ids` và ghi `post.gallery`; candidate AI vẫn kiểm ID/quyền/URL asset tại boundary riêng.
 4. Sanitize cho phép `img`, `figure`, `figcaption` và một tập thuộc tính an toàn; chặn event handler/URL nguy hiểm. File upload phải xong trước lưu; không lưu `blob:`/base64 tạm làm URL nội dung cuối.
-5. Di chuyển/xóa ảnh trong editor được phản ánh vào usage sau khi lưu; xóa tham chiếu không tự xóa file MediaAsset toàn cục. Cleaner không xóa asset đang được Post/candidate khác sử dụng.
+5. Di chuyển/xóa ảnh trong editor chỉ đổi HTML và không làm đổi Gallery. Cleaner AI đọc URL trong Post trước khi dọn ảnh tạm, không tạo quan hệ content; refs candidate còn retention vẫn được bảo vệ.
 6. Thất bại upload/lưu phải hiển thị lỗi và giữ draft; reload, sửa candidate và Apply vẫn giữ ảnh đúng vị trí.
 
 **Regenerate nội dung đã có ảnh:** chuyển ảnh thành placeholder/ref ID được backend cung cấp trước khi gửi text AI. Writer/Editor chỉ giữ/đặt ref được phép; không tự tạo URL hoặc asset ID. Backend khôi phục HTML ảnh từ map đã xác thực, kiểm thiếu/ref không tồn tại và không để bước sanitize làm mất ảnh. Duy trì vị trí hợp lý theo block; người dùng vẫn có thể chỉnh/xóa trong TinyMCE.
@@ -1572,3 +1609,157 @@ Không gọi model thật, không migrate database đang dùng.
 Bằng chứng/phạm vi/lệnh kiểm tra: [AI Content Review QA](qa/AI_CONTENT_REVIEW_2026-10-05.md).
 Task tiếp theo theo backlog còn lại: thumbnail generate → Realtime/VPS →
 chín tab Settings ngoài AI. Lưu dài hạn và phân quyền duyệt chéo owner chờ đợt riêng.
+
+### 12.37 Hoàn tất thumbnail sinh bằng AI — 2026-10-06
+
+**Kết luận:** tạo thumbnail AI cho candidate ở AI Content và gắn vào Post khi
+duyệt đã `DONE` kỹ thuật. Toàn FIX 1
+vẫn `IN PROGRESS`; task tiếp theo là Realtime/VPS rồi chín tab Settings ngoài AI.
+Kho draft dài hạn, duyệt chéo owner và chấm chất lượng vẫn theo phạm vi đã chốt.
+
+**Phạm vi ảnh:** thumbnail của Post lưu tại `draft.thumbnail.media_asset_id`, được
+map sang `media.thumbnail_id` và usage `post.thumbnail` khi tạo Post draft.
+Mốc này không triển khai sinh ảnh inline hoặc phân tích nội dung Post để tạo
+thumbnail. Nút tạo ảnh độc lập trong `PostMediaPanel` đã có từ trước, chỉ nhận
+tiêu đề/prompt nhập tay; không được tính là luồng mới đã nghiệm thu tại 12.37.
+Đề xuất thumbnail dựa trên nội dung bài mới nhất tạm hoãn ngày 2026-10-06.
+
+**Đã triển khai:**
+
+- Form tạo và dialog regenerate chọn thumbnail nguồn hoặc AI; model ảnh độc lập
+  với model nội dung, chỉ hiện model bật/khả dụng/có capability và driver tạo ảnh.
+  Prompt ảnh tùy chọn, tối đa 4.000 ký tự. Generate dùng được với URL, text,
+  prompt, HTML hoặc file; thumbnail-only giữ snapshot và không gọi model text.
+- `AiThumbnailOptions` dùng chung lựa chọn; `AiThumbnailStatus` hiển thị preview,
+  tiến trình/lỗi, kiểm tra, thử lại và hủy. Component trình bày chỉ phát sự kiện;
+  composables/service giữ API và polling. Select có nhãn truy cập được trên mobile.
+- `ProcessAiImportJob` lưu parent ready và child ảnh trong cùng transaction;
+  dispatch sau commit. `AiThumbnailService` gắn ảnh vào
+  `draft.thumbnail.media_asset_id`, kèm `origin=generated` và `image_run_id`.
+  Summary/detail/review trả `thumbnail_generation` và lựa chọn ảnh an toàn.
+- Worker khóa độc quyền theo image run; khi khóa bận, đưa delivery trở lại queue.
+  Retry/hủy chỉ tác động child ảnh, không tạo lại bài hoặc thêm dòng vào list bài.
+  Ảnh thất bại giữ nội dung ready; kết quả trễ bị chặn khi parent đã duyệt/từ chối,
+  hết hạn hoặc child không còn hiện hành. Đồng bộ ảnh giữ chỉnh sửa mới nhất.
+- Có thể sửa/từ chối khi ảnh đang chạy; duyệt bị chặn đến khi ảnh có trạng thái
+  cuối. Hủy ảnh cho phép duyệt các field còn lại. Version cũ bị từ chối nếu ảnh
+  hoặc bản nháp thay đổi. Apply tạo Post draft, media usage và provenance thumbnail
+  lấy đúng image run/provider/model, kể cả ảnh kế thừa khi regenerate field khác.
+- Backend kiểm `media.upload`, model ID/cặp provider-model hợp lệ và quyền owner;
+  không tự thay lựa chọn model sai. Không thêm migration hoặc đổi retention.
+
+**Kiểm chứng cuối:** backend **390 tests / 2727 assertions**, frontend
+**46 files / 333 tests**, Pint + ESLint/Stylelint scoped + `git diff --check` đạt;
+production build **2 phút 6 giây**. Regression bao gồm success/failure/retry/cancel,
+edit/version, phản hồi trễ, khóa worker bận, regenerate và media/provenance/cleanup.
+Bộ PHP chạy với GD đã bật sẵn trong CLI hiện tại, không đổi php.ini.
+
+**Browser QA:** Laravel/Vue thật trên localhost với SQLite/tài khoản/media fixture
+riêng, viewport mobile 409 × 590. Đã chọn model text/ảnh riêng, kiểm pending chặn
+duyệt, retry/hủy ảnh giữ ba dòng bài và duyệt bản có ảnh thành Post draft.
+Đối chiếu DB xác nhận media usage và provenance `qa-thumbnail / qa-image`.
+Không chạy queue worker hoặc gọi provider AI thật; chưa đánh giá chất lượng ảnh
+từ dịch vụ thật. Không migrate DB đang dùng hoặc sửa `.env`.
+
+Báo cáo và bằng chứng: [AI Thumbnail QA](qa/AI_THUMBNAIL_2026-10-06/README.md).
+API contract, `PLAN.md`, inventory và cấu trúc project đã đồng bộ; các báo cáo
+12.17–12.36 và study cũ được giữ nguyên.
+
+### 12.38 Sửa mở dialog nguồn/lịch sử và làm rõ nội dung đối chiếu — 2026-10-06
+
+Người dùng phản ánh màn hình tối trước khi dialog xuất hiện. CSS Vuexy đặt scrim
+`opacity: 1 !important`, trong khi hiệu ứng mở dialog của Vuetify còn chạy.
+Loading overlay bên trong review card cũng tạo thêm lớp tối lúc GET đang chờ.
+
+- `AiContentReviewDialog` tắt transition riêng, hiện khung cùng nền; tiến trình
+  và thông báo tải đặt inline trong body. Header/footer và nút X/Đóng vẫn hiện.
+- `AiContentComparison` nhận `loading`; giữ hai cột, hiện chờ tải thay vì báo
+  không có nguồn trước khi API trả về. Chú thích giải thích nguồn là bản chụp
+  đầu vào, còn bản AI là bản nháp hiện tại gồm chỉnh sửa đã lưu.
+- Nguồn đọc từ `ai_imports.source_meta_json.article_source.content_html`, fallback
+  `source_text`; bản AI đọc `result_json.draft.content_html`. Lịch sử sự kiện ở
+  `activity_log`, trạng thái duyệt ở `source_meta_json.editorial`; Post được duyệt
+  lưu `posts.content` với status draft. Không có thay đổi schema/retention.
+
+**Kiểm chứng:** ba file frontend liên quan **23 tests** đạt; ESLint/Stylelint
+scoped, `git diff --check` và production build **1 phút 23 giây** đạt.
+Test dùng VDialog/VOverlay thật kiểm loading, một nền, nút đóng và after-leave;
+tests composable giữ chặn quyết định/stale-response. Browser localhost dùng DB
+fixture riêng xác nhận card visible/opacity 1 khi `aria-busy=true`, một scrim,
+đóng nút X rồi mở bài khác và đóng footer. Không gọi generation AI hoặc migrate
+DB ứng dụng; kết quả full suites tại 12.37 là lượt trước, không cộng vào lượt này.
+
+Bằng chứng và phạm vi: [QA dialog nguồn/lịch sử](qa/AI_REVIEW_DIALOG_2026-10-06/README.md).
+Mốc này là sửa UX của workflow hiện có; toàn FIX 1 vẫn `IN PROGRESS`.
+
+### 12.39 Khôi phục hiệu ứng dialog nguồn/lịch sử đúng với project — 2026-10-06
+
+Người dùng không chấp nhận cách tắt transition tại 12.38 vì dialog không còn
+mở giống những dialog khác. Mốc 12.38 được giữ làm lịch sử; hành vi hiện tại
+được thay thế bằng hiệu ứng chuẩn Vuetify/Vuexy và layout dùng chung của project.
+
+- `AiContentReviewDialog` dùng `VDialog scrollable` với transition mặc định,
+  `AppDialogLayout`, header/footer cố định và nút X. Không có loading overlay
+  phủ card; trạng thái tải vẫn nằm inline trong body.
+- CSS scoped khôi phục fade cho scrim riêng của dialog, khắc phục override
+  `opacity: 1 !important` của Vuexy. Khi không bật reduced motion, nền dùng cùng
+  easing/thời lượng mở **225 ms**, đóng **125 ms** với khung dialog.
+- GET chạy ngay khi mở. Chỉ parse/render văn bản nguồn và bản AI dài sau
+  `after-enter`; giữ nội dung đến hết hiệu ứng đóng rồi dọn qua `after-leave`.
+  Khi mở lại, trạng thái render được reset; dữ liệu vẫn do composable hiện có quản lý.
+
+**Kiểm chứng mới:** ba file frontend liên quan **24 tests** đạt; ESLint/Stylelint
+scoped đạt; production build **1 phút 7 giây** đạt. Test VDialog thật kiểm dữ liệu
+trả sớm chưa render trong enter, render sau enter và còn nguyên trong leave.
+
+**Browser QA:** Laravel/Vue thật với SQLite/account fixture riêng, mở/đóng/mở lại
+ba candidate. Lấy mẫu opacity ngắn khi mở xác nhận nền và khung cùng
+**0 → 0.852497 → 1**; khi đóng cùng **1 → 0.933624 → 0.562011** trước khi DOM bị dọn.
+Lấy mẫu đầy đủ xác nhận text chưa render trong enter và còn trong leave.
+Kiểm body cuộn đến lịch sử: header/footer vẫn hiện, một scrim, nút X dùng được.
+Mốc `ms` trong artifacts là thời điểm lấy mẫu của công cụ, không phải phép đo
+latency ứng dụng. Tab/server QA tạm đã đóng; không gọi generation AI hoặc sửa DB/.env
+đang dùng. Kết quả full suites tại 12.37 vẫn là lượt lịch sử riêng.
+
+Bằng chứng: [QA hiệu ứng dialog nguồn/lịch sử](qa/AI_REVIEW_DIALOG_EFFECT_2026-10-06/README.md).
+Không thay đổi backend, schema, nơi lưu nguồn/bản AI hoặc retention trong mốc này.
+Thumbnail AI vẫn `DONE`; toàn FIX 1 vẫn `IN PROGRESS` theo backlog còn lại.
+
+### 12.40 Chuẩn hóa 10 tab Settings theo project — 2026-10-06
+
+Hoàn tất phạm vi chuẩn hóa trang Settings tại 9.9: sáu nhóm mới đọc/lưu thật,
+AI giữ writer chung và có mẫu văn phong/version, Cron/System Info đọc thực,
+Webhooks phản ánh chưa hỗ trợ. Mọi input đang cho sửa có API và validation.
+Mốc này không đánh dấu webhook delivery, run history hay toàn FIX 1 hoàn thành.
+
+Kiểm chứng và ảnh: [Settings QA](qa/SETTINGS_2026-10-06/README.md).
+
+### 12.41 Tách ảnh content bằng link và bộ ảnh Gallery của Post — 2026-10-06
+
+Theo xác nhận của chủ dự án, ảnh content chỉ là link trong HTML, có thể chèn
+cùng link nhiều lần và không có quan hệ media với Post. Gallery là bộ ảnh được
+chọn riêng, lưu thứ tự để phục vụ `post_type = gallery` trong giai đoạn sau.
+
+- Post editor thêm **Chèn ảnh bằng link**; chọn/upload từ MediaLibrary cũng chèn
+  URL thuần. Alt/caption thuộc từng vị trí trong bài. Không tự điền Gallery.
+- Post API nhận `media.gallery_image_ids`, trả `media.gallery_images` và lưu
+  `post.gallery`. Content dùng validator URL/markup, không truy vấn asset hoặc
+  tạo usage; payload/attach `post.content_images` cũ không còn được ghi.
+- Candidate AI giữ ref nội bộ để kiểm nguồn/regenerate. Apply vào Post không tạo
+  quan hệ ảnh content hoặc tự điền Gallery. Cleanup ảnh AI đọc URL trong HTML
+  Post đã lưu để giữ file đang được dùng, không tạo quan hệ ngầm.
+- Migration bỏ usage legacy của ảnh xuất hiện trong content; chuyển ảnh được
+  chọn riêng sang Gallery theo thứ tự cũ. Giữ HTML, MediaAsset và file.
+  Đã áp dụng migration riêng này ở local: hai usage inline còn **0**; cả bốn
+  Post, 22 MediaAsset và 22 bản ghi file giữ nguyên, đối chiếu hash đạt.
+
+**Kiểm chứng:** backend **49 tests / 432 assertions**, frontend **8 files / 55
+tests** đạt; scoped ESLint/Pint và production build đạt. Browser trên SQLite
+fixture riêng kiểm chèn cùng link hai lần, lưu/mở lại với Gallery rỗng, chọn
+ảnh Gallery riêng và lưu/mở lại sau sửa content. Reorder/clear và partial update
+được kiểm ở test tự động. TinyMCE localhost khóa theo cấu hình hiện có nên
+browser dùng nhánh HTML fallback; không sửa key/editor config.
+
+Báo cáo và ảnh: [Post content/Gallery QA](qa/POST_GALLERY_2026-10-06/README.md).
+`post_type = gallery` và giao diện trình diễn ảnh vẫn là backlog tương lai;
+mốc này không đánh dấu toàn FIX 1 hoàn thành.

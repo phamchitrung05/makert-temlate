@@ -46,6 +46,7 @@ final class AiSettingsRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'settings_version' => ['sometimes', 'required', 'string', 'size:64'],
             'default_text_model_id' => ['nullable', 'integer', 'min:1'],
             'default_image_model_id' => ['nullable', 'integer', 'min:1'],
             'default_writing_profile_id' => ['sometimes', 'nullable', 'integer', 'min:1'],

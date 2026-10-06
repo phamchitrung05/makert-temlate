@@ -11,6 +11,7 @@
 <script setup>
 import { computed } from 'vue'
 import AiContentSourceForm from './AiContentSourceForm.vue'
+import AiThumbnailStatus from '@/views/ai/shared/AiThumbnailStatus.vue'
 import AiPipelineReport from '@/views/ai/shared/AiPipelineReport.vue'
 import { pipelineStepLabel } from '@/utils/aiArticleOptions'
 
@@ -112,6 +113,11 @@ const stepLabel = computed(() => pipelineStepLabel(props.generation.session?.cur
           :model-value="props.generation.session?.progress ?? 0"
         />
       </div>
+      <AiThumbnailStatus
+        :asset="props.generation.session?.thumbnail"
+        :generation="props.generation.session?.thumbnail_generation"
+        class="mb-4"
+      />
       <VAlert
         v-if="props.generation.monitorMessage"
         type="warning"

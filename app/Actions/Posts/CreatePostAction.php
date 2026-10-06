@@ -5,7 +5,7 @@ namespace App\Actions\Posts;
 use App\Models\Post;
 use App\Models\User;
 use App\Services\Ai\Provenance\AiProvenanceService;
-use App\Services\Media\ContentMediaReferenceService;
+use App\Services\Media\ContentImageUrlValidator;
 use App\Services\MediaAssetUsageService;
 use App\Services\SeoMetadataService;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\DB;
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - recordProvenance(): ghi nguồn AI sau khi Post đã lưu trong transaction.
- * - __construct(): nhận các service domain và validator ảnh inline dùng chung.
+ * - __construct(): nhận các service domain và validator link ảnh HTML.
  * - handle(): tạo Post và đồng bộ SEO/taxonomy/media atomically.
  * - syncTaxonomy()/extractTaxonomy(): chuẩn hóa và đồng bộ pivot.
  * - syncSeo()/syncMedia(): ghi SEO và usage media theo quyền actor.
@@ -37,7 +37,7 @@ class CreatePostAction
      * =====================================================================
      * CHỨC NĂNG: Nhận service media, SEO và lineage AI từ container.
      * =====================================================================
-     * INPUT: MediaAssetUsageService, SeoMetadataService, AiProvenanceService và ContentMediaReferenceService.
+     * INPUT: MediaAssetUsageService, SeoMetadataService, AiProvenanceService và ContentImageUrlValidator.
      * OUTPUT: action sẵn sàng xử lý.
      * SIDE EFFECT: không gọi database khi khởi tạo.
      * EXCEPTION/TRANSACTION: không có; không mở transaction.
@@ -47,14 +47,14 @@ class CreatePostAction
         private readonly MediaAssetUsageService $mediaAssetUsageService,
         private readonly SeoMetadataService $seoMetadataService,
         private readonly AiProvenanceService $aiProvenanceService,
-        private readonly ContentMediaReferenceService $contentMediaReferenceService,
+        private readonly ContentImageUrlValidator $contentImageUrlValidator,
     ) {}
 
     /**
      * =====================================================================
      * CHỨC NĂNG: Tạo Post và đồng bộ quan hệ trong transaction có retry deadlock.
      * =====================================================================
-     * INPUT: attributes đã validate và admin ID; content có ảnh phải mang ID/URL MediaLibrary thật.
+     * INPUT: attributes đã validate và admin ID; content chỉ lưu HTML với link ảnh.
      * OUTPUT: Post mới đã eager load.
      * SIDE EFFECT: ghi Post, SEO, taxonomy, media usage và lineage AI.
      * EXCEPTION/TRANSACTION: rollback khi một boundary thất bại; retry deadlock tối đa 5 lần.
@@ -64,9 +64,9 @@ class CreatePostAction
     {
         return DB::transaction(function () use ($attributes, $actorId): Post {
             $media = (array) ($attributes['media'] ?? []);
-            // INPUT: content mới. OUTPUT: usage theo ảnh thực sự trong HTML, bỏ gallery client sai lệch.
+            // INPUT: content mới. OUTPUT: kiểm link ảnh; không suy ra media usage từ HTML.
             if (array_key_exists('content', $attributes)) {
-                $media['content_image_ids'] = $this->contentMediaReferenceService->validate((string) ($attributes['content'] ?? ''), User::findOrFail($actorId));
+                $this->contentImageUrlValidator->validate((string) ($attributes['content'] ?? ''));
             }
             $taxonomy = $this->extractTaxonomy($attributes);
             $aiRunId = $attributes['ai_run_id'] ?? null;
@@ -142,7 +142,7 @@ class CreatePostAction
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Đồng bộ thumbnail/content image usage.
+     * CHỨC NĂNG: Đồng bộ thumbnail/gallery độc lập với link ảnh trong content.
      * =====================================================================
      * INPUT: Post, media map và actor ID.
      * OUTPUT: không trả giá trị.
@@ -163,8 +163,8 @@ class CreatePostAction
             $fields['post.thumbnail'] = $media['thumbnail_id'] === null ? [] : [$media['thumbnail_id']];
         }
 
-        if (array_key_exists('content_image_ids', $media)) {
-            $fields['post.content_images'] = (array) ($media['content_image_ids'] ?? []);
+        if (array_key_exists('gallery_image_ids', $media)) {
+            $fields['post.gallery'] = (array) ($media['gallery_image_ids'] ?? []);
         }
 
         $this->mediaAssetUsageService->syncFields($actor, $post, $fields);

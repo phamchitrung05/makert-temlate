@@ -1,0 +1,15 @@
+{
+  "backdropCount": 1,
+  "closeDisabled": false,
+  "contentClass": "v-overlay__content",
+  "contentOpacity": "1",
+  "contentVisibility": "visible",
+  "dialogVisible": true,
+  "fixture_only": true,
+  "header": "Duyệt content AIQA Lỗi ảnh, giữ bài",
+  "loading": "true",
+  "viewport": {
+    "height": 720,
+    "width": 1280
+  }
+}

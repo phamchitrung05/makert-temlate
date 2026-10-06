@@ -49,9 +49,9 @@ return [
             ],
         ],
         'thumbnail' => [
-            'label' => 'Thumbnail từ nguồn URL',
+            'label' => 'Ảnh đại diện (nguồn / AI)',
             'fields' => ['thumbnail', 'thumbnail_prompt', 'thumbnail_alt_text'],
-            'source_types' => ['url'],
+            'source_types' => [],
             'source_owned_fields' => ['thumbnail'],
             'rules' => [
                 'thumbnail_prompt' => ['type' => 'string', 'max' => 10000],

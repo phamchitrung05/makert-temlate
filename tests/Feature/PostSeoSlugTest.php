@@ -12,6 +12,7 @@ use App\Services\SlugService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 use Tests\UsesIsolatedDatabase;
@@ -251,7 +252,7 @@ class PostSeoSlugTest extends TestCase
         ]);
         $this->assertSame('Resource SEO', app(SeoMetadataService::class)->resolve($resource)['seo_title']);
         $privateImage = MediaAsset::factory()->image()->create(['visibility' => 'private']);
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $this->expectException(ValidationException::class);
         app(SeoMetadataService::class)->sync($post, ['og_image_id' => $privateImage->id]);
     }
 
@@ -306,21 +307,21 @@ class PostSeoSlugTest extends TestCase
         $private = MediaAsset::factory()->image()->create(['visibility' => 'private']);
         $created = $this->withToken($token)->postJson('/api/admin/posts', [
             'title' => 'Gallery',
-            'media' => ['thumbnail_id' => $first->id, 'content_image_ids' => [$second->id, $first->id]],
-        ])->assertCreated()->assertJsonPath('data.media.content_images.0.id', $second->id)
-            ->assertJsonPath('data.media.content_images.1.id', $first->id);
+            'media' => ['thumbnail_id' => $first->id, 'gallery_image_ids' => [$second->id, $first->id]],
+        ])->assertCreated()->assertJsonPath('data.media.gallery_images.0.id', $second->id)
+            ->assertJsonPath('data.media.gallery_images.1.id', $first->id);
         $id = $created->json('data.id');
         $this->withToken($token)->putJson('/api/admin/posts/'.$id, [
-            'media' => ['content_image_ids' => [$first->id, $second->id]],
-        ])->assertOk()->assertJsonPath('data.media.content_images.0.id', $first->id);
+            'media' => ['gallery_image_ids' => [$first->id, $second->id]],
+        ])->assertOk()->assertJsonPath('data.media.gallery_images.0.id', $first->id);
         $this->withToken($token)->putJson('/api/admin/posts/'.$id, [
             'media' => ['thumbnail_id' => $private->id],
         ])->assertUnprocessable();
         $this->withToken($token)->getJson('/api/admin/posts/'.$id)
             ->assertOk()->assertJsonPath('data.media.thumbnail.id', $first->id);
         $this->withToken($token)->putJson('/api/admin/posts/'.$id, [
-            'media' => ['thumbnail_id' => null, 'content_image_ids' => []],
-        ])->assertOk()->assertJsonPath('data.media.thumbnail', null)->assertJsonPath('data.media.content_images', []);
+            'media' => ['thumbnail_id' => null, 'gallery_image_ids' => []],
+        ])->assertOk()->assertJsonPath('data.media.thumbnail', null)->assertJsonPath('data.media.gallery_images', []);
         $this->assertDatabaseHas('media_assets', ['id' => $first->id]);
     }
 }
