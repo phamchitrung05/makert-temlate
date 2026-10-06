@@ -1536,3 +1536,39 @@ Báo cáo/bằng chứng/screenshot: [Task 2 hoàn tất kỹ thuật](qa/TASK2_
 theo mục 4: workflow draft dài hạn và API duyệt/từ chối → UI biên tập/compare
 → thumbnail generate → Realtime/VPS → chín tab Settings ngoài AI. Chấm người
 đọc/rollout vẫn theo đợt chất lượng riêng.
+
+### 12.36 API/UI duyệt nội dung AI trên bản ghi hiện có — 2026-10-05
+
+**Phạm vi người dùng chọn:** tạm bỏ mục 1 (bảng/model `ai_content_drafts` và
+lưu dài hạn); triển khai mục 2–3–4: API nghiệp vụ, UI biên tập/so sánh và tests.
+Không thêm migration, không đổi retention của `ai_imports` hoặc phục hồi B.
+
+- Trạng thái biên tập `pending_review/approved/rejected` lưu trong
+  `ai_imports.source_meta_json.editorial`, tách khỏi trạng thái kỹ thuật.
+- Giữ boundary hiện có: admin có `posts.manage`, chỉ đọc/duyệt run của mình.
+  Người duyệt/thời điểm/lý do lấy từ server; lịch sử dùng Spatie Activitylog.
+- Duyệt tạo Post draft qua actions/provenance hiện có, khóa row/version,
+  chặn duyệt trùng và candidate đã từ chối. API Apply cũ dùng cùng boundary.
+- UI giữ editor hiện có; dialog so sánh nguồn đã snapshot/kết quả và lịch sử,
+  dialog quyết định riêng có xác nhận duyệt hoặc lý do từ chối bắt buộc.
+- Component map: page nối `useAiContentReview`; `AiContentReviewDialog` hiển thị
+  metadata/nguồn/lịch sử; `AiContentComparison` render text đã escape;
+  `AiContentReviewHistory` trình bày và tải trang tiếp;
+  `AiContentReviewDecisionDialog` chỉ phát confirm/close, không gọi API.
+- Tests kiểm quyền/owner, version, transition, rollback, media/provenance,
+  cleanup và giao diện tải chậm/lỗi/xung đột/đóng/mở lại. Không gọi model thật.
+
+**Trạng thái:** `DONE` cho mục 2–3–4 trong phạm vi trên. Mục 1 (lưu dài hạn)
+vẫn tạm hoãn theo lựa chọn người dùng; nguồn/bản AI chịu retention hiện tại.
+Activitylog không bị cleanup run xóa; GET history theo candidate cần run còn tồn tại.
+
+**Kiểm chứng:** backend **383 tests / 2649 assertions**, frontend
+**45 files / 319 tests**, Pint + ESLint/Stylelint scoped và production build đạt.
+PHP CLI mặc định chưa bật GD; bộ backend đầy đủ chạy bằng
+`php -d extension=gd -d xdebug.mode=off vendor/bin/phpunit --no-progress`, chỉ bật
+GD cho tiến trình kiểm thử, không sửa php.ini hoặc môi trường ứng dụng.
+Không gọi model thật, không migrate database đang dùng.
+
+Bằng chứng/phạm vi/lệnh kiểm tra: [AI Content Review QA](qa/AI_CONTENT_REVIEW_2026-10-05.md).
+Task tiếp theo theo backlog còn lại: thumbnail generate → Realtime/VPS →
+chín tab Settings ngoài AI. Lưu dài hạn và phân quyền duyệt chéo owner chờ đợt riêng.

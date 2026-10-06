@@ -1,6 +1,6 @@
 # API tạo bài AI — Task 2
 
-Backend và các form Vue 3 đã nối API: AI Content, regenerate, quản lý văn phong và MediaLibrary trong editor chung. Tạo nội dung tập trung ở AI Content; dialog tạo bài AI trong Post đã gỡ. Generation chỉ lưu candidate; Apply tạo Post draft khi người dùng xác nhận. Báo cáo nghiệm thu localhost ban đầu tại [Task 2 QA](qa/TASK2_LOCALHOST_2026-10-05.md).
+Backend và các form Vue 3 đã nối API: AI Content, regenerate, quản lý văn phong và MediaLibrary trong editor chung. Tạo nội dung tập trung ở AI Content; dialog tạo bài AI trong Post đã gỡ. Generation chỉ lưu candidate; Duyệt/Apply tạo Post draft khi người dùng xác nhận. Báo cáo nghiệm thu localhost ban đầu tại [Task 2 QA](qa/TASK2_LOCALHOST_2026-10-05.md); review workflow trên dữ liệu hiện có tại [Review QA](qa/AI_CONTENT_REVIEW_2026-10-05.md).
 
 Form tạo mới dùng `writing_profile_id: null` cho mặc định website. Regenerate bỏ field này để giữ snapshot của parent; chọn lại mặc định gửi `null` rõ ràng. Brief chỉ gửi khi người dùng bật phần chỉnh brief; gửi `{}` rõ ràng để xóa brief kế thừa. File HTML được gửi multipart nguyên byte cùng encoding, không flatten thành text ở trình duyệt. Preview nguồn không gọi model.
 
@@ -31,6 +31,10 @@ Dùng admin bearer token. Target `post` yêu cầu `posts.manage`; các target k
 | DELETE | `/ai-agent/sessions/{uuid}` | Xóa run terminal; active trả 409 |
 | PATCH | `/ai-agent/candidates/{uuid}` | Lưu chỉnh sửa candidate ready chưa Apply |
 | POST | `/ai-agent/candidates/{uuid}/apply` | Áp field được chọn vào Post **draft** |
+| GET | `/ai-agent/candidates/{uuid}/review` | Nguồn đã lưu, draft và trạng thái duyệt có version |
+| GET | `/ai-agent/candidates/{uuid}/review/history` | Lịch sử Spatie Activitylog phân trang |
+| POST | `/ai-agent/candidates/{uuid}/approve` | Duyệt, tạo một Post **draft** mới và ghi audit |
+| POST | `/ai-agent/candidates/{uuid}/reject` | Từ chối với lý do bắt buộc, không tạo Post |
 
 Các endpoint `/posts/ai/import/...` tương thích cũ vẫn được giữ; kết nối mới ưu tiên `/ai-agent`.
 
@@ -207,6 +211,68 @@ POST /api/admin/ai-agent/candidates/{uuid}/apply
 
 Tạo Post mới status draft; response gồm `post_id`, `fields`, provenance. Nên gửi `expected_version` lấy từ detail để chặn candidate đã đổi sau khi người dùng xem; field tùy chọn để tương thích client cũ, backend vẫn lock candidate và kiểm hash lúc Apply. Cập nhật Post có sẵn thêm `target_id`, nên gửi `expected_updated_at` lấy từ Post API để chặn target đã đổi. Apply lock cả candidate và target trong transaction. Taxonomy Apply hoàn toàn thủ công; candidate cũ chứa gợi ý AI phải được chọn/xác nhận lại, không tự áp ID legacy. Slug/actor/status theo domain actions; Publish vẫn là thao tác duyệt riêng.
 
+## Duyệt/từ chối AI Content trên dữ liệu hiện có — 2026-10-05
+
+Mục database/model `ai_content_drafts` và lưu dài hạn được chủ dự án tạm hoãn.
+Trạng thái hiện tại nằm trong `ai_imports.source_meta_json.editorial`, độc lập
+với trạng thái job `ready/failed/...`: `pending_review → approved` hoặc
+`pending_review → rejected`. Bản đã Apply từ trước được suy ra `approved`;
+người duyệt/thời điểm cũ để null nếu không có dữ liệu, không dựng lịch sử giả.
+
+Các API review dùng admin bearer token + `posts.manage`, chỉ run thuộc actor
+hiện tại và target Post. Chưa mở quyền duyệt chéo owner hoặc nhóm permission mới.
+GET review chỉ trả nguồn snapshot đã sanitize (fallback `source_text` nếu có),
+draft allowlist, `review`, `draft_version`, `review_version`, `can_review`,
+`can_edit`, `has_thumbnail`, `applied_target_id`, thời hạn và provider/model.
+Không fetch lại URL, không gọi AI, không trả key/profile/checkpoint thô.
+
+```http
+POST /api/admin/ai-agent/candidates/{uuid}/approve
+```
+
+```json
+{
+  "fields": ["title", "excerpt", "content", "seo", "taxonomy"],
+  "category_ids": [3],
+  "tag_ids": [5],
+  "expected_version": "data.draft_version-tu-GET-review",
+  "expected_review_version": "data.review_version-tu-GET-review",
+  "reason": "Đã đối chiếu nguồn"
+}
+```
+
+`fields` phải gồm `title` vì API mới luôn tạo Post mới; taxonomy chỉ nhận ID
+thủ công hợp lệ. Hai version bắt buộc là hash 64 ký tự từ GET vừa xem, không
+tự tạo ở client. `reason` tùy chọn khi duyệt, tối đa 2000 ký tự. Không nhận
+`target_id`/`expected_updated_at`; actor/thời điểm lấy từ server, Post luôn draft.
+Post, SEO/media/taxonomy, provenance, metadata quyết định và audit được ghi cùng
+transaction, lock candidate và kiểm version; chỉ một quyết định được chấp nhận.
+
+Reject gửi `expected_version`, `expected_review_version`, `reason` có nội dung
+sau trim (tối đa 2000 ký tự). Draft và job `ready` giữ nguyên, `review.status`
+chuyển `rejected`; không tạo Post, không gọi provider. Bài đã từ chối không thể
+edit/approve/Apply hoặc dùng provenance qua PostForm; có thể regenerate thành
+run mới. Duyệt/từ chối lại, candidate chưa ready/hết hạn hoặc version cũ trả 409.
+API Apply cũ dùng cùng service duyệt, ghi audit và chặn rejected/duyệt trùng,
+vẫn giữ contract cập nhật Post có sẵn và `expected_version` tùy chọn của client cũ.
+
+Lịch sử dùng bảng Spatie `activity_log` hiện có, `log_name=ai-content` và
+`properties.candidate_id` là UUID run. Sự kiện `candidate.edited`,
+`candidate.approved`, `candidate.rejected` lưu causer/thời điểm; quyết định thêm
+lý do/Post ID. GET history nhận `page/per_page` như sessions, trả `data[]` gồm
+`id/event/actor/at/reason/post_id/fields` và `meta.pagination`. Không trả raw properties.
+
+UI AI Content có trạng thái Chờ duyệt/Đã duyệt/Từ chối, mở dialog so sánh text
+nguồn/kết quả, thông tin duyệt và lịch sử tải trang tiếp. Editor TinyMCE hiện có
+tiếp tục dùng để sửa bản chờ duyệt. Xác nhận duyệt chọn field/taxonomy; từ chối
+bắt buộc nhập lý do. Mất kết nối/409/5xx khi POST yêu cầu GET kiểm lại trạng thái,
+không tự lặp quyết định; bản nhập giữ khi lỗi. Header/footer dialog cố định.
+
+Retention run vẫn mặc định 2 ngày. Cleanup có thể xóa nguồn/candidate đã duyệt
+hoặc từ chối; Post/provenance/media đang dùng và Activitylog không bị command
+này xóa. GET lịch sử theo candidate cần run còn tồn tại; Spatie có chính sách
+cleanup riêng. Chưa có kho draft dài hạn hoặc khôi phục candidate sau cleanup.
+
 ## Lỗi và giới hạn chất lượng
 
 Validation request trả `422`; quyền `403` hoặc owner `404`; xung đột/trạng thái `409`; quota run `429`; AI tắt `503`. Lỗi bên trong queue đọc tại polling `status=failed`, `error_code`, `error`, diagnostics bounded.
@@ -238,4 +304,5 @@ OpenAI/Gemini/http-json dùng adapter generic task và schema validation server.
 - Production dùng cache lock chia sẻ giữa worker, không dùng cache array/file riêng từng container để chống redelivery. Checkpoint giữ output đã validate nhưng không thay lock/ràng buộc state.
 - Chạy `php artisan queue:restart` sau deploy/config mới theo process manager; scheduler chạy `ai-import:cleanup` và `ai:cleanup-writing-profile-analyses` theo lịch đã đăng ký. Retention mặc định 2 ngày.
 
-Không cần giao diện mới để kiểm API bằng client admin. Hook editor và đánh giá chất lượng với provider/người đọc thật còn chờ bước tích hợp sau.
+Editor và review workflow đã nối vào AI Content. API cũng có thể kiểm bằng client
+admin; đánh giá chất lượng với provider/người đọc thật vẫn theo đợt riêng.

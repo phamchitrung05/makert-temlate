@@ -657,7 +657,28 @@ app/Http/Resources/AiSessionSummaryResource.php    DTO summary không có body/i
 ```
 
 Workspace có cột phải luôn tạo bài **Post** mới; danh sách không bind nội dung
-vào form. Dialog chi tiết/chỉnh sửa/duyệt trên page này được bổ sung sau.
+vào form. Editor chi tiết đã có; workflow review tại FIX 1 mục 12.36 dùng
+`useAiContentReview.js` và các component sau:
+
+```text
+resources/js/views/ai/content/dialog/AiContentReviewDialog.vue    nguồn/kết quả/metadata/lịch sử
+resources/js/views/ai/content/dialog/AiContentReviewDecisionDialog.vue  xác nhận field/lý do, không API
+resources/js/views/ai/content/AiContentComparison.vue             hai panel text trơ, không v-html
+resources/js/views/ai/content/AiContentReviewHistory.vue          sự kiện Spatie và pagination
+app/Http/Controllers/Admin/AiContentReviewController.php         GET review/history, POST approve/reject
+app/Services/Ai/Content/AiContentReviewService.php                quyền/owner/version/transaction/audit
+app/Http/Requests/Admin/AiCandidateApproveRequest.php             fields/version/ghi chú duyệt
+app/Http/Requests/Admin/AiCandidateRejectRequest.php              version/lý do bắt buộc
+```
+
+Review state lưu JSON trong `ai_imports`, lịch sử dùng Spatie Activitylog theo
+UUID run. Duyệt chỉ tạo Post draft qua actions/provenance hiện có; API Apply cũ
+dùng cùng boundary, không cho duyệt trùng hoặc Apply bài đã từ chối. Quyền hiện
+tại là `posts.manage` + owner, chưa duyệt chéo owner. Tests nằm tại
+`AiContentReviewApiTest.php`, `aiContentReview.test.js`,
+`aiContentReviewDialog.test.js` và `aiAgentService.test.js`.
+Bảng/model `ai_content_drafts` và thay đổi retention tạm hoãn theo chủ dự án;
+run vẫn có hạn, Activitylog/Post không bị cleanup run xóa.
 Provider/model đọc từ `GET /api/admin/settings/ai`, dùng provider active/có key,
 model enabled/available; ưu tiên model text ban đầu và kiểm tra capability thật.
 Nút tạo có lý do validation, chống gửi trùng và progress/error/polling cleanup.

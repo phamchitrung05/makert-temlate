@@ -33,7 +33,7 @@ const editorDialogOpen = ref(false)
 
 // Input: state kỹ thuật/Apply. Output: khóa field của bản không thể lưu.
 const readOnly = computed(() => props.saving || props.loading || !props.session?.draft_version || !props.session?.draft
-  || props.session.status !== 'ready' || Boolean(props.session.applied_target_id))
+  || props.session.status !== 'ready' || Boolean(props.session.applied_target_id) || props.session.review?.status === 'rejected')
 
 // Input: detail/loading/error. Output: snapshot hiển thị giữ đến hết hiệu ứng đóng;
 // chỉ chép form khi nhận session mới, không ghi đè nội dung nhập khi save/error đổi.

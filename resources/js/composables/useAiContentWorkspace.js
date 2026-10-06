@@ -19,8 +19,9 @@ import { formatAiError, isAiSuccess } from '@/utils/aiErrors'
 /** Input: summary và bản ghi cũ tùy chọn. Output: dòng UI; không mutate DTO. */
 function toListItem(summary, previous) {
   const status = summary.applied_target_id ? 'applied'
-    : ['ready', 'completed', 'succeeded'].includes(summary.status) ? 'review'
-      : ['failed', 'cancelled', 'expired'].includes(summary.status) ? summary.status : 'generating'
+    : summary.review?.status === 'rejected' ? 'rejected'
+      : ['ready', 'completed', 'succeeded'].includes(summary.status) ? 'review'
+        : ['failed', 'cancelled', 'expired'].includes(summary.status) ? summary.status : 'generating'
 
   const createdAt = summary.created_at ?? previous?.createdAt ?? new Date().toISOString()
   const date = new Date(createdAt)
@@ -35,6 +36,7 @@ function toListItem(summary, previous) {
     errorCode: summary.error_code ?? null,
     validationErrors: summary.validation_errors ?? [],
     thumbnail: summary.thumbnail === undefined ? previous?.thumbnail ?? null : summary.thumbnail,
+    review: summary.review ?? previous?.review ?? null,
     source: summary.source_host || previous?.source || (summary.source_type === 'url' ? 'Nguồn URL' : 'Nội dung văn bản'),
     date: date.toLocaleDateString('vi-VN'), time: date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
   }

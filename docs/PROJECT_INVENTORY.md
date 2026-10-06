@@ -269,6 +269,21 @@ npm run lint
 
 ## 11. Change log
 
+Workflow review bổ sung ngày 2026-10-05 (FIX 1 mục 12.36):
+
+- API `/ai-agent/candidates/{uuid}/review`, `/review/history`, `/approve`, `/reject`
+  do `AiContentReviewController` và `AiContentReviewService` xử lý;
+  `AiCandidateApproveRequest`/`AiCandidateRejectRequest` validate hai hash/lý do.
+- Trạng thái JSON `pending_review/approved/rejected` trong `ai_imports`, audit
+  dùng Spatie `activity_log` (`ai-content`, candidate UUID trong properties).
+  Admin `posts.manage` chỉ duyệt run của mình; approve tạo Post draft atomically.
+- Page AI Content nối `useAiContentReview`, hai dialog trong `views/ai/content/dialog/`,
+  `AiContentComparison` và `AiContentReviewHistory`; editor hiện có được giữ.
+- Tests: `AiContentReviewApiTest`, `aiContentReview.test.js`,
+  `aiContentReviewDialog.test.js` và service tests. Xem kết quả tại `fix_1.md` 12.36.
+- Chủ dự án tạm hoãn `ai_content_drafts`/lưu dài hạn: không migration/permission
+  mới hoặc đổi cleanup/retention; audit Spatie không bị cleanup run xóa.
+
 | Date | Change | Files/area | Tests/build |
 |---|---|---|---|
 | 2026-09-30 | Created central project inventory | `docs/PROJECT_INVENTORY.md` | `git diff --check` |

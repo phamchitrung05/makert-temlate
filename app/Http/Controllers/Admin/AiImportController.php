@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Actions\Posts\CreatePostAction;
-use App\Actions\Posts\UpdatePostAction;
 use App\Enums\AiCapability;
 use App\Enums\MediaAssetKind;
 use App\Http\Controllers\Controller;
@@ -16,10 +14,9 @@ use App\Http\Resources\MediaAssetResource;
 use App\Http\Responses\BaseResponse;
 use App\Models\AiImport;
 use App\Models\MediaAsset;
-use App\Models\Post;
+use App\Services\Ai\Content\AiContentReviewService;
 use App\Services\Ai\Content\AiContentSanitizer;
 use App\Services\Ai\Content\ArticleSourceFetcher;
-use App\Services\Ai\Provenance\AiProvenanceService;
 use App\Services\Ai\Providers\Catalog\ModelResolver;
 use App\Services\Ai\Providers\Diagnostics\AiResponseDiagnostics;
 use App\Services\Ai\Registries\PromptRegistry;
@@ -525,13 +522,14 @@ class AiImportController extends Controller
     }
 
     /**
-     * Sửa candidate chưa apply, kiểm tra phiên bản và sanitize HTML tại backend.
+     * Sửa candidate chờ duyệt, kiểm tra phiên bản và sanitize HTML tại backend.
      * =====================================================================
      * CHỨC NĂNG: Sửa candidate với version lock và xác thực ảnh MediaLibrary
      * =====================================================================
      * Input: title/content/excerpt/SEO và hash phiên bản từ GET detail.
      * Output: candidate cập nhật; không ghi domain model hoặc gọi AI.
      * Side effect: lock row, ghi result_json và audit trong cùng transaction.
+     * Exception: 409 khi đã duyệt/từ chối/hết hạn hoặc version cũ; không gọi model.
      * =====================================================================
      */
     public function updateCandidate(AiCandidateUpdateRequest $request, AiImport $aiImport, AiContentSanitizer $sanitizer): JsonResponse
@@ -541,6 +539,7 @@ class AiImportController extends Controller
         $run = DB::transaction(function () use ($aiImport, $data, $sanitizer, $request): AiImport {
             $run = AiImport::query()->lockForUpdate()->findOrFail($aiImport->id);
             abort_unless($run->status === 'ready' && ! $run->applied_target_id && $run->operation !== 'image', 409, 'Chỉ sửa candidate sẵn sàng chưa được áp dụng.');
+            abort_if(AiContentReviewService::state($run)['status'] === 'rejected', 409, 'Bài đã bị từ chối. Hãy tạo bản mới để biên tập.');
             abort_if($run->expires_at?->isPast(), 409, 'Candidate đã hết hạn.');
             $result = (array) $run->result_json;
             $draft = (array) ($result['draft'] ?? []);
@@ -569,51 +568,20 @@ class AiImportController extends Controller
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Áp dụng field được chọn vào Post draft và ghi provenance
+     * CHỨC NĂNG: API Apply cũ dùng service duyệt để tạo/cập nhật Post draft và ghi audit
      * =====================================================================
      * INPUT: Run ready, fields whitelist, target_id, expected_version và expected_updated_at tùy chọn.
-     * OUTPUT: Post ID, các field đã áp dụng và metadata nguồn AI.
-     * SIDE EFFECT: Ghi Post/media/SEO và provenance qua domain actions; không gọi model.
-     * EXCEPTION/TRANSACTION: DB transaction bao toàn bộ apply; abort 409 khi candidate/target không còn hợp lệ.
+     * OUTPUT: Post ID, các field đã áp dụng, provenance và quyết định biên tập.
+     * SIDE EFFECT: service ghi Post/media/SEO, provenance, JSON quyết định và Spatie Activitylog.
+     * EXCEPTION/TRANSACTION: service khóa run/target trong DB transaction;
+     * 409 khi stale/đã quyết định/hết hạn, không Publish hoặc gọi model.
      * =====================================================================
      */
-    public function apply(AiCandidateApplyRequest $request, AiImport $aiImport, TargetRegistry $targets, CreatePostAction $create, UpdatePostAction $update, AiProvenanceService $provenance): JsonResponse
+    public function apply(AiCandidateApplyRequest $request, AiImport $aiImport, AiContentReviewService $review): JsonResponse
     {
         $this->ensureOwner($request, $aiImport);
-        abort_unless(data_get($aiImport->input_json, 'target_type', 'post') === 'post', 422, 'Apply vào Post chỉ hỗ trợ candidate Post.');
-        abort_unless($aiImport->status === 'ready', 409, 'Candidate chưa sẵn sàng.');
-        $data = $request->validated();
-        $adapter = $targets->adapter('post');
-        $expectedVersion = $data['expected_version'] ?? hash('sha256', json_encode(data_get($aiImport->result_json, 'draft', [])));
-        $actorId = (int) $request->user()->getKey();
-        $post = DB::transaction(function () use ($data, $adapter, $expectedVersion, $aiImport, $create, $update, $provenance, $actorId): Post {
-            $run = AiImport::query()->lockForUpdate()->findOrFail($aiImport->id);
-            abort_unless($run->status === 'ready' && ! $run->expires_at?->isPast(), 409, 'Candidate chưa sẵn sàng hoặc đã hết hạn.');
-            $outputs = (array) data_get($run->result_json, 'draft', []);
-            abort_unless(hash_equals(hash('sha256', json_encode($outputs)), $expectedVersion), 409, 'Candidate đã thay đổi, hãy tải lại trước khi áp dụng.');
-            if (in_array('taxonomy', $data['fields'], true)) {
-                $explicitManual = array_key_exists('category_ids', $data) || array_key_exists('tag_ids', $data);
-                $manualOrigin = data_get($run->input_json, 'taxonomy_origin') === 'manual'
-                    || ($outputs['taxonomy_origin'] ?? null) === 'manual';
-                if (! $explicitManual && ! $manualOrigin) {
-                    throw ValidationException::withMessages(['category_ids' => 'Hãy chọn hoặc xác nhận taxonomy thủ công trước khi áp dụng candidate cũ.']);
-                }
-                foreach (['category_ids', 'tag_ids'] as $taxonomyField) {
-                    $outputs[$taxonomyField] = $data[$taxonomyField] ?? ($manualOrigin ? ($outputs[$taxonomyField] ?? data_get($run->input_json, $taxonomyField, [])) : []);
-                }
-            }
-            $payload = $adapter->toApplyPayload($outputs, $data['fields']);
-            $target = ! empty($data['target_id']) ? Post::query()->lockForUpdate()->findOrFail($data['target_id']) : null;
-            if ($target && ! empty($data['expected_updated_at']) && (string) $target->updated_at !== (string) $data['expected_updated_at']) {
-                abort(409, 'Post đã thay đổi, hãy tải lại trước khi áp dụng candidate.');
-            }
-            $post = $target ? $update->handle($target, array_merge($payload, ['status' => 'draft']), $actorId) : $create->handle(array_merge($payload, ['status' => 'draft']), $actorId);
-            $provenance->recordPost($actorId, $post, (string) $run->getKey(), $data['fields'], $payload);
 
-            return $post;
-        });
-
-        return BaseResponse::success(['post_id' => $post->getKey(), 'fields' => $data['fields'], 'provenance' => data_get($aiImport->fresh()->result_json, 'provider')], 'Đã áp dụng candidate vào Post draft.');
+        return BaseResponse::success($review->approve($request->user(), $aiImport, $request->validated()), $request->filled('target_id') ? 'Đã duyệt và cập nhật Post nháp.' : 'Đã duyệt và tạo Post nháp.');
     }
 
     /**
@@ -715,6 +683,9 @@ class AiImportController extends Controller
             'target_type' => data_get($import->input_json, 'target_type', 'post'),
             'created_at' => $import->created_at?->toIso8601String(),
             'draft_version' => hash('sha256', json_encode(data_get($import->result_json, 'draft', []))),
+            'review' => AiContentReviewService::state($import),
+            'review_version' => AiContentReviewService::version($import),
+            'expires_at' => $import->expires_at?->toIso8601String(),
             'applied_target_id' => $import->applied_target_id, 'applied_fields' => $import->applied_fields,
             'thumbnail' => $thumbnail ? MediaAssetResource::make($thumbnail) : null,
         ];

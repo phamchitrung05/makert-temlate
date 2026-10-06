@@ -8,6 +8,8 @@
   - useAiContentWorkspace()/useAiContentCatalog(): nguồn và catalog/list thật.
   - useAiContentGeneration(): tạo và polling, không tự apply bài vào Post.
   - useAiContentActions(): dialog biên tập và action riêng từng candidate.
+  - useAiContentReview(): so sánh nguồn/lịch sử và duyệt hoặc từ chối.
+  - editReviewedContent()/clearNotice(): mở editor hiện có và đóng thông báo.
   - createNew(): reset nguồn khi không đang chạy tác vụ.
   - onMounted(): tải list và catalog độc lập.
 
@@ -18,15 +20,18 @@
   =====================================================================
 -->
 <script setup>
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import AiContentList from '@/views/ai/content/AiContentList.vue'
 import AiContentCreateForm from '@/views/ai/content/AiContentCreateForm.vue'
 import { useAiContentWorkspace } from '@/composables/useAiContentWorkspace'
 import { useAiContentCatalog } from '@/composables/useAiContentCatalog'
 import { useAiContentGeneration } from '@/composables/useAiContentGeneration'
 import { useAiContentActions } from '@/composables/useAiContentActions'
+import { useAiContentReview } from '@/composables/useAiContentReview'
 import AiContentEditorDialog from '@/views/ai/content/AiContentEditorDialog.vue'
 import AiContentRunActionDialog from '@/views/ai/content/AiContentRunActionDialog.vue'
+import AiContentReviewDialog from '@/views/ai/content/dialog/AiContentReviewDialog.vue'
+import AiContentReviewDecisionDialog from '@/views/ai/content/dialog/AiContentReviewDecisionDialog.vue'
 import { useAiRunFeedback } from '@/composables/useAiRunFeedback'
 import { getAlertColor } from '@/config/alertColors'
 
@@ -42,6 +47,26 @@ const { editor, editorLoading, editorSaving, editorError, action, actionBusy, ac
   openEditor, closeEditor, saveEditor, requestAction, closeAction, confirmAction, resumeRun } = useAiContentActions({
   updateSession, removeItem, onFeedback: onRunFeedback, getOutputOptions: () => catalog.value.outputOptions,
 })
+
+const { state: reviewState, notice: reviewNotice, openReview, loadReview, loadHistory, requestDecision,
+  closeDecision, confirmDecision, closeReview, finishClose } = useAiContentReview(updateSession, notice)
+
+const visibleNotice = computed(() => reviewNotice.value ?? notice.value)
+const contentBusyId = computed(() => reviewState.value.busy ? reviewState.value.detail?.job_id : busyId.value)
+
+/** Input: bài đã GET trong dialog duyệt. Output: mở editor hiện có, quyết định sau phải GET mới. */
+function editReviewedContent() {
+  const detail = reviewState.value.detail
+  if (!detail?.can_edit || reviewState.value.busy || reviewState.value.loading) return
+  closeReview()
+  void openEditor({ id: detail.job_id, targetType: 'post', status: 'review' })
+}
+
+/** Input: đóng thông báo. Output: xóa notice ở hai workflow, không gọi API. */
+function clearNotice() {
+  notice.value = null
+  reviewNotice.value = null
+}
 
 onMounted(loadCatalog)
 onMounted(loadItems)
@@ -78,15 +103,15 @@ function createNew() {
     </div>
 
     <VAlert
-      v-if="notice"
-      :type="notice.type"
-      :color="getAlertColor(notice.type)"
+      v-if="visibleNotice"
+      :type="visibleNotice.type"
+      :color="getAlertColor(visibleNotice.type)"
       variant="tonal"
       class="mb-4"
       closable
-      @click:close="notice = null"
+      @click:close="clearNotice"
     >
-      {{ notice.message }}
+      {{ visibleNotice.message }}
     </VAlert>
     <VRow>
       <VCol
@@ -99,13 +124,14 @@ function createNew() {
           :error="listError"
           :targets="catalog.targetOptions"
           :output-options="catalog.outputOptions"
-          :busy-id="busyId"
+          :busy-id="contentBusyId"
           @reload="loadItems"
           @edit="openEditor"
           @remove="requestAction('remove', $event)"
           @regenerate="requestAction('regenerate', $event)"
           @refresh-status="resumeRun"
-          @apply="requestAction('apply', $event)"
+          @apply="openReview"
+          @review="openReview"
           @cancel="requestAction('cancel', $event)"
         />
       </VCol>
@@ -140,6 +166,28 @@ function createNew() {
       :error="actionError"
       @confirm="confirmAction"
       @close="closeAction"
+    />
+    <AiContentReviewDialog
+      :state="reviewState"
+      @close="closeReview"
+      @after-leave="finishClose"
+      @reload="loadReview"
+      @history-reload="loadHistory"
+      @history-more="loadHistory(reviewState.historyPagination.current_page + 1)"
+      @approve="requestDecision('approve')"
+      @reject="requestDecision('reject')"
+      @edit="editReviewedContent"
+    />
+    <AiContentReviewDecisionDialog
+      :kind="reviewState.decision"
+      :detail="reviewState.detail"
+      :busy="reviewState.busy"
+      :loading="reviewState.loading"
+      :blocked="reviewState.decisionBlocked"
+      :error="reviewState.decisionError"
+      @confirm="confirmDecision"
+      @close="closeDecision"
+      @reload="loadReview"
     />
     <VSnackbar
       :model-value="snackbar.visible"

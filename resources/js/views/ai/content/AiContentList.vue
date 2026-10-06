@@ -10,7 +10,7 @@
 
   INPUT/OUTPUT CỦA CLASS (tổng thể):
   - INPUT : items, loading và lỗi đọc danh sách từ page.
-  - OUTPUT: emit reload/edit/remove/regenerate/refreshStatus/apply/cancel;
+  - OUTPUT: emit reload/edit/review/remove/regenerate/refreshStatus/apply/cancel;
   không thay đổi form tạo mới hoặc tự publish Post.
   - SIDE EFFECT: không gọi API hoặc sửa items đầu vào.
   =====================================================================
@@ -29,7 +29,7 @@ const props = defineProps({
   outputOptions: { type: Array, default: () => [] },
 })
 
-const emit = defineEmits(['reload', 'edit', 'remove', 'regenerate', 'refreshStatus', 'apply', 'cancel'])
+const emit = defineEmits(['reload', 'edit', 'review', 'remove', 'regenerate', 'refreshStatus', 'apply', 'cancel'])
 const search = shallowRef('')
 const status = shallowRef('all')
 const page = shallowRef(1)
@@ -39,7 +39,8 @@ const statuses = [
   { value: 'all', title: 'Tất cả' },
   { value: 'generating', title: 'Đang tạo', color: 'primary' },
   { value: 'review', title: 'Chờ duyệt', color: 'warning' },
-  { value: 'applied', title: 'Đã áp dụng', color: 'success' },
+  { value: 'applied', title: 'Đã duyệt', color: 'success' },
+  { value: 'rejected', title: 'Từ chối', color: 'error' },
   { value: 'failed', title: 'Lỗi', color: 'error' },
   { value: 'cancelled', title: 'Đã hủy', color: 'secondary' },
   { value: 'expired', title: 'Hết hạn', color: 'secondary' },
@@ -218,9 +219,19 @@ watch(() => filteredItems.value.length, total => {
                 variant="text"
                 color="success"
                 :disabled="props.busyId === item.id"
-                :aria-label="`Tạo Post nháp từ ${item.title}`"
-                title="Tạo Post nháp"
+                :aria-label="`Duyệt ${item.title}`"
+                title="Duyệt bài viết"
                 @click="emit('apply', item)"
+              />
+              <VBtn
+                v-if="item.targetType === 'post' && ['review', 'applied', 'rejected'].includes(item.status)"
+                icon="tabler-eye"
+                size="small"
+                variant="text"
+                :disabled="props.busyId === item.id"
+                :aria-label="`Xem nguồn và lịch sử ${item.title}`"
+                title="Xem nguồn và lịch sử duyệt"
+                @click="emit('review', item)"
               />
               <VBtn
                 icon="tabler-refresh"
@@ -252,6 +263,13 @@ watch(() => filteredItems.value.length, total => {
               role="status"
             >
               {{ failureMessage(item) }}
+            </div>
+            <div
+              v-if="item.status === 'rejected' && item.review?.reason"
+              class="text-caption text-error text-wrap mt-1"
+              role="status"
+            >
+              Lý do: {{ item.review.reason }}
             </div>
           </div>
         </div>

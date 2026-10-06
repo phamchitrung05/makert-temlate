@@ -5,6 +5,7 @@
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE: unwrap(), isMissingRoute(), generationCapabilities(), fallbackCapabilities(),
  * capabilities(), listSessions(), createSession(), status(), regenerate(), retry(), cancel(),
+ * review(), reviewHistory(), approveCandidate(), rejectCandidate(),
  * applyCandidate(), targets(), updateCandidate(), removeSession().
  * INPUT/OUTPUT CỦA CLASS (tổng thể): target/capability/request -> session,
  * candidate hoặc lỗi API chuẩn hóa; không chứa logic nghiệp vụ của Post.
@@ -301,6 +302,26 @@ export const aiAgentService = {
 
       return unwrap(await $api(`/admin/posts/ai/import/${candidateId}/apply`, { method: 'POST', body: payload }))
     }
+  },
+
+  /** Input: UUID và AbortSignal. Output: nguồn snapshot/draft/review có quyền; chỉ GET. */
+  async review(candidateId, options = {}) {
+    return unwrap(await $api(`/admin/ai-agent/candidates/${candidateId}/review`, { ...options, retry: 0 }))
+  },
+
+  /** Input: UUID/page và AbortSignal. Output: lịch sử cùng meta.pagination; không gọi AI. */
+  async reviewHistory(candidateId, query = {}, options = {}) {
+    return $api(`/admin/ai-agent/candidates/${candidateId}/review/history`, { ...options, query, retry: 0 })
+  },
+
+  /** Input: UUID/fields/hai version/lý do. Output: Post draft đã duyệt; POST không tự retry. */
+  async approveCandidate(candidateId, payload) {
+    return unwrap(await $api(`/admin/ai-agent/candidates/${candidateId}/approve`, { method: 'POST', body: payload, retry: 0 }))
+  },
+
+  /** Input: UUID/hai version/lý do bắt buộc. Output: rejected; POST không tự retry. */
+  async rejectCandidate(candidateId, payload) {
+    return unwrap(await $api(`/admin/ai-agent/candidates/${candidateId}/reject`, { method: 'POST', body: payload, retry: 0 }))
   },
 }
 

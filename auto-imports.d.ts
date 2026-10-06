@@ -196,6 +196,7 @@ declare global {
   const useAiContentActions: typeof import('./resources/js/composables/useAiContentActions.js')['useAiContentActions']
   const useAiContentCatalog: typeof import('./resources/js/composables/useAiContentCatalog.js')['useAiContentCatalog']
   const useAiContentGeneration: typeof import('./resources/js/composables/useAiContentGeneration.js')['useAiContentGeneration']
+  const useAiContentReview: typeof import('./resources/js/composables/useAiContentReview.js')['useAiContentReview']
   const useAiContentSettings: typeof import('./resources/js/composables/useAiContentSettings.js')['useAiContentSettings']
   const useAiContentWorkspace: typeof import('./resources/js/composables/useAiContentWorkspace.js')['useAiContentWorkspace']
   const useAiProviderSettings: typeof import('./resources/js/composables/useAiProviderSettings.js')['useAiProviderSettings']
@@ -608,6 +609,7 @@ declare module 'vue' {
     readonly useAiContentActions: UnwrapRef<typeof import('./resources/js/composables/useAiContentActions.js')['useAiContentActions']>
     readonly useAiContentCatalog: UnwrapRef<typeof import('./resources/js/composables/useAiContentCatalog.js')['useAiContentCatalog']>
     readonly useAiContentGeneration: UnwrapRef<typeof import('./resources/js/composables/useAiContentGeneration.js')['useAiContentGeneration']>
+    readonly useAiContentReview: UnwrapRef<typeof import('./resources/js/composables/useAiContentReview.js')['useAiContentReview']>
     readonly useAiContentSettings: UnwrapRef<typeof import('./resources/js/composables/useAiContentSettings.js')['useAiContentSettings']>
     readonly useAiContentWorkspace: UnwrapRef<typeof import('./resources/js/composables/useAiContentWorkspace.js')['useAiContentWorkspace']>
     readonly useAiProviderSettings: UnwrapRef<typeof import('./resources/js/composables/useAiProviderSettings.js')['useAiProviderSettings']>

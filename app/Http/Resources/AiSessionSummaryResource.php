@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\Ai\Content\AiContentReviewService;
 use App\Services\Ai\Providers\Diagnostics\AiResponseDiagnostics;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -49,6 +50,7 @@ class AiSessionSummaryResource extends JsonResource
             'source_type' => data_get($this->input_json, 'source_type', filled($this->source_url) ? 'url' : 'text'),
             'source_host' => parse_url($this->source_url ?? '', PHP_URL_HOST) ?: null,
             'applied_target_id' => $this->applied_target_id,
+            'review' => AiContentReviewService::state($this->resource),
             'created_at' => $this->created_at?->toIso8601String(),
             'expires_at' => $this->expires_at?->toIso8601String(),
         ];

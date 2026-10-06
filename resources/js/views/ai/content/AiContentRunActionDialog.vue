@@ -44,7 +44,7 @@ const fieldOptions = computed(() => applying.value
 
 const blocked = computed(() => props.busy || props.action?.loading || props.action?.loadFailed
   || (regenerating.value && (loadingCapabilities.value || Boolean(capabilityError.value)))
-  || (applying.value && (!fields.value.length || props.action?.session?.status !== 'ready' || props.action?.session?.applied_target_id || (legacyTaxonomy.value && fields.value.includes('taxonomy') && !taxonomyConfirmed.value))))
+  || (applying.value && (!fields.value.length || props.action?.session?.status !== 'ready' || props.action?.session?.applied_target_id || props.action?.session?.review?.status === 'rejected' || (legacyTaxonomy.value && fields.value.includes('taxonomy') && !taxonomyConfirmed.value))))
 
 // =====================================================================
 // Input: action identity mới. Output: reset một lần, tải capability regen;

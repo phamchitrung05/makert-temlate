@@ -412,6 +412,7 @@
     "hasTemporaryImages": true,
     "inlineAssetUrl": true,
     "inlineImageHtml": true,
-    "usePostInlineMedia": true
+    "usePostInlineMedia": true,
+    "useAiContentReview": true
   }
 }

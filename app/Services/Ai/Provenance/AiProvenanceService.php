@@ -191,7 +191,7 @@ final class AiProvenanceService
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Lấy run ready thuộc đúng actor và còn hạn sử dụng.
+     * CHỨC NĂNG: Lấy run ready chưa bị từ chối, thuộc đúng actor và còn hạn sử dụng.
      * =====================================================================
      * INPUT: actor ID và UUID run.
      * OUTPUT: AiImport đã load result/input metadata.
@@ -212,6 +212,9 @@ final class AiProvenanceService
             throw ValidationException::withMessages([
                 'ai_run_id' => 'AI candidate không tồn tại, chưa sẵn sàng hoặc đã hết hạn.',
             ]);
+        }
+        if (data_get($import->source_meta_json, 'editorial.status') === 'rejected') {
+            throw ValidationException::withMessages(['ai_run_id' => 'Không thể dùng bản AI đã bị từ chối để lưu Post.']);
         }
 
         return $import;

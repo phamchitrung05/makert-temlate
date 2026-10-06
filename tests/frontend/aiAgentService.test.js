@@ -136,4 +136,27 @@ describe('aiAgentService', () => {
       'gemini',
     ])
   })
+
+  it('reads review/history with abort and sends decisions once without legacy fallback', async () => {
+    const controller = new AbortController()
+    const record = { job_id: 'run-1', review: { status: 'pending_review' } }
+    const pagination = { current_page: 1, last_page: 2, total: 3 }
+
+    apiMocks.$api.mockResolvedValueOnce({ success: true, data: record })
+    await expect(aiAgentService.review('run-1', { signal: controller.signal })).resolves.toEqual(record)
+    expect(apiMocks.$api).toHaveBeenLastCalledWith('/admin/ai-agent/candidates/run-1/review', { signal: controller.signal, retry: 0 })
+    apiMocks.$api.mockResolvedValueOnce({ success: true, data: [], meta: { pagination } })
+    await expect(aiAgentService.reviewHistory('run-1', { page: 2 })).resolves.toMatchObject({ meta: { pagination } })
+    expect(apiMocks.$api).toHaveBeenLastCalledWith('/admin/ai-agent/candidates/run-1/review/history', { query: { page: 2 }, retry: 0 })
+
+    const payload = { fields: ['title'], expected_version: 'draft', expected_review_version: 'review' }
+
+    apiMocks.$api.mockResolvedValueOnce({ success: true, data: { post_id: 5 } })
+    await expect(aiAgentService.approveCandidate('run-1', payload)).resolves.toEqual({ post_id: 5 })
+    expect(apiMocks.$api).toHaveBeenLastCalledWith('/admin/ai-agent/candidates/run-1/approve', { method: 'POST', body: payload, retry: 0 })
+    apiMocks.$api.mockRejectedValueOnce({ status: 404 })
+    await expect(aiAgentService.rejectCandidate('run-1', { reason: 'Sai nguồn' })).rejects.toEqual({ status: 404 })
+    expect(apiMocks.$api).toHaveBeenCalledTimes(4)
+    expect(apiMocks.$api).toHaveBeenLastCalledWith('/admin/ai-agent/candidates/run-1/reject', { method: 'POST', body: { reason: 'Sai nguồn' }, retry: 0 })
+  })
 })
