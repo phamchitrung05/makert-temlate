@@ -69,6 +69,14 @@ const dialogPassthroughs = passthroughStubs([
   'VCardActions',
   'VCard',
   'VSnackbar',
+  'VBtnToggle',
+  'VChip',
+  'VIcon',
+  'VAvatar',
+  'VImg',
+  'VList',
+  'VListItem',
+  'VDivider',
 ])
 
 const mountDialog = (props = {}) => mount(MediaLibraryDialog, {
@@ -146,7 +154,7 @@ describe('MediaLibraryDialog', () => {
     await wrapper.find('[data-testid="asset-1"]').trigger('click')
     await wrapper.find('[data-testid="asset-2"]').trigger('click')
 
-    const selectButton = wrapper.findAll('button').find(button => button.text().includes('Select'))
+    const selectButton = wrapper.findAll('button').find(button => button.text().includes('Chọn media'))
 
     await selectButton.trigger('click')
 
@@ -181,7 +189,7 @@ describe('MediaLibraryDialog', () => {
     await flushPromises()
     expect(wrapper.text()).toContain('1 file đã chọn')
     await wrapper.find('[data-testid="asset-1"]').trigger('click')
-    await wrapper.findAll('button').find(button => button.text().includes('Select')).trigger('click')
+    await wrapper.findAll('button').find(button => button.text().includes('Chọn media')).trigger('click')
     expect(wrapper.emitted('select')).toEqual([[[]]])
     wrapper.unmount()
   })
@@ -196,7 +204,7 @@ describe('MediaLibraryDialog', () => {
 
     await flushPromises()
     await wrapper.find('[data-testid="asset-2"]').trigger('click')
-    await wrapper.findAll('button').find(button => button.text().includes('Select')).trigger('click')
+    await wrapper.findAll('button').find(button => button.text().includes('Chọn media')).trigger('click')
     expect(wrapper.emitted('select')).toEqual([[[first, second]]])
     wrapper.unmount()
   })

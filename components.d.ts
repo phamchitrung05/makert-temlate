@@ -17,6 +17,7 @@ declare module 'vue' {
     AiImageGenerationDialog: typeof import('./resources/js/components/ai/AiImageGenerationDialog.vue')['default']
     AppAutocomplete: typeof import('./resources/js/@core/components/app-form-elements/AppAutocomplete.vue')['default']
     AppBarSearch: typeof import('./resources/js/@core/components/AppBarSearch.vue')['default']
+    AppBrandLogo: typeof import('./resources/js/components/AppBrandLogo.vue')['default']
     AppCardActions: typeof import('./resources/js/@core/components/cards/AppCardActions.vue')['default']
     AppCardCode: typeof import('./resources/js/@core/components/cards/AppCardCode.vue')['default']
     AppCombobox: typeof import('./resources/js/@core/components/app-form-elements/AppCombobox.vue')['default']

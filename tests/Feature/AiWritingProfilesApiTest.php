@@ -147,10 +147,12 @@ final class AiWritingProfilesApiTest extends TestCase
         $this->assertStringNotContainsString('gateway.example', $response->getContent());
         $this->assertArrayNotHasKey('reference_text', $response->json('data'));
         $result = $response->json('data.result');
+        $this->assertSame($this->analysisOutput()['rules'], $result['rules']);
         $profile = $this->withToken($token)->postJson(self::PREFIX, [
             'name' => 'Mẫu đã duyệt', 'description' => $result['summary'], 'rules_json' => $result['rules'],
             'evidence_json' => $result['evidence'], 'style_instructions' => $result['style_instructions'], 'analysis_id' => $id,
         ])->assertCreated()->assertJsonPath('data.origin', 'reference')->json('data');
+        $this->assertSame($result['rules'], $profile['rules_json']);
         $this->assertSame(hash('sha256', self::SOURCE), AiWritingProfile::findOrFail($profile['id'])->source_hash);
         $this->assertSame('writing-profile.analysis.v1', $profile['analysis_metadata']['schema_version']);
         Http::assertSentCount(1);
@@ -327,7 +329,7 @@ final class AiWritingProfilesApiTest extends TestCase
      * =====================================================================
      * CHỨC NĂNG: Cung cấp output analysis có trích đoạn thật.
      * =====================================================================
-     * Input: không có. Output: contract writing-profile.analysis.v1.
+     * Input: không có. Output: contract writing-profile.analysis.v1 gồm cả rules tùy chọn.
      * Side effect: hàm thuần.
      * =====================================================================
      */
@@ -335,7 +337,11 @@ final class AiWritingProfilesApiTest extends TestCase
     {
         return [
             'summary' => 'Giải thích trực tiếp và gần gũi.',
-            'rules' => ['tone' => 'Gần gũi', 'opening' => 'Nêu vấn đề', 'sentence_rhythm' => 'Câu ngắn phối hợp giải thích', 'uncertainties' => []],
+            'rules' => [
+                'tone' => 'Gần gũi', 'opening' => 'Nêu vấn đề', 'sentence_rhythm' => 'Câu ngắn phối hợp giải thích',
+                'pronouns' => 'Gọi người đọc là bạn', 'paragraph_rhythm' => 'Mỗi đoạn tập trung một ý',
+                'structure_patterns' => ['Nêu vấn đề', 'Hướng dẫn thực hiện'], 'uncertainties' => [],
+            ],
             'evidence' => [['feature' => 'opening', 'excerpt' => 'Bạn đang mất thời gian tìm lỗi?', 'explanation' => 'Mở bài đưa ngay tình huống cho người đọc.']],
             'style_instructions' => 'Nêu vấn đề cụ thể, dùng câu ngắn tự nhiên và tránh kết luận lặp lại.',
         ];

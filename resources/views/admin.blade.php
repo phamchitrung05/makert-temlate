@@ -1,12 +1,23 @@
+{{--
+  =====================================================================
+  CHỨC NĂNG FILE: Khung SPA quản trị và branding bootstrap từ Settings.
+  CÁC HÀM/METHOD TRONG FILE: Không có; render Blade và khởi tạo màu loader.
+  INPUT/OUTPUT CỦA CLASS (tổng thể):
+  - INPUT : branding DTO public từ view composer.
+  - OUTPUT: favicon/logo loader và JSON bootstrap; không nhận HTML upload.
+  =====================================================================
+--}}
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" href="{{ asset('favicon.ico') }}" />
+  <link rel="icon" href="{{ $branding['favicon_url'] }}" type="{{ $branding['favicon_type'] }}" />
   <meta name="robots" content="noindex, nofollow" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>@yield('title', config('app.name'))</title>
   <link rel="stylesheet" type="text/css" href="{{ asset('loader.css') }}" />
+  @php($brandingBootstrap = \Illuminate\Support\Arr::only($branding, ['logo_url', 'favicon_url', 'favicon_type']))
+  <script type="application/json" id="site-branding">@json($brandingBootstrap)</script>
   @vite(['resources/js/main.js'])
 </head>
 
@@ -14,6 +25,9 @@
   <div id="app">
     <div id="loading-bg">
       <div class="loading-logo">
+        @if ($branding['logo_url'])
+          <img src="{{ $branding['logo_url'] }}" alt="{{ $branding['site_name'] }}" style="max-width:160px;height:48px;object-fit:contain" />
+        @else
         <!-- SVG Logo -->
         <svg width="86" height="48" viewBox="0 0 34 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path fill-rule="evenodd" clip-rule="evenodd"
@@ -31,6 +45,7 @@
             fill="var(--initial-loader-color)"
 />
         </svg>
+        @endif
       </div>
       <div class=" loading">
         <div class="effect-1 effects"></div>

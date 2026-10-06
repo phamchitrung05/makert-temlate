@@ -1,15 +1,30 @@
 /**
- * State từng nhóm Settings: load/updateField/save/reset/loadOperation/testMail.
- * Input: service API. Output: draft, dirty/error/conflict; giữ draft khi request lỗi.
- * Side effect: HTTP, không lưu secret vào storage; chặn response cũ và lưu trùng.
+ * =====================================================================
+ * CHỨC NĂNG FILE: State từng nhóm Settings và branding chưa lưu.
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - clone()/editableValues()/useSettings(): chuẩn hóa và khởi tạo state.
+ * - load()/updateField()/save()/reset()/reloadGroup(): form/version và xung đột.
+ * - selectBrandingFile()/removeBrandingFile(): đổi file có kiểm quyền/busy.
+ * - loadOperation()/testMail(): đọc vận hành và gửi thử theo yêu cầu.
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : service API; OUTPUT: draft, branding, dirty/error/conflict.
+ * - SIDE EFFECT: HTTP; giữ draft khi lỗi và chỉ áp dụng branding sau lưu thành công.
+ * =====================================================================
  */
 import { computed, shallowRef } from 'vue'
 import { settingsService } from '@/services/settings'
+import { useSettingsBranding } from '@/composables/useSettingsBranding'
+import { applySiteBranding } from '@/composables/useSiteBranding'
 
+/** Input: DTO JSON. Output: bản sao cho form; File được giữ ở composable branding riêng. */
 const clone = value => JSON.parse(JSON.stringify(value))
+
+/** Input: values DTO. Output: form có password trống, giữ cờ secret theo response. */
 const editableValues = values => ({ ...values, ...(Object.hasOwn(values, 'password_configured') ? { password: '' } : {}) })
 
+/** Input: service API tùy chọn. Output: state/actions; HTTP chỉ chạy từ các action rõ ràng. */
 export function useSettings(service = settingsService) {
+  const branding = useSettingsBranding()
   const sections = shallowRef({})
   const drafts = shallowRef({})
   const options = shallowRef({})
@@ -26,10 +41,28 @@ export function useSettings(service = settingsService) {
   const mailNotice = shallowRef(null)
   let requestId = 0
 
-  const dirtyGroups = computed(() => Object.keys(drafts.value)
-    .filter(group => JSON.stringify(drafts.value[group]) !== JSON.stringify(editableValues(sections.value[group]?.values ?? {}))))
+  const dirtyGroups = computed(() => [...new Set([
+    ...Object.keys(drafts.value).filter(group => JSON.stringify(drafts.value[group]) !== JSON.stringify(editableValues(sections.value[group]?.values ?? {}))),
+    ...(branding.dirty.value ? ['site'] : []),
+  ])])
 
-  /** Load/retry; chỉ gọi khi chưa có draft cần giữ. Refresh có chủ ý qua reset nhóm. */
+  /** Input: kind/File. Output: đổi preview khi có quyền và không tải/lưu; không gọi API. */
+  function selectBrandingFile(kind, file) {
+    if (!canManage.value || saving.value || loading.value) return
+    branding.selectFile(kind, file)
+    fieldErrors.value = { ...fieldErrors.value, site: { ...fieldErrors.value.site, [`${kind}_file`]: undefined } }
+    notices.value = { ...notices.value, site: null }
+  }
+
+  /** Input: kind. Output: đánh dấu gỡ sau lưu; chặn thao tác lúc request đang chạy. */
+  function removeBrandingFile(kind) {
+    if (!canManage.value || saving.value || loading.value) return
+    branding.removeFile(kind)
+    fieldErrors.value = { ...fieldErrors.value, site: { ...fieldErrors.value.site, [`${kind}_file`]: undefined } }
+    notices.value = { ...notices.value, site: null }
+  }
+
+  /** Input: không có. Output: tải/retry và trả success; giữ draft/file đang sửa. */
   async function load() {
     if (saving.value || dirtyGroups.value.length) return false
     const current = ++requestId
@@ -44,6 +77,7 @@ export function useSettings(service = settingsService) {
       options.value = data.options ?? {}
       canManage.value = Boolean(data.can_manage)
       loaded.value = true
+      if (sections.value.site) applySiteBranding(sections.value.site.values)
 
       return true
     }
@@ -57,7 +91,7 @@ export function useSettings(service = settingsService) {
     }
   }
 
-  /** Update một field; loại bỏ lỗi field cũ, giữ các tab khác và cờ xung đột. */
+  /** Input: group/key/value. Output: đổi một field, dọn lỗi cũ, giữ tab khác và cờ conflict. */
   function updateField(group, key, value) {
     if (!canManage.value || saving.value === group || !Object.hasOwn(drafts.value[group] ?? {}, key)) return
     if (JSON.stringify(drafts.value[group][key]) === JSON.stringify(value)) return
@@ -67,15 +101,16 @@ export function useSettings(service = settingsService) {
     if (group === 'mail') mailNotice.value = null
   }
 
-  /** Reset chỉ tab chọn, không ghi API; dùng sau xác nhận bỏ thay đổi. */
+  /** Input: group. Output: reset tab/file sau xác nhận bỏ thay đổi; không ghi API. */
   function reset(group) {
     if (saving.value === group || !sections.value[group]) return
+    if (group === 'site') branding.reset()
     drafts.value = { ...drafts.value, [group]: clone(editableValues(sections.value[group].values)) }
     fieldErrors.value = { ...fieldErrors.value, [group]: {} }
     notices.value = { ...notices.value, [group]: null }
   }
 
-  /** Save từng nhóm với version; redaction state sau thành công, giữ input khi 409/422. */
+  /** Input: group. Output: success và DTO/file state; lưu cùng version, giữ input khi 409/422. */
   async function save(group) {
     if (saving.value || loading.value || !canManage.value || conflicts.value[group] || !dirtyGroups.value.includes(group)) return false
     saving.value = group
@@ -84,11 +119,16 @@ export function useSettings(service = settingsService) {
       const payload = { ...drafts.value[group], version: sections.value[group].version }
 
       delete payload.password_configured
+      if (group === 'site') Object.assign(payload, branding.payload())
 
       const section = await service.update(group, payload)
 
       sections.value = { ...sections.value, [group]: section }
       drafts.value = { ...drafts.value, [group]: clone(editableValues(section.values)) }
+      if (group === 'site') {
+        branding.reset()
+        applySiteBranding(section.values)
+      }
       notices.value = { ...notices.value, [group]: { type: 'success', message: 'Đã lưu cài đặt.' } }
 
       return true
@@ -110,7 +150,7 @@ export function useSettings(service = settingsService) {
     }
   }
 
-  /** Tải lại một nhóm xung đột sau xác nhận; giữ draft khác và không ghi đè khi fetch lỗi. */
+  /** Input: group. Output: tải lại sau xác nhận; giữ tab khác và không đổi draft khi fetch lỗi. */
   async function reloadGroup(group) {
     if (saving.value || loading.value) return false
     loading.value = true
@@ -119,6 +159,7 @@ export function useSettings(service = settingsService) {
 
       sections.value = { ...sections.value, [group]: data.sections[group] }
       reset(group)
+      if (group === 'site') applySiteBranding(data.sections.site.values)
       conflicts.value = { ...conflicts.value, [group]: false }
 
       return true
@@ -133,7 +174,7 @@ export function useSettings(service = settingsService) {
     }
   }
 
-  /** Lazy read vận hành; trạng thái độc lập theo tab, response lỗi có retry. */
+  /** Input: group. Output: lazy read vận hành, lỗi và retry độc lập theo tab. */
   async function loadOperation(group) {
     if (operations.value[group]?.loading) return
     operations.value = { ...operations.value, [group]: { ...operations.value[group], loading: true, error: '' } }
@@ -147,7 +188,7 @@ export function useSettings(service = settingsService) {
     }
   }
 
-  /** Gửi mail thử theo thao tác rõ ràng, chỉ dùng cấu hình đã lưu; không gửi khi form dirty. */
+  /** Input: recipient. Output: success/notice; gửi cấu hình đã lưu khi mail form sạch. */
   async function testMail(recipient) {
     if (mailTesting.value || !canManage.value || dirtyGroups.value.includes('mail')) return false
     mailTesting.value = true
@@ -169,5 +210,5 @@ export function useSettings(service = settingsService) {
     }
   }
 
-  return { sections, drafts, options, loading, loaded, error, canManage, saving, fieldErrors, notices, conflicts, dirtyGroups, operations, mailTesting, mailNotice, load, updateField, reset, save, reloadGroup, loadOperation, testMail }
+  return { sections, drafts, options, loading, loaded, error, canManage, saving, fieldErrors, notices, conflicts, dirtyGroups, operations, mailTesting, mailNotice, branding, selectBrandingFile, removeBrandingFile, load, updateField, reset, save, reloadGroup, loadOperation, testMail }
 }

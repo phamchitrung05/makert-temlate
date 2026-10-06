@@ -21,6 +21,8 @@ import { VDialog } from 'vuetify/components/VDialog'
 import { VIcon } from 'vuetify/components/VIcon'
 import { VOverlay } from 'vuetify/components/VOverlay'
 import { VProgressLinear } from 'vuetify/components/VProgressLinear'
+import { VSwitch } from 'vuetify/components/VSwitch'
+import { VAvatar } from 'vuetify/components/VAvatar'
 import AiContentReviewDecisionDialog from '@/views/ai/content/dialog/AiContentReviewDecisionDialog.vue'
 import AiContentComparison from '@/views/ai/content/AiContentComparison.vue'
 import AiContentReviewDialog from '@/views/ai/content/dialog/AiContentReviewDialog.vue'
@@ -35,7 +37,7 @@ function render(component, props, { realDialog = false } = {}) {
   wrapper = mount(component, {
     attachTo: document.body, props,
     global: {
-      plugins: [createVuetify({ aliases: { IconBtn: VBtn }, components: { VBtn, VCard, VCardActions, VCardItem, VCardSubtitle, VCardText, VCardTitle, VForm, VCheckbox, VCol, VRow, VSpacer, VDivider, VDialog, VIcon, VOverlay, VProgressLinear } })],
+      plugins: [createVuetify({ aliases: { IconBtn: VBtn }, components: { VBtn, VCard, VCardActions, VCardItem, VCardSubtitle, VCardText, VCardTitle, VForm, VCheckbox, VCol, VRow, VSpacer, VDivider, VDialog, VIcon, VOverlay, VProgressLinear, VSwitch, VAvatar } })],
       stubs: {
         transition: !realDialog,
         VDialog: realDialog ? false : {
@@ -208,6 +210,46 @@ describe('AI content review dialog', () => {
 })
 
 describe('AI content source comparison', () => {
+  it('binds saved metadata and switches between escaped source HTML, preview and clean text', async () => {
+    render(AiContentComparison, {
+      source: { available: true, title: 'Nguồn động', content_html: '<p>Đoạn chung.</p><p>Đoạn nguồn.</p>' },
+      draft: { title: 'Bài động', content_html: '<p>Đoạn chung.</p><p>Đoạn AI mới.</p><table><tr><td>Dữ liệu bảng</td></tr></table>',
+        excerpt: 'Tóm tắt động', seo_title: 'SEO động', seo_description: 'Mô tả động', focus_keyword: 'Từ khóa động' },
+    })
+    expect(wrapper.text()).toContain('Tóm tắt động')
+    expect(wrapper.text()).toContain('SEO động')
+    expect(wrapper.text()).toContain('Mô tả động')
+    expect(wrapper.text()).toContain('Từ khóa động')
+    expect(wrapper.get('[aria-label="Văn bản AI"] table').text()).toContain('Dữ liệu bảng')
+    expect(wrapper.get('[aria-label="Văn bản AI"] .ai-comparison-added').text()).toBe('Đoạn AI mới.')
+    await button('HTML gốc').trigger('click')
+    expect(wrapper.get('[aria-label="Văn bản nguồn"] pre').text()).toContain('<p>Đoạn nguồn.</p>')
+    expect(wrapper.find('[aria-label="Văn bản nguồn"] pre p').exists()).toBe(false)
+    await wrapper.get('input[aria-label="Chỉ xem nội dung sạch"]').setValue(true)
+    expect(wrapper.find('[aria-label="Văn bản nguồn"] pre').exists()).toBe(false)
+    expect(wrapper.find('[aria-label="Văn bản AI"] table').exists()).toBe(false)
+    expect(wrapper.get('[aria-label="Văn bản AI"]').text()).toContain('Dữ liệu bảng')
+    await wrapper.get('input[aria-label="Tô khác biệt"]').setValue(false)
+    expect(wrapper.find('.ai-comparison-panel__block--added').exists()).toBe(false)
+  })
+
+  it('synchronizes relative scroll positions only while the option is enabled', async () => {
+    render(AiContentComparison, { source: { available: true, content_html: '<p>Nguồn</p>' }, draft: { content_html: '<p>AI</p>' } })
+
+    const source = wrapper.get('[aria-label="Văn bản nguồn"]')
+    const result = wrapper.get('[aria-label="Văn bản AI"]')
+
+    Object.defineProperties(source.element, { scrollHeight: { value: 1000 }, clientHeight: { value: 200 } })
+    Object.defineProperties(result.element, { scrollHeight: { value: 2000 }, clientHeight: { value: 200 } })
+    source.element.scrollTop = 200
+    await source.trigger('scroll')
+    expect(result.element.scrollTop).toBe(450)
+    await wrapper.get('input[aria-label="Đồng bộ cuộn"]').setValue(false)
+    source.element.scrollTop = 400
+    await source.trigger('scroll')
+    expect(result.element.scrollTop).toBe(450)
+  })
+
   it('keeps the comparison headings while loading and shows saved data after the read completes', async () => {
     render(AiContentComparison, { loading: true })
     expect(wrapper.text()).toContain('Nguồn đã lưu')

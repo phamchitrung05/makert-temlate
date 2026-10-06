@@ -1614,8 +1614,12 @@ lifecycle phức tạp như Resource vào một CRUD base quá chung.
 - [x] Tạo lại toàn bài/nhóm field giữ parent, theo dõi child và hiện trong list sau reload.
 - [x] Đối chiếu `docs/fix_1.md`, giữ các mục chưa triển khai ở trạng thái pending.
 - [x] Nối cấu hình typed và operational/capability thật cho Settings theo FIX 1 mục 9.9; không còn fixture nghiệp vụ ở page.
-- [ ] Settings mở rộng: webhook CRUD/delivery/history, lịch sử scheduler/heartbeat worker, branding upload, GA/GSC/2FA/CAPTCHA và SMTP/VPS.
+- [x] Upload logo/favicon tại Settings → Tổng quan; lưu cùng version, preview/hoàn tác, runtime public/admin và cleanup sau commit. Chi tiết FIX 1 mục 12.42.
+- [ ] Settings mở rộng: webhook CRUD/delivery/history, lịch sử scheduler/heartbeat worker, GA/GSC/2FA/CAPTCHA và SMTP/VPS. Chủ dự án chọn bỏ qua Realtime/VPS trong đợt hiện tại.
 - [ ] Apply domain Resource/Sound, tạo audio và lớp editorial `ai_content_drafts` vẫn theo backlog đã chốt.
+
+Bàn giao cuối phiên 2026-10-06 và phần việc để tiếp tục:
+[SESSION_HANDOFF_2026-10-06.md](SESSION_HANDOFF_2026-10-06.md).
 
 ## 16. Tài liệu tham khảo
 

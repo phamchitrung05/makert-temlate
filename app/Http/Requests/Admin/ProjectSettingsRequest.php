@@ -7,18 +7,23 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * Validate theo nhóm Settings; payload partial, version bắt buộc.
- * Input: HTTP admin. Output: allowlisted values; không ghi dữ liệu.
+ * =====================================================================
+ * CHỨC NĂNG FILE: Validate nhóm Settings và upload logo/favicon.
+ * CÁC HÀM/METHOD TRONG FILE: authorize(), rules(), after().
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : HTTP admin, partial payload/version hoặc multipart branding.
+ * - OUTPUT: allowlisted values/file; không ghi dữ liệu hoặc tin path từ client.
+ * =====================================================================
  */
 final class ProjectSettingsRequest extends FormRequest
 {
-    /** Route vẫn bảo vệ quyền; kiểm tra thêm để request dùng đúng guard. */
+    /** Input: user hiện tại. Output: quyền Settings manage; route tiếp tục kiểm guard. */
     public function authorize(): bool
     {
         return $this->user()?->can('settings.manage') ?? false;
     }
 
-    /** Output: rules tương ứng capability thực tế; secret chỉ nhận chiều ghi. */
+    /** Input: service Settings. Output: rules theo nhóm; secret chỉ nhận chiều ghi. */
     public function rules(ProjectSettingsService $settings): array
     {
         $rules = match ($this->route('group')) {
@@ -28,6 +33,10 @@ final class ProjectSettingsRequest extends FormRequest
                 'site_description' => ['nullable', 'string', 'max:1000'],
                 'contact_email' => ['nullable', 'email:rfc', 'max:254'],
                 'timezone' => ['sometimes', 'required', 'timezone:all'],
+                'logo_file' => ['sometimes', 'required', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048', 'dimensions:max_width=4096,max_height=4096'],
+                'favicon_file' => ['sometimes', 'required', 'image', 'mimes:png', 'max:512', 'dimensions:min_width=16,min_height=16,max_width=512,max_height=512,ratio=1'],
+                'remove_logo' => ['sometimes', 'boolean'],
+                'remove_favicon' => ['sometimes', 'boolean'],
             ],
             'media' => [
                 ...array_fill_keys(['image_max_size_kb', 'document_max_size_kb', 'video_max_size_kb', 'archive_max_size_kb'], ['sometimes', 'required', 'integer', 'min:1', 'max:'.(int) (config('media-library.max_file_size') / 1024)]),
@@ -66,10 +75,17 @@ final class ProjectSettingsRequest extends FormRequest
         return ['version' => ['required', 'integer', 'min:0']] + $rules;
     }
 
-    /** Kiểm locale mặc định nằm trong tập bật; dùng giá trị đã lưu khi partial. */
+    /** Input: request đã validate. Output: callbacks kiểm gỡ/upload và locale mặc định trong tập bật. */
     public function after(): array
     {
         return [function ($validator): void {
+            if ($this->route('group') === 'site') {
+                foreach (['logo', 'favicon'] as $kind) {
+                    if ($this->hasFile($kind.'_file') && $this->boolean('remove_'.$kind)) {
+                        $validator->errors()->add($kind.'_file', 'Không thể vừa upload vừa gỡ cùng một ảnh.');
+                    }
+                }
+            }
             if ($this->route('group') !== 'languages' || $validator->errors()->isNotEmpty()) {
                 return;
             }

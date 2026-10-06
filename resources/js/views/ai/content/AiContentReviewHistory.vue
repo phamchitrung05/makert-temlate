@@ -2,7 +2,7 @@
   =====================================================================
   CHỨC NĂNG FILE: Hiển thị lịch sử chỉnh sửa/duyệt/từ chối đã lưu tại server.
   =====================================================================
-  CÁC HÀM/METHOD TRONG FILE: eventLabel/dateLabel; emits reload/more.
+  CÁC HÀM/METHOD TRONG FILE: eventLabel/eventIcon/dateLabel; emits reload/more.
   INPUT/OUTPUT CỦA CLASS (tổng thể): items/pagination/loading/error -> lịch sử và retry.
   SIDE EFFECT: không tự gọi API, không dựng lịch sử từ trạng thái UI.
   =====================================================================
@@ -14,13 +14,21 @@ const emit = defineEmits(['reload', 'more'])
 /** Input: mã Activitylog. Output: nhãn thao tác đã ghi. */
 const eventLabel = value => ({ 'candidate.edited': 'Chỉnh sửa nội dung', 'candidate.approved': 'Duyệt thành Post nháp', 'candidate.rejected': 'Từ chối' }[value] ?? value)
 
+/** Input: mã Activitylog. Output: icon theo thao tác thật đã ghi. */
+const eventIcon = value => ({ 'candidate.edited': 'tabler-edit', 'candidate.approved': 'tabler-check', 'candidate.rejected': 'tabler-x' }[value] ?? 'tabler-history')
+
 /** Input: thời điểm server. Output: ngày giờ local hoặc nhãn thiếu dữ liệu. */
 const dateLabel = value => value ? new Date(value).toLocaleString('vi-VN') : 'Chưa có thời điểm'
 </script>
 
 <template>
   <div class="mt-6">
-    <h3 class="text-subtitle-1 mb-3">
+    <h3 class="d-flex align-center gap-2 text-subtitle-1 mb-3">
+      <VIcon
+        icon="tabler-history"
+        color="primary"
+        size="20"
+      />
       Lịch sử biên tập
     </h3>
     <VProgressLinear
@@ -54,23 +62,35 @@ const dateLabel = value => value ? new Date(value).toLocaleString('vi-VN') : 'Ch
       :key="item.id"
       class="ai-review-history__item"
     >
-      <div class="text-body-2 font-weight-medium">
-        {{ eventLabel(item.event) }}
-      </div>
-      <div class="text-caption text-medium-emphasis">
-        {{ item.actor?.name || 'Tài khoản không còn tồn tại' }} · {{ dateLabel(item.at) }}
-      </div>
-      <p
-        v-if="item.reason"
-        class="text-body-2 mb-0"
+      <VAvatar
+        color="primary"
+        variant="tonal"
+        size="32"
       >
-        Lý do: {{ item.reason }}
-      </p>
-      <div
-        v-if="item.post_id"
-        class="text-caption"
-      >
-        Post nháp #{{ item.post_id }}
+        <VIcon
+          :icon="eventIcon(item.event)"
+          size="18"
+        />
+      </VAvatar>
+      <div>
+        <div class="text-body-2 font-weight-medium">
+          {{ eventLabel(item.event) }}
+        </div>
+        <div class="text-caption text-medium-emphasis">
+          {{ item.actor?.name || 'Tài khoản không còn tồn tại' }} · {{ dateLabel(item.at) }}
+        </div>
+        <p
+          v-if="item.reason"
+          class="text-body-2 mb-0"
+        >
+          Lý do: {{ item.reason }}
+        </p>
+        <div
+          v-if="item.post_id"
+          class="text-caption"
+        >
+          Post nháp #{{ item.post_id }}
+        </div>
       </div>
     </div>
     <VBtn
@@ -86,7 +106,10 @@ const dateLabel = value => value ? new Date(value).toLocaleString('vi-VN') : 'Ch
 
 <style scoped>
 .ai-review-history__item {
+  display: flex;
+  align-items: flex-start;
   border-block-end: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  gap: 12px;
   overflow-wrap: anywhere;
   padding-block: 10px;
 }

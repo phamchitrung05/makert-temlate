@@ -2,7 +2,7 @@
   =====================================================================
   CHỨC NĂNG FILE: Xem nguồn, kết quả AI, quyết định và lịch sử trước khi duyệt.
   =====================================================================
-  CÁC HÀM/METHOD TRONG FILE: reviewLabel/locked/displayLoading (computed),
+  CÁC HÀM/METHOD TRONG FILE: reviewLabel/reviewColor/postId/locked/displayLoading (computed),
   watcher open, finishEnter(), finishLeave(), dateLabel().
   INPUT/OUTPUT CỦA CLASS (tổng thể): state -> emit thao tác GET/biên tập/quyết định.
   SIDE EFFECT: không gọi API, không render HTML nguồn; giữ content đến after-leave.
@@ -24,6 +24,8 @@ const emit = defineEmits(['close', 'afterLeave', 'reload', 'historyReload', 'his
 const contentActive = shallowRef(false)
 const displayLoading = computed(() => props.state.loading || (props.state.open && !contentActive.value))
 const reviewLabel = computed(() => ({ pending_review: 'Chờ duyệt', approved: 'Đã duyệt', rejected: 'Từ chối', not_ready: 'Chưa sẵn sàng' }[props.state.detail?.review?.status] ?? 'Đang tải'))
+const reviewColor = computed(() => ({ pending_review: 'warning', approved: 'success', rejected: 'error' }[props.state.detail?.review?.status] ?? 'secondary'))
+const postId = computed(() => props.state.detail?.review?.post_id || props.state.detail?.applied_target_id)
 const locked = computed(() => displayLoading.value || props.state.busy || Boolean(props.state.error))
 
 /** Input: mở lại dialog. Output: trì hoãn text dài cho đến khi hiệu ứng mở hoàn tất. */
@@ -43,14 +45,15 @@ function finishLeave() {
 }
 
 /** Input: thời điểm ISO từ server. Output: ngày giờ theo locale hiện tại, không mutation. */
-const dateLabel = value => value ? new Date(value).toLocaleString('vi-VN') : ''
+const dateLabel = value => value && !Number.isNaN(new Date(value).getTime()) ? new Date(value).toLocaleString('vi-VN') : 'Chưa có thời điểm'
 </script>
 
 <template>
   <VDialog
     :model-value="props.state.open"
     class="ai-content-review-dialog"
-    max-width="1100"
+    max-width="1440"
+    height="min(1100px, calc(100dvh - 48px))"
     scrollable
     :persistent="props.state.busy"
     :retain-focus="!props.state.decision"
@@ -59,13 +62,17 @@ const dateLabel = value => value ? new Date(value).toLocaleString('vi-VN') : ''
     @after-leave="finishLeave"
   >
     <AppDialogLayout
+      id="view-moi"
       title="Duyệt content AI"
       :subtitle="props.state.detail?.draft?.title"
       :close-disabled="props.state.busy"
       close-label="Đóng duyệt content AI"
       @close="emit('close')"
     >
-      <VCardText :aria-busy="displayLoading">
+      <VCardText
+        :aria-busy="displayLoading"
+        class="ai-review-body"
+      >
         <div
           v-if="displayLoading"
           role="status"
@@ -96,7 +103,12 @@ const dateLabel = value => value ? new Date(value).toLocaleString('vi-VN') : ''
           </VBtn>
         </VAlert>
         <div class="d-flex flex-wrap align-center gap-3 mb-4">
-          <VChip :color="props.state.detail?.review?.status === 'rejected' ? 'error' : 'primary'">
+          <VChip
+            :color="reviewColor"
+            size="small"
+            variant="tonal"
+            :prepend-icon="props.state.detail?.review?.status === 'approved' ? 'tabler-circle-check' : props.state.detail?.review?.status === 'rejected' ? 'tabler-circle-x' : 'tabler-clock'"
+          >
             {{ reviewLabel }}
           </VChip>
           <span v-if="props.state.detail?.review?.reviewed_at">
@@ -105,8 +117,12 @@ const dateLabel = value => value ? new Date(value).toLocaleString('vi-VN') : ''
           </span>
           <span
             v-if="props.state.detail?.expires_at"
-            class="text-caption text-medium-emphasis"
+            class="d-flex align-center gap-1 text-caption text-medium-emphasis"
           >
+            <VIcon
+              icon="tabler-clock"
+              size="16"
+            />
             Nội dung AI có hạn đến {{ dateLabel(props.state.detail.expires_at) }}
           </span>
         </div>
@@ -124,44 +140,6 @@ const dateLabel = value => value ? new Date(value).toLocaleString('vi-VN') : ''
           :loading="displayLoading"
           :active="contentActive"
         />
-        <VRow class="mt-2">
-          <VCol cols="12">
-            <div class="text-subtitle-2">
-              Tóm tắt
-            </div>
-            <p class="text-body-2 ai-review-value">
-              {{ props.state.detail?.draft?.excerpt || 'Chưa có' }}
-            </p>
-          </VCol>
-          <VCol
-            cols="12"
-            md="6"
-          >
-            <div class="text-subtitle-2">
-              Tiêu đề SEO
-            </div>
-            <p class="text-body-2 ai-review-value">
-              {{ props.state.detail?.draft?.seo_title || 'Chưa có' }}
-            </p>
-            <div class="text-subtitle-2">
-              Từ khóa chính
-            </div>
-            <p class="text-body-2 ai-review-value">
-              {{ props.state.detail?.draft?.focus_keyword || 'Chưa có' }}
-            </p>
-          </VCol>
-          <VCol
-            cols="12"
-            md="6"
-          >
-            <div class="text-subtitle-2">
-              Mô tả SEO
-            </div>
-            <p class="text-body-2 ai-review-value">
-              {{ props.state.detail?.draft?.seo_description || 'Chưa có' }}
-            </p>
-          </VCol>
-        </VRow>
         <VDivider class="my-4" />
         <AiThumbnailStatus
           :asset="props.state.detail?.thumbnail"
@@ -195,21 +173,28 @@ const dateLabel = value => value ? new Date(value).toLocaleString('vi-VN') : ''
           <VSpacer />
           <VBtn
             variant="text"
+            prepend-icon="tabler-refresh"
             :disabled="props.state.busy || props.state.loading"
             @click="emit('reload')"
           >
             Tải lại trạng thái
           </VBtn>
           <VBtn
-            v-if="props.state.detail?.review?.post_id"
-            :to="{ name: 'apps-blog-post-add', query: { post: props.state.detail.review.post_id } }"
+            v-if="postId"
+            :to="{ name: 'apps-blog-post-add', query: { post: postId } }"
             :disabled="locked"
+            variant="tonal"
+            color="primary"
+            prepend-icon="tabler-external-link"
           >
             Mở Post
           </VBtn>
           <template v-if="props.state.detail?.can_review">
             <VBtn
+              v-if="props.state.detail?.can_edit !== false"
               variant="tonal"
+              color="primary"
+              prepend-icon="tabler-edit"
               :disabled="locked"
               @click="emit('edit')"
             >
@@ -218,13 +203,16 @@ const dateLabel = value => value ? new Date(value).toLocaleString('vi-VN') : ''
             <VBtn
               color="error"
               variant="tonal"
+              prepend-icon="tabler-x"
               :disabled="locked || props.state.decisionBlocked"
               @click="emit('reject')"
             >
               Từ chối
             </VBtn>
             <VBtn
-              color="success"
+              color="primary"
+              variant="flat"
+              prepend-icon="tabler-check"
               :disabled="locked || props.state.decisionBlocked || props.state.detail?.can_approve === false"
               @click="emit('approve')"
             >
@@ -258,8 +246,13 @@ const dateLabel = value => value ? new Date(value).toLocaleString('vi-VN') : ''
 }
 /* stylelint-enable selector-pseudo-class-no-unknown */
 
-.ai-review-value {
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
+.ai-review-body {
+  padding: 24px;
+}
+
+@media (max-width: 599.98px) {
+  .ai-review-body {
+    padding: 16px;
+  }
 }
 </style>

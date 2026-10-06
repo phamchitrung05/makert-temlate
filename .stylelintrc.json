@@ -19,7 +19,15 @@
       "files": [
         "**/*.vue"
       ],
-      "customSyntax": "postcss-html"
+      "customSyntax": "postcss-html",
+      "rules": {
+        "selector-pseudo-class-no-unknown": [
+          true,
+          {
+            "ignorePseudoClasses": ["deep", "global", "slotted"]
+          }
+        ]
+      }
     }
   ],
   "rules": {

@@ -311,6 +311,7 @@ Thumbnail AI bổ sung ngày 2026-10-06 (FIX 1 mục 12.37):
 
 | Date | Change | Files/area | Tests/build |
 |---|---|---|---|
+| 2026-10-06 | Upload logo/favicon, preview/hoàn tác, version/rollback/cleanup và runtime public/admin | SiteSettings, SiteBrandingService, Settings panel/composables, Blade/theme | 15 backend tests/135 assertions; 12 frontend tests; lint/Pint/build/browser fixture đạt |
 | 2026-10-06 | Tách ảnh content bằng link khỏi Gallery có thứ tự; bỏ usage inline legacy local, giữ HTML/file; post_type gallery ở backlog | Post request/action/resource/editor, Media field và migration, AI cleanup | 49 backend tests/432 assertions; 55 frontend tests; lint/Pint/build/browser đạt |
 | 2026-10-06 | Chuẩn hóa 10 tab Settings; sáu nhóm typed mới, version/quyền/SMTP secret, runtime và capability thật | Settings API/UI, Media/SEO/login/locale/scheduler | 64 backend regression tests; lượt cuối 8 Settings tests/77 assertions; 32 frontend tests; lint/Pint/build/browser đạt |
 | 2026-10-06 | Completed AI thumbnails from generation through Post draft approval | AI Content, image jobs, media/provenance, shared thumbnail UI | Backend 390 tests/2727 assertions; frontend 46 files/333 tests; lint/build/browser fixture pass |

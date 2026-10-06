@@ -5,10 +5,24 @@ namespace App\Services\Ai\Content\Quality;
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Đối chiếu cách viết số tương đương có ngữ cảnh rõ ràng.
- * CÁC HÀM: tokens(), integerCounts(), dates(), times(), centuries(), counts(), weekdays().
- * INPUT/OUTPUT: plain text -> tokens số và ngày/giờ/thế kỷ; không sửa HTML lưu.
+ * =====================================================================
  * Không làm tròn, đổi đơn vị tiền/tỷ lệ hoặc bỏ điều kiện nguồn. Semantic
  * grounding vẫn cần người đọc; phiên bản có dấu chấm giữ nguyên.
+ *
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - tokens(): tổng hợp số và ngữ cảnh sau chuẩn hóa.
+ * - integerCounts(): chuẩn hóa dấu nhóm nghìn của số lượng nguyên.
+ * - dates(): chuẩn hóa ngày/tháng và giữ năm đã nêu.
+ * - times(): chuẩn hóa giờ/phút theo định dạng 12/24 giờ.
+ * - centuries(): đối chiếu số thế kỷ và chữ số La Mã.
+ * - listLabels(): bỏ thứ tự trình bày của nhãn nội dung liệt kê.
+ * - counts(): chuẩn hóa số đếm có đơn vị rõ ràng.
+ * - weekdays(): giữ số ngày và danh sách thứ trong tuần.
+ *
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : plain text từ bài nguồn hoặc output AI.
+ * - OUTPUT: tokens số và ngày/giờ/thế kỷ; không sửa HTML lưu.
+ * =====================================================================
  * =====================================================================
  */
 final class ArticleNumberNormalizer
@@ -21,6 +35,7 @@ final class ArticleNumberNormalizer
         $text = $this->times($text, $contexts);
         $text = $this->centuries($text, $contexts);
         $text = $this->weekdays($text, $contexts);
+        $text = $this->listLabels($text);
         $text = $this->counts($text);
         $text = $this->integerCounts($text);
         $quarters = ['I' => '1', 'II' => '2', 'III' => '3', 'IV' => '4'];
@@ -110,13 +125,25 @@ final class ArticleNumberNormalizer
         return preg_replace_callback('/(?<![\pL-])(?:(twenty|thirty|forty|hundred)\s+)?('.implode('|', $ordinals).')\s+century\b/iu', fn (array $match): string => ($match[1] ?? '') !== '' ? $match[0] : $record(array_search(strtolower($match[2]), $ordinals, true) + 1), $text) ?? $text;
     }
 
-    /** Input: số đếm 1–9 trước tầng/nhóm/ngày. Output: không lấy phần của số lớn. */
+    /**
+     * Bỏ số thứ tự của nhãn “Nội dung thứ 2 là/về” để bài được đổi bố cục.
+     *
+     * Input: text có nhãn nội dung liệt kê; thứ của hội nghị/điều khoản giữ nguyên.
+     * Output: text dùng để đối chiếu số liệu, giữ số văn bản và số lượng nội dung.
+     */
+    private function listLabels(string $text): string
+    {
+        return preg_replace('/\bnội[\s\p{Z}]+dung[\s\p{Z}]+thứ[\s\p{Z}]+(?:[1-9]|nhất|hai|ba|tư|bốn|năm|sáu|bảy|tám|chín)(?=[\s\p{Z}]+(?:là|về)\b)/iu', 'nội dung', $text) ?? $text;
+    }
+
+    /** Input: số đếm 1–9 trước tầng/nhóm/ngày/nội dung. Output: không lấy phần của số lớn. */
     private function counts(string $text): string
     {
         $counts = ['một' => '1', 'hai' => '2', 'ba' => '3', 'bốn' => '4', 'năm' => '5', 'sáu' => '6', 'bảy' => '7', 'tám' => '8', 'chín' => '9'];
-        $text = preg_replace_callback('/\b(?:(mười|mươi|trăm|nghìn|ngàn|triệu|tỷ|lẻ|linh|chấm|phẩy|phần|âm)[\s\p{Z}]+)?(một|hai|ba|bốn|năm|sáu|bảy|tám|chín)[\s\p{Z}]+(tầng|nhóm|ngày)\b(?![\s\p{Z}]+(?:rưỡi\b|và[\s\p{Z}]+(?:một|1)[\s\p{Z}]+nửa\b))/iu', fn (array $match): string => ($match[1] ?? '') !== '' ? $match[0] : $counts[mb_strtolower($match[2])].' '.$match[3], $text) ?? $text;
+        $unit = '(?:tầng|nhóm|ngày|nội[\s\p{Z}]+dung)';
+        $text = preg_replace_callback('/\b(?:(mười|mươi|trăm|nghìn|ngàn|triệu|tỷ|lẻ|linh|chấm|phẩy|phần|âm)[\s\p{Z}]+)?(một|hai|ba|bốn|năm|sáu|bảy|tám|chín)[\s\p{Z}]+('.$unit.')\b(?![\s\p{Z}]+(?:rưỡi\b|và[\s\p{Z}]+(?:một|1)[\s\p{Z}]+nửa\b))/iu', fn (array $match): string => ($match[1] ?? '') !== '' ? $match[0] : $counts[mb_strtolower($match[2])].' '.$match[3], $text) ?? $text;
 
-        return preg_replace_callback('/(?<![\pL\pN.,])0+([1-9]\d*)\s+(tầng|nhóm|ngày)\b/iu', fn (array $match): string => $match[1].' '.$match[2], $text) ?? $text;
+        return preg_replace_callback('/(?<![\pL\pN.,])0+([1-9]\d*)[\s\p{Z}]+('.$unit.')\b/iu', fn (array $match): string => $match[1].' '.$match[2], $text) ?? $text;
     }
 
     /** Input: danh sách ít nhất hai thứ trong tuần. Output: số ngày và chính danh sách. */

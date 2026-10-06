@@ -1,17 +1,20 @@
 <!--
   =====================================================================
-  CHỨC NĂNG FILE: Render grid asset cho Media Picker
+  CHỨC NĂNG FILE: Hiển thị lưới media co giãn với các ô vuông cho Media Picker.
   =====================================================================
 
   Component chỉ nhận asset và selection từ dialog, sau đó phát event khi user
   chọn hoặc retry. Không gọi HTTP và không tự quyết định policy.
 
-  CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
-  - fileOf()/previewOf(): lấy metadata hiển thị an toàn
+  CÁC HÀM/METHOD TRONG FILE:
+  - selectedIds: computed tập ID để tra cứu các file đã chọn.
+  - fileOf()/previewOf()/fileInfo(): lấy metadata hiển thị an toàn
   - resolveStatus(): ánh xạ status sang nhãn/màu
-  - isSelected()/canSelect(): xác định trạng thái chọn
+  - isSelected()/canSelect()/selectionHint(): xác định trạng thái chọn
+  - shouldShowStatus()/shouldShowScanStatus()/shouldShowConversionStatus(): ẩn trạng thái mặc định.
+  - handleKeydown(): hỗ trợ chọn bằng Enter/Space.
 
-  INPUT/OUTPUT CỦA COMPONENT (tổng thể):
+  INPUT/OUTPUT CỦA CLASS (tổng thể):
   - INPUT : assets, selected assets, multiple và capability.
   - OUTPUT: emit toggle/retry cho MediaLibraryDialog.
   =====================================================================
@@ -53,6 +56,18 @@ const fileOf = asset => asset?.file ?? {}
 /** Input: asset. Output: preview URL public hoặc null. */
 const previewOf = asset => fileOf(asset).preview_url || fileOf(asset).url || null
 
+/** Input: asset. Output: định dạng và kích thước file thật cho card. */
+const fileInfo = asset => {
+  const file = fileOf(asset)
+  const format = file.mime_type?.split('/').pop()?.toUpperCase() || asset.kind
+  const size = Number(file.size)
+  if (!Number.isFinite(size) || size <= 0) return format
+  const units = ['B', 'KB', 'MB', 'GB']
+  const index = Math.min(Math.floor(Math.log(size) / Math.log(1024)), units.length - 1)
+
+  return `${format} · ${(size / 1024 ** index).toFixed(index === 0 ? 0 : 1)} ${units[index]}`
+}
+
 /** Input: asset. Output: true khi asset đang được chọn. */
 const isSelected = asset => selectedIds.value.has(asset.id)
 
@@ -80,11 +95,11 @@ const selectionHint = asset => {
   if (asset.kind === 'archive' && fileOf(asset).scan_status !== 'clean')
     return 'Package chỉ chọn được sau khi security scan clean.'
 
-  return props.multiple ? 'Chọn asset này' : 'Chọn asset'
+  return `Chọn ${asset.title || 'file'}`
 }
 
 /** Input: status API. Output: ẩn trạng thái mặc định clean/pending khỏi card. */
-const shouldShowStatus = status => Boolean(status) && !['clean', 'pending'].includes(status)
+const shouldShowStatus = status => Boolean(status) && !['clean', 'pending', 'ready'].includes(status)
 
 /** Input: asset. Output: true khi cần hiển thị scan status. */
 const shouldShowScanStatus = asset => shouldShowStatus(fileOf(asset).scan_status)
@@ -104,21 +119,19 @@ const handleKeydown = (event, asset) => {
 
 <template>
   <div class="media-asset-grid">
-    <VRow
+    <div
       v-if="props.assets.length"
+      class="media-asset-grid__list"
       role="listbox"
       :aria-multiselectable="props.multiple"
     >
-      <VCol
+      <div
         v-for="asset in props.assets"
         :key="asset.id"
-        cols="12"
-        sm="6"
-        md="4"
-        lg="3"
+        class="media-asset-grid__item"
       >
         <VCard
-          class="media-asset-card h-100"
+          class="media-asset-card"
           :class="{ 'media-asset-card--selected': isSelected(asset) }"
           :tabindex="canSelect(asset) ? 0 : -1"
           :aria-disabled="!canSelect(asset)"
@@ -132,8 +145,7 @@ const handleKeydown = (event, asset) => {
             <VImg
               v-if="previewOf(asset) && asset.kind === 'image'"
               :src="previewOf(asset)"
-              height="100%"
-              contain
+              cover
               class="media-asset-card__image"
               alt=""
             />
@@ -152,14 +164,27 @@ const handleKeydown = (event, asset) => {
             />
           </div>
 
+          <VCardText class="media-asset-card__caption">
+            <div
+              class="font-weight-medium media-asset-card__title"
+              :title="asset.title"
+            >
+              {{ asset.title || fileOf(asset).original_name || 'File media' }}
+            </div>
+            <div class="media-asset-card__info media-asset-card__title">
+              {{ fileInfo(asset) }}
+            </div>
+          </VCardText>
+
           <VCardText
             v-if="shouldShowScanStatus(asset) || shouldShowConversionStatus(asset)"
-            class="pb-2"
+            class="media-asset-card__status"
           >
-            <div class="d-flex flex-wrap gap-1 mt-2">
+            <div class="d-flex flex-column align-start gap-1">
               <VChip
                 v-if="shouldShowScanStatus(asset)"
                 :color="resolveStatus(fileOf(asset).scan_status).color"
+                :title="`Scan ${resolveStatus(fileOf(asset).scan_status).text}`"
                 size="x-small"
                 label
               >
@@ -168,6 +193,7 @@ const handleKeydown = (event, asset) => {
               <VChip
                 v-if="shouldShowConversionStatus(asset)"
                 :color="resolveStatus(fileOf(asset).conversion_status).color"
+                :title="resolveStatus(fileOf(asset).conversion_status).text"
                 size="x-small"
                 label
               >
@@ -178,29 +204,50 @@ const handleKeydown = (event, asset) => {
 
           <VCardActions
             v-if="props.canRetry && (fileOf(asset).scan_status === 'error' || fileOf(asset).conversion_status === 'failed')"
-            class="pt-0 justify-end"
+            class="media-asset-card__actions"
           >
             <VBtn
               icon="tabler-refresh"
-              variant="text"
-              size="small"
+              variant="tonal"
+              size="x-small"
               :aria-label="`Retry ${asset.title}`"
               @click.stop="emit('retry', asset)"
+              @keydown.stop
             />
           </VCardActions>
         </VCard>
-      </VCol>
-    </VRow>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.media-asset-grid__list {
+  display: grid;
+  gap: 12px;
+
+  /* Khoảng 10 cột khi đủ rộng; giảm cột để mỗi ô không nhỏ hơn 96px. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, max(96px, calc((100% - 108px) / 10))), 1fr));
+}
+
+.media-asset-grid__item {
+  min-inline-size: 0;
+}
+
 .media-asset-card {
-  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  border: thin solid rgba(var(--v-border-color), var(--v-border-opacity));
+  aspect-ratio: 1 / 1;
   background: rgb(var(--v-theme-surface));
-  border: 2px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  box-shadow: 0 2px 6px rgba(var(--v-theme-on-surface), 0.08);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: none;
+  cursor: pointer;
+  inline-size: 100%;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.media-asset-card:hover {
+  border-color: rgba(var(--v-theme-primary), 0.5);
 }
 
 .media-asset-card:focus-visible {
@@ -210,35 +257,90 @@ const handleKeydown = (event, asset) => {
 
 .media-asset-card--selected {
   border-color: rgb(var(--v-theme-primary));
-  box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 0.14), 0 2px 6px rgba(var(--v-theme-on-surface), 0.08);
+  background: rgba(var(--v-theme-primary), 0.04);
 }
 
-.media-asset-card[aria-disabled='true'] {
+.media-asset-card[aria-disabled="true"] {
   cursor: not-allowed;
   opacity: 0.62;
 }
 
 .media-asset-card__preview {
-  position: relative;
+  position: absolute;
   display: flex;
-  inline-size: 100%;
-  aspect-ratio: 1 / 1;
-  min-block-size: 0;
+  overflow: hidden;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
-  background: rgb(var(--v-theme-grey-100));
+  background: rgb(var(--v-theme-background));
+  inset: 0;
 }
 
 .media-asset-card__preview :deep(.media-asset-card__image) {
-  inline-size: 100%;
   block-size: 100%;
+  inline-size: 100%;
 }
 
 .media-asset-card__check {
   position: absolute;
-  inset-block-start: 10px;
-  inset-inline-end: 10px;
+  z-index: 2;
+  border-radius: 50%;
+  background: rgb(var(--v-theme-surface));
+  inset-block-start: 6px;
+  inset-inline-end: 6px;
+}
+
+.media-asset-card__caption {
+  position: absolute;
+  background: linear-gradient(transparent, rgba(var(--v-theme-surface), 0.96) 32%);
+  color: rgb(var(--v-theme-on-surface));
+  font-size: 12px;
+  inset-block-end: 0;
+  inset-inline: 0;
+  line-height: 1.4;
+  padding-block: 16px 6px !important;
+  padding-inline: 8px !important;
+}
+
+.media-asset-card__info {
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+  font-size: 10px;
+}
+
+.media-asset-card__status {
+  position: absolute;
+  padding: 0 !important;
+  inset-block-start: 6px;
+  inset-inline-start: 6px;
+  max-inline-size: calc(100% - 40px);
+}
+
+.media-asset-card__status :deep(.v-chip) {
+  background: rgb(var(--v-theme-surface));
+  max-inline-size: 100%;
+}
+
+.media-asset-card__status :deep(.v-chip__content) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.media-asset-card__actions {
+  position: absolute;
+  padding: 0;
+  inset-block-start: 32px;
+  inset-inline-end: 4px;
+  min-block-size: 0;
+}
+
+.media-asset-card__actions :deep(.v-btn) {
+  background: rgb(var(--v-theme-surface));
+}
+
+.media-asset-card__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
 

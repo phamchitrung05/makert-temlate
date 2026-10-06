@@ -29,20 +29,22 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Đăng ký binding AI registry/provider và morph map của ứng dụng.
+ * CHỨC NĂNG FILE: Đăng ký AI registry/provider, morph map và view branding.
  * =====================================================================
  *
  * Provider là điểm composition root: các service AI được bind một lần vào
  * container, còn morph alias được khóa trước khi model ghi quan hệ polymorphic.
- * Không đặt business rule hoặc truy vấn database trong provider.
+ * Branding chỉ đọc qua service khi render view; không truy vấn DB lúc provider boot.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - register(): bind provider contract và các registry singleton.
  * - boot(): kích hoạt morph map.
+ * - registerBrandingViews(): cấp branding đã lưu khi render public/admin.
  * - enforceMorphMap(): khai báo alias/model cho quan hệ polymorphic.
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
@@ -110,6 +112,15 @@ class AppServiceProvider extends ServiceProvider
                 ->by($request->ip());
         });
         $this->enforceMorphMap();
+        $this->registerBrandingViews();
+    }
+
+    /** Input: không có. Output: composer đọc DTO khi render; không query DB lúc provider boot. */
+    private function registerBrandingViews(): void
+    {
+        View::composer(['admin', 'layouts.public'], function ($view): void {
+            $view->with('branding', app(ProjectSettingsService::class)->section('site')['values']);
+        });
     }
 
     /**

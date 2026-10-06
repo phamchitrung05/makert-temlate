@@ -11,9 +11,19 @@ use Tests\TestCase;
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Regression các lỗi số liệu thực tế và các ca đổi giá trị.
- * CÁC HÀM: equivalentNumbers(), changedNumbers(), test_*.
- * INPUT/OUTPUT: nguồn/output cố định -> gate pass/blocked; 0 HTTP/model/DB.
+ * =====================================================================
  * Không sửa study hoặc dùng kết quả gate làm điểm văn phong.
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - test_equivalent_notations_preserve_values(): chấp nhận cách viết tương đương.
+ * - equivalentNumbers(): cung cấp ca ngày/giờ/thế kỷ/số đếm/nhãn liệt kê.
+ * - test_changed_values_are_not_hidden_by_unrelated_numbers(): chặn đổi giá trị.
+ * - changedNumbers(): cung cấp ca mất hoặc thay đổi số liệu có ý nghĩa.
+ * - test_saved_c_candidates_pass_without_mutating_historical_study(): kiểm corpus cũ.
+ * - test_new_q33_table_candidate_preserves_grouped_integer_counts(): kiểm số đếm bảng.
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : nguồn/output cố định và artifacts lịch sử chỉ đọc.
+ * - OUTPUT: gate pass/blocked; không gọi HTTP/model hoặc ghi database.
+ * =====================================================================
  * =====================================================================
  */
 final class ArticleNumberGroundingTest extends TestCase
@@ -42,6 +52,10 @@ final class ArticleNumberGroundingTest extends TestCase
             'Roman century' => ['Its 16th century heyday.', 'Thương cảng hưng thịnh ở thế kỷ XVI.'],
             'written English ordinal' => ['A trading port in the second century.', 'Thương cảng có từ thế kỷ II.'],
             'word group count' => ['4 nhóm chương trình chính.', 'Chương trình tập trung vào bốn nhóm.'],
+            'written topic count' => ['Thảo luận về 3 nội dung.', 'Phiên họp tập trung vào ba nội dung.'],
+            'written topic count with nonbreaking spaces' => ['Thảo luận về 3 nội dung.', "Phiên họp tập trung vào ba\u{00A0}nội\u{00A0}dung."],
+            'reordered topic retains its regulation number' => ['Nội dung thứ 2 là Quy định 15/2006 về đảng viên làm kinh tế tư nhân.', 'Một trong ba nội dung là Quy định 15/2006 về đảng viên làm kinh tế tư nhân.'],
+            'third topic retains its resolution number' => ['Nội dung thứ 3 là tổng kết Nghị quyết 26/2018.', 'Hội nghị thảo luận tổng kết Nghị quyết 26/2018.'],
             'explicit two days by enumeration' => ['02 ngày trong tuần vào Thứ ba và Thứ sáu.', 'Miễn phí vào Thứ ba và Thứ sáu.'],
             'English and Vietnamese check run grouping' => ['A check suite supports 50,000 check runs.', 'Mỗi suite có 50.000 check run.'],
             'runner integer grouping' => ['10,000 runners per group.', 'Mỗi nhóm có tối đa 10.000 runner.'],
@@ -79,6 +93,12 @@ final class ArticleNumberGroundingTest extends TestCase
             'invalid Roman notation' => ['3rd century', 'Thương cảng ở thế kỷ IIIX.'],
             'component of large count' => ['4 nhóm.', 'Có hai mươi bốn nhóm.'],
             'component of decimal count' => ['4 nhóm.', 'Có hai phẩy bốn nhóm.'],
+            'changed topic count' => ['Thảo luận 3 nội dung.', 'Thảo luận bốn nội dung.'],
+            'component of large topic count' => ['Thảo luận 3 nội dung.', 'Thảo luận mười ba nội dung.'],
+            'fractional topic count' => ['Thảo luận 3 nội dung.', 'Thảo luận ba nội dung rưỡi.'],
+            'reordered topic still requires its regulation number' => ['Nội dung thứ 2 là Quy định 15/2006.', 'Một trong ba nội dung là Quy định 16/2006.'],
+            'conference ordinal is factual' => ['Hội nghị lần thứ 4 diễn ra.', 'Hội nghị lần thứ 3 diễn ra.'],
+            'clause ordinal is factual' => ['Điều khoản thứ 2 được áp dụng.', 'Điều khoản thứ 3 được áp dụng.'],
             'changed weekday condition' => ['02 ngày vào Thứ ba và Thứ sáu.', 'Miễn phí 2 ngày vào Thứ ba và Thứ năm.'],
             'duplicate weekday' => ['02 ngày vào Thứ ba và Thứ sáu.', 'Miễn phí 2 ngày vào Thứ ba và Thứ ba.'],
             'version is not a decimal or padded count' => ['Phiên bản 2.10.', 'Chỉ hỗ trợ phiên bản 2.1.'],

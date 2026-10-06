@@ -69,7 +69,7 @@ final class WritingProfileDefinition
      * =====================================================================
      * CHỨC NĂNG: Validate output AI và chứng minh excerpt có trong nguồn.
      * =====================================================================
-     * Input: JSON output đã parse và reference text. Output: result allowlisted.
+     * Input: JSON output đã parse và reference text. Output: result allowlisted giữ đủ rules hợp lệ.
      * Side effect: AiImportException khi schema/bằng chứng không đúng; không fallback.
      * =====================================================================
      */
@@ -78,7 +78,8 @@ final class WritingProfileDefinition
         try {
             $validated = Validator::make($output, [
                 'summary' => ['required', 'string', 'max:2000'],
-                'rules' => ['required', 'array', 'min:1', 'max:16'],
+                // Array có whitelist giữ các field tùy chọn để validateRules kiểm tra đầy đủ.
+                'rules' => ['required', 'array:'.implode(',', self::RULE_KEYS), 'min:1', 'max:16'],
                 'rules.tone' => ['required', 'string', 'max:2000'],
                 'rules.opening' => ['required', 'string', 'max:2000'],
                 'rules.sentence_rhythm' => ['required', 'string', 'max:2000'],

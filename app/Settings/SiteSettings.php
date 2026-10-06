@@ -5,8 +5,13 @@ namespace App\Settings;
 use Spatie\LaravelSettings\Settings;
 
 /**
- * Cấu hình typed nhóm site; null dùng config môi trường.
- * Input: repository settings. Output: giá trị có kiểu; group/encrypted không ghi DB.
+ * =====================================================================
+ * CHỨC NĂNG FILE: Cấu hình typed thông tin website và đường dẫn branding.
+ * CÁC HÀM/METHOD TRONG FILE: group().
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : repository Settings; null dùng cấu hình/tài nguyên mặc định.
+ * - OUTPUT: giá trị có kiểu; file upload được settings writer quản lý.
+ * =====================================================================
  */
 final class SiteSettings extends Settings
 {
@@ -20,9 +25,13 @@ final class SiteSettings extends Settings
 
     public ?string $timezone;
 
+    public ?string $logo_path;
+
+    public ?string $favicon_path;
+
     public int $version;
 
-    /** Output: tên nhóm lưu trong settings. */
+    /** Input: không có. Output: tên nhóm lưu trong settings. */
     public static function group(): string
     {
         return 'site';

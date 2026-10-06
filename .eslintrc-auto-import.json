@@ -418,6 +418,12 @@
     "isAiThumbnailPending": true,
     "useSettings": true,
     "useSettingsLocales": true,
-    "inlineUrlImageHtml": true
+    "inlineUrlImageHtml": true,
+    "comparisonBlocks": true,
+    "previewOfHtml": true,
+    "textOfHtml": true,
+    "applySiteBranding": true,
+    "useSettingsBranding": true,
+    "useSiteBranding": true
   }
 }

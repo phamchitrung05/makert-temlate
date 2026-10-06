@@ -101,7 +101,7 @@ const fieldKindMismatch = computed(() => Boolean(
   fieldConfig.value?.kind && props.kind && fieldConfig.value.kind !== props.kind,
 ))
 
-const fieldTitle = computed(() => fieldConfig.value?.title || props.field || 'Media Library')
+const fieldTitle = computed(() => fieldConfig.value?.title || props.field || 'Tất cả media')
 const canAttach = computed(() => props.canAttach ?? authCanAttach.value)
 const canUpload = computed(() => props.canUpload ?? authCanUpload.value)
 const canRetry = computed(() => authCanRetry.value)
@@ -268,12 +268,15 @@ watch(
 </script>
 
 <template>
+  <!-- Khung tối đa 2560 × 1640; tự co theo màn hình và chừa 16px ở mỗi cạnh. -->
   <VDialog
     :model-value="props.open"
     scrollable
-    max-width="1600"
-    height="calc(100% - 24px)"
-    max-height="calc(100% - 24px)"
+    width="calc(100vw - 32px)"
+    max-width="2560"
+    height="min(1640px, calc(100dvh - 32px))"
+    max-height="calc(100dvh - 32px)"
+    :persistent="isMutating"
     content-class="media-library-dialog-overlay"
     @update:model-value="handleDialogUpdate"
   >
@@ -323,6 +326,14 @@ watch(
 
 <style lang="scss">
 .media-library-dialog-overlay {
-  margin: 12px !important;
+  margin: 16px !important;
+}
+
+@media (max-width: 599.98px) {
+  .media-library-dialog-overlay {
+    margin: 16px !important;
+    max-block-size: calc(100dvh - 32px) !important;
+    max-inline-size: calc(100vw - 32px) !important;
+  }
 }
 </style>

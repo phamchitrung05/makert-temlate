@@ -1,4 +1,15 @@
 /* eslint-disable camelcase -- Error fixtures follow the Laravel API contract. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Kiểm tra thông báo lỗi AI theo lý do backend trả về.
+ * =====================================================================
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - describe()/it(): kiểm ưu tiên lỗi, lỗi thiếu số liệu và thông báo theo lượt.
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : run DTO/lỗi HTTP giả, nhãn output và trạng thái snackbar.
+ * - OUTPUT: assertions về message cụ thể và số lần thông báo.
+ * =====================================================================
+ */
 import { describe, expect, it } from 'vitest'
 import { formatAiError } from '@/utils/aiErrors'
 import { useAiRunFeedback } from '@/composables/useAiRunFeedback'
@@ -17,6 +28,21 @@ describe('AI run error feedback', () => {
     expect(formatAiError({ error: 'Provider từ chối' })).toBe('Provider từ chối')
     expect(formatAiError({ validation_errors: [{ group: 'content', reason: 'new_reason' }] }, undefined, outputs)).toBe('Nội dung không hợp lệ.')
     expect(formatAiError({ error: { raw: 'do not render' } }, 'Lỗi an toàn')).toBe('Lỗi an toàn')
+  })
+
+  it('explains the missing source numbers that blocked the current article', () => {
+    const run = {
+      job_id: 'missing-source-number-run', status: 'failed', error_code: 'AI_QUALITY_GROUNDING',
+      error: 'Nội dung AI thiếu số liệu hoặc phiên bản trong bằng chứng quan trọng.',
+      validation_errors: [{ group: 'content', field: 'content_html', reason: 'important_number_missing' }],
+    }
+
+    const state = useAiRunFeedback()
+
+    state.observeRun(run, undefined, outputs)
+
+    expect(state.snackbar.value.message).toBe('Nội dung thiếu số liệu hoặc phiên bản quan trọng từ nguồn.')
+    expect(formatAiError({ data: run }, undefined, outputs)).toBe(state.snackbar.value.message)
   })
 
   it('notifies once per failed transition and can notify again after a manual retry', () => {

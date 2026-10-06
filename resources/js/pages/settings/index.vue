@@ -1,7 +1,14 @@
 <!--
-  Trang Settings chỉ compose tab/panel và thao tác chung.
-  Input: quyền admin, query tab, API; output: cấu hình thật theo nhóm.
-  Methods: selectTab/saveActive/requestDiscard; giữ draft khi đổi tab, cảnh báo khi rời trang.
+  =====================================================================
+  CHỨC NĂNG FILE: Compose Settings panels, branding và thao tác lưu/hoàn tác chung.
+  CÁC HÀM/METHOD TRONG FILE:
+  - selectTab()/saveActive(): điều hướng và lưu đúng nhóm.
+  - requestDiscard()/finishConfirmation()/discardActive(): xác nhận bỏ draft.
+  - beforeUnload(): cảnh báo rời trang; watcher tải panel theo tab.
+  INPUT/OUTPUT CỦA CLASS (tổng thể):
+  - INPUT : quyền admin, query tab và API; OUTPUT: form cấu hình thật.
+  - SIDE EFFECT: HTTP qua composables; giữ draft/file khi đổi tab hoặc lưu lỗi.
+  =====================================================================
 -->
 <script setup>
 import { computed, onMounted, onBeforeUnmount, reactive, shallowRef, watch } from 'vue'
@@ -14,6 +21,7 @@ import { settingsTabs, settingsFields } from '@/config/settingsTabs'
 import { getAlertColor } from '@/config/alertColors'
 import SettingsNavigation from '@/views/settings/SettingsNavigation.vue'
 import SettingsFieldsPanel from '@/views/settings/SettingsFieldsPanel.vue'
+import SettingsBrandingPanel from '@/views/settings/SettingsBrandingPanel.vue'
 import SettingsLanguagesPanel from '@/views/settings/SettingsLanguagesPanel.vue'
 import SettingsMailTest from '@/views/settings/SettingsMailTest.vue'
 import SettingsOperationsPanel from '@/views/settings/SettingsOperationsPanel.vue'
@@ -34,6 +42,7 @@ const {
   sections, drafts, options, loading, loaded, error, canManage, saving, fieldErrors,
   notices, conflicts, dirtyGroups, operations, mailTesting, mailNotice,
   load, updateField, reset, save, reloadGroup, loadOperation, testMail,
+  branding, selectBrandingFile, removeBrandingFile,
 } = useSettings()
 
 const ai = reactive(useAiContentSettings())
@@ -292,14 +301,16 @@ onBeforeUnmount(() => {
                   :disabled="!canManage || busy"
                   @change-field="(key, value) => updateField(group, key, value)"
                 />
-                <VAlert
+                <SettingsBrandingPanel
                   v-if="group === 'site'"
-                  :color="getAlertColor('info')"
-                  variant="tonal"
-                  class="mt-5"
-                >
-                  Logo và favicon hiện được quản lý bằng tài nguyên của giao diện. Chưa có cấu hình upload thương hiệu từ Settings.
-                </VAlert>
+                  :form="drafts.site"
+                  :changes="branding.changes.value"
+                  :previews="branding.previews.value"
+                  :errors="fieldErrors.site"
+                  :disabled="!canManage || busy"
+                  @select-file="selectBrandingFile"
+                  @remove-file="removeBrandingFile"
+                />
                 <VAlert
                   v-if="group === 'media'"
                   :color="getAlertColor('info')"

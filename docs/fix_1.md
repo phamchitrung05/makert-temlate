@@ -1,7 +1,7 @@
 # FIX 1 — Ổn định AI Content và quy trình duyệt bài
 
 **Ngày lập:** 2026-10-02
-**Trạng thái 2026-10-06:** Task 1 `DONE`; Task 2 `DONE` kỹ thuật theo 12.35. Workflow biên tập/duyệt trên `ai_imports` đã `DONE` tại 12.36; thumbnail sinh bằng AI đã `DONE` tại 12.37. Kho `ai_content_drafts` và lưu dài hạn tạm hoãn theo chủ dự án. Hai người đọc chấm chất lượng vẫn là đợt riêng; chưa có điểm hoặc kết luận rollout. Artifacts/status study lịch sử và QA Tiny Cloud tại 12.35 được giữ. Toàn FIX 1 vẫn `IN PROGRESS`: Reverb/VPS, chín tab Settings ngoài AI và QA Settings còn chờ. Phần Ai Prompt chưa API giữ minh họa rõ nhãn.
+**Trạng thái 2026-10-06:** Task 1 `DONE`; Task 2 `DONE` kỹ thuật theo 12.35. Workflow biên tập/duyệt trên `ai_imports` đã `DONE` tại 12.36; thumbnail sinh bằng AI đã `DONE` tại 12.37; chuẩn hóa Settings/QA đã xong tại 9.9/12.40; upload logo/favicon đã xong tại 12.42. Kho `ai_content_drafts` và lưu dài hạn tạm hoãn theo chủ dự án. Hai người đọc chấm chất lượng vẫn là đợt riêng; chưa có điểm hoặc kết luận rollout. Artifacts/status study lịch sử và QA Tiny Cloud tại 12.35 được giữ. Toàn FIX 1 vẫn `IN PROGRESS`: Settings mở rộng và các đợt chất lượng còn chờ; Realtime/VPS được bỏ qua trong đợt hiện tại. Phần Ai Prompt chưa API giữ minh họa rõ nhãn.
 **Mục tiêu:** Gom các lỗi đã xác nhận trong lúc test, chốt một lần rồi triển khai đồng bộ.
 **Điều chỉnh phạm vi:** Bỏ nhóm Provider/9Router khỏi công việc FIX 1 theo yêu cầu ngày 2026-10-03.
 
@@ -316,8 +316,10 @@ Task 2 quản lý mẫu văn phong tại Systerm AI → Ai Prompt; tab AI & Cont
 - [x] Cron dùng ProjectScheduleRegistry chung web/console; System Info đọc phiên bản/DB/disk/queue thật. Webhooks là empty state capability chưa hỗ trợ.
 - [x] Backend/frontend tests, lint/Pint/build và browser đủ 10 tab desktop sáng/tối + mobile. Save/reload/draft/reset được kiểm; hai migration thêm nhóm/quyền đã chạy local.
 
+- [x] Upload logo/favicon đã hoàn tất tại 12.42, lưu cùng version nhóm site và áp dụng public/admin.
+
 Backlog mở rộng còn lại: webhook CRUD/delivery/history, scheduler run history/worker
-heartbeat, logo/favicon upload, GA/GSC/2FA/CAPTCHA và kiểm SMTP/VPS. Chưa cho phép
+heartbeat, GA/GSC/2FA/CAPTCHA và kiểm SMTP/VPS. Chưa cho phép
 bật các tính năng này từ UI. AI vẫn dùng endpoint riêng theo quyền riêng.
 Lỗi/quyền/timeout/empty state đã kiểm bằng test tự động; browser chưa mô phỏng
 mọi trạng thái lỗi API. Những checkbox thiết kế ở 9.2–9.6 chỉ được hoàn thành
@@ -1763,3 +1765,38 @@ browser dùng nhánh HTML fallback; không sửa key/editor config.
 Báo cáo và ảnh: [Post content/Gallery QA](qa/POST_GALLERY_2026-10-06/README.md).
 `post_type = gallery` và giao diện trình diễn ảnh vẫn là backlog tương lai;
 mốc này không đánh dấu toàn FIX 1 hoàn thành.
+
+### 12.42 Upload logo/favicon trong Settings — 2026-10-06
+
+**Trạng thái:** `DONE`. Theo lựa chọn chủ dự án, chuyển sang branding;
+Realtime/VPS được bỏ qua trong đợt hiện tại.
+
+- Tab Tổng quan chọn logo PNG/JPG/WebP (tối đa 2 MB, 4096 px) và favicon PNG
+  vuông (16–512 px, tối đa 512 KB). Preview cục bộ; chỉ upload khi Lưu thay đổi.
+- `SettingsBrandingPanel` nhận DTO/file/preview/error, phát select/remove;
+  `useSettingsBranding` giữ File/blob và dọn khi hoàn tác/unmount;
+  `useSettings` quản lý dirty/version/quyền và `settingsService` gửi multipart.
+- Backend dùng cùng writer/version nhóm site. `SiteBrandingService` giữ file
+  UUID trên disk public; đường dẫn nằm trong Spatie Settings. Migration thêm
+  `site.logo_path` và `site.favicon_path`, không đổi thông tin website đã lưu.
+- Logo áp dụng tại header public, loader và các vị trí logo của theme admin;
+  favicon áp dụng trên Blade public/admin và SPA sau khi lưu thành công.
+- Gỡ ảnh dùng biểu tượng mặc định. Conflict/validation không ghi file; lỗi DB
+  rollback và dọn file mới, file cũ chỉ dọn sau commit.
+
+**Kiểm chứng:** 15 backend tests/135 assertions (branding, Settings và migration),
+3 frontend files/12 tests, scoped ESLint/Stylelint/Pint và production build
+**1 phút 5 giây** đạt. Migration thêm hai property đã chạy riêng trên DB local;
+GET trang admin thật trả 200 và có branding bootstrap/favicon.
+
+Browser kiểm page/panel/theme thật với API fixture: chọn hai PNG qua file input,
+preview không đổi branding trước Save, lưu/reload áp dụng logo/favicon; desktop
+sáng/tối và mobile 390 px không tràn ngang, hai card xếp dọc trên mobile.
+Upload/persistence/quyền/validation/409/rollback/runtime Blade được kiểm bằng
+HTTP feature tests với database/storage cô lập. QA không thay logo/favicon đang
+dùng trên website development; ảnh trong screenshot là fixture có nhãn.
+
+Contract: [Settings Branding API](SETTINGS_BRANDING_API.md).
+Báo cáo/ảnh/lệnh kiểm tra: [Branding QA](qa/SITE_BRANDING_2026-10-06/README.md).
+Toàn FIX 1 vẫn `IN PROGRESS`; Realtime/VPS bỏ qua trong đợt này, các mục Settings
+mở rộng còn lại và kho draft dài hạn giữ trạng thái theo backlog.

@@ -917,6 +917,14 @@ php artisan test
 - Upload/conversion, SEO/public/robots và login token/rate limiter dùng cùng nhóm Settings. Capability chưa có không được biến thành toggle lưu giả.
 - Contract và kiểm chứng tại FIX 1 mục 9.9/12.40, docs/qa/SETTINGS_2026-10-06/README.md.
 
+### Branding Settings — 2026-10-06
+
+- `SiteBrandingService` lưu logo/favicon UUID trên disk `public`, trả URL an toàn và dọn file theo commit/rollback. Path thuộc `SiteSettings`; không thêm model hoặc usage media.
+- `database/settings/2026_10_06_180000_add_site_branding.php` thêm `site.logo_path`/`site.favicon_path` nullable; đã migrate riêng ở local.
+- `SettingsBrandingPanel` trình bày; `useSettingsBranding` giữ File/blob và dọn preview; `useSettings` giữ quyền/dirty/version; `settingsService` gửi multipart POST spoof PATCH cùng payload site.
+- `useSiteBranding` nhận JSON Blade và cập nhật sau save; `AppBrandLogo` được themeConfig dùng chung, fallback slot của theme. View composer cấp branding khi render `admin`/`layouts.public`; không đọc DB lúc boot.
+- Contract và QA: `docs/SETTINGS_BRANDING_API.md`, `docs/qa/SITE_BRANDING_2026-10-06/README.md`, FIX 1 mục 12.42.
+
 - `docs/PLAN.md`: cập nhật trạng thái, checklist và mốc tiến độ.
 - `docs/PROJECT_STRUCTURE.md`: cập nhật khi thêm boundary, thư mục kiến trúc,
   convention hoặc luồng dữ liệu mới.

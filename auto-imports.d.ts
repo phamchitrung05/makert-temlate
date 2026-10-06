@@ -16,6 +16,7 @@ declare global {
   const analysisReport: typeof import('./resources/js/utils/aiWritingProfile.js')['analysisReport']
   const analyzeContent: typeof import('./resources/js/composables/seoMetadata.js')['analyzeContent']
   const analyzeSeo: typeof import('./resources/js/composables/seoMetadata.js')['analyzeSeo']
+  const applySiteBranding: typeof import('./resources/js/composables/useSiteBranding.js')['applySiteBranding']
   const articleRequestBody: typeof import('./resources/js/utils/aiArticleOptions.js')['articleRequestBody']
   const articleSourcePayload: typeof import('./resources/js/utils/aiArticleOptions.js')['articleSourcePayload']
   const asyncComputed: typeof import('@vueuse/core')['asyncComputed']
@@ -26,6 +27,7 @@ declare global {
   const buildAiContentRegenerateRequest: typeof import('./resources/js/utils/aiContentInput.js')['buildAiContentRegenerateRequest']
   const buildAiContentRequest: typeof import('./resources/js/utils/aiContentInput.js')['buildAiContentRequest']
   const buildContentUrl: typeof import('./resources/js/composables/seoMetadata.js')['buildContentUrl']
+  const comparisonBlocks: typeof import('./resources/js/utils/aiContentComparison.js')['comparisonBlocks']
   const computed: typeof import('vue')['computed']
   const computedAsync: typeof import('@vueuse/core')['computedAsync']
   const computedEager: typeof import('@vueuse/core')['computedEager']
@@ -138,6 +140,7 @@ declare global {
   const pipelineStages: typeof import('./resources/js/utils/aiArticleOptions.js')['pipelineStages']
   const pipelineStepLabel: typeof import('./resources/js/utils/aiArticleOptions.js')['pipelineStepLabel']
   const prefixWithPlus: typeof import('./resources/js/@core/utils/formatters.js')['prefixWithPlus']
+  const previewOfHtml: typeof import('./resources/js/utils/aiContentComparison.js')['previewOfHtml']
   const profilePayload: typeof import('./resources/js/utils/aiWritingProfile.js')['profilePayload']
   const profileToForm: typeof import('./resources/js/utils/aiWritingProfile.js')['profileToForm']
   const provide: typeof import('vue')['provide']
@@ -175,6 +178,7 @@ declare global {
   const syncRef: typeof import('@vueuse/core')['syncRef']
   const syncRefs: typeof import('@vueuse/core')['syncRefs']
   const templateRef: typeof import('@vueuse/core')['templateRef']
+  const textOfHtml: typeof import('./resources/js/utils/aiContentComparison.js')['textOfHtml']
   const throttledRef: typeof import('@vueuse/core')['throttledRef']
   const throttledWatch: typeof import('@vueuse/core')['throttledWatch']
   const toPostPayload: typeof import('./resources/js/composables/aiCandidate.js')['toPostPayload']
@@ -342,8 +346,10 @@ declare global {
   const useSeoMetadata: typeof import('./resources/js/composables/useSeoMetadata.js')['useSeoMetadata']
   const useSessionStorage: typeof import('@vueuse/core')['useSessionStorage']
   const useSettings: typeof import('./resources/js/composables/useSettings.js')['useSettings']
+  const useSettingsBranding: typeof import('./resources/js/composables/useSettingsBranding.js')['useSettingsBranding']
   const useSettingsLocales: typeof import('./resources/js/composables/useSettingsLocales.js')['useSettingsLocales']
   const useShare: typeof import('@vueuse/core')['useShare']
+  const useSiteBranding: typeof import('./resources/js/composables/useSiteBranding.js')['useSiteBranding']
   const useSkins: typeof import('./resources/js/@core/composable/useSkins.js')['useSkins']
   const useSlots: typeof import('vue')['useSlots']
   const useSlug: typeof import('./resources/js/composables/useSlug.js')['useSlug']
@@ -434,6 +440,7 @@ declare module 'vue' {
     readonly analysisReport: UnwrapRef<typeof import('./resources/js/utils/aiWritingProfile.js')['analysisReport']>
     readonly analyzeContent: UnwrapRef<typeof import('./resources/js/composables/seoMetadata.js')['analyzeContent']>
     readonly analyzeSeo: UnwrapRef<typeof import('./resources/js/composables/seoMetadata.js')['analyzeSeo']>
+    readonly applySiteBranding: UnwrapRef<typeof import('./resources/js/composables/useSiteBranding.js')['applySiteBranding']>
     readonly articleRequestBody: UnwrapRef<typeof import('./resources/js/utils/aiArticleOptions.js')['articleRequestBody']>
     readonly articleSourcePayload: UnwrapRef<typeof import('./resources/js/utils/aiArticleOptions.js')['articleSourcePayload']>
     readonly asyncComputed: UnwrapRef<typeof import('@vueuse/core')['asyncComputed']>
@@ -444,6 +451,7 @@ declare module 'vue' {
     readonly buildAiContentRegenerateRequest: UnwrapRef<typeof import('./resources/js/utils/aiContentInput.js')['buildAiContentRegenerateRequest']>
     readonly buildAiContentRequest: UnwrapRef<typeof import('./resources/js/utils/aiContentInput.js')['buildAiContentRequest']>
     readonly buildContentUrl: UnwrapRef<typeof import('./resources/js/composables/seoMetadata.js')['buildContentUrl']>
+    readonly comparisonBlocks: UnwrapRef<typeof import('./resources/js/utils/aiContentComparison.js')['comparisonBlocks']>
     readonly computed: UnwrapRef<typeof import('vue')['computed']>
     readonly computedAsync: UnwrapRef<typeof import('@vueuse/core')['computedAsync']>
     readonly computedEager: UnwrapRef<typeof import('@vueuse/core')['computedEager']>
@@ -556,6 +564,7 @@ declare module 'vue' {
     readonly pipelineStages: UnwrapRef<typeof import('./resources/js/utils/aiArticleOptions.js')['pipelineStages']>
     readonly pipelineStepLabel: UnwrapRef<typeof import('./resources/js/utils/aiArticleOptions.js')['pipelineStepLabel']>
     readonly prefixWithPlus: UnwrapRef<typeof import('./resources/js/@core/utils/formatters.js')['prefixWithPlus']>
+    readonly previewOfHtml: UnwrapRef<typeof import('./resources/js/utils/aiContentComparison.js')['previewOfHtml']>
     readonly profilePayload: UnwrapRef<typeof import('./resources/js/utils/aiWritingProfile.js')['profilePayload']>
     readonly profileToForm: UnwrapRef<typeof import('./resources/js/utils/aiWritingProfile.js')['profileToForm']>
     readonly provide: UnwrapRef<typeof import('vue')['provide']>
@@ -593,6 +602,7 @@ declare module 'vue' {
     readonly syncRef: UnwrapRef<typeof import('@vueuse/core')['syncRef']>
     readonly syncRefs: UnwrapRef<typeof import('@vueuse/core')['syncRefs']>
     readonly templateRef: UnwrapRef<typeof import('@vueuse/core')['templateRef']>
+    readonly textOfHtml: UnwrapRef<typeof import('./resources/js/utils/aiContentComparison.js')['textOfHtml']>
     readonly throttledRef: UnwrapRef<typeof import('@vueuse/core')['throttledRef']>
     readonly throttledWatch: UnwrapRef<typeof import('@vueuse/core')['throttledWatch']>
     readonly toPostPayload: UnwrapRef<typeof import('./resources/js/composables/aiCandidate.js')['toPostPayload']>
@@ -760,8 +770,10 @@ declare module 'vue' {
     readonly useSeoMetadata: UnwrapRef<typeof import('./resources/js/composables/useSeoMetadata.js')['useSeoMetadata']>
     readonly useSessionStorage: UnwrapRef<typeof import('@vueuse/core')['useSessionStorage']>
     readonly useSettings: UnwrapRef<typeof import('./resources/js/composables/useSettings.js')['useSettings']>
+    readonly useSettingsBranding: UnwrapRef<typeof import('./resources/js/composables/useSettingsBranding.js')['useSettingsBranding']>
     readonly useSettingsLocales: UnwrapRef<typeof import('./resources/js/composables/useSettingsLocales.js')['useSettingsLocales']>
     readonly useShare: UnwrapRef<typeof import('@vueuse/core')['useShare']>
+    readonly useSiteBranding: UnwrapRef<typeof import('./resources/js/composables/useSiteBranding.js')['useSiteBranding']>
     readonly useSkins: UnwrapRef<typeof import('./resources/js/@core/composable/useSkins.js')['useSkins']>
     readonly useSlots: UnwrapRef<typeof import('vue')['useSlots']>
     readonly useSlug: UnwrapRef<typeof import('./resources/js/composables/useSlug.js')['useSlug']>
