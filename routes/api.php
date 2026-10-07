@@ -9,6 +9,8 @@
  * =====================================================================
  */
 
+use App\Http\Controllers\Admin\AccessPermissionController;
+use App\Http\Controllers\Admin\AdminUserRoleController;
 use App\Http\Controllers\Admin\AiContentReviewController;
 use App\Http\Controllers\Admin\AiImageGenerationController;
 use App\Http\Controllers\Admin\AiImportController;
@@ -21,6 +23,7 @@ use App\Http\Controllers\Admin\MediaAssetController;
 use App\Http\Controllers\Admin\PostController;
 use App\Http\Controllers\Admin\ResourceController;
 use App\Http\Controllers\Admin\ResourceVersionController;
+use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SlugPreviewController;
 use App\Http\Controllers\Admin\TagController;
@@ -41,6 +44,22 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
     ->prefix('admin')
     ->group(function (): void {
         Route::get('/me', [AdminTokenController::class, 'me']);
+
+        // Guard admin tách khỏi customer; service kiểm lại quyền mutation dưới lock.
+        Route::middleware('permission:users.view|users.manage,admin')->group(function (): void {
+            Route::get('/permissions/catalog', [AccessPermissionController::class, 'catalog']);
+            Route::get('/permissions', [AccessPermissionController::class, 'index']);
+            Route::get('/roles', [RoleController::class, 'index']);
+            Route::get('/roles/{role}', [RoleController::class, 'show'])->whereNumber('role');
+            Route::get('/access/users', [AdminUserRoleController::class, 'index']);
+            Route::get('/access/users/{user}', [AdminUserRoleController::class, 'show'])->whereNumber('user');
+        });
+        Route::middleware('permission:users.manage,admin')->group(function (): void {
+            Route::post('/roles', [RoleController::class, 'store']);
+            Route::patch('/roles/{role}', [RoleController::class, 'update'])->whereNumber('role');
+            Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->whereNumber('role');
+            Route::patch('/access/users/{user}/roles', [AdminUserRoleController::class, 'update'])->whereNumber('user');
+        });
 
         // Locale là preference an toàn; cấu hình vận hành dùng quyền Settings riêng.
         Route::get('/settings/preferences', [SettingsController::class, 'preferences']);

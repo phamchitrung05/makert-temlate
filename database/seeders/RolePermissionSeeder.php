@@ -29,7 +29,8 @@ class RolePermissionSeeder extends Seeder
      * - Không trả giá trị; database có đủ permission và role cho admin guard
      *
      * SIDE EFFECT:
-     * - INSERT/UPDATE permissions, roles và role_has_permissions
+     * - Tạo catalog và role còn thiếu; giữ quyền role đã được quản lý qua Admin.
+     * - Đồng bộ super-admin với toàn bộ catalog; không ghi đè cấu hình role mặc định khác.
      * =====================================================================
      */
     public function run(): void
@@ -69,8 +70,10 @@ class RolePermissionSeeder extends Seeder
         ];
 
         foreach ($roles as $roleName => $rolePermissions) {
-            $role = Role::findOrCreate($roleName, $guard);
-            $role->syncPermissions($rolePermissions->values());
+            $role = Role::query()->firstOrCreate(['name' => $roleName, 'guard_name' => $guard]);
+            if ($role->wasRecentlyCreated || $roleName === 'super-admin') {
+                $role->syncPermissions($rolePermissions->values());
+            }
         }
     }
 }

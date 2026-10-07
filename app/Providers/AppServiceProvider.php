@@ -31,6 +31,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Spatie\Permission\Models\Role;
 
 /**
  * =====================================================================
@@ -136,7 +137,7 @@ class AppServiceProvider extends ServiceProvider
      * INPUT: Danh sách alias model được khai báo trong provider.
      * OUTPUT: Morph registry ổn định cho quan hệ polymorphic, không ghi DB.
      * SIDE EFFECT:
-     * - Đăng ký alias cho 9 model; các alias cũ đã ghi vào database phải
+     * - Đăng ký alias cho model domain và role; các alias cũ đã ghi vào database phải
      *   được migrate riêng nếu có
      *
      * EXCEPTION/TRANSACTION:
@@ -156,6 +157,7 @@ class AppServiceProvider extends ServiceProvider
             'technology' => Technology::class,
             'user' => User::class,
             'customer' => Customer::class,
+            'role' => Role::class,
         ]);
     }
 }

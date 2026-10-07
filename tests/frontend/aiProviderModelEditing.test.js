@@ -13,7 +13,7 @@ import { passthroughStubs } from './testStubs'
  * - page(): mount trang AI Providers với catalog/API giả.
  * - button(wrapper, text): tìm nút theo nội dung hiển thị.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
- * - INPUT: catalog, thao tác sửa/thêm model và phản hồi thành công hoặc lỗi khi test.
+ * - INPUT: catalog GET có thể có timeout/retry, thao tác sửa/thêm model và phản hồi thành công hoặc lỗi khi test.
  * - OUTPUT: đúng endpoint cập nhật, snackbar/tick và không reload catalog khi test model.
  * SIDE EFFECT: mount Vue và mock API; không gọi provider hoặc ghi database thật.
  * =====================================================================
@@ -123,7 +123,7 @@ describe('AI provider model editing', () => {
     vi.stubGlobal('definePage', vi.fn())
     api.mockReset()
     api.mockImplementation(async (url, options) => {
-      if (options) return { id: 10, ...options.body }
+      if (options?.method) return { id: 10, ...options.body }
 
       return {
         providers: [{
