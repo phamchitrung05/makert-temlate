@@ -1,0 +1,156 @@
+{
+    "version": "article.quality.acceptance.v1",
+    "bundle_sha256": "988b08b2c84bd9726727cedd3ba935a39fb5fe6b511a119d266676c33f995036",
+    "criteria_sha256": "a1aed32a0eee14ca2aab6009822eaf9beb4f72915398020acc55d6814f01411c",
+    "status": "criteria_not_met",
+    "checks": [
+        {
+            "id": "criteria",
+            "label": "Tiêu chí được chủ dự án xác nhận",
+            "observed": "proposed",
+            "required": "approved + approved_by",
+            "status": "pending"
+        },
+        {
+            "id": "cases",
+            "label": "Số ca đã freeze",
+            "observed": 20,
+            "required": 20,
+            "status": "passed"
+        },
+        {
+            "id": "sources",
+            "label": "Số nguồn độc lập",
+            "observed": 20,
+            "required": 20,
+            "status": "passed"
+        },
+        {
+            "id": "languages",
+            "label": "Coverage ngôn ngữ nguồn",
+            "observed": [
+                "en",
+                "vi"
+            ],
+            "required": [
+                "vi",
+                "en"
+            ],
+            "status": "passed"
+        },
+        {
+            "id": "coverage",
+            "label": "Khoảng trống coverage cần xác nhận phạm vi",
+            "observed": [
+                "Nguồn web mới là trích đoạn được chọn, không mặc định là toàn bài.",
+                "Facts quan trọng cần hai người đọc xác nhận độc lập từ nguồn.",
+                "Ảnh nguồn chỉ là metadata/chú thích: chưa kiểm pixel hoặc regenerate với asset được duyệt.",
+                "Chưa có benchmark độc lập; bảng giới hạn dịch vụ không đại diện benchmark."
+            ],
+            "required": [],
+            "status": "failed"
+        },
+        {
+            "id": "technical",
+            "label": "Tỷ lệ run C hoàn tất trong study gốc",
+            "observed": 0.7,
+            "required": 1,
+            "status": "failed"
+        },
+        {
+            "id": "readers",
+            "label": "Hai người chấm độc lập hoàn thành mọi ca C",
+            "observed": {
+                "reviewer-1": {
+                    "completed": 0,
+                    "available": 19,
+                    "reviewer": null
+                },
+                "reviewer-2": {
+                    "completed": 0,
+                    "available": 19,
+                    "reviewer": null
+                }
+            },
+            "required": 40,
+            "status": "pending"
+        },
+        {
+            "id": "disagreements",
+            "label": "Bất đồng facts được giải quyết bằng dẫn chứng",
+            "observed": [],
+            "required": [],
+            "status": "pending"
+        },
+        {
+            "id": "critical_errors",
+            "label": "Số lỗi critical_errors lớn nhất mỗi bài",
+            "observed": null,
+            "required": 0,
+            "status": "pending"
+        },
+        {
+            "id": "major_errors",
+            "label": "Số lỗi major_errors lớn nhất mỗi bài",
+            "observed": null,
+            "required": 0,
+            "status": "pending"
+        },
+        {
+            "id": "accuracy",
+            "label": "Mọi bài đạt accuracy do người đọc xác nhận",
+            "observed": 0,
+            "required": 40,
+            "status": "pending"
+        },
+        {
+            "id": "naturalness_1_5",
+            "label": "Điểm trung vị naturalness_1_5",
+            "observed": null,
+            "required": 3,
+            "status": "pending"
+        },
+        {
+            "id": "usefulness_1_5",
+            "label": "Điểm trung vị usefulness_1_5",
+            "observed": null,
+            "required": 3,
+            "status": "pending"
+        },
+        {
+            "id": "structure_1_5",
+            "label": "Điểm trung vị structure_1_5",
+            "observed": null,
+            "required": 3,
+            "status": "pending"
+        },
+        {
+            "id": "repetition_1_5",
+            "label": "Điểm trung vị repetition_1_5",
+            "observed": null,
+            "required": 3,
+            "status": "pending"
+        },
+        {
+            "id": "brief_style_1_5",
+            "label": "Điểm trung vị brief_style_1_5",
+            "observed": null,
+            "required": 3,
+            "status": "pending"
+        },
+        {
+            "id": "editing",
+            "label": "Phút chỉnh sửa trung vị",
+            "observed": null,
+            "required": "Ghi nhận, chưa chốt giới hạn",
+            "status": "pending"
+        }
+    ],
+    "pending_checks": 12,
+    "failed_checks": 2,
+    "rollout": "pending_owner_decision",
+    "scores_filled_by_agent": false,
+    "cost": null,
+    "unknown_usage_runs": 1,
+    "scope": "C only; technical rechecks never rewrite original run status; no baseline improvement claim"
+}

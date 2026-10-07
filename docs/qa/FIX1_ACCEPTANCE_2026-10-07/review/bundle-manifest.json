@@ -1,0 +1,8 @@
+{
+    "bundle_sha256": "988b08b2c84bd9726727cedd3ba935a39fb5fe6b511a119d266676c33f995036",
+    "manifest_sha256": "f8104f32e6875589dc6d9ea401fb720d055d9d2140fcbb1c4e78ede63e16cfe2",
+    "experiment_sha256": "4395da3b41e2a946cdaed30fe3301a968c14a1e6ba0d16b3b0195c90eff8eee5",
+    "cases": 20,
+    "human_review": "pending",
+    "scores_filled_by_agent": false
+}

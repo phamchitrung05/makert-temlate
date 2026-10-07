@@ -141,7 +141,7 @@ Không dùng `--run` với `--export-only`; export phải đúng các nhánh tro
 php scripts/ai-quality/freeze.php --output=THU_MUC_CORPUS_MOI --html-source=DUONG_DAN_HTML_DUOC_CHON
 ```
 
-Protocol/rubric và phần còn chờ ở [AI_ARTICLE_QUALITY_EVALUATION.md](../../AI_ARTICLE_QUALITY_EVALUATION.md). Các fixture kỹ thuật tổng hợp trong `tests/Fixtures` và ca MySQL dùng provider fake không được tính vào điểm văn phong hoặc token model thật.
+Protocol/rubric và phần còn chờ ở [AI_ARTICLE_QUALITY_EVALUATION.md](../../quality/AI_ARTICLE_QUALITY_EVALUATION.md). Các fixture kỹ thuật tổng hợp trong `tests/Fixtures` và ca MySQL dùng provider fake không được tính vào điểm văn phong hoặc token model thật.
 
 Nghiệm thu kỹ thuật Task 2 đã chốt ở [báo cáo 2026-10-05](../TASK2_COMPLETE_2026-10-05/README.md).
 Q33 có phiên C mới ba calls và audit offline sau sửa dấu hàng nghìn; raw

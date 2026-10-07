@@ -21,6 +21,7 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : actor và attributes nội bộ đã được resolver/request whitelist.
  * - OUTPUT: AiImport queued hoặc run trùng còn khả dụng; profile/config bất biến.
+ *   Post text mới bật archive v1/generation 1; image/target khác có lifecycle riêng.
  * - SIDE EFFECT: cache lock theo actor, DB write atomic và queue dispatch.
  * - EXCEPTION/TRANSACTION: HTTP 429/409/503; không gọi provider trong transaction.
  * =====================================================================
@@ -32,7 +33,7 @@ final class AiRunService
      * CHỨC NĂNG: Xếp hàng run mới, chống double-click trước khi áp quota
      * =====================================================================
      * INPUT: actor ID, run attributes; fresh=true khi admin yêu cầu candidate mới.
-     * OUTPUT: AiImport persisted, snapshot không chứa API key.
+     * OUTPUT: AiImport persisted; connection snapshot private không trả qua API.
      * SIDE EFFECT: khóa theo actor (chờ tối đa một giây), ghi metadata trong transaction và dispatch sau commit.
      * EXCEPTION/TRANSACTION: 429 nếu quota giờ đầy, 409 nếu đang tạo run, 503 khi tắt AI.
      * =====================================================================
@@ -62,6 +63,9 @@ final class AiRunService
                 $import = DB::transaction(function () use ($actorId, $attributes): AiImport {
                     $import = AiImport::query()->create(array_merge($attributes, [
                         'created_by' => $actorId, 'status' => 'queued', 'current_step' => 'queued', 'progress' => 0,
+                        'generation_no' => 1,
+                        'archive_version' => ($attributes['operation'] ?? 'create') !== 'image'
+                            && data_get($attributes, 'input_json.target_type', 'post') === 'post' ? 1 : null,
                         'expires_at' => now()->addDays((int) config('ai-import.retention_days', 2)),
                     ]));
                     $import->forceFill(['session_id' => $attributes['session_id'] ?? $import->id])->save();
@@ -128,7 +132,7 @@ final class AiRunService
         if ($import->operation === 'image') {
             ProcessAiImageGenerationJob::dispatch($import->id, $requestTimeout);
         } else {
-            ProcessAiImportJob::dispatch($import->id, $requestTimeout, AiRunBudget::calls((array) $import->input_json));
+            ProcessAiImportJob::dispatch($import->id, $requestTimeout, AiRunBudget::calls((array) $import->input_json), (int) $import->generation_no);
         }
     }
 

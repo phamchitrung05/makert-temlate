@@ -1,0 +1,1663 @@
+{
+    "mode": "saved_outputs_only",
+    "model_calls": 0,
+    "prompt_version_current": "2.2",
+    "captured_at": "2026-10-07T02:13:59+00:00",
+    "manifest_sha256": "f8104f32e6875589dc6d9ea401fb720d055d9d2140fcbb1c4e78ede63e16cfe2",
+    "human_quality": "not_evaluated",
+    "cases": [
+        {
+            "case": "Q01-C",
+            "original_status": "ready",
+            "original_error_code": null,
+            "original_diagnostics": null,
+            "source_json_sha256": "1068bf4531bce9a9d933018fdc0664a5ce96cc4b6afcdd5aa7503cb6581f8777",
+            "artifact_json_sha256": "54568530e264acb217150f402af9b86fba62b3e5661c1e4576ea3402f2ed8d2e",
+            "link_manifest": {
+                "required_hrefs": [
+                    "https://github.com/vuejs/rfcs/discussions/369#discussioncomment-5059028",
+                    "https://vue-macros.sxzz.moe/features/reactivity-transform.html"
+                ],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://github.com/vuejs/rfcs/discussions/369#discussioncomment-5059028",
+                    "https://vue-macros.sxzz.moe/features/reactivity-transform.html",
+                    "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/extras/reactivity-transform.md"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "pass",
+                "checks": [
+                    {
+                        "check": "copy",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "similarity",
+                        "status": "pass",
+                        "metric": 0.032,
+                        "reason": "lexical_metric_not_style_score"
+                    },
+                    {
+                        "check": "language",
+                        "status": "pass",
+                        "detected": "vi"
+                    },
+                    {
+                        "check": "source_code_links",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "important_numbers",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "unanchored_numbers",
+                        "status": "pass",
+                        "count": 0,
+                        "reason": "requires_editor_review"
+                    },
+                    {
+                        "check": "semantic_grounding",
+                        "status": "undetermined",
+                        "reason": "source_anchors_are_not_external_fact_verification"
+                    }
+                ]
+            }
+        },
+        {
+            "case": "Q02-C",
+            "original_status": "ready",
+            "original_error_code": null,
+            "original_diagnostics": null,
+            "source_json_sha256": "6884fedc06b7ae1f4e267bbcb02e4917d106e060cdb659a6f2f432c94dc6851d",
+            "artifact_json_sha256": "83366aece5150fef6a715be175673f71b6f52ba5d9af44a5300c022e993abd5b",
+            "link_manifest": {
+                "required_hrefs": [
+                    "https://semver.org",
+                    "https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments"
+                ],
+                "optional_navigation_hrefs": [
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#versioning-scheme",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#support-policy",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#laravel-12"
+                ],
+                "allowed_hrefs": [
+                    "https://semver.org",
+                    "https://www.php.net/manual/en/functions.arguments.php#functions.named-arguments",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#versioning-scheme",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#support-policy",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#laravel-12",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#versioning-scheme",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#support-policy",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#laravel-12"
+                    ],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#versioning-scheme",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#support-policy",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#laravel-12"
+                    ],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "pass",
+                "checks": [
+                    {
+                        "check": "copy",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "similarity",
+                        "status": "pass",
+                        "metric": 0.036,
+                        "reason": "lexical_metric_not_style_score"
+                    },
+                    {
+                        "check": "language",
+                        "status": "pass",
+                        "detected": "vi"
+                    },
+                    {
+                        "check": "source_code_links",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "important_numbers",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "unanchored_numbers",
+                        "status": "pass",
+                        "count": 0,
+                        "reason": "requires_editor_review"
+                    },
+                    {
+                        "check": "semantic_grounding",
+                        "status": "undetermined",
+                        "reason": "source_anchors_are_not_external_fact_verification"
+                    }
+                ]
+            }
+        },
+        {
+            "case": "Q03-C",
+            "original_status": "ready",
+            "original_error_code": null,
+            "original_diagnostics": null,
+            "source_json_sha256": "f9764ab23d536ebde3b70bc4d8b8195a4c64b65d6fccec55cd32ae789cdd73f9",
+            "artifact_json_sha256": "ea4901fec29f5286a92c8dcb79c9b66e691db28daf750c7024d6cd740739de20",
+            "link_manifest": {
+                "required_hrefs": [
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#upgrade-12.0",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#updating-dependencies",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#updating-the-laravel-installer"
+                ],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#upgrade-12.0",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#updating-dependencies",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md#updating-the-laravel-installer",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/upgrade.md"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "pass",
+                "checks": [
+                    {
+                        "check": "copy",
+                        "status": "skipped",
+                        "reason": "short_prose"
+                    },
+                    {
+                        "check": "language",
+                        "status": "pass",
+                        "detected": "vi"
+                    },
+                    {
+                        "check": "source_code_links",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "important_numbers",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "unanchored_numbers",
+                        "status": "pass",
+                        "count": 0,
+                        "reason": "requires_editor_review"
+                    },
+                    {
+                        "check": "semantic_grounding",
+                        "status": "undetermined",
+                        "reason": "source_anchors_are_not_external_fact_verification"
+                    }
+                ]
+            }
+        },
+        {
+            "case": "Q06-C",
+            "original_status": "ready",
+            "original_error_code": null,
+            "original_diagnostics": null,
+            "source_json_sha256": "0bf99e7c16aa6d8cd08c069e0b3a9bc9c33d52af408e2c26652c8ff07923d03f",
+            "artifact_json_sha256": "0a38df38ef86d5313a6b33d63faf9de8259077d24ae6bb6904ae225d40f7f2dd",
+            "link_manifest": {
+                "required_hrefs": [
+                    "https://play.vuejs.org/#eNo9jcEKwjAMhl/lt5fpQYfXUQfefAMvvRQbddC1pUuHUPrudg4HIcmXjyRZXEM4zYlEJ+T0iEPgXjn6BB8Zhp46WUZWDjCa9f6w9kAkTtH9CRinV4fmRtZ63H20Ztesqiylphqy3R5UYBqD1UyVAPk+9zkvV1CKbCv9poMLiTEfR2/IXpSoXomqZLtti/IFwVtA9A==",
+                    "https://jsfiddle.net/yyx990803/2ke1ab0z/",
+                    "https://vite.new/vue",
+                    "http://scrimba.com/links/vue-quickstart"
+                ],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://play.vuejs.org/#eNo9jcEKwjAMhl/lt5fpQYfXUQfefAMvvRQbddC1pUuHUPrudg4HIcmXjyRZXEM4zYlEJ+T0iEPgXjn6BB8Zhp46WUZWDjCa9f6w9kAkTtH9CRinV4fmRtZ63H20Ztesqiylphqy3R5UYBqD1UyVAPk+9zkvV1CKbCv9poMLiTEfR2/IXpSoXomqZLtti/IFwVtA9A==",
+                    "https://jsfiddle.net/yyx990803/2ke1ab0z/",
+                    "https://vite.new/vue",
+                    "http://scrimba.com/links/vue-quickstart",
+                    "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/quick-start.md"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "pass",
+                "checks": [
+                    {
+                        "check": "copy",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "similarity",
+                        "status": "pass",
+                        "metric": 0.027,
+                        "reason": "lexical_metric_not_style_score"
+                    },
+                    {
+                        "check": "language",
+                        "status": "pass",
+                        "detected": "vi"
+                    },
+                    {
+                        "check": "source_code_links",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "important_numbers",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "unanchored_numbers",
+                        "status": "pass",
+                        "count": 0,
+                        "reason": "requires_editor_review"
+                    },
+                    {
+                        "check": "semantic_grounding",
+                        "status": "undetermined",
+                        "reason": "source_anchors_are_not_external_fact_verification"
+                    }
+                ]
+            }
+        },
+        {
+            "case": "Q07-C",
+            "original_status": "ready",
+            "original_error_code": null,
+            "original_diagnostics": null,
+            "source_json_sha256": "2937d401e81895deae84db701fdbf61b51ed3e897e9f672beaf2c9f5d234d24f",
+            "artifact_json_sha256": "ad9962aa48b4873cd6f755d7425e07fdea753e4e7e5b1ae6158dba675df3a3b8",
+            "link_manifest": {
+                "required_hrefs": [],
+                "optional_navigation_hrefs": [
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#introduction",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-configuration",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-variable-types",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#retrieving-environment-configuration",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#determining-the-current-environment",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#encrypting-environment-files",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#accessing-configuration-values",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-caching",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-publishing",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#debug-mode",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#maintenance-mode"
+                ],
+                "allowed_hrefs": [
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#introduction",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-configuration",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-variable-types",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#retrieving-environment-configuration",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#determining-the-current-environment",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#encrypting-environment-files",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#accessing-configuration-values",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-caching",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-publishing",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#debug-mode",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#maintenance-mode",
+                    "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#introduction",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-configuration",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-variable-types",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#retrieving-environment-configuration",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#determining-the-current-environment",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#encrypting-environment-files",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#accessing-configuration-values",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-caching",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-publishing",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#debug-mode",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#maintenance-mode"
+                    ],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#introduction",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-configuration",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-variable-types",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#retrieving-environment-configuration",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#determining-the-current-environment",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#encrypting-environment-files",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#accessing-configuration-values",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-caching",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-publishing",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#debug-mode",
+                        "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#maintenance-mode"
+                    ],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "pass",
+                "checks": [
+                    {
+                        "check": "copy",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "similarity",
+                        "status": "pass",
+                        "metric": 0.02,
+                        "reason": "lexical_metric_not_style_score"
+                    },
+                    {
+                        "check": "language",
+                        "status": "pass",
+                        "detected": "vi"
+                    },
+                    {
+                        "check": "source_code_links",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "important_numbers",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "unanchored_numbers",
+                        "status": "pass",
+                        "count": 0,
+                        "reason": "requires_editor_review"
+                    },
+                    {
+                        "check": "semantic_grounding",
+                        "status": "undetermined",
+                        "reason": "source_anchors_are_not_external_fact_verification"
+                    }
+                ]
+            }
+        },
+        {
+            "case": "Q08-C",
+            "original_status": "ready",
+            "original_error_code": null,
+            "original_diagnostics": null,
+            "source_json_sha256": "4473638d3420d306445ef71a1a1538377de591a9162a7a0ebaac8d72eff1050c",
+            "artifact_json_sha256": "938464ee57cb3fddc783a2d8b163a5abb2c8cd0721607923ab24db5741f08159",
+            "link_manifest": {
+                "required_hrefs": [
+                    "https://github.com/vuejs/create-vue",
+                    "https://vite.dev/",
+                    "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/typescript/overview.md#ide-support",
+                    "https://github.com/vuejs/language-tools/tree/master/packages/tsc",
+                    "https://vite-plugin-checker.netlify.app/",
+                    "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/typescript/overview.md#note-on-vue-cli-and-ts-loader",
+                    "https://code.visualstudio.com/",
+                    "https://marketplace.visualstudio.com/items?itemName=Vue.volar",
+                    "https://marketplace.visualstudio.com/items?itemName=octref.vetur",
+                    "https://www.jetbrains.com/webstorm/",
+                    "https://plugins.jetbrains.com/plugin/9442-vue-js",
+                    "https://github.com/vuejs/tsconfig",
+                    "https://www.typescriptlang.org/docs/handbook/project-references.html",
+                    "https://www.typescriptlang.org/tsconfig#isolatedModules",
+                    "https://esbuild.github.io/",
+                    "https://www.typescriptlang.org/tsconfig#verbatimModuleSyntax",
+                    "https://github.com/microsoft/TypeScript/issues/53601",
+                    "https://www.typescriptlang.org/tsconfig#strict",
+                    "https://www.typescriptlang.org/tsconfig#noImplicitThis",
+                    "https://www.typescriptlang.org/tsconfig#paths",
+                    "https://www.typescriptlang.org/tsconfig#jsx",
+                    "https://www.typescriptlang.org/tsconfig#jsxImportSource",
+                    "https://www.typescriptlang.org/docs/handbook/compiler-options.html",
+                    "https://esbuild.github.io/content-types/#typescript-caveats"
+                ],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://github.com/vuejs/create-vue",
+                    "https://vite.dev/",
+                    "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/typescript/overview.md#ide-support",
+                    "https://github.com/vuejs/language-tools/tree/master/packages/tsc",
+                    "https://vite-plugin-checker.netlify.app/",
+                    "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/typescript/overview.md#note-on-vue-cli-and-ts-loader",
+                    "https://code.visualstudio.com/",
+                    "https://marketplace.visualstudio.com/items?itemName=Vue.volar",
+                    "https://marketplace.visualstudio.com/items?itemName=octref.vetur",
+                    "https://www.jetbrains.com/webstorm/",
+                    "https://plugins.jetbrains.com/plugin/9442-vue-js",
+                    "https://github.com/vuejs/tsconfig",
+                    "https://www.typescriptlang.org/docs/handbook/project-references.html",
+                    "https://www.typescriptlang.org/tsconfig#isolatedModules",
+                    "https://esbuild.github.io/",
+                    "https://www.typescriptlang.org/tsconfig#verbatimModuleSyntax",
+                    "https://github.com/microsoft/TypeScript/issues/53601",
+                    "https://www.typescriptlang.org/tsconfig#strict",
+                    "https://www.typescriptlang.org/tsconfig#noImplicitThis",
+                    "https://www.typescriptlang.org/tsconfig#paths",
+                    "https://www.typescriptlang.org/tsconfig#jsx",
+                    "https://www.typescriptlang.org/tsconfig#jsxImportSource",
+                    "https://www.typescriptlang.org/docs/handbook/compiler-options.html",
+                    "https://esbuild.github.io/content-types/#typescript-caveats",
+                    "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/typescript/overview.md"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "pass",
+                "checks": [
+                    {
+                        "check": "copy",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "similarity",
+                        "status": "pass",
+                        "metric": 0.076,
+                        "reason": "lexical_metric_not_style_score"
+                    },
+                    {
+                        "check": "language",
+                        "status": "pass",
+                        "detected": "vi"
+                    },
+                    {
+                        "check": "source_code_links",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "important_numbers",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "unanchored_numbers",
+                        "status": "pass",
+                        "count": 0,
+                        "reason": "requires_editor_review"
+                    },
+                    {
+                        "check": "semantic_grounding",
+                        "status": "undetermined",
+                        "reason": "source_anchors_are_not_external_fact_verification"
+                    }
+                ]
+            }
+        },
+        {
+            "case": "Q09-C",
+            "original_status": "ready",
+            "original_error_code": null,
+            "original_diagnostics": null,
+            "source_json_sha256": "e5d1dcb89581d54cc41faf4d5c47b75bcc3eea04463168580ebf754e791e5df9",
+            "artifact_json_sha256": "a26e60f8a62655ade934242ec68e6c1e136715f780f8482c2b67cd861d41a6cb",
+            "link_manifest": {
+                "required_hrefs": [
+                    "https://github.com/api/options-state#watch",
+                    "https://play.vuejs.org/#eNp9VE1v2zAM/SucLnaw1D70lqUbsiKH7rB1W4++aDYdq5ElTx9xgiD/fbT8lXZFAQO2+Mgn8pH0mW2aJjl4ZCu2trkRjfucKTw22jgosOReOjhnCqDgjseL/hvAoPNGjSeAvx6tE1qtIIqWo5Er26Ih088BteCt51KeINfKcaGAT5FQc7NP4NPNYiaQmhdC7VZQcmlxMF+61yUcWu7yajVmkabQVqjwgGZmzSuudmiX4CphofQqD+ZWSAnGqz5y9I4VtmOuS9CyGA9T3QCihGu3RKhc+gJtHH2JFld+EG5Mdug2QYZ4MSKhgBd11OgqXdipEm5PKoer0Jk2kA66wB044/EF1GtOSPRUCbUnryRJosnFnK4zpC5YR7205M9bLhyUSIrGUeVcY1dpekKrdNK6MuWNiKYKXt8V98FElDxbknGxGLCpZMi7VkGMxmjzv0pz1tvO4QPcay8LULoj5RToKoTN40MCEXyEQDJTl0KFmXpNOqsUxudN+TNFzzqdJp8ODutGcod0Alg34QWwsXsaVtIjVXqe9h5bC9V4B4ebWhco7zI24hmDVSEs/yOxIPOQEFnTnjzt2emS83nYFrhcevM6nRJhS+Ys9aoUu6Av7WqoNWO5rhsh0fxownplbBqhjJEmuv0WbN2UDNtDMRXm+zfsz/bY2TL2SH1Ec8CMTZjjhqaxh7e/v+ORvieQqvaSvN8Bf6HV0veSdG5fvSoo7Su/kO1D3f13SKInuz06VHYsahzzfl0yRj+s+3dKn9O9TW7HPrPLP624lFU=",
+                    "https://github.com/api/reactivity-core#watch",
+                    "https://play.vuejs.org/#eNp9U8Fy0zAQ/ZVFF9tDah96C2mZ0umhHKBAj7oIe52oUSQjyXEyGf87KytyoDC9JPa+p+e3b1cndtd15b5HtmQrV1vZeXDo++6Wa7nrjPVwAovtAgbh6w2M0Fqzg4xOZFxzXRvtPPzq0XlpNNwEbp5lRUKEdgPaVP925jnoXS+UOgKxvJAaxEVjJ+y2hA9XxUVFGdFIvT7LtEI5JIzrqjrbGozdOmikxdqTKqmIQOV6gvOkvQDhjrqGXOOQvCzAqCa9FHBzCyeuAWT7F6uUulZ9gy7PPmZFETmQjJV7oXoke972GJHY+Axkzxupt4FalhRcYHh7TDIQcqA+LTriikFIDy0G59nG+84tq+qITpty8G0lOhmSiedefSaPZ0mnfHFG50VRRkbkj1BPceVorbFzF/+6fQj4O7g3vWpAm6Ao6JzfINw9PZaQwXuYNJJuK/U0z1nxdTLT0M7s8Ec/I3WxquLS0brRi8ddp4RHegNYhR0M/Du3pXFSAJU285osI7aSuus97K92pkF1w1nCOYNlI534qbCh8tkOVasoXkV1+sjplLZ0HGN5Vc1G2IJ5R8Np5XpKlK7J1CJntdl1UqH92k0bzdkyNc8ZRWGGz1MtbMQi1esN1tv/1F/cIdQ4e6LJod0jZzPmhV2jj/DDjy94oOcZpK57Rew3wO/ojOpjJIH2qdcN2f6DN7l9nC47RfTsHg4etUtNpZUeJz5ndPPv32j9Yve6vE6DZuNvu1R2Tg==",
+                    "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get#description"
+                ],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://github.com/api/options-state#watch",
+                    "https://play.vuejs.org/#eNp9VE1v2zAM/SucLnaw1D70lqUbsiKH7rB1W4++aDYdq5ElTx9xgiD/fbT8lXZFAQO2+Mgn8pH0mW2aJjl4ZCu2trkRjfucKTw22jgosOReOjhnCqDgjseL/hvAoPNGjSeAvx6tE1qtIIqWo5Er26Ih088BteCt51KeINfKcaGAT5FQc7NP4NPNYiaQmhdC7VZQcmlxMF+61yUcWu7yajVmkabQVqjwgGZmzSuudmiX4CphofQqD+ZWSAnGqz5y9I4VtmOuS9CyGA9T3QCihGu3RKhc+gJtHH2JFld+EG5Mdug2QYZ4MSKhgBd11OgqXdipEm5PKoer0Jk2kA66wB044/EF1GtOSPRUCbUnryRJosnFnK4zpC5YR7205M9bLhyUSIrGUeVcY1dpekKrdNK6MuWNiKYKXt8V98FElDxbknGxGLCpZMi7VkGMxmjzv0pz1tvO4QPcay8LULoj5RToKoTN40MCEXyEQDJTl0KFmXpNOqsUxudN+TNFzzqdJp8ODutGcod0Alg34QWwsXsaVtIjVXqe9h5bC9V4B4ebWhco7zI24hmDVSEs/yOxIPOQEFnTnjzt2emS83nYFrhcevM6nRJhS+Ys9aoUu6Av7WqoNWO5rhsh0fxownplbBqhjJEmuv0WbN2UDNtDMRXm+zfsz/bY2TL2SH1Ec8CMTZjjhqaxh7e/v+ORvieQqvaSvN8Bf6HV0veSdG5fvSoo7Su/kO1D3f13SKInuz06VHYsahzzfl0yRj+s+3dKn9O9TW7HPrPLP624lFU=",
+                    "https://github.com/api/reactivity-core#watch",
+                    "https://play.vuejs.org/#eNp9U8Fy0zAQ/ZVFF9tDah96C2mZ0umhHKBAj7oIe52oUSQjyXEyGf87KytyoDC9JPa+p+e3b1cndtd15b5HtmQrV1vZeXDo++6Wa7nrjPVwAovtAgbh6w2M0Fqzg4xOZFxzXRvtPPzq0XlpNNwEbp5lRUKEdgPaVP925jnoXS+UOgKxvJAaxEVjJ+y2hA9XxUVFGdFIvT7LtEI5JIzrqjrbGozdOmikxdqTKqmIQOV6gvOkvQDhjrqGXOOQvCzAqCa9FHBzCyeuAWT7F6uUulZ9gy7PPmZFETmQjJV7oXoke972GJHY+Axkzxupt4FalhRcYHh7TDIQcqA+LTriikFIDy0G59nG+84tq+qITpty8G0lOhmSiedefSaPZ0mnfHFG50VRRkbkj1BPceVorbFzF/+6fQj4O7g3vWpAm6Ao6JzfINw9PZaQwXuYNJJuK/U0z1nxdTLT0M7s8Ec/I3WxquLS0brRi8ddp4RHegNYhR0M/Du3pXFSAJU285osI7aSuus97K92pkF1w1nCOYNlI534qbCh8tkOVasoXkV1+sjplLZ0HGN5Vc1G2IJ5R8Np5XpKlK7J1CJntdl1UqH92k0bzdkyNc8ZRWGGz1MtbMQi1esN1tv/1F/cIdQ4e6LJod0jZzPmhV2jj/DDjy94oOcZpK57Rew3wO/ojOpjJIH2qdcN2f6DN7l9nC47RfTsHg4etUtNpZUeJz5ndPPv32j9Yve6vE6DZuNvu1R2Tg==",
+                    "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get#description",
+                    "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/essentials/watchers.md"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "pass",
+                "checks": [
+                    {
+                        "check": "copy",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "similarity",
+                        "status": "pass",
+                        "metric": 0.02,
+                        "reason": "lexical_metric_not_style_score"
+                    },
+                    {
+                        "check": "language",
+                        "status": "pass",
+                        "detected": "vi"
+                    },
+                    {
+                        "check": "source_code_links",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "important_numbers",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "unanchored_numbers",
+                        "status": "pass",
+                        "count": 0,
+                        "reason": "requires_editor_review"
+                    },
+                    {
+                        "check": "semantic_grounding",
+                        "status": "undetermined",
+                        "reason": "source_anchors_are_not_external_fact_verification"
+                    }
+                ]
+            }
+        },
+        {
+            "case": "Q12-C",
+            "original_status": "ready",
+            "original_error_code": null,
+            "original_diagnostics": null,
+            "source_json_sha256": "672b41ad5f596d54002422c8a2d24fece323d72575c14145e0fc0ebdfa14a5d7",
+            "artifact_json_sha256": "03546c1ddb578c5271a680caa6a41e5b9cddbb5865f37a30aa721a0921d68945",
+            "link_manifest": {
+                "required_hrefs": [
+                    "https://github.com/api/reactivity-core",
+                    "https://github.com/api/composition-api-lifecycle",
+                    "https://github.com/api/composition-api-dependency-injection",
+                    "https://blog.vuejs.org/posts/vue-2-7-naruto.html",
+                    "https://github.com/vuejs/composition-api",
+                    "https://github.com/api/sfc-script-setup"
+                ],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://github.com/api/reactivity-core",
+                    "https://github.com/api/composition-api-lifecycle",
+                    "https://github.com/api/composition-api-dependency-injection",
+                    "https://blog.vuejs.org/posts/vue-2-7-naruto.html",
+                    "https://github.com/vuejs/composition-api",
+                    "https://github.com/api/sfc-script-setup",
+                    "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/extras/composition-api-faq.md"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "pass",
+                "checks": [
+                    {
+                        "check": "copy",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "similarity",
+                        "status": "pass",
+                        "metric": 0.057,
+                        "reason": "lexical_metric_not_style_score"
+                    },
+                    {
+                        "check": "language",
+                        "status": "pass",
+                        "detected": "vi"
+                    },
+                    {
+                        "check": "source_code_links",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "important_numbers",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "unanchored_numbers",
+                        "status": "pass",
+                        "count": 0,
+                        "reason": "requires_editor_review"
+                    },
+                    {
+                        "check": "semantic_grounding",
+                        "status": "undetermined",
+                        "reason": "source_anchors_are_not_external_fact_verification"
+                    }
+                ]
+            }
+        },
+        {
+            "case": "Q13-C",
+            "original_status": "ready",
+            "original_error_code": null,
+            "original_diagnostics": null,
+            "source_json_sha256": "18cbccdaa2dc89666ac367a80c0b7e9b9e78e7c97dfaf8db8cc0807cc9d6c414",
+            "artifact_json_sha256": "ea6b6e41bd276d17aea49ff174fa8d0f9fe59143a97efad9c7cbb8b26dc0622f",
+            "link_manifest": {
+                "required_hrefs": [
+                    "https://v2.vuejs.org/eol/",
+                    "https://v3-migration.vuejs.org/",
+                    "https://developer.mozilla.org/en-US/docs/Web/JavaScript/A_re-introduction_to_JavaScript",
+                    "https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML",
+                    "https://developer.mozilla.org/en-US/docs/Learn/CSS/First_steps"
+                ],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://v2.vuejs.org/eol/",
+                    "https://v3-migration.vuejs.org/",
+                    "https://developer.mozilla.org/en-US/docs/Web/JavaScript/A_re-introduction_to_JavaScript",
+                    "https://developer.mozilla.org/en-US/docs/Learn/HTML/Introduction_to_HTML",
+                    "https://developer.mozilla.org/en-US/docs/Learn/CSS/First_steps",
+                    "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/introduction.md"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "pass",
+                "checks": [
+                    {
+                        "check": "copy",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "similarity",
+                        "status": "pass",
+                        "metric": 0.043,
+                        "reason": "lexical_metric_not_style_score"
+                    },
+                    {
+                        "check": "language",
+                        "status": "pass",
+                        "detected": "vi"
+                    },
+                    {
+                        "check": "source_code_links",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "important_numbers",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "unanchored_numbers",
+                        "status": "pass",
+                        "count": 0,
+                        "reason": "requires_editor_review"
+                    },
+                    {
+                        "check": "semantic_grounding",
+                        "status": "undetermined",
+                        "reason": "source_anchors_are_not_external_fact_verification"
+                    }
+                ]
+            }
+        },
+        {
+            "case": "Q14-C",
+            "original_status": "ready",
+            "original_error_code": null,
+            "original_diagnostics": null,
+            "source_json_sha256": "8675090be7976abaf557dd96f469b772b2f5242e48f6e6df796be3983977c6b1",
+            "artifact_json_sha256": "b2de203ecd440fef9a4e5fe569f8aacb44d406dd2f5408bf1ae77228c1292bac",
+            "link_manifest": {
+                "required_hrefs": [],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/guide/extras/reactivity-in-depth.md"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "pass",
+                "checks": [
+                    {
+                        "check": "copy",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "similarity",
+                        "status": "pass",
+                        "metric": 0.021,
+                        "reason": "lexical_metric_not_style_score"
+                    },
+                    {
+                        "check": "language",
+                        "status": "pass",
+                        "detected": "vi"
+                    },
+                    {
+                        "check": "source_code_links",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "important_numbers",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "unanchored_numbers",
+                        "status": "pass",
+                        "count": 0,
+                        "reason": "requires_editor_review"
+                    },
+                    {
+                        "check": "semantic_grounding",
+                        "status": "undetermined",
+                        "reason": "source_anchors_are_not_external_fact_verification"
+                    }
+                ]
+            }
+        },
+        {
+            "case": "Q17-C",
+            "original_status": "ready",
+            "original_error_code": null,
+            "original_diagnostics": null,
+            "source_json_sha256": "94415de4e7cc383018e7a7f081315dcb0a77a944f5742e8be938b91adab1d6dd",
+            "artifact_json_sha256": "502493cf1494fe3fe852e0875cbaf7a8af8abb6407ad3eda3ad8dc00259fc58b",
+            "link_manifest": {
+                "required_hrefs": [
+                    "https://developer.mozilla.org/en-US/docs/Web/API/Node/textContent",
+                    "https://github.com/guide/essentials/template-syntax#text-interpolation"
+                ],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://developer.mozilla.org/en-US/docs/Web/API/Node/textContent",
+                    "https://github.com/guide/essentials/template-syntax#text-interpolation",
+                    "https://github.com/vuejs/docs/blob/40aa88af0094f7bab4aaf786e55c748a6a251d88/src/api/built-in-directives.md"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "pass",
+                "checks": [
+                    {
+                        "check": "copy",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "similarity",
+                        "status": "pass",
+                        "metric": 0.009,
+                        "reason": "lexical_metric_not_style_score"
+                    },
+                    {
+                        "check": "language",
+                        "status": "pass",
+                        "detected": "vi"
+                    },
+                    {
+                        "check": "source_code_links",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "important_numbers",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "unanchored_numbers",
+                        "status": "pass",
+                        "count": 0,
+                        "reason": "requires_editor_review"
+                    },
+                    {
+                        "check": "semantic_grounding",
+                        "status": "undetermined",
+                        "reason": "source_anchors_are_not_external_fact_verification"
+                    }
+                ]
+            }
+        },
+        {
+            "case": "Q18-C",
+            "original_status": "ready",
+            "original_error_code": null,
+            "original_diagnostics": null,
+            "source_json_sha256": "2299d9d9e3f225898fd8a8348259794be0ca303c6c8064b8c29aa94400ff31be",
+            "artifact_json_sha256": "42ea74dd1f91281e51ac1d961fc1c95b73a691dae9cb98af9d11d0cc7cac74f0",
+            "link_manifest": {
+                "required_hrefs": [
+                    "mailto:info@thegioidulich.com",
+                    "https://www.startravel.vn/"
+                ],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "mailto:info@thegioidulich.com",
+                    "https://www.startravel.vn/"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "pass",
+                "checks": [
+                    {
+                        "check": "copy",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "similarity",
+                        "status": "pass",
+                        "metric": 0.376,
+                        "reason": "lexical_metric_not_style_score"
+                    },
+                    {
+                        "check": "language",
+                        "status": "pass",
+                        "detected": "vi"
+                    },
+                    {
+                        "check": "source_code_links",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "important_numbers",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "unanchored_numbers",
+                        "status": "warning",
+                        "count": 11,
+                        "reason": "requires_editor_review"
+                    },
+                    {
+                        "check": "semantic_grounding",
+                        "status": "undetermined",
+                        "reason": "source_anchors_are_not_external_fact_verification"
+                    }
+                ]
+            }
+        },
+        {
+            "case": "Q26-C",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "original_diagnostics": {
+                "stage": "validate",
+                "validation_errors": [
+                    {
+                        "group": "content",
+                        "field": "content_html",
+                        "reason": "important_number_missing"
+                    }
+                ]
+            },
+            "source_json_sha256": "b642546b4c8a12366d70f47de382ef5e9d77fed6124ed9f5f401fe0c736cbe32",
+            "artifact_json_sha256": "f47ffd2118a4c2797b062b56f4f559b6f085957e229b37202e0994b744171eee",
+            "link_manifest": {
+                "required_hrefs": [],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://tphcm.chinhphu.vn/tphcm-khanh-thanh-tuyen-metro-so-1-khoi-nguon-cho-su-phat-trien-giao-thong-do-thi-hien-dai-101250309104036732.htm"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "pass",
+                "checks": [
+                    {
+                        "check": "copy",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "similarity",
+                        "status": "pass",
+                        "metric": 0.445,
+                        "reason": "lexical_metric_not_style_score"
+                    },
+                    {
+                        "check": "language",
+                        "status": "pass",
+                        "detected": "vi"
+                    },
+                    {
+                        "check": "source_code_links",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "important_numbers",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "unanchored_numbers",
+                        "status": "pass",
+                        "count": 0,
+                        "reason": "requires_editor_review"
+                    },
+                    {
+                        "check": "semantic_grounding",
+                        "status": "undetermined",
+                        "reason": "source_anchors_are_not_external_fact_verification"
+                    }
+                ]
+            }
+        },
+        {
+            "case": "Q27-C",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "original_diagnostics": {
+                "stage": "validate",
+                "validation_errors": [
+                    {
+                        "group": "content",
+                        "field": "content_html",
+                        "reason": "important_number_missing"
+                    }
+                ]
+            },
+            "source_json_sha256": "cf524d11440f1b4115dc227438add3e8a2b00eed009b56469062b53b57643413",
+            "artifact_json_sha256": "3777b0c5ec22839c180584be8426381757848773baff506aeccc40a43fb8d386",
+            "link_manifest": {
+                "required_hrefs": [],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://baochinhphu.vn/nam-du-lich-quoc-gia-2025-hue-kinh-do-xua-van-hoi-moi-10224123113585751.htm"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "pass",
+                "checks": [
+                    {
+                        "check": "copy",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "similarity",
+                        "status": "pass",
+                        "metric": 0.278,
+                        "reason": "lexical_metric_not_style_score"
+                    },
+                    {
+                        "check": "language",
+                        "status": "undetermined",
+                        "detected": null
+                    },
+                    {
+                        "check": "source_code_links",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "important_numbers",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "unanchored_numbers",
+                        "status": "pass",
+                        "count": 0,
+                        "reason": "requires_editor_review"
+                    },
+                    {
+                        "check": "semantic_grounding",
+                        "status": "undetermined",
+                        "reason": "source_anchors_are_not_external_fact_verification"
+                    }
+                ]
+            }
+        },
+        {
+            "case": "Q28-C",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "original_diagnostics": {
+                "stage": "validate",
+                "validation_errors": [
+                    {
+                        "group": "content",
+                        "field": "content_html",
+                        "reason": "important_number_missing"
+                    }
+                ]
+            },
+            "source_json_sha256": "536b7b6210c359fbe674decebec9003daefb917baddcc4b56994b51d5a22e898",
+            "artifact_json_sha256": "dadd7b7a69341dd69f1cd4507823709b7de4791df5aaa16618e312dfd60e885f",
+            "link_manifest": {
+                "required_hrefs": [],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://tphcm.baochinhphu.vn/le-hoi-di-san-ca-phe-toan-cau-to-chuc-dip-cuoi-nam-tai-da-lat-101251125131136511.htm"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "pass",
+                "checks": [
+                    {
+                        "check": "copy",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "similarity",
+                        "status": "pass",
+                        "metric": 0.358,
+                        "reason": "lexical_metric_not_style_score"
+                    },
+                    {
+                        "check": "language",
+                        "status": "pass",
+                        "detected": "vi"
+                    },
+                    {
+                        "check": "source_code_links",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "important_numbers",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "unanchored_numbers",
+                        "status": "pass",
+                        "count": 0,
+                        "reason": "requires_editor_review"
+                    },
+                    {
+                        "check": "semantic_grounding",
+                        "status": "undetermined",
+                        "reason": "source_anchors_are_not_external_fact_verification"
+                    }
+                ]
+            }
+        },
+        {
+            "case": "Q29-C",
+            "original_status": "ready",
+            "original_error_code": null,
+            "original_diagnostics": null,
+            "source_json_sha256": "7bfbc627a5988356ba2268075c855ad8e5a1e8a6a197a9eb1f6f86a8df27dfad",
+            "artifact_json_sha256": "e2e57880e97565f2e73c2660c9624dd641a9de86009ae2b932252d46ef759379",
+            "link_manifest": {
+                "required_hrefs": [],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://thongke.tourism.vn/index.php/news/items/336"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "pass",
+                "checks": [
+                    {
+                        "check": "copy",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "similarity",
+                        "status": "pass",
+                        "metric": 0.75,
+                        "reason": "lexical_metric_not_style_score"
+                    },
+                    {
+                        "check": "language",
+                        "status": "pass",
+                        "detected": "vi"
+                    },
+                    {
+                        "check": "source_code_links",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "important_numbers",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "unanchored_numbers",
+                        "status": "pass",
+                        "count": 0,
+                        "reason": "requires_editor_review"
+                    },
+                    {
+                        "check": "semantic_grounding",
+                        "status": "undetermined",
+                        "reason": "source_anchors_are_not_external_fact_verification"
+                    }
+                ]
+            }
+        },
+        {
+            "case": "Q30-C",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "original_diagnostics": {
+                "stage": "validate",
+                "validation_errors": [
+                    {
+                        "group": "content",
+                        "field": "content_html",
+                        "reason": "important_number_missing"
+                    }
+                ]
+            },
+            "source_json_sha256": "0fdb47ac0cfdc691f4dc19e8260dd01c88aa50bcc224b967fcff6d7f822d3132",
+            "artifact_json_sha256": "46c722b91af85412351e32409a36a30c9bc14a052d771e7dc49d4762cebf4295",
+            "link_manifest": {
+                "required_hrefs": [],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://baotanglichsuquocgia.vn/vi/Articles/3090/6038/thong-bao-lich-djon-tiep-va-gia-ve-djoi-voi-khach-tham-quan-bao-tang-lich-su-viet-nam.html"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "pass",
+                "checks": [
+                    {
+                        "check": "copy",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "similarity",
+                        "status": "pass",
+                        "metric": 0.463,
+                        "reason": "lexical_metric_not_style_score"
+                    },
+                    {
+                        "check": "language",
+                        "status": "pass",
+                        "detected": "vi"
+                    },
+                    {
+                        "check": "source_code_links",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "important_numbers",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "unanchored_numbers",
+                        "status": "pass",
+                        "count": 0,
+                        "reason": "requires_editor_review"
+                    },
+                    {
+                        "check": "semantic_grounding",
+                        "status": "undetermined",
+                        "reason": "source_anchors_are_not_external_fact_verification"
+                    }
+                ]
+            }
+        },
+        {
+            "case": "Q31-C",
+            "original_status": "ready",
+            "original_error_code": null,
+            "original_diagnostics": null,
+            "source_json_sha256": "e9251a362ad4a7b8be6db1e4668da50a117c2770970f45b41d470535dccd6c1a",
+            "artifact_json_sha256": "ad7a026462a282f7fb634f8e6e98bce8e00d468d056a0c4a6a8bb8324c01f5e2",
+            "link_manifest": {
+                "required_hrefs": [
+                    "https://vietnam.travel/places-to-go/central-vietnam/phong-nha"
+                ],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://vietnam.travel/places-to-go/central-vietnam/phong-nha",
+                    "https://www.vietnam.travel/things-to-do/cave-country-phong-nha"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "pass",
+                "checks": [
+                    {
+                        "check": "copy",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "similarity",
+                        "status": "pass",
+                        "metric": 0.023,
+                        "reason": "lexical_metric_not_style_score"
+                    },
+                    {
+                        "check": "language",
+                        "status": "pass",
+                        "detected": "vi"
+                    },
+                    {
+                        "check": "source_code_links",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "important_numbers",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "unanchored_numbers",
+                        "status": "pass",
+                        "count": 0,
+                        "reason": "requires_editor_review"
+                    },
+                    {
+                        "check": "semantic_grounding",
+                        "status": "undetermined",
+                        "reason": "source_anchors_are_not_external_fact_verification"
+                    }
+                ]
+            }
+        },
+        {
+            "case": "Q32-C",
+            "original_status": "failed",
+            "original_error_code": "AI_QUALITY_GROUNDING",
+            "original_diagnostics": {
+                "stage": "validate",
+                "validation_errors": [
+                    {
+                        "group": "content",
+                        "field": "content_html",
+                        "reason": "important_number_missing"
+                    }
+                ]
+            },
+            "source_json_sha256": "abe6bbfae9fc09bf388649c1e5a8b060a0755daed70cf29d33894d81e46863bf",
+            "artifact_json_sha256": "c1c96bc796f940dbee1649fe73b64d7ec9ef800cc8271f04a198766031faf6ca",
+            "link_manifest": {
+                "required_hrefs": [],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://www.vietnam.travel/things-to-do/7-things-to-do-hoi-an"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                },
+                {
+                    "task": "article.editor",
+                    "required_links_missing": [],
+                    "navigation_links_omitted": [],
+                    "links_outside_allowlist": [],
+                    "unknown_fact_ids": []
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "pass",
+                "checks": [
+                    {
+                        "check": "copy",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "similarity",
+                        "status": "pass",
+                        "metric": 0.018,
+                        "reason": "lexical_metric_not_style_score"
+                    },
+                    {
+                        "check": "language",
+                        "status": "pass",
+                        "detected": "vi"
+                    },
+                    {
+                        "check": "source_code_links",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "important_numbers",
+                        "status": "pass"
+                    },
+                    {
+                        "check": "unanchored_numbers",
+                        "status": "warning",
+                        "count": 1,
+                        "reason": "requires_editor_review"
+                    },
+                    {
+                        "check": "semantic_grounding",
+                        "status": "undetermined",
+                        "reason": "source_anchors_are_not_external_fact_verification"
+                    }
+                ]
+            }
+        },
+        {
+            "case": "Q33-C",
+            "original_status": "failed",
+            "original_error_code": "AI_PROVIDER_TIMEOUT",
+            "original_diagnostics": {
+                "stage": "transport",
+                "schema_version": "article.writer.v1"
+            },
+            "source_json_sha256": "0e5f82562876bdbf1d54eebb4e7e4e1c00a07eb7944a66cb78ae6f0d4c05e693",
+            "artifact_json_sha256": "8e6ec98a3aec551cebf9666b11384a62730c74d6a4638d7a151eab6537e71697",
+            "link_manifest": {
+                "required_hrefs": [
+                    "https://docs.github.com/en/actions/reference/limits#existing-system-limits",
+                    "https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments#wait-timer",
+                    "https://docs.github.com/en/actions/reference/limits#workflow-file-size",
+                    "https://docs.github.com/en/actions/reference/limits#job-concurrency-limits-for-github-hosted-runners",
+                    "https://docs.github.com/en/actions/reference/limits#storage-limits-for-all-github-hosted-runners",
+                    "https://docs.github.com/en/actions/reference/limits#private-ip-scaling-for-vnet-injection-on-larger-runners"
+                ],
+                "optional_navigation_hrefs": [],
+                "allowed_hrefs": [
+                    "https://docs.github.com/en/actions/reference/limits#existing-system-limits",
+                    "https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments#wait-timer",
+                    "https://docs.github.com/en/actions/reference/limits#workflow-file-size",
+                    "https://docs.github.com/en/actions/reference/limits#job-concurrency-limits-for-github-hosted-runners",
+                    "https://docs.github.com/en/actions/reference/limits#storage-limits-for-all-github-hosted-runners",
+                    "https://docs.github.com/en/actions/reference/limits#private-ip-scaling-for-vnet-injection-on-larger-runners",
+                    "https://docs.github.com/en/actions/reference/limits"
+                ]
+            },
+            "stages": [
+                {
+                    "task": "article.analysis-plan"
+                },
+                {
+                    "task": "article.writer"
+                }
+            ],
+            "current_gate_recheck": {
+                "status": "no_final_candidate"
+            }
+        }
+    ]
+}

@@ -25,4 +25,4 @@ Ai Prompt tái sử dụng Tiptap có sẵn của project. TinyMCE Cloud key hi�
 - Nhập câu 10 từ: bộ đếm cập nhật thành 10; xóa về 0 và khôi phục bài mẫu về 118 từ.
 - Sao chép prompt: có thông báo thành công.
 
-![Giao diện Ai Prompt](./AI_PROMPT_UI_2026-10-04.jpg)
+![Giao diện Ai Prompt](AI_PROMPT_UI_2026-10-04.jpg)

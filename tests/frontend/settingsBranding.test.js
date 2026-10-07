@@ -17,7 +17,7 @@ import { VFileInput } from 'vuetify/components/VFileInput'
 import { VIcon } from 'vuetify/components/VIcon'
 import { VCol, VRow } from 'vuetify/components/VGrid'
 import { useSettings } from '@/composables/useSettings'
-import { settingsService } from '@/services/settings'
+import { settingsService, SETTINGS_REQUEST_TIMEOUT_MS } from '@/services/settings'
 import { applySiteBranding } from '@/composables/useSiteBranding'
 import SettingsBrandingPanel from '@/views/settings/SettingsBrandingPanel.vue'
 import AppBrandLogo from '@/components/AppBrandLogo.vue'
@@ -122,9 +122,9 @@ describe('Settings branding API', () => {
   it('keeps existing JSON PATCH for remove-only and other settings groups', async () => {
     api.mockResolvedValue({ data: {} })
     await settingsService.update('site', { version: 4, remove_logo: true, logo_url: '/readonly.png' })
-    expect(api).toHaveBeenLastCalledWith('/admin/settings/site', { method: 'PATCH', retry: 0, body: { version: 4, remove_logo: true } })
+    expect(api).toHaveBeenLastCalledWith('/admin/settings/site', { method: 'PATCH', retry: 0, timeout: SETTINGS_REQUEST_TIMEOUT_MS, body: { version: 4, remove_logo: true } })
     await settingsService.update('mail', { version: 0, mailer: 'log' })
-    expect(api).toHaveBeenLastCalledWith('/admin/settings/mail', { method: 'PATCH', retry: 0, body: { version: 0, mailer: 'log' } })
+    expect(api).toHaveBeenLastCalledWith('/admin/settings/mail', { method: 'PATCH', retry: 0, timeout: SETTINGS_REQUEST_TIMEOUT_MS, body: { version: 0, mailer: 'log' } })
   })
 })
 

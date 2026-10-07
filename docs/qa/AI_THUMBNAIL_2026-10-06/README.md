@@ -90,8 +90,7 @@ Các log test/build cuối còn trong thư mục QA này.
 
 ## Tài liệu đã cập nhật
 
-- [FIX 1](../../fix_1.md), mục 12.37.
-- [PLAN](../../PLAN.md).
-- [API pipeline](../../AI_ARTICLE_PIPELINE_API.md).
-- [Cấu trúc project](../../PROJECT_STRUCTURE.md).
-- [Inventory](../../PROJECT_INVENTORY.md).
+- [PLAN](../../plans/PLAN.md).
+- [API pipeline](../../api/AI_ARTICLE_PIPELINE_API.md).
+- [Cấu trúc project](../../architecture/PROJECT_STRUCTURE.md).
+- [Inventory](../../architecture/PROJECT_INVENTORY.md).

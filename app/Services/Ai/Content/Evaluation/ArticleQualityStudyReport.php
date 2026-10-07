@@ -154,7 +154,7 @@ final class ArticleQualityStudyReport
         }
         $lines[] = '';
         if ($report['human_review']['status'] === 'pending_human') {
-            $lines[] = 'Chưa kết luận '.($paired ? 'nhánh nào viết hay hơn, ít lỗi factual hơn hoặc ít phút sửa hơn.' : 'chất lượng diễn đạt, độ chính xác hoặc công sửa của C.').' Hai form chấm độc lập ở `review-v2/reviewer-1.html` và `review-v2/reviewer-2.html`; xem hướng dẫn ở README của bộ chấm.';
+            $lines[] = 'Chưa kết luận '.($paired ? 'nhánh nào viết hay hơn, ít lỗi factual hơn hoặc ít phút sửa hơn.' : 'chất lượng diễn đạt, độ chính xác hoặc công sửa của C.').' Hai form reviewer-1.html và reviewer-2.html ở thư mục bộ chấm đi kèm; xem hướng dẫn ở README của bộ chấm.';
         } else {
             $lines[] = 'Phân bố từng tiêu chí, lỗi critical/major, coverage, phút sửa, preference và bất đồng nằm riêng trong report.json. Bất đồng cần đối chiếu dẫn chứng; không lấy điểm diễn đạt bù cho lỗi factual.';
         }

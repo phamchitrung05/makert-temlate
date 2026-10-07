@@ -38,7 +38,7 @@ use Illuminate\Validation\ValidationException;
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : AiImport cùng URL/options, provider contract và uploader media tùy chọn.
- * - OUTPUT: source metadata và draft canonical chưa publish.
+ * - OUTPUT: source metadata, draft canonical và nguồn gốc field để archive; chưa publish.
  * - SIDE EFFECT: cập nhật progress; tùy chọn tạo MediaAsset thumbnail public.
  * - EXCEPTION/TRANSACTION: AiImportException cho lỗi nguồn/provider; asset được
  *   tạo qua UploadMediaAssetAction để dùng chung transaction/security pipeline.
@@ -149,6 +149,7 @@ class ArticleImportService
         $draft = $this->fallbackDraft($url, $draftTitle, $description, $content, $html);
         $draft['thumbnail']['source_url'] = $snapshot['thumbnail_source_url'] ?? $draft['thumbnail']['source_url'];
         $sourceDraft = $draft;
+        $inheritedFields = $hasFieldSelection && $import->parent_id ? array_keys($parentDraft) : [];
         if ($hasFieldSelection && $import->parent_id) {
             $sourceThumbnail = $draft['thumbnail'];
             $draft = array_replace($draft, $parentDraft);
@@ -165,6 +166,8 @@ class ArticleImportService
             'stage' => 'source',
         ];
         $generationCalled = false;
+        $generatedFields = [];
+        $generationMode = 'source_only';
         try {
             if ($needsTextGeneration && $provider->configured()) {
                 $diagnostics['stage'] = 'transport';
@@ -188,6 +191,15 @@ class ArticleImportService
                 unset($generated['thumbnail']);
                 $diagnostics['returned_fields'] = array_keys($generated);
                 $generated = $validator->validate($generated, $validationGroups, sanitizeContent: true);
+                $allowedGeneratedFields = $hasFieldSelection
+                    ? array_merge(...array_map(fn (string $group): array => (array) config('ai-agent.output_definitions.'.$group.'.fields', []), $requestedFields))
+                    : array_keys($generated);
+                $generatedFields = array_values(array_intersect(array_keys($generated), $allowedGeneratedFields));
+                if (in_array('content', $generatedFields, true) && ! in_array('content_html', $generatedFields, true)) {
+                    $generatedFields[] = 'content_html';
+                }
+                $generationMode = 'ai';
+                $inheritedFields = array_values(array_diff($inheritedFields, $generatedFields));
                 $draft = $hasFieldSelection
                     ? $this->mergeRequestedFields($draft, $generated, $requestedFields)
                     : array_replace($draft, $generated);
@@ -200,9 +212,12 @@ class ArticleImportService
                 }
                 if ($needsTextGeneration && $hasFieldSelection) {
                     $draft = $this->mergeRequestedFields($draft, $sourceDraft, $requestedFields);
+                    $replacedFields = array_merge(...array_map(fn (string $group): array => (array) config('ai-agent.output_definitions.'.$group.'.fields', []), $requestedFields));
+                    $inheritedFields = array_values(array_diff($inheritedFields, $replacedFields));
                 }
                 $validator->validate($draft, $validationGroups, sanitizeContent: true);
                 $diagnostics['stage'] = $needsTextGeneration ? 'deterministic' : 'skipped';
+                $generationMode = $needsTextGeneration ? 'deterministic' : 'source_only';
             }
         } catch (AiImportException $exception) {
             $providerMetadata = $generationCalled && $provider instanceof AiResponseMetadataProvider ? $provider->responseMetadata() : [];
@@ -259,13 +274,30 @@ class ArticleImportService
             'prompt_version' => (string) $prompt['version'],
             'schema_version' => (string) $prompt['schema'],
             'requested_fields' => $requestedFields,
+            'generation_meta' => [
+                'mode' => $generationMode, 'generated_fields' => $generatedFields, 'inherited_fields' => $inheritedFields,
+                'requested_groups' => $hasFieldSelection ? $requestedFields : ['title', 'content'],
+            ],
         ];
     }
 
     /**
      * =====================================================================
-     * Input: run và diagnostics allowlist; kể cả khi output validation thất bại.
-     * Output: lưu riêng metadata kỹ thuật, không đưa vào draft hoặc mở transaction.
+     * CHỨC NĂNG: Lưu diagnostics provider đã lọc vào metadata của run
+     * =====================================================================
+     *
+     * INPUT:
+     * - AiImport và diagnostics allowlist, kể cả khi validation output thất bại.
+     *
+     * OUTPUT:
+     * - void: run đã persist có source_meta_json.ai_response mới; run chỉ ở memory được bỏ qua.
+     *
+     * SIDE EFFECT:
+     * - Refresh run và lưu diagnostics đã sanitize, không đưa diagnostics vào draft.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Không tự mở transaction hoặc gọi provider; lỗi DB/Eloquent truyền ra pipeline.
+     *
      * =====================================================================
      */
     private function persistResponseMetadata(AiImport $import, array $diagnostics): void
@@ -462,9 +494,21 @@ class ArticleImportService
 
     /**
      * =====================================================================
-     * Input: HTML chứa refs ảnh và run có actor; test không persist không kiểm DB.
-     * Output: xác nhận quyền/src/public asset hoặc lỗi AI_MEDIA_REFERENCE an toàn.
-     * SIDE EFFECT: đọc media/policy, không tải hoặc tự tạo asset từ URL.
+     * CHỨC NĂNG: Xác thực quyền và asset ảnh trong nội dung của run
+     * =====================================================================
+     *
+     * INPUT:
+     * - HTML chứa refs ảnh và AiImport có actor; run chưa persist hoặc HTML không có img được bỏ qua.
+     *
+     * OUTPUT:
+     * - void: tham chiếu ảnh hợp lệ theo MediaLibrary/policy.
+     *
+     * SIDE EFFECT:
+     * - Đọc actor/media và quyền sử dụng; không tải URL hoặc tự tạo asset.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Không mở transaction; thiếu actor ném AI_ACTOR_NOT_FOUND, validation/authorization ảnh đổi thành AI_MEDIA_REFERENCE an toàn.
+     *
      * =====================================================================
      */
     private function validateMediaReferences(string $html, AiImport $import): void

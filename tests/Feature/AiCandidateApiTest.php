@@ -19,6 +19,11 @@ use Tests\UsesIsolatedDatabase;
  * =====================================================================
  * CHỨC NĂNG FILE: Kiểm regenerate/retry/Apply giữ candidate và provenance.
  * =====================================================================
+ *
+ * PHPUnit kiểm regenerate/retry/Apply, nhóm field được chọn và provenance của Post.
+ * Candidate ready dựng bằng tay là fixture legacy, chưa qua checkpoint worker v1.
+ * HTTP/queue và database được cô lập; không gọi AI hoặc sửa dữ liệu ứng dụng.
+ *
  * CÁC HÀM/METHOD TRONG FILE:
  * - setUp().
  * - tearDown().
@@ -30,11 +35,12 @@ use Tests\UsesIsolatedDatabase;
  * - test_apply_selected_fields_does_not_overwrite_unselected_fields().
  * - test_regular_post_create_records_ai_provenance_from_form_metadata().
  * - test_post_create_accepts_multiple_non_overlapping_ai_runs().
- * =====================================================================
+ *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
- * - INPUT : fixtures/requests admin, HTTP và Queue fake, database test cô lập.
- * - OUTPUT: assertions cho contract, snapshot, quyền và lỗi; không gọi AI thật.
- * - SIDE EFFECT: tạo/sửa dữ liệu trong database test; không chỉnh dữ liệu ứng dụng.
+ * - INPUT : Fixtures, HTTP request và dependency test đã cô lập.
+ * - OUTPUT: Assertions cho output, quyền, validation và lifecycle hiện có.
+ * - SIDE EFFECT: Tạo/đọc/sửa dữ liệu ở DB test; setup/teardown quản lý schema và connection riêng.
+ * - EXCEPTION/TRANSACTION: Lỗi assertion/dependency truyền ra PHPUnit; transaction code nghiệp vụ chạy trong môi trường test.
  * =====================================================================
  */
 class AiCandidateApiTest extends TestCase
@@ -117,9 +123,9 @@ class AiCandidateApiTest extends TestCase
     {
         Queue::fake();
         $token = $this->token();
-        $this->withToken($token)->postJson('/api/admin/posts/ai/import', ['url' => 'https://example.test/article'])->assertStatus(202);
+        $this->withToken($token)->postJson('/api/admin/posts/ai/import', ['url' => 'https://example.test/article', 'provider' => 'deterministic'])->assertStatus(202);
         $original = AiImport::query()->firstOrFail();
-        $original->update(['status' => 'ready', 'result_json' => ['draft' => ['title' => 'A']]]);
+        $original->update(['archive_version' => null, 'status' => 'ready', 'result_json' => ['draft' => ['title' => 'A']]]);
 
         $response = $this->withToken($token)->postJson('/api/admin/posts/ai/import/'.$original->id.'/regenerate', ['instructions' => 'Giữ nguyên code.', 'refresh_source' => true]);
         $response->assertStatus(202)->assertJsonPath('data.operation', 'regenerate');
@@ -157,10 +163,11 @@ class AiCandidateApiTest extends TestCase
         $token = $this->token();
         $this->withToken($token)->postJson('/api/admin/posts/ai/import', [
             'url' => 'https://example.test/partial-regenerate',
+            'provider' => 'deterministic',
         ])->assertStatus(202);
         $parent = AiImport::query()->firstOrFail();
         $parent->update([
-            'status' => 'ready',
+            'archive_version' => null, 'status' => 'ready',
             'result_json' => [
                 'draft' => [
                     'title' => 'Tiêu đề cũ',
@@ -199,7 +206,7 @@ class AiCandidateApiTest extends TestCase
     {
         Queue::fake();
         $token = $this->token();
-        $this->withToken($token)->postJson('/api/admin/posts/ai/import', ['url' => 'https://example.test/retry'])->assertStatus(202);
+        $this->withToken($token)->postJson('/api/admin/posts/ai/import', ['url' => 'https://example.test/retry', 'provider' => 'deterministic'])->assertStatus(202);
         $import = AiImport::query()->firstOrFail();
         $import->update(['status' => 'failed', 'error_code' => 'TEMP']);
 
@@ -226,11 +233,12 @@ class AiCandidateApiTest extends TestCase
         $token = $this->token();
         $this->withToken($token)->postJson('/api/admin/posts/ai/import', [
             'url' => 'https://example.test/apply',
+            'provider' => 'deterministic',
         ])->assertStatus(202);
 
         $import = AiImport::query()->firstOrFail();
         $import->update([
-            'status' => 'ready',
+            'archive_version' => null, 'status' => 'ready',
             'result_json' => [
                 'provider' => 'deterministic',
                 'model' => 'deterministic',
@@ -279,10 +287,11 @@ class AiCandidateApiTest extends TestCase
 
         $this->withToken($token)->postJson('/api/admin/posts/ai/import', [
             'url' => 'https://example.test/partial',
+            'provider' => 'deterministic',
         ])->assertStatus(202);
         $import = AiImport::query()->firstOrFail();
         $import->update([
-            'status' => 'ready',
+            'archive_version' => null, 'status' => 'ready',
             'result_json' => [
                 'provider' => 'deterministic',
                 'model' => 'deterministic',
@@ -323,11 +332,12 @@ class AiCandidateApiTest extends TestCase
         $token = $this->token();
         $this->withToken($token)->postJson('/api/admin/posts/ai/import', [
             'url' => 'https://example.test/form-provenance',
+            'provider' => 'deterministic',
         ])->assertStatus(202);
 
         $import = AiImport::query()->firstOrFail();
         $import->update([
-            'status' => 'ready',
+            'archive_version' => null, 'status' => 'ready',
             'result_json' => [
                 'provider' => 'deterministic',
                 'model' => 'deterministic',
@@ -382,11 +392,11 @@ class AiCandidateApiTest extends TestCase
         $token = $this->token();
         $runIds = [];
         foreach (['content-run', 'seo-run'] as $slug) {
-            $this->withToken($token)->postJson('/api/admin/posts/ai/import', ['url' => 'https://example.test/'.$slug])->assertStatus(202);
+            $this->withToken($token)->postJson('/api/admin/posts/ai/import', ['url' => 'https://example.test/'.$slug, 'provider' => 'deterministic'])->assertStatus(202);
             $run = AiImport::query()->latest('created_at')->firstOrFail();
             $runIds[] = $run->id;
             $run->update([
-                'status' => 'ready', 'result_json' => ['provider' => 'deterministic', 'model' => 'deterministic', 'draft' => []],
+                'archive_version' => null, 'status' => 'ready', 'result_json' => ['provider' => 'deterministic', 'model' => 'deterministic', 'draft' => []],
             ]);
         }
 

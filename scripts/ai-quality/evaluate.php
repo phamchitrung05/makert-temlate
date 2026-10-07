@@ -26,8 +26,12 @@ set_exception_handler(static function (Throwable $exception): never {
     fwrite(STDERR, 'Evaluation failed: '.$exception->getMessage().PHP_EOL);
     exit(1);
 });
-$options = getopt('', ['manifest:', 'prototype:', 'input-snapshot:', 'case:', 'arms:', 'max-calls:', 'request-timeout:', 'output:', 'run', 'current-prompts', 'export-only']);
+$options = getopt('', ['manifest:', 'prototype:', 'input-snapshot:', 'case:', 'arms:', 'max-calls:', 'request-timeout:', 'temperature:', 'output:', 'run', 'current-prompts', 'export-only']);
 $exportOnly = isset($options['export-only']);
+$temperature = isset($options['temperature']) ? filter_var($options['temperature'], FILTER_VALIDATE_FLOAT) : null;
+if ($temperature === false || ($temperature !== null && (! is_finite($temperature) || $temperature < 0 || $temperature > 2)) || ($exportOnly && $temperature !== null)) {
+    throw new RuntimeException('--temperature chỉ nhận số hữu hạn 0–2 cho phiên C mới; không sửa phiên lịch sử.');
+}
 $requestTimeout = isset($options['request-timeout']) ? filter_var($options['request-timeout'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 5, 'max_range' => 600]]) : null;
 if ($requestTimeout === false || ($exportOnly && $requestTimeout !== null)) {
     throw new RuntimeException('--request-timeout chỉ nhận 5–600 giây cho phiên C mới, không sửa phiên export lịch sử.');
@@ -76,7 +80,7 @@ foreach ($cases as $case) {
         throw new RuntimeException('Source không có blocks.');
     }
 }
-echo json_encode(['cases' => $ids, 'arms' => $arms, 'planned_calls' => $exportOnly ? 0 : $planned, 'baseline_A' => 'unavailable', 'mode' => $exportOnly ? 'export' : (isset($options['run']) ? 'execute' : 'preflight')], JSON_UNESCAPED_SLASHES).PHP_EOL;
+echo json_encode(['cases' => $ids, 'arms' => $arms, 'planned_calls' => $exportOnly ? 0 : $planned, 'temperature_override' => $temperature, 'baseline_A' => 'unavailable', 'mode' => $exportOnly ? 'export' : (isset($options['run']) ? 'execute' : 'preflight')], JSON_UNESCAPED_SLASHES).PHP_EOL;
 if (! isset($options['run']) && ! $exportOnly) {
     exit;
 }
@@ -106,6 +110,9 @@ if (! $exportOnly && empty($input['ai_connection'])) {
 if (! $exportOnly && $requestTimeout !== null) {
     $input['ai_connection']['timeout'] = $requestTimeout;
 }
+if (! $exportOnly && $temperature !== null) {
+    $input['ai_connection']['temperature'] = $temperature;
+}
 $output = $options['output'] ?? base_path('docs/qa/task2-quality/pilot-'.now()->format('Ymd-His'));
 if (! $exportOnly && file_exists($output)) {
     throw new RuntimeException('Output đã tồn tại; không ghi đè thử nghiệm trước.');
@@ -119,7 +126,8 @@ if ($summary['manifest_sha256'] !== frozenJsonHash($manifestPath)) {
 }
 if (! $exportOnly) {
     $summary['request_timeout'] = $input['ai_connection']['timeout'] ?? null;
-    writeJson($output.'/experiment-input.json', array_intersect_key($input, array_flip(['writing_profile_snapshot', 'pipeline_snapshot'])) + ['evaluation_options' => ['request_timeout' => $summary['request_timeout']]]);
+    $summary['temperature'] = $input['ai_connection']['temperature'] ?? null;
+    writeJson($output.'/experiment-input.json', array_intersect_key($input, array_flip(['writing_profile_snapshot', 'pipeline_snapshot'])) + ['evaluation_options' => ['request_timeout' => $summary['request_timeout'], 'temperature' => $summary['temperature']]]);
 }
 // Resolve một lần: toàn phiên C dùng cùng options/connection trong memory.
 // Clone từng nhánh để state diagnostics/output fields không truyền qua bài khác.

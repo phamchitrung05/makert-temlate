@@ -12,6 +12,10 @@ import { $api } from '@/utils/api'
 /** Input: BaseResponse. Output: DTO trong data. */
 const unwrap = response => response.data
 
+// Settings requests must release loading/save state when the server stops responding.
+export const SETTINGS_REQUEST_TIMEOUT_MS = 15000
+const requestOptions = { timeout: SETTINGS_REQUEST_TIMEOUT_MS, retry: 0 }
+
 /** Input: group/payload. Output: saved DTO; file dùng POST spoof PATCH để PHP đọc multipart. */
 async function update(group, payload) {
   const values = { ...payload }
@@ -29,13 +33,13 @@ async function update(group, payload) {
     })
   }
 
-  return unwrap(await $api(`/admin/settings/${group}`, { method: hasFiles ? 'POST' : 'PATCH', body, retry: 0 }))
+  return unwrap(await $api(`/admin/settings/${group}`, { ...requestOptions, method: hasFiles ? 'POST' : 'PATCH', body }))
 }
 
 export const settingsService = {
-  list: async () => unwrap(await $api('/admin/settings')),
+  list: async () => unwrap(await $api('/admin/settings', requestOptions)),
   update,
-  readOperations: async group => unwrap(await $api(`/admin/settings/${group}`)),
-  preferences: async () => unwrap(await $api('/admin/settings/preferences')),
-  testMail: async recipient => $api('/admin/settings/mail/test', { method: 'POST', body: { recipient }, retry: 0 }),
+  readOperations: async group => unwrap(await $api(`/admin/settings/${group}`, requestOptions)),
+  preferences: async () => unwrap(await $api('/admin/settings/preferences', requestOptions)),
+  testMail: async recipient => $api('/admin/settings/mail/test', { method: 'POST', body: { recipient }, timeout: 120000, retry: 0 }),
 }

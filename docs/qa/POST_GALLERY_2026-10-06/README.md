@@ -51,8 +51,8 @@
 - Không publish bài, gọi provider AI, gửi email hoặc sửa dữ liệu thật qua browser.
 - Tab QA đã đóng và xác nhận server tạm ở cổng 8001 không còn chạy sau kiểm tra.
 
-Ảnh chụp sau khi lưu và mở lại: [Content và Gallery](./post-content-gallery.png).
-Đối chiếu dữ liệu thử: [Fixture verification](./fixture-verification.json).
+Ảnh chụp sau khi lưu và mở lại: [Content và Gallery](post-content-gallery.png).
+Đối chiếu dữ liệu thử: [Fixture verification](fixture-verification.json).
 
 ## Migration trên local
 

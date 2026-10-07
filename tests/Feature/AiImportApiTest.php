@@ -21,6 +21,11 @@ use Tests\UsesIsolatedDatabase;
  * =====================================================================
  * CHỨC NĂNG FILE: Kiểm tạo/poll/hủy run và quyền truy cập với queue bất đồng bộ.
  * =====================================================================
+ *
+ * PHPUnit kiểm tạo/poll/hủy run, quyền admin và danh sách Content AI của owner.
+ * Kiểm pagination/expiry, payload summary an toàn và thumbnail/media tải theo lô.
+ * HTTP/queue và database được cô lập; không gọi AI hoặc sửa dữ liệu ứng dụng.
+ *
  * CÁC HÀM/METHOD TRONG FILE:
  * - setUp().
  * - tearDown().
@@ -39,11 +44,12 @@ use Tests\UsesIsolatedDatabase;
  * - test_generic_session_endpoint_normalizes_nested_input().
  * - test_cancelled_import_is_terminal_for_queued_worker().
  * - test_cleanup_command_removes_expired_import().
- * =====================================================================
+ *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
- * - INPUT : fixtures/requests admin, HTTP và Queue fake, database test cô lập.
- * - OUTPUT: assertions cho contract, snapshot, quyền và lỗi; không gọi AI thật.
- * - SIDE EFFECT: tạo/sửa dữ liệu trong database test; không chỉnh dữ liệu ứng dụng.
+ * - INPUT : Fixtures, HTTP request và dependency test đã cô lập.
+ * - OUTPUT: Assertions cho output, quyền, validation và lifecycle hiện có.
+ * - SIDE EFFECT: Tạo/đọc/sửa dữ liệu ở DB test; setup/teardown quản lý schema và connection riêng.
+ * - EXCEPTION/TRANSACTION: Lỗi assertion/dependency truyền ra PHPUnit; transaction code nghiệp vụ chạy trong môi trường test.
  * =====================================================================
  */
 class AiImportApiTest extends TestCase
@@ -112,7 +118,21 @@ class AiImportApiTest extends TestCase
 
     /**
      * =====================================================================
-     * Input: collection không có quyền. Output: HTTP 401/403; DB cô lập, không gọi AI.
+     * CHỨC NĂNG: Kiểm thử collection không có quyền
+     * =====================================================================
+     *
+     * INPUT:
+     * - collection không có quyền.
+     *
+     * OUTPUT:
+     * - HTTP 401/403; DB cô lập, không gọi AI.
+     *
+     * SIDE EFFECT:
+     * - Chỉ xử lý fixture hoặc dữ liệu trong database test; không gọi AI thật hay sửa dữ liệu ứng dụng.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_session_list_requires_authenticated_post_manager(): void
@@ -126,7 +146,21 @@ class AiImportApiTest extends TestCase
 
     /**
      * =====================================================================
-     * Input: query sai. Output: validation 422; không truy vấn provider hoặc ghi run.
+     * CHỨC NĂNG: Kiểm thử query sai
+     * =====================================================================
+     *
+     * INPUT:
+     * - query sai.
+     *
+     * OUTPUT:
+     * - validation 422; không truy vấn provider hoặc ghi run.
+     *
+     * SIDE EFFECT:
+     * - Chỉ xử lý fixture hoặc dữ liệu trong database test; không gọi AI thật hay sửa dữ liệu ứng dụng.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_session_list_validates_pagination(): void
@@ -137,10 +171,21 @@ class AiImportApiTest extends TestCase
 
     /**
      * =====================================================================
-     * Input: run gốc/con/ảnh/hết hạn và run của owner khác.
-     * Output: root/candidate con còn hạn của owner; không lộ body/input/URL query/key.
-     * Side effect: fake queue và SQLite cô lập; không gọi provider thật.
-
+     * CHỨC NĂNG: Kiểm thử run gốc/con/ảnh/hết hạn và run của owner khác
+     * =====================================================================
+     *
+     * INPUT:
+     * - run gốc/con/ảnh/hết hạn và run của owner khác.
+     *
+     * OUTPUT:
+     * - root/candidate con còn hạn của owner; không lộ body/input/URL query/key.
+     *
+     * SIDE EFFECT:
+     * - fake queue và SQLite cô lập; không gọi provider thật.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_session_list_filters_owner_root_and_expiry_and_returns_safe_summaries(): void
@@ -149,6 +194,7 @@ class AiImportApiTest extends TestCase
         $token = $this->token();
         $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
             'target_type' => 'post', 'operation' => 'create', 'input' => ['type' => 'text', 'text' => 'Private source content'],
+            'provider' => 'deterministic',
         ])->assertAccepted();
         $root = AiImport::query()->firstOrFail();
         $root->forceFill([
@@ -182,7 +228,23 @@ class AiImportApiTest extends TestCase
 
     /**
      * =====================================================================
+     * CHỨC NĂNG: Kiểm thử fixture và môi trường test đã cô lập
+     * =====================================================================
+     *
      * Saved thumbnails appear in lists and polling without querying each asset or conversion parent.
+     *
+     * INPUT:
+     * - Fixture và môi trường test đã cô lập.
+     *
+     * OUTPUT:
+     * - Assertions xác nhận contract/hành vi mong đợi.
+     *
+     * SIDE EFFECT:
+     * - Chỉ xử lý fixture hoặc dữ liệu trong database test; không gọi AI thật hay sửa dữ liệu ứng dụng.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_session_thumbnails_are_loaded_in_batches_and_returned_in_polling(): void
@@ -237,7 +299,23 @@ class AiImportApiTest extends TestCase
 
     /**
      * =====================================================================
+     * CHỨC NĂNG: Kiểm thử fixture và môi trường test đã cô lập
+     * =====================================================================
+     *
      * Missing/deleted assets return null, and private thumbnails never expose a storage URL.
+     *
+     * INPUT:
+     * - Fixture và môi trường test đã cô lập.
+     *
+     * OUTPUT:
+     * - Assertions xác nhận contract/hành vi mong đợi.
+     *
+     * SIDE EFFECT:
+     * - Chỉ xử lý fixture hoặc dữ liệu trong database test; không gọi AI thật hay sửa dữ liệu ứng dụng.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_session_thumbnails_handle_missing_deleted_and_private_assets(): void
@@ -271,7 +349,23 @@ class AiImportApiTest extends TestCase
 
     /**
      * =====================================================================
+     * CHỨC NĂNG: Tạo thumbnail fixture phục vụ kiểm payload MediaLibrary
+     * =====================================================================
+     *
      * Persist file metadata for DTO/query tests; no real upload or image conversion is required.
+     *
+     * INPUT:
+     * - Fixture và môi trường test đã cô lập.
+     *
+     * OUTPUT:
+     * - Assertions xác nhận contract/hành vi mong đợi.
+     *
+     * SIDE EFFECT:
+     * - Chỉ xử lý fixture hoặc dữ liệu trong database test; không gọi AI thật hay sửa dữ liệu ứng dụng.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     private function thumbnailAsset(int $ownerId, MediaAssetVisibility $visibility = MediaAssetVisibility::Public): MediaAsset
@@ -307,6 +401,7 @@ class AiImportApiTest extends TestCase
         Queue::fake();
         $response = $this->withToken($this->token())->postJson('/api/admin/posts/ai/import', [
             'url' => 'https://example.test/article', 'language' => 'vi', 'generate_thumbnail' => true,
+            'provider' => 'deterministic',
         ]);
 
         $response->assertStatus(202)->assertJsonPath('data.status', 'queued')->assertJsonPath('data.progress', 0);
@@ -329,7 +424,7 @@ class AiImportApiTest extends TestCase
     public function test_import_status_is_private_to_creator(): void
     {
         Queue::fake();
-        $this->withToken($this->token())->postJson('/api/admin/posts/ai/import', ['url' => 'https://example.test/article'])->assertStatus(202);
+        $this->withToken($this->token())->postJson('/api/admin/posts/ai/import', ['url' => 'https://example.test/article', 'provider' => 'deterministic'])->assertStatus(202);
         $import = AiImport::query()->firstOrFail();
         $other = User::factory()->create(['status' => 'active']);
         $other->givePermissionTo('posts.manage');
@@ -394,6 +489,7 @@ class AiImportApiTest extends TestCase
 
         $this->withToken($token)->postJson('/api/admin/posts/ai/import', [
             'url' => 'https://example.test/article', 'prompt_key' => 'post.unknown',
+            'provider' => 'deterministic',
         ])->assertStatus(422)->assertJsonValidationErrors('prompt_key');
 
         Queue::assertNothingPushed();
@@ -416,6 +512,7 @@ class AiImportApiTest extends TestCase
         Queue::fake();
         $response = $this->withToken($this->token())->postJson('/api/admin/posts/ai/import', [
             'text' => "Tiêu đề inline\n\nNội dung do quản trị viên nhập.",
+            'provider' => 'deterministic',
         ]);
 
         $response->assertStatus(202)
@@ -482,6 +579,7 @@ class AiImportApiTest extends TestCase
         $token = $this->token();
         $this->withToken($token)->postJson('/api/admin/posts/ai/import', [
             'url' => 'https://example.test/cancel',
+            'provider' => 'deterministic',
         ])->assertStatus(202);
         $import = AiImport::query()->firstOrFail();
         $import->update(['status' => 'fetching', 'current_step' => 'fetching', 'progress' => 15]);
@@ -516,9 +614,11 @@ class AiImportApiTest extends TestCase
         Queue::fake();
         $this->withToken($this->token())->postJson('/api/admin/posts/ai/import', [
             'url' => 'https://example.test/expired',
+            'provider' => 'deterministic',
         ])->assertStatus(202);
         $import = AiImport::query()->firstOrFail();
-        $import->update(['status' => 'ready', 'expires_at' => now()->subMinute()]);
+        // Fixture legacy dựng trực tiếp, chưa chạy worker/contract archive v1.
+        $import->update(['archive_version' => null, 'status' => 'ready', 'expires_at' => now()->subMinute()]);
 
         $this->artisan('ai-import:cleanup')
             ->expectsOutput('Đã dọn 1 AI import.')

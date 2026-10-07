@@ -4,7 +4,7 @@ Mỗi người mở một file reviewer-N.html, nhập tên/mã riêng rồi đ�
 
 1. Lập dữ kiện quan trọng từ source blocks, ghi mã đoạn và điều kiện. Không lấy ledger Analyze làm đáp án.
 2. Đọc từng ứng viên theo nhãn, ghi lỗi critical/major/minor, coverage và checklist code/link/table/quote/ảnh. URL/alt/chú thích không chứng minh đã nhìn pixel ảnh.
-3. Chấm 1–5 theo rubric ở docs/AI_ARTICLE_QUALITY_EVALUATION.md. 1 kém, 3 dùng được sau sửa, 5 tốt; 2/4 là mức giữa.
+3. Chấm 1–5 theo rubric ở docs/quality/AI_ARTICLE_QUALITY_EVALUATION.md. 1 kém, 3 dùng được sau sửa, 5 tốt; 2/4 là mức giữa.
 4. Ghi phút sửa thực tế và số sửa; không suy công sửa từ tokens/latency/diff. Phiên C không có lựa chọn giữa hai bài; để trống paired_preference trong CSV.
 5. Chỉ đánh dấu Hoàn thành khi đủ dữ kiện và điểm. Tải CSV để giữ bản chắc chắn; bản nháp lưu riêng theo bộ chấm/trình duyệt khi hỗ trợ.
 

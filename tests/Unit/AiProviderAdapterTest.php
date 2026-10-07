@@ -29,6 +29,17 @@ use Tests\TestCase;
  */
 class AiProviderAdapterTest extends TestCase
 {
+    public function test_temperature_zero_and_existing_temperature_are_sent_without_fallback(): void
+    {
+        Config::set('ai-providers.connections.openai.key', 'test-openai-key');
+        Config::set('ai-providers.connections.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
+        foreach ([0.0, 0.2] as $temperature) {
+            Http::fake(['https://api.openai.test/*' => Http::response(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => json_encode(['title' => 'Title', 'content_html' => '<p>Content</p>'])]]]])]);
+            (new OpenAiProvider)->withRunSettings(['temperature' => $temperature])->generate('Nguồn', '<p>Gốc</p>');
+            Http::assertSent(fn ($request): bool => (float) $request['temperature'] === $temperature);
+        }
+    }
+
     /**
      * =====================================================================
      * INPUT: Fixture nguồn/output/cấu hình và dependencies fake của ca này.

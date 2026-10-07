@@ -2,27 +2,33 @@
 
 namespace App\Models;
 
-/**
- * =====================================================================
- * CHỨC NĂNG FILE: Lưu trạng thái và kết quả một lần import bài viết bằng AI.
- * =====================================================================
- * Model phục vụ API polling, giữ URL nguồn, trạng thái xử lý và draft JSON.
- * CÁC HÀM/METHOD TRONG FILE:
- * - casts(): ép kiểu kết quả và thời hạn.
- * - createdBy(): liên kết quản trị viên khởi tạo import.
- * - candidates(), steps(): liên kết candidate và checkpoint của run.
- * - advance(), isCancelled(): cập nhật tiến độ an toàn khi run bị hủy.
- * INPUT/OUTPUT CỦA CLASS (tổng thể):
- * - INPUT : dữ liệu import và kết quả pipeline.
- * - OUTPUT: bản ghi AiImport cùng quan hệ người tạo.
- * =====================================================================
- */
-
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Lưu trạng thái và kết quả một lần import bài viết bằng AI.
+ * =====================================================================
+ *
+ * Model phục vụ polling và danh sách Content AI, giữ nguồn/lifecycle/candidate cùng số generation. Checkpoint v1 tạm được service quản lý và hidden khỏi serialize API; chỉ bản approved có kho lâu dài riêng.
+ *
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - casts().
+ * - createdBy().
+ * - candidates().
+ * - steps().
+ * - advance().
+ * - isCancelled().
+ *
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : Dữ liệu run, input/result JSON, thời hạn và actor.
+ * - OUTPUT: AiImport cùng các quan hệ owner/candidate/step và trạng thái tiến trình.
+ * - SIDE EFFECT: Eloquent đọc/ghi lifecycle; advance() không ghi đè trạng thái terminal.
+ * - EXCEPTION/TRANSACTION: Mutation nghiệp vụ/lock thuộc controller, worker hoặc service; các relation/cast không tự mở transaction.
+ * =====================================================================
+ */
 class AiImport extends Model
 {
     use HasUuids;
@@ -35,12 +41,17 @@ class AiImport extends Model
 
     protected $keyType = 'string';
 
+    protected $attributes = ['generation_no' => 1];
+
+    protected $hidden = ['archive_pending_json'];
+
     protected $fillable = [
         'created_by', 'source_url', 'source_text', 'normalized_url', 'source_hash', 'status',
         'current_step', 'progress', 'input_json', 'source_meta_json', 'result_json',
         'error_code', 'error_message', 'provider', 'prompt_version', 'started_at',
         'completed_at', 'expires_at',
         'session_id', 'parent_id', 'operation', 'applied_target_id', 'applied_fields',
+        'archive_version', 'generation_no',
     ];
 
     /**
@@ -48,7 +59,7 @@ class AiImport extends Model
      * CHỨC NĂNG: Khai báo cast cho state/result/input của AI run.
      * =====================================================================
      * INPUT: không có.
-     * OUTPUT: enum/date/JSON cast của model.
+     * OUTPUT: map cast JSON/integer/datetime của model.
      * SIDE EFFECT: Không ghi database hoặc gọi provider.
      * EXCEPTION/TRANSACTION: Không mở transaction.
      * =====================================================================
@@ -57,6 +68,9 @@ class AiImport extends Model
     {
         return [
             'input_json' => 'array',
+            'archive_pending_json' => 'array',
+            'archive_version' => 'integer',
+            'generation_no' => 'integer',
             'source_meta_json' => 'array',
             'result_json' => 'array',
             'applied_fields' => 'array',
@@ -100,11 +114,21 @@ class AiImport extends Model
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Trả checkpoint kỹ thuật theo đúng thứ tự tạo
+     * CHỨC NĂNG: Trả quan hệ checkpoint kỹ thuật của run theo thứ tự tạo
      * =====================================================================
-     * INPUT: UUID import hiện tại.
-     * OUTPUT: quan hệ HasMany AiImportStep.
-     * SIDE EFFECT: chỉ tạo truy vấn, không gọi provider hoặc ghi Post.
+     *
+     * INPUT:
+     * - UUID AiImport hiện tại.
+     *
+     * OUTPUT:
+     * - HasMany AiImportStep, sắp tăng dần theo id, chưa paginate hoặc eager load.
+     *
+     * SIDE EFFECT:
+     * - Chỉ dựng query quan hệ; DB chỉ được đọc khi caller thực thi query, không gọi AI hoặc ghi Post.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Không mở transaction/lock; caller chịu trách nhiệm quyền xem run và xử lý lỗi query.
+     *
      * =====================================================================
      */
     public function steps(): HasMany

@@ -39,7 +39,7 @@
 - Local bảng settings cũ có 0 row; migration tạo 6 property mặc định. Test migration
   riêng đã xác nhận trường hợp có dữ liệu cũ.
 - Worker hiện tại được restart sau migration; một worker `--timeout=720`.
-- Ảnh dùng dữ liệu QA: [AI_CONTENT_SETTINGS_2026-10-03.jpg](./AI_CONTENT_SETTINGS_2026-10-03.jpg).
+- Ảnh dùng dữ liệu QA: [AI_CONTENT_SETTINGS_2026-10-03.jpg](AI_CONTENT_SETTINGS_2026-10-03.jpg).
 
 ## Giới hạn
 
@@ -48,4 +48,4 @@
 - Sound chỉ tạo mô tả văn bản; không tạo file audio. Resource/Sound chưa apply
   sang domain. Post API apply đã tồn tại, UI duyệt/reject riêng vẫn pending.
 - Chưa có `ai_content_drafts`; retention của `ai_imports` vẫn mặc định 2 ngày.
-- Các mục provider parser/quality/extractor/Reverb còn pending trong `fix_1.md`.
+- Các mục provider parser/quality/extractor/Reverb còn pending tại thời điểm nghiệm thu; trạng thái mới nhất nằm ở [PLAN](../plans/PLAN.md).

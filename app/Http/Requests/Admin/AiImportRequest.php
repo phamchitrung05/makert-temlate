@@ -19,6 +19,7 @@ use Illuminate\Validation\Validator;
  * CÁC HÀM/METHOD TRONG FILE:
  * - prepareForValidation(): chuẩn hóa payload generic session về content import.
  * - authorize(): xác nhận route middleware đã kiểm tra permission.
+ * - messages(): giải thích phạm vi file nguồn được hỗ trợ.
  * - rules(): whitelist URL, ngôn ngữ, prompt và thumbnail options.
  * - after(): yêu cầu đúng một nguồn, kiểm encoding và byte HTML.
  *
@@ -78,6 +79,12 @@ class AiImportRequest extends FormRequest
         $target = app(TargetRegistry::class)->all()[$key] ?? null;
 
         return ! $target || $this->user()?->can($target['permission'] ?? 'posts.manage');
+    }
+
+    /** Input: lỗi extension nguồn. Output: thông báo phạm vi HTML; không có side effect. */
+    public function messages(): array
+    {
+        return ['html_file.extensions' => 'Nguồn bài viết chỉ nhận file .html hoặc .htm. File .mhtml/.mht chưa được hỗ trợ.'];
     }
 
     /**

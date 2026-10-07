@@ -5,6 +5,7 @@ namespace App\Services\Ai\Provenance;
 use App\Models\AiImport;
 use App\Models\AiProvenance;
 use App\Models\Post;
+use App\Services\Ai\Content\Archives\AiArticleArchiveService;
 use App\Services\Ai\Images\AiThumbnailService;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
@@ -28,10 +29,11 @@ use Illuminate\Validation\ValidationException;
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : actor ID, Post đã lưu, run UUID, field đã chọn và giá trị Post.
- * - OUTPUT: bản ghi AiProvenance và AiImport applied metadata.
+ * - OUTPUT: bản ghi AiProvenance, AiImport applied metadata và archive của bản Post
+ *   được chọn; checkpoint giữ bản AI gốc trước edit, legacy chưa rõ original giữ null.
  * - SIDE EFFECT: ghi database trong transaction của Action/Controller.
  * - EXCEPTION/TRANSACTION: ValidationException nếu run/field không hợp lệ;
- *   service không tự mở transaction để caller kiểm soát atomicity.
+ *   lỗi archive rollback cùng Post trong transaction caller; service archive dùng row lock/savepoint.
  * =====================================================================
  */
 final class AiProvenanceService
@@ -56,10 +58,11 @@ final class AiProvenanceService
      * =====================================================================
      * INPUT: actor ID, Post đã create/update, run UUID nullable, field allowlist
      * và map giá trị sau khi domain Action đã chuẩn hóa.
-     * OUTPUT: AiImport được đánh dấu applied và audit rows theo từng field.
+     * OUTPUT: AiImport được đánh dấu applied, audit rows và archive Post của bản đã chọn.
      * SIDE EFFECT: query/insert/update database; không gọi provider.
      * EXCEPTION/TRANSACTION: ValidationException nếu run không thuộc actor,
-     * chưa ready, hết hạn hoặc field không nằm trong contract; transaction thuộc caller.
+     * chưa ready, hết hạn hoặc field không nằm trong contract; lỗi archive truyền ra;
+     * transaction Post thuộc caller, kho dùng transaction ngắn lồng bên trong.
      *
      * @param  array<int, string>  $fields
      * @param  array<string, mixed>  $values
@@ -144,6 +147,7 @@ final class AiProvenanceService
             if ($textFields !== $fields) {
                 $import->forceFill(['applied_fields' => $fields])->save();
             }
+            app(AiArticleArchiveService::class)->archiveApproved($import->id, (int) $import->generation_no, legacy: true);
         }
     }
 

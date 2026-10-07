@@ -26,6 +26,11 @@ use Tests\UsesIsolatedDatabase;
  * =====================================================================
  * CHỨC NĂNG FILE: Kiểm API backend Task 2 về snapshot, taxonomy, version và lifecycle.
  * =====================================================================
+ *
+ * PHPUnit kiểm snapshot nguồn/profile/brief, taxonomy thủ công, version candidate
+ * và lifecycle Task 2. Gồm queue budget, contract ba bước và phục hồi metadata ảnh.
+ * HTTP/queue và database được cô lập; không gọi AI hoặc sửa dữ liệu ứng dụng.
+ *
  * CÁC HÀM/METHOD TRONG FILE:
  * - setUp().
  * - tearDown().
@@ -41,16 +46,18 @@ use Tests\UsesIsolatedDatabase;
  * - test_step_polling_hides_intermediate_output_and_secrets().
  * - test_new_running_stages_cannot_be_deleted_and_cancel_is_terminal().
  * - test_three_step_queue_budget_is_inside_queue_lease().
+ * - test_new_run_forces_three_steps_even_with_legacy_configuration().
  * - test_regenerate_preserves_edited_manual_taxonomy_and_clears_legacy_ai_taxonomy().
  * - test_apply_checks_candidate_version_and_uses_manual_taxonomy().
  * - test_missing_snapshot_requires_explicit_refresh().
  * - test_sync_queue_is_rejected_before_run_creation().
  * - test_optional_image_metadata_does_not_overwrite_ready_candidate_edits().
- * =====================================================================
+ *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
- * - INPUT : fixtures/requests admin, HTTP và Queue fake, database test cô lập.
- * - OUTPUT: assertions cho contract, snapshot, quyền và lỗi; không gọi AI thật.
- * - SIDE EFFECT: tạo/sửa dữ liệu trong database test; không chỉnh dữ liệu ứng dụng.
+ * - INPUT : Fixtures, HTTP request và dependency test đã cô lập.
+ * - OUTPUT: Assertions cho output, quyền, validation và lifecycle hiện có.
+ * - SIDE EFFECT: Tạo/đọc/sửa dữ liệu ở DB test; setup/teardown quản lý schema và connection riêng.
+ * - EXCEPTION/TRANSACTION: Lỗi assertion/dependency truyền ra PHPUnit; transaction code nghiệp vụ chạy trong môi trường test.
  * =====================================================================
  */
 class AiTask2RunApiTest extends TestCase
@@ -59,9 +66,21 @@ class AiTask2RunApiTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: PHPUnit setup. OUTPUT: DB cô lập/quyền/queue fake.
-     * SIDE EFFECT: migrate SQLite, không tác động database ứng dụng.
-
+     * CHỨC NĂNG: Chuẩn bị môi trường cô lập trước mỗi ca kiểm thử
+     * =====================================================================
+     *
+     * INPUT:
+     * - PHPUnit setup.
+     *
+     * OUTPUT:
+     * - DB cô lập/quyền/queue fake.
+     *
+     * SIDE EFFECT:
+     * - migrate SQLite, không tác động database ứng dụng.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi setup/schema truyền ra PHPUnit; không mở transaction nghiệp vụ bao toàn bộ ca test.
+     *
      * =====================================================================
      */
     protected function setUp(): void
@@ -76,9 +95,21 @@ class AiTask2RunApiTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: PHPUnit teardown. OUTPUT: dọn database cô lập.
-     * SIDE EFFECT: rollback test, không ghi production.
-
+     * CHỨC NĂNG: Dọn môi trường cô lập sau mỗi ca kiểm thử
+     * =====================================================================
+     *
+     * INPUT:
+     * - PHPUnit teardown.
+     *
+     * OUTPUT:
+     * - dọn database cô lập.
+     *
+     * SIDE EFFECT:
+     * - rollback test, không ghi production.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi teardown truyền ra PHPUnit; không gọi provider hoặc mở transaction nghiệp vụ mới.
+     *
      * =====================================================================
      */
     protected function tearDown(): void
@@ -89,9 +120,21 @@ class AiTask2RunApiTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: không có. OUTPUT: token actor posts.manage.
-     * SIDE EFFECT: chỉ tạo user/token trong DB test.
-
+     * CHỨC NĂNG: Chuẩn bị actor và token admin cho request kiểm thử
+     * =====================================================================
+     *
+     * INPUT:
+     * - không có.
+     *
+     * OUTPUT:
+     * - token actor posts.manage.
+     *
+     * SIDE EFFECT:
+     * - chỉ tạo user/token trong DB test.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     private function token(): string
@@ -106,9 +149,21 @@ class AiTask2RunApiTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: không có. OUTPUT: mẫu bật version 1 đã được người dùng lưu.
-     * SIDE EFFECT: chỉ ghi fixture profile, không phân tích bài mẫu.
-
+     * CHỨC NĂNG: Tạo writing profile fixture trong database test
+     * =====================================================================
+     *
+     * INPUT:
+     * - không có.
+     *
+     * OUTPUT:
+     * - mẫu bật version 1 đã được người dùng lưu.
+     *
+     * SIDE EFFECT:
+     * - chỉ ghi fixture profile, không phân tích bài mẫu.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     private function profile(): AiWritingProfile
@@ -122,15 +177,28 @@ class AiTask2RunApiTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: token và options override. OUTPUT: run đã queued.
-     * SIDE EFFECT: gọi API nội bộ; Queue fake không chạy generation.
-
+     * CHỨC NĂNG: Tạo AI run qua API để kiểm snapshot và lifecycle
+     * =====================================================================
+     *
+     * INPUT:
+     * - token và options override.
+     *
+     * OUTPUT:
+     * - run đã queued.
+     *
+     * SIDE EFFECT:
+     * - gọi API nội bộ; Queue fake không chạy generation.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     private function createRun(string $token, array $options = []): AiImport
     {
         $response = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', array_replace([
             'text' => 'Nguồn hướng dẫn giải thích tính năng thật.', 'generate_thumbnail' => false,
+            'provider' => 'deterministic',
             'requested_outputs' => ['content'],
         ], $options))->assertStatus(202);
 
@@ -139,9 +207,21 @@ class AiTask2RunApiTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: profile/brief/category/tag thủ công. OUTPUT: snapshot và draft public giữ IDs/manual.
-     * SIDE EFFECT: API/queue fake; không gọi AI hoặc tạo Post.
-
+     * CHỨC NĂNG: Kiểm thử profile/brief/category/tag thủ công
+     * =====================================================================
+     *
+     * INPUT:
+     * - profile/brief/category/tag thủ công.
+     *
+     * OUTPUT:
+     * - snapshot và draft public giữ IDs/manual.
+     *
+     * SIDE EFFECT:
+     * - API/queue fake; không gọi AI hoặc tạo Post.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_create_snapshots_profile_brief_and_manual_taxonomy(): void
@@ -170,9 +250,21 @@ class AiTask2RunApiTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: AI taxonomy generation được yêu cầu. OUTPUT: 422 thay vì gửi taxonomy vào model.
-     * SIDE EFFECT: không tạo run/provider request.
-
+     * CHỨC NĂNG: Kiểm thử aI taxonomy generation được yêu cầu
+     * =====================================================================
+     *
+     * INPUT:
+     * - AI taxonomy generation được yêu cầu.
+     *
+     * OUTPUT:
+     * - 422 thay vì gửi taxonomy vào model.
+     *
+     * SIDE EFFECT:
+     * - không tạo run/provider request.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_ai_taxonomy_generation_is_rejected(): void
@@ -185,9 +277,21 @@ class AiTask2RunApiTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: HTML/form/code và script. OUTPUT: preview giữ code/form nhưng bỏ script/footer.
-     * SIDE EFFECT: không tạo run hoặc gọi model/URL.
-
+     * CHỨC NĂNG: Kiểm thử hTML/form/code và script
+     * =====================================================================
+     *
+     * INPUT:
+     * - HTML/form/code và script.
+     *
+     * OUTPUT:
+     * - preview giữ code/form nhưng bỏ script/footer.
+     *
+     * SIDE EFFECT:
+     * - không tạo run hoặc gọi model/URL.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_html_source_preview_preserves_code_inside_form(): void
@@ -206,9 +310,21 @@ class AiTask2RunApiTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: file HTML có bài trong div/form và footer copyright dùng section.
-     * OUTPUT: upload preview trả đầu/cuối bài và source blocks, không trả footer.
-     * SIDE EFFECT: chỉ upload tạm trong test; không gọi HTTP/model hoặc tạo run.
+     * CHỨC NĂNG: Kiểm thử file HTML có bài trong div/form và footer copyright dùng section
+     * =====================================================================
+     *
+     * INPUT:
+     * - file HTML có bài trong div/form và footer copyright dùng section.
+     *
+     * OUTPUT:
+     * - upload preview trả đầu/cuối bài và source blocks, không trả footer.
+     *
+     * SIDE EFFECT:
+     * - chỉ upload tạm trong test; không gọi HTTP/model hoặc tạo run.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_html_file_preview_selects_div_article_body_instead_of_footer_section(): void
@@ -241,9 +357,21 @@ class AiTask2RunApiTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: HTML tạo run và hai nguồn trùng. OUTPUT: raw HTML được nhận; nguồn mơ hồ lỗi 422.
-     * SIDE EFFECT: Queue fake, không chạy AI.
-
+     * CHỨC NĂNG: Kiểm thử hTML tạo run và hai nguồn trùng
+     * =====================================================================
+     *
+     * INPUT:
+     * - HTML tạo run và hai nguồn trùng.
+     *
+     * OUTPUT:
+     * - raw HTML được nhận; nguồn mơ hồ lỗi 422.
+     *
+     * SIDE EFFECT:
+     * - Queue fake, không chạy AI.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_html_run_and_ambiguous_sources_contract(): void
@@ -251,6 +379,7 @@ class AiTask2RunApiTest extends TestCase
         $token = $this->token();
         $response = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
             'html' => '<article><pre>    code</pre><p>Source</p></article>', 'requested_outputs' => ['content'],
+            'provider' => 'deterministic',
         ])->assertStatus(202);
         $run = AiImport::query()->findOrFail($response->json('data.job_id'));
         $this->assertSame('html', $run->input_json['source_format']);
@@ -262,10 +391,21 @@ class AiTask2RunApiTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: parent với source/profile snapshot; profile sau đó bị tắt.
-     * OUTPUT: child giữ snapshot parent, không đọc lại profile hiện tại.
-     * SIDE EFFECT: chỉ tạo child queued, không fetch URL.
-
+     * CHỨC NĂNG: Kiểm thử parent với source/profile snapshot
+     * =====================================================================
+     *
+     * INPUT:
+     * - parent với source/profile snapshot; profile sau đó bị tắt.
+     *
+     * OUTPUT:
+     * - child giữ snapshot parent, không đọc lại profile hiện tại.
+     *
+     * SIDE EFFECT:
+     * - chỉ tạo child queued, không fetch URL.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_regenerate_keeps_parent_profile_and_source_snapshot(): void
@@ -285,9 +425,21 @@ class AiTask2RunApiTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: checkpoint có output nội bộ. OUTPUT: polling chỉ trả metadata an toàn.
-     * SIDE EFFECT: tạo step fixture, không gọi AI.
-
+     * CHỨC NĂNG: Kiểm thử checkpoint có output nội bộ
+     * =====================================================================
+     *
+     * INPUT:
+     * - checkpoint có output nội bộ.
+     *
+     * OUTPUT:
+     * - polling chỉ trả metadata an toàn.
+     *
+     * SIDE EFFECT:
+     * - tạo step fixture, không gọi AI.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_step_polling_hides_intermediate_output_and_secrets(): void
@@ -310,9 +462,21 @@ class AiTask2RunApiTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: run đang editing và yêu cầu hủy. OUTPUT: progress sau hủy không hồi sinh run.
-     * SIDE EFFECT: chỉ cập nhật lifecycle test; không gọi model.
-
+     * CHỨC NĂNG: Kiểm thử run đang editing và yêu cầu hủy
+     * =====================================================================
+     *
+     * INPUT:
+     * - run đang editing và yêu cầu hủy.
+     *
+     * OUTPUT:
+     * - progress sau hủy không hồi sinh run.
+     *
+     * SIDE EFFECT:
+     * - chỉ cập nhật lifecycle test; không gọi model.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_new_running_stages_cannot_be_deleted_and_cancel_is_terminal(): void
@@ -328,9 +492,21 @@ class AiTask2RunApiTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: request timeout 600s và ba bước. OUTPUT: job 1920s nằm trong queue lease.
-     * SIDE EFFECT: không dispatch hoặc gọi model.
-
+     * CHỨC NĂNG: Kiểm thử request timeout 600s và ba bước
+     * =====================================================================
+     *
+     * INPUT:
+     * - request timeout 600s và ba bước.
+     *
+     * OUTPUT:
+     * - job 1920s nằm trong queue lease.
+     *
+     * SIDE EFFECT:
+     * - không dispatch hoặc gọi model.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_three_step_queue_budget_is_inside_queue_lease(): void
@@ -343,7 +519,25 @@ class AiTask2RunApiTest extends TestCase
         $this->assertSame(3, AiRunBudget::calls(['provider' => 'openai', 'fields' => ['content'], 'pipeline_snapshot' => ['pipeline' => 'single_step']]));
     }
 
-    /** Input: cấu hình cũ còn mode B. Output: run mới snapshot C và budget ba lượt. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm thử cấu hình cũ còn mode B
+     * =====================================================================
+     *
+     * INPUT:
+     * - cấu hình cũ còn mode B.
+     *
+     * OUTPUT:
+     * - run mới snapshot C và budget ba lượt.
+     *
+     * SIDE EFFECT:
+     * - Chỉ xử lý fixture hoặc dữ liệu trong database test; không gọi AI thật hay sửa dữ liệu ứng dụng.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
+     * =====================================================================
+     */
     public function test_new_run_forces_three_steps_even_with_legacy_configuration(): void
     {
         config()->set('ai-content.pipeline', 'single_step');
@@ -354,10 +548,21 @@ class AiTask2RunApiTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: taxonomy sửa trên candidate và lựa chọn cũ trống.
-     * OUTPUT: child giữ lựa chọn thủ công mới nhất, không lấy taxonomy AI cũ.
-     * SIDE EFFECT: queue fake, chỉ tạo child trong database test.
-
+     * CHỨC NĂNG: Kiểm thử taxonomy sửa trên candidate và lựa chọn cũ trống
+     * =====================================================================
+     *
+     * INPUT:
+     * - taxonomy sửa trên candidate và lựa chọn cũ trống.
+     *
+     * OUTPUT:
+     * - child giữ lựa chọn thủ công mới nhất, không lấy taxonomy AI cũ.
+     *
+     * SIDE EFFECT:
+     * - queue fake, chỉ tạo child trong database test.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_regenerate_preserves_edited_manual_taxonomy_and_clears_legacy_ai_taxonomy(): void
@@ -378,10 +583,21 @@ class AiTask2RunApiTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: apply version cũ, rồi version hiện tại với taxonomy thủ công.
-     * OUTPUT: stale 409 không ghi Post; version đúng tạo Post draft.
-     * SIDE EFFECT: ghi Post/provenance trong database test, không gọi AI.
-
+     * CHỨC NĂNG: Kiểm thử apply version cũ, rồi version hiện tại với taxonomy thủ công
+     * =====================================================================
+     *
+     * INPUT:
+     * - apply version cũ, rồi version hiện tại với taxonomy thủ công.
+     *
+     * OUTPUT:
+     * - stale 409 không ghi Post; version đúng tạo Post draft.
+     *
+     * SIDE EFFECT:
+     * - ghi Post/provenance trong database test, không gọi AI.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_apply_checks_candidate_version_and_uses_manual_taxonomy(): void
@@ -390,7 +606,8 @@ class AiTask2RunApiTest extends TestCase
         $category = Category::query()->create(['name' => 'Manual', 'status' => 'active']);
         $run = $this->createRun($token);
         $draft = ['title' => 'Bài mới', 'content_html' => '<p>Nội dung bài.</p>', 'category_ids' => [$category->id], 'tag_ids' => [], 'taxonomy_origin' => 'manual'];
-        $run->update(['status' => 'ready', 'result_json' => ['draft' => $draft]]);
+        // Candidate legacy giả lập; kiểm Apply/taxonomy, không giả đã chạy worker archive.
+        $run->update(['archive_version' => null, 'status' => 'ready', 'result_json' => ['draft' => $draft]]);
         $url = '/api/admin/ai-agent/candidates/'.$run->id.'/apply';
         $this->withToken($token)->postJson($url, ['fields' => ['title', 'content', 'taxonomy'], 'expected_version' => str_repeat('0', 64)])->assertConflict();
         $this->assertDatabaseCount('posts', 0);
@@ -402,10 +619,21 @@ class AiTask2RunApiTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: nguồn snapshot đã mất hoặc hết hạn.
-     * OUTPUT: yêu cầu refresh explicit, không âm thầm fetch nguồn khác.
-     * SIDE EFFECT: chỉ ghi child khi refresh_source=true; queue fake.
-
+     * CHỨC NĂNG: Kiểm thử nguồn snapshot đã mất hoặc hết hạn
+     * =====================================================================
+     *
+     * INPUT:
+     * - nguồn snapshot đã mất hoặc hết hạn.
+     *
+     * OUTPUT:
+     * - yêu cầu refresh explicit, không âm thầm fetch nguồn khác.
+     *
+     * SIDE EFFECT:
+     * - chỉ ghi child khi refresh_source=true; queue fake.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_missing_snapshot_requires_explicit_refresh(): void
@@ -419,24 +647,47 @@ class AiTask2RunApiTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: queue sync. OUTPUT: 422 trước khi lưu run hoặc gọi provider.
-     * SIDE EFFECT: không ghi database hoặc gọi AI trong HTTP request.
-
+     * CHỨC NĂNG: Kiểm thử queue sync
+     * =====================================================================
+     *
+     * INPUT:
+     * - queue sync.
+     *
+     * OUTPUT:
+     * - 422 trước khi lưu run hoặc gọi provider.
+     *
+     * SIDE EFFECT:
+     * - không ghi database hoặc gọi AI trong HTTP request.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_sync_queue_is_rejected_before_run_creation(): void
     {
         config()->set('queue.default', 'sync');
-        $this->withToken($this->token())->postJson('/api/admin/ai-agent/sessions', ['text' => 'Source'])->assertUnprocessable()->assertJsonValidationErrors('queue');
+        $this->withToken($this->token())->postJson('/api/admin/ai-agent/sessions', ['text' => 'Source', 'provider' => 'deterministic'])->assertUnprocessable()->assertJsonValidationErrors('queue');
         $this->assertDatabaseCount('ai_imports', 0);
     }
 
     /**
      * =====================================================================
-     * INPUT: parent được sửa ngay khi child ảnh được tạo sau content ready.
-     * OUTPUT: ghi image_job_id không làm mất title/content vừa sửa.
-     * SIDE EFFECT: event mô phỏng edit và Queue fake, không gọi model/ảnh thật.
-
+     * CHỨC NĂNG: Kiểm thử parent được sửa ngay khi child ảnh được tạo sau content ready
+     * =====================================================================
+     *
+     * INPUT:
+     * - parent được sửa ngay khi child ảnh được tạo sau content ready.
+     *
+     * OUTPUT:
+     * - ghi image_job_id không làm mất title/content vừa sửa.
+     *
+     * SIDE EFFECT:
+     * - event mô phỏng edit và Queue fake, không gọi model/ảnh thật.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_optional_image_metadata_does_not_overwrite_ready_candidate_edits(): void

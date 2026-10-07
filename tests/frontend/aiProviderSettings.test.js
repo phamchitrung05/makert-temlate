@@ -78,7 +78,7 @@ describe('AI settings orchestration', () => {
 
     service.list.mockRejectedValue(new Error('Load failed'))
     await expect(state.load()).rejects.toThrow('Load failed')
-    expect(state.error.value).toBe('Load failed')
+    expect(state.error.value).toBe('Không thể tải cấu hình AI. Hãy thử lại.')
     expect(state.loading.value).toBe(false)
     service.saveProvider.mockRejectedValue(new Error('Write failed'))
     await expect(state.saveProvider({ name: 'Test' })).rejects.toThrow('Write failed')

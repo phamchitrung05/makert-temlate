@@ -7,9 +7,11 @@
  * =====================================================================
  */
 import { $api } from '@/utils/api'
+import { SETTINGS_REQUEST_TIMEOUT_MS } from '@/services/settings'
 /* eslint-disable camelcase -- Request fields follow the Laravel API contract. */
 
 const unwrap = response => response?.success && 'data' in response ? response.data : response
+const settingsRequestOptions = { timeout: SETTINGS_REQUEST_TIMEOUT_MS, retry: 0 }
 
 export const aiProviderSettingsService = {
   /**
@@ -23,7 +25,7 @@ export const aiProviderSettingsService = {
    * =====================================================================
    */
   async list() {
-    return unwrap(await $api('/admin/settings/ai'))
+    return unwrap(await $api('/admin/settings/ai', settingsRequestOptions))
   },
 
   /**
@@ -118,6 +120,6 @@ export const aiProviderSettingsService = {
    * =====================================================================
    */
   async updateSettings(payload) {
-    return unwrap(await $api('/admin/settings/ai/settings', { method: 'PUT', body: payload }))
+    return unwrap(await $api('/admin/settings/ai/settings', { ...settingsRequestOptions, method: 'PUT', body: payload }))
   },
 }

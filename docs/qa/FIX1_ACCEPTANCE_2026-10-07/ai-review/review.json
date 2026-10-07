@@ -1,0 +1,3368 @@
+{
+  "version": "article.quality.ai_review.v1",
+  "review_date": "2026-10-07",
+  "timezone": "Asia/Bangkok",
+  "reviewer": {
+    "name": "Codex",
+    "type": "ai",
+    "independent_human_reviewer": false,
+    "blind_review": false
+  },
+  "scores_filled_by_agent": true,
+  "bundle_sha256": "988b08b2c84bd9726727cedd3ba935a39fb5fe6b511a119d266676c33f995036",
+  "scope": {
+    "arms": [
+      "C"
+    ],
+    "manifest_path": "docs/qa/task2-quality/corpus-v2/manifest.json",
+    "study_path": "docs/qa/task2-quality/study-2026-10-05-corpus-v2",
+    "rubric_path": "docs/quality/AI_ARTICLE_QUALITY_EVALUATION.md",
+    "fact_standard_status": "ai_proposed_not_human_approved",
+    "accuracy_meaning": "Chưa phát hiện lỗi dữ kiện quan trọng so với snapshot/brief được đọc; không xác nhận tính đúng hay hiện hành của nguồn ngoài snapshot.",
+    "style_meaning": "Năm điểm rubric 1–5; trung bình văn phong chỉ để đọc nhanh, không bù lỗi accuracy và không phải điểm nghiệm thu.",
+    "fact_unit_meaning": "Một đơn vị gồm claim và điều kiện liên quan. Chỉ tính dữ kiện được đề xuất là quan trọng trong brief; không cộng mục lục/frontmatter/metadata ảnh như facts văn bản.",
+    "editing_meaning": "Phút và số sửa thực tế để null vì chưa biên tập/đo; nhận xét cần sửa là đề xuất, không phải công sửa đã thực hiện.",
+    "additional_project_provider_api_calls": 0,
+    "external_research_performed": false,
+    "apply_or_publish_performed": false,
+    "historical_corpus_or_artifact_modified": false,
+    "human_csv_modified": false
+  },
+  "summary": {
+    "cases": 20,
+    "articles_reviewed": 19,
+    "no_candidate": 1,
+    "accuracy_pass_against_frozen_source": 19,
+    "ai_proposed_fact_units_expected": 185,
+    "ai_proposed_fact_units_preserved": 185,
+    "critical_errors_detected": 0,
+    "major_errors_detected": 0,
+    "minor_factual_errors_detected": 0,
+    "style_average_mean_1_5": 4.49,
+    "style_average_median_1_5": 4.4,
+    "score_medians": {
+      "naturalness_1_5": 4,
+      "usefulness_1_5": 5,
+      "structure_1_5": 5,
+      "repetition_1_5": 4,
+      "brief_style_1_5": 4
+    },
+    "measured_editing_minutes": null,
+    "human_reviews_completed": 0,
+    "acceptance_status": "pending_human_and_owner",
+    "original_study_results_changed": false
+  },
+  "limitations": [
+    "Một lượt chấm của AI, không phải hai người đọc độc lập. Đã biết đây là nhánh C và từng xem báo cáo kỹ thuật; không gọi là chấm mù.",
+    "185 đơn vị dữ kiện là danh sách đề xuất do AI lập từ source blocks sau khi đọc; chưa được con người duyệt và không phải ledger Analyze.",
+    "Các điểm pass chỉ nói về trung thành phạm vi nguồn đã freeze. Không xác nhận mốc thống kê, giá vé, gói dịch vụ, lịch sử, bảo trì công cụ hoặc độ hoạt động của URL hiện nay.",
+    "Chưa nhìn pixel ảnh, chưa nhập/gắn/regenerate MediaAsset và chưa chạy code ví dụ.",
+    "Nguồn một số ca không đủ coverage mục tiêu: Q03 chỉ mục lục migration; Q06 không có CLI; Q12 chưa so sánh trade-off; Q14 chỉ khái niệm; Q26 thiếu ngày bắt đầu vận hành.",
+    "Q33 chưa có candidate của study gốc; không dùng output của phiên khác để bù.",
+    "Không có baseline A hay đánh giá đối chứng mới; không kết luận C tốt hơn nhánh khác, temperature 0 tốt hơn 0.2 hoặc giảm công biên tập."
+  ],
+  "recommendations": [
+    {
+      "priority": 1,
+      "cases": [
+        "Q18"
+      ],
+      "action": "Rút cảnh báo lặp, gom một mục giới hạn nguồn cũ; giữ cảnh báo đặc thù về đơn vị Internet, điều kiện an toàn, giá và dữ liệu chưa xác minh."
+    },
+    {
+      "priority": 2,
+      "cases": [
+        "Q08",
+        "Q09",
+        "Q12"
+      ],
+      "action": "Rút đoạn diễn giải lặp; giải nghĩa thuật ngữ khi xuất hiện. Giữ toàn bộ code và điều kiện/key/value."
+    },
+    {
+      "priority": 3,
+      "cases": [
+        "Q03",
+        "Q06",
+        "Q12",
+        "Q14",
+        "Q26"
+      ],
+      "action": "Chuẩn bị corpus phiên mới có đoạn nguồn đúng coverage mục tiêu; giữ nguyên snapshot/study hiện tại."
+    },
+    {
+      "priority": 4,
+      "cases": [
+        "Q09",
+        "Q12",
+        "Q17"
+      ],
+      "action": "Trước dùng để đăng, xác minh các href github.com/api/... hoặc github.com/guide/... được kế thừa từ snapshot. Chưa có kết luận URL hoạt động/không hoạt động trong lần chấm này."
+    },
+    {
+      "priority": 5,
+      "cases": [
+        "Q33"
+      ],
+      "action": "Cần output C trong một study mới đủ mẫu để đánh giá bảng; bài timeout không được gán điểm văn phong thấp."
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "Q01",
+      "review_state": "ai_reviewed",
+      "reviewer_type": "ai",
+      "candidate_available": true,
+      "source_path": "docs/qa/task2-quality/corpus-v2/Q01.json",
+      "artifact_path": "docs/qa/task2-quality/study-2026-10-05-corpus-v2/Q01-C.json",
+      "source_sha256": "1068bf4531bce9a9d933018fdc0664a5ce96cc4b6afcdd5aa7503cb6581f8777",
+      "artifact_sha256": "54568530e264acb217150f402af9b86fba62b3e5661c1e4576ea3402f2ed8d2e",
+      "accuracy_gate": "pass_against_frozen_source",
+      "factual_error_counts": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0
+      },
+      "factual_errors": [],
+      "important_facts_expected": 4,
+      "important_facts_preserved": 4,
+      "important_facts": [
+        {
+          "id": "F01",
+          "source_block_ids": [
+            "S002"
+          ],
+          "claim": "Reactivity Transform từng là tính năng thử nghiệm và bị loại bỏ ở Vue 3.4.",
+          "candidate_excerpts": [
+            "từng là tính năng thử nghiệm",
+            "đã bị loại bỏ trong Vue 3.4"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F02",
+          "source_block_ids": [
+            "S003"
+          ],
+          "claim": "Nếu vẫn muốn dùng thì có thể dùng qua plugin Vue Macros.",
+          "candidate_excerpts": [
+            "qua plugin Vue Macros"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F03",
+          "source_block_ids": [
+            "S004"
+          ],
+          "claim": "Tính năng chỉ dành cho Composition API.",
+          "candidate_excerpts": [
+            "chỉ dành cho Composition API"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F04",
+          "source_block_ids": [
+            "S004"
+          ],
+          "claim": "Cần một bước build.",
+          "candidate_excerpts": [
+            "cần một bước build"
+          ],
+          "status": "preserved"
+        }
+      ],
+      "scores": {
+        "naturalness_1_5": 5,
+        "usefulness_1_5": 5,
+        "structure_1_5": 5,
+        "repetition_1_5": 5,
+        "brief_style_1_5": 5
+      },
+      "style_average_1_5": 5,
+      "assessment": "Tin ngắn gọn, mở ngay bằng thay đổi chính, giữ hai liên kết tham khảo và hai điều kiện sử dụng. Không thấy phần kéo dài hoặc bịa hướng dẫn.",
+      "editorial_findings": [],
+      "source_limitations": [
+        "Chỉ chấm thông báo ngắn trong snapshot; chưa kiểm tình trạng plugin hiện nay."
+      ],
+      "preservation": {
+        "source_pre_blocks": 0,
+        "source_pre_blocks_preserved_exactly": 0,
+        "source_urls_absent_from_output": [],
+        "source_image_metadata_count": 0,
+        "pixels_reviewed": false,
+        "code_executed": false,
+        "live_urls_verified": false
+      },
+      "editing": {
+        "actual_minutes": null,
+        "fact_edits": null,
+        "expression_edits": null,
+        "paragraphs_added": null,
+        "paragraphs_removed": null,
+        "reason": "Chỉ đánh giá bài đã lưu; chưa sửa đến mức duyệt hoặc đo thời gian thực tế."
+      }
+    },
+    {
+      "case_id": "Q02",
+      "review_state": "ai_reviewed",
+      "reviewer_type": "ai",
+      "candidate_available": true,
+      "source_path": "docs/qa/task2-quality/corpus-v2/Q02.json",
+      "artifact_path": "docs/qa/task2-quality/study-2026-10-05-corpus-v2/Q02-C.json",
+      "source_sha256": "6884fedc06b7ae1f4e267bbcb02e4917d106e060cdb659a6f2f432c94dc6851d",
+      "artifact_sha256": "83366aece5150fef6a715be175673f71b6f52ba5d9af44a5300c022e993abd5b",
+      "accuracy_gate": "pass_against_frozen_source",
+      "factual_error_counts": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0
+      },
+      "factual_errors": [],
+      "important_facts_expected": 10,
+      "important_facts_preserved": 10,
+      "important_facts": [
+        {
+          "id": "F01",
+          "source_block_ids": [
+            "S006"
+          ],
+          "claim": "Laravel và các gói chính chủ tuân theo Semantic Versioning.",
+          "candidate_excerpts": [
+            "Laravel và các gói chính chủ khác tuân theo Semantic Versioning"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F02",
+          "source_block_ids": [
+            "S006"
+          ],
+          "claim": "Bản major phát hành hằng năm khoảng quý I.",
+          "candidate_excerpts": [
+            "phát hành hằng năm, vào khoảng quý I"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F03",
+          "source_block_ids": [
+            "S006"
+          ],
+          "claim": "Minor và patch có thể phát hành thường xuyên tới mức hằng tuần.",
+          "candidate_excerpts": [
+            "có thể ra thường xuyên tới mức hằng tuần"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F04",
+          "source_block_ids": [
+            "S006"
+          ],
+          "claim": "Minor và patch không được chứa breaking changes.",
+          "candidate_excerpts": [
+            "các bản này không được chứa thay đổi phá vỡ tương thích"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F05",
+          "source_block_ids": [
+            "S007"
+          ],
+          "claim": "Luôn dùng ràng buộc phiên bản như ^12.0 khi khai báo framework/components.",
+          "candidate_excerpts": [
+            "bạn nên luôn dùng ràng buộc phiên bản như ^12.0"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F06",
+          "source_block_ids": [
+            "S007"
+          ],
+          "claim": "Bản major có breaking changes.",
+          "candidate_excerpts": [
+            "các bản major có thay đổi phá vỡ tương thích"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F07",
+          "source_block_ids": [
+            "S007"
+          ],
+          "claim": "Nâng cấp trong một ngày hoặc ít hơn là mục tiêu của Laravel, không phải bảo đảm cho mọi ứng dụng.",
+          "candidate_excerpts": [
+            "Đây là mục tiêu của dự án, không phải bảo đảm"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F08",
+          "source_block_ids": [
+            "S009"
+          ],
+          "claim": "Named arguments không thuộc hướng dẫn tương thích ngược.",
+          "candidate_excerpts": [
+            "Cách gọi này không thuộc phạm vi hướng dẫn về tương thích ngược của Laravel"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F09",
+          "source_block_ids": [
+            "S009"
+          ],
+          "claim": "Laravel có thể đổi tên tham số khi cần cải thiện codebase.",
+          "candidate_excerpts": [
+            "dự án có thể đổi tên tham số khi cần cải thiện mã nguồn"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F10",
+          "source_block_ids": [
+            "S009"
+          ],
+          "claim": "Cần dùng named arguments thận trọng vì tên tham số có thể thay đổi.",
+          "candidate_excerpts": [
+            "cần tính đến khả năng tên tham số thay đổi trong tương lai"
+          ],
+          "status": "preserved"
+        }
+      ],
+      "scores": {
+        "naturalness_1_5": 4,
+        "usefulness_1_5": 5,
+        "structure_1_5": 5,
+        "repetition_1_5": 4,
+        "brief_style_1_5": 4
+      },
+      "style_average_1_5": 4.4,
+      "assessment": "Giữ đúng nhịp phát hành, ^12.0 và ngoại lệ named arguments; diễn giải mục tiêu một ngày đúng mức. Mở bài và phần sau lặp lại vài quy tắc.",
+      "editorial_findings": [
+        {
+          "candidate_excerpt": "Bản major của Laravel có thay đổi phá vỡ tương thích",
+          "issue": "Ý major/minor/patch được nhắc lại ở mở bài, danh sách và phần nâng cấp.",
+          "proposed_change": "Rút mở bài còn vấn đề tương thích và ngoại lệ named arguments; giữ chi tiết trong từng mục.",
+          "kind": "editorial_not_factual"
+        }
+      ],
+      "source_limitations": [
+        "Ba liên kết mục lục đầu nguồn không có trong bài mới; đây là điều hướng, không phải mất nội dung body.",
+        "Chưa chấm độ đúng hiện hành ngoài commit nguồn."
+      ],
+      "preservation": {
+        "source_pre_blocks": 0,
+        "source_pre_blocks_preserved_exactly": 0,
+        "source_urls_absent_from_output": [
+          "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#versioning-scheme",
+          "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#support-policy",
+          "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/releases.md#laravel-12"
+        ],
+        "source_image_metadata_count": 0,
+        "pixels_reviewed": false,
+        "code_executed": false,
+        "live_urls_verified": false
+      },
+      "editing": {
+        "actual_minutes": null,
+        "fact_edits": null,
+        "expression_edits": null,
+        "paragraphs_added": null,
+        "paragraphs_removed": null,
+        "reason": "Chỉ đánh giá bài đã lưu; chưa sửa đến mức duyệt hoặc đo thời gian thực tế."
+      }
+    },
+    {
+      "case_id": "Q03",
+      "review_state": "ai_reviewed",
+      "reviewer_type": "ai",
+      "candidate_available": true,
+      "source_path": "docs/qa/task2-quality/corpus-v2/Q03.json",
+      "artifact_path": "docs/qa/task2-quality/study-2026-10-05-corpus-v2/Q03-C.json",
+      "source_sha256": "f9764ab23d536ebde3b70bc4d8b8195a4c64b65d6fccec55cd32ae789cdd73f9",
+      "artifact_sha256": "ea4901fec29f5286a92c8dcb79c9b66e691db28daf750c7024d6cd740739de20",
+      "accuracy_gate": "pass_against_frozen_source",
+      "factual_error_counts": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0
+      },
+      "factual_errors": [],
+      "important_facts_expected": 4,
+      "important_facts_preserved": 4,
+      "important_facts": [
+        {
+          "id": "F01",
+          "source_block_ids": [
+            "S002"
+          ],
+          "claim": "Phạm vi nâng cấp là từ Laravel 11.x lên 12.0.",
+          "candidate_excerpts": [
+            "nâng cấp Laravel từ 11.x lên 12.0"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F02",
+          "source_block_ids": [
+            "S003"
+          ],
+          "claim": "Hai mục thuộc nhóm High Impact Changes.",
+          "candidate_excerpts": [
+            "nhóm thay đổi có tác động lớn (High Impact Changes)"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F03",
+          "source_block_ids": [
+            "S004"
+          ],
+          "claim": "Một mục là cập nhật dependencies.",
+          "candidate_excerpts": [
+            "cập nhật các phụ thuộc (dependencies)"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F04",
+          "source_block_ids": [
+            "S005"
+          ],
+          "claim": "Mục còn lại là cập nhật Laravel Installer.",
+          "candidate_excerpts": [
+            "cập nhật Laravel Installer"
+          ],
+          "status": "preserved"
+        }
+      ],
+      "scores": {
+        "naturalness_1_5": 5,
+        "usefulness_1_5": 4,
+        "structure_1_5": 5,
+        "repetition_1_5": 5,
+        "brief_style_1_5": 5
+      },
+      "style_average_1_5": 4.8,
+      "assessment": "Đúng phạm vi trích đoạn và có ích như bản chỉ dẫn đọc tiếp. Bài không tự bịa lệnh, phiên bản phụ thuộc hoặc điều kiện triển khai khi nguồn chưa cung cấp.",
+      "editorial_findings": [],
+      "source_limitations": [
+        "Nguồn chỉ là tiêu đề và liên kết mục lục. Không đủ để kiểm chất lượng một hướng dẫn migration/breaking changes hoàn chỉnh."
+      ],
+      "preservation": {
+        "source_pre_blocks": 0,
+        "source_pre_blocks_preserved_exactly": 0,
+        "source_urls_absent_from_output": [],
+        "source_image_metadata_count": 0,
+        "pixels_reviewed": false,
+        "code_executed": false,
+        "live_urls_verified": false
+      },
+      "editing": {
+        "actual_minutes": null,
+        "fact_edits": null,
+        "expression_edits": null,
+        "paragraphs_added": null,
+        "paragraphs_removed": null,
+        "reason": "Chỉ đánh giá bài đã lưu; chưa sửa đến mức duyệt hoặc đo thời gian thực tế."
+      }
+    },
+    {
+      "case_id": "Q06",
+      "review_state": "ai_reviewed",
+      "reviewer_type": "ai",
+      "candidate_available": true,
+      "source_path": "docs/qa/task2-quality/corpus-v2/Q06.json",
+      "artifact_path": "docs/qa/task2-quality/study-2026-10-05-corpus-v2/Q06-C.json",
+      "source_sha256": "0bf99e7c16aa6d8cd08c069e0b3a9bc9c33d52af408e2c26652c8ff07923d03f",
+      "artifact_sha256": "0a38df38ef86d5313a6b33d63faf9de8259077d24ae6bb6904ae225d40f7f2dd",
+      "accuracy_gate": "pass_against_frozen_source",
+      "factual_error_counts": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0
+      },
+      "factual_errors": [],
+      "important_facts_expected": 4,
+      "important_facts_preserved": 4,
+      "important_facts": [
+        {
+          "id": "F01",
+          "source_block_ids": [
+            "S004"
+          ],
+          "claim": "Playground để thử Vue nhanh.",
+          "candidate_excerpts": [
+            "Thử nhanh với Playground"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F02",
+          "source_block_ids": [
+            "S005"
+          ],
+          "claim": "JSFiddle là điểm bắt đầu cho HTML thuần không có bước build.",
+          "candidate_excerpts": [
+            "HTML thuần mà không có bước build"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F03",
+          "source_block_ids": [
+            "S006"
+          ],
+          "claim": "Người quen Node.js và build tools có thể thử thiết lập build đầy đủ trong trình duyệt trên StackBlitz.",
+          "candidate_excerpts": [
+            "nếu đã quen với Node.js và khái niệm công cụ build"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F04",
+          "source_block_ids": [
+            "S007"
+          ],
+          "claim": "Scrimba là hướng dẫn tương tác về thiết lập khuyến nghị, chạy, sửa và triển khai ứng dụng Vue đầu tiên.",
+          "candidate_excerpts": [
+            "cách chạy, chỉnh sửa, triển khai ứng dụng Vue đầu tiên"
+          ],
+          "status": "preserved"
+        }
+      ],
+      "scores": {
+        "naturalness_1_5": 4,
+        "usefulness_1_5": 5,
+        "structure_1_5": 5,
+        "repetition_1_5": 4,
+        "brief_style_1_5": 5
+      },
+      "style_average_1_5": 4.6,
+      "assessment": "Bốn lựa chọn được phân biệt theo nhu cầu; URL và điều kiện lựa chọn giữ đúng. Một số nhãn và mô tả nhắc lại cùng ý.",
+      "editorial_findings": [
+        {
+          "candidate_excerpt": "thử Vue trực tiếp để làm quen nhanh",
+          "issue": "Nhãn Thử nhanh và câu mô tả lặp lại cùng tác dụng.",
+          "proposed_change": "Gộp nhãn với mô tả thành một câu ngắn cho mỗi lựa chọn.",
+          "kind": "editorial_not_factual"
+        }
+      ],
+      "source_limitations": [
+        "Ca được đặt nhóm Tutorial CLI nhưng snapshot chỉ nói về bốn cách thử trực tuyến; chưa kiểm được thứ tự lệnh CLI.",
+        "Frontmatter footer: false được bỏ đúng."
+      ],
+      "preservation": {
+        "source_pre_blocks": 0,
+        "source_pre_blocks_preserved_exactly": 0,
+        "source_urls_absent_from_output": [],
+        "source_image_metadata_count": 0,
+        "pixels_reviewed": false,
+        "code_executed": false,
+        "live_urls_verified": false
+      },
+      "editing": {
+        "actual_minutes": null,
+        "fact_edits": null,
+        "expression_edits": null,
+        "paragraphs_added": null,
+        "paragraphs_removed": null,
+        "reason": "Chỉ đánh giá bài đã lưu; chưa sửa đến mức duyệt hoặc đo thời gian thực tế."
+      }
+    },
+    {
+      "case_id": "Q07",
+      "review_state": "ai_reviewed",
+      "reviewer_type": "ai",
+      "candidate_available": true,
+      "source_path": "docs/qa/task2-quality/corpus-v2/Q07.json",
+      "artifact_path": "docs/qa/task2-quality/study-2026-10-05-corpus-v2/Q07-C.json",
+      "source_sha256": "2937d401e81895deae84db701fdbf61b51ed3e897e9f672beaf2c9f5d234d24f",
+      "artifact_sha256": "ad9962aa48b4873cd6f755d7425e07fdea753e4e7e5b1ae6158dba675df3a3b8",
+      "accuracy_gate": "pass_against_frozen_source",
+      "factual_error_counts": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0
+      },
+      "factual_errors": [],
+      "important_facts_expected": 6,
+      "important_facts_preserved": 6,
+      "important_facts": [
+        {
+          "id": "F01",
+          "source_block_ids": [
+            "S010"
+          ],
+          "claim": "Các tệp cấu hình Laravel nằm trong thư mục config.",
+          "candidate_excerpts": [
+            "nằm trong thư mục config"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F02",
+          "source_block_ids": [
+            "S010"
+          ],
+          "claim": "Mỗi option có tài liệu giải thích trong tệp.",
+          "candidate_excerpts": [
+            "Mỗi tùy chọn đều có phần giải thích trong tệp"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F03",
+          "source_block_ids": [
+            "S011"
+          ],
+          "claim": "Cấu hình gồm database, mail server, application URL và encryption key.",
+          "candidate_excerpts": [
+            "thông tin kết nối cơ sở dữ liệu, máy chủ thư, URL ứng dụng, khóa mã hóa"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F04",
+          "source_block_ids": [
+            "S013",
+            "S014"
+          ],
+          "claim": "about hiển thị tổng quan config, drivers và environment bằng php artisan about.",
+          "candidate_excerpts": [
+            "hiển thị tổng quan về cấu hình, driver và môi trường"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F05",
+          "source_block_ids": [
+            "S015",
+            "S016"
+          ],
+          "claim": "--only lọc một phần; ví dụ php artisan about --only=environment.",
+          "candidate_excerpts": [
+            "php artisan about --only=environment"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F06",
+          "source_block_ids": [
+            "S017",
+            "S018"
+          ],
+          "claim": "config:show xem chi tiết giá trị một file; ví dụ php artisan config:show database.",
+          "candidate_excerpts": [
+            "php artisan config:show database"
+          ],
+          "status": "preserved"
+        }
+      ],
+      "scores": {
+        "naturalness_1_5": 5,
+        "usefulness_1_5": 5,
+        "structure_1_5": 5,
+        "repetition_1_5": 4,
+        "brief_style_1_5": 4
+      },
+      "style_average_1_5": 4.6,
+      "assessment": "Bố cục đi từ nơi lưu cấu hình tới xem tổng quan và chi tiết. Giữ chính xác cả ba lệnh Artisan, không thêm key hoặc yêu cầu môi trường chưa có trong nguồn.",
+      "editorial_findings": [
+        {
+          "candidate_excerpt": "Đoạn tài liệu được cung cấp không nêu phiên bản Laravel hoặc PHP",
+          "issue": "Đoạn kết nói về quá trình cung cấp nguồn hơi nặng so với một hướng dẫn ngắn.",
+          "proposed_change": "Giữ ghi chú giới hạn phiên bản nếu cần; viết ngắn và tách khỏi nội dung thao tác.",
+          "kind": "editorial_not_factual"
+        }
+      ],
+      "source_limitations": [
+        "Các liên kết mục lục về environment/cache/secret khác không nằm trong phần body đã freeze; không yêu cầu tự viết thêm những phần đó.",
+        "Chưa chạy ba lệnh trên một môi trường Laravel thực tế trong đợt chấm."
+      ],
+      "preservation": {
+        "source_pre_blocks": 3,
+        "source_pre_blocks_preserved_exactly": 3,
+        "source_urls_absent_from_output": [
+          "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#introduction",
+          "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-configuration",
+          "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#environment-variable-types",
+          "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#retrieving-environment-configuration",
+          "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#determining-the-current-environment",
+          "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#encrypting-environment-files",
+          "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#accessing-configuration-values",
+          "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-caching",
+          "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#configuration-publishing",
+          "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#debug-mode",
+          "https://github.com/laravel/docs/blob/5b8c610735c8af96a3bda4e37a820b27dc40aee9/configuration.md#maintenance-mode"
+        ],
+        "source_image_metadata_count": 0,
+        "pixels_reviewed": false,
+        "code_executed": false,
+        "live_urls_verified": false
+      },
+      "editing": {
+        "actual_minutes": null,
+        "fact_edits": null,
+        "expression_edits": null,
+        "paragraphs_added": null,
+        "paragraphs_removed": null,
+        "reason": "Chỉ đánh giá bài đã lưu; chưa sửa đến mức duyệt hoặc đo thời gian thực tế."
+      }
+    },
+    {
+      "case_id": "Q08",
+      "review_state": "ai_reviewed",
+      "reviewer_type": "ai",
+      "candidate_available": true,
+      "source_path": "docs/qa/task2-quality/corpus-v2/Q08.json",
+      "artifact_path": "docs/qa/task2-quality/study-2026-10-05-corpus-v2/Q08-C.json",
+      "source_sha256": "4473638d3420d306445ef71a1a1538377de591a9162a7a0ebaac8d72eff1050c",
+      "artifact_sha256": "938464ee57cb3fddc783a2d8b163a5abb2c8cd0721607923ab24db5741f08159",
+      "accuracy_gate": "pass_against_frozen_source",
+      "factual_error_counts": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0
+      },
+      "factual_errors": [],
+      "important_facts_expected": 25,
+      "important_facts_preserved": 25,
+      "important_facts": [
+        {
+          "id": "F01",
+          "source_block_ids": [
+            "S003"
+          ],
+          "claim": "TypeScript giúp phát hiện lỗi bằng phân tích tĩnh, refactor và gợi ý kiểu trong IDE.",
+          "candidate_excerpts": [
+            "TypeScript có thể phát hiện nhiều lỗi phổ biến bằng phân tích tĩnh"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F02",
+          "source_block_ids": [
+            "S004"
+          ],
+          "claim": "Vue viết bằng TypeScript và mọi package chính thức có khai báo kiểu.",
+          "candidate_excerpts": [
+            "mọi gói Vue chính thức đều đi kèm khai báo kiểu"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F03",
+          "source_block_ids": [
+            "S006"
+          ],
+          "claim": "create-vue tạo dự án Vite có sẵn TypeScript.",
+          "candidate_excerpts": [
+            "có tùy chọn tạo dự án dùng Vite với TypeScript được thiết lập sẵn"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F04",
+          "source_block_ids": [
+            "S008"
+          ],
+          "claim": "Vite dev server/bundler chỉ transpile, không type-check.",
+          "candidate_excerpts": [
+            "dev server và bundler của Vite chỉ chuyển đổi mã, không kiểm tra kiểu"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F05",
+          "source_block_ids": [
+            "S009"
+          ],
+          "claim": "IDE phù hợp để phản hồi lỗi kiểu tức thì.",
+          "candidate_excerpts": [
+            "nhận phản hồi tức thì về lỗi kiểu"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F06",
+          "source_block_ids": [
+            "S010"
+          ],
+          "claim": "vue-tsc bọc tsc, hỗ trợ SFC, kiểm tra kiểu CLI và sinh declaration.",
+          "candidate_excerpts": [
+            "công cụ bọc tsc",
+            "sinh khai báo kiểu"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F07",
+          "source_block_ids": [
+            "S010"
+          ],
+          "claim": "Có thể chạy vue-tsc watch song song với Vite hoặc dùng checker ở worker thread.",
+          "candidate_excerpts": [
+            "ở chế độ watch song song",
+            "một worker thread riêng"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F08",
+          "source_block_ids": [
+            "S011"
+          ],
+          "claim": "Vue CLI hỗ trợ TS nhưng không còn được khuyến nghị.",
+          "candidate_excerpts": [
+            "Vue CLI có hỗ trợ TypeScript nhưng không còn được tài liệu này khuyến nghị"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F09",
+          "source_block_ids": [
+            "S013"
+          ],
+          "claim": "VS Code được khuyến nghị; Vue - Official trước tên Volar hỗ trợ TS trong SFC.",
+          "candidate_excerpts": [
+            "Vue - Official, trước đây có tên Volar"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F10",
+          "source_block_ids": [
+            "S013"
+          ],
+          "claim": "Vue - Official thay Vetur; cần tắt Vetur trong dự án Vue 3.",
+          "candidate_excerpts": [
+            "Nếu đã cài Vetur, hãy vô hiệu hóa extension này trong dự án Vue 3"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F11",
+          "source_block_ids": [
+            "S014"
+          ],
+          "claim": "WebStorm hỗ trợ Vue/TS; IDE JetBrains khác hỗ trợ sẵn hoặc qua plugin miễn phí.",
+          "candidate_excerpts": [
+            "Các IDE JetBrains khác hỗ trợ trực tiếp hoặc thông qua plugin miễn phí"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F12",
+          "source_block_ids": [
+            "S014"
+          ],
+          "claim": "Mốc 2023.2 cho Vue Language Server trong WebStorm và Vue Plugin.",
+          "candidate_excerpts": [
+            "từ phiên bản 2023.2, WebStorm và Vue Plugin tích hợp sẵn Vue Language Server"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F13",
+          "source_block_ids": [
+            "S014"
+          ],
+          "claim": "Có đường dẫn Settings để bật Volar cho mọi TS; mặc định TS 5.0 trở lên.",
+          "candidate_excerpts": [
+            "Settings > Languages & Frameworks > TypeScript > Vue",
+            "TypeScript 5.0 trở lên"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F14",
+          "source_block_ids": [
+            "S016"
+          ],
+          "claim": "create-vue có tsconfig sẵn, nền @vue/tsconfig và Project References phân biệt môi trường.",
+          "candidate_excerpts": [
+            "Project References để bảo đảm kiểu phù hợp với từng môi trường chạy"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F15",
+          "source_block_ids": [
+            "S018"
+          ],
+          "claim": "isolatedModules=true do Vite/esbuild chuyển đổi từng tệp.",
+          "candidate_excerpts": [
+            "compilerOptions.isolatedModules",
+            "Vite dùng esbuild"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F16",
+          "source_block_ids": [
+            "S018"
+          ],
+          "claim": "verbatimModuleSyntax bao hàm isolatedModules và được @vue/tsconfig dùng.",
+          "candidate_excerpts": [
+            "tùy chọn bao hàm các ràng buộc của isolatedModules"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F17",
+          "source_block_ids": [
+            "S019"
+          ],
+          "claim": "Options API cần strict hoặc noImplicitThis; nếu không this là any.",
+          "candidate_excerpts": [
+            "compilerOptions.noImplicitThis",
+            "this trong các tùy chọn component sẽ được coi là any"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F18",
+          "source_block_ids": [
+            "S020"
+          ],
+          "claim": "Alias trong build tool cần khai báo paths cho TS, gồm @/* của create-vue.",
+          "candidate_excerpts": [
+            "cấu hình cho TypeScript qua compilerOptions.paths"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F19",
+          "source_block_ids": [
+            "S021"
+          ],
+          "claim": "TSX cần jsx=preserve và jsxImportSource=vue.",
+          "candidate_excerpts": [
+            "compilerOptions.jsx thành \"preserve\"",
+            "compilerOptions.jsxImportSource thành \"vue\""
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F20",
+          "source_block_ids": [
+            "S026"
+          ],
+          "claim": "Type checker cần toàn bộ module graph nên không phù hợp đặt trong bước transform từng module.",
+          "candidate_excerpts": [
+            "kiểm tra kiểu cần biết toàn bộ đồ thị module"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F21",
+          "source_block_ids": [
+            "S027"
+          ],
+          "claim": "ts-loader chỉ kiểm mã sau transform nên không khớp với IDE/vue-tsc ánh xạ source.",
+          "candidate_excerpts": [
+            "ts-loader chỉ kiểm tra kiểu của mã sau chuyển đổi"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F22",
+          "source_block_ids": [
+            "S028"
+          ],
+          "claim": "Kiểm kiểu cùng thread/process với transform làm chậm build.",
+          "candidate_excerpts": [
+            "ảnh hưởng đáng kể đến tốc độ build toàn ứng dụng"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F23",
+          "source_block_ids": [
+            "S029"
+          ],
+          "claim": "IDE đã type-check ở process riêng; làm chậm dev vì transform là trade-off không hợp lý.",
+          "candidate_excerpts": [
+            "IDE đã kiểm tra kiểu trong một process riêng"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F24",
+          "source_block_ids": [
+            "S030"
+          ],
+          "claim": "Vue 3 + TS qua Vue CLI được khuyến nghị chuyển sang Vite.",
+          "candidate_excerpts": [
+            "tài liệu khuyến nghị chuyển sang Vite"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F25",
+          "source_block_ids": [
+            "S030"
+          ],
+          "claim": "CLI transpile-only là công việc đang thực hiện, chưa xác nhận đã phát hành.",
+          "candidate_excerpts": [
+            "không phải xác nhận tính năng đã phát hành"
+          ],
+          "status": "preserved"
+        }
+      ],
+      "scores": {
+        "naturalness_1_5": 4,
+        "usefulness_1_5": 4,
+        "structure_1_5": 5,
+        "repetition_1_5": 4,
+        "brief_style_1_5": 4
+      },
+      "style_average_1_5": 4.2,
+      "assessment": "Coverage kỹ thuật tốt: giữ các key/value, đường dẫn IDE, mốc phiên bản và trạng thái tính năng đang phát triển. Hướng dẫn dài và nhiều thuật ngữ khiến người mới cần đọc chậm.",
+      "editorial_findings": [
+        {
+          "candidate_excerpt": "kiểm tra kiểu cần biết toàn bộ đồ thị module",
+          "issue": "Lý do tách type checking được trình bày ở mở bài rồi quay lại giải thích dài ở phần ts-loader.",
+          "proposed_change": "Rút mở bài; dành giải thích chi tiết cho mục ts-loader và thêm một câu dẫn đường cho người mới.",
+          "kind": "editorial_not_factual"
+        },
+        {
+          "candidate_excerpt": "một worker thread riêng",
+          "issue": "Một số thuật ngữ worker thread/module graph xuất hiện chưa có giải nghĩa ngắn.",
+          "proposed_change": "Giải thích ngay khi xuất hiện; giữ nguyên mọi điều kiện và key cấu hình.",
+          "kind": "editorial_not_factual"
+        }
+      ],
+      "source_limitations": [
+        "Không cài IDE/build tools hoặc chạy kiểm tra kiểu trong đợt chấm.",
+        "Snapshot có mốc 2023.2 và TS 5.0; điểm chỉ phản ánh trung thành nguồn, không xác nhận công cụ hiện nay."
+      ],
+      "preservation": {
+        "source_pre_blocks": 0,
+        "source_pre_blocks_preserved_exactly": 0,
+        "source_urls_absent_from_output": [],
+        "source_image_metadata_count": 0,
+        "pixels_reviewed": false,
+        "code_executed": false,
+        "live_urls_verified": false
+      },
+      "editing": {
+        "actual_minutes": null,
+        "fact_edits": null,
+        "expression_edits": null,
+        "paragraphs_added": null,
+        "paragraphs_removed": null,
+        "reason": "Chỉ đánh giá bài đã lưu; chưa sửa đến mức duyệt hoặc đo thời gian thực tế."
+      }
+    },
+    {
+      "case_id": "Q09",
+      "review_state": "ai_reviewed",
+      "reviewer_type": "ai",
+      "candidate_available": true,
+      "source_path": "docs/qa/task2-quality/corpus-v2/Q09.json",
+      "artifact_path": "docs/qa/task2-quality/study-2026-10-05-corpus-v2/Q09-C.json",
+      "source_sha256": "e5d1dcb89581d54cc41faf4d5c47b75bcc3eea04463168580ebf754e791e5df9",
+      "artifact_sha256": "a26e60f8a62655ade934242ec68e6c1e136715f780f8482c2b67cd861d41a6cb",
+      "accuracy_gate": "pass_against_frozen_source",
+      "factual_error_counts": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0
+      },
+      "factual_errors": [],
+      "important_facts_expected": 10,
+      "important_facts_preserved": 10,
+      "important_facts": [
+        {
+          "id": "F01",
+          "source_block_ids": [
+            "S003"
+          ],
+          "claim": "Computed tính derived values; watcher dùng cho side effects như DOM/async-state.",
+          "candidate_excerpts": [
+            "Những tác động phụ này là trường hợp sử dụng watcher"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F02",
+          "source_block_ids": [
+            "S004",
+            "S005"
+          ],
+          "claim": "Options API watch chạy khi property reactive đổi; chỉ gọi API nếu question chứa ?.",
+          "candidate_excerpts": [
+            "chỉ gọi API lấy câu trả lời nếu câu hỏi chứa dấu ?"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F03",
+          "source_block_ids": [
+            "S005"
+          ],
+          "claim": "Ví dụ đặt loading, fetch yesno API, đọc answer, bắt lỗi và reset loading trong finally.",
+          "candidate_excerpts": [
+            "Khối finally đặt loading về false"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F04",
+          "source_block_ids": [
+            "S006"
+          ],
+          "claim": "Template dùng v-model question, disabled loading và hiển thị answer.",
+          "candidate_excerpts": [
+            "v-model liên kết ô nhập với question"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F05",
+          "source_block_ids": [
+            "S008",
+            "S009"
+          ],
+          "claim": "Dot path trong Options watch chỉ hỗ trợ đường dẫn đơn giản, không hỗ trợ biểu thức.",
+          "candidate_excerpts": [
+            "chỉ hỗ trợ đường dẫn đơn giản, không hỗ trợ biểu thức"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F06",
+          "source_block_ids": [
+            "S010",
+            "S011"
+          ],
+          "claim": "Composition watch nhận ref và callback async, cập nhật qua .value.",
+          "candidate_excerpts": [
+            "watch nhận trực tiếp ref question và một callback async"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F07",
+          "source_block_ids": [
+            "S014"
+          ],
+          "claim": "Nguồn watch có ref/computed ref, reactive object, getter hoặc mảng.",
+          "candidate_excerpts": [
+            "Một ref, kể cả computed ref."
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F08",
+          "source_block_ids": [
+            "S015"
+          ],
+          "claim": "Ví dụ theo dõi ref x, getter tổng x+y và mảng x/getter y.",
+          "candidate_excerpts": [
+            "theo dõi nhiều nguồn bằng mảng [x, () => y.value]"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F09",
+          "source_block_ids": [
+            "S016",
+            "S017"
+          ],
+          "claim": "Không watch trực tiếp obj.count vì đó là giá trị số.",
+          "candidate_excerpts": [
+            "Truyền giá trị đó vào watch không cung cấp nguồn reactive cần theo dõi"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F10",
+          "source_block_ids": [
+            "S018",
+            "S019"
+          ],
+          "claim": "Dùng getter () => obj.count.",
+          "candidate_excerpts": [
+            "hãy truyền getter () => obj.count"
+          ],
+          "status": "preserved"
+        }
+      ],
+      "scores": {
+        "naturalness_1_5": 4,
+        "usefulness_1_5": 5,
+        "structure_1_5": 4,
+        "repetition_1_5": 4,
+        "brief_style_1_5": 4
+      },
+      "style_average_1_5": 4.2,
+      "assessment": "Giữ toàn bộ bảy khối code, xử lý try/catch/finally và giới hạn nguồn watch. Giải thích đủ cho người mới nhưng hai ví dụ đầy đủ cộng diễn giải khiến bài nặng.",
+      "editorial_findings": [
+        {
+          "candidate_excerpt": "Luồng lấy câu trả lời và xử lý lỗi giống ví dụ Options API",
+          "issue": "Sau khi đã có cả hai code mẫu đầy đủ, phần diễn giải còn nhắc lại nhiều bước.",
+          "proposed_change": "Giữ cả code theo yêu cầu bảo toàn; rút diễn giải ở ví dụ thứ hai chỉ còn điểm khác .value/watch.",
+          "kind": "editorial_not_factual"
+        },
+        {
+          "candidate_excerpt": "Đối số đầu tiên của watch có thể là:",
+          "issue": "Phần source types rồi phần giải thích code nhắc lại danh sách vừa nêu.",
+          "proposed_change": "Gộp diễn giải với ví dụ tương ứng để giảm chuyển qua lại.",
+          "kind": "editorial_not_factual"
+        }
+      ],
+      "source_limitations": [
+        "Các API link github.com/api/... đã nằm trong nguồn; chưa kiểm chúng trực tuyến.",
+        "Chưa chạy ví dụ hoặc kiểm race condition/cancellation ngoài đoạn nguồn."
+      ],
+      "preservation": {
+        "source_pre_blocks": 7,
+        "source_pre_blocks_preserved_exactly": 7,
+        "source_urls_absent_from_output": [],
+        "source_image_metadata_count": 0,
+        "pixels_reviewed": false,
+        "code_executed": false,
+        "live_urls_verified": false
+      },
+      "editing": {
+        "actual_minutes": null,
+        "fact_edits": null,
+        "expression_edits": null,
+        "paragraphs_added": null,
+        "paragraphs_removed": null,
+        "reason": "Chỉ đánh giá bài đã lưu; chưa sửa đến mức duyệt hoặc đo thời gian thực tế."
+      }
+    },
+    {
+      "case_id": "Q12",
+      "review_state": "ai_reviewed",
+      "reviewer_type": "ai",
+      "candidate_available": true,
+      "source_path": "docs/qa/task2-quality/corpus-v2/Q12.json",
+      "artifact_path": "docs/qa/task2-quality/study-2026-10-05-corpus-v2/Q12-C.json",
+      "source_sha256": "672b41ad5f596d54002422c8a2d24fece323d72575c14145e0fc0ebdfa14a5d7",
+      "artifact_sha256": "03546c1ddb578c5271a680caa6a41e5b9cddbb5865f37a30aa721a0921d68945",
+      "accuracy_gate": "pass_against_frozen_source",
+      "factual_error_counts": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0
+      },
+      "factual_errors": [],
+      "important_facts_expected": 11,
+      "important_facts_preserved": 11,
+      "important_facts": [
+        {
+          "id": "F01",
+          "source_block_ids": [
+            "S003"
+          ],
+          "claim": "FAQ gốc giả định đã biết Vue, đặc biệt Vue 2/Options API.",
+          "candidate_excerpts": [
+            "FAQ gốc dành cho người đã có kinh nghiệm với Vue"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F02",
+          "source_block_ids": [
+            "S005"
+          ],
+          "claim": "Composition API dùng imported functions thay khai báo options.",
+          "candidate_excerpts": [
+            "bằng các hàm được import, thay vì khai báo các options"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F03",
+          "source_block_ids": [
+            "S006"
+          ],
+          "claim": "Reactivity API có ref/reactive để tạo reactive/computed/watchers.",
+          "candidate_excerpts": [
+            "trạng thái phản ứng, trạng thái tính toán và watcher"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F04",
+          "source_block_ids": [
+            "S007"
+          ],
+          "claim": "Lifecycle hooks gồm onMounted/onUnmounted.",
+          "candidate_excerpts": [
+            "onMounted() và onUnmounted()"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F05",
+          "source_block_ids": [
+            "S008"
+          ],
+          "claim": "Dependency Injection dùng provide/inject cùng reactivity.",
+          "candidate_excerpts": [
+            "provide() và inject()"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F06",
+          "source_block_ids": [
+            "S009"
+          ],
+          "claim": "Tích hợp sẵn ở Vue 3 và Vue 2.7.",
+          "candidate_excerpts": [
+            "tích hợp sẵn trong Vue 3 và Vue 2.7"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F07",
+          "source_block_ids": [
+            "S009"
+          ],
+          "claim": "Vue 2 cũ hơn dùng @vue/composition-api, nguồn mô tả chính thức nhưng không xác nhận bảo trì hiện tại.",
+          "candidate_excerpts": [
+            "không phải xác nhận về tình trạng bảo trì hiện tại"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F08",
+          "source_block_ids": [
+            "S009"
+          ],
+          "claim": "Vue 3 thường dùng với script setup/SFC, không phải điều kiện bắt buộc.",
+          "candidate_excerpts": [
+            "không phải điều kiện bắt buộc"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F09",
+          "source_block_ids": [
+            "S010"
+          ],
+          "claim": "Ví dụ ref(0), tăng count.value khi click và onMounted log ban đầu.",
+          "candidate_excerpts": [
+            "increment() tăng count.value và kích hoạt cập nhật"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F10",
+          "source_block_ids": [
+            "S011"
+          ],
+          "claim": "Composition API không phải functional programming; Vue mutable/fine-grained, FP nhấn immutability.",
+          "candidate_excerpts": [
+            "Composition API không phải lập trình hàm"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F11",
+          "source_block_ids": [
+            "S012"
+          ],
+          "claim": "Nút API preference nằm ở đầu sidebar trái của trang docs; hướng dẫn đọc từ đầu.",
+          "candidate_excerpts": [
+            "chọn Composition API cho toàn bộ trang, rồi đọc hướng dẫn từ đầu"
+          ],
+          "status": "preserved"
+        }
+      ],
+      "scores": {
+        "naturalness_1_5": 4,
+        "usefulness_1_5": 4,
+        "structure_1_5": 5,
+        "repetition_1_5": 4,
+        "brief_style_1_5": 4
+      },
+      "style_average_1_5": 4.2,
+      "assessment": "Định nghĩa, phiên bản và ví dụ đúng. Việc nói rõ script setup là phổ biến thay vì bắt buộc và không xác nhận bảo trì plugin hiện tại là phù hợp. Người mới còn cần giải nghĩa dependency injection.",
+      "editorial_findings": [
+        {
+          "candidate_excerpt": "hệ thống dependency injection của Vue",
+          "issue": "Định nghĩa ở phần Dependency Injection gần như lặp lại tên thuật ngữ.",
+          "proposed_change": "Thêm một giải nghĩa ngắn bằng tiếng Việt trong phạm vi nguồn; không bịa một ví dụ API mới.",
+          "kind": "editorial_not_factual"
+        }
+      ],
+      "source_limitations": [
+        "Ca gắn nhãn So sánh trade-off nhưng snapshot chưa có phần so sánh ưu/nhược; chưa kiểm được coverage mục tiêu này.",
+        "Href github.com/api/... được bảo toàn từ snapshot, chưa kiểm hoạt động.",
+        "Frontmatter outline: deep được bỏ đúng."
+      ],
+      "preservation": {
+        "source_pre_blocks": 1,
+        "source_pre_blocks_preserved_exactly": 1,
+        "source_urls_absent_from_output": [],
+        "source_image_metadata_count": 0,
+        "pixels_reviewed": false,
+        "code_executed": false,
+        "live_urls_verified": false
+      },
+      "editing": {
+        "actual_minutes": null,
+        "fact_edits": null,
+        "expression_edits": null,
+        "paragraphs_added": null,
+        "paragraphs_removed": null,
+        "reason": "Chỉ đánh giá bài đã lưu; chưa sửa đến mức duyệt hoặc đo thời gian thực tế."
+      }
+    },
+    {
+      "case_id": "Q13",
+      "review_state": "ai_reviewed",
+      "reviewer_type": "ai",
+      "candidate_available": true,
+      "source_path": "docs/qa/task2-quality/corpus-v2/Q13.json",
+      "artifact_path": "docs/qa/task2-quality/study-2026-10-05-corpus-v2/Q13-C.json",
+      "source_sha256": "18cbccdaa2dc89666ac367a80c0b7e9b9e78e7c97dfaf8db8cc0807cc9d6c414",
+      "artifact_sha256": "ea6b6e41bd276d17aea49ff174fa8d0f9fe59143a97efad9c7cbb8b26dc0622f",
+      "accuracy_gate": "pass_against_frozen_source",
+      "factual_error_counts": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0
+      },
+      "factual_errors": [],
+      "important_facts_expected": 12,
+      "important_facts_preserved": 12,
+      "important_facts": [
+        {
+          "id": "F01",
+          "source_block_ids": [
+            "S003"
+          ],
+          "claim": "Nội dung là tài liệu Vue 3.",
+          "candidate_excerpts": [
+            "tài liệu Vue 3"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F02",
+          "source_block_ids": [
+            "S004"
+          ],
+          "claim": "Vue 2 kết thúc hỗ trợ ngày 31/12/2023.",
+          "candidate_excerpts": [
+            "ngày 31/12/2023"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F03",
+          "source_block_ids": [
+            "S005"
+          ],
+          "claim": "Có Migration Guide cho nâng cấp từ Vue 2.",
+          "candidate_excerpts": [
+            "hãy tham khảo Migration Guide"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F04",
+          "source_block_ids": [
+            "S007"
+          ],
+          "claim": "Vue là framework JS xây UI trên HTML/CSS/JS, declarative và component-based.",
+          "candidate_excerpts": [
+            "mô hình lập trình khai báo và dựa trên component"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F05",
+          "source_block_ids": [
+            "S007"
+          ],
+          "claim": "Vue phát âm /vjuː/, như view.",
+          "candidate_excerpts": [
+            "Tên Vue được phát âm /vjuː/"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F06",
+          "source_block_ids": [
+            "S009"
+          ],
+          "claim": "Ví dụ data() count=0 mount #app.",
+          "candidate_excerpts": [
+            "Cách thứ nhất dùng data()"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F07",
+          "source_block_ids": [
+            "S010"
+          ],
+          "claim": "Ví dụ setup/ref(0) thay thế cùng mount #app.",
+          "candidate_excerpts": [
+            "Bạn dùng một trong hai khối JavaScript này"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F08",
+          "source_block_ids": [
+            "S011"
+          ],
+          "claim": "Template dùng @click=count++ và mustache count.",
+          "candidate_excerpts": [
+            "@click=\"count++\" tăng biến đếm"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F09",
+          "source_block_ids": [
+            "S014"
+          ],
+          "claim": "Declarative rendering mô tả HTML dựa vào JS state.",
+          "candidate_excerpts": [
+            "mô tả đầu ra HTML dựa trên trạng thái JavaScript"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F10",
+          "source_block_ids": [
+            "S015"
+          ],
+          "claim": "Reactivity tự theo dõi state và cập nhật DOM.",
+          "candidate_excerpts": [
+            "Vue tự theo dõi thay đổi trạng thái JavaScript"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F11",
+          "source_block_ids": [
+            "S017"
+          ],
+          "claim": "Cần nền HTML/CSS/JS, người mới hoàn toàn nên học nền trước.",
+          "candidate_excerpts": [
+            "hãy nắm các kiến thức nền tảng trước"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F12",
+          "source_block_ids": [
+            "S017"
+          ],
+          "claim": "Kinh nghiệm framework khác hữu ích nhưng không bắt buộc.",
+          "candidate_excerpts": [
+            "Kinh nghiệm với framework khác có ích, nhưng không bắt buộc"
+          ],
+          "status": "preserved"
+        }
+      ],
+      "scores": {
+        "naturalness_1_5": 5,
+        "usefulness_1_5": 5,
+        "structure_1_5": 5,
+        "repetition_1_5": 5,
+        "brief_style_1_5": 5
+      },
+      "style_average_1_5": 5,
+      "assessment": "Bài giải thích rõ cả hai cách viết là lựa chọn thay thế, dùng một template chung và kết nối code với hai khái niệm chính. Giữ ba code block, link học nền và mốc EOL.",
+      "editorial_findings": [],
+      "source_limitations": [
+        "Code được đối chiếu với bản đã lưu, chưa chạy. Các ký tự escape trong snapshot cần được kiểm khi xuất code để dùng thực tế.",
+        "Frontmatter footer: false không phải nội dung cần giữ."
+      ],
+      "preservation": {
+        "source_pre_blocks": 3,
+        "source_pre_blocks_preserved_exactly": 3,
+        "source_urls_absent_from_output": [],
+        "source_image_metadata_count": 0,
+        "pixels_reviewed": false,
+        "code_executed": false,
+        "live_urls_verified": false
+      },
+      "editing": {
+        "actual_minutes": null,
+        "fact_edits": null,
+        "expression_edits": null,
+        "paragraphs_added": null,
+        "paragraphs_removed": null,
+        "reason": "Chỉ đánh giá bài đã lưu; chưa sửa đến mức duyệt hoặc đo thời gian thực tế."
+      }
+    },
+    {
+      "case_id": "Q14",
+      "review_state": "ai_reviewed",
+      "reviewer_type": "ai",
+      "candidate_available": true,
+      "source_path": "docs/qa/task2-quality/corpus-v2/Q14.json",
+      "artifact_path": "docs/qa/task2-quality/study-2026-10-05-corpus-v2/Q14-C.json",
+      "source_sha256": "8675090be7976abaf557dd96f469b772b2f5242e48f6e6df796be3983977c6b1",
+      "artifact_sha256": "b2de203ecd440fef9a4e5fe569f8aacb44d406dd2f5408bf1ae77228c1292bac",
+      "accuracy_gate": "pass_against_frozen_source",
+      "factual_error_counts": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0
+      },
+      "factual_errors": [],
+      "important_facts_expected": 11,
+      "important_facts_preserved": 11,
+      "important_facts": [
+        {
+          "id": "F01",
+          "source_block_ids": [
+            "S003"
+          ],
+          "claim": "Vue component state gồm object JS reactive, sửa state làm view cập nhật.",
+          "candidate_excerpts": [
+            "khi bạn chỉnh sửa chúng, giao diện cập nhật"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F02",
+          "source_block_ids": [
+            "S005"
+          ],
+          "claim": "Reactivity là thích ứng thay đổi theo cách khai báo.",
+          "candidate_excerpts": [
+            "thích ứng với thay đổi theo cách khai báo"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F03",
+          "source_block_ids": [
+            "S006"
+          ],
+          "claim": "Ví dụ bảng tính A2=A0+A1, kết quả 3, A0/A1 đổi thì A2 đổi.",
+          "candidate_excerpts": [
+            "Khi A0 hoặc A1 thay đổi, A2 tự động cập nhật"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F04",
+          "source_block_ids": [
+            "S008",
+            "S009"
+          ],
+          "claim": "JS gán A0=2 nhưng A2 vẫn 3, không tự tính lại.",
+          "candidate_excerpts": [
+            "A2 vẫn là 3"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F05",
+          "source_block_ids": [
+            "S010",
+            "S011"
+          ],
+          "claim": "Bọc phép cập nhật A2 trong hàm update để có thể chạy lại.",
+          "candidate_excerpts": [
+            "ta viết lại phần cập nhật A2 thành một hàm"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F06",
+          "source_block_ids": [
+            "S013"
+          ],
+          "claim": "update là effect vì sửa trạng thái chương trình.",
+          "candidate_excerpts": [
+            "vì nó thay đổi trạng thái chương trình bằng cách cập nhật A2"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F07",
+          "source_block_ids": [
+            "S014"
+          ],
+          "claim": "A0/A1 là dependencies; effect là subscriber.",
+          "candidate_excerpts": [
+            "A0 và A1 là các phụ thuộc của effect"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F08",
+          "source_block_ids": [
+            "S015",
+            "S016"
+          ],
+          "claim": "whenDepsChange(update) minh họa cơ chế gọi lại khi dependency đổi, chưa phải API được triển khai.",
+          "candidate_excerpts": [
+            "hàm giả định để giải thích cơ chế cần có"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F09",
+          "source_block_ids": [
+            "S018"
+          ],
+          "claim": "Theo dõi lúc một biến được đọc.",
+          "candidate_excerpts": [
+            "Theo dõi lúc biến được đọc."
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F10",
+          "source_block_ids": [
+            "S019"
+          ],
+          "claim": "Khi effect đang chạy, đăng ký effect với các biến được đọc; sau lần đầu update subscribe A0/A1.",
+          "candidate_excerpts": [
+            "sau lần gọi update() đầu tiên"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F11",
+          "source_block_ids": [
+            "S020"
+          ],
+          "claim": "Phát hiện mutation và thông báo subscriber effects chạy lại.",
+          "candidate_excerpts": [
+            "thông báo cho tất cả effect đã đăng ký"
+          ],
+          "status": "preserved"
+        }
+      ],
+      "scores": {
+        "naturalness_1_5": 4,
+        "usefulness_1_5": 5,
+        "structure_1_5": 5,
+        "repetition_1_5": 4,
+        "brief_style_1_5": 5
+      },
+      "style_average_1_5": 4.6,
+      "assessment": "Mạch từ phép gán tới effect/dependency rõ, giữ ba khối code và ba nhiệm vụ cơ chế phản ứng. Không biến hàm minh họa thành API Vue thật.",
+      "editorial_findings": [
+        {
+          "candidate_excerpt": "Đây là mô hình khái niệm mà đoạn tài liệu dùng",
+          "issue": "Giới hạn mô hình khái niệm đã được nói ngay sau whenDepsChange và lặp ở kết.",
+          "proposed_change": "Giữ một ghi chú rõ rằng đây là hàm giả định, rút ghi chú lặp cuối.",
+          "kind": "editorial_not_factual"
+        }
+      ],
+      "source_limitations": [
+        "Snapshot chỉ là phần mở đầu khái niệm, chưa có Proxy/track/trigger để kiểm một bài chuyên sâu về implementation.",
+        "Ký hiệu bảng tính được giữ theo nguồn; chưa xác minh hoặc chạy ví dụ Excel."
+      ],
+      "preservation": {
+        "source_pre_blocks": 3,
+        "source_pre_blocks_preserved_exactly": 3,
+        "source_urls_absent_from_output": [],
+        "source_image_metadata_count": 0,
+        "pixels_reviewed": false,
+        "code_executed": false,
+        "live_urls_verified": false
+      },
+      "editing": {
+        "actual_minutes": null,
+        "fact_edits": null,
+        "expression_edits": null,
+        "paragraphs_added": null,
+        "paragraphs_removed": null,
+        "reason": "Chỉ đánh giá bài đã lưu; chưa sửa đến mức duyệt hoặc đo thời gian thực tế."
+      }
+    },
+    {
+      "case_id": "Q17",
+      "review_state": "ai_reviewed",
+      "reviewer_type": "ai",
+      "candidate_available": true,
+      "source_path": "docs/qa/task2-quality/corpus-v2/Q17.json",
+      "artifact_path": "docs/qa/task2-quality/study-2026-10-05-corpus-v2/Q17-C.json",
+      "source_sha256": "94415de4e7cc383018e7a7f081315dcb0a77a944f5742e8be938b91adab1d6dd",
+      "artifact_sha256": "502493cf1494fe3fe852e0875cbaf7a8af8abb6407ad3eda3ad8dc00259fc58b",
+      "accuracy_gate": "pass_against_frozen_source",
+      "factual_error_counts": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0
+      },
+      "factual_errors": [],
+      "important_facts_expected": 5,
+      "important_facts_preserved": 5,
+      "important_facts": [
+        {
+          "id": "F01",
+          "source_block_ids": [
+            "S003",
+            "S005"
+          ],
+          "claim": "v-text gán textContent để cập nhật text.",
+          "candidate_excerpts": [
+            "bằng cách gán thuộc tính textContent"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F02",
+          "source_block_ids": [
+            "S004"
+          ],
+          "claim": "Giá trị mong đợi là string.",
+          "candidate_excerpts": [
+            "mong đợi là string (chuỗi)"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F03",
+          "source_block_ids": [
+            "S005"
+          ],
+          "claim": "v-text ghi đè toàn bộ nội dung bên trong phần tử.",
+          "candidate_excerpts": [
+            "ghi đè toàn bộ nội dung hiện có bên trong"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F04",
+          "source_block_ids": [
+            "S005"
+          ],
+          "claim": "Cần cập nhật một phần thì dùng mustache interpolation.",
+          "candidate_excerpts": [
+            "chỉ cập nhật một phần văn bản"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F05",
+          "source_block_ids": [
+            "S006",
+            "S007"
+          ],
+          "claim": "Hai ví dụ span v-text=msg và span mustache msg tương đương.",
+          "candidate_excerpts": [
+            "hai cách viết tương đương nhau"
+          ],
+          "status": "preserved"
+        }
+      ],
+      "scores": {
+        "naturalness_1_5": 5,
+        "usefulness_1_5": 5,
+        "structure_1_5": 5,
+        "repetition_1_5": 5,
+        "brief_style_1_5": 5
+      },
+      "style_average_1_5": 5,
+      "assessment": "Ngắn và đủ: nêu ngay rủi ro ghi đè, phân biệt cập nhật toàn bộ/một phần, giữ code mẫu và link nguồn. Không kéo thành bài dài.",
+      "editorial_findings": [],
+      "source_limitations": [
+        "Link github.com/guide/... được giữ từ snapshot; chưa kiểm hoạt động.",
+        "Khối mustache thứ hai được đưa từ ví dụ inline trong source sang pre; chưa chạy code."
+      ],
+      "preservation": {
+        "source_pre_blocks": 1,
+        "source_pre_blocks_preserved_exactly": 1,
+        "source_urls_absent_from_output": [],
+        "source_image_metadata_count": 0,
+        "pixels_reviewed": false,
+        "code_executed": false,
+        "live_urls_verified": false
+      },
+      "editing": {
+        "actual_minutes": null,
+        "fact_edits": null,
+        "expression_edits": null,
+        "paragraphs_added": null,
+        "paragraphs_removed": null,
+        "reason": "Chỉ đánh giá bài đã lưu; chưa sửa đến mức duyệt hoặc đo thời gian thực tế."
+      }
+    },
+    {
+      "case_id": "Q18",
+      "review_state": "ai_reviewed",
+      "reviewer_type": "ai",
+      "candidate_available": true,
+      "source_path": "docs/qa/task2-quality/corpus-v2/Q18.json",
+      "artifact_path": "docs/qa/task2-quality/study-2026-10-05-corpus-v2/Q18-C.json",
+      "source_sha256": "2299d9d9e3f225898fd8a8348259794be0ca303c6c8064b8c29aa94400ff31be",
+      "artifact_sha256": "42ea74dd1f91281e51ac1d961fc1c95b73a691dae9cb98af9d11d0cc7cac74f0",
+      "accuracy_gate": "pass_against_frozen_source",
+      "factual_error_counts": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0
+      },
+      "factual_errors": [],
+      "important_facts_expected": 27,
+      "important_facts_preserved": 27,
+      "important_facts": [
+        {
+          "id": "F01",
+          "source_block_ids": [
+            "S001"
+          ],
+          "claim": "Star Travel đón Ovation cập cảng Việt Nam ngày 14/06/2016.",
+          "candidate_excerpts": [
+            "ngày 14/06/2016"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F02",
+          "source_block_ids": [
+            "S002"
+          ],
+          "claim": "Hơn 1.213 lượt khách Star Travel trong sáu tháng đầu năm 2016 bằng Royal Caribbean.",
+          "candidate_excerpts": [
+            "hơn 1.213 lượt khách tham quan bằng hệ thống du thuyền Royal Caribbean"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F03",
+          "source_block_ids": [
+            "S003"
+          ],
+          "claim": "Tàu thuộc Quantum, trong nhóm ba tàu nguồn nhắc.",
+          "candidate_excerpts": [
+            "thuộc dòng Quantum, trong nhóm ba du thuyền"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F04",
+          "source_block_ids": [
+            "S003"
+          ],
+          "claim": "Quy mô 18 tầng, dài 347m, ngang 41m.",
+          "candidate_excerpts": [
+            "18 tầng, dài 347 mét, ngang 41 mét"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F05",
+          "source_block_ids": [
+            "S003"
+          ],
+          "claim": "2.090 phòng, 4.905 khách, 1.500 nhân viên.",
+          "candidate_excerpts": [
+            "2.090 phòng ngủ, sức chứa 4.905 khách và 1.500 nhân viên"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F06",
+          "source_block_ids": [
+            "S003"
+          ],
+          "claim": "Nguồn gọi 168.666 tấn là tải trọng; không đổi loại đại lượng chưa xác minh.",
+          "candidate_excerpts": [
+            "Con số 168.666 tấn được gọi là “tải trọng”"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F07",
+          "source_block_ids": [
+            "S005"
+          ],
+          "claim": "Sao Bắc Đẩu cabin/cần trục cao hơn 90m và góc nhìn 360 độ.",
+          "candidate_excerpts": [
+            "độ cao hơn 90 mét so với mặt nước biển"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F08",
+          "source_block_ids": [
+            "S007"
+          ],
+          "claim": "Two70 ăn uống/giải trí, nhìn 270 độ, ngày sáng và tối cửa sổ thành màn hình.",
+          "candidate_excerpts": [
+            "tầm nhìn 270 độ",
+            "các cửa sổ trở thành màn hình trình chiếu lớn"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F09",
+          "source_block_ids": [
+            "S009"
+          ],
+          "claim": "Internet vệ tinh và số 4,26 km/giây từ nguồn phải giữ ở trạng thái bất thường, không đổi thành Mbps.",
+          "candidate_excerpts": [
+            "không nên tự đổi thành Mbps hoặc Gbps"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F10",
+          "source_block_ids": [
+            "S009"
+          ],
+          "claim": "WOWband được mô tả cấp mỗi khách để check-in/out, mở phòng, thanh toán.",
+          "candidate_excerpts": [
+            "mỗi hành khách được cấp vòng tay thông minh"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F11",
+          "source_block_ids": [
+            "S011"
+          ],
+          "claim": "Bionic chọn tablet, hai robot và hai ly/phút; không tự gán năng suất mỗi robot.",
+          "candidate_excerpts": [
+            "không nói rõ đó là năng suất chung hay của từng robot"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F12",
+          "source_block_ids": [
+            "S013"
+          ],
+          "claim": "Ripcord by iFly trải nghiệm bay theo quảng bá; chưa có điều kiện an toàn cho mọi người.",
+          "candidate_excerpts": [
+            "không phải bảo đảm an toàn cho mọi người"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F13",
+          "source_block_ids": [
+            "S015"
+          ],
+          "claim": "SeaPlex có danh sách trượt băng, bóng rổ, xe điện đụng, nhào lộn theo nguồn.",
+          "candidate_excerpts": [
+            "trượt băng nghệ thuật, bóng rổ, xe điện đụng và biểu diễn nhào lộn"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F14",
+          "source_block_ids": [
+            "S017"
+          ],
+          "claim": "Loft Suite hai tầng, ban công biển, LED 80-inch, piano.",
+          "candidate_excerpts": [
+            "hai tầng, ban công riêng hướng biển, màn hình LED 80-inch và một chiếc piano"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F15",
+          "source_block_ids": [
+            "S017"
+          ],
+          "claim": "Chỉ một số phòng có ban công màn hình ảo.",
+          "candidate_excerpts": [
+            "Một số phòng được giới thiệu có ban công màn hình ảo"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F16",
+          "source_block_ids": [
+            "S019"
+          ],
+          "claim": "18 nhà hàng, trong đó nhà hàng Ý được mô tả Jamie Oliver chỉ đạo.",
+          "candidate_excerpts": [
+            "18 nhà hàng, trong đó có nhà hàng Ý"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F17",
+          "source_block_ids": [
+            "S021"
+          ],
+          "claim": "Tour Singapore-Malaysia 03/04/2017, 4 ngày, 19.000.000đ.",
+          "candidate_excerpts": [
+            "03/04/2017",
+            "4 ngày",
+            "19.000.000đ"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F18",
+          "source_block_ids": [
+            "S022"
+          ],
+          "claim": "Tour Singapore-Malaysia 10/04/2017, 5 ngày, 20.500.000đ.",
+          "candidate_excerpts": [
+            "10/04/2017",
+            "20.500.000đ"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F19",
+          "source_block_ids": [
+            "S023"
+          ],
+          "claim": "Tour Singapore-Thái Lan 11/03 và 06/04/2017, 5 ngày, 20.900.000đ.",
+          "candidate_excerpts": [
+            "11/03/2017, 06/04/2017"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F20",
+          "source_block_ids": [
+            "S024"
+          ],
+          "claim": "Tour Singapore-Malaysia 15/03/2017, 5 ngày, 20.900.000đ.",
+          "candidate_excerpts": [
+            "15/03/2017"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F21",
+          "source_block_ids": [
+            "S025"
+          ],
+          "claim": "Tour Singapore-Thái Lan-Malaysia 06/03,19/03,29/03/2017, 6 ngày, 24.900.000đ.",
+          "candidate_excerpts": [
+            "06/03/2017, 19/03/2017, 29/03/2017",
+            "24.900.000đ"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F22",
+          "source_block_ids": [
+            "S026"
+          ],
+          "claim": "Tour Singapore-Malaysia-Thái Lan 24/03/2017, 6 ngày, 25.500.000đ.",
+          "candidate_excerpts": [
+            "24/03/2017",
+            "25.500.000đ"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F23",
+          "source_block_ids": [
+            "S020",
+            "S021",
+            "S022",
+            "S023",
+            "S024",
+            "S025",
+            "S026"
+          ],
+          "claim": "Giá trọn gói và lịch là dữ liệu năm 2017, không báo giá hiện hành hoặc chứng minh bao gồm mọi phí.",
+          "candidate_excerpts": [
+            "Bảng dưới đây là thông tin lịch sử, không phải báo giá hiện hành."
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F24",
+          "source_block_ids": [
+            "S027"
+          ],
+          "claim": "Trụ sở 96 Trần Hưng Đạo Q1, hotline 0925 122 122, tel (08) 39 201 201.",
+          "candidate_excerpts": [
+            "96 Trần Hưng Đạo",
+            "0925 122 122",
+            "(08) 39 201 201"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F25",
+          "source_block_ids": [
+            "S028"
+          ],
+          "claim": "VP Hà Nội tầng3 59 Xã Đàn Đống Đa, tel (04)39 275 288.",
+          "candidate_excerpts": [
+            "tầng 3, 59 Xã Đàn",
+            "(04) 39 275 288"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F26",
+          "source_block_ids": [
+            "S029"
+          ],
+          "claim": "VP PMH SE3-1 Mỹ Khánh3 Q7, tel (08)54 121 168.",
+          "candidate_excerpts": [
+            "SE3-1 Mỹ Khánh 3",
+            "(08) 54 121 168"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F27",
+          "source_block_ids": [
+            "S029"
+          ],
+          "claim": "Giữ email và nhãn website nguồn, không đánh tráo nhãn với href.",
+          "candidate_excerpts": [
+            "Nhãn và đích liên kết được giữ nguyên"
+          ],
+          "status": "preserved"
+        }
+      ],
+      "scores": {
+        "naturalness_1_5": 4,
+        "usefulness_1_5": 4,
+        "structure_1_5": 4,
+        "repetition_1_5": 3,
+        "brief_style_1_5": 3
+      },
+      "style_average_1_5": 3.6,
+      "assessment": "Dữ kiện tàu và sáu dòng tour được giữ đúng. Bài phân biệt dữ liệu cũ, quảng bá và điều chưa xác minh tốt, nhưng giọng giống bản kiểm toán: hầu như mỗi mục đều có đoạn cảnh báo. Cần sửa cách trình bày trước khi dùng làm bài giới thiệu trải nghiệm.",
+      "editorial_findings": [
+        {
+          "candidate_excerpt": "không phải lịch chạy hay báo giá hiện nay",
+          "issue": "Giới hạn dữ liệu cũ được nhắc ở mở bài, WOWband, SeaPlex, nhà hàng, bảng tour, liên hệ và kết.",
+          "proposed_change": "Gom cảnh báo tính hiện hành thành một ghi chú chung; chỉ giữ cảnh báo riêng cho đơn vị Internet sai, an toàn và giá thiếu điều kiện.",
+          "kind": "editorial_not_factual"
+        },
+        {
+          "candidate_excerpt": "không đủ chi tiết để khẳng định cấu hình này có ở mọi Loft Suite",
+          "issue": "Đoạn giới hạn lặp mô thức nguồn chưa đủ trên nhiều mục, làm trải nghiệm đọc bị ngắt.",
+          "proposed_change": "Viết phần tiện ích liền mạch và dành một mục cuối cho những thông tin cần xác nhận.",
+          "kind": "editorial_not_factual"
+        },
+        {
+          "candidate_excerpt": "Thông tin liên hệ trong nguồn cũ",
+          "issue": "Ba địa chỉ và điện thoại cũ kéo bài xa mục đích giới thiệu trải nghiệm.",
+          "proposed_change": "Cân nhắc chuyển liên hệ sang phụ lục giữ nguyên dữ liệu, tùy phạm vi bài người dùng muốn.",
+          "kind": "editorial_not_factual"
+        }
+      ],
+      "source_limitations": [
+        "S002 còn nêu quan hệ đại diện/đối tác Royal Caribbean. Bài bỏ chi tiết doanh nghiệp này; dưới brief giới thiệu trải nghiệm tàu, tôi xem đây là chi tiết phụ. Người đọc cần xác nhận lại phạm vi facts phải giữ.",
+        "Nguồn có đơn vị Internet bất thường, tên Two700/Two70 không nhất quán và lời quảng bá. Điểm fidelity không xác nhận tính đúng bên ngoài nguồn.",
+        "Có 11 metadata ảnh, chưa nhìn pixel hoặc kiểm ảnh được gắn vào bài."
+      ],
+      "preservation": {
+        "source_pre_blocks": 0,
+        "source_pre_blocks_preserved_exactly": 0,
+        "source_urls_absent_from_output": [],
+        "source_image_metadata_count": 11,
+        "pixels_reviewed": false,
+        "code_executed": false,
+        "live_urls_verified": false
+      },
+      "editing": {
+        "actual_minutes": null,
+        "fact_edits": null,
+        "expression_edits": null,
+        "paragraphs_added": null,
+        "paragraphs_removed": null,
+        "reason": "Chỉ đánh giá bài đã lưu; chưa sửa đến mức duyệt hoặc đo thời gian thực tế."
+      }
+    },
+    {
+      "case_id": "Q26",
+      "review_state": "ai_reviewed",
+      "reviewer_type": "ai",
+      "candidate_available": true,
+      "source_path": "docs/qa/task2-quality/corpus-v2/Q26.json",
+      "artifact_path": "docs/qa/task2-quality/study-2026-10-05-corpus-v2/Q26-C.json",
+      "source_sha256": "b642546b4c8a12366d70f47de382ef5e9d77fed6124ed9f5f401fe0c736cbe32",
+      "artifact_sha256": "f47ffd2118a4c2797b062b56f4f559b6f085957e229b37202e0994b744171eee",
+      "accuracy_gate": "pass_against_frozen_source",
+      "factual_error_counts": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0
+      },
+      "factual_errors": [],
+      "important_facts_expected": 6,
+      "important_facts_preserved": 6,
+      "important_facts": [
+        {
+          "id": "F01",
+          "source_block_ids": [
+            "S002",
+            "S006"
+          ],
+          "claim": "Lễ khánh thành diễn ra sáng 09/03/2025.",
+          "candidate_excerpts": [
+            "Sáng 09/03/2025"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F02",
+          "source_block_ids": [
+            "S006"
+          ],
+          "claim": "UBND TPHCM tổ chức tại Công viên 23/9 Quận1.",
+          "candidate_excerpts": [
+            "UBND TPHCM tổ chức lễ khánh thành"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F03",
+          "source_block_ids": [
+            "S006"
+          ],
+          "claim": "Tên tuyến Metro số1 Bến Thành-Suối Tiên.",
+          "candidate_excerpts": [
+            "Metro số 1) Bến Thành - Suối Tiên"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F04",
+          "source_block_ids": [
+            "S006"
+          ],
+          "claim": "Khách dự có Nhật Bản, lãnh đạo, đối tác trong/ngoài nước và người dân.",
+          "candidate_excerpts": [
+            "đại diện Chính phủ Nhật Bản"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F05",
+          "source_block_ids": [
+            "S003"
+          ],
+          "claim": "Nhận xét về chương mới giao thông là lời Chủ tịch UBND TPHCM, không trải nghiệm tác giả.",
+          "candidate_excerpts": [
+            "Chủ tịch UBND TPHCM nhấn mạnh"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F06",
+          "source_block_ids": [
+            "S002"
+          ],
+          "claim": "Bản tin đăng 10:55 ngày 09/03/2025.",
+          "candidate_excerpts": [
+            "đăng lúc 10:55 cùng ngày"
+          ],
+          "status": "preserved"
+        }
+      ],
+      "scores": {
+        "naturalness_1_5": 4,
+        "usefulness_1_5": 5,
+        "structure_1_5": 5,
+        "repetition_1_5": 4,
+        "brief_style_1_5": 4
+      },
+      "style_average_1_5": 4.4,
+      "assessment": "Giữ ngày, tuyến, địa điểm và người phát biểu; không suy khánh thành thành ngày bắt đầu vận hành. Tin ba đoạn phù hợp lượng nguồn, nhưng phần danh sách khách dự hơi dài.",
+      "editorial_findings": [
+        {
+          "candidate_excerpt": "Tham dự buổi lễ có đại diện Chính phủ Nhật Bản",
+          "issue": "Đoạn khách dự dài và giọng hành chính; có thể giảm nhịp đọc.",
+          "proposed_change": "Rút nhóm chức danh lặp, giữ các nhóm tham dự có ý nghĩa và attribution phát biểu.",
+          "kind": "editorial_not_factual"
+        }
+      ],
+      "source_limitations": [
+        "Snapshot không chứa ngày bắt đầu vận hành; ca này chưa kiểm được khả năng giữ hai mốc riêng khi cả hai xuất hiện.",
+        "Caption ảnh là metadata; chưa kiểm pixel/hiển thị ảnh."
+      ],
+      "preservation": {
+        "source_pre_blocks": 0,
+        "source_pre_blocks_preserved_exactly": 0,
+        "source_urls_absent_from_output": [],
+        "source_image_metadata_count": 1,
+        "pixels_reviewed": false,
+        "code_executed": false,
+        "live_urls_verified": false
+      },
+      "editing": {
+        "actual_minutes": null,
+        "fact_edits": null,
+        "expression_edits": null,
+        "paragraphs_added": null,
+        "paragraphs_removed": null,
+        "reason": "Chỉ đánh giá bài đã lưu; chưa sửa đến mức duyệt hoặc đo thời gian thực tế."
+      }
+    },
+    {
+      "case_id": "Q27",
+      "review_state": "ai_reviewed",
+      "reviewer_type": "ai",
+      "candidate_available": true,
+      "source_path": "docs/qa/task2-quality/corpus-v2/Q27.json",
+      "artifact_path": "docs/qa/task2-quality/study-2026-10-05-corpus-v2/Q27-C.json",
+      "source_sha256": "cf524d11440f1b4115dc227438add3e8a2b00eed009b56469062b53b57643413",
+      "artifact_sha256": "3777b0c5ec22839c180584be8426381757848773baff506aeccc40a43fb8d386",
+      "accuracy_gate": "pass_against_frozen_source",
+      "factual_error_counts": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0
+      },
+      "factual_errors": [],
+      "important_facts_expected": 9,
+      "important_facts_preserved": 9,
+      "important_facts": [
+        {
+          "id": "F01",
+          "source_block_ids": [
+            "S001",
+            "S002"
+          ],
+          "claim": "Năm Du lịch quốc gia và Festival Huế năm2025.",
+          "candidate_excerpts": [
+            "Năm Du lịch quốc gia và Festival Huế năm 2025"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F02",
+          "source_block_ids": [
+            "S001",
+            "S006"
+          ],
+          "claim": "Chủ đề Huế - Kinh đô xưa, vận hội mới.",
+          "candidate_excerpts": [
+            "Huế - Kinh đô xưa, vận hội mới"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F03",
+          "source_block_ids": [
+            "S002"
+          ],
+          "claim": "Dự kiến hơn170 sự kiện cấp quốc gia/cấp tỉnh.",
+          "candidate_excerpts": [
+            "dự kiến có hơn 170 sự kiện cấp quốc gia, cấp tỉnh"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F04",
+          "source_block_ids": [
+            "S002"
+          ],
+          "claim": "Mùa Xuân là Xuân Cố đô.",
+          "candidate_excerpts": [
+            "Lễ hội mùa Xuân “Xuân Cố đô”"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F05",
+          "source_block_ids": [
+            "S002"
+          ],
+          "claim": "Mùa Hạ là Kinh thành tỏa sáng.",
+          "candidate_excerpts": [
+            "Lễ hội mùa Hạ “Kinh thành tỏa sáng”"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F06",
+          "source_block_ids": [
+            "S002"
+          ],
+          "claim": "Mùa Thu là Huế vào Thu.",
+          "candidate_excerpts": [
+            "Lễ hội mùa Thu “Huế vào Thu”"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F07",
+          "source_block_ids": [
+            "S002"
+          ],
+          "claim": "Mùa Đông là Mùa Đông xứ Huế.",
+          "candidate_excerpts": [
+            "Lễ hội mùa Đông “Mùa Đông xứ Huế”"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F08",
+          "source_block_ids": [
+            "S006"
+          ],
+          "claim": "BTC họp báo sáng31/12/2024 tại Huế.",
+          "candidate_excerpts": [
+            "Sáng 31/12/2024, tại thành phố Huế"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F09",
+          "source_block_ids": [
+            "S002",
+            "S003"
+          ],
+          "claim": "Đăng14:57 ngày31/12/2024, đây là kế hoạch ở thời điểm công bố.",
+          "candidate_excerpts": [
+            "phản ánh kế hoạch tại thời điểm công bố"
+          ],
+          "status": "preserved"
+        }
+      ],
+      "scores": {
+        "naturalness_1_5": 4,
+        "usefulness_1_5": 5,
+        "structure_1_5": 4,
+        "repetition_1_5": 4,
+        "brief_style_1_5": 4
+      },
+      "style_average_1_5": 4.2,
+      "assessment": "Các tên chương trình, bốn mùa và trạng thái kế hoạch đều giữ đúng. Đoạn họp báo đặt sau danh sách chương trình làm mạch thời gian hơi quay lại.",
+      "editorial_findings": [
+        {
+          "candidate_excerpt": "Sáng 31/12/2024, tại thành phố Huế",
+          "issue": "Bối cảnh họp báo xuất hiện sau khi đã nêu kế hoạch và các nhóm chương trình.",
+          "proposed_change": "Đặt bối cảnh công bố cùng mở bài; phần sau chỉ trình bày bốn nhóm chương trình.",
+          "kind": "editorial_not_factual"
+        }
+      ],
+      "source_limitations": [
+        "Trích đoạn cuối2024 chưa có lịch chi tiết hoặc kết quả tổ chức2025; không thể đánh giá hai phần đó.",
+        "Không kiểm ảnh hoặc thực tế diễn ra sự kiện."
+      ],
+      "preservation": {
+        "source_pre_blocks": 0,
+        "source_pre_blocks_preserved_exactly": 0,
+        "source_urls_absent_from_output": [],
+        "source_image_metadata_count": 1,
+        "pixels_reviewed": false,
+        "code_executed": false,
+        "live_urls_verified": false
+      },
+      "editing": {
+        "actual_minutes": null,
+        "fact_edits": null,
+        "expression_edits": null,
+        "paragraphs_added": null,
+        "paragraphs_removed": null,
+        "reason": "Chỉ đánh giá bài đã lưu; chưa sửa đến mức duyệt hoặc đo thời gian thực tế."
+      }
+    },
+    {
+      "case_id": "Q28",
+      "review_state": "ai_reviewed",
+      "reviewer_type": "ai",
+      "candidate_available": true,
+      "source_path": "docs/qa/task2-quality/corpus-v2/Q28.json",
+      "artifact_path": "docs/qa/task2-quality/study-2026-10-05-corpus-v2/Q28-C.json",
+      "source_sha256": "536b7b6210c359fbe674decebec9003daefb917baddcc4b56994b51d5a22e898",
+      "artifact_sha256": "dadd7b7a69341dd69f1cd4507823709b7de4791df5aaa16618e312dfd60e885f",
+      "accuracy_gate": "pass_against_frozen_source",
+      "factual_error_counts": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0
+      },
+      "factual_errors": [],
+      "important_facts_expected": 9,
+      "important_facts_preserved": 9,
+      "important_facts": [
+        {
+          "id": "F01",
+          "source_block_ids": [
+            "S003"
+          ],
+          "claim": "Tên lễ hội di sản cà phê toàn cầu2025 tại Đà Lạt/Lâm Đồng.",
+          "candidate_excerpts": [
+            "dự kiến diễn ra tại Đà Lạt, tỉnh Lâm Đồng"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F02",
+          "source_block_ids": [
+            "S003"
+          ],
+          "claim": "Khoảng dự kiến18/12/2025-02/1/2026, qua hai năm.",
+          "candidate_excerpts": [
+            "từ ngày 18/12/2025 đến 02/1/2026"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F03",
+          "source_block_ids": [
+            "S003"
+          ],
+          "claim": "Hơn500 đại biểu/chuyên gia, hàng trăm rang xay quốc tế, hàng ngàn du khách là dự kiến.",
+          "candidate_excerpts": [
+            "Sự kiện dự kiến quy tụ hơn 500 đại biểu"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F04",
+          "source_block_ids": [
+            "S002"
+          ],
+          "claim": "Bản tin25/11/2025 lúc15:15.",
+          "candidate_excerpts": [
+            "đăng ngày 25/11/2025 lúc 15:15"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F05",
+          "source_block_ids": [
+            "S006"
+          ],
+          "claim": "Mốc150 năm cà phê bén rễ tại Việt Nam trong2025.",
+          "candidate_excerpts": [
+            "năm 2025 đánh dấu 150 năm"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F06",
+          "source_block_ids": [
+            "S006"
+          ],
+          "claim": "Niên vụ2024-2025 xuất khẩu8,4 tỷUSD.",
+          "candidate_excerpts": [
+            "niên vụ 2024-2025 đạt kỷ lục 8,4 tỷ USD"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F07",
+          "source_block_ids": [
+            "S006"
+          ],
+          "claim": "Mức kỷ lục là theo thời điểm nguồn, không khẳng định mãi mãi.",
+          "candidate_excerpts": [
+            "mức cao nhất tính đến thời điểm đăng bài"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F08",
+          "source_block_ids": [
+            "S006"
+          ],
+          "claim": "Nguồn mô tả Việt Nam xuất khẩu Robusta lớn nhất thế giới tại thời điểm đó.",
+          "candidate_excerpts": [
+            "khi đó Việt Nam là quốc gia xuất khẩu Robusta lớn nhất thế giới"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F09",
+          "source_block_ids": [
+            "S006"
+          ],
+          "claim": "Khoảng17% tổng sản lượng cà phê toàn cầu.",
+          "candidate_excerpts": [
+            "chiếm khoảng 17% tổng sản lượng cà phê toàn cầu"
+          ],
+          "status": "preserved"
+        }
+      ],
+      "scores": {
+        "naturalness_1_5": 4,
+        "usefulness_1_5": 5,
+        "structure_1_5": 5,
+        "repetition_1_5": 4,
+        "brief_style_1_5": 4
+      },
+      "style_average_1_5": 4.4,
+      "assessment": "Giữ số, kỳ niên vụ, tỷ lệ và khoảng ngày qua hai năm. Có attribution cho dữ liệu lịch sử và không biến kế hoạch thành sự kiện đã xảy ra.",
+      "editorial_findings": [
+        {
+          "candidate_excerpt": "không phải thông tin xác nhận lễ hội đã diễn ra",
+          "issue": "Câu xác nhận phạm vi kế hoạch hơi dài sau khi đã có dự kiến và ngày nguồn.",
+          "proposed_change": "Rút còn một ghi chú ngắn về kế hoạch tại thời điểm đăng; không bỏ từ dự kiến.",
+          "kind": "editorial_not_factual"
+        }
+      ],
+      "source_limitations": [
+        "Chỉ chấm trung thành bản tin lịch sử; không kiểm kim ngạch, thị phần hoặc sự kiện bằng nguồn cập nhật.",
+        "Có metadata một ảnh, chưa kiểm pixel."
+      ],
+      "preservation": {
+        "source_pre_blocks": 0,
+        "source_pre_blocks_preserved_exactly": 0,
+        "source_urls_absent_from_output": [],
+        "source_image_metadata_count": 1,
+        "pixels_reviewed": false,
+        "code_executed": false,
+        "live_urls_verified": false
+      },
+      "editing": {
+        "actual_minutes": null,
+        "fact_edits": null,
+        "expression_edits": null,
+        "paragraphs_added": null,
+        "paragraphs_removed": null,
+        "reason": "Chỉ đánh giá bài đã lưu; chưa sửa đến mức duyệt hoặc đo thời gian thực tế."
+      }
+    },
+    {
+      "case_id": "Q29",
+      "review_state": "ai_reviewed",
+      "reviewer_type": "ai",
+      "candidate_available": true,
+      "source_path": "docs/qa/task2-quality/corpus-v2/Q29.json",
+      "artifact_path": "docs/qa/task2-quality/study-2026-10-05-corpus-v2/Q29-C.json",
+      "source_sha256": "7bfbc627a5988356ba2268075c855ad8e5a1e8a6a197a9eb1f6f86a8df27dfad",
+      "artifact_sha256": "e2e57880e97565f2e73c2660c9624dd641a9de86009ae2b932252d46ef759379",
+      "accuracy_gate": "pass_against_frozen_source",
+      "factual_error_counts": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0
+      },
+      "factual_errors": [],
+      "important_facts_expected": 8,
+      "important_facts_preserved": 8,
+      "important_facts": [
+        {
+          "id": "F01",
+          "source_block_ids": [
+            "S004"
+          ],
+          "claim": "Số liệu thuộc năm2024.",
+          "candidate_excerpts": [
+            "Năm 2024, Việt Nam"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F02",
+          "source_block_ids": [
+            "S004"
+          ],
+          "claim": "Hơn17,5 triệu khách quốc tế.",
+          "candidate_excerpts": [
+            "hơn 17,5 triệu khách quốc tế"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F03",
+          "source_block_ids": [
+            "S004"
+          ],
+          "claim": "110 triệu lượt khách du lịch nội địa.",
+          "candidate_excerpts": [
+            "110 triệu lượt khách du lịch nội địa"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F04",
+          "source_block_ids": [
+            "S004"
+          ],
+          "claim": "Tổng thu840 nghìn tỷđồng.",
+          "candidate_excerpts": [
+            "840 nghìn tỷ đồng"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F05",
+          "source_block_ids": [
+            "S004"
+          ],
+          "claim": "Hoàn thành chỉ tiêu kế hoạch đặt từ đầu năm.",
+          "candidate_excerpts": [
+            "hoàn thành chỉ tiêu kế hoạch đặt ra từ đầu năm"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F06",
+          "source_block_ids": [
+            "S004"
+          ],
+          "claim": "Đánh giá điểm sáng là của Chính phủ/Thủ tướng.",
+          "candidate_excerpts": [
+            "được Chính phủ, Thủ tướng Chính phủ đánh giá"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F07",
+          "source_block_ids": [
+            "S002",
+            "S003"
+          ],
+          "claim": "TITC thuộc CụcDuLịch xây tài liệu tháng12/2024; cập nhật07/01/2025.",
+          "candidate_excerpts": [
+            "cập nhật ngày 07/01/2025"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F08",
+          "source_block_ids": [
+            "S003"
+          ],
+          "claim": "Tài liệu giới thiệu sự kiện/kết quả và quản lý, truyền thông, xúc tiến, quốc tế, số hóa.",
+          "candidate_excerpts": [
+            "quản lý nhà nước, truyền thông, xúc tiến quảng bá, hợp tác quốc tế và chuyển đổi số"
+          ],
+          "status": "preserved"
+        }
+      ],
+      "scores": {
+        "naturalness_1_5": 4,
+        "usefulness_1_5": 5,
+        "structure_1_5": 5,
+        "repetition_1_5": 4,
+        "brief_style_1_5": 4
+      },
+      "style_average_1_5": 4.4,
+      "assessment": "Kỳ báo cáo, lượt khách và đơn vị nghìn tỷ đồng được giữ đúng. Lời đánh giá được gắn với cơ quan phát biểu. Đoạn hai nhiều danh từ hành chính.",
+      "editorial_findings": [
+        {
+          "candidate_excerpt": "các sự kiện tiêu biểu, dấu ấn nổi bật và kết quả thực hiện",
+          "issue": "Danh sách nội dung tài liệu dài, gần văn phong thông cáo.",
+          "proposed_change": "Rút danh sách hoặc chia câu; giữ cơ quan, tên tài liệu, tháng và ngày cập nhật.",
+          "kind": "editorial_not_factual"
+        }
+      ],
+      "source_limitations": [
+        "Không kiểm lại thống kê bằng dữ liệu hiện hành; đây là thông tin kỳ2024.",
+        "Nguồn chỉ có đoạn giới thiệu tài liệu, chưa có bảng thống kê đầy đủ."
+      ],
+      "preservation": {
+        "source_pre_blocks": 0,
+        "source_pre_blocks_preserved_exactly": 0,
+        "source_urls_absent_from_output": [],
+        "source_image_metadata_count": 1,
+        "pixels_reviewed": false,
+        "code_executed": false,
+        "live_urls_verified": false
+      },
+      "editing": {
+        "actual_minutes": null,
+        "fact_edits": null,
+        "expression_edits": null,
+        "paragraphs_added": null,
+        "paragraphs_removed": null,
+        "reason": "Chỉ đánh giá bài đã lưu; chưa sửa đến mức duyệt hoặc đo thời gian thực tế."
+      }
+    },
+    {
+      "case_id": "Q30",
+      "review_state": "ai_reviewed",
+      "reviewer_type": "ai",
+      "candidate_available": true,
+      "source_path": "docs/qa/task2-quality/corpus-v2/Q30.json",
+      "artifact_path": "docs/qa/task2-quality/study-2026-10-05-corpus-v2/Q30-C.json",
+      "source_sha256": "0fdb47ac0cfdc691f4dc19e8260dd01c88aa50bcc224b967fcff6d7f822d3132",
+      "artifact_sha256": "46c722b91af85412351e32409a36a30c9bc14a052d771e7dc49d4762cebf4295",
+      "accuracy_gate": "pass_against_frozen_source",
+      "factual_error_counts": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0
+      },
+      "factual_errors": [],
+      "important_facts_expected": 9,
+      "important_facts_preserved": 9,
+      "important_facts": [
+        {
+          "id": "F01",
+          "source_block_ids": [
+            "S001"
+          ],
+          "claim": "Thông báo áp dụng từ01/03/2010, phải giữ như tư liệu lưu trữ.",
+          "candidate_excerpts": [
+            "01 tháng 03 năm 2010"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F02",
+          "source_block_ids": [
+            "S002"
+          ],
+          "claim": "Mở tất cả ngày trong tuần.",
+          "candidate_excerpts": [
+            "mở cửa tất cả các ngày trong tuần"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F03",
+          "source_block_ids": [
+            "S002"
+          ],
+          "claim": "Giờ8h00-16h30.",
+          "candidate_excerpts": [
+            "từ 8h00 đến 16h30"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F04",
+          "source_block_ids": [
+            "S003"
+          ],
+          "claim": "Khách Việt Nam và nước ngoài20.000đ/người/vé.",
+          "candidate_excerpts": [
+            "20.000đ/người/vé"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F05",
+          "source_block_ids": [
+            "S004",
+            "S005"
+          ],
+          "claim": "Điều kiện học sinh chỉ từ Tiểu học tới THPT.",
+          "candidate_excerpts": [
+            "học sinh từ cấp Tiểu học đến Trung học phổ thông"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F06",
+          "source_block_ids": [
+            "S004"
+          ],
+          "claim": "Thứba và Thứsáu miễn phí với đoàn dưới100người.",
+          "candidate_excerpts": [
+            "miễn phí vé tham quan cho đoàn dưới 100 người"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F07",
+          "source_block_ids": [
+            "S004"
+          ],
+          "claim": "Đoàn trên100: từ người101 trả50%=10.000đ/người/vé.",
+          "candidate_excerpts": [
+            "số người từ 101 trở đi phải mua vé bằng 50%"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F08",
+          "source_block_ids": [
+            "S005"
+          ],
+          "claim": "Các thứ2,4,5,7,CN học sinh trả50%=10.000đ/người/vé.",
+          "candidate_excerpts": [
+            "Thứ hai, Thứ tư, Thứ năm, Thứ bảy và Chủ nhật"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F09",
+          "source_block_ids": [
+            "S004"
+          ],
+          "claim": "Nguồn chỉ nêu dưới100/trên100, không được tự bổ sung chính sách đúng100.",
+          "candidate_excerpts": [
+            "Trích đoạn không nói rõ điều kiện vé cho đoàn đúng 100 người"
+          ],
+          "status": "preserved"
+        }
+      ],
+      "scores": {
+        "naturalness_1_5": 5,
+        "usefulness_1_5": 5,
+        "structure_1_5": 5,
+        "repetition_1_5": 5,
+        "brief_style_1_5": 5
+      },
+      "style_average_1_5": 5,
+      "assessment": "Bài xử lý tốt một nguồn có ranh giới chưa rõ: giữ dưới100/trên100 và không tự đoán đoàn đúng100. Điều kiện nhóm, thứ trong tuần, tiền và tư liệu năm2010 đều rõ.",
+      "editorial_findings": [],
+      "source_limitations": [
+        "Không thể dùng bài này như báo giá/lịch mở cửa hiện tại.",
+        "Điều kiện đúng100người phải được bảo tàng xác nhận nếu dùng cho quyết định thực tế."
+      ],
+      "preservation": {
+        "source_pre_blocks": 0,
+        "source_pre_blocks_preserved_exactly": 0,
+        "source_urls_absent_from_output": [],
+        "source_image_metadata_count": 1,
+        "pixels_reviewed": false,
+        "code_executed": false,
+        "live_urls_verified": false
+      },
+      "editing": {
+        "actual_minutes": null,
+        "fact_edits": null,
+        "expression_edits": null,
+        "paragraphs_added": null,
+        "paragraphs_removed": null,
+        "reason": "Chỉ đánh giá bài đã lưu; chưa sửa đến mức duyệt hoặc đo thời gian thực tế."
+      }
+    },
+    {
+      "case_id": "Q31",
+      "review_state": "ai_reviewed",
+      "reviewer_type": "ai",
+      "candidate_available": true,
+      "source_path": "docs/qa/task2-quality/corpus-v2/Q31.json",
+      "artifact_path": "docs/qa/task2-quality/study-2026-10-05-corpus-v2/Q31-C.json",
+      "source_sha256": "e9251a362ad4a7b8be6db1e4668da50a117c2770970f45b41d470535dccd6c1a",
+      "artifact_sha256": "ad7a026462a282f7fb634f8e6e98bce8e00d468d056a0c4a6a8bb8324c01f5e2",
+      "accuracy_gate": "pass_against_frozen_source",
+      "factual_error_counts": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0
+      },
+      "factual_errors": [],
+      "important_facts_expected": 7,
+      "important_facts_preserved": 7,
+      "important_facts": [
+        {
+          "id": "F01",
+          "source_block_ids": [
+            "S001",
+            "S003"
+          ],
+          "claim": "Phong Nha hấp dẫn người yêu thiên nhiên ngoài Sơn Đoòng.",
+          "candidate_excerpts": [
+            "không chỉ thu hút du khách nhờ Sơn Đoòng"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F02",
+          "source_block_ids": [
+            "S002"
+          ],
+          "claim": "Trong vài năm từ vùng yên ắng giáp Lào thành trung tâm du lịch.",
+          "candidate_excerpts": [
+            "vùng đất yên ắng giáp Lào này đã trở thành một trung tâm du lịch"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F03",
+          "source_block_ids": [
+            "S002"
+          ],
+          "claim": "Cảnh phủ rừng và đá vôi lâu đời nhất châu lục được trình bày theo nguồn.",
+          "candidate_excerpts": [
+            "những thành tạo đá vôi mà nguồn mô tả là lâu đời nhất châu Á"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F04",
+          "source_block_ids": [
+            "S001",
+            "S002"
+          ],
+          "claim": "Sơn Đoòng là hang lớn nhất theo nguồn và phát hiện góp phần nổi tiếng.",
+          "candidate_excerpts": [
+            "Việc phát hiện Sơn Đoòng góp phần làm Phong Nha được chú ý hơn"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F05",
+          "source_block_ids": [
+            "S003"
+          ],
+          "claim": "Khoảng200 người/năm vào Sơn Đoòng qua tour Oxalis.",
+          "candidate_excerpts": [
+            "khoảng 200 người mỗi năm"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F06",
+          "source_block_ids": [
+            "S003",
+            "S004"
+          ],
+          "claim": "Có hoạt động ngoài trời và lựa chọn khác cho người không thích nơi tối.",
+          "candidate_excerpts": [
+            "người không thích không gian tối vẫn có nhiều lựa chọn khác"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F07",
+          "source_block_ids": [
+            "S004"
+          ],
+          "claim": "Phần lớn tour trong khu vực có tham quan hang.",
+          "candidate_excerpts": [
+            "phần lớn tour trong khu vực có hoạt động tham quan hang động"
+          ],
+          "status": "preserved"
+        }
+      ],
+      "scores": {
+        "naturalness_1_5": 4,
+        "usefulness_1_5": 4,
+        "structure_1_5": 5,
+        "repetition_1_5": 4,
+        "brief_style_1_5": 4
+      },
+      "style_average_1_5": 4.2,
+      "assessment": "Giữ hạn mức khoảng200 theo nguồn với cảnh báo không coi là hiện hành; không tự bịa danh sách hoạt động. Bài dễ đọc nhưng còn phụ thuộc đoạn nguồn ngắn nên thông tin hành động hạn chế.",
+      "editorial_findings": [
+        {
+          "candidate_excerpt": "Nội dung trên chỉ giới thiệu thông tin có trong trích đoạn được cung cấp.",
+          "issue": "Phạm vi trích đoạn đã được nói trong nội dung, kết lại nhắc quy trình cung cấp dữ liệu.",
+          "proposed_change": "Gộp giới hạn nguồn vào ghi chú cuối ngắn; giữ cảnh báo riêng cho hạn mức200.",
+          "kind": "editorial_not_factual"
+        }
+      ],
+      "source_limitations": [
+        "Ngày xuất bản/hạn mức hiện hành chưa được xác minh.",
+        "Chỉ có tiêu đề Phong Nha and Paradise Caves, không có phần mô tả hoạt động; không yêu cầu AI tự hoàn thiện.",
+        "Ảnh chỉ có URL/alt, chưa nhìn pixel."
+      ],
+      "preservation": {
+        "source_pre_blocks": 0,
+        "source_pre_blocks_preserved_exactly": 0,
+        "source_urls_absent_from_output": [],
+        "source_image_metadata_count": 1,
+        "pixels_reviewed": false,
+        "code_executed": false,
+        "live_urls_verified": false
+      },
+      "editing": {
+        "actual_minutes": null,
+        "fact_edits": null,
+        "expression_edits": null,
+        "paragraphs_added": null,
+        "paragraphs_removed": null,
+        "reason": "Chỉ đánh giá bài đã lưu; chưa sửa đến mức duyệt hoặc đo thời gian thực tế."
+      }
+    },
+    {
+      "case_id": "Q32",
+      "review_state": "ai_reviewed",
+      "reviewer_type": "ai",
+      "candidate_available": true,
+      "source_path": "docs/qa/task2-quality/corpus-v2/Q32.json",
+      "artifact_path": "docs/qa/task2-quality/study-2026-10-05-corpus-v2/Q32-C.json",
+      "source_sha256": "abe6bbfae9fc09bf388649c1e5a8b060a0755daed70cf29d33894d81e46863bf",
+      "artifact_sha256": "c1c96bc796f940dbee1649fe73b64d7ec9ef800cc8271f04a198766031faf6ca",
+      "accuracy_gate": "pass_against_frozen_source",
+      "factual_error_counts": {
+        "critical": 0,
+        "major": 0,
+        "minor": 0
+      },
+      "factual_errors": [],
+      "important_facts_expected": 8,
+      "important_facts_preserved": 8,
+      "important_facts": [
+        {
+          "id": "F01",
+          "source_block_ids": [
+            "S001"
+          ],
+          "claim": "Danh hiệu Asia's Leading Cultural City Destination2022 tạiWTA29 Asia/Oceania tháng9/2022.",
+          "candidate_excerpts": [
+            "Tháng 9 năm 2022"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F02",
+          "source_block_ids": [
+            "S001"
+          ],
+          "claim": "Lần thứba, vượt đề cử Seoul/HànQuốc vàKyoto/NhậtBản.",
+          "candidate_excerpts": [
+            "lần thứ ba Hội An giành danh hiệu này"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F03",
+          "source_block_ids": [
+            "S002"
+          ],
+          "claim": "Hội An là di sản thế giớiUNESCO.",
+          "candidate_excerpts": [
+            "Hội An là di sản thế giới UNESCO"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F04",
+          "source_block_ids": [
+            "S002"
+          ],
+          "claim": "Thương cảng từ thế kỷII sauCN theo nguồn.",
+          "candidate_excerpts": [
+            "thương cảng từ thế kỷ II sau Công nguyên"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F05",
+          "source_block_ids": [
+            "S002"
+          ],
+          "claim": "Hưng thịnh thế kỷXVI, thương nhân từ toànthếgiới.",
+          "candidate_excerpts": [
+            "thời kỳ hưng thịnh ở thế kỷ XVI"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F06",
+          "source_block_ids": [
+            "S002"
+          ],
+          "claim": "Văn hóa bảnđịa hòa trộn ảnhhưởng châuÂu,TrungQuốc,NhậtBản.",
+          "candidate_excerpts": [
+            "những ảnh hưởng từ châu Âu, Trung Quốc, Nhật Bản"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F07",
+          "source_block_ids": [
+            "S003"
+          ],
+          "claim": "Có cảnhsắc,bãi biển,gầnđiểmđếnkhác; văn hóa gây ấntượng mạnh theo nguồn.",
+          "candidate_excerpts": [
+            "giá trị văn hóa là yếu tố để lại ấn tượng sâu sắc nhất"
+          ],
+          "status": "preserved"
+        },
+        {
+          "id": "F08",
+          "source_block_ids": [
+            "S003"
+          ],
+          "claim": "Gợi mở MỹSơn,bảo tàng,biểu diễn,thamquan.",
+          "candidate_excerpts": [
+            "Di tích Mỹ Sơn, các bảo tàng, những buổi biểu diễn trực tiếp"
+          ],
+          "status": "preserved"
+        }
+      ],
+      "scores": {
+        "naturalness_1_5": 5,
+        "usefulness_1_5": 4,
+        "structure_1_5": 5,
+        "repetition_1_5": 5,
+        "brief_style_1_5": 4
+      },
+      "style_average_1_5": 4.6,
+      "assessment": "Mạch lịch sử giao thương tới trải nghiệm văn hóa tự nhiên, không tự viết đủ bảy hoạt động khi nguồn chưa nêu. Các danh hiệu và thế kỷ được giữ theo bài giới thiệu, chưa chứng minh đúng ngoài nguồn.",
+      "editorial_findings": [
+        {
+          "candidate_excerpt": "các chuyến tham quan",
+          "issue": "Ý excursions vẫn giữ nhưng sắc thái authentic của nguồn được diễn đạt chung.",
+          "proposed_change": "Có thể làm rõ đây là các chuyến tìm hiểu văn hóa; tránh tự nêu một tour hoặc hoạt động cụ thể.",
+          "kind": "editorial_not_factual"
+        }
+      ],
+      "source_limitations": [
+        "Nguồn kết bằng lời dẫn bảy hoạt động mà chưa có danh sách; không đủ để chấm bài hướng dẫn du lịch đầy đủ.",
+        "Không kiểm tính đúng lịch sử/thứ hạng bên ngoài snapshot, hoặc pixel ảnh."
+      ],
+      "preservation": {
+        "source_pre_blocks": 0,
+        "source_pre_blocks_preserved_exactly": 0,
+        "source_urls_absent_from_output": [],
+        "source_image_metadata_count": 1,
+        "pixels_reviewed": false,
+        "code_executed": false,
+        "live_urls_verified": false
+      },
+      "editing": {
+        "actual_minutes": null,
+        "fact_edits": null,
+        "expression_edits": null,
+        "paragraphs_added": null,
+        "paragraphs_removed": null,
+        "reason": "Chỉ đánh giá bài đã lưu; chưa sửa đến mức duyệt hoặc đo thời gian thực tế."
+      }
+    },
+    {
+      "case_id": "Q33",
+      "review_state": "no_candidate",
+      "reviewer_type": "ai",
+      "candidate_available": false,
+      "source_path": "docs/qa/task2-quality/corpus-v2/Q33.json",
+      "artifact_path": "docs/qa/task2-quality/study-2026-10-05-corpus-v2/Q33-C.json",
+      "source_sha256": "0e5f82562876bdbf1d54eebb4e7e4e1c00a07eb7944a66cb78ae6f0d4c05e693",
+      "artifact_sha256": "8e6ec98a3aec551cebf9666b11384a62730c74d6a4638d7a151eab6537e71697",
+      "accuracy_gate": null,
+      "factual_error_counts": {
+        "critical": null,
+        "major": null,
+        "minor": null
+      },
+      "factual_errors": [],
+      "important_facts_expected": null,
+      "important_facts_preserved": null,
+      "important_facts": [],
+      "scores": {
+        "naturalness_1_5": null,
+        "usefulness_1_5": null,
+        "structure_1_5": null,
+        "repetition_1_5": null,
+        "brief_style_1_5": null
+      },
+      "style_average_1_5": null,
+      "assessment": "Run C gốc bị AI_PROVIDER_TIMEOUT, final và candidate_for_review đều null. Không có bài để đối chiếu, không gán 0 hoặc 1/5 và không thay bằng bài chạy lại.",
+      "editorial_findings": [],
+      "source_limitations": [
+        "Bảng GitHub Actions đã đọc, nhưng không có output C cùng study để chấm fidelity/table preservation."
+      ],
+      "preservation": {
+        "source_pre_blocks": 0,
+        "source_pre_blocks_preserved_exactly": null,
+        "source_urls_absent_from_output": null,
+        "source_image_metadata_count": 0,
+        "pixels_reviewed": false,
+        "code_executed": false,
+        "live_urls_verified": false
+      },
+      "editing": {
+        "actual_minutes": null,
+        "fact_edits": null,
+        "expression_edits": null,
+        "paragraphs_added": null,
+        "paragraphs_removed": null,
+        "reason": "Không có bài."
+      }
+    }
+  ]
+}

@@ -2,8 +2,8 @@
 
 Chủ dự án chọn làm mục 2–3–4, tạm hoãn mục 1 (`ai_content_drafts`/lưu dài hạn).
 Thay đổi dùng `ai_imports` và Spatie Activitylog hiện có; không thêm migration
-hoặc thay retention. [Hợp đồng API](../AI_ARTICLE_PIPELINE_API.md),
-[FIX 1 mục 12.36](../fix_1.md#1236-apiui-duyệt-nội-dung-ai-trên-bản-ghi-hiện-có--2026-10-05).
+hoặc thay retention. [Hợp đồng API](../api/AI_ARTICLE_PIPELINE_API.md),
+[tiến độ và backlog](../plans/PLAN.md#backlog-đang-dùng).
 
 ## Kết quả nghiệp vụ
 

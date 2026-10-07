@@ -40,7 +40,7 @@
 - Form tạo mới lấy 200 giây từ config, giữ đúng chế độ tạo mới.
 - Migration mới đã chạy local. Config cache đã clear và worker hiện có đã restart;
   queue có 0 job khi restart, worker chạy nền với `--timeout=720`.
-- Ảnh: [AI_PROVIDER_TIMEOUT_2026-10-03.png](./AI_PROVIDER_TIMEOUT_2026-10-03.png).
+- Ảnh: [AI_PROVIDER_TIMEOUT_2026-10-03.png](AI_PROVIDER_TIMEOUT_2026-10-03.png).
 
 ## Giới hạn hiện tại
 

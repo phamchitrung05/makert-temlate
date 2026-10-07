@@ -76,7 +76,17 @@ final class ModelResolver
             throw ValidationException::withMessages(['model_id' => 'Hãy cấu hình model mặc định hoặc fallback khả dụng cho tác vụ này.']);
         }
 
-        return $this->legacy($capability, ['provider' => config('ai-providers.default_provider', 'deterministic')], $settings);
+        $provider = (string) config('ai-providers.default_provider', 'deterministic');
+        if ($provider === 'deterministic') {
+            throw ValidationException::withMessages(['model_id' => 'Chưa có model AI mặc định. Chọn model hoặc cấu hình model mặc định/fallback trong AI & Content.']);
+        }
+
+        $resolved = $this->legacy($capability, ['provider' => $provider], $settings);
+        if (! $this->providers->resolveForRun($resolved)->configured()) {
+            throw ValidationException::withMessages(['model_id' => 'Model AI mặc định chưa có kết nối hợp lệ. Hãy kiểm tra cấu hình provider.']);
+        }
+
+        return $resolved;
     }
 
     /**

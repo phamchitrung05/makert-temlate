@@ -29,7 +29,7 @@ Copy-Item .env.example .env
 
 Nếu dùng SQLite và file chưa tồn tại, tạo `database/database.sqlite` trước khi
 chạy migration. Chi tiết biến môi trường nằm ở
-[docs/ENVIRONMENT.md](docs/ENVIRONMENT.md).
+[docs/operations/ENVIRONMENT.md](docs/operations/ENVIRONMENT.md).
 
 ## Chạy ứng dụng
 
@@ -95,9 +95,17 @@ npm run build
 ## Quy ước dự án
 
 - Kiến trúc và vị trí mở rộng Laravel/Vue 3 được ghi tại
-  [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md); tiến độ thực hiện nằm
-  tại [docs/PLAN.md](docs/PLAN.md).
+  [cấu trúc dự án](docs/architecture/PROJECT_STRUCTURE.md); tiến độ thực hiện nằm
+  tại [kế hoạch tổng](docs/plans/PLAN.md).
 - Vue dùng Composition API và `<script setup>`; file `.vue` mới hoặc được chỉnh
-  sửa phải có block comment theo [docs/PLAN.md](docs/PLAN.md#cấu-trúc-comment-bắt-buộc-cho-file-vue).
+  sửa phải có block comment theo [quy ước phát triển](docs/architecture/DEVELOPMENT_GUIDELINES.md#cấu-trúc-comment-bắt-buộc-cho-file-vue).
 - CASL hiện tạm hoãn trong Vue; quyền thực tế luôn được kiểm tra ở Laravel.
 - Không ghi access token, password hoặc secret vào source, comment hay README.
+
+## Tài liệu và kế hoạch
+
+- [Mục lục docs](docs/README.md): tìm tài liệu theo nhóm kế hoạch, kiến trúc, API, vận hành, chất lượng và QA.
+- [Kế hoạch tổng](docs/plans/PLAN.md): tiến độ hiện tại và backlog.
+- [Hệ thống tự đánh giá định kỳ](docs/plans/HE_THONG_TU_DANH_GIA_DINH_KY.md): task lưu bài AI, chấm theo lịch và tạo báo cáo phân tích.
+- [Quy ước phát triển](docs/architecture/DEVELOPMENT_GUIDELINES.md), [cấu trúc](docs/architecture/PROJECT_STRUCTURE.md) và [inventory](docs/architecture/PROJECT_INVENTORY.md): hướng dẫn sửa code và tra module.
+- Các kế hoạch và ghi chú bàn giao cũ đã được tổng hợp vào hai file kế hoạch trên; bằng chứng kiểm chứng nằm trong `docs/qa/`.

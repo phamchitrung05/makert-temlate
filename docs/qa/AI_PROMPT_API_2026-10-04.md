@@ -38,4 +38,4 @@ Localhost `http://127.0.0.1:8000/admin/ai/prompt`, phiên admin đã đăng nh�
 
 Browser QA xác nhận hiển thị, catalog và input; luồng queued/ready/lưu/version/default kiểm bằng HTTP giả lập. Chưa thử worker và model thật từ browser hoặc đánh giá chất lượng văn phong. URL/HTML preview giữ yêu cầu `posts.manage`; paste/TXT và WritingProfiles dùng quyền `ai_settings.manage`. GET analysis không trả bài nguồn nên reload chỉ khôi phục trạng thái/kết quả, không khôi phục raw source.
 
-Không có endpoint/migration mới trong đợt này. Bảo vệ POST tại client không thay cho idempotency backend. Báo cáo công việc và hạng mục để sau tại [FIX 1, mục 12.19](../fix_1.md#1219-nối-api-ai-prompt-theo-phạm-vi-mới--2026-10-04).
+Không có endpoint/migration mới trong đợt này. Bảo vệ POST tại client không thay cho idempotency backend. Contract và phạm vi hiện tại ở [API mẫu văn phong](../api/AI_WRITING_PROFILES_API.md); hạng mục mở rộng ở [PLAN](../plans/PLAN.md#backlog-đang-dùng).

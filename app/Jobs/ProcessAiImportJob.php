@@ -2,8 +2,10 @@
 
 namespace App\Jobs;
 
+use App\Exceptions\AiArticleArchiveException;
 use App\Exceptions\AiImportException;
 use App\Models\AiImport;
+use App\Services\Ai\Content\Archives\AiArticleArchiveService;
 use App\Services\Ai\Content\ArticleImportService;
 use App\Services\Ai\Images\AiThumbnailService;
 use App\Services\Ai\Providers\Diagnostics\AiResponseDiagnostics;
@@ -23,14 +25,15 @@ use Throwable;
  * CHỨC NĂNG FILE: Worker queue xử lý pipeline AI import có retry có kiểm soát.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE:
- * - __construct(), handle(), process(), failed(), queueOptionalImage().
+ * - __construct(), handle(), process(), failed(), markArchiveFailure(), queueOptionalImage().
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : UUID AiImport được dispatch từ controller/command.
  * - OUTPUT: trạng thái ready/failed/cancelled và result JSON.
  * - SIDE EFFECT: gọi outbound provider, fetch nguồn và tạo thumbnail asset.
  * - EXCEPTION/TRANSACTION: queue retry tối đa 3 lần, backoff tăng dần; lỗi
- *   input/schema không retry và lifecycle được ghi terminal.
+ *   input/schema không retry và lifecycle được ghi terminal. Checkpoint v1 nằm tạm
+ *   trong ai_imports để phục hồi ready; chỉ duyệt/apply mới ghi kho lâu dài.
  * =====================================================================
  */
 class ProcessAiImportJob implements ShouldQueue
@@ -53,7 +56,7 @@ class ProcessAiImportJob implements ShouldQueue
      * EXCEPTION/TRANSACTION: không mở transaction.
      * =====================================================================
      */
-    public function __construct(public readonly string $importId, int $requestTimeout = 30, int $calls = 1)
+    public function __construct(public readonly string $importId, int $requestTimeout = 30, int $calls = 1, public readonly ?int $generationNo = null)
     {
         $this->timeout = AiRunBudget::timeout($requestTimeout, $calls);
     }
@@ -88,15 +91,36 @@ class ProcessAiImportJob implements ShouldQueue
     private function process(ArticleImportService $service): void
     {
         $import = AiImport::query()->find($this->importId);
-        if (! $import || in_array($import->status, ['ready', 'failed', 'cancelled', 'expired'], true)) {
+        if (! $import || ($this->generationNo ?? 1) !== (int) $import->generation_no) {
             return;
         }
-        $sourceMetadata = (array) $import->source_meta_json;
-        unset($sourceMetadata['ai_response'], $sourceMetadata['article_pipeline']);
-        $import->update(['source_meta_json' => $sourceMetadata]);
+        $archives = app(AiArticleArchiveService::class);
+        $generationNo = (int) $import->generation_no;
+        $recovering = $import->status === 'failed' && $import->error_code === 'AI_ARCHIVE_WRITE_FAILED' && $import->archive_pending_json !== null;
+        if (in_array($import->status, AiImport::TERMINAL_STATUSES, true) && ! $recovering) {
+            return;
+        }
         try {
+            if ($archives->tracked($import) && $import->archive_pending_json !== null) {
+                if ($archives->resumeReady($import->id, $generationNo)) {
+                    $this->queueOptionalImage($import->fresh());
+                }
+
+                return;
+            }
+            $sourceMetadata = (array) $import->source_meta_json;
+            unset($sourceMetadata['ai_response'], $sourceMetadata['article_pipeline']);
+            $import->update(['source_meta_json' => $sourceMetadata]);
             $result = $service->run($import);
             if ($import->fresh()?->status === 'cancelled') {
+                return;
+            }
+            if ($archives->tracked($import)) {
+                if ($archives->stageCompletion($import->id, $generationNo, $result)
+                    && $archives->resumeReady($import->id, $generationNo)) {
+                    $this->queueOptionalImage($import->fresh());
+                }
+
                 return;
             }
             $completion = [
@@ -106,18 +130,21 @@ class ProcessAiImportJob implements ShouldQueue
                 'expires_at' => now()->addDays((int) config('ai-import.retention_days', 2)),
                 'error_code' => null, 'error_message' => null,
             ];
-            DB::transaction(function () use ($import, $completion): void {
+            DB::transaction(function () use ($import, $completion, $generationNo): void {
                 $parent = AiImport::query()->lockForUpdate()->find($import->id);
-                if (! $parent || in_array($parent->status, AiImport::TERMINAL_STATUSES, true) || $parent->expires_at?->isPast()) {
+                if (! $parent || (int) $parent->generation_no !== $generationNo || in_array($parent->status, AiImport::TERMINAL_STATUSES, true) || $parent->expires_at?->isPast()) {
                     return;
                 }
                 $parent->forceFill($completion)->save();
                 $this->queueOptionalImage($parent);
             });
+        } catch (AiArticleArchiveException $exception) {
+            $this->markArchiveFailure($generationNo, $exception);
+            throw $exception;
         } catch (AiImportException $exception) {
-            $shouldRetry = DB::transaction(function () use ($exception): bool {
+            $shouldRetry = DB::transaction(function () use ($exception, $generationNo): bool {
                 $run = AiImport::query()->lockForUpdate()->find($this->importId);
-                if (! $run || in_array($run->status, AiImport::TERMINAL_STATUSES, true)) {
+                if (! $run || (int) $run->generation_no !== $generationNo || in_array($run->status, AiImport::TERMINAL_STATUSES, true)) {
                     return false;
                 }
                 $updates = ['error_code' => $exception->errorCode, 'error_message' => Str::limit($exception->getMessage(), 500)];
@@ -145,11 +172,45 @@ class ProcessAiImportJob implements ShouldQueue
             }
         } catch (Throwable $exception) {
             report($exception);
-            AiImport::query()->whereKey($import->id)->whereNotIn('status', AiImport::TERMINAL_STATUSES)->update([
-                'status' => 'failed', 'current_step' => 'failed',
-                'error_code' => 'AI_IMPORT_FAILED', 'error_message' => 'Tác vụ AI thất bại do lỗi hệ thống.',
-            ]);
+            DB::transaction(function () use ($import, $generationNo): void {
+                $run = AiImport::query()->lockForUpdate()->find($import->id);
+                if (! $run || (int) $run->generation_no !== $generationNo || in_array($run->status, AiImport::TERMINAL_STATUSES, true)) {
+                    return;
+                }
+                $run->forceFill(['status' => 'failed', 'current_step' => 'failed', 'completed_at' => now(),
+                    'error_code' => 'AI_IMPORT_FAILED', 'error_message' => 'Tác vụ AI thất bại do lỗi hệ thống.'])->save();
+            });
         }
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Ghi lỗi checkpoint riêng và giữ dữ liệu phục hồi của generation hiện tại
+     * =====================================================================
+     *
+     * INPUT:
+     * - Số generation của job và AiArticleArchiveException chứa mã/thông báo an toàn.
+     *
+     * OUTPUT:
+     * - void: run hiện tại chưa terminal được đánh dấu failed; stale/missing/terminal không đổi.
+     *
+     * SIDE EFFECT:
+     * - Ghi lifecycle/completed_at/error_code/error_message, giữ checkpoint; không tạo archive giả hoặc gọi provider.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Transaction ngắn khóa run và kiểm generation; lỗi DB truyền lên queue, không báo ready hoặc làm mất checkpoint.
+     *
+     * =====================================================================
+     */
+    private function markArchiveFailure(int $generationNo, AiArticleArchiveException $exception): void
+    {
+        DB::transaction(function () use ($generationNo, $exception): void {
+            $run = AiImport::query()->lockForUpdate()->find($this->importId);
+            if ($run && (int) $run->generation_no === $generationNo && ! in_array($run->status, AiImport::TERMINAL_STATUSES, true)) {
+                $run->forceFill(['status' => 'failed', 'current_step' => 'failed', 'completed_at' => now(),
+                    'error_code' => $exception->reason, 'error_message' => $exception->getMessage()])->save();
+            }
+        });
     }
 
     /**
@@ -159,13 +220,21 @@ class ProcessAiImportJob implements ShouldQueue
      * INPUT: throwable terminal hoặc null.
      * OUTPUT: không trả giá trị; AiImport chuyển sang failed nếu chưa ready/cancelled.
      * SIDE EFFECT: ghi mã/thông báo lỗi đã giới hạn độ dài, không lộ secret.
-     * EXCEPTION/TRANSACTION: không mở transaction; queue worker quản lý lifecycle.
+     * EXCEPTION/TRANSACTION: khóa run trong transaction ngắn; lỗi checkpoint giữ dữ liệu và truyền ra.
      * =====================================================================
      */
     public function failed(?Throwable $exception): void
     {
         $import = AiImport::query()->find($this->importId);
-        if (! $import || in_array($import->status, AiImport::TERMINAL_STATUSES, true)) {
+        if (! $import || ($this->generationNo ?? 1) !== (int) $import->generation_no
+            || in_array($import->status, AiImport::TERMINAL_STATUSES, true)) {
+            return;
+        }
+        if ($exception instanceof AiArticleArchiveException
+            || ($import->archive_pending_json !== null && app(AiArticleArchiveService::class)->tracked($import))) {
+            $this->markArchiveFailure((int) $import->generation_no,
+                $exception instanceof AiArticleArchiveException ? $exception : new AiArticleArchiveException);
+
             return;
         }
         $updates = [
@@ -182,8 +251,12 @@ class ProcessAiImportJob implements ShouldQueue
             ]);
         }
         $updates['completed_at'] = now();
-        AiImport::query()->whereKey($import->id)->whereNotIn('status', AiImport::TERMINAL_STATUSES)
-            ->update((new AiImport)->forceFill($updates)->getAttributes());
+        DB::transaction(function () use ($import, $updates): void {
+            $run = AiImport::query()->lockForUpdate()->find($import->id);
+            if ($run && (int) $run->generation_no === (int) $import->generation_no && ! in_array($run->status, AiImport::TERMINAL_STATUSES, true)) {
+                $run->forceFill($updates)->save();
+            }
+        });
     }
 
     /**

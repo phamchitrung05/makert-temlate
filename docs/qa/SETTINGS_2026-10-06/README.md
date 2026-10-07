@@ -25,9 +25,9 @@
 
 ## Bằng chứng
 
-- [Desktop](./settings-desktop.png)
-- [Email dark](./email-dark.png)
-- [Media mobile](./media-mobile.png)
+- [Desktop](settings-desktop.png)
+- [Email dark](email-dark.png)
+- [Media mobile](media-mobile.png)
 
 ## Giới hạn hiện tại
 

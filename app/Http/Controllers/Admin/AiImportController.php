@@ -16,6 +16,7 @@ use App\Models\AiImport;
 use App\Models\MediaAsset;
 use App\Services\Ai\Content\AiContentReviewService;
 use App\Services\Ai\Content\AiContentSanitizer;
+use App\Services\Ai\Content\Archives\AiArticleArchiveService;
 use App\Services\Ai\Content\ArticleSourceFetcher;
 use App\Services\Ai\Images\AiThumbnailService;
 use App\Services\Ai\Providers\Catalog\ModelResolver;
@@ -31,6 +32,7 @@ use App\Services\Media\ContentMediaReferenceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -55,13 +57,21 @@ class AiImportController extends Controller
     /**
      * =====================================================================
      * CHỨC NĂNG: Đọc danh sách tác vụ thuộc admin hiện tại
+Đọc danh sách tác vụ và candidate con còn hạn của chính admin hiện tại.
      * =====================================================================
-     * Đọc danh sách tác vụ và candidate con còn hạn của chính admin hiện tại.
      *
-     * Input: page/per_page đã validate, actor đã qua auth/posts.manage.
-     * Output: summary phân trang mới nhất trước; loại run ảnh và target không có quyền.
-     * Side effect: query DB và tải thumbnail/media theo lô; không dispatch hoặc gọi AI.
-     * Exception/Transaction: không mở transaction; middleware kiểm tra quyền.
+     * INPUT:
+     * - page/per_page đã validate, actor đã qua auth/posts.manage.
+     *
+     * OUTPUT:
+     * - summary phân trang mới nhất trước; loại run ảnh và target không có quyền.
+     *
+     * SIDE EFFECT:
+     * - query DB và tải thumbnail/media theo lô; không dispatch hoặc gọi AI.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - không mở transaction; middleware kiểm tra quyền.
+     *
      * =====================================================================
      */
     public function index(AiSessionIndexRequest $request): JsonResponse
@@ -94,8 +104,19 @@ class AiImportController extends Controller
      * =====================================================================
      * CHỨC NĂNG: Liệt kê target AI theo quyền của admin
      * =====================================================================
-     * INPUT: request xác thực và registry. OUTPUT: JSON target/options public.
-     * SIDE EFFECT: chỉ đọc cấu hình; không gọi provider hoặc ghi DB.
+     *
+     * INPUT:
+     * - request xác thực và registry.
+     *
+     * OUTPUT:
+     * - JSON target/options public.
+     *
+     * SIDE EFFECT:
+     * - chỉ đọc cấu hình; không gọi provider hoặc ghi DB.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Không mở transaction/lock; middleware/controller xác thực actor và quyền trước khi gọi.
+     *
      * =====================================================================
      */
     public function targets(Request $request, TargetRegistry $targets): JsonResponse
@@ -461,7 +482,8 @@ class AiImportController extends Controller
      * INPUT: Run failed/cancelled/expired thuộc actor; image run cần media.upload.
      * OUTPUT: Run hiện tại đã reset trạng thái queued.
      * SIDE EFFECT: Cập nhật timeout theo provider hiện tại, lifecycle/retention;
-     * giữ identity/input và dispatch đúng một job sau commit.
+     * giữ identity/input, bỏ checkpoint chưa duyệt của lần trước, tăng generation_no;
+     * dispatch sau commit. Bản đã Apply không được retry.
      * EXCEPTION/TRANSACTION: Lock row trong transaction; 403/404/409 hoặc validation
      * khi connection đã đổi/tắt; không gọi provider trong transaction.
      * =====================================================================
@@ -472,10 +494,12 @@ class AiImportController extends Controller
         if ($aiImport->operation === 'image') {
             abort_unless($request->user()->can('media.upload'), 403);
         }
-        $aiImport = DB::transaction(function () use ($aiImport, $runs, $providers): AiImport {
+        $retried = Cache::lock('ai-import-process-'.$aiImport->id, 10)->get(fn () => DB::transaction(function () use ($aiImport, $runs, $providers): AiImport {
             app(AiThumbnailService::class)->prepareRetry($aiImport);
             $run = AiImport::query()->lockForUpdate()->findOrFail($aiImport->id);
             abort_unless(in_array($run->status, ['failed', 'cancelled', 'expired'], true), 409, 'Chỉ có thể retry run đã kết thúc lỗi.');
+            abort_if($run->applied_target_id !== null || data_get($run->source_meta_json, 'editorial.status') === 'approved', 409, 'Bản đã duyệt không được retry. Hãy tạo bản mới.');
+            $archives = app(AiArticleArchiveService::class);
             $input = (array) $run->input_json;
             foreach (['ai_connection', 'image_connection'] as $key) {
                 $snapshot = (array) ($input[$key] ?? []);
@@ -492,13 +516,18 @@ class AiImportController extends Controller
             $run->forceFill([
                 'status' => 'queued', 'current_step' => 'queued', 'progress' => 0,
                 'input_json' => $input, 'error_code' => null, 'error_message' => null, 'completed_at' => null,
+                'generation_no' => (int) $run->generation_no + 1,
+                'archive_version' => $archives->supports($run) ? 1 : null,
+                'archive_pending_json' => null, 'result_json' => null, 'started_at' => null,
                 'expires_at' => now()->addDays((int) config('ai-import.retention_days', 2)),
             ])->save();
             app(AiThumbnailService::class)->sync($run);
             DB::afterCommit(fn () => $runs->dispatch($run));
 
             return $run;
-        });
+        }));
+        abort_if($retried === false, 409, 'Worker cũ đang kết thúc. Hãy chờ trước khi thử lại.');
+        $aiImport = $retried;
 
         return BaseResponse::success($this->payload($aiImport->fresh()), 'Đã xếp hàng retry run.');
     }
@@ -528,14 +557,24 @@ class AiImportController extends Controller
     }
 
     /**
-     * Sửa candidate chờ duyệt, kiểm tra phiên bản và sanitize HTML tại backend.
      * =====================================================================
      * CHỨC NĂNG: Sửa candidate với version lock và xác thực ảnh MediaLibrary
      * =====================================================================
-     * Input: title/content/excerpt/SEO và hash phiên bản từ GET detail.
-     * Output: candidate cập nhật; không ghi domain model hoặc gọi AI.
-     * Side effect: lock row, ghi result_json và audit trong cùng transaction.
-     * Exception: 409 khi đã duyệt/từ chối/hết hạn hoặc version cũ; không gọi model.
+     *
+     * Sửa candidate chờ duyệt, kiểm tra phiên bản và sanitize HTML tại backend.
+     *
+     * INPUT:
+     * - title/content/excerpt/SEO và hash phiên bản từ GET detail.
+     *
+     * OUTPUT:
+     * - candidate cập nhật; không ghi domain model hoặc gọi AI.
+     *
+     * SIDE EFFECT:
+     * - lock row, ghi result_json và audit trong cùng transaction.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - 409 khi đã duyệt/từ chối/hết hạn hoặc version cũ; không gọi model. Transaction khóa run; thiếu quyền ảnh/validation truyền ra và rollback result/audit.
+     *
      * =====================================================================
      */
     public function updateCandidate(AiCandidateUpdateRequest $request, AiImport $aiImport, AiContentSanitizer $sanitizer): JsonResponse
@@ -625,16 +664,20 @@ class AiImportController extends Controller
      * =====================================================================
      * INPUT: AiImport route-bound thuộc actor.
      * OUTPUT: Response thành công không có payload.
-     * SIDE EFFECT: Dọn asset chưa có usage rồi xóa bản ghi run; không gọi provider.
-     * EXCEPTION/TRANSACTION: Abort 404 khi ownership không khớp; lỗi lưu trữ/DB truyền lên caller.
+     * SIDE EFFECT: Đối chiếu archive rồi dọn asset/run; không gọi provider.
+     * EXCEPTION/TRANSACTION: Khóa run trong transaction; lỗi archive giữ run để phục hồi.
      * =====================================================================
      */
     public function destroy(Request $request, AiImport $aiImport): JsonResponse
     {
         $this->ensureOwner($request, $aiImport);
-        abort_if(in_array($aiImport->status, AiImport::RUNNING_STATUSES, true), 409, 'Hãy đợi tác vụ kết thúc trước khi xóa.');
-        $this->cleanupThumbnail($aiImport);
-        $aiImport->delete();
+        DB::transaction(function () use ($aiImport): void {
+            $run = AiImport::query()->lockForUpdate()->findOrFail($aiImport->id);
+            abort_if(in_array($run->status, AiImport::RUNNING_STATUSES, true), 409, 'Hãy đợi tác vụ kết thúc trước khi xóa.');
+            app(AiArticleArchiveService::class)->preserve($run, removalReason: 'user_deleted');
+            $this->cleanupThumbnail($run);
+            $run->delete();
+        });
 
         return BaseResponse::success(null, 'Đã xóa import.');
     }
@@ -673,6 +716,7 @@ class AiImportController extends Controller
         return [
             ...$result,
             'job_id' => $import->id, 'status' => $import->status, 'current_step' => $import->current_step,
+            'generation_no' => (int) $import->generation_no,
             'steps' => $steps,
             // Allowlist dùng cả cho nhánh một lượt; không expose source/intermediate/raw response.
             'response_diagnostics' => $diagnostics,
@@ -706,8 +750,19 @@ class AiImportController extends Controller
      * =====================================================================
      * CHỨC NĂNG: Tải thumbnail và media theo lô cho public payload
      * =====================================================================
-     * INPUT: collection AiImport. OUTPUT: relation thumbnail hoặc null.
-     * SIDE EFFECT: query asset/media; không tạo ảnh hoặc ghi DB.
+     *
+     * INPUT:
+     * - collection AiImport.
+     *
+     * OUTPUT:
+     * - relation thumbnail hoặc null.
+     *
+     * SIDE EFFECT:
+     * - query asset/media; không tạo ảnh hoặc ghi DB.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Không mở transaction/lock; middleware/controller xác thực actor và quyền trước khi gọi.
+     *
      * =====================================================================
      */
     private function loadThumbnails(Collection $imports): void

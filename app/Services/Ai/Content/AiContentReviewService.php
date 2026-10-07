@@ -9,6 +9,7 @@ use App\Models\AiImport;
 use App\Models\MediaAsset;
 use App\Models\Post;
 use App\Models\User;
+use App\Services\Ai\Content\Archives\AiArticleArchiveService;
 use App\Services\Ai\Images\AiThumbnailService;
 use App\Services\Ai\Provenance\AiProvenanceService;
 use App\Services\Ai\Registries\TargetRegistry;
@@ -20,22 +21,47 @@ use Spatie\Activitylog\Models\Activity;
  * =====================================================================
  * CHỨC NĂNG FILE: Duyệt/từ chối candidate trong ai_imports hiện có.
  * =====================================================================
- * Trạng thái biên tập nằm trong source_meta_json.editorial; retention không đổi.
- * CÁC HÀM/METHOD TRONG FILE: __construct(), state(), version(), authorize(),
- * view(), history(), approve(), reject(), assertPending(), recordDecision().
+ *
+ * Duyệt/từ chối trên candidate ai_imports hiện có. Quyết định nằm ở editorial metadata, retention không đổi; bản được duyệt lưu Post/provenance/quyết định/audit/archive đồng bộ.
+ *
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - __construct().
+ * - state().
+ * - version().
+ * - authorize().
+ * - view().
+ * - history().
+ * - approve().
+ * - reject().
+ * - assertPending().
+ * - recordDecision().
+ *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
- * - INPUT : actor, candidate, phiên bản đã xem và quyết định của người dùng.
- * - OUTPUT: thông tin duyệt, nguồn đã sanitize, lịch sử hoặc Post draft.
- * - SIDE EFFECT: transaction ghi Post/provenance/quyết định/Activitylog; không gọi AI.
+ * - INPUT : Authenticated actor posts.manage, candidate, phiên bản đã xem và quyết định.
+ * - OUTPUT: Nguồn/draft/review/history allowlist hoặc Post draft; chưa Publish.
+ * - SIDE EFFECT: Duyệt ghi kho bản AI gốc trước edit; từ chối chỉ ghi quyết định/audit.
+ * - EXCEPTION/TRANSACTION: Kiểm owner/target/quyền; mutation khóa row trong transaction, lỗi Post/archive/audit rollback toàn bộ.
  * =====================================================================
  */
 final class AiContentReviewService
 {
     /**
      * =====================================================================
-     * CHỨC NĂNG: Nhận domain actions, registry, provenance và sanitizer.
-     * INPUT: các service đã resolve từ container.
-     * OUTPUT: service sẵn sàng xử lý, không ghi database hoặc mở transaction.
+     * CHỨC NĂNG: Nhận domain actions và service phục vụ duyệt candidate
+     * =====================================================================
+     *
+     * INPUT:
+     * - CreatePostAction, UpdatePostAction, TargetRegistry, AiProvenanceService và AiContentSanitizer.
+     *
+     * OUTPUT:
+     * - Service sẵn sàng xử lý quyết định biên tập.
+     *
+     * SIDE EFFECT:
+     * - Chỉ gán dependency; không gọi DB/provider.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Không mở transaction hoặc lock khi khởi tạo.
+     *
      * =====================================================================
      */
     public function __construct(
@@ -48,10 +74,21 @@ final class AiContentReviewService
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Đọc trạng thái biên tập độc lập trạng thái job.
-     * INPUT: candidate hiện có và JSON editorial nếu đã ghi.
-     * OUTPUT: metadata review, không mutation hoặc query quan hệ.
-     * Bản Apply cũ suy ra approved, không dựng người duyệt hoặc lịch sử giả.
+     * CHỨC NĂNG: Đọc trạng thái biên tập độc lập với trạng thái job
+     * =====================================================================
+     *
+     * INPUT:
+     * - Candidate có applied_target_id/source_meta_json/status đã load.
+     *
+     * OUTPUT:
+     * - Array review metadata; Apply cũ suy approved, không dựng người duyệt hoặc lịch sử giả.
+     *
+     * SIDE EFFECT:
+     * - Chỉ đọc model; không query quan hệ hoặc ghi dữ liệu.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Không mở transaction, không kiểm quyền thay caller.
+     *
      * =====================================================================
      */
     public static function state(AiImport $run): array
@@ -73,9 +110,21 @@ final class AiContentReviewService
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Tạo phiên bản quyết định từ draft và review hiện tại.
-     * INPUT: candidate đã load JSON.
-     * OUTPUT: SHA-256; không ghi database. JSON lỗi ném JsonException.
+     * CHỨC NĂNG: Tạo phiên bản quyết định từ draft và review hiện tại
+     * =====================================================================
+     *
+     * INPUT:
+     * - Candidate đã load result_json và metadata biên tập.
+     *
+     * OUTPUT:
+     * - SHA-256 của draft và state dùng chặn quyết định stale.
+     *
+     * SIDE EFFECT:
+     * - Chỉ serialize/tính hash trong memory; không ghi DB.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Không mở transaction; JSON không encode được ném JsonException.
+     *
      * =====================================================================
      */
     public static function version(AiImport $run): string
@@ -87,10 +136,21 @@ final class AiContentReviewService
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Kiểm admin posts.manage, owner và target Post không phải image run.
-     * INPUT: authenticated actor và candidate đã load.
-     * OUTPUT: không có; ném HTTP 404/403/422 khi vi phạm boundary.
-     * SIDE EFFECT: chỉ đọc permission; không tự mở transaction hoặc ghi dữ liệu.
+     * CHỨC NĂNG: Kiểm quyền posts.manage, owner và target Post của candidate
+     * =====================================================================
+     *
+     * INPUT:
+     * - User đã xác thực và candidate đã load.
+     *
+     * OUTPUT:
+     * - void: vượt qua khi cùng owner, có posts.manage và Post non-image.
+     *
+     * SIDE EFFECT:
+     * - Đọc permission; không tự ghi dữ liệu hoặc mở transaction.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Ném HTTP 404 khi khác owner, 403 thiếu quyền hoặc 422 sai target; caller cung cấp authenticated actor.
+     *
      * =====================================================================
      */
     public function authorize(User $actor, AiImport $run): void
@@ -102,10 +162,21 @@ final class AiContentReviewService
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Trả bản để đối chiếu nguồn/kết quả trước khi quyết định.
-     * INPUT: authenticated actor và candidate đã load.
-     * OUTPUT: nguồn sanitize, draft/review/version allowlist hoặc lỗi authorize.
-     * SIDE EFFECT: không fetch nguồn/gọi AI/ghi DB; không trả snapshot riêng hoặc key.
+     * CHỨC NĂNG: Trả nguồn và candidate để đối chiếu trước khi quyết định
+     * =====================================================================
+     *
+     * INPUT:
+     * - Authenticated actor có posts.manage và candidate thuộc owner.
+     *
+     * OUTPUT:
+     * - Array nguồn sanitize, draft/review/version allowlist, thumbnail/trạng thái ảnh và cờ khả năng duyệt/sửa.
+     *
+     * SIDE EFFECT:
+     * - Đọc thumbnail với media eager load; nguồn fallback source_text nếu thiếu HTML snapshot. Không fetch nguồn/gọi AI/ghi DB hoặc trả key riêng.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - authorize() có thể ném HTTP 404/403/422; không mở transaction.
+     *
      * =====================================================================
      */
     public function view(User $actor, AiImport $run): array
@@ -146,10 +217,21 @@ final class AiContentReviewService
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Đọc sự kiện biên tập từ Spatie Activitylog theo UUID candidate.
-     * INPUT: authenticated actor, run, page/perPage đã validate.
-     * OUTPUT: items allowlist + pagination hoặc lỗi authorize.
-     * SIDE EFFECT: query Activity/causer; không ghi DB hoặc mở transaction.
+     * CHỨC NĂNG: Đọc lịch sử biên tập của candidate từ Activitylog
+     * =====================================================================
+     *
+     * INPUT:
+     * - Authenticated actor, run và page/perPage đã validate.
+     *
+     * OUTPUT:
+     * - Items allowlist cùng pagination của các event edited/approved/rejected.
+     *
+     * SIDE EFFECT:
+     * - Filter log_name ai-content và UUID candidate; eager load causer, sort id giảm dần và paginate. Không ghi DB.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - authorize() có thể ném HTTP 404/403/422; không mở transaction hoặc lock.
+     *
      * =====================================================================
      */
     public function history(User $actor, AiImport $run, int $page = 1, int $perPage = 20): array
@@ -175,13 +257,21 @@ final class AiContentReviewService
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Duyệt candidate, tạo/cập nhật Post nháp và ghi quyết định/audit.
-     * INPUT: authenticated actor, candidate, field selection/version đã validate.
-     * OUTPUT: Post draft ID/provenance/review; không Publish hoặc gọi AI.
-     * SIDE EFFECT: transaction khóa run/target và ghi Post/provenance/JSON/Activitylog.
-     * EXCEPTION: 404/403/422 authorize; 409 stale/đã quyết định/hết hạn;
-     * lỗi action/media/validation rollback toàn bộ transaction.
-     * API Apply cũ dùng cùng method; target_id chỉ phục vụ contract Apply cũ.
+     * CHỨC NĂNG: Duyệt candidate và lưu Post nháp cùng kho bản AI được chọn
+     * =====================================================================
+     *
+     * INPUT:
+     * - Authenticated actor posts.manage, candidate, fields/hash/lý do đã validate; target_id chỉ cho Apply cũ.
+     *
+     * OUTPUT:
+     * - Post draft ID/provenance/review/version; không Publish.
+     *
+     * SIDE EFFECT:
+     * - Ghi Post/provenance/quyết định/Activitylog/archive cùng nhau; Post dùng bản biên tập, kho dùng checkpoint AI trước edit. API Apply cũ dùng cùng method.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Transaction khóa run/target; 404/403/422 do authorization/validation, 409 khi stale/đã quyết định/hết hạn/thumbnail pending. Lỗi action/media/archive/audit rollback toàn bộ; không HTTP/AI trong transaction.
+     *
      * =====================================================================
      */
     public function approve(User $actor, AiImport $candidate, array $data): array
@@ -229,10 +319,21 @@ final class AiContentReviewService
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Từ chối candidate với lý do, không sửa draft hoặc tạo Post.
-     * INPUT: authenticated actor, candidate, hai hash/lý do đã validate.
-     * OUTPUT: rejected và review version mới; lỗi authorize/409 truyền lên.
-     * SIDE EFFECT: transaction khóa run, ghi JSON và Activitylog cùng nhau.
+     * CHỨC NĂNG: Từ chối candidate và lưu lý do mà không tạo Post hoặc archive
+     * =====================================================================
+     *
+     * INPUT:
+     * - Authenticated actor posts.manage, candidate, hai hash và lý do đã validate.
+     *
+     * OUTPUT:
+     * - Review rejected và review_version mới.
+     *
+     * SIDE EFFECT:
+     * - Ghi editorial JSON/Activitylog, giữ draft và retention.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Transaction khóa run; authorize() có thể ném 404/403/422, assertPending() ném 409. Lỗi lưu rollback quyết định.
+     *
      * =====================================================================
      */
     public function reject(User $actor, AiImport $candidate, array $data): array
@@ -251,10 +352,21 @@ final class AiContentReviewService
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Chặn trạng thái và phiên bản không còn đủ điều kiện quyết định.
-     * INPUT: run đã lockForUpdate trong transaction của caller và hash đã xem.
-     * OUTPUT: không có hoặc HTTP 409 khi chưa ready/hết hạn/đã quyết định/stale.
-     * SIDE EFFECT: chỉ đọc model; không mở transaction riêng hoặc ghi DB.
+     * CHỨC NĂNG: Chặn candidate không còn đủ điều kiện quyết định
+     * =====================================================================
+     *
+     * INPUT:
+     * - Run đã lockForUpdate trong transaction caller và hash/version người dùng đã xem.
+     *
+     * OUTPUT:
+     * - void: candidate ready, còn hạn, pending_review và version khớp.
+     *
+     * SIDE EFFECT:
+     * - Chỉ kiểm model/hash; không query/ghi DB hoặc tự mở transaction.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Ném HTTP 409 khi chưa ready, hết hạn, đã duyệt/từ chối hoặc stale; caller chịu trách nhiệm authorization/lock.
+     *
      * =====================================================================
      */
     private function assertPending(AiImport $run, array $data): void
@@ -271,11 +383,21 @@ final class AiContentReviewService
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Ghi quyết định và audit lấy actor/thời điểm từ server.
-     * INPUT: run đã khóa, authenticated actor, approved/rejected và lý do.
-     * OUTPUT: không có; metadata/audit persisted, giữ nguồn/draft/retention.
-     * SIDE EFFECT: ghi JSON và Spatie Activitylog trong transaction bắt buộc của caller.
-     * EXCEPTION: lỗi lưu truyền lên để rollback toàn bộ quyết định/Post.
+     * CHỨC NĂNG: Ghi quyết định và audit bằng actor/thời điểm từ server
+     * =====================================================================
+     *
+     * INPUT:
+     * - Run đã khóa, authenticated actor, approved/rejected và lý do.
+     *
+     * OUTPUT:
+     * - void: metadata/audit được lưu, giữ nguồn/draft/retention.
+     *
+     * SIDE EFFECT:
+     * - Ghi editorial JSON và Activitylog; approved tạo/cập nhật archive, rejected không tạo kho.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Yêu cầu transaction của approve()/reject(); lỗi lưu/archive/audit truyền lên để rollback Post/quyết định.
+     *
      * =====================================================================
      */
     private function recordDecision(AiImport $run, User $actor, string $status, ?string $reason): void
@@ -286,6 +408,9 @@ final class AiContentReviewService
             'reviewed_at' => now()->toIso8601String(), 'reason' => filled($reason) ? trim($reason) : null,
         ];
         $run->forceFill(['source_meta_json' => array_replace((array) $run->source_meta_json, ['editorial' => $review])])->save();
+        if ($status === 'approved') {
+            app(AiArticleArchiveService::class)->archiveApproved($run->id, (int) $run->generation_no, legacy: true);
+        }
         activity('ai-content')->causedBy($actor)->withProperties([
             'candidate_id' => $run->id, ...$review, 'post_id' => $run->applied_target_id,
         ])->log('candidate.'.$status);

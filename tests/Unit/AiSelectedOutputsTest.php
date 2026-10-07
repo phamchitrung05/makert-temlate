@@ -20,6 +20,11 @@ use Tests\TestCase;
  * =====================================================================
  * CHỨC NĂNG FILE: Regression field được chọn, merge parent snapshot và adapter giả lập.
  * =====================================================================
+ *
+ * PHPUnit kiểm allowlist nhóm field và merge đúng snapshot parent đã chụp lúc enqueue.
+ * Provider structured/raw giả trong file trả output rộng để kiểm boundary service
+ * vẫn lọc field; schema SQLite in-memory riêng, không gọi AI hoặc DB development.
+ *
  * CÁC HÀM/METHOD TRONG FILE:
  * - setUp().
  * - tearDown().
@@ -35,29 +40,33 @@ use Tests\TestCase;
  * - test_regeneration_merges_into_queued_parent_snapshot_even_if_live_parent_was_edited().
  * - test_three_step_regeneration_preserves_approved_parent_inline_images().
  * - inlineImport().
- * - __construct().
- * - configured().
- * - providerName().
- * - modelName().
- * - requestPayload().
- * - __construct().
- * - configured().
- * - execute().
- * - providerName().
- * - modelName().
- * - generate().
+ *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
- * - INPUT : fixtures source/JSON và cấu hình test đã cô lập.
- * - OUTPUT: assertions contract; không gọi AI thật hoặc ghi database development.
+ * - INPUT : Fixtures, HTTP request và dependency test đã cô lập.
+ * - OUTPUT: Assertions cho output, quyền, validation và lifecycle hiện có.
+ * - SIDE EFFECT: Tạo/đọc/sửa dữ liệu ở DB test; setup/teardown quản lý schema và connection riêng.
+ * - EXCEPTION/TRANSACTION: Lỗi assertion/dependency truyền ra PHPUnit; transaction code nghiệp vụ chạy trong môi trường test.
  * =====================================================================
  */
 final class AiSelectedOutputsTest extends TestCase
 {
     /**
      * =====================================================================
-     * INPUT: Không có; PHPUnit gọi trước mỗi ca.
-     * OUTPUT: Khởi tạo dependency/database test riêng; không thay dữ liệu development.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Chuẩn bị môi trường cô lập trước mỗi ca kiểm thử
+     * =====================================================================
+     *
+     * INPUT:
+     * - Không có; PHPUnit gọi trước mỗi ca.
+     *
+     * OUTPUT:
+     * - Khởi tạo dependency/database test riêng; không thay dữ liệu development.
+     *
+     * SIDE EFFECT:
+     * - chỉ xử lý fixtures hoặc database test đã cô lập.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi setup/schema truyền ra PHPUnit; không mở transaction nghiệp vụ bao toàn bộ ca test.
+     *
      * =====================================================================
      */
     protected function setUp(): void
@@ -69,6 +78,7 @@ final class AiSelectedOutputsTest extends TestCase
         config()->set('database.default', 'selected_outputs_test');
         Schema::create('ai_imports', function (Blueprint $table): void {
             $table->string('id')->primary();
+            $table->unsignedInteger('generation_no')->default(1);
             $table->text('result_json')->nullable();
             $table->timestamps();
         });
@@ -77,9 +87,21 @@ final class AiSelectedOutputsTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: Không có; PHPUnit gọi sau mỗi ca.
-     * OUTPUT: Dọn dependency/connection test, không thay dữ liệu development.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Dọn môi trường cô lập sau mỗi ca kiểm thử
+     * =====================================================================
+     *
+     * INPUT:
+     * - Không có; PHPUnit gọi sau mỗi ca.
+     *
+     * OUTPUT:
+     * - Dọn dependency/connection test, không thay dữ liệu development.
+     *
+     * SIDE EFFECT:
+     * - chỉ xử lý fixtures hoặc database test đã cô lập.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi teardown truyền ra PHPUnit; không gọi provider hoặc mở transaction nghiệp vụ mới.
+     *
      * =====================================================================
      */
     protected function tearDown(): void
@@ -90,9 +112,21 @@ final class AiSelectedOutputsTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: Fixture nguồn/output/cấu hình và dependencies fake của ca này.
-     * OUTPUT: Assertions contract/hành vi mong đợi; không gọi API AI thật.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Kiểm thử fixture nguồn/output/cấu hình và dependencies fake của ca này
+     * =====================================================================
+     *
+     * INPUT:
+     * - Fixture nguồn/output/cấu hình và dependencies fake của ca này.
+     *
+     * OUTPUT:
+     * - Assertions contract/hành vi mong đợi; không gọi API AI thật.
+     *
+     * SIDE EFFECT:
+     * - chỉ xử lý fixtures hoặc database test đã cô lập.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_excerpt_selection_filters_unselected_fields_even_when_their_types_are_invalid(): void
@@ -109,9 +143,21 @@ final class AiSelectedOutputsTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: Fixture nguồn/output/cấu hình và dependencies fake của ca này.
-     * OUTPUT: Assertions contract/hành vi mong đợi; không gọi API AI thật.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Kiểm thử fixture nguồn/output/cấu hình và dependencies fake của ca này
+     * =====================================================================
+     *
+     * INPUT:
+     * - Fixture nguồn/output/cấu hình và dependencies fake của ca này.
+     *
+     * OUTPUT:
+     * - Assertions contract/hành vi mong đợi; không gọi API AI thật.
+     *
+     * SIDE EFFECT:
+     * - chỉ xử lý fixtures hoặc database test đã cô lập.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_partial_seo_output_does_not_require_title_or_content_and_selection_overrides_legacy_flag(): void
@@ -125,9 +171,21 @@ final class AiSelectedOutputsTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: Fixture nguồn/output/cấu hình và dependencies fake của ca này.
-     * OUTPUT: Assertions contract/hành vi mong đợi; không gọi API AI thật.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Kiểm thử fixture nguồn/output/cấu hình và dependencies fake của ca này
+     * =====================================================================
+     *
+     * INPUT:
+     * - Fixture nguồn/output/cấu hình và dependencies fake của ca này.
+     *
+     * OUTPUT:
+     * - Assertions contract/hành vi mong đợi; không gọi API AI thật.
+     *
+     * SIDE EFFECT:
+     * - chỉ xử lý fixtures hoặc database test đã cô lập.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_selected_field_still_rejects_invalid_type(): void
@@ -140,9 +198,21 @@ final class AiSelectedOutputsTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: Fixture nguồn/output/cấu hình và dependencies fake của ca này.
-     * OUTPUT: Assertions contract/hành vi mong đợi; không gọi API AI thật.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Kiểm thử fixture nguồn/output/cấu hình và dependencies fake của ca này
+     * =====================================================================
+     *
+     * INPUT:
+     * - Fixture nguồn/output/cấu hình và dependencies fake của ca này.
+     *
+     * OUTPUT:
+     * - Assertions contract/hành vi mong đợi; không gọi API AI thật.
+     *
+     * SIDE EFFECT:
+     * - chỉ xử lý fixtures hoặc database test đã cô lập.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_create_preserves_manual_title_source_content_and_source_thumbnail(): void
@@ -170,9 +240,21 @@ final class AiSelectedOutputsTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: Fixture nguồn/output/cấu hình và dependencies fake của ca này.
-     * OUTPUT: Assertions contract/hành vi mong đợi; không gọi API AI thật.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Kiểm thử fixture nguồn/output/cấu hình và dependencies fake của ca này
+     * =====================================================================
+     *
+     * INPUT:
+     * - Fixture nguồn/output/cấu hình và dependencies fake của ca này.
+     *
+     * OUTPUT:
+     * - Assertions contract/hành vi mong đợi; không gọi API AI thật.
+     *
+     * SIDE EFFECT:
+     * - chỉ xử lý fixtures hoặc database test đã cô lập.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_content_selection_sanitizes_generated_html_and_preserves_other_source_fields(): void
@@ -191,9 +273,21 @@ final class AiSelectedOutputsTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: Fixture nguồn/output/cấu hình và dependencies fake của ca này.
-     * OUTPUT: Assertions contract/hành vi mong đợi; không gọi API AI thật.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Kiểm thử fixture nguồn/output/cấu hình và dependencies fake của ca này
+     * =====================================================================
+     *
+     * INPUT:
+     * - Fixture nguồn/output/cấu hình và dependencies fake của ca này.
+     *
+     * OUTPUT:
+     * - Assertions contract/hành vi mong đợi; không gọi API AI thật.
+     *
+     * SIDE EFFECT:
+     * - chỉ xử lý fixtures hoặc database test đã cô lập.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_content_selection_accepts_legacy_content_alias_and_prefers_canonical_field(): void
@@ -213,9 +307,21 @@ final class AiSelectedOutputsTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: Fixture nguồn/output/cấu hình và dependencies fake của ca này.
-     * OUTPUT: Assertions contract/hành vi mong đợi; không gọi API AI thật.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Kiểm thử fixture nguồn/output/cấu hình và dependencies fake của ca này
+     * =====================================================================
+     *
+     * INPUT:
+     * - Fixture nguồn/output/cấu hình và dependencies fake của ca này.
+     *
+     * OUTPUT:
+     * - Assertions contract/hành vi mong đợi; không gọi API AI thật.
+     *
+     * SIDE EFFECT:
+     * - chỉ xử lý fixtures hoặc database test đã cô lập.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_content_selection_rejects_invalid_type_in_legacy_content_alias(): void
@@ -228,9 +334,21 @@ final class AiSelectedOutputsTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: Fixture nguồn/output/cấu hình và dependencies fake của ca này.
-     * OUTPUT: Assertions contract/hành vi mong đợi; không gọi API AI thật.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Kiểm thử fixture nguồn/output/cấu hình và dependencies fake của ca này
+     * =====================================================================
+     *
+     * INPUT:
+     * - Fixture nguồn/output/cấu hình và dependencies fake của ca này.
+     *
+     * OUTPUT:
+     * - Assertions contract/hành vi mong đợi; không gọi API AI thật.
+     *
+     * SIDE EFFECT:
+     * - chỉ xử lý fixtures hoặc database test đã cô lập.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_regenerate_only_merges_selected_group_into_parent(): void
@@ -255,9 +373,21 @@ final class AiSelectedOutputsTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: Fixture nguồn/output/cấu hình và dependencies fake của ca này.
-     * OUTPUT: Assertions contract/hành vi mong đợi; không gọi API AI thật.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Kiểm thử fixture nguồn/output/cấu hình và dependencies fake của ca này
+     * =====================================================================
+     *
+     * INPUT:
+     * - Fixture nguồn/output/cấu hình và dependencies fake của ca này.
+     *
+     * OUTPUT:
+     * - Assertions contract/hành vi mong đợi; không gọi API AI thật.
+     *
+     * SIDE EFFECT:
+     * - chỉ xử lý fixtures hoặc database test đã cô lập.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_empty_regenerate_selection_preserves_legacy_complete_generation(): void
@@ -275,9 +405,21 @@ final class AiSelectedOutputsTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: Fixture nguồn/output/cấu hình và dependencies fake của ca này.
-     * OUTPUT: Assertions contract/hành vi mong đợi; không gọi API AI thật.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Kiểm thử fixture nguồn/output/cấu hình và dependencies fake của ca này
+     * =====================================================================
+     *
+     * INPUT:
+     * - Fixture nguồn/output/cấu hình và dependencies fake của ca này.
+     *
+     * OUTPUT:
+     * - Assertions contract/hành vi mong đợi; không gọi API AI thật.
+     *
+     * SIDE EFFECT:
+     * - chỉ xử lý fixtures hoặc database test đã cô lập.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_regeneration_merges_into_queued_parent_snapshot_even_if_live_parent_was_edited(): void
@@ -297,9 +439,21 @@ final class AiSelectedOutputsTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: parent snapshot có ảnh MediaLibrary và baseline AI trả content mới.
-     * OUTPUT: content giữ asset ref cùng title cũ; không cần model biết URL ảnh.
-     * SIDE EFFECT: database SQLite/HTTP provider fixture đã cô lập.
+     * CHỨC NĂNG: Kiểm thử parent snapshot có ảnh MediaLibrary và baseline AI trả content mới
+     * =====================================================================
+     *
+     * INPUT:
+     * - parent snapshot có ảnh MediaLibrary và baseline AI trả content mới.
+     *
+     * OUTPUT:
+     * - content giữ asset ref cùng title cũ; không cần model biết URL ảnh.
+     *
+     * SIDE EFFECT:
+     * - database SQLite/HTTP provider fixture đã cô lập.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_three_step_regeneration_preserves_approved_parent_inline_images(): void
@@ -317,9 +471,21 @@ final class AiSelectedOutputsTest extends TestCase
 
     /**
      * =====================================================================
-     * INPUT: Tham số fixture hoặc dữ liệu test được caller chuẩn bị.
-     * OUTPUT: Kết quả/exception giả lập để kiểm contract; HTTP/queue dùng fake trong ca test.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Dựng AiImport chỉ trong memory với nguồn inline fixture
+     * =====================================================================
+     *
+     * INPUT:
+     * - Tham số fixture hoặc dữ liệu test được caller chuẩn bị.
+     *
+     * OUTPUT:
+     * - Kết quả/exception giả lập để kiểm contract; HTTP/queue dùng fake trong ca test.
+     *
+     * SIDE EFFECT:
+     * - Chỉ dựng array/model trong memory; không persist hoặc gọi HTTP.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Không mở transaction; caller thực thi pipeline trên fixture này.
+     *
      * =====================================================================
      */
     private function inlineImport(array $input): AiImport
@@ -331,15 +497,48 @@ final class AiSelectedOutputsTest extends TestCase
     }
 }
 
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Provider structured giả dành cho kiểm output chọn lọc.
+ * =====================================================================
+ *
+ * Provider structured giả ghi lại input để kiểm allowlist/schema ở boundary service. Fixture trả output cố định hoặc DTO pipeline, không gửi HTTP thật.
+ *
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - __construct().
+ * - configured().
+ * - providerName().
+ * - modelName().
+ * - requestPayload().
+ *
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : Response fixture và input/task do pipeline chuẩn bị.
+ * - OUTPUT: Output fixture và captured input dùng assertions.
+ * - SIDE EFFECT: Chỉ cập nhật captured trong memory.
+ * - EXCEPTION/TRANSACTION: Không mở transaction; lỗi fixture/schema truyền ra ca test.
+ * =====================================================================
+ */
 final class SelectedOutputsStructuredProvider extends AbstractStructuredAiProvider
 {
     public object $captured;
 
     /**
      * =====================================================================
-     * INPUT: Dữ liệu responses/context để khởi tạo helper fixture.
-     * OUTPUT: Helper test sẵn sàng, không gọi HTTP hoặc ghi database.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Khởi tạo provider fixture cho ca kiểm thử
+     * =====================================================================
+     *
+     * INPUT:
+     * - Dữ liệu responses/context để khởi tạo helper fixture.
+     *
+     * OUTPUT:
+     * - Helper test sẵn sàng, không gọi HTTP hoặc ghi database.
+     *
+     * SIDE EFFECT:
+     * - Chỉ giữ response/captured state trong memory; không DB/HTTP.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Không mở transaction hoặc gọi AI thật.
+     *
      * =====================================================================
      */
     public function __construct(private readonly array $response)
@@ -349,9 +548,21 @@ final class SelectedOutputsStructuredProvider extends AbstractStructuredAiProvid
 
     /**
      * =====================================================================
-     * INPUT: Không có; provider fixture chỉ dùng trong test.
-     * OUTPUT: Trạng thái hoặc identity provider giả lập; không gọi HTTP hay ghi database.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Báo provider fixture sẵn sàng trong kiểm thử
+     * =====================================================================
+     *
+     * INPUT:
+     * - Không có; provider chỉ dùng trong test.
+     *
+     * OUTPUT:
+     * - bool true.
+     *
+     * SIDE EFFECT:
+     * - Chỉ trả cấu hình fixture; không DB/HTTP.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Không mở transaction hoặc gọi AI thật.
+     *
      * =====================================================================
      */
     public function configured(): bool
@@ -361,9 +572,21 @@ final class SelectedOutputsStructuredProvider extends AbstractStructuredAiProvid
 
     /**
      * =====================================================================
-     * INPUT: Không có; provider fixture chỉ dùng trong test.
-     * OUTPUT: Trạng thái hoặc identity provider giả lập; không gọi HTTP hay ghi database.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Trả định danh provider fixture dùng đối chiếu provenance
+     * =====================================================================
+     *
+     * INPUT:
+     * - Không có.
+     *
+     * OUTPUT:
+     * - Tên provider cố định cho fixture của class.
+     *
+     * SIDE EFFECT:
+     * - Chỉ đọc identity trong memory; không I/O.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Không mở transaction hoặc tra catalog thật.
+     *
      * =====================================================================
      */
     public function providerName(): string
@@ -373,9 +596,21 @@ final class SelectedOutputsStructuredProvider extends AbstractStructuredAiProvid
 
     /**
      * =====================================================================
-     * INPUT: Không có; provider fixture chỉ dùng trong test.
-     * OUTPUT: Trạng thái hoặc identity provider giả lập; không gọi HTTP hay ghi database.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Trả định danh model fixture dùng đối chiếu metadata
+     * =====================================================================
+     *
+     * INPUT:
+     * - Không có.
+     *
+     * OUTPUT:
+     * - Tên model cố định cho fixture của class.
+     *
+     * SIDE EFFECT:
+     * - Chỉ đọc identity trong memory; không I/O.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Không mở transaction hoặc gọi provider thật.
+     *
      * =====================================================================
      */
     public function modelName(): string
@@ -385,9 +620,21 @@ final class SelectedOutputsStructuredProvider extends AbstractStructuredAiProvid
 
     /**
      * =====================================================================
-     * INPUT: Tham số fixture hoặc dữ liệu test được caller chuẩn bị.
-     * OUTPUT: Kết quả/exception giả lập để kiểm contract; HTTP/queue dùng fake trong ca test.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Ghi captured input và trả output structured fixture
+     * =====================================================================
+     *
+     * INPUT:
+     * - Tham số fixture hoặc dữ liệu test được caller chuẩn bị.
+     *
+     * OUTPUT:
+     * - Kết quả/exception giả lập để kiểm contract; HTTP/queue dùng fake trong ca test.
+     *
+     * SIDE EFFECT:
+     * - Ghi captured input trong memory và dựng output từ ArticlePipelineFixture; không HTTP/DB.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi fixture/schema truyền lên ca test; không mở transaction.
+     *
      * =====================================================================
      */
     protected function requestPayload(array $input): mixed
@@ -400,23 +647,68 @@ final class SelectedOutputsStructuredProvider extends AbstractStructuredAiProvid
     }
 }
 
-/** Deliberately ignores requested groups to verify the service boundary too. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Provider giả bỏ qua nhóm output để kiểm boundary service.
+ * =====================================================================
+ *
+ * Provider cố tình bỏ qua requested groups để kiểm boundary service vẫn lọc/merge output đúng. Trả response fixture hoặc DTO ba bước, không gọi AI thật.
+ *
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - __construct().
+ * - configured().
+ * - execute().
+ * - providerName().
+ * - modelName().
+ * - generate().
+ *
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : Response fixture, task request hoặc tham số generate legacy.
+ * - OUTPUT: Output giả lập chưa tự lọc nhóm field ở provider.
+ * - SIDE EFFECT: Chỉ xử lý memory; không DB/HTTP.
+ * - EXCEPTION/TRANSACTION: Không mở transaction; ca test kiểm lỗi schema hoặc selection ở service.
+ * =====================================================================
+ */
 final class SelectedOutputsRawProvider implements AiProviderContract
 {
     /**
      * =====================================================================
-     * INPUT: Dữ liệu responses/context để khởi tạo helper fixture.
-     * OUTPUT: Helper test sẵn sàng, không gọi HTTP hoặc ghi database.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Khởi tạo provider fixture cho ca kiểm thử
+     * =====================================================================
+     *
+     * INPUT:
+     * - Dữ liệu responses/context để khởi tạo helper fixture.
+     *
+     * OUTPUT:
+     * - Helper test sẵn sàng, không gọi HTTP hoặc ghi database.
+     *
+     * SIDE EFFECT:
+     * - Chỉ giữ response/captured state trong memory; không DB/HTTP.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Không mở transaction hoặc gọi AI thật.
+     *
      * =====================================================================
      */
     public function __construct(private readonly array $response) {}
 
     /**
      * =====================================================================
-     * INPUT: Không có; provider fixture chỉ dùng trong test.
-     * OUTPUT: Trạng thái hoặc identity provider giả lập; không gọi HTTP hay ghi database.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Báo provider fixture sẵn sàng trong kiểm thử
+     * =====================================================================
+     *
+     * INPUT:
+     * - Không có; provider chỉ dùng trong test.
+     *
+     * OUTPUT:
+     * - bool true.
+     *
+     * SIDE EFFECT:
+     * - Chỉ trả cấu hình fixture; không DB/HTTP.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Không mở transaction hoặc gọi AI thật.
+     *
      * =====================================================================
      */
     public function configured(): bool
@@ -426,9 +718,21 @@ final class SelectedOutputsRawProvider implements AiProviderContract
 
     /**
      * =====================================================================
-     * INPUT: Tham số fixture hoặc dữ liệu test được caller chuẩn bị.
-     * OUTPUT: Kết quả/exception giả lập để kiểm contract; HTTP/queue dùng fake trong ca test.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Trả DTO output fixture theo task pipeline
+     * =====================================================================
+     *
+     * INPUT:
+     * - Tham số fixture hoặc dữ liệu test được caller chuẩn bị.
+     *
+     * OUTPUT:
+     * - Kết quả/exception giả lập để kiểm contract; HTTP/queue dùng fake trong ca test.
+     *
+     * SIDE EFFECT:
+     * - Chỉ dựng output/DTO từ response fixture; không HTTP/DB.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi fixture/schema truyền lên ca test; không mở transaction.
+     *
      * =====================================================================
      */
     public function execute(AiTaskRequest $request): AiTaskResponse
@@ -438,9 +742,21 @@ final class SelectedOutputsRawProvider implements AiProviderContract
 
     /**
      * =====================================================================
-     * INPUT: Không có; provider fixture chỉ dùng trong test.
-     * OUTPUT: Trạng thái hoặc identity provider giả lập; không gọi HTTP hay ghi database.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Trả định danh provider fixture dùng đối chiếu provenance
+     * =====================================================================
+     *
+     * INPUT:
+     * - Không có.
+     *
+     * OUTPUT:
+     * - Tên provider cố định cho fixture của class.
+     *
+     * SIDE EFFECT:
+     * - Chỉ đọc identity trong memory; không I/O.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Không mở transaction hoặc tra catalog thật.
+     *
      * =====================================================================
      */
     public function providerName(): string
@@ -450,9 +766,21 @@ final class SelectedOutputsRawProvider implements AiProviderContract
 
     /**
      * =====================================================================
-     * INPUT: Không có; provider fixture chỉ dùng trong test.
-     * OUTPUT: Trạng thái hoặc identity provider giả lập; không gọi HTTP hay ghi database.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Trả định danh model fixture dùng đối chiếu metadata
+     * =====================================================================
+     *
+     * INPUT:
+     * - Không có.
+     *
+     * OUTPUT:
+     * - Tên model cố định cho fixture của class.
+     *
+     * SIDE EFFECT:
+     * - Chỉ đọc identity trong memory; không I/O.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Không mở transaction hoặc gọi provider thật.
+     *
      * =====================================================================
      */
     public function modelName(): string
@@ -462,9 +790,21 @@ final class SelectedOutputsRawProvider implements AiProviderContract
 
     /**
      * =====================================================================
-     * INPUT: Tham số fixture hoặc dữ liệu test được caller chuẩn bị.
-     * OUTPUT: Kết quả/exception giả lập để kiểm contract; HTTP/queue dùng fake trong ca test.
-     * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
+     * CHỨC NĂNG: Trả response fixture theo contract generate legacy
+     * =====================================================================
+     *
+     * INPUT:
+     * - Tham số fixture hoặc dữ liệu test được caller chuẩn bị.
+     *
+     * OUTPUT:
+     * - Kết quả/exception giả lập để kiểm contract; HTTP/queue dùng fake trong ca test.
+     *
+     * SIDE EFFECT:
+     * - Chỉ dựng output/DTO từ response fixture; không HTTP/DB.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi fixture/schema truyền lên ca test; không mở transaction.
+     *
      * =====================================================================
      */
     public function generate(string $title, string $content, string $language = 'vi', string $rewriteStyle = 'informative', string $promptKey = 'post.create.from_url', string $instructions = ''): array

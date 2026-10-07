@@ -50,7 +50,7 @@ export function useAiProviderSettings() {
       settings.value = { ...settings.value, ...(data.settings ?? {}) }
     }
     catch (reason) {
-      error.value = reason?.data?.message ?? reason?.message ?? 'Không thể tải cấu hình AI.'
+      error.value = reason?.data?.message ?? 'Không thể tải cấu hình AI. Hãy thử lại.'
       throw reason
     }
     finally {

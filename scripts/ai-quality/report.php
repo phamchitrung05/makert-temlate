@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\Ai\Content\Data\ArticleInputHasher;
+use App\Services\Ai\Content\Evaluation\ArticleQualityAcceptance;
 use App\Services\Ai\Content\Evaluation\ArticleQualityHumanReview;
 use App\Services\Ai\Content\Evaluation\ArticleQualityReviewBundle;
 use App\Services\Ai\Content\Evaluation\ArticleQualityStudyReport;
@@ -22,7 +23,7 @@ set_exception_handler(static function (Throwable $exception): never {
     fwrite(STDERR, 'Report failed: '.$exception->getMessage().PHP_EOL);
     exit(1);
 });
-$options = getopt('', ['study:', 'manifest:', 'output:', 'review-output:', 'reviewer-1:', 'reviewer-2:']);
+$options = getopt('', ['study:', 'manifest:', 'output:', 'review-output:', 'reviewer-1:', 'reviewer-2:', 'criteria:', 'arms:']);
 $study = realpath($options['study'] ?? base_path('docs/qa/task2-quality/study-2026-10-05-corpus-v2'));
 $manifestPath = realpath($options['manifest'] ?? base_path('docs/qa/task2-quality/corpus-v2/manifest.json'));
 if (! $study || ! $manifestPath) {
@@ -46,6 +47,13 @@ $arms = array_values(array_unique(array_column($summary['results'], 'arm')));
 sort($arms);
 if (! in_array($arms, [['C'], ['B', 'C']], true)) {
     throw new RuntimeException('Chỉ nhận phiên C hoặc artifacts B/C lịch sử.');
+}
+if (isset($options['arms'])) {
+    if ($options['arms'] !== 'C') {
+        throw new RuntimeException('--arms chỉ nhận C khi chuẩn bị bộ nghiệm thu mới.');
+    }
+    $arms = ['C'];
+    $key = array_map(static fn (array $labels): array => array_filter($labels, static fn (string $arm): bool => $arm === 'C'), $key);
 }
 foreach ($manifest['cases'] as $case) {
     $id = $case['case_id'];
@@ -81,7 +89,11 @@ $report = $reportService->build($manifest, $sources, $artifacts, $key, $readers,
 $report['manifest_sha256'] = $manifestHash;
 $report['bundle_sha256'] = $bundleHash;
 $report['artifact_sha256'] = $hashes;
-if (array_sum(array_column($report['arms'], 'calls')) !== $summary['actual_calls']) {
+$acceptance = isset($options['criteria']) ? (new ArticleQualityAcceptance)->evaluate($report, readStudyJson($options['criteria'])) : null;
+$selectedCalls = isset($options['arms'])
+    ? array_sum(array_column(array_filter($summary['results'], static fn (array $result): bool => $result['arm'] === 'C'), 'calls'))
+    : $summary['actual_calls'];
+if (array_sum(array_column($report['arms'], 'calls')) !== $selectedCalls) {
     throw new RuntimeException('Số call summary không khớp artifacts.');
 }
 $output = $options['output'] ?? $study.'/report-v2';
@@ -113,13 +125,17 @@ if (! is_dir($review)) {
     copy(__DIR__.'/review.css', $review.'/review.css');
     writeNewJson($review.'/bundle-manifest.json', ['bundle_sha256' => $bundleHash, 'manifest_sha256' => $manifestHash, 'experiment_sha256' => $experimentHash, 'cases' => count($manifest['cases']), 'human_review' => 'pending', 'scores_filled_by_agent' => false]);
     $preferenceInstructions = count($arms) > 1 ? ' Chọn bài ưu tiên sau khi đọc cả hai.' : ' Phiên C không có lựa chọn giữa hai bài; để trống paired_preference trong CSV.';
-    file_put_contents($review.'/README.md', "# Hai bộ chấm độc lập\n\nMỗi người mở một file reviewer-N.html, nhập tên/mã riêng rồi đọc nguồn và brief. Không xem summary, report hoặc blind-key trước khi chốt điểm. Có thể mở trực tiếp file; giữ review.js/review.css cùng thư mục.\n\n1. Lập dữ kiện quan trọng từ source blocks, ghi mã đoạn và điều kiện. Không lấy ledger Analyze làm đáp án.\n2. Đọc từng ứng viên theo nhãn, ghi lỗi critical/major/minor, coverage và checklist code/link/table/quote/ảnh. URL/alt/chú thích không chứng minh đã nhìn pixel ảnh.\n3. Chấm 1–5 theo rubric ở docs/AI_ARTICLE_QUALITY_EVALUATION.md. 1 kém, 3 dùng được sau sửa, 5 tốt; 2/4 là mức giữa.\n4. Ghi phút sửa thực tế và số sửa; không suy công sửa từ tokens/latency/diff.".$preferenceInstructions."\n5. Chỉ đánh dấu Hoàn thành khi đủ dữ kiện và điểm. Tải CSV để giữ bản chắc chắn; bản nháp lưu riêng theo bộ chấm/trình duyệt khi hỗ trợ.\n\nHai người chấm trước khi trao đổi. CSV trống là chưa chấm, không phải 0; không chỉnh CSV của người kia. Sau đó đưa hai CSV vào scripts/ai-quality/report.php --reviewer-1=PATH --reviewer-2=PATH --output=FRESH_REPORT_DIR. Tool không gọi AI hoặc đổi cấu hình. Bất đồng fact cần đối chiếu evidence và owner quyết định nghiệm thu chất lượng.\n");
+    file_put_contents($review.'/README.md', "# Hai bộ chấm độc lập\n\nMỗi người mở một file reviewer-N.html, nhập tên/mã riêng rồi đọc nguồn và brief. Không xem summary, report hoặc blind-key trước khi chốt điểm. Có thể mở trực tiếp file; giữ review.js/review.css cùng thư mục.\n\n1. Lập dữ kiện quan trọng từ source blocks, ghi mã đoạn và điều kiện. Không lấy ledger Analyze làm đáp án.\n2. Đọc từng ứng viên theo nhãn, ghi lỗi critical/major/minor, coverage và checklist code/link/table/quote/ảnh. URL/alt/chú thích không chứng minh đã nhìn pixel ảnh.\n3. Chấm 1–5 theo rubric ở docs/quality/AI_ARTICLE_QUALITY_EVALUATION.md. 1 kém, 3 dùng được sau sửa, 5 tốt; 2/4 là mức giữa.\n4. Ghi phút sửa thực tế và số sửa; không suy công sửa từ tokens/latency/diff.".$preferenceInstructions."\n5. Chỉ đánh dấu Hoàn thành khi đủ dữ kiện và điểm. Tải CSV để giữ bản chắc chắn; bản nháp lưu riêng theo bộ chấm/trình duyệt khi hỗ trợ.\n\nHai người chấm trước khi trao đổi. CSV trống là chưa chấm, không phải 0; không chỉnh CSV của người kia. Sau đó chạy scripts/ai-quality/report.php với cả --reviewer-1 và --reviewer-2, đúng --study/--manifest, --review-output trỏ tới bộ chấm này và --output là thư mục report mới. Với bộ chỉ có C phải giữ --arms=C. Thêm --criteria nếu cần kiểm điều kiện nghiệm thu. Tool không gọi AI hoặc đổi cấu hình. Bất đồng fact cần đối chiếu evidence và owner quyết định nghiệm thu chất lượng.\n");
 }
 if (! mkdir($output, 0755, true)) {
     throw new RuntimeException('Không tạo được thư mục report mới.');
 }
 writeNewJson($output.'/report.json', $report);
 file_put_contents($output.'/report.md', $reportService->markdown($report));
+if ($acceptance !== null) {
+    writeNewJson($output.'/acceptance.json', $acceptance);
+    file_put_contents($output.'/acceptance.md', (new ArticleQualityAcceptance)->markdown($acceptance));
+}
 echo json_encode(['cases' => $report['cases'], 'matched_pairs' => $report['matched_pairs'], 'calls' => array_sum(array_column($report['arms'], 'calls')), 'B_ready' => $report['arms']['B']['ready'] ?? null, 'C_ready' => $report['arms']['C']['ready'], 'human_review' => $report['human_review']['status'], 'output' => $output, 'AI_calls_added' => 0], JSON_UNESCAPED_SLASHES).PHP_EOL;
 
 /**

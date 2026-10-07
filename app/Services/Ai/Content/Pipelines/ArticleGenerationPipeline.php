@@ -23,15 +23,18 @@ use App\Services\Ai\Providers\Diagnostics\AiResponseDiagnostics;
  * CHỨC NĂNG FILE: Điều phối Analyze + Plan → Write → Edit và checkpoint.
  * =====================================================================
  * Reuse provider/queue/AiImport hiện có; không ghi Post hoặc auto-publish.
- * CÁC HÀM/METHOD TRONG FILE: run(), step(), boundary(), restoreImages(), metadata().
+ * CÁC HÀM/METHOD TRONG FILE: run(), step(), traceStep(), boundary(), restoreImages(), metadata().
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : run, provider, source/profile/settings snapshots và selected fields.
- * - OUTPUT: final canonical đã sanitize/quality; metadata lưu riêng source_meta.
+ * - OUTPUT: final canonical đã sanitize/quality; metadata và hash/version của
+ *   checkpoint thật sự sử dụng để archive giữ được sau cleanup.
  * - SIDE EFFECT: gọi AI ba lần, lưu checkpoint từng bước sau validate.
  * =====================================================================
  */
 final class ArticleGenerationPipeline
 {
+    private array $usedSteps = [];
+
     /**
      * =====================================================================
      * Input: AiImport, provider, source snapshot và field groups thật sự yêu cầu.
@@ -41,6 +44,7 @@ final class ArticleGenerationPipeline
      */
     public function run(AiImport $import, AiProviderContract $provider, array $source, array $fields): array
     {
+        $this->usedSteps = [];
         $input = (array) $import->input_json;
         $settings = (array) ($input['pipeline_snapshot'] ?? config('ai-content', []));
         $groups = array_values(array_diff($fields === [] ? ['title', 'content'] : $fields, ['thumbnail', 'taxonomy']));
@@ -96,6 +100,7 @@ final class ArticleGenerationPipeline
         $this->metadata($import, [
             'pipeline' => 'three_step', 'quality' => $checks, 'image_warnings' => $imageWarnings,
             'editor_warning_count' => count($editor['issues']),
+            'used_steps' => $this->usedSteps,
         ]);
 
         return $final;
@@ -125,6 +130,7 @@ final class ArticleGenerationPipeline
             if ($artifact->status === 'completed' && is_array($artifact->output_json)) {
                 $output = (new AiTaskSchemaValidator)->validate($artifact->output_json, $request->schema);
                 $validate($output);
+                $this->traceStep($task, $hash, (array) $artifact->diagnostics_json, $request->options, true);
 
                 return $output;
             }
@@ -142,6 +148,7 @@ final class ArticleGenerationPipeline
                 'provider' => $provider->providerName(), 'model' => $provider->modelName(), 'latency_ms' => (int) round((microtime(true) - $started) * 1000),
             ];
             $artifact?->forceFill(['status' => 'completed', 'output_json' => $output, 'diagnostics_json' => $diagnostics, 'completed_at' => now()])->save();
+            $this->traceStep($task, $hash, $diagnostics, $request->options, false);
 
             return $output;
         } catch (AiImportException $exception) {
@@ -149,6 +156,17 @@ final class ArticleGenerationPipeline
                 'diagnostics_json' => AiResponseDiagnostics::sanitize($exception->diagnostics) + ['error_code' => $exception->errorCode], 'completed_at' => now()])->save();
             throw $exception;
         }
+    }
+
+    /** INPUT: task/hash/diagnostics/version. OUTPUT: trace có nguồn gốc; không DB/network/transaction. */
+    private function traceStep(string $task, string $hash, array $diagnostics, array $options, bool $reused): void
+    {
+        $this->usedSteps[] = [
+            'task' => $task, 'input_hash' => $hash, 'prompt_version' => $options['prompt_version'],
+            'schema_version' => $options['schema_version'], 'reused_checkpoint' => $reused,
+            // Usage này thuộc checkpoint gốc; reused không có nghĩa phát sinh thêm token.
+            'diagnostics' => AiResponseDiagnostics::sanitize($diagnostics),
+        ];
     }
 
     /**

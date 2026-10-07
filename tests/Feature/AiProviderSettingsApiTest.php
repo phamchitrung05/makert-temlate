@@ -27,6 +27,11 @@ use Tests\UsesIsolatedDatabase;
  * =====================================================================
  * CHỨC NĂNG FILE: Kiểm catalog/settings/provider lifecycle với HTTP và queue fake.
  * =====================================================================
+ *
+ * PHPUnit kiểm provider catalog/settings, capability, request timeout và retry
+ * khi connection lỗi hoặc bị tắt. HTTP/queue dùng fake trên database test riêng;
+ * không kết nối provider thật hoặc thay key/dữ liệu của ứng dụng.
+ *
  * CÁC HÀM/METHOD TRONG FILE:
  * - setUp().
  * - tearDown().
@@ -51,11 +56,12 @@ use Tests\UsesIsolatedDatabase;
  * - test_catalog_and_image_connection_failures_do_not_reconnect_automatically().
  * - test_manual_retry_rejects_disabled_connection_without_mutating_run().
  * - test_new_provider_and_form_use_configured_timeout_default().
- * =====================================================================
+ *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
- * - INPUT : fixtures/requests admin, HTTP và Queue fake, database test cô lập.
- * - OUTPUT: assertions cho contract, snapshot, quyền và lỗi; không gọi AI thật.
- * - SIDE EFFECT: tạo/sửa dữ liệu trong database test; không chỉnh dữ liệu ứng dụng.
+ * - INPUT : Fixtures, HTTP request và dependency test đã cô lập.
+ * - OUTPUT: Assertions cho output, quyền, validation và lifecycle hiện có.
+ * - SIDE EFFECT: Tạo/đọc/sửa dữ liệu ở DB test; setup/teardown quản lý schema và connection riêng.
+ * - EXCEPTION/TRANSACTION: Lỗi assertion/dependency truyền ra PHPUnit; transaction code nghiệp vụ chạy trong môi trường test.
  * =====================================================================
  */
 final class AiProviderSettingsApiTest extends TestCase
@@ -125,10 +131,21 @@ final class AiProviderSettingsApiTest extends TestCase
 
     /**
      * =====================================================================
-     * Input: Catalog có text-only, image-only, unknown và disabled models.
-     * Output: Text-only hiển thị/chạy được; output sai JSON vẫn bị từ chối.
-     * Side effect: Database cô lập, HTTP/queue fake; không gọi model thật.
-
+     * CHỨC NĂNG: Kiểm thử catalog có text-only, image-only, unknown và disabled models
+     * =====================================================================
+     *
+     * INPUT:
+     * - Catalog có text-only, image-only, unknown và disabled models.
+     *
+     * OUTPUT:
+     * - Text-only hiển thị/chạy được; output sai JSON vẫn bị từ chối.
+     *
+     * SIDE EFFECT:
+     * - Database cô lập, HTTP/queue fake; không gọi model thật.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_text_capability_alone_is_visible_and_runs_without_native_json_mode(): void
@@ -576,7 +593,21 @@ final class AiProviderSettingsApiTest extends TestCase
 
     /**
      * =====================================================================
-     * Input: tạo/sửa provider và timeout sai. Output: default 120, lưu số giây, giữ khi bỏ field, 422 ngoài 5–600; DB cô lập.
+     * CHỨC NĂNG: Kiểm thử tạo/sửa provider và timeout sai
+     * =====================================================================
+     *
+     * INPUT:
+     * - tạo/sửa provider và timeout sai.
+     *
+     * OUTPUT:
+     * - default 120, lưu số giây, giữ khi bỏ field, 422 ngoài 5–600; DB cô lập.
+     *
+     * SIDE EFFECT:
+     * - Chỉ xử lý fixture hoặc dữ liệu trong database test; không gọi AI thật hay sửa dữ liệu ứng dụng.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_provider_timeout_can_be_saved_and_validated_without_changing_key(): void
@@ -600,7 +631,21 @@ final class AiProviderSettingsApiTest extends TestCase
 
     /**
      * =====================================================================
-     * Input: timeout provider 360, global 5, hai capability. Output: text/image dùng 360 và job/lease đủ dài; không network thật.
+     * CHỨC NĂNG: Kiểm thử timeout provider 360, global 5, hai capability
+     * =====================================================================
+     *
+     * INPUT:
+     * - timeout provider 360, global 5, hai capability.
+     *
+     * OUTPUT:
+     * - text/image dùng 360 và job/lease đủ dài; không network thật.
+     *
+     * SIDE EFFECT:
+     * - Chỉ xử lý fixture hoặc dữ liệu trong database test; không gọi AI thật hay sửa dữ liệu ứng dụng.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_provider_timeout_overrides_global_for_text_image_and_catalog_calls(): void
@@ -636,7 +681,21 @@ final class AiProviderSettingsApiTest extends TestCase
 
     /**
      * =====================================================================
-     * Input: POST mất kết nối, timeout provider đổi trước retry. Output: failed sau một lần, chỉ requeue khi bấm, nhận timeout mới và chống retry trùng; fake HTTP/queue.
+     * CHỨC NĂNG: Kiểm thử pOST mất kết nối, timeout provider đổi trước retry
+     * =====================================================================
+     *
+     * INPUT:
+     * - POST mất kết nối, timeout provider đổi trước retry.
+     *
+     * OUTPUT:
+     * - failed sau một lần, chỉ requeue khi bấm, nhận timeout mới và chống retry trùng; fake HTTP/queue.
+     *
+     * SIDE EFFECT:
+     * - Chỉ xử lý fixture hoặc dữ liệu trong database test; không gọi AI thật hay sửa dữ liệu ứng dụng.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_connection_failure_waits_for_manual_retry_and_uses_latest_timeout(): void
@@ -677,7 +736,7 @@ final class AiProviderSettingsApiTest extends TestCase
         $this->withToken($token)->postJson($url)->assertConflict();
         Queue::assertPushed(ProcessAiImportJob::class, 2);
         $this->assertSame(1, $calls);
-        (new ProcessAiImportJob($id, 600))->handle(app(ArticleImportService::class));
+        (new ProcessAiImportJob($id, 600, generationNo: (int) AiImport::findOrFail($id)->generation_no))->handle(app(ArticleImportService::class));
         $this->assertSame('ready', AiImport::findOrFail($id)->status);
         $this->assertEquals([120, 600, 600, 600], $timeouts);
         $this->assertSame(1, AiImport::count());
@@ -685,7 +744,21 @@ final class AiProviderSettingsApiTest extends TestCase
 
     /**
      * =====================================================================
-     * Input: GET catalog hoặc POST image mất kết nối. Output: một HTTP attempt, image failed và catalog cũ còn nguyên; không tạo ảnh thật.
+     * CHỨC NĂNG: Kiểm thử gET catalog hoặc POST image mất kết nối
+     * =====================================================================
+     *
+     * INPUT:
+     * - GET catalog hoặc POST image mất kết nối.
+     *
+     * OUTPUT:
+     * - một HTTP attempt, image failed và catalog cũ còn nguyên; không tạo ảnh thật.
+     *
+     * SIDE EFFECT:
+     * - Chỉ xử lý fixture hoặc dữ liệu trong database test; không gọi AI thật hay sửa dữ liệu ứng dụng.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_catalog_and_image_connection_failures_do_not_reconnect_automatically(): void
@@ -715,7 +788,21 @@ final class AiProviderSettingsApiTest extends TestCase
 
     /**
      * =====================================================================
-     * Input: failed run nhưng provider đã tắt. Output: từ chối retry, giữ lifecycle và không dispatch; DB/queue fake.
+     * CHỨC NĂNG: Kiểm thử failed run nhưng provider đã tắt
+     * =====================================================================
+     *
+     * INPUT:
+     * - failed run nhưng provider đã tắt.
+     *
+     * OUTPUT:
+     * - từ chối retry, giữ lifecycle và không dispatch; DB/queue fake.
+     *
+     * SIDE EFFECT:
+     * - Chỉ xử lý fixture hoặc dữ liệu trong database test; không gọi AI thật hay sửa dữ liệu ứng dụng.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_manual_retry_rejects_disabled_connection_without_mutating_run(): void
@@ -736,7 +823,21 @@ final class AiProviderSettingsApiTest extends TestCase
 
     /**
      * =====================================================================
-     * Input: config timeout 240 và provider mới bỏ field. Output: catalog/form default 240 và record lưu 240; chỉ DB test.
+     * CHỨC NĂNG: Kiểm thử config timeout 240 và provider mới bỏ field
+     * =====================================================================
+     *
+     * INPUT:
+     * - config timeout 240 và provider mới bỏ field.
+     *
+     * OUTPUT:
+     * - catalog/form default 240 và record lưu 240; chỉ DB test.
+     *
+     * SIDE EFFECT:
+     * - Chỉ xử lý fixture hoặc dữ liệu trong database test; không gọi AI thật hay sửa dữ liệu ứng dụng.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
+     *
      * =====================================================================
      */
     public function test_new_provider_and_form_use_configured_timeout_default(): void

@@ -1,0 +1,14 @@
+{
+    "version": "article.quality.criteria.v1",
+    "status": "proposed",
+    "approved_by": "",
+    "minimum_cases": 20,
+    "minimum_unique_sources": 20,
+    "required_source_languages": ["vi", "en"],
+    "minimum_ready_rate": 1,
+    "maximum_critical_errors": 0,
+    "maximum_major_errors": 0,
+    "minimum_median_score": 3,
+    "maximum_median_editing_minutes": null,
+    "accepted_coverage_gaps": []
+}

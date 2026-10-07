@@ -109,7 +109,7 @@ hoặc bổ sung điểm người đọc vào study cũ. Các phiên đánh giá
 
 ## Phần tiếp theo
 
-Chấm người đọc là đợt riêng theo [protocol](../../AI_ARTICLE_QUALITY_EVALUATION.md).
+Chấm người đọc là đợt riêng theo [protocol](../../quality/AI_ARTICLE_QUALITY_EVALUATION.md).
 Theo FIX 1, công việc triển khai kế tiếp là workflow `ai_content_drafts` lưu
 dài hạn và API/UI duyệt/từ chối/so sánh nguồn, sau đó thumbnail generate,
 Reverb/VPS và chín tab Settings ngoài AI.
