@@ -424,6 +424,13 @@
     "textOfHtml": true,
     "applySiteBranding": true,
     "useSettingsBranding": true,
-    "useSiteBranding": true
+    "useSiteBranding": true,
+    "ACTIVE_AI_TASK_STATUSES": true,
+    "AI_TASK_QUEUED_EVENT": true,
+    "TERMINAL_AI_TASK_STATUSES": true,
+    "aiTaskStatusMeta": true,
+    "normalizeTask": true,
+    "useAiTaskQueue": true,
+    "AI_TASK_READY_EVENT": true
   }
 }

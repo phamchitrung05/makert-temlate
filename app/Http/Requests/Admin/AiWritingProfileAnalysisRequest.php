@@ -43,6 +43,8 @@ final class AiWritingProfileAnalysisRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:160'],
             'reference_text' => ['required', 'string', 'min:30', 'max:100000'],
+            'source_type' => ['sometimes', 'required', 'string', 'in:url,paste,file'],
+            'source_url' => ['sometimes', 'nullable', 'url:http,https', 'max:2048'],
             'model_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'provider' => ['sometimes', 'nullable', 'string', 'max:100'],
             'model' => ['sometimes', 'nullable', 'string', 'max:191'],

@@ -35,9 +35,9 @@ Chủ dự án chấp nhận mức **4,49/5** và hiện chưa yêu cầu chỉn
 
 Ngày 07/10/2026, chủ dự án yêu cầu để tính năng chấm bài và danh sách customer làm sau vì giai đoạn đầu chưa có khách hàng. Q-01 giai đoạn 1 đã hoàn tất; phần giai đoạn 2–6 và A-01 tạm hoãn. **A-02 đã xong phạm vi backend**: role CRUD, permission catalog và gán role admin. Hai page Vue để khung trống để chủ dự án thêm giao diện riêng sau. P-01 đã triển khai. Ngày 08/10/2026, chủ dự án yêu cầu tạm hoãn P-02; P-03 và P-04 đã hoàn tất trong phạm vi hiện tại. `post_type` và Gallery đầy đủ sẽ mở ở một plan riêng sau.
 
-### Plan bên lề đang chờ triển khai
+### Plan bên lề đã triển khai
 
-- [AI Task Queue Popup](AI_TASK_QUEUE_POPUP.md): cho phép thêm nhiều văn phong liên tiếp và theo dõi các analysis/job trong popup góc trái dưới. Backend queue hiện đã nhận nhiều job; plan tập trung vào API danh sách, polling và UI, chưa thay đổi concurrency worker.
+- [AI Task Queue Popup](AI_TASK_QUEUE_POPUP.md): đã cho phép thêm nhiều văn phong liên tiếp và theo dõi các analysis/job trong popup góc phải dưới. API list có pagination/filter/scope; polling dừng ở trạng thái cuối và không thay đổi concurrency worker.
 
 ## Mốc đã hoàn tất gần nhất
 
@@ -53,6 +53,7 @@ Ngày 07/10/2026, chủ dự án yêu cầu để tính năng chấm bài và da
 - [x] 08/10: hoàn tất P-01: workflow review/publish/archive Post, `published_at` server-side, permission CRUD/lifecycle riêng, audit transition và UI action/filter. [QA Post workflow](../qa/POST_WORKFLOW_2026-10-08.md).
 - [x] 08/10: hoàn tất P-03: sanitize HTML Post thủ công ở backend, giữ markup/media hợp lệ, chặn URL ảnh nguy hiểm và dùng chung sanitizer với AI. [QA Post HTML](../qa/POST_CONTENT_SANITIZATION_2026-10-08.md).
 - [x] 08/10: hoàn tất P-04 trong phạm vi đã chốt: lọc Post theo tác giả và ngày tạo, danh sách tác giả cho filter, date range inclusive, UI panel filter riêng và fake API. `post_type`/Gallery không thuộc task này; sẽ lập plan riêng sau. [QA Post filters](../qa/POST_FILTERS_2026-10-08.md).
+- [x] 08/10: hoàn tất [AI Task Queue Popup](AI_TASK_QUEUE_POPUP.md): API list analysis có scope/filter/pagination, popup Admin dùng task thật, polling terminal, Add văn phong cho phép enqueue liên tiếp, worker tạo draft và trang `/ai/prompt/edit` khôi phục nguồn để duyệt/lưu.
 
 Bằng chứng FIX 1 ở [Acceptance/QA](../qa/FIX1_ACCEPTANCE_2026-10-07/README.md): backend 438 tests/2986 assertions; lượt scoped cuối 31/172; frontend scoped 7 files/51 tests và build đạt. Kiểm backend gần nhất sau bổ sung kho approved xem [QA giai đoạn 1](../qa/AI_ARTICLE_ARCHIVES_2026-10-07.md). Đây là các lượt có phần trùng nhau, không cộng thành tổng mới.
 

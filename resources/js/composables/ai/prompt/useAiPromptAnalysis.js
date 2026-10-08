@@ -4,14 +4,16 @@
  * CHỨC NĂNG FILE: Submit, polling, hủy và resume analysis văn phong hiện có.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE: useAiPromptAnalysis(), storageKey(), remember(),
- * stop(), accept(), poll(), resumePolling(), analyze(), cancel(), restore(), allowNewSubmission(), reset().
+ * stop(), accept(), poll(), resumePolling(), analyze(), cancel(), restore(), restoreActive(),
+ * clearRemembered(), allowNewSubmission(), detachActive(), reset().
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : nguồn reactive và actor hiện tại.
  * - OUTPUT: lifecycle/result/lỗi; nguồn đã gửi bất biến trong lượt phân tích.
- * - SIDE EFFECT: POST một lần theo click, GET backoff, sessionStorage chỉ UUID.
+ * - SIDE EFFECT: POST một lần theo click, GET backoff, sessionStorage lưu UUID/trạng thái resume.
  * =====================================================================
  */
 import { computed, onScopeDispose, shallowRef, toValue } from 'vue'
+import { AI_TASK_QUEUED_EVENT } from '@/composables/useAiTaskQueue'
 import { aiWritingProfilesService } from '@/services/aiWritingProfiles'
 import { formatAiError } from '@/utils/aiErrors'
 
@@ -66,6 +68,7 @@ export function useAiPromptAnalysis(source, actorId) {
       const key = storageKey()
       if (key && analysis.value) {
         window.sessionStorage.setItem(key, JSON.stringify({ id: analysis.value.id, expiresAt: analysis.value.expires_at }))
+        window.sessionStorage.setItem(`${key}:status`, analysis.value.status || '')
         window.sessionStorage.removeItem(`${key}:pending`)
       }
     }
@@ -92,6 +95,10 @@ export function useAiPromptAnalysis(source, actorId) {
    * =====================================================================
    */
   function accept(value) {
+    if (submittedText.value === null && typeof value.reference_text === 'string') {
+      source.restoreFromAnalysis(value)
+      submittedText.value = source.text.value
+    }
     analysis.value = value
     statusOverride.value = ''
     remember()
@@ -128,8 +135,7 @@ export function useAiPromptAnalysis(source, actorId) {
         message.value = httpStatus === 403
           ? formatAiError(reason, 'Bạn không có quyền mở phân tích này. Có thể bắt đầu văn phong mới.')
           : 'Phân tích đã hết hạn hoặc không còn được lưu.'
-        try { if (storageKey()) window.sessionStorage.removeItem(storageKey()) }
-        catch { /* Không phụ thuộc quyền ghi storage. */ }
+        clearRemembered()
       }
       else {
         paused.value = true
@@ -152,7 +158,8 @@ export function useAiPromptAnalysis(source, actorId) {
     stop()
     attempt = 0
     paused.value = false
-    void poll(analysis.value.id, sequence)
+
+    return poll(analysis.value.id, sequence)
   }
 
   /**
@@ -186,10 +193,16 @@ export function useAiPromptAnalysis(source, actorId) {
     try { if (storageKey()) window.sessionStorage.setItem(`${storageKey()}:pending`, 'true') }
     catch { /* Chỉ lưu cờ chưa rõ kết quả, không lưu bài mẫu hoặc token. */ }
     try {
-      const value = await aiWritingProfilesService.createAnalysis({ name, reference_text: text, ...(source.modelId.value ? { model_id: source.modelId.value } : {}) })
+      const payload = { name, reference_text: text, ...(source.modelId.value ? { model_id: source.modelId.value } : {}) }
+      if (source.sourceTab.value !== 'paste') payload.source_type = source.sourceTab.value
+      if (source.sourceTab.value === 'url' && source.sourceUrl.value.trim()) payload.source_url = source.sourceUrl.value.trim()
+      const value = await aiWritingProfilesService.createAnalysis(payload)
       if (disposed || currentSequence !== sequence) return
       accept(value)
-      resumePolling()
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(AI_TASK_QUEUED_EVENT, { detail: value }))
+      void resumePolling()
+
+      return value
     }
     catch (reason) {
       if (disposed || currentSequence !== sequence) return
@@ -260,9 +273,59 @@ export function useAiPromptAnalysis(source, actorId) {
       analysis.value = { id: stored.id, status: 'queued', name: '' }
       submittedText.value = null
       uncertainSubmit.value = false
-      resumePolling()
+
+      return resumePolling()
     }
     catch { /* Metadata không hợp lệ không ngăn người dùng tạo tác vụ mới. */ }
+  }
+
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Chỉ resume analysis còn đang xử lý khi mở lại trang Add.
+   * Input: metadata UUID trong sessionStorage. Output: polling active analysis hoặc form trống.
+   * SIDE EFFECT: xóa marker của analysis đã kết thúc để không đưa dữ liệu cũ vào Add.
+   * =====================================================================
+   */
+  function restoreActive() {
+    try {
+      const key = storageKey()
+      if (!key) return
+      if (window.sessionStorage.getItem(`${key}:pending`)) {
+        restore()
+
+        return
+      }
+      const stored = JSON.parse(window.sessionStorage.getItem(key) || 'null')
+      const storedStatus = window.sessionStorage.getItem(`${key}:status`)
+
+      // Metadata từ phiên bản cũ không có status nên được dọn để không khôi phục kết quả cũ vào Add.
+      if (!storedStatus || !activeStatuses.includes(storedStatus)) {
+        clearRemembered()
+
+        return
+      }
+      restore(stored.id)
+    }
+    catch { /* Metadata cũ hoặc storage lỗi không ngăn Add mở form trống. */ }
+  }
+
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Xóa marker resume của actor hiện tại.
+   * Input: actor hiện tại. Output: sessionStorage sạch cho lượt Add mới.
+   * SIDE EFFECT: chỉ xóa UUID và cờ POST chưa xác định; không xóa analysis server.
+   * =====================================================================
+   */
+  function clearRemembered() {
+    try {
+      const key = storageKey()
+      if (key) {
+        window.sessionStorage.removeItem(key)
+        window.sessionStorage.removeItem(`${key}:status`)
+        window.sessionStorage.removeItem(`${key}:pending`)
+      }
+    }
+    catch { /* Form vẫn có thể được dọn khi storage bị chặn. */ }
   }
 
   /**
@@ -297,15 +360,30 @@ export function useAiPromptAnalysis(source, actorId) {
     errors.value = {}
     message.value = ''
     attempt = 0
-    try {
-      const key = storageKey()
+    clearRemembered()
 
-      if (key) {
-        window.sessionStorage.removeItem(key)
-        window.sessionStorage.removeItem(`${key}:pending`)
-      }
-    }
-    catch { /* Form mới vẫn hoạt động khi storage bị chặn. */ }
+    return true
+  }
+
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Tách analysis đã queued khỏi form hiện tại để tạo task kế tiếp.
+   * =====================================================================
+   * Input: analysis đang queued/analyzing. Output: form-level state idle; task server vẫn chạy.
+   * Side effect: dừng polling cục bộ, xóa resume marker; queue popup tiếp tục theo dõi qua API.
+   * =====================================================================
+   */
+  function detachActive() {
+    if (disposed || !analysis.value?.id || !activeStatuses.includes(status.value)) return false
+    stop()
+    analysis.value = null
+    submittedText.value = null
+    statusOverride.value = ''
+    paused.value = false
+    errors.value = {}
+    message.value = ''
+    uncertainSubmit.value = false
+    clearRemembered()
 
     return true
   }
@@ -313,5 +391,6 @@ export function useAiPromptAnalysis(source, actorId) {
   onScopeDispose(() => { disposed = true; stop() })
 
   return { analysis, submittedText, submitting, cancelling, polling, paused, errors, message, uncertainSubmit,
-    status, running, sourceChanged, analyze, cancel, resumePolling, restore, allowNewSubmission, reset }
+    status, running, sourceChanged, analyze, cancel, resumePolling, restore, restoreActive, clearRemembered,
+    allowNewSubmission, detachActive, reset }
 }

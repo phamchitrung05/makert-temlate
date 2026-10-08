@@ -153,6 +153,10 @@ docs/                      Plans, handoff notes and this inventory
 - Main files: `app/Models/AiImport.php`, `app/Models/AiProvenance.php`, `app/Jobs/ProcessAiImportJob.php`, `app/Services/Ai/Content/ArticleImportService.php`, `app/Services/Ai/Providers/Adapters/StructuredAiProvider.php`, `app/Services/Ai/Contracts/`, `app/Services/Ai/Registries/`, `app/Services/Ai/Targets/PostAiAdapter.php`, `app/Http/Controllers/Admin/AiImportController.php`, `config/ai-import.php`, `config/ai-agent.php`.
 - Frontend files: `resources/js/components/ai/`, `resources/js/services/aiAgent.js`,
   `resources/js/stores/aiAgent.js` và `resources/js/views/ai/content/`.
+- Writing profile analysis queue: `AiWritingProfileAnalysisController` có API list scope theo actor tại
+  `GET /api/admin/ai/writing-profiles/analyses`; `AiWritingProfileAnalysisSummaryResource` chỉ trả metadata an toàn.
+  `resources/js/composables/useAiTaskQueue.js` và `resources/js/components/ai/AiTaskQueuePopup.vue` giữ danh sách/polling
+  task ở Admin layout; Add văn phong phát event queued để có thể enqueue liên tiếp.
 - Từ 2026-10-05, tạo nội dung Post tập trung tại AI Content; Post List/Add/Edit
   không còn nút Create With AI/Fill All with AI hoặc dialog tạo nội dung riêng.
 - Candidate có session/parent lineage, regenerate khác retry kỹ thuật, apply toàn bộ
@@ -205,6 +209,12 @@ All admin routes are under `/api/admin`, protected by Sanctum admin middleware a
 - Read requires `users.view|users.manage,admin`; write requires `users.manage,admin`, with service scope/system-role checks under transaction locks.
 - [Contract and versions](../api/ACCESS_MANAGEMENT_API.md). Vue Roles/Permissions pages are intentionally empty pending the owner's new interface.
 
+### AI writing profile tasks
+
+- `POST /api/admin/ai/writing-profiles/analyses` tạo task; `GET /api/admin/ai/writing-profiles/analyses` list có `page`, `per_page`, `status` và scope `created_by`; `GET|POST /analyses/{analysis}` polling/cancel.
+- Summary list không trả `reference_text`, connection snapshot, result hoặc secret; lifecycle gồm `queued`, `analyzing`, `ready`, `failed`, `cancelled`.
+- Popup dùng `task_type=writing_profile_analysis`, `source=ai_writing_profile` để mở rộng cho job AI khác về sau.
+
 ### Media Asset
 
 - `GET /api/admin/media-assets`
@@ -228,6 +238,8 @@ All admin routes are under `/api/admin`, protected by Sanctum admin middleware a
 - `/apps/blog/post/add` — create Post.
 - `/apps/blog/post/add?post={id}` — edit Post.
 - `/apps/blog/post/list` — Post list.
+- `/ai/prompt/add` — tạo văn phong và enqueue analysis; `/ai/prompt/list` — danh sách văn phong.
+- `AiTaskQueuePopup` được mount trong `resources/js/layouts/default.vue`, nên giữ trạng thái khi chuyển route.
 - `/apps/media/file` — API-backed file library.
 - `/apps/media/media-asset` — media asset grid/library; must not use demo data in production.
 - `/apps/media/media-asset/folder/:folder` — verify folder contract before enabling as persisted feature.
@@ -246,6 +258,7 @@ When adding Post options or AI imports, add a new timestamped migration. Never e
 - Post/SEO/slug: `PostSeoSlugTest`.
 - Taxonomy: `TaxonomyCrudTest`.
 - Auth/permissions/routes: `AuthenticationTest`, `SanctumFoundationTest`, `RouteBoundaryTest`, `ResourcePermissionTest`, `AccessManagementApiTest`.
+- AI writing profiles/queue: `AiWritingProfilesApiTest` và `tests/frontend/aiTaskQueue.test.js`, `aiPromptApi.test.js`, `aiPromptFlow.test.js`.
 
 ```powershell
 php artisan test
@@ -297,6 +310,8 @@ npm run lint
 6. Add a dated entry to the change log below.
 
 ## 11. Change log
+
+| 2026-10-08 | Triển khai AI Task Queue Popup: API list analysis có filter/pagination/scope, popup Admin polling task thật, Add văn phong enqueue liên tiếp | Writing profile analysis controller/request/resource, queue composable/popup, Ai Prompt Add và tests | Backend 10 tests/117 assertions; frontend queue/API/flow 33 tests; ESLint scoped và build đạt |
 
 AI Approved archive viewer bổ sung ngày 2026-10-08:
 

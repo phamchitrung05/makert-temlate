@@ -1,12 +1,12 @@
 # AI Task Queue Popup
 
-**Cập nhật:** 08/10/2026
+**Cập nhật:** 09/10/2026
 
-**Trạng thái:** TODO — plan bên lề, ưu tiên triển khai buổi tối
+**Trạng thái:** DONE giai đoạn 1 — task mở rộng đa worker/model đang TODO
 
 ## Mục tiêu
 
-Cho phép người dùng thêm nhiều văn phong liên tiếp trong khi worker đang phân tích. Mỗi lần thêm tạo một analysis/job riêng; một worker xử lý tuần tự, còn giao diện hiển thị toàn bộ hàng đợi ở popup cố định góc trái dưới.
+Cho phép người dùng thêm nhiều văn phong liên tiếp trong khi worker đang phân tích. Mỗi lần thêm tạo một analysis/job riêng; một worker xử lý tuần tự, còn giao diện hiển thị toàn bộ hàng đợi ở popup cố định góc phải dưới.
 
 Worker và database queue đã hỗ trợ nhiều job. Phần cần bổ sung chủ yếu là cách theo dõi queue trong giao diện và bỏ trạng thái khóa toàn bộ form Add sau khi job đầu tiên đã được enqueue.
 
@@ -23,13 +23,15 @@ Worker và database queue đã hỗ trợ nhiều job. Phần cần bổ sung ch
 
 - Bổ sung endpoint danh sách analysis của user hiện tại, có phân trang và lọc `queued`, `analyzing`, `ready`, `failed`, `cancelled`.
 - Chỉ trả metadata cần cho popup: ID, tên, trạng thái, thời gian tạo/bắt đầu/kết thúc, lỗi an toàn và thời điểm hết hạn.
-- Không trả `reference_text`, snapshot kết nối hoặc secret.
+- Endpoint summary không trả `reference_text`, snapshot kết nối hoặc secret; endpoint detail của đúng owner trả lại nguồn đã gửi để mở trang edit.
 - Giữ quyền truy cập theo user/role hiện có; không để user xem analysis của người khác.
 
 ### 3. Popup `AI Task Queue`
 
 - Gắn ở Admin layout để chuyển trang vẫn nhìn thấy.
-- Vị trí mặc định: góc trái dưới; có thể thu gọn thành nút hiển thị số tác vụ đang chờ/chạy.
+- Vị trí mặc định: góc phải dưới, nằm phía trên nút `ScrollToTop`; có thể thu gọn thành nút hiển thị số tác vụ đang chờ/chạy.
+- Nút tròn được giữ lại khi popup mở để người dùng có thể chuyển nhanh giữa trạng thái mở và ẩn.
+- Badge trên nút tròn hiển thị số task còn `queued`; danh sách task tự cuộn khi vượt 420px.
 - Hiển thị mỗi tác vụ: tên văn phong, trạng thái, thời gian và thông báo lỗi nếu có.
 - Có nút mở kết quả khi `ready`, xem lỗi khi `failed` và hủy khi trạng thái còn cho phép.
 - Polling ngắn trong lúc có tác vụ `queued`/`analyzing`; dừng polling khi không còn tác vụ đang chạy.
@@ -39,6 +41,36 @@ Worker và database queue đã hỗ trợ nhiều job. Phần cần bổ sung ch
 
 - Dùng kiểu dữ liệu có `task_type`/`source` để sau này hiển thị tạo bài, tạo ảnh và job AI khác trong cùng popup.
 - Giai đoạn đầu chỉ nối `AiWritingProfileAnalysis`; không thay đổi cách worker chạy hoặc tăng số worker.
+
+### 5. Task mở rộng: theo dõi worker/model dùng chung (TODO — tiếp tục ngày 09/10/2026)
+
+**Mục tiêu:** đưa tiến trình của các worker AI khác vào cùng popup mà không làm mất dữ liệu nghiệp vụ riêng của từng module.
+
+**Phạm vi cần triển khai:**
+
+- Tạo bảng theo dõi chung `ai_task_runs` với UUID, `task_type`, `source`, `model`, `provider`, `status`, `progress`, `user_id`, `job_id`, lỗi an toàn và các mốc thời gian.
+- Tạo contract/service để mỗi Job đăng ký, cập nhật và kết thúc một task; `AiWritingProfileAnalysis` giữ quan hệ tương thích với bản ghi theo dõi chung.
+- Bổ sung API list/detail/cancel dùng chung, có scope theo user, filter `task_type`/`status` và pagination.
+- Mở rộng `useAiTaskQueue` và `AiTaskQueuePopup` để hiển thị nhiều loại task, nhãn model/source và hành động phù hợp theo loại task.
+- Backfill các analysis hiện có sang bảng chung; không đưa secret, reference text hoặc payload nhạy cảm vào popup.
+- Giữ các bảng kết quả riêng như `ai_writing_profile_analyses`, bảng bài viết hoặc bảng ảnh làm nguồn dữ liệu nghiệp vụ.
+
+**Tiêu chí nghiệm thu:**
+
+- Một popup hiển thị đồng thời ít nhất writing profile, tạo bài và tạo ảnh với trạng thái độc lập.
+- Task mới vẫn xuất hiện sau refresh/chuyển route và task terminal dừng polling.
+- User A không đọc hoặc hủy được task của User B.
+- Hủy một task không làm thay đổi kết quả của task khác trong cùng queue.
+- Test backend kiểm tra đăng ký/cập nhật/scope/idempotency; test frontend kiểm tra normalize, filter, polling và hành động theo `task_type`.
+
+**Không thuộc task này:** thay đổi concurrency, thay provider AI, retry tự động hoặc xóa các bảng nghiệp vụ hiện có.
+
+### 6. Edit và draft sau khi worker hoàn tất
+
+- Khi analysis chuyển `ready`, worker tạo một profile `draft` với rules, evidence và hướng dẫn đã validate.
+- Popup mở `/ai/prompt/edit?analysis=<UUID>&profile=<ID>`; trang dùng lại form Add, khôi phục tên, model, URL và nội dung nguồn từ analysis detail.
+- Nút Edit trong Ai Prompt/List cũng điều hướng tới trang Edit (profile thủ công dùng `?profile=<ID>`), không mở dialog chỉnh sửa tại List.
+- Profile nháp không xuất hiện trong options dùng để viết bài cho đến khi người dùng lưu; thao tác lưu chuyển profile sang `active`.
 
 ## Tiêu chí nghiệm thu
 
@@ -63,3 +95,14 @@ Worker và database queue đã hỗ trợ nhiều job. Phần cần bổ sung ch
 3. Tạo service/composable lấy danh sách và polling trạng thái.
 4. Tạo popup ở Admin layout, nối mở kết quả/hủy.
 5. Chạy test frontend/backend và thử thực tế với ba văn phong cùng một worker.
+
+## Kết quả triển khai
+
+- API `GET /api/admin/ai/writing-profiles/analyses` trả summary có pagination, filter status và scope theo user; không trả `reference_text`, connection snapshot, result hoặc secret.
+- `AiTaskQueuePopup` được gắn ở Admin layout, giữ popup khi chuyển route, hỗ trợ thu gọn/ẩn, filter, mở kết quả ready, xem lỗi failed và hủy task active.
+- `useAiTaskQueue` khôi phục danh sách qua API sau refresh, polling tuần tự khi còn `queued`/`analyzing` và dừng ở trạng thái terminal.
+- Add văn phong chỉ khóa submit trong lúc POST; khi nhận `queued`, form được reset để thêm task tiếp theo và task mới được đưa vào popup.
+- Worker tạo profile nháp idempotent khi analysis ready; list hiển thị chip `Bản nháp`, trang edit lưu bằng optimistic version.
+- Khi queue nhận trạng thái `ready`, List tự tải lại để profile nháp mới xuất hiện ngay mà không cần F5.
+- Kiểm chứng: backend `AiWritingProfilesApiTest` 11 tests/131 assertions; frontend queue/API/flow/list/dialogs 52 tests; ESLint scoped và Vite build đạt.
+- Có command một lần `ai:sync-writing-profile-drafts` để bù các analysis ready cũ thiếu draft; luồng worker mới đã tạo draft trong cùng transaction.

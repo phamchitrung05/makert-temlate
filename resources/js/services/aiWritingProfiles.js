@@ -3,7 +3,7 @@
  * =====================================================================
  * CHỨC NĂNG FILE: Kết nối API mẫu văn phong và preview nguồn hiện có.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: unwrap(), createAnalysis(), analysis(), cancel(),
+ * CÁC HÀM/METHOD TRONG FILE: unwrap(), createAnalysis(), analysis(), cancel(), listAnalyses(),
  * previewSource(), save(), profile(), list(), findProfiles(), options(), remove(), updateDefault().
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : payload đã duyệt, UUID/ID và AbortSignal tùy chọn.
@@ -53,6 +53,19 @@ export const aiWritingProfilesService = {
    */
   async cancel(id) {
     return unwrap(await $api(`/admin/ai/writing-profiles/analyses/${id}/cancel`, { method: 'POST', retry: 0 }))
+  },
+
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Đọc danh sách analysis của actor cho trung tâm tác vụ AI.
+   * =====================================================================
+   * Input: page/per_page/status và AbortSignal tùy chọn.
+   * Output: envelope có data summary và meta.pagination; không trả source/result.
+   * Side effect: chỉ GET; backend scope theo user hiện tại.
+   * =====================================================================
+   */
+  async listAnalyses(filters = {}, signal) {
+    return $api('/admin/ai/writing-profiles/analyses', { query: filters, signal, retry: 0 })
   },
 
   /**

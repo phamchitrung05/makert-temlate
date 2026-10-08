@@ -4,7 +4,7 @@
  * CHỨC NĂNG FILE: Quản lý nguồn và catalog cho form phân tích văn phong.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE: useAiPromptSource(), selection(), loadCatalog(),
- * preview(), clearSource(), resetSource(), resetForNewProfile(); watcher loại nguồn khi đổi input.
+ * preview(), clearSource(), resetSource(), resetForNewProfile(), restoreFromAnalysis(); watcher loại nguồn khi đổi input.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : quyền preview hiện tại; URL/paste/file/model do người dùng chọn.
  * - OUTPUT: nguồn text đã xác nhận, thống kê, catalog và lỗi field reactive.
@@ -218,8 +218,42 @@ export function useAiPromptSource(canPreview) {
     modelId.value = null
   }
 
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Khôi phục nguồn đã gửi khi mở lại analysis từ hàng đợi.
+   * =====================================================================
+   * Input: analysis detail có source metadata/reference_text. Output: các ô
+   * tên, model, URL và nội dung hiển thị lại; không gọi preview hoặc AI.
+   * Side effect: hủy preview cũ và đánh dấu nguồn đã chuẩn bị.
+   * =====================================================================
+   */
+  function restoreFromAnalysis(analysis) {
+    if (!analysis?.reference_text) return
+    sequence++
+    controller?.abort()
+    previewing.value = false
+    errors.value = {}
+    notice.value = 'Đã khôi phục nguồn từ tác vụ đã hoàn tất.'
+    profileName.value = analysis.name ?? profileName.value
+    modelId.value = Number(analysis.model_id) || null
+    sourceTab.value = analysis.source_type === 'url' ? 'url' : 'paste'
+    sourceUrl.value = analysis.source_url ?? ''
+    sourceFile.value = null
+    sourceText.value = analysis.reference_text
+    importedMetrics.value = null
+
+    if (analysis.source_type === 'url') {
+      preparedSelection.value = sourceUrl.value
+    }
+    else {
+      // Nguồn đã lưu là text: escape trước khi đưa lại vào editor HTML và giữ nguyên newline.
+      sourceHtml.value = analysis.reference_text.replace(/&/gu, '&amp;').replace(/</gu, '&lt;').replace(/>/gu, '&gt;')
+      preparedSelection.value = null
+    }
+  }
+
   onScopeDispose(() => { sequence++; controller?.abort() })
 
   return { sourceHtml, profileName, sourceTab, sourceUrl, sourceFile, sourceText, modelId, previewing, errors, notice,
-    sourcePrepared, text, metrics, modelOptions, catalog, loadCatalog, preview, clearSource, resetSource, resetForNewProfile }
+    sourcePrepared, text, metrics, modelOptions, catalog, loadCatalog, preview, clearSource, resetSource, resetForNewProfile, restoreFromAnalysis }
 }

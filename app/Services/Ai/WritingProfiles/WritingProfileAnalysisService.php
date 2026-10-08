@@ -5,6 +5,7 @@ namespace App\Services\Ai\WritingProfiles;
 use App\Enums\AiCapability;
 use App\Exceptions\AiImportException;
 use App\Jobs\AnalyzeAiWritingProfileJob;
+use App\Models\AiWritingProfile;
 use App\Models\AiWritingProfileAnalysis;
 use App\Services\Ai\Data\AiTaskRequest;
 use App\Services\Ai\Providers\Catalog\ModelResolver;
@@ -17,10 +18,10 @@ use Illuminate\Validation\ValidationException;
  * =====================================================================
  * CHỨC NĂNG FILE: Queue và thực thi phân tích văn phong từ bài người dùng dán.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: __construct(), queue(), process(), instructions().
+ * CÁC HÀM/METHOD TRONG FILE: __construct(), queue(), process(), syncReadyDrafts(), ensureDraft(), findExistingProfile(), instructions().
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : tên/bài mẫu/model selection và UUID analysis job.
- * - OUTPUT: tác vụ có result đã validate; chưa tạo profile để sử dụng.
+ * - OUTPUT: tác vụ có result đã validate và profile nháp để người dùng duyệt.
  * - SIDE EFFECT: DB/queue và một request AI khi worker chạy; không auto retry.
  * =====================================================================
  */
@@ -71,6 +72,7 @@ final class WritingProfileAnalysisService
             $text = trim($values['reference_text']);
             $analysis = AiWritingProfileAnalysis::query()->create([
                 'created_by' => $actorId, 'name' => $values['name'], 'reference_text' => $text,
+                'source_type' => $values['source_type'] ?? 'paste', 'source_url' => $values['source_url'] ?? null,
                 'source_hash' => hash('sha256', $text), 'status' => 'queued', 'connection_snapshot_json' => $snapshot,
                 'prompt_version' => WritingProfileDefinition::PROMPT_VERSION, 'schema_version' => WritingProfileDefinition::SCHEMA_VERSION,
                 'expires_at' => now()->addDays(max(1, (int) config('ai-import.retention_days', 2))),
@@ -112,11 +114,134 @@ final class WritingProfileAnalysisService
             ],
         ));
         $result = $this->definition->validate($response->output, $analysis->reference_text);
-        AiWritingProfileAnalysis::query()->whereKey($id)->where('status', 'analyzing')->update([
-            'status' => 'ready', 'result_json' => json_encode($result, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE),
-            'diagnostics_json' => json_encode(AiResponseDiagnostics::sanitize($response->diagnostics), JSON_THROW_ON_ERROR),
-            'error_code' => null, 'error_message' => null, 'completed_at' => now(), 'updated_at' => now(),
+        DB::transaction(function () use ($id, $result, $response): void {
+            // Khóa analysis trước khi tạo nháp: cancel thắng thì không ghi profile/result.
+            $current = AiWritingProfileAnalysis::query()->lockForUpdate()->findOrFail($id);
+            if ($current->status !== 'analyzing') {
+                return;
+            }
+            $draft = $this->ensureDraft($current, $result);
+
+            $current->fill([
+                'status' => 'ready', 'result_json' => $result,
+                'draft_profile_id' => $draft->id,
+                'diagnostics_json' => AiResponseDiagnostics::sanitize($response->diagnostics),
+                'error_code' => null, 'error_message' => null, 'completed_at' => now(),
+            ])->save();
+        });
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Bù profile nháp cho analysis ready còn thiếu liên kết.
+     * =====================================================================
+     * Input: tùy chọn UUID analysis. Output: số bản tạo, liên kết và bỏ qua.
+     * Side effect: ghi profile/analysis trong transaction, không gọi provider AI.
+     * =====================================================================
+     */
+    public function syncReadyDrafts(?string $analysisId = null): array
+    {
+        $query = AiWritingProfileAnalysis::query()
+            ->where('status', 'ready')
+            ->whereNull('draft_profile_id')
+            ->whereNotNull('result_json')
+            ->orderBy('created_at');
+        if ($analysisId !== null) {
+            $query->whereKey($analysisId);
+        }
+
+        $counts = ['created' => 0, 'linked' => 0, 'skipped' => 0];
+        foreach ($query->cursor() as $analysis) {
+            try {
+                $result = $this->definition->validate($analysis->result_json, $analysis->reference_text);
+                $outcome = DB::transaction(function () use ($analysis, $result): string {
+                    $current = AiWritingProfileAnalysis::query()->lockForUpdate()->find($analysis->id);
+                    if (! $current || $current->status !== 'ready' || $current->draft_profile_id) {
+                        return 'skipped';
+                    }
+
+                    $existing = $this->findExistingProfile($current);
+                    $draft = $this->ensureDraft($current, $result, $existing);
+                    $current->forceFill(['draft_profile_id' => $draft->id])->save();
+
+                    return $existing ? 'linked' : 'created';
+                });
+            } catch (AiImportException|ValidationException) {
+                $outcome = 'skipped';
+            }
+            $counts[$outcome]++;
+        }
+
+        return $counts;
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Lấy hoặc tạo duy nhất profile từ output analysis đã kiểm tra.
+     * =====================================================================
+     * Input: analysis đã khóa, result allowlist và profile cũ tùy chọn.
+     * Output: profile draft hoặc profile đã được người dùng lưu trước đó.
+     * Side effect: tạo profile khi chưa có; không gọi AI.
+     * =====================================================================
+     */
+    private function ensureDraft(AiWritingProfileAnalysis $analysis, array $result, ?AiWritingProfile $existing = null): AiWritingProfile
+    {
+        $draft = $analysis->draft_profile_id ? AiWritingProfile::query()->find($analysis->draft_profile_id) : null;
+        if ($draft) {
+            return $draft;
+        }
+
+        $draft = $existing ?: $this->findExistingProfile($analysis);
+        if ($draft) {
+            return $draft;
+        }
+
+        return AiWritingProfile::query()->create([
+            'name' => $analysis->name,
+            'description' => $result['summary'] ?? null,
+            'rules_json' => $result['rules'] ?? [],
+            'evidence_json' => $result['evidence'] ?? [],
+            'style_instructions' => $result['style_instructions'] ?? '',
+            'version' => 1,
+            'origin' => 'reference',
+            'status' => 'draft',
+            'source_hash' => $analysis->source_hash,
+            'is_enabled' => false,
+            'created_by' => $analysis->created_by,
+            'analysis_metadata_json' => [
+                'analysis_id' => $analysis->id,
+                'provider' => $analysis->connection_snapshot_json['provider'] ?? null,
+                'model' => $analysis->connection_snapshot_json['model'] ?? null,
+                'model_id' => $analysis->connection_snapshot_json['model_id'] ?? null,
+                'source_type' => $analysis->source_type ?? 'paste',
+                'source_url' => $analysis->source_url,
+                'prompt_version' => $analysis->prompt_version,
+                'schema_version' => $analysis->schema_version,
+            ],
         ]);
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Tìm profile reference đã lưu trước khi worker tạo liên kết.
+     * =====================================================================
+     * Input: analysis có owner/source hash. Output: profile liên quan hoặc null.
+     * Side effect: chỉ đọc database; metadata analysis_id phải khớp tuyệt đối.
+     * =====================================================================
+     */
+    private function findExistingProfile(AiWritingProfileAnalysis $analysis): ?AiWritingProfile
+    {
+        $profiles = AiWritingProfile::query()
+            ->where('origin', 'reference')
+            ->where('source_hash', $analysis->source_hash)
+            ->when($analysis->created_by === null, fn ($query) => $query->whereNull('created_by'))
+            ->when($analysis->created_by !== null, fn ($query) => $query->where('created_by', $analysis->created_by))
+            ->orderBy('id')
+            ->get();
+
+        return $profiles->first(function (AiWritingProfile $profile) use ($analysis): bool {
+            return ($profile->analysis_metadata_json['analysis_id'] ?? null) === $analysis->id;
+        });
     }
 
     /**

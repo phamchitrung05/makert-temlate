@@ -16,8 +16,8 @@ use Throwable;
  * CÁC HÀM/METHOD TRONG FILE: __construct(), handle(), failed(), markFailed().
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : UUID analysis và timeout server-side; không serialize bài mẫu/key.
- * - OUTPUT: lifecycle tác vụ cập nhật để polling.
- * - SIDE EFFECT: gọi analysis service trong queue; lỗi không tự tạo profile.
+ * - OUTPUT: lifecycle tác vụ và profile draft cập nhật để polling/edit.
+ * - SIDE EFFECT: gọi analysis service trong queue; lỗi không tạo profile nháp.
  * =====================================================================
  */
 final class AnalyzeAiWritingProfileJob implements ShouldQueue

@@ -7,10 +7,15 @@
 export {}
 declare global {
   const $api: typeof import('./resources/js/utils/api.js')['$api']
+  const ACTIVE_AI_TASK_STATUSES: typeof import('./resources/js/composables/useAiTaskQueue.js')['ACTIVE_AI_TASK_STATUSES']
+  const AI_TASK_QUEUED_EVENT: typeof import('./resources/js/composables/useAiTaskQueue.js')['AI_TASK_QUEUED_EVENT']
+  const AI_TASK_READY_EVENT: typeof import('./resources/js/composables/useAiTaskQueue.js')['AI_TASK_READY_EVENT']
   const COOKIE_MAX_AGE_1_YEAR: typeof import('./resources/js/utils/constants.js')['COOKIE_MAX_AGE_1_YEAR']
   const EffectScope: typeof import('vue')['EffectScope']
+  const TERMINAL_AI_TASK_STATUSES: typeof import('./resources/js/composables/useAiTaskQueue.js')['TERMINAL_AI_TASK_STATUSES']
   const acceptHMRUpdate: typeof import('pinia')['acceptHMRUpdate']
   const activeAiLineage: typeof import('./resources/js/composables/aiCandidate.js')['activeAiLineage']
+  const aiTaskStatusMeta: typeof import('./resources/js/composables/useAiTaskQueue.js')['aiTaskStatusMeta']
   const alphaDashValidator: typeof import('./resources/js/@core/utils/validators.js')['alphaDashValidator']
   const alphaValidator: typeof import('./resources/js/@core/utils/validators.js')['alphaValidator']
   const analysisReport: typeof import('./resources/js/utils/aiWritingProfile.js')['analysisReport']
@@ -112,6 +117,7 @@ declare global {
   const mergePostCandidate: typeof import('./resources/js/composables/aiCandidate.js')['mergePostCandidate']
   const nextTick: typeof import('vue')['nextTick']
   const normalizeProvider: typeof import('./resources/js/utils/aiModelOptions.js')['normalizeProvider']
+  const normalizeTask: typeof import('./resources/js/composables/useAiTaskQueue.js')['normalizeTask']
   const onActivated: typeof import('vue')['onActivated']
   const onBeforeMount: typeof import('vue')['onBeforeMount']
   const onBeforeRouteLeave: typeof import('vue-router/auto')['onBeforeRouteLeave']
@@ -208,6 +214,7 @@ declare global {
   const useAiContentWorkspace: typeof import('./resources/js/composables/useAiContentWorkspace.js')['useAiContentWorkspace']
   const useAiProviderSettings: typeof import('./resources/js/composables/useAiProviderSettings.js')['useAiProviderSettings']
   const useAiRunFeedback: typeof import('./resources/js/composables/useAiRunFeedback.js')['useAiRunFeedback']
+  const useAiTaskQueue: typeof import('./resources/js/composables/useAiTaskQueue.js')['useAiTaskQueue']
   const useAnimate: typeof import('@vueuse/core')['useAnimate']
   const useApi: typeof import('./resources/js/composables/useApi.js')['useApi']
   const useArrayDifference: typeof import('@vueuse/core')['useArrayDifference']
@@ -431,10 +438,15 @@ declare module 'vue' {
   interface GlobalComponents {}
   interface ComponentCustomProperties {
     readonly $api: UnwrapRef<typeof import('./resources/js/utils/api.js')['$api']>
+    readonly ACTIVE_AI_TASK_STATUSES: UnwrapRef<typeof import('./resources/js/composables/useAiTaskQueue.js')['ACTIVE_AI_TASK_STATUSES']>
+    readonly AI_TASK_QUEUED_EVENT: UnwrapRef<typeof import('./resources/js/composables/useAiTaskQueue.js')['AI_TASK_QUEUED_EVENT']>
+    readonly AI_TASK_READY_EVENT: UnwrapRef<typeof import('./resources/js/composables/useAiTaskQueue.js')['AI_TASK_READY_EVENT']>
     readonly COOKIE_MAX_AGE_1_YEAR: UnwrapRef<typeof import('./resources/js/utils/constants.js')['COOKIE_MAX_AGE_1_YEAR']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
+    readonly TERMINAL_AI_TASK_STATUSES: UnwrapRef<typeof import('./resources/js/composables/useAiTaskQueue.js')['TERMINAL_AI_TASK_STATUSES']>
     readonly acceptHMRUpdate: UnwrapRef<typeof import('pinia')['acceptHMRUpdate']>
     readonly activeAiLineage: UnwrapRef<typeof import('./resources/js/composables/aiCandidate.js')['activeAiLineage']>
+    readonly aiTaskStatusMeta: UnwrapRef<typeof import('./resources/js/composables/useAiTaskQueue.js')['aiTaskStatusMeta']>
     readonly alphaDashValidator: UnwrapRef<typeof import('./resources/js/@core/utils/validators.js')['alphaDashValidator']>
     readonly alphaValidator: UnwrapRef<typeof import('./resources/js/@core/utils/validators.js')['alphaValidator']>
     readonly analysisReport: UnwrapRef<typeof import('./resources/js/utils/aiWritingProfile.js')['analysisReport']>
@@ -536,6 +548,7 @@ declare module 'vue' {
     readonly mergePostCandidate: UnwrapRef<typeof import('./resources/js/composables/aiCandidate.js')['mergePostCandidate']>
     readonly nextTick: UnwrapRef<typeof import('vue')['nextTick']>
     readonly normalizeProvider: UnwrapRef<typeof import('./resources/js/utils/aiModelOptions.js')['normalizeProvider']>
+    readonly normalizeTask: UnwrapRef<typeof import('./resources/js/composables/useAiTaskQueue.js')['normalizeTask']>
     readonly onActivated: UnwrapRef<typeof import('vue')['onActivated']>
     readonly onBeforeMount: UnwrapRef<typeof import('vue')['onBeforeMount']>
     readonly onBeforeRouteLeave: UnwrapRef<typeof import('vue-router/auto')['onBeforeRouteLeave']>
@@ -632,6 +645,7 @@ declare module 'vue' {
     readonly useAiContentWorkspace: UnwrapRef<typeof import('./resources/js/composables/useAiContentWorkspace.js')['useAiContentWorkspace']>
     readonly useAiProviderSettings: UnwrapRef<typeof import('./resources/js/composables/useAiProviderSettings.js')['useAiProviderSettings']>
     readonly useAiRunFeedback: UnwrapRef<typeof import('./resources/js/composables/useAiRunFeedback.js')['useAiRunFeedback']>
+    readonly useAiTaskQueue: UnwrapRef<typeof import('./resources/js/composables/useAiTaskQueue.js')['useAiTaskQueue']>
     readonly useAnimate: UnwrapRef<typeof import('@vueuse/core')['useAnimate']>
     readonly useApi: UnwrapRef<typeof import('./resources/js/composables/useApi.js')['useApi']>
     readonly useArrayDifference: UnwrapRef<typeof import('@vueuse/core')['useArrayDifference']>

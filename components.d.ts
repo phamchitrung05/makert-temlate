@@ -15,6 +15,8 @@ declare module 'vue' {
     AiAgentCandidatePreview: typeof import('./resources/js/components/ai/AiAgentCandidatePreview.vue')['default']
     AiAgentDialog: typeof import('./resources/js/components/ai/AiAgentDialog.vue')['default']
     AiImageGenerationDialog: typeof import('./resources/js/components/ai/AiImageGenerationDialog.vue')['default']
+    AiTaskQueueItem: typeof import('./resources/js/components/ai/AiTaskQueueItem.vue')['default']
+    AiTaskQueuePopup: typeof import('./resources/js/components/ai/AiTaskQueuePopup.vue')['default']
     AppAutocomplete: typeof import('./resources/js/@core/components/app-form-elements/AppAutocomplete.vue')['default']
     AppBarSearch: typeof import('./resources/js/@core/components/AppBarSearch.vue')['default']
     AppBrandLogo: typeof import('./resources/js/components/AppBrandLogo.vue')['default']

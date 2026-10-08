@@ -2,7 +2,7 @@
 /* eslint-disable vue/one-component-per-file -- UI primitive giả cho kiểm public interaction. */
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Regression loading/exit và bốn dialog riêng của Ai Prompt List.
+ * CHỨC NĂNG FILE: Regression loading/exit và các dialog quản lý của Ai Prompt List.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE: deferred(), renderList(), button(), finishTransitions(),
  * beforeEach()/afterEach() và các ca tải chậm/lỗi/response muộn/dirty/confirmation.
@@ -17,8 +17,10 @@ import { defineComponent, ref, watch } from 'vue'
 import AiPromptList from '@/views/ai/prompt/AiPromptList.vue'
 
 const api = vi.hoisted(() => vi.fn())
+const router = vi.hoisted(() => ({ push: vi.fn() }))
 
 vi.mock('@/utils/api', () => ({ $api: api }))
+vi.mock('vue-router', () => ({ useRouter: () => router }))
 
 const profile = { id: 4, name: 'Mẫu đã lưu', version: 3, is_enabled: true, description: 'Mô tả mẫu', style_instructions: 'Giải thích bằng ví dụ.', rules_json: { tone: 'Tự nhiên' }, evidence_json: [] }
 const options = { success: true, data: { items: [profile], default_writing_profile_id: 4 } }
@@ -96,6 +98,7 @@ async function finishTransitions() {
 
 beforeEach(() => {
   api.mockReset()
+  router.push.mockReset()
   api.mockImplementation(async path => {
     if (path.endsWith('/options')) return options
     if (path.endsWith('/4')) return { success: true, data: profile }
@@ -198,32 +201,11 @@ describe('Ai Prompt dedicated management dialogs', () => {
     expect(wrapper.get('textarea[aria-label="Hướng dẫn văn phong"]').element.value).toBe('')
   })
 
-  it('opens a separate edit form, preserves unsaved input on cancel and retains it throughout confirmed close', async () => {
-    const pending = deferred()
-
+  it('navigates to the dedicated Edit page instead of opening the old edit dialog', async () => {
     await renderList()
-    api.mockResolvedValueOnce(options).mockReturnValueOnce(pending.promise)
     await button('Sửa mẫu').trigger('click')
-    expect(wrapper.text()).toContain('Chỉnh sửa văn phong')
-    expect(wrapper.text()).not.toContain('Nhập văn phong thủ công')
-    expect(wrapper.get('input[aria-label="Tên văn phong"]').element.value).toBe(profile.name)
-    expect(wrapper.get('input[aria-label="Tên văn phong"]').element.disabled).toBe(true)
-    pending.resolve({ success: true, data: { ...profile, name: 'Bản mới nhất' } })
-    await flushPromises()
-    expect(wrapper.get('input[aria-label="Tên văn phong"]').element.value).toBe('Bản mới nhất')
-    await wrapper.get('input[aria-label="Tên văn phong"]').setValue('Tên chưa lưu')
-    await wrapper.get('button[aria-label="Đóng chỉnh sửa văn phong"]').trigger('click')
-    expect(wrapper.text()).toContain('Bỏ bản đang sửa?')
-    await button('Hủy').trigger('click')
-    await finishTransitions()
-    expect(wrapper.get('[role="dialog"]').attributes('data-open')).toBe('true')
-    expect(wrapper.get('input[aria-label="Tên văn phong"]').element.value).toBe('Tên chưa lưu')
-    await wrapper.get('button[aria-label="Đóng chỉnh sửa văn phong"]').trigger('click')
-    await button('Đóng').trigger('click')
-    expect(wrapper.get('[role="dialog"]').attributes('data-open')).toBe('false')
-    expect(wrapper.get('input[aria-label="Tên văn phong"]').element.value).toBe('Tên chưa lưu')
-    await finishTransitions()
-    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+    expect(router.push).toHaveBeenCalledWith({ path: '/ai/prompt/edit', query: { profile: '4' } })
+    expect(wrapper.text()).not.toContain('Chỉnh sửa văn phong')
     expect(api.mock.calls.every(([, request]) => !request.method || request.method === 'GET')).toBe(true)
   })
 

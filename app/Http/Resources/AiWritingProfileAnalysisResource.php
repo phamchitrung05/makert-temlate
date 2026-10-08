@@ -7,12 +7,12 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Polling analysis qua payload an toàn, không expose secret/source.
+ * CHỨC NĂNG FILE: Polling analysis qua payload an toàn, có nguồn của owner để edit.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE: toArray().
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : analysis của actor đã kiểm quyền.
- * - OUTPUT: status/result/error/timestamps và model public, không endpoint/key.
+ * - OUTPUT: status/result/error/timestamps, nguồn của owner và model public, không endpoint/key.
  * - SIDE EFFECT: serialize thuần, không tự tạo profile.
  * =====================================================================
  */
@@ -22,8 +22,8 @@ final class AiWritingProfileAnalysisResource extends JsonResource
      * =====================================================================
      * CHỨC NĂNG: Trả tiến trình/kết quả preview bằng allowlist.
      * =====================================================================
-     * Input: Request và analysis. Output: JSON data dùng để người dùng duyệt.
-     * Side effect: không đọc thêm DB hoặc trả raw provider response.
+     * Input: Request và analysis. Output: JSON data dùng để người dùng duyệt/edit.
+     * Side effect: không đọc thêm DB hoặc trả raw provider response; nguồn chỉ trả ở detail owner.
      * =====================================================================
      */
     public function toArray(Request $request): array
@@ -32,6 +32,9 @@ final class AiWritingProfileAnalysisResource extends JsonResource
 
         return [
             'id' => $this->id, 'name' => $this->name, 'status' => $this->status,
+            'reference_text' => $this->status === 'ready' ? $this->reference_text : null,
+            'source_type' => $this->source_type ?? 'paste', 'source_url' => $this->source_url,
+            'model_id' => $snapshot['model_id'] ?? null, 'draft_profile_id' => $this->draft_profile_id,
             'result' => $this->status === 'ready' ? $this->result_json : null,
             'provider' => $snapshot['provider'] ?? null, 'model' => $snapshot['model'] ?? null,
             'prompt_version' => $this->prompt_version, 'schema_version' => $this->schema_version,

@@ -32,7 +32,7 @@ final class AiWritingProfileResource extends JsonResource
             'id' => $this->id, 'name' => $this->name, 'description' => $this->description,
             'rules_json' => $this->rules_json, 'evidence_json' => $this->evidence_json ?? [],
             'style_instructions' => $this->style_instructions, 'version' => $this->version,
-            'origin' => $this->origin, 'is_enabled' => $this->is_enabled, 'created_by' => $this->created_by,
+            'origin' => $this->origin, 'status' => $this->status ?? 'active', 'is_enabled' => $this->is_enabled, 'created_by' => $this->created_by,
             'analysis_metadata' => $this->analysis_metadata_json,
             'created_at' => $this->created_at?->toIso8601String(), 'updated_at' => $this->updated_at?->toIso8601String(),
         ];

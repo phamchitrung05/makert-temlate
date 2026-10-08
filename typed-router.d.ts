@@ -24,6 +24,7 @@ declare module 'vue-router/auto-routes' {
     'ai-content': RouteRecordInfo<'ai-content', '/ai/content', Record<never, never>, Record<never, never>>,
     'ai-prompt': RouteRecordInfo<'ai-prompt', '/ai/prompt', Record<never, never>, Record<never, never>>,
     'ai-prompt-add': RouteRecordInfo<'ai-prompt-add', '/ai/prompt/add', Record<never, never>, Record<never, never>>,
+    'ai-prompt-edit': RouteRecordInfo<'ai-prompt-edit', '/ai/prompt/edit', Record<never, never>, Record<never, never>>,
     'ai-prompt-list': RouteRecordInfo<'ai-prompt-list', '/ai/prompt/list', Record<never, never>, Record<never, never>>,
     'apps-academy-course-details': RouteRecordInfo<'apps-academy-course-details', '/apps/academy/course-details', Record<never, never>, Record<never, never>>,
     'apps-academy-dashboard': RouteRecordInfo<'apps-academy-dashboard', '/apps/academy/dashboard', Record<never, never>, Record<never, never>>,

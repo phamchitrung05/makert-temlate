@@ -20,7 +20,7 @@ final class AiWritingProfile extends Model
 {
     protected $fillable = [
         'name', 'description', 'rules_json', 'evidence_json', 'style_instructions',
-        'version', 'origin', 'source_hash', 'analysis_metadata_json', 'is_enabled', 'created_by',
+        'version', 'origin', 'status', 'source_hash', 'analysis_metadata_json', 'is_enabled', 'created_by',
     ];
 
     /**

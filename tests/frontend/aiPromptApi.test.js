@@ -53,6 +53,15 @@ describe('Ai Prompt API contract', () => {
     expect(mocks.api.mock.calls[4][1].body).toEqual({ default_writing_profile_id: 7 })
   })
 
+  it('lists writing profile analysis summaries with status filters and cancellation', async () => {
+    const signal = new AbortController().signal
+    const envelope = { success: true, data: [{ id: 'analysis-id', task_type: 'writing_profile_analysis', status: 'queued' }], meta: { pagination: { total: 1 } } }
+
+    mocks.api.mockResolvedValue(envelope)
+    expect(await aiWritingProfilesService.listAnalyses({ status: 'queued', per_page: 100 }, signal)).toBe(envelope)
+    expect(mocks.api).toHaveBeenLastCalledWith('/admin/ai/writing-profiles/analyses', { query: { status: 'queued', per_page: 100 }, signal, retry: 0 })
+  })
+
   it('previews JSON and HTML FormData through the existing source-preview endpoint', async () => {
     const controller = new AbortController()
     const file = new File(['<article>Nội dung</article>'], 'reference.html', { type: 'text/html' })

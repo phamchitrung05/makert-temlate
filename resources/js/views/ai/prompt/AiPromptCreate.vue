@@ -1,33 +1,33 @@
 <!--
   =====================================================================
   Header/footer cố định qua AppDialogLayout; chỉ content ở giữa được cuộn.
-  CHỨC NĂNG FILE: Điều phối nguồn, phân tích và duyệt lưu văn phong tại Ai Prompt Add.
+  CHỨC NĂNG FILE: Điều phối nguồn, phân tích và duyệt lưu văn phong tại Ai Prompt Add/Edit.
   =====================================================================
   Giữ layout/theme của giao diện người dùng; dùng API hiện có cho văn phong,
   các khối chưa có API giữ dữ liệu minh họa riêng. Nút danh sách mở Ai Prompt List.
   CÁC HÀM/METHOD TRONG FILE:
-  - analyzeSource(): chặn thao tác khi busy rồi phân tích nguồn đã xác nhận.
+  - analyzeSource(): chặn thao tác khi busy, queue analysis và mở lại form ngay khi server trả queued.
   - restoreAnalysis(): mở UUID thật sau khi xác nhận bỏ form chưa lưu.
   - resetCreation(): dọn nguồn/analysis/form và resume để tạo mẫu mới, giữ database.
   - startNewProfile(): yêu cầu xác nhận nếu bỏ bản đang duyệt chưa lưu.
-  - saveProfile(): lưu rồi reset Add khi thành công; giữ form khi lỗi/default lỗi.
+  - saveProfile(): lưu rồi reset Add hoặc giữ Edit sau khi thành công; giữ form khi lỗi/default lỗi.
   - copyPrompt(): sao chép hướng dẫn đang xem/sửa, báo kết quả clipboard.
   - exportReport(): tải Markdown từ analysis thật, không kèm toàn bài tham khảo.
   - confirmAction(): xác nhận bỏ form cũ hoặc cho phép lượt POST mới có chủ đích.
   - hasUnsavedChanges (computed): đối chiếu bản đang duyệt với profile đã lưu.
   - canStartNew (computed): chặn reset khi request đang chạy hoặc POST chưa xác định.
-  - onMounted(): GET catalog và resume UUID của actor, không tự gửi model.
+  - onMounted(): GET catalog và chỉ resume analysis đang xử lý ở trang Add, không tự gửi model.
   - onBeforeRouteLeave(): nhắc bản sửa chưa lưu khi người dùng rời trang.
   INPUT/OUTPUT CỦA CLASS (tổng thể):
-  - INPUT : tên, nguồn, model, thao tác phân tích/hủy/duyệt/lưu và UUID resume.
+  - INPUT : mode Add/Edit, tên, nguồn, model, thao tác phân tích/hủy/duyệt/lưu và query analysis/profile.
   - OUTPUT: component hai cột, lifecycle/result/profile thật và minh họa có nhãn.
   - SIDE EFFECT: qua composable gọi Admin API; clipboard/download theo click.
   =====================================================================
 -->
 <script setup>
 import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
-import { computed, onMounted, shallowRef } from 'vue'
-import { onBeforeRouteLeave } from 'vue-router'
+import { computed, onMounted, shallowRef, watch } from 'vue'
+import * as VueRouter from 'vue-router'
 import { getAlertColor } from '@/config/alertColors'
 import { useAdminAuthStore } from '@/stores/adminAuth'
 import { useAiPromptSource } from '@/composables/ai/prompt/useAiPromptSource'
@@ -40,7 +40,21 @@ import AiPromptInsights from '@/views/ai/prompt/AiPromptInsights.vue'
 import AiPromptProfileForm from '@/views/ai/prompt/AiPromptProfileForm.vue'
 import { promptPreviewReport } from '@/views/ai/prompt/promptPreview'
 
+const props = defineProps({
+  mode: { type: String, default: 'add' },
+})
+
 const auth = useAdminAuthStore()
+const routeFactory = Object.keys(VueRouter).includes('useRoute') ? VueRouter.useRoute : null
+const route = typeof routeFactory === 'function' ? routeFactory() : null
+
+const routeQuery = computed(() => {
+  if (route?.query) return route.query
+  if (typeof window === 'undefined') return {}
+
+  return Object.fromEntries(new URLSearchParams(window.location.search).entries())
+})
+
 const canPreview = computed(() => auth.permissions.includes('posts.manage'))
 const source = useAiPromptSource(canPreview)
 const run = useAiPromptAnalysis(source, () => auth.user?.id)
@@ -56,6 +70,7 @@ const analysisMessage = run.message
 const profileMessage = profiles.message
 const profileErrors = profiles.errors
 const busy = computed(() => run.running.value || saving.value || restoring.value || catalogLoading.value)
+const isEditMode = computed(() => props.mode === 'edit')
 
 const canStartNew = computed(() => !run.running.value && !saving.value && !restoring.value && !previewing.value
   && !uncertainSubmit.value && !profiles.uncertainSave.value)
@@ -141,6 +156,16 @@ async function saveProfile() {
   if (!await profiles.save()) return
   const name = savedProfile.value.name
 
+  if (isEditMode.value) {
+    // Giữ bản vừa lưu trên trang Edit nhưng không để trang Add khôi phục lại nó.
+    run.clearRemembered()
+    snackbarType.value = 'success'
+    snackbarMessage.value = `Đã lưu văn phong “${name}”.`
+    snackbarVisible.value = true
+
+    return
+  }
+
   if (!resetCreation()) return
   snackbarType.value = 'success'
   snackbarMessage.value = `Đã lưu văn phong “${name}”. Bạn có thể tạo văn phong mới.`
@@ -154,14 +179,20 @@ async function saveProfile() {
  * SIDE EFFECT: không gửi AI khi input đang khóa hoặc POST trước chưa rõ kết quả.
  * =====================================================================
  */
-function analyzeSource() {
+async function analyzeSource() {
   if (busy.value || previewing.value || uncertainSubmit.value) return
   if (hasUnsavedChanges.value) {
     confirmKind.value = 'analyze'
 
     return
   }
-  void run.analyze()
+  const queued = await run.analyze()
+  if (queued?.status !== 'queued' || !run.detachActive()) return
+
+  resetCreation()
+  snackbarType.value = 'success'
+  snackbarMessage.value = 'Đã đưa phân tích vào hàng đợi. Bạn có thể thêm văn phong tiếp theo.'
+  snackbarVisible.value = true
 }
 
 /**
@@ -230,7 +261,7 @@ function confirmAction() {
   const kind = confirmKind.value
 
   confirmKind.value = ''
-  if (kind === 'analyze') void run.analyze()
+  if (kind === 'analyze') void analyzeSource()
   if (kind === 'resume') run.restore(resumeId.value.trim())
   if (kind === 'reload') void profiles.reloadProfile()
   if (kind === 'new') run.allowNewSubmission()
@@ -239,10 +270,35 @@ function confirmAction() {
 
 onMounted(async () => {
   await source.loadCatalog()
-  run.restore()
+
+  const requestedId = typeof routeQuery.value.analysis === 'string' ? routeQuery.value.analysis : ''
+  const requestedProfileId = typeof routeQuery.value.profile === 'string' ? routeQuery.value.profile : ''
+  const hasRequestedProfile = /^\d+$/u.test(requestedProfileId)
+  if (/^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(requestedId)) {
+    run.restore(requestedId)
+    if (isEditMode.value && hasRequestedProfile) void profiles.loadProfile(requestedProfileId)
+  }
+  else if (isEditMode.value && hasRequestedProfile) void profiles.loadProfile(requestedProfileId)
+  else if (!isEditMode.value) run.restoreActive()
 })
 
-onBeforeRouteLeave(() => !hasUnsavedChanges.value || window.confirm('Bạn có mẫu văn phong chưa lưu. Rời trang và bỏ bản chỉnh sửa hiện tại?'))
+watch([() => routeQuery.value.analysis, isEditMode], ([requestedId, editMode]) => {
+  if (typeof requestedId !== 'string' || !/^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(requestedId)) {
+    if (!editMode && (analysis.value || savedProfile.value)) resetCreation()
+
+    return
+  }
+  if (requestedId === analysis.value?.id) return
+  if (hasUnsavedChanges.value) {
+    resumeId.value = requestedId
+    confirmKind.value = 'resume'
+
+    return
+  }
+  run.restore(requestedId)
+})
+
+VueRouter.onBeforeRouteLeave(() => !hasUnsavedChanges.value || window.confirm('Bạn có mẫu văn phong chưa lưu. Rời trang và bỏ bản chỉnh sửa hiện tại?'))
 </script>
 
 <template>
@@ -251,7 +307,7 @@ onBeforeRouteLeave(() => !hasUnsavedChanges.value || window.confirm('Bạn có m
       <div class="ai-prompt-page__heading">
         <div class="d-flex align-center flex-wrap gap-3 mb-1">
           <h4 class="text-h4 font-weight-medium">
-            Thêm văn phong
+            {{ isEditMode ? 'Chỉnh sửa văn phong' : 'Thêm văn phong' }}
           </h4>
           <VChip
             :color="statusColor"
@@ -262,7 +318,7 @@ onBeforeRouteLeave(() => !hasUnsavedChanges.value || window.confirm('Bạn có m
           </VChip>
         </div>
         <div class="text-body-1 text-medium-emphasis">
-          Phân tích bài tham khảo, duyệt và lưu mẫu văn phong để sử dụng lại.
+          {{ isEditMode ? 'Chỉnh sửa bản nháp văn phong, sau đó lưu để đưa vào danh sách sử dụng.' : 'Phân tích bài tham khảo, duyệt và lưu mẫu văn phong để sử dụng lại.' }}
         </div>
       </div>
       <div class="d-flex flex-wrap align-center gap-3">

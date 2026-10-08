@@ -56,7 +56,7 @@ final class WritingProfileService
                 'name' => $values['name'], 'description' => $values['description'] ?? null,
                 'rules_json' => $values['rules_json'], 'evidence_json' => $evidence,
                 'style_instructions' => $values['style_instructions'], 'is_enabled' => $values['is_enabled'] ?? true,
-                'version' => 1, 'created_by' => $actorId, 'origin' => $analysis ? 'reference' : 'manual',
+                'version' => 1, 'created_by' => $actorId, 'origin' => $analysis ? 'reference' : 'manual', 'status' => 'active',
                 'source_hash' => $analysis?->source_hash,
                 'analysis_metadata_json' => $analysis ? [
                     'analysis_id' => $analysis->id, 'provider' => $analysis->connection_snapshot_json['provider'] ?? null,
@@ -98,7 +98,11 @@ final class WritingProfileService
                 }
             }
             unset($values['version'], $values['analysis_id']);
-            $current->fill($values)->forceFill(['version' => $current->version + 1])->save();
+            $current->fill($values)->forceFill([
+                'version' => $current->version + 1,
+                // Bấm lưu trên trang edit là hành động duyệt bản nháp.
+                'status' => 'active',
+            ])->save();
             if (! $current->is_enabled) {
                 $this->clearDefault($current->id, $actorId);
             }

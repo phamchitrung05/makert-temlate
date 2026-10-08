@@ -5,19 +5,22 @@
   CÁC HÀM/METHOD TRONG FILE:
   - useAiPromptList(): cung cấp query, dữ liệu thật, loading/error và thao tác tải lại.
   - useAiPromptManagement(): CRUD manual/profile/version/default, refresh list sau ghi.
+  - openEdit(): điều hướng một row tới trang Ai Prompt/Edit.
+  - handleTaskReady(): tải lại list khi worker tạo profile draft.
   INPUT/OUTPUT CỦA CLASS (tổng thể):
-  - INPUT : thao tác tìm tên, đổi trang/số dòng, tải lại và mở trang Add.
+  - INPUT : thao tác tìm tên, đổi trang/số dòng, tải lại, mở Add/Edit và quản lý profile.
   - OUTPUT: danh sách profile đã lưu với trạng thái rỗng/lỗi rõ ràng.
-  - SIDE EFFECT: API qua composable; phân tích bài vẫn ở Add, manual ở dialog List.
+  - SIDE EFFECT: API qua composable; worker ready làm tải lại List, manual vẫn ở dialog List.
   =====================================================================
 -->
 <script setup>
-import { reactive } from 'vue'
+import { onMounted, onScopeDispose, reactive } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAiPromptList } from '@/composables/ai/prompt/useAiPromptList'
+import { AI_TASK_READY_EVENT } from '@/composables/useAiTaskQueue'
 import AiPromptListFilters from '@/views/ai/prompt/AiPromptListFilters.vue'
 import AiPromptListTable from '@/views/ai/prompt/AiPromptListTable.vue'
 import AiPromptCreateDialog from '@/views/ai/prompt/dialog/AiPromptCreateDialog.vue'
-import AiPromptEditDialog from '@/views/ai/prompt/dialog/AiPromptEditDialog.vue'
 import AiPromptToggleDialog from '@/views/ai/prompt/dialog/AiPromptToggleDialog.vue'
 import AiPromptDeleteDialog from '@/views/ai/prompt/dialog/AiPromptDeleteDialog.vue'
 import { useAiPromptManagement } from '@/composables/ai/prompt/useAiPromptManagement'
@@ -27,6 +30,36 @@ import { useAiPromptManagement } from '@/composables/ai/prompt/useAiPromptManage
 // =====================================================================
 const { page, itemsPerPage, search, items, totalItems, isLoading, error, load } = useAiPromptList()
 const manager = reactive(useAiPromptManagement(load))
+const router = useRouter()
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Mở trang Edit từ một dòng List, không mở dialog chỉnh sửa cũ.
+ * Input: profile row có thể kèm analysis_metadata.analysis_id. Output: route Edit.
+ * Side effect: navigation; không gọi mutation hoặc xóa profile.
+ * =====================================================================
+ */
+function openEdit(item) {
+  if (!router) return
+
+  const query = { profile: String(item.id) }
+  const analysisId = item.analysis_metadata?.analysis_id
+  if (/^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/iu.test(String(analysisId ?? ''))) query.analysis = analysisId
+
+  router.push({ path: '/ai/prompt/edit', query })
+}
+
+function handleTaskReady() {
+  void load()
+}
+
+onMounted(() => {
+  window.addEventListener(AI_TASK_READY_EVENT, handleTaskReady)
+})
+
+onScopeDispose(() => {
+  if (typeof window !== 'undefined') window.removeEventListener(AI_TASK_READY_EVENT, handleTaskReady)
+})
 </script>
 
 <template>
@@ -47,7 +80,7 @@ const manager = reactive(useAiPromptManagement(load))
           </VChip>
         </div>
         <div class="text-body-1 text-medium-emphasis">
-          Danh sách prompt văn phong đã lưu để sử dụng khi tạo bài viết.
+          Danh sách prompt văn phong, gồm cả bản nháp vừa được worker tạo để bạn duyệt.
         </div>
       </div>
       <div class="d-flex flex-wrap gap-3">
@@ -108,8 +141,8 @@ const manager = reactive(useAiPromptManagement(load))
         :total-items="totalItems"
         :loading="isLoading"
         :disabled="Boolean(manager.action)"
-        :empty-text="error ? 'Không tải được danh sách.' : search?.trim() ? 'Không tìm thấy văn phong phù hợp.' : 'Chưa có văn phong đã lưu. Chọn Thêm văn phong để phân tích bài tham khảo.'"
-        @edit="manager.open('edit', $event)"
+        :empty-text="error ? 'Không tải được danh sách.' : search?.trim() ? 'Không tìm thấy văn phong phù hợp.' : 'Chưa có văn phong đã lưu.'"
+        @edit="openEdit"
         @toggle="manager.open('toggle', $event)"
         @remove="manager.open('delete', $event)"
       />
@@ -121,14 +154,6 @@ const manager = reactive(useAiPromptManagement(load))
       @load="manager.load"
       @close="manager.close"
       @after-leave="manager.finishClose('create')"
-    />
-    <AiPromptEditDialog
-      :state="manager"
-      @update-form="manager.form = $event"
-      @save="manager.save"
-      @load="manager.load"
-      @close="manager.close"
-      @after-leave="manager.finishClose('edit')"
     />
     <AiPromptToggleDialog
       :state="manager"

@@ -13,8 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * CÁC HÀM/METHOD TRONG FILE: casts(), createdBy().
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : bài tham khảo, snapshot kết nối không key và output đã validate.
- * - OUTPUT: tác vụ queued/analyzing/ready/failed/cancelled có thời hạn.
- * - SIDE EFFECT: database kỹ thuật; không tự tạo mẫu đã duyệt.
+ * - OUTPUT: tác vụ queued/analyzing/ready/failed/cancelled có thời hạn và draft_profile_id.
+ * - SIDE EFFECT: database kỹ thuật; profile draft chỉ được worker tạo khi output ready.
  * =====================================================================
  */
 final class AiWritingProfileAnalysis extends Model
@@ -26,8 +26,8 @@ final class AiWritingProfileAnalysis extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'created_by', 'name', 'reference_text', 'source_hash', 'status', 'connection_snapshot_json',
-        'prompt_version', 'schema_version', 'result_json', 'diagnostics_json', 'error_code', 'error_message',
+        'created_by', 'name', 'reference_text', 'source_type', 'source_url', 'source_hash', 'status', 'connection_snapshot_json',
+        'prompt_version', 'schema_version', 'result_json', 'draft_profile_id', 'diagnostics_json', 'error_code', 'error_message',
         'started_at', 'completed_at', 'expires_at',
     ];
 

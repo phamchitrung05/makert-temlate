@@ -348,6 +348,23 @@ describe('Ai Prompt analysis lifecycle', () => {
 })
 
 describe('Ai Prompt explicit approval and save', () => {
+  it('saves a profile opened directly from List when its source analysis is unavailable', async () => {
+    const flow = createFlow()
+    const existing = profileDto({ id: 19, version: 3, name: 'Mẫu đã lưu' })
+
+    mocks.service.profile.mockResolvedValueOnce(existing)
+
+    expect(await flow.profiles.loadProfile(19)).toBe(true)
+    flow.profiles.form.value.name = 'Mẫu đã chỉnh'
+    expect(await flow.profiles.save()).toBe(true)
+
+    const [payload, id] = mocks.service.save.mock.calls[0]
+
+    expect(id).toBe(19)
+    expect(payload).toMatchObject({ name: 'Mẫu đã chỉnh', version: 3 })
+    expect(payload).not.toHaveProperty('analysis_id')
+  })
+
   it('keeps edits independent from AI output and only saves/defaults after explicit approval', async () => {
     const flow = await readyFlow()
 

@@ -269,6 +269,7 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
         Route::middleware('permission:ai_settings.manage,admin')->prefix('ai/writing-profiles')->group(function (): void {
             Route::get('/', [AiWritingProfileController::class, 'index']);
             Route::post('/', [AiWritingProfileController::class, 'store']);
+            Route::get('/analyses', [AiWritingProfileAnalysisController::class, 'index']);
             Route::post('/analyses', [AiWritingProfileAnalysisController::class, 'store'])->middleware('throttle:6,1');
             Route::get('/analyses/{analysis}', [AiWritingProfileAnalysisController::class, 'show'])->whereUuid('analysis');
             Route::post('/analyses/{analysis}/cancel', [AiWritingProfileAnalysisController::class, 'cancel'])->whereUuid('analysis');

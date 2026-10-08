@@ -101,11 +101,11 @@ watch(() => props.items, () => { expanded.value = [] })
     </template>
     <template #item.is_enabled="{ item }">
       <VChip
-        :color="item.is_enabled ? 'success' : 'secondary'"
+        :color="item.status === 'draft' ? 'warning' : (item.is_enabled ? 'success' : 'secondary')"
         variant="tonal"
         size="small"
       >
-        {{ item.is_enabled ? 'Đang bật' : 'Đã tắt' }}
+        {{ item.status === 'draft' ? 'Bản nháp' : (item.is_enabled ? 'Đang bật' : 'Đã tắt') }}
       </VChip>
     </template>
     <template #item.version="{ item }">
@@ -125,6 +125,7 @@ watch(() => props.items, () => { expanded.value = [] })
           @click="emit('edit', item)"
         />
         <VBtn
+          v-if="item.status !== 'draft'"
           :icon="item.is_enabled ? 'tabler-toggle-right' : 'tabler-toggle-left'"
           size="small"
           variant="text"

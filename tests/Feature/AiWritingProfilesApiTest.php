@@ -127,10 +127,10 @@ final class AiWritingProfilesApiTest extends TestCase
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Analysis ready chỉ preview, người dùng phải POST để lưu profile.
+     * CHỨC NĂNG: Analysis ready tạo nháp và người dùng PUT để duyệt profile.
      * =====================================================================
-     * Input: queued analysis và response provider fake. Output: profile chỉ có sau duyệt.
-     * Side effect: offline job/API; metadata không expose reference/base/key.
+     * Input: queued analysis và response provider fake. Output: một draft giữ nguồn edit.
+     * Side effect: offline job/API; metadata không expose base/key.
      * =====================================================================
      */
     public function test_analysis_requires_explicit_human_save_and_redacts_private_data(): void
@@ -142,16 +142,20 @@ final class AiWritingProfilesApiTest extends TestCase
         $this->assertDatabaseCount('ai_writing_profiles', 0);
         $this->finishAnalysis($id);
         $response = $this->withToken($token)->getJson(self::PREFIX.'/analyses/'.$id)->assertOk()->assertJsonPath('data.status', 'ready');
-        $this->assertDatabaseCount('ai_writing_profiles', 0);
+        $this->assertDatabaseCount('ai_writing_profiles', 1);
         $this->assertStringNotContainsString('offline-secret-key', $response->getContent());
         $this->assertStringNotContainsString('gateway.example', $response->getContent());
-        $this->assertArrayNotHasKey('reference_text', $response->json('data'));
+        $this->assertSame(self::SOURCE, $response->json('data.reference_text'));
         $result = $response->json('data.result');
         $this->assertSame($this->analysisOutput()['rules'], $result['rules']);
-        $profile = $this->withToken($token)->postJson(self::PREFIX, [
+        $draftId = $response->json('data.draft_profile_id');
+        $this->assertDatabaseHas('ai_writing_profiles', ['id' => $draftId, 'status' => 'draft', 'is_enabled' => false]);
+        $this->withToken($token)->getJson(self::PREFIX)->assertOk()->assertJsonPath('data.0.status', 'draft');
+        $profile = $this->withToken($token)->putJson(self::PREFIX.'/'.$draftId, [
             'name' => 'Mẫu đã duyệt', 'description' => $result['summary'], 'rules_json' => $result['rules'],
-            'evidence_json' => $result['evidence'], 'style_instructions' => $result['style_instructions'], 'analysis_id' => $id,
-        ])->assertCreated()->assertJsonPath('data.origin', 'reference')->json('data');
+            'evidence_json' => $result['evidence'], 'style_instructions' => $result['style_instructions'], 'version' => 1, 'is_enabled' => true,
+        ])->assertOk()->assertJsonPath('data.origin', 'reference')->assertJsonPath('data.status', 'active')->json('data');
+        $this->assertDatabaseCount('ai_writing_profiles', 1);
         $this->assertSame($result['rules'], $profile['rules_json']);
         $this->assertSame(hash('sha256', self::SOURCE), AiWritingProfile::findOrFail($profile['id'])->source_hash);
         $this->assertSame('writing-profile.analysis.v1', $profile['analysis_metadata']['schema_version']);
@@ -230,6 +234,53 @@ final class AiWritingProfilesApiTest extends TestCase
 
     /**
      * =====================================================================
+     * CHỨC NĂNG: Danh sách task chỉ trả analysis của actor, có filter/pagination an toàn.
+     * =====================================================================
+     * Input: ba analysis thuộc owner và một analysis thuộc user khác.
+     * Output: summary đúng status, tổng trang và không lộ source/snapshot/result.
+     * Side effect: DB test/queue fake, không gọi AI.
+     * =====================================================================
+     */
+    public function test_analysis_queue_list_is_scoped_filtered_and_paginated(): void
+    {
+        $owner = $this->token();
+        $queued = $this->queueAnalysis($owner);
+        $analyzing = $this->queueAnalysis($owner);
+        $failed = $this->queueAnalysis($owner);
+        AiWritingProfileAnalysis::query()->whereKey($analyzing)->update(['status' => 'analyzing', 'started_at' => now()]);
+        AiWritingProfileAnalysis::query()->whereKey($failed)->update(['status' => 'failed', 'error_code' => 'SAFE_FAILURE', 'error_message' => 'Lỗi bounded', 'completed_at' => now()]);
+        $this->assertDatabaseHas('ai_writing_profile_analyses', ['id' => $queued, 'status' => 'queued']);
+        $this->assertDatabaseHas('ai_writing_profile_analyses', ['id' => $analyzing, 'status' => 'analyzing']);
+
+        $other = $this->token();
+        $this->queueAnalysis($other);
+        Auth::forgetGuards();
+
+        $response = $this->withToken($owner)->getJson(self::PREFIX.'/analyses?per_page=1&page=1')
+            ->assertOk()
+            ->assertJsonPath('meta.pagination.total', 3)
+            ->assertJsonPath('meta.pagination.per_page', 1)
+            ->assertJsonCount(1, 'data');
+
+        $task = $response->json('data.0');
+        $this->assertContains($task['id'], [$queued, $analyzing, $failed]);
+        $this->assertSame('writing_profile_analysis', $task['task_type']);
+        $this->assertSame('ai_writing_profile', $task['source']);
+        $this->assertArrayNotHasKey('reference_text', $task);
+        $this->assertArrayNotHasKey('connection_snapshot_json', $task);
+        $this->assertArrayNotHasKey('result', $task);
+        $this->assertArrayNotHasKey('diagnostics', $task);
+
+        $this->withToken($owner)->getJson(self::PREFIX.'/analyses?status=failed')->assertOk()
+            ->assertJsonPath('meta.pagination.total', 1)
+            ->assertJsonPath('data.0.id', $failed)
+            ->assertJsonPath('data.0.error_message', 'Lỗi bounded');
+        Auth::forgetGuards();
+        $this->withToken($other)->getJson(self::PREFIX.'/analyses')->assertOk()->assertJsonPath('meta.pagination.total', 1);
+    }
+
+    /**
+     * =====================================================================
      * CHỨC NĂNG: Retention xóa bài mẫu nhưng giữ profile/bằng chứng đã duyệt.
      * =====================================================================
      * Input: expired task gắn profile. Output: profile vẫn dùng được sau cleanup.
@@ -251,6 +302,36 @@ final class AiWritingProfilesApiTest extends TestCase
         $changed = $output['evidence'];
         $changed[0]['excerpt'] = 'Bằng chứng mới sau khi bài mẫu bị xóa.';
         $this->withToken($token)->putJson(self::PREFIX.'/'.$profileId, ['version' => 2, 'evidence_json' => $changed])->assertUnprocessable();
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Khôi phục draft khi analysis ready bị thiếu liên kết do worker cũ.
+     * =====================================================================
+     * Input: analysis đã hoàn thành, profile nháp bị mất và chạy command đồng bộ.
+     * Output: một draft được tạo lại, chạy lần hai không tạo bản trùng.
+     * Side effect: database test và command, không gọi provider AI.
+     * =====================================================================
+     */
+    public function test_ready_analysis_missing_draft_can_be_repaired_idempotently(): void
+    {
+        $token = $this->token();
+        $id = $this->queueAnalysis($token);
+        $this->finishAnalysis($id);
+        $analysis = AiWritingProfileAnalysis::findOrFail($id);
+        $draftId = $analysis->draft_profile_id;
+        AiWritingProfile::findOrFail($draftId)->delete();
+        $analysis->forceFill(['draft_profile_id' => null])->save();
+
+        $this->artisan('ai:sync-writing-profile-drafts')->assertSuccessful();
+        $repaired = AiWritingProfileAnalysis::findOrFail($id)->draft_profile_id;
+        $this->assertNotNull($repaired);
+        $this->assertSame('draft', AiWritingProfile::findOrFail($repaired)->status);
+        $this->assertSame(1, AiWritingProfile::query()->count());
+
+        $this->artisan('ai:sync-writing-profile-drafts')->assertSuccessful();
+        $this->assertSame($repaired, AiWritingProfileAnalysis::findOrFail($id)->draft_profile_id);
+        $this->assertSame(1, AiWritingProfile::query()->count());
     }
 
     /**

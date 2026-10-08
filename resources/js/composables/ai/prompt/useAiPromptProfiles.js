@@ -3,7 +3,7 @@
  * =====================================================================
  * CHỨC NĂNG FILE: Duyệt/lưu/sửa mẫu hiện tại và đặt mặc định sau khi lưu.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: useAiPromptProfiles(), savedKey(), save(),
+ * CÁC HÀM/METHOD TRONG FILE: useAiPromptProfiles(), savedKey(), save(), loadProfile(),
  * reloadProfile(), recoverSave(), reset(); watcher tạo form/khôi phục profile ID/lưu bất định.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : analysis hiện tại, catalog Settings và actor.
@@ -37,6 +37,7 @@ export function useAiPromptProfiles(run, catalog, actorId) {
   let disposed = false
   let preparedAnalysisId = null
   let observedAnalysisId = null
+  const profileOverrideId = shallowRef(null)
 
   const defaultProfileId = computed(() => catalog.settings.value.default_writing_profile_id ?? null)
 
@@ -78,7 +79,7 @@ export function useAiPromptProfiles(run, catalog, actorId) {
       savedProfile.value = null
       form.value = emptyProfileForm()
     }
-    if (status !== 'ready' || preparedAnalysisId === id) return
+    if (status !== 'ready' || preparedAnalysisId === id || profileOverrideId.value) return
     const currentSequence = ++sequence
 
     preparedAnalysisId = id
@@ -89,8 +90,8 @@ export function useAiPromptProfiles(run, catalog, actorId) {
     conflict.value = false
     uncertainSave.value = false
     form.value = resultToForm(run.analysis.value.result, run.analysis.value.name)
-    let savedId
-    try { savedId = Number(window.sessionStorage.getItem(savedKey())) || null }
+    let savedId = Number(run.analysis.value.draft_profile_id) || null
+    try { savedId = Number(window.sessionStorage.getItem(savedKey())) || savedId }
     catch { /* Không có storage thì giữ bản analysis ready. */ }
     if (!savedId) {
       try {
@@ -120,6 +121,50 @@ export function useAiPromptProfiles(run, catalog, actorId) {
 
   /**
    * =====================================================================
+   * CHỨC NĂNG: Tải trực tiếp profile được chọn từ List để mở trang Edit.
+   * Input: profile ID. Output: profile/version và form độc lập; không cần analysis còn hạn.
+   * Side effect: GET profile, hủy kết quả tải profile cũ và không gọi model.
+   * =====================================================================
+   */
+  async function loadProfile(id) {
+    const profileId = Number(id)
+    if (!Number.isInteger(profileId) || profileId < 1 || disposed) return false
+    if (savedProfile.value?.id === profileId && !restoring.value) return true
+
+    const currentSequence = ++sequence
+
+    profileOverrideId.value = profileId
+    preparedAnalysisId = null
+    savedProfile.value = null
+    form.value = emptyProfileForm()
+    errors.value = {}
+    message.value = ''
+    defaultError.value = ''
+    conflict.value = false
+    uncertainSave.value = false
+    restoring.value = true
+
+    try {
+      const profile = await aiWritingProfilesService.profile(profileId)
+      if (disposed || currentSequence !== sequence) return false
+      savedProfile.value = profile
+      form.value = profileToForm(profile, defaultProfileId.value)
+
+      return true
+    }
+    catch (reason) {
+      if (disposed || currentSequence !== sequence) return false
+      message.value = formatAiError(reason, 'Không đọc được văn phong để chỉnh sửa.')
+
+      return false
+    }
+    finally {
+      if (currentSequence === sequence) restoring.value = false
+    }
+  }
+
+  /**
+   * =====================================================================
    * CHỨC NĂNG: Lưu sau duyệt; update cần version và lỗi default báo riêng.
    * Input: form, analysis ID/profile hiện tại. Output: boolean lưu xong cả yêu cầu mặc định.
    * savedProfile/version/errors vẫn phản ánh server; false giữ bản khi lỗi/chưa xác định.
@@ -130,7 +175,7 @@ export function useAiPromptProfiles(run, catalog, actorId) {
     if (!canSave.value || disposed) return false
     errors.value = validateProfileForm(form.value)
     if (Object.keys(errors.value).length) return false
-    const payload = profilePayload(form.value, run.analysis.value.id, savedProfile.value)
+    const payload = profilePayload(form.value, run.analysis.value?.id ?? null, savedProfile.value)
     const wantsDefault = form.value.setAsDefault && form.value.is_enabled
     const currentSequence = sequence
 
@@ -268,6 +313,7 @@ export function useAiPromptProfiles(run, catalog, actorId) {
     sequence++
     preparedAnalysisId = null
     observedAnalysisId = null
+    profileOverrideId.value = null
     form.value = emptyProfileForm()
     savedProfile.value = null
     errors.value = {}
@@ -280,5 +326,5 @@ export function useAiPromptProfiles(run, catalog, actorId) {
 
   onScopeDispose(() => { disposed = true; sequence++ })
 
-  return { form, savedProfile, saving, restoring, errors, message, defaultError, conflict, uncertainSave, defaultProfileId, canSave, save, reloadProfile, recoverSave, reset }
+  return { form, savedProfile, saving, restoring, errors, message, defaultError, conflict, uncertainSave, defaultProfileId, canSave, save, loadProfile, reloadProfile, recoverSave, reset }
 }

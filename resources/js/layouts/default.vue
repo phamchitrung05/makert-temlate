@@ -5,6 +5,7 @@ import { switchToVerticalNavOnLtOverlayNavBreakpoint } from '@layouts/utils'
 
 const DefaultLayoutWithHorizontalNav = defineAsyncComponent(() => import('./components/DefaultLayoutWithHorizontalNav.vue'))
 const DefaultLayoutWithVerticalNav = defineAsyncComponent(() => import('./components/DefaultLayoutWithVerticalNav.vue'))
+const AiTaskQueuePopup = defineAsyncComponent(() => import('@/components/ai/AiTaskQueuePopup.vue'))
 const configStore = useConfigStore()
 
 // ℹ️ This will switch to vertical nav when define breakpoint is reached when in horizontal nav layout
@@ -48,6 +49,8 @@ watch([
         <Component :is="Component" />
       </Suspense>
     </RouterView>
+
+    <AiTaskQueuePopup />
   </Component>
 </template>
 
