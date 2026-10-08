@@ -13,9 +13,10 @@ use Illuminate\Http\JsonResponse;
  * =====================================================================
  * CHỨC NĂNG FILE: Trả catalog quyền thật và danh sách permission
  * =====================================================================
- * Quyền chỉ đọc từ cấu hình/server; FormRequest kiểm users.view/manage.
+ * Quyền chỉ đọc từ cấu hình/server; FormRequest kiểm users.view/manage hoặc
+ * một action vòng đời role.
  * CÁC HÀM/METHOD TRONG FILE: __construct(), index(), catalog().
- * INPUT/OUTPUT CỦA CLASS: Request đã validate và actor có users.view/manage -> BaseResponse catalog/bảng quyền.
+ * INPUT/OUTPUT CỦA CLASS: Request đã validate và actor có quyền access -> BaseResponse catalog/bảng quyền.
  * SIDE EFFECT: Query read-only qua service; không ghi database.
  * EXCEPTION/TRANSACTION: FormRequest chặn 403/422; controller không mở transaction.
  * =====================================================================
@@ -50,7 +51,7 @@ final class AccessPermissionController extends Controller
     /**
      * =====================================================================
      * CHỨC NĂNG: Trả nhóm quyền và role options cho editor
-     * INPUT: Actor có users.view/manage.
+     * INPUT: Actor có quyền access hoặc action vòng đời role.
      * OUTPUT: BaseResponse catalog.
      * SIDE EFFECT: Read-only query; không seed.
      * EXCEPTION/TRANSACTION: Không mở transaction.

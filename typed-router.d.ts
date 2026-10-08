@@ -55,7 +55,6 @@ declare module 'vue-router/auto-routes' {
     'apps-logistics-fleet': RouteRecordInfo<'apps-logistics-fleet', '/apps/logistics/fleet', Record<never, never>, Record<never, never>>,
     'apps-media-file': RouteRecordInfo<'apps-media-file', '/apps/media/file', Record<never, never>, Record<never, never>>,
     'apps-media-media-asset': RouteRecordInfo<'apps-media-media-asset', '/apps/media/media-asset', Record<never, never>, Record<never, never>>,
-    'apps-permissions': RouteRecordInfo<'apps-permissions', '/apps/permissions', Record<never, never>, Record<never, never>>,
     'apps-roles': RouteRecordInfo<'apps-roles', '/apps/roles', Record<never, never>, Record<never, never>>,
     'apps-user-list': RouteRecordInfo<'apps-user-list', '/apps/user/list', Record<never, never>, Record<never, never>>,
     'apps-user-view-id': RouteRecordInfo<'apps-user-view-id', '/apps/user/view/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,

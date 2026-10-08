@@ -177,10 +177,7 @@ export default [
       {
         title: 'Roles & Permissions',
         icon: { icon: 'tabler-settings' },
-        children: [
-          { title: 'Roles', to: 'apps-roles' },
-          { title: 'Permissions', to: 'apps-permissions' },
-        ],
+        to: 'apps-roles',
       },
     ],
   },

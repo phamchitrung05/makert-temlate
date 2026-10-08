@@ -148,6 +148,70 @@ final class AccessManagementApiTest extends TestCase
 
     /**
      * =====================================================================
+     * CHỨC NĂNG: Hiển thị và thực thi permission vòng đời role riêng
+     * INPUT: Actor có roles.view/create/update và media.view.
+     * OUTPUT: Catalog có roles.create/roles.update; actor tạo và sửa được role trong scope.
+     * SIDE EFFECT: Tạo rồi cập nhật một role trong database test cô lập.
+     * EXCEPTION/TRANSACTION: Route/FormRequest/service từ chối quyền ngoài scope.
+     * =====================================================================
+     */
+    public function test_role_catalog_exposes_granular_role_lifecycle_permissions(): void
+    {
+        $token = $this->token(['roles.view', 'roles.create', 'roles.update', 'media.view']);
+
+        $catalog = $this->withToken($token)->getJson('/api/admin/permissions/catalog')
+            ->assertOk()
+            ->assertJsonPath('data.can_create_role', true)
+            ->assertJsonPath('data.can_update_role', true);
+
+        $rolePermissions = collect($catalog->json('data.groups'))
+            ->firstWhere('name', 'roles')['permissions'];
+
+        $this->assertSame(
+            ['roles.create', 'roles.delete', 'roles.update', 'roles.view'],
+            collect($rolePermissions)->pluck('name')->sort()->values()->all(),
+        );
+        $this->assertTrue(collect($rolePermissions)->firstWhere('name', 'roles.create')['assignable']);
+        $this->assertTrue(collect($rolePermissions)->firstWhere('name', 'roles.update')['assignable']);
+
+        $created = $this->withToken($token)->postJson('/api/admin/roles', [
+            'name' => 'scoped-role-manager',
+            'permission_ids' => $this->permissionIds('media.view'),
+        ])->assertCreated();
+
+        $this->withToken($token)->patchJson('/api/admin/roles/'.$created->json('data.id'), [
+            'name' => 'scoped-role-manager',
+            'permission_ids' => $this->permissionIds('media.view'),
+            'expected_version' => $created->json('data.version'),
+        ])->assertOk();
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Xác nhận role admin mặc định có thể tạo role trong scope
+     * INPUT: Token của user mang role admin và permission catalog hợp lệ.
+     * OUTPUT: 201 và role mới nhận các permission admin được cấp.
+     * SIDE EFFECT: Tạo role trong database test cô lập.
+     * EXCEPTION/TRANSACTION: Middleware/service từ chối permission ngoài scope.
+     * =====================================================================
+     */
+    public function test_default_admin_role_can_create_role_within_its_scope(): void
+    {
+        $token = $this->token(role: 'admin');
+
+        $created = $this->withToken($token)->postJson('/api/admin/roles', [
+            'name' => 'admin-content-manager',
+            'permission_ids' => $this->permissionIds('media.view', 'users.view'),
+        ])->assertCreated()->assertJsonPath('data.name', 'admin-content-manager');
+
+        $this->assertSame(
+            ['media.view', 'users.view'],
+            collect($created->json('data.permissions'))->pluck('name')->sort()->values()->all(),
+        );
+    }
+
+    /**
+     * =====================================================================
      * CHỨC NĂNG: Kiểm CRUD custom role và audit của super-admin
      * =====================================================================
      * INPUT: Tên role, permission IDs và version trả từ API.

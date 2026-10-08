@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\AccessIndexRequest;
-use App\Http\Requests\Admin\AccessVersionRequest;
 use App\Http\Requests\Admin\RoleCreateRequest;
+use App\Http\Requests\Admin\RoleDeleteRequest;
 use App\Http\Requests\Admin\RoleUpdateRequest;
 use App\Http\Resources\RoleResource;
 use App\Http\Responses\BaseResponse;
@@ -18,7 +18,8 @@ use Symfony\Component\HttpFoundation\Response;
  * =====================================================================
  * CHỨC NĂNG FILE: Điều phối CRUD role admin qua FormRequest và service
  * =====================================================================
- * Đọc cần users.view/manage, mutation cần users.manage; response giữ BaseResponse.
+ * Đọc cần users.view/manage hoặc một action roles; mutation dùng roles.create/update/delete
+ * và vẫn hỗ trợ users.manage để tương thích; response giữ BaseResponse.
  * CÁC HÀM/METHOD TRONG FILE: __construct(), index(), show(), store(), update(), destroy().
  * INPUT/OUTPUT CỦA CLASS (tổng thể): dữ liệu đã validate/admin -> DTO hoặc mutation quyền.
  * SIDE EFFECT: Theo boundary từng method; không gọi dịch vụ bên ngoài.
@@ -42,15 +43,19 @@ final class RoleController extends Controller
      * =====================================================================
      * CHỨC NĂNG: Trả danh sách role phân trang
      * INPUT: Query đã validate và actor có quyền xem.
-     * OUTPUT: BaseResponse DataTable cùng meta can_manage.
+     * OUTPUT: BaseResponse DataTable cùng meta các action role được phép.
      * SIDE EFFECT: Read-only eager loaded query.
      * EXCEPTION/TRANSACTION: Không mở transaction.
      * =====================================================================
      */
     public function index(AccessIndexRequest $request): JsonResponse
     {
-        return BaseResponse::dataTable(RoleResource::collection($this->access->roles($request->validated())),
-            meta: ['can_manage' => $request->user()->can('users.manage')]);
+        return BaseResponse::dataTable(RoleResource::collection($this->access->roles($request->validated())), meta: [
+            'can_manage' => RoleManagementService::canManageRoles($request->user()),
+            'can_create_role' => RoleManagementService::canCreateRole($request->user()),
+            'can_update_role' => RoleManagementService::canUpdateRole($request->user()),
+            'can_delete_role' => RoleManagementService::canDeleteRole($request->user()),
+        ]);
     }
 
     /**
@@ -72,7 +77,7 @@ final class RoleController extends Controller
     /**
      * =====================================================================
      * CHỨC NĂNG: Tạo role tùy chỉnh
-     * INPUT: RoleCreateRequest đã kiểm users.manage.
+     * INPUT: RoleCreateRequest đã kiểm roles.create hoặc users.manage.
      * OUTPUT: BaseResponse 201 RoleResource.
      * SIDE EFFECT: Service ghi role/pivot/audit.
      * EXCEPTION/TRANSACTION: Transaction/lock/rollback do service quản lý.
@@ -86,7 +91,7 @@ final class RoleController extends Controller
     /**
      * =====================================================================
      * CHỨC NĂNG: Cập nhật role và permission
-     * INPUT: RoleUpdateRequest và role binding.
+     * INPUT: RoleUpdateRequest đã kiểm roles.update hoặc users.manage và role binding.
      * OUTPUT: BaseResponse RoleResource mới.
      * SIDE EFFECT: Service ghi role/pivot/audit.
      * EXCEPTION/TRANSACTION: Service kiểm version, root, system name và quyền trong transaction.
@@ -100,13 +105,13 @@ final class RoleController extends Controller
     /**
      * =====================================================================
      * CHỨC NĂNG: Xóa custom role chưa dùng
-     * INPUT: AccessVersionRequest và role.
+     * INPUT: RoleDeleteRequest đã kiểm roles.delete hoặc users.manage và role.
      * OUTPUT: HTTP 204.
      * SIDE EFFECT: Service xóa role/pivot, ghi audit.
      * EXCEPTION/TRANSACTION: Service kiểm version/quyền/role đang dùng; lỗi rollback.
      * =====================================================================
      */
-    public function destroy(AccessVersionRequest $request, Role $role): Response
+    public function destroy(RoleDeleteRequest $request, Role $role): Response
     {
         $this->access->remove($request->user(), $role, $request->validated('expected_version'));
 

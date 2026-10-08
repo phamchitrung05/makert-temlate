@@ -10,7 +10,8 @@ use Illuminate\Validation\Rule;
  * =====================================================================
  * CHỨC NĂNG FILE: Validate query xem role, permission và tài khoản admin
  * =====================================================================
- * Request là boundary quyền xem users.view hoặc users.manage; customer không được truy cập.
+ * Request là boundary quyền xem users.view/users.manage hoặc một action roles;
+ * customer không được truy cập.
  * CÁC HÀM/METHOD TRONG FILE: authorize(), rules().
  * INPUT/OUTPUT CỦA CLASS: Query HTTP và User đã xác thực -> filters đã validate.
  * SIDE EFFECT: Đọc quyền User và query validation role; không ghi database.
@@ -23,14 +24,16 @@ final class AccessIndexRequest extends FormRequest
      * =====================================================================
      * CHỨC NĂNG: Kiểm quyền đọc back-office
      * INPUT: User hiện tại từ Sanctum.
-     * OUTPUT: Boolean quyền users.view hoặc users.manage.
+     * OUTPUT: Boolean quyền users.view/users.manage hoặc roles.view/create/update/delete.
      * SIDE EFFECT: Không ghi dữ liệu.
      * EXCEPTION/TRANSACTION: Không mở transaction.
      * =====================================================================
      */
     public function authorize(): bool
     {
-        return $this->user() instanceof User && ($this->user()->can('users.view') || $this->user()->can('users.manage'));
+        return $this->user() instanceof User && collect([
+            'users.view', 'users.manage', 'roles.view', 'roles.create', 'roles.update', 'roles.delete',
+        ])->contains(fn (string $permission): bool => $this->user()->can($permission));
     }
 
     /**

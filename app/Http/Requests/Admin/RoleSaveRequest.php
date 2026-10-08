@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\User;
 use App\Services\Access\RoleManagementService;
 use Illuminate\Validation\Rule;
 
@@ -9,8 +10,10 @@ use Illuminate\Validation\Rule;
  * =====================================================================
  * CHỨC NĂNG FILE: Validate tên role và permission IDs theo catalog admin
  * =====================================================================
- * Base chung cho RoleCreateRequest và RoleUpdateRequest; users.manage tạo/sửa. Guard/name/system invariants được service kiểm dưới lock.
- * CÁC HÀM/METHOD TRONG FILE: prepareForValidation(), rules(); authorize() kế thừa.
+ * Base chung cho RoleCreateRequest và RoleUpdateRequest; roles.create/roles.update
+ * tạo boundary hẹp, còn users.manage giữ quyền tương thích. Guard/name/system
+ * invariants được service kiểm dưới lock.
+ * CÁC HÀM/METHOD TRONG FILE: authorize(), prepareForValidation(), rules().
  * INPUT/OUTPUT CỦA CLASS: User/name/permission_ids -> payload tên/catalog đã validate.
  * SIDE EFFECT: Trim name và query validation role/permission; không ghi database.
  * EXCEPTION/TRANSACTION: 403 khi thiếu quyền, 422 khi field sai; không mở transaction.
@@ -18,6 +21,28 @@ use Illuminate\Validation\Rule;
  */
 abstract class RoleSaveRequest extends AccessVersionRequest
 {
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm action riêng của request tạo hoặc cập nhật role
+     * INPUT: HTTP method và User admin hiện tại.
+     * OUTPUT: true khi actor có roles.create/roles.update hoặc users.manage.
+     * SIDE EFFECT: Không ghi dữ liệu.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
+    public function authorize(): bool
+    {
+        $user = $this->user();
+
+        if (! $user instanceof User) {
+            return false;
+        }
+
+        return $this->isMethod('post')
+            ? RoleManagementService::canCreateRole($user)
+            : RoleManagementService::canUpdateRole($user);
+    }
+
     /**
      * =====================================================================
      * CHỨC NĂNG: Chuẩn hóa tên role

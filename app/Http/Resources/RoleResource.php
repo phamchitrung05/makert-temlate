@@ -32,6 +32,7 @@ final class RoleResource extends JsonResource
     {
         $system = in_array($this->name, RoleManagementService::SYSTEM_ROLES, true);
         $editable = RoleManagementService::canEditRole($request->user(), $this->resource);
+        $deletable = RoleManagementService::canDeleteRoleModel($request->user(), $this->resource);
 
         return [
             'id' => $this->id, 'name' => $this->name,
@@ -39,7 +40,7 @@ final class RoleResource extends JsonResource
             'users_count' => (int) $this->users_count,
             'version' => RoleManagementService::roleVersion($this->resource),
             'is_system' => $system, 'can_edit' => $editable,
-            'can_delete' => $editable && ! $system && (int) $this->users_count === 0,
+            'can_delete' => $deletable && ! $system && (int) $this->users_count === 0,
         ];
     }
 }

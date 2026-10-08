@@ -346,11 +346,6 @@ export const db = {
           icon: 'tabler-shield-checkered',
           title: 'Roles',
         },
-        {
-          url: { name: 'apps-permissions' },
-          icon: 'tabler-shield-checkered',
-          title: 'Permissions',
-        },
       ],
     },
     {

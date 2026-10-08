@@ -46,7 +46,7 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
         Route::get('/me', [AdminTokenController::class, 'me']);
 
         // Guard admin tách khỏi customer; service kiểm lại quyền mutation dưới lock.
-        Route::middleware('permission:users.view|users.manage,admin')->group(function (): void {
+        Route::middleware('permission:users.view|users.manage|roles.view|roles.create|roles.update|roles.delete,admin')->group(function (): void {
             Route::get('/permissions/catalog', [AccessPermissionController::class, 'catalog']);
             Route::get('/permissions', [AccessPermissionController::class, 'index']);
             Route::get('/roles', [RoleController::class, 'index']);
@@ -54,10 +54,15 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
             Route::get('/access/users', [AdminUserRoleController::class, 'index']);
             Route::get('/access/users/{user}', [AdminUserRoleController::class, 'show'])->whereNumber('user');
         });
+        Route::post('/roles', [RoleController::class, 'store'])
+            ->middleware('permission:users.manage|roles.create,admin');
+        Route::patch('/roles/{role}', [RoleController::class, 'update'])
+            ->whereNumber('role')
+            ->middleware('permission:users.manage|roles.update,admin');
+        Route::delete('/roles/{role}', [RoleController::class, 'destroy'])
+            ->whereNumber('role')
+            ->middleware('permission:users.manage|roles.delete,admin');
         Route::middleware('permission:users.manage,admin')->group(function (): void {
-            Route::post('/roles', [RoleController::class, 'store']);
-            Route::patch('/roles/{role}', [RoleController::class, 'update'])->whereNumber('role');
-            Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->whereNumber('role');
             Route::patch('/access/users/{user}/roles', [AdminUserRoleController::class, 'update'])->whereNumber('user');
         });
 

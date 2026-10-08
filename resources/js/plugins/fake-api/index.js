@@ -28,7 +28,6 @@ import { handlerAppsInvoice } from '@db/apps/invoice/index'
 import { handlerAppsKanban } from '@db/apps/kanban/index'
 import { handlerAppsMedia } from '@db/apps/media/index'
 import { handlerAppLogistics } from '@db/apps/logistics/index'
-import { handlerAppsPermission } from '@db/apps/permission/index'
 import { handlerAppsResources } from '@db/apps/resources/index'
 import { handlerAppsResourceVersions } from '@db/apps/resourceVersions/index'
 import { handlerAppsPosts } from '@db/apps/posts/index'
@@ -39,7 +38,7 @@ import { handlerPagesFaq } from '@db/pages/faq/index'
 import { handlerPagesHelpCenter } from '@db/pages/help-center/index'
 import { handlerPagesProfile } from '@db/pages/profile/index'
 
-const worker = setupWorker(...handlerAppsEcommerce, ...handlerAppsAcademy, ...handlerAppsInvoice, ...handlerAppsUsers, ...handlerAppsEmail, ...handlerAppsCalendar, ...handlerAppsChat, ...handlerAppsPermission, ...handlerAppsResources, ...handlerAppsResourceVersions, ...handlerAppsPosts, ...handlerAppsMedia, ...handlerPagesHelpCenter, ...handlerPagesProfile, ...handlerPagesFaq, ...handlerPagesDatatable, ...handlerAppBarSearch, ...handlerAppLogistics, ...handlerAppsKanban, ...handlerDashboard)
+const worker = setupWorker(...handlerAppsEcommerce, ...handlerAppsAcademy, ...handlerAppsInvoice, ...handlerAppsUsers, ...handlerAppsEmail, ...handlerAppsCalendar, ...handlerAppsChat, ...handlerAppsResources, ...handlerAppsResourceVersions, ...handlerAppsPosts, ...handlerAppsMedia, ...handlerPagesHelpCenter, ...handlerPagesProfile, ...handlerPagesFaq, ...handlerPagesDatatable, ...handlerAppBarSearch, ...handlerAppLogistics, ...handlerAppsKanban, ...handlerDashboard)
 
 /**
  * Khởi động MSW worker khi ứng dụng được cấu hình dùng fake API.

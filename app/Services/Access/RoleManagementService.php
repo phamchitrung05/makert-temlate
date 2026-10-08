@@ -18,7 +18,7 @@ use Spatie\Permission\PermissionRegistrar;
  * CHỨC NĂNG FILE: Quản lý role admin, catalog quyền và gán role có bảo vệ quyền hệ thống
  * =====================================================================
  * Controller dùng service cho query/mutation. Catalog lấy từ config; super-admin bất biến, role mặc định giữ tên. Mọi mutation khóa role super-admin để serialize thay đổi quyền và kiểm lại actor; audit cùng transaction, cache xóa sau commit.
- * CÁC HÀM/METHOD TRONG FILE: permissionNames(), canGrant(), canEditRole(), roleVersion(), userVersion(), roles(), roleDetails(), users(), permissions(), catalog(), save(), remove(), assign(), mutate(), selectedPermissions(), userCount(), assertVersion(), audit().
+ * CÁC HÀM/METHOD TRONG FILE: permissionNames(), canCreateRole(), canUpdateRole(), canDeleteRole(), canManageRoles(), canGrant(), canEditRole(), canDeleteRoleModel(), roleVersion(), userVersion(), roles(), roleDetails(), users(), permissions(), catalog(), save(), remove(), assign(), mutate(), selectedPermissions(), userCount(), assertVersion(), audit().
  * INPUT/OUTPUT CỦA CLASS (tổng thể): dữ liệu đã validate/admin -> DTO hoặc mutation quyền.
  * SIDE EFFECT: Theo boundary từng method; không gọi dịch vụ bên ngoài.
  * EXCEPTION/TRANSACTION: Quyền/validation/conflict trả 403/422/409; mutation dùng transaction.
@@ -46,6 +46,58 @@ final class RoleManagementService
 
     /**
      * =====================================================================
+     * CHỨC NĂNG: Kiểm quyền tạo role
+     * INPUT: Actor admin đã xác thực.
+     * OUTPUT: true khi có roles.create hoặc users.manage tương thích.
+     * SIDE EFFECT: Đọc permission của actor, không ghi dữ liệu.
+     * =====================================================================
+     */
+    public static function canCreateRole(User $actor): bool
+    {
+        return $actor->can('users.manage') || $actor->can('roles.create');
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm quyền cập nhật role
+     * INPUT: Actor admin đã xác thực.
+     * OUTPUT: true khi có roles.update hoặc users.manage tương thích.
+     * SIDE EFFECT: Đọc permission của actor, không ghi dữ liệu.
+     * =====================================================================
+     */
+    public static function canUpdateRole(User $actor): bool
+    {
+        return $actor->can('users.manage') || $actor->can('roles.update');
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm quyền xóa role
+     * INPUT: Actor admin đã xác thực.
+     * OUTPUT: true khi có roles.delete hoặc users.manage tương thích.
+     * SIDE EFFECT: Đọc permission của actor, không ghi dữ liệu.
+     * =====================================================================
+     */
+    public static function canDeleteRole(User $actor): bool
+    {
+        return $actor->can('users.manage') || $actor->can('roles.delete');
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm actor có thể mở luồng quản lý role
+     * INPUT: Actor admin đã xác thực.
+     * OUTPUT: true khi có quyền tạo hoặc cập nhật role.
+     * SIDE EFFECT: Đọc permission của actor, không ghi dữ liệu.
+     * =====================================================================
+     */
+    public static function canManageRoles(User $actor): bool
+    {
+        return self::canCreateRole($actor) || self::canUpdateRole($actor);
+    }
+
+    /**
+     * =====================================================================
      * CHỨC NĂNG: Kiểm quyền được cấp có nằm trong phạm vi của người quản lý
      * INPUT: Actor đã xác thực và collection Permission.
      * OUTPUT: true nếu super-admin hoặc actor có mọi quyền được cấp.
@@ -63,7 +115,7 @@ final class RoleManagementService
      * =====================================================================
      * CHỨC NĂNG: Xác định role được phép chỉnh sửa
      * INPUT: Actor và role đã eager load permissions.
-     * OUTPUT: Boolean quyền users.manage, guard admin và giới hạn cấp quyền.
+     * OUTPUT: Boolean quyền roles.update/users.manage, guard admin và giới hạn cấp quyền.
      * SIDE EFFECT: Không ghi dữ liệu.
      * EXCEPTION/TRANSACTION: Không mở transaction.
      * =====================================================================
@@ -71,7 +123,21 @@ final class RoleManagementService
     public static function canEditRole(User $actor, Role $role): bool
     {
         return $role->guard_name === 'admin' && $role->name !== 'super-admin'
-            && $actor->can('users.manage') && self::canGrant($actor, $role->permissions);
+            && self::canUpdateRole($actor) && self::canGrant($actor, $role->permissions);
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Xác định role được phép xóa
+     * INPUT: Actor và role đã eager load permissions.
+     * OUTPUT: Boolean quyền roles.delete/users.manage, guard admin và scope.
+     * SIDE EFFECT: Không ghi dữ liệu.
+     * =====================================================================
+     */
+    public static function canDeleteRoleModel(User $actor, Role $role): bool
+    {
+        return $role->guard_name === 'admin' && $role->name !== 'super-admin'
+            && self::canDeleteRole($actor) && self::canGrant($actor, $role->permissions);
     }
 
     /**
@@ -183,7 +249,8 @@ final class RoleManagementService
      * =====================================================================
      * CHỨC NĂNG: Trả nhóm quyền và role options thật cho form
      * INPUT: Actor admin đã được cấp quyền xem.
-     * OUTPUT: groups, role_options, can_manage và actor_id; mỗi quyền/role có cờ assignable.
+     * OUTPUT: groups, role_options, cờ quản lý role theo action và actor_id;
+     * mỗi quyền/role có cờ assignable.
      * SIDE EFFECT: Đọc quyền/role đã eager load; không seed hoặc sửa catalog.
      * EXCEPTION/TRANSACTION: Không mở transaction.
      * =====================================================================
@@ -195,7 +262,7 @@ final class RoleManagementService
             return ['name' => $group, 'permissions' => $items->map(fn ($permission) => [
                 'id' => $permission->id, 'name' => $permission->name,
                 'action' => explode('.', $permission->name, 2)[1],
-                'assignable' => $actor->can('users.manage') && self::canGrant($actor, collect([$permission])),
+                'assignable' => self::canManageRoles($actor) && self::canGrant($actor, collect([$permission])),
             ])->values()->all()];
         })->values()->all();
 
@@ -203,10 +270,13 @@ final class RoleManagementService
             'groups' => $groups,
             'role_options' => Role::query()->where('guard_name', 'admin')->with('permissions')->orderBy('name')->get()
                 ->map(fn ($role) => ['id' => $role->id, 'name' => $role->name,
-                    'assignable' => $actor->can('users.manage') && self::canGrant($actor, $role->permissions)
+                    'assignable' => self::canManageRoles($actor) && self::canGrant($actor, $role->permissions)
                         && ($role->name !== 'super-admin' || $actor->hasRole('super-admin', 'admin')),
                 ])->all(),
-            'can_manage' => $actor->can('users.manage'),
+            'can_manage' => self::canManageRoles($actor),
+            'can_create_role' => self::canCreateRole($actor),
+            'can_update_role' => self::canUpdateRole($actor),
+            'can_delete_role' => self::canDeleteRole($actor),
             'actor_id' => $actor->id,
         ];
     }
@@ -217,11 +287,13 @@ final class RoleManagementService
      * INPUT: Actor, name/permission_ids/expected_version đã validate, role optional.
      * OUTPUT: Role đã eager load/count sau mutation.
      * SIDE EFFECT: Ghi role/pivot và audit; không sửa permission catalog.
-     * EXCEPTION/TRANSACTION: mutate() mở transaction và lock; root bất biến, tên system role cố định, không tự mất users.manage; lỗi rollback.
+     * EXCEPTION/TRANSACTION: mutate() mở transaction và lock; root bất biến, tên system role cố định, không tự mất quyền quản lý role; lỗi rollback.
      * =====================================================================
      */
     public function save(User $actor, array $data, ?Role $role = null): Role
     {
+        $requiredPermission = $role === null ? 'roles.create' : 'roles.update';
+
         return $this->mutate($actor, function (User $freshActor) use ($data, $role): Role {
             $selected = $this->selectedPermissions($data['permission_ids']);
             abort_unless(self::canGrant($freshActor, $selected), 403, 'You can only grant permissions you already have.');
@@ -234,10 +306,16 @@ final class RoleManagementService
                     throw ValidationException::withMessages(['name' => 'System role names cannot be changed.']);
                 }
                 $before = ['name' => $role->name, 'permission_ids' => $role->permissions->pluck('id')->all()];
-                if ($freshActor->roles->contains('id', $role->id) && $freshActor->can('users.manage')) {
+                if ($freshActor->roles->contains('id', $role->id) && self::canUpdateRole($freshActor)) {
                     $otherPermissions = $freshActor->permissions->pluck('name')->merge($freshActor->roles
                         ->where('id', '!=', $role->id)->flatMap(fn ($other) => $other->permissions->pluck('name')));
-                    abort_unless($selected->pluck('name')->merge($otherPermissions)->contains('users.manage'), 422, 'Keep your access management permission.');
+                    $protectedPermissions = $freshActor->can('users.manage')
+                        ? ['users.manage']
+                        : collect(['roles.create', 'roles.update'])
+                            ->filter(fn (string $permission) => $freshActor->can($permission))
+                            ->values()->all();
+                    $effectivePermissions = $selected->pluck('name')->merge($otherPermissions);
+                    abort_unless(collect($protectedPermissions)->every(fn (string $permission) => $effectivePermissions->contains($permission)), 422, 'Keep your role management permission.');
                 }
             }
             abort_if($data['name'] === 'super-admin', 422, 'The super-admin role is reserved.');
@@ -252,7 +330,7 @@ final class RoleManagementService
                 ['name' => $role->name, 'permission_ids' => $selected->pluck('id')->all()]);
 
             return $this->roleDetails($role);
-        });
+        }, $requiredPermission);
     }
 
     /**
@@ -268,13 +346,13 @@ final class RoleManagementService
     {
         $this->mutate($actor, function (User $freshActor) use ($role, $version): void {
             $role = Role::query()->where('guard_name', 'admin')->with('permissions')->lockForUpdate()->findOrFail($role->id);
-            abort_unless(self::canEditRole($freshActor, $role), 403);
+            abort_unless(self::canDeleteRoleModel($freshActor, $role), 403);
             $this->assertVersion(self::roleVersion($role), $version);
             abort_if(in_array($role->name, self::SYSTEM_ROLES, true), 422, 'System roles cannot be deleted.');
             abort_if($this->userCount($role) > 0, 409, 'Remove this role from its users before deleting it.');
             $this->audit($freshActor, $role, 'role_deleted', ['name' => $role->name, 'permission_ids' => $role->permissions->pluck('id')->all()], null);
             $role->delete();
-        });
+        }, 'roles.delete');
     }
 
     /**
@@ -307,25 +385,25 @@ final class RoleManagementService
             $this->audit($freshActor, $user, 'admin_roles_updated', $before, ['role_ids' => $roles->pluck('id')->all()]);
 
             return $user->load(['roles.permissions', 'permissions']);
-        });
+        }, 'users.manage');
     }
 
     /**
      * =====================================================================
      * CHỨC NĂNG: Serialize thay đổi quyền và kiểm lại người quản lý
-     * INPUT: Actor và callback mutation.
+     * INPUT: Actor, callback mutation và permission action bắt buộc.
      * OUTPUT: Kết quả callback.
      * SIDE EFFECT: Lock role super-admin và actor; xóa cache Spatie sau commit.
      * EXCEPTION/TRANSACTION: Transaction retry deadlock tối đa 5; callback/audit lỗi rollback.
      * =====================================================================
      */
-    private function mutate(User $actor, Closure $callback): mixed
+    private function mutate(User $actor, Closure $callback, string $requiredPermission): mixed
     {
-        return DB::transaction(function () use ($actor, $callback) {
+        return DB::transaction(function () use ($actor, $callback, $requiredPermission) {
             $root = Role::query()->where('guard_name', 'admin')->where('name', 'super-admin')->lockForUpdate()->first();
             abort_unless($root, 409, 'System roles have not been initialized.');
             $freshActor = User::query()->with(['roles.permissions', 'permissions'])->lockForUpdate()->findOrFail($actor->id);
-            abort_unless($freshActor->isActive() && $freshActor->can('users.manage'), 403);
+            abort_unless($freshActor->isActive() && ($freshActor->can('users.manage') || $freshActor->can($requiredPermission)), 403);
             $result = $callback($freshActor);
             DB::afterCommit(fn () => app(PermissionRegistrar::class)->forgetCachedPermissions());
 
