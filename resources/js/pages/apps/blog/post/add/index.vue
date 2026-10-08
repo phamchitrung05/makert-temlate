@@ -11,7 +11,7 @@
   - postId: lấy Post ID từ query string khi mở chế độ chỉnh sửa
   - errorMessage: chuẩn hóa lỗi API thành nội dung hiển thị
   - watcher postId: tải Post tương ứng hoặc reset form create
-  - handleSubmit(): gọi create/update rồi quay về danh sách
+  - handleSubmit(): lưu nội dung rồi gọi lifecycle save/review/publish
 
   INPUT/OUTPUT CỦA COMPONENT (tổng thể):
   - INPUT : route query `post`, state từ usePostStore
@@ -40,15 +40,33 @@ watch(postId, id => {
 /**
  * INPUT: payload Post do PostForm emit.
  * OUTPUT: không trả dữ liệu cho template.
- * SIDE EFFECT: tạo/cập nhật Post và điều hướng về trang danh sách khi thành công.
+ * SIDE EFFECT: tạo/cập nhật Post, gọi lifecycle endpoint nếu được yêu cầu và điều hướng khi thành công.
  * EXCEPTION: store giữ lỗi API để PostForm hiển thị; page không điều hướng khi lỗi.
  */
 const handleSubmit = async payload => {
   try {
-    if (postId.value)
-      await store.updatePost(postId.value, payload)
-    else
-      await store.createPost(payload)
+    const workflowAction = payload.workflowAction ?? 'save'
+    const formPayload = { ...payload }
+
+    delete formPayload.workflowAction
+
+    // Create luôn đi qua draft; review/publish được thực hiện ở endpoint riêng.
+    if (!postId.value)
+      formPayload.status = 'draft'
+
+    const saved = postId.value
+      ? await store.updatePost(postId.value, formPayload)
+      : await store.createPost(formPayload)
+
+    const savedId = saved?.id ?? postId.value
+
+    if (!savedId)
+      throw new Error('Không xác định được Post sau khi lưu.')
+
+    if (workflowAction === 'review')
+      await store.submitPostReview(savedId)
+    else if (workflowAction === 'publish' && saved?.status !== 'published')
+      await store.publishPost(savedId)
 
     await router.push({ name: 'apps-blog-post-list' })
   }

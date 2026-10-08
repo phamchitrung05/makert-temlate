@@ -34,7 +34,7 @@ Phạm vi đầu tiên là bài Post do AI Content tạo; image run và lượt 
 | [ProjectScheduleRegistry](../../app/Services/Settings/ProjectScheduleRegistry.php), queue, Settings và provider/model catalog | Job chấm ngay, lịch tổng hợp báo cáo, cấu hình evaluator và ngân sách riêng |
 | [Rubric chất lượng](../quality/AI_ARTICLE_QUALITY_EVALUATION.md), gate kỹ thuật và bộ đánh giá offline | Tiêu chí/version dùng chung, cổng duyệt phía backend, kiểm chứng kết quả AI và báo cáo |
 
-Kho `ai_article_archives` và service đã triển khai ở giai đoạn 1; nơi lưu điểm tạm, bảng chấm/báo cáo và cổng duyệt còn là thiết kế cần triển khai. Không sửa ngược migration đã chạy; nếu cần schema mới cho điểm thì thêm migration khi triển khai. Kho snapshot chất lượng không đồng nghĩa triển khai toàn bộ kho draft biên tập dài hạn đang tạm hoãn.
+Kho `ai_article_archives` và service đã triển khai ở giai đoạn 1; API và màn hình `AI Approved` đọc các snapshot đã duyệt, còn nơi lưu điểm tạm, bảng chấm/báo cáo và cổng duyệt vẫn là thiết kế cần triển khai. Archive dùng identity đa model `target_type` + `applied_target_id`; Post là target đầu tiên có workflow duyệt, các target khác dùng chung kho khi adapter/review tương ứng hoàn tất. Không sửa ngược migration đã chạy; nếu cần schema mới cho điểm thì thêm migration khi triển khai. Kho snapshot chất lượng không đồng nghĩa triển khai toàn bộ kho draft biên tập dài hạn đang tạm hoãn.
 
 ## 3. Dữ liệu cần lưu
 

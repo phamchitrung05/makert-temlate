@@ -56,7 +56,9 @@ class RolePermissionSeeder extends Seeder
             'admin' => $permissions->only([
                 'resources.view', 'resources.create', 'resources.update',
                 'resources.publish', 'resources.archive', 'resource_versions.manage',
-                'posts.manage', 'media.view', 'media.upload', 'media.attach',
+                'posts.manage', 'posts.view', 'posts.create', 'posts.update', 'posts.delete',
+                'posts.review', 'posts.publish', 'posts.archive',
+                'media.view', 'media.upload', 'media.attach',
                 'media.delete', 'media.retry',
                 'ai_settings.manage',
                 // Admin được phép quản lý role trong phạm vi permission của mình.
@@ -67,6 +69,8 @@ class RolePermissionSeeder extends Seeder
             'editor' => $permissions->only([
                 'resources.view', 'resources.create', 'resources.update',
                 'resources.publish', 'resource_versions.manage', 'posts.manage',
+                'posts.view', 'posts.create', 'posts.update', 'posts.delete',
+                'posts.review', 'posts.publish', 'posts.archive',
                 'taxonomy.manage', 'media.view', 'media.upload', 'media.attach',
             ]),
             'support' => $permissions->only(['resources.view', 'media.view', 'users.view']),

@@ -5,10 +5,28 @@ namespace App\Services\Media;
 use DOMDocument;
 use Illuminate\Validation\ValidationException;
 
-/** Kiểm link ảnh trong HTML; chỉ đọc markup, không tìm asset hoặc tạo quan hệ Post. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Kiểm contract URL ảnh trong HTML Post.
+ * =====================================================================
+ * CÁC HÀM/METHOD TRONG FILE: validate(), imageUrls(), validUrl(), document(), fail().
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : HTML sau boundary request, trước khi sanitize và lưu Post.
+ * - OUTPUT: pass hoặc ValidationException; không sửa HTML và không query asset.
+ * =====================================================================
+ */
 final class ContentImageUrlValidator
 {
-    /** Input: HTML bài viết. Output: hợp lệ hoặc lỗi content; giữ nguyên các ảnh lặp và định dạng. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm cấu trúc ảnh và chỉ cho phép URL HTTP/HTTPS/root-relative.
+     * =====================================================================
+     * INPUT: HTML bài viết chưa sanitize.
+     * OUTPUT: không trả dữ liệu khi hợp lệ; lỗi validation khi URL/kiểu ảnh sai.
+     * SIDE EFFECT: chỉ parse DOM trong memory, không tải URL.
+     * EXCEPTION/TRANSACTION: ValidationException; không mở transaction.
+     * =====================================================================
+     */
     public function validate(string $html): void
     {
         if (trim($html) === '') {
@@ -30,6 +48,7 @@ final class ContentImageUrlValidator
                     $this->fail('Ảnh nội dung không được chứa thuộc tính thực thi sự kiện.');
                 }
             }
+            // Style và attribute lạ do ContentHtmlSanitizer loại bỏ; validator giữ contract event ảnh.
             if ($image->hasAttribute('srcset')) {
                 $this->fail('Ảnh nội dung hiện dùng một link ảnh; chưa hỗ trợ srcset.');
             }
@@ -39,7 +58,16 @@ final class ContentImageUrlValidator
         }
     }
 
-    /** Input: HTML đã lưu. Output: từng URL img theo vị trí; không khử trùng hoặc truy cập đường dẫn. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Trích URL img theo thứ tự để consumer cần đọc HTML.
+     * =====================================================================
+     * INPUT: HTML đã lưu.
+     * OUTPUT: danh sách URL ảnh; không sanitize hoặc truy cập đường dẫn.
+     * SIDE EFFECT: chỉ parse DOM trong memory.
+     * EXCEPTION/TRANSACTION: không có; không mở transaction.
+     * =====================================================================
+     */
     public function imageUrls(string $html): array
     {
         if (trim($html) === '') {
@@ -54,22 +82,42 @@ final class ContentImageUrlValidator
         return $urls;
     }
 
-    /** Input: URL img. Output: chỉ nhận URL web hoặc đường dẫn gốc, không nhận blob/data/file/script. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm một URL ảnh có thuộc protocol được phép hay không.
+     * =====================================================================
+     * INPUT: URL src của img.
+     * OUTPUT: bool; chỉ nhận HTTP/HTTPS hoặc root-relative.
+     * SIDE EFFECT: không có.
+     * EXCEPTION/TRANSACTION: không có; không mở transaction.
+     * =====================================================================
+     */
     private function validUrl(string $url): bool
     {
         if ($url === '' || preg_match('/[\x00-\x20\x7F]/', $url) || str_contains($url, '\\')) {
             return false;
         }
-        if (str_starts_with($url, '/') && ! str_starts_with($url, '//')) {
+        if (str_starts_with($url, '//')) {
+            return false;
+        }
+        if (str_starts_with($url, '/')) {
             return true;
         }
-        $absolute = str_starts_with($url, '//') ? 'https:'.$url : $url;
 
-        return filter_var($absolute, FILTER_VALIDATE_URL) !== false
-            && in_array(strtolower((string) parse_url($absolute, PHP_URL_SCHEME)), ['http', 'https'], true);
+        return filter_var($url, FILTER_VALIDATE_URL) !== false
+            && in_array(strtolower((string) parse_url($url, PHP_URL_SCHEME)), ['http', 'https'], true);
     }
 
-    /** Input: HTML UTF-8. Output: DOM tách rời; không tải ảnh/script và khôi phục cấu hình libxml. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Parse HTML UTF-8 trong DOM tách rời.
+     * =====================================================================
+     * INPUT: HTML UTF-8.
+     * OUTPUT: DOMDocument; không tải ảnh/script và khôi phục cấu hình libxml.
+     * SIDE EFFECT: chỉ thay đổi parser state trong thời gian parse.
+     * EXCEPTION/TRANSACTION: libxml warning được nuốt; không mở transaction.
+     * =====================================================================
+     */
     private function document(string $html): DOMDocument
     {
         $document = new DOMDocument;
@@ -84,7 +132,16 @@ final class ContentImageUrlValidator
         return $document;
     }
 
-    /** Input: thông báo. Output: lỗi validation content; không sửa HTML hoặc ghi database. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Ném lỗi validation chuẩn cho field content.
+     * =====================================================================
+     * INPUT: thông báo tiếng Việt.
+     * OUTPUT: never.
+     * SIDE EFFECT: tạo ValidationException; không sửa HTML hoặc ghi database.
+     * EXCEPTION/TRANSACTION: ValidationException; không mở transaction.
+     * =====================================================================
+     */
     private function fail(string $message): never
     {
         throw ValidationException::withMessages(['content' => $message]);

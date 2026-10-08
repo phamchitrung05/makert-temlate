@@ -20,11 +20,13 @@ const tagItems = shallowRef([])
 const taxonomyLoading = shallowRef(false)
 const taxonomyError = shallowRef('')
 
-const statusItems = [
-  { title: 'Draft', value: 'draft' },
-  { title: 'Published', value: 'published' },
-  { title: 'Archived', value: 'archived' },
-]
+const statusLabels = {
+  draft: 'Draft',
+  'pending_review': 'Pending review',
+  rejected: 'Rejected',
+  published: 'Published',
+  archived: 'Archived',
+}
 
 const filteredCategories = computed(() => categories.value.filter(category => category.name.toLowerCase().includes(categorySearch.value.toLowerCase())))
 
@@ -54,12 +56,19 @@ onMounted(loadTaxonomy)
     class="mb-6"
   >
     <VCardText>
-      <AppSelect
-        v-model="status"
-        label="Status"
-        :items="statusItems"
-        prepend-inner-icon="tabler-status-change"
-      />
+      <div class="d-flex align-center justify-space-between">
+        <span class="text-body-2">Status</span>
+        <VChip
+          size="small"
+          color="primary"
+          variant="tonal"
+        >
+          {{ statusLabels[status] || status }}
+        </VChip>
+      </div>
+      <div class="text-caption text-medium-emphasis mt-3">
+        Trạng thái chỉ đổi qua workflow review, publish hoặc archive.
+      </div>
       <div class="d-flex justify-space-between text-caption mt-4">
         <span>Visibility</span><span>Public</span>
       </div>

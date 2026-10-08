@@ -1,6 +1,6 @@
 # Kế hoạch tổng của dự án
 
-**Cập nhật:** 07/10/2026. Đây là nơi theo dõi tiến độ hiện tại; mỗi task chỉ có một checklist đang dùng.
+**Cập nhật:** 08/10/2026. Đây là nơi theo dõi tiến độ hiện tại; mỗi task chỉ có một checklist đang dùng.
 
 ## Tài liệu cần đọc
 
@@ -23,7 +23,7 @@ Các tài liệu API và QA trong `docs/` tiếp tục làm nguồn tham chiếu
 | Authentication và quyền | IN PROGRESS — A-02 backend DONE | Admin Sanctum, customer OAuth, token; backend quản lý role/permission bằng API thật đã xong. Hai page Vue để trống, giao diện mới do chủ dự án bổ sung sau; danh sách customer tạm hoãn |
 | Resource và taxonomy | DONE | Backend, admin CRUD, service/store và kiểm thử |
 | Media và version | DONE | Media Library task 1–10: upload/security, usage, API/quyền, picker, Resource/Post/Version và QA |
-| Blog Admin/Post | IN PROGRESS | CRUD, taxonomy, SEO metadata, editor, media, phân trang/tìm kiếm/lọc trạng thái; còn workflow/revision và các mục bên dưới |
+| Blog Admin/Post | IN PROGRESS | CRUD, taxonomy, SEO metadata, editor, media, P-01 workflow, P-03 HTML sanitization và P-04 bộ lọc tác giả/ngày; post_type/Gallery mở thành plan riêng |
 | AI Content | DONE trong phạm vi kỹ thuật hiện tại | Pipeline C ba bước, nguồn URL/text/HTML/file, profile/brief, duyệt/từ chối, sửa/regenerate, Apply Post nháp và thumbnail từ AI Content |
 | Ai Prompt/Writing Profiles | DONE trong phạm vi hiện tại | CRUD, profile mặc định, chọn profile, phân tích văn phong qua queue và quyền/validation |
 | Settings | DONE phần đã triển khai | 10 tab, typed settings/version/quyền, AI defaults, thông tin hệ thống, logo/favicon public/admin và QA upload thật |
@@ -33,7 +33,11 @@ Các tài liệu API và QA trong `docs/` tiếp tục làm nguồn tham chiếu
 
 Chủ dự án chấp nhận mức **4,49/5** và hiện chưa yêu cầu chỉnh bài, prompt hoặc model thêm. Không mở lại các task kỹ thuật đã xong chỉ vì checklist cũ chưa được cập nhật.
 
-Ngày 07/10/2026, chủ dự án yêu cầu để tính năng chấm bài và danh sách customer làm sau vì giai đoạn đầu chưa có khách hàng. Q-01 giai đoạn 1 đã hoàn tất; phần giai đoạn 2–6 và A-01 tạm hoãn. **A-02 đã xong phạm vi backend**: role CRUD, permission catalog và gán role admin. Theo yêu cầu mới, hai page Vue để khung trống để chủ dự án thêm giao diện riêng sau. Task backend tiếp theo đề xuất là **P-01 — workflow review/publish Post**, rồi P-02; chưa tự bắt đầu các task này.
+Ngày 07/10/2026, chủ dự án yêu cầu để tính năng chấm bài và danh sách customer làm sau vì giai đoạn đầu chưa có khách hàng. Q-01 giai đoạn 1 đã hoàn tất; phần giai đoạn 2–6 và A-01 tạm hoãn. **A-02 đã xong phạm vi backend**: role CRUD, permission catalog và gán role admin. Hai page Vue để khung trống để chủ dự án thêm giao diện riêng sau. P-01 đã triển khai. Ngày 08/10/2026, chủ dự án yêu cầu tạm hoãn P-02; P-03 và P-04 đã hoàn tất trong phạm vi hiện tại. `post_type` và Gallery đầy đủ sẽ mở ở một plan riêng sau.
+
+### Plan bên lề đang chờ triển khai
+
+- [AI Task Queue Popup](AI_TASK_QUEUE_POPUP.md): cho phép thêm nhiều văn phong liên tiếp và theo dõi các analysis/job trong popup góc trái dưới. Backend queue hiện đã nhận nhiều job; plan tập trung vào API danh sách, polling và UI, chưa thay đổi concurrency worker.
 
 ## Mốc đã hoàn tất gần nhất
 
@@ -46,6 +50,9 @@ Ngày 07/10/2026, chủ dự án yêu cầu để tính năng chấm bài và da
 - [x] 07/10: hoàn tất Q-01 giai đoạn 1 và điều chỉnh theo yêu cầu: chỉ candidate được duyệt/Apply vào kho bản gốc/nguồn; các bản chưa chọn hết hạn cùng Content AI. Dùng lại migration local đã chạy; kiểm ba bản chỉ chọn bản 2, rollback, phục hồi và cleanup. [Kết quả kiểm thử](../qa/AI_ARTICLE_ARCHIVES_2026-10-07.md).
 - [x] 07/10: hoàn tất A-02 backend theo phạm vi đã điều chỉnh; bảo vệ role/scope quyền, version, audit và cache. Vue Roles/Permissions để trống cho giao diện mới của chủ dự án. [Contract API](../api/ACCESS_MANAGEMENT_API.md) · [Kiểm chứng](../qa/ACCESS_MANAGEMENT_2026-10-07/README.md).
 - [x] 07/10: cập nhật kế hoạch Q-01 theo thảo luận: chấm từng bài trước duyệt, vòng tròn điểm, ngưỡng > 4 kèm kiểm nguồn/dữ kiện; chỉ giữ điểm bản đã chọn và định kỳ tổng hợp. Đây là cập nhật tài liệu, chưa triển khai evaluator/cổng duyệt/giao diện điểm.
+- [x] 08/10: hoàn tất P-01: workflow review/publish/archive Post, `published_at` server-side, permission CRUD/lifecycle riêng, audit transition và UI action/filter. [QA Post workflow](../qa/POST_WORKFLOW_2026-10-08.md).
+- [x] 08/10: hoàn tất P-03: sanitize HTML Post thủ công ở backend, giữ markup/media hợp lệ, chặn URL ảnh nguy hiểm và dùng chung sanitizer với AI. [QA Post HTML](../qa/POST_CONTENT_SANITIZATION_2026-10-08.md).
+- [x] 08/10: hoàn tất P-04 trong phạm vi đã chốt: lọc Post theo tác giả và ngày tạo, danh sách tác giả cho filter, date range inclusive, UI panel filter riêng và fake API. `post_type`/Gallery không thuộc task này; sẽ lập plan riêng sau. [QA Post filters](../qa/POST_FILTERS_2026-10-08.md).
 
 Bằng chứng FIX 1 ở [Acceptance/QA](../qa/FIX1_ACCEPTANCE_2026-10-07/README.md): backend 438 tests/2986 assertions; lượt scoped cuối 31/172; frontend scoped 7 files/51 tests và build đạt. Kiểm backend gần nhất sau bổ sung kho approved xem [QA giai đoạn 1](../qa/AI_ARTICLE_ARCHIVES_2026-10-07.md). Đây là các lượt có phần trùng nhau, không cộng thành tổng mới.
 
@@ -60,12 +67,12 @@ Các ID dưới đây để theo dõi ổn định, không phải yêu cầu tri
 | Q-03 | TODO — tạm hoãn | Nghiệm thu chất lượng nhận xét Ai Prompt; đối chiếu temperature 0/0.2 và hiệu chỉnh language/exact-copy/similarity theo loại bài/ngôn ngữ khi chủ dự án yêu cầu. Similarity không phải điểm chất lượng tổng thể |
 | A-01 | TODO — tạm hoãn | Để làm sau khi có khách hàng theo yêu cầu ngày 07/10/2026. Admin xem danh sách customer bằng API thật: tên/email, trạng thái, ngày tạo/lần đăng nhập gần nhất; tìm kiếm, lọc trạng thái và phân trang |
 | A-02 | DONE — backend | API role CRUD, permission catalog, danh sách/chi tiết/gán role admin, quyền/scope/version/audit đã triển khai và kiểm thử. Hai page Vue để trống; giao diện mới do chủ dự án bổ sung sau theo yêu cầu. CASL frontend tiếp tục tạm hoãn |
-| P-01 | TODO | Review/publish workflow, `published_at` và quyền Post chi tiết |
-| P-02 | TODO | Revision/history và khôi phục bản cũ của Post |
-| P-03 | TODO — cần rà code trước | Rà sanitization HTML nhập tay và hoàn thiện phần còn thiếu; không mặc định toàn bộ input chưa được bảo vệ |
-| P-04 | TODO | Lọc Post theo tác giả/ngày và trình diễn `post_type = gallery`; bộ ảnh Gallery có thứ tự đã lưu được |
-| P-05 | TODO — nếu giữ tùy chọn | Chốt các Post options đang minh họa; bổ sung persistence/validation cho option được chọn |
-| AI-01 | TODO — tạm hoãn | Kho draft phục vụ biên tập dài hạn. Kho snapshot cho Q-01 là yêu cầu riêng, không tự mở lại toàn bộ luồng biên tập này |
+| P-01 | DONE | Review/publish/reject/archive workflow, `published_at` server-side, audit và quyền Post chi tiết. [QA](../qa/POST_WORKFLOW_2026-10-08.md) |
+| P-02 | TODO — tạm hoãn | Revision/history và khôi phục bản cũ của Post; làm sau theo yêu cầu ngày 08/10/2026 |
+| P-03 | DONE | Sanitization HTML Post server-side, allowlist markup/attribute, giữ media refs hợp lệ và test XSS/URL |
+| P-04 | DONE | Lọc Post theo tác giả/ngày tạo, endpoint option tác giả, validation khoảng ngày, UI panel filter riêng và test. Không bao gồm `post_type`/Gallery; sẽ làm theo plan riêng |
+| P-05 | TODO — tạm hoãn | Chốt các Post options đang minh họa; bổ sung persistence/validation cho option được chọn. Làm sau theo yêu cầu ngày 08/10/2026 |
+| AI-01 | DONE — phạm vi archive approved | Trang `AI Approved` đọc archive bài AI đã duyệt dài hạn, có filter/ngày, datatable phân trang và dialog xem snapshot gốc. Kho dùng identity đa model `target_type` + `target_id`; draft chưa duyệt vẫn tạm thời và phạm vi Resource/Sound Apply thuộc AI-04 |
 | AI-02 | TODO — tạm hoãn | Sinh thumbnail từ nội dung Post đã được người dùng biên tập. Thumbnail tạo trong AI Content và dialog prompt ảnh thủ công đã có |
 | AI-03 | TODO | Ai Prompt: lịch sử phân tích phía server, quyền source preview riêng và mở rộng idempotency khi cần |
 | AI-04 | TODO | AI Apply cho Resource/Sound, input/file theo từng domain; ghi usage/cost và phiên bản bảng giá. Thiếu usage/giá giữ trạng thái chưa biết |

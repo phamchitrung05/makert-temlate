@@ -24,7 +24,7 @@ class PostCreateRequest extends FormRequest
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Ủy quyền validation sau middleware posts.manage
+     * CHỨC NĂNG: Ủy quyền validation sau middleware posts.create/posts.manage
      * =====================================================================
      * INPUT: Request đã qua xác thực/permission ở route.
      * OUTPUT: true để Laravel thực hiện validation.
@@ -54,7 +54,8 @@ class PostCreateRequest extends FormRequest
             ...$this->aiProvenanceRules(),
             'title' => ['required', 'string', 'max:255'],
             'content' => ['nullable', 'string'],
-            'status' => ['sometimes', 'string', Rule::in(PostStatus::values())],
+            // Post mới luôn bắt đầu ở draft; Publish phải đi qua lifecycle endpoint.
+            'status' => ['sometimes', 'string', Rule::in([PostStatus::Draft->value])],
             'category_ids' => ['sometimes', 'array'],
             'category_ids.*' => ['integer', 'distinct', 'exists:categories,id'],
             'tag_ids' => ['sometimes', 'array'],

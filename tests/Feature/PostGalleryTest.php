@@ -135,7 +135,7 @@ class PostGalleryTest extends TestCase
     public function test_content_rejects_temporary_or_executable_urls_without_fetching_images(): void
     {
         $token = $this->token(['posts.manage']);
-        foreach (['blob:temporary', 'data:image/png;base64,AAAA', 'javascript:alert(1)', 'file:///C:/image.png', ''] as $url) {
+        foreach (['blob:temporary', 'data:image/png;base64,AAAA', 'javascript:alert(1)', 'file:///C:/image.png', '//images.example.test/photo.jpg', ''] as $url) {
             $this->withToken($token)->postJson('/api/admin/posts', [
                 'title' => 'Link không hợp lệ', 'content' => '<img src="'.e($url).'" alt="Ảnh">',
             ])->assertUnprocessable()->assertJsonValidationErrors('content');

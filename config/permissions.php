@@ -37,9 +37,9 @@ return [
         // Resource version: quản lý toàn bộ vòng đời version của resource.
         'resource_versions' => ['manage'],
 
-        // Post: manage cho phép thao tác quản trị bài viết; create/update
-        // được dùng riêng cho tạo mới/cập nhật và cấp quyền preview slug.
-        'posts' => ['manage', 'create', 'update'],
+        // Post: CRUD và lifecycle review/publish/archive được cấp độc lập;
+        // manage vẫn giữ quyền toàn bộ để tương thích role hiện có.
+        'posts' => ['manage', 'view', 'create', 'update', 'delete', 'review', 'publish', 'archive'],
 
         // Taxonomy: quản lý danh mục, tag và technology.
         'taxonomy' => ['manage'],

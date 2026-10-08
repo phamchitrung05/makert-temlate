@@ -6,6 +6,7 @@
  * Menu dùng route name do file-based router sinh ra. Resource nằm trong
  * Ecommerce; Media là nhóm nghiệp vụ riêng để quản lý file dùng chung.
  * Systerm AI tập trung Ai Content, Ai Prompt và AI Settings cho nội dung/mẫu/provider.
+ * AI Approved hiển thị các snapshot bài AI đã duyệt được lưu dài hạn.
  * Ai Prompt có List đọc mẫu đã lưu và Add phân tích bài tham khảo để tạo mẫu.
  * SYSTERM SETTING chứa trang SETTING trống.
  *
@@ -29,6 +30,13 @@ export default [
     title: 'Ai Content',
     icon: { icon: 'tabler-sparkles' },
     to: 'ai-content',
+  },
+  {
+    title: 'AI Approved',
+    icon: { icon: 'tabler-circle-check' },
+    to: 'ai-approved',
+    action: 'manage',
+    subject: 'posts',
   },
   {
     title: 'Ai Prompt',

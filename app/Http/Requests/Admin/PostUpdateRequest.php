@@ -2,12 +2,10 @@
 
 namespace App\Http\Requests\Admin;
 
-use App\Enums\PostStatus;
 use App\Http\Requests\Admin\Concerns\ValidatesAiProvenance;
 use App\Http\Requests\Admin\Concerns\ValidatesContentMedia;
 use App\Http\Requests\Admin\Concerns\ValidatesPostSeo;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 /**
  * =====================================================================
@@ -24,7 +22,7 @@ class PostUpdateRequest extends FormRequest
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Ủy quyền validation sau middleware posts.manage
+     * CHỨC NĂNG: Ủy quyền validation sau middleware posts.update/posts.manage
      * =====================================================================
      * INPUT: Request đã qua xác thực/permission ở route.
      * OUTPUT: true để Laravel thực hiện validation.
@@ -54,7 +52,9 @@ class PostUpdateRequest extends FormRequest
             ...$this->aiProvenanceRules(),
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'content' => ['nullable', 'string'],
-            'status' => ['sometimes', 'string', Rule::in(PostStatus::values())],
+            // Status và published_at chỉ được đổi qua workflow endpoint riêng.
+            'status' => ['prohibited'],
+            'published_at' => ['prohibited'],
             'category_ids' => ['sometimes', 'array'],
             'category_ids.*' => ['integer', 'distinct', 'exists:categories,id'],
             'tag_ids' => ['sometimes', 'array'],

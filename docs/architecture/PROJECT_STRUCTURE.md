@@ -478,9 +478,15 @@ app/Http/Resources/ResourceVersionResource.php
 app/Models/Post.php
 app/Actions/Posts/CreatePostAction.php
 app/Actions/Posts/UpdatePostAction.php
+app/Actions/Posts/SubmitPostForReviewAction.php
+app/Actions/Posts/PublishPostAction.php
+app/Actions/Posts/RejectPostAction.php
+app/Actions/Posts/ArchivePostAction.php
 app/Http/Controllers/Admin/PostController.php
 app/Http/Requests/Admin/PostCreateRequest.php
 app/Http/Requests/Admin/PostUpdateRequest.php
+app/Http/Requests/Admin/PostRejectRequest.php
+app/Http/Requests/Admin/PostIndexRequest.php
 app/Http/Resources/PostResource.php
 database/migrations/*_create_posts_table.php
 tests/Feature/MediaTask8IntegrationTest.php
@@ -496,6 +502,16 @@ resources/js/pages/apps/blog/post/
 resources/js/plugins/fake-api/handlers/apps/resourceVersions/
 resources/js/plugins/fake-api/handlers/apps/posts/
 ```
+
+Post lifecycle dùng các endpoint `submit-review`, `publish`, `reject` và
+`archive`; CRUD chỉ sửa nội dung/metadata và không ghi trực tiếp `status` hoặc
+`published_at`. Permission chi tiết nằm trong `config/permissions.php` và
+migration workflow Post mới nhất.
+
+Danh sách Post có bộ lọc `author_id`, `created_from`, `created_to` (inclusive
+theo `created_at`) và endpoint `GET /api/admin/posts/authors` để dựng option.
+Panel bộ lọc được tách riêng phía trên bảng; `post_type` và Gallery đầy đủ chưa
+thuộc phạm vi P-04.
 
 `MediaAsset` sở hữu collection Spatie `library`; bảng `media_assets` chỉ lưu
 metadata nghiệp vụ, còn bảng `media` lưu file vật lý. Disk `media_public` và
@@ -562,6 +578,7 @@ app/Services/Ai/Contracts/             provider/target contract
 app/Services/Ai/Registries/             target/provider/prompt/schema registry
 app/Services/Ai/Targets/PostAiAdapter.php
 app/Services/Ai/Content/                source, sanitize, validate, import pipeline
+app/Services/Content/                    sanitizer HTML dùng chung cho Post và AI
 app/Services/Ai/Content/Agents/         Analyze + Plan, Write, Edit cho Post content
 app/Services/Ai/Content/Pipelines/      điều phối/checkpoint ba bước
 app/Services/Ai/Content/Archives/       snapshot AI gốc, hash và phục hồi kho v1
@@ -755,17 +772,18 @@ giữ nguyên. Với Post text v1, child ảnh được tạo sau khi parent rea
 `GET /sessions` phân trang summary root còn hạn của chính actor. Page đọc mọi trang,
 merge lifecycle mới vào list và không tự apply/publish Post. Các session vẫn theo
 retention của backend hiện tại (mặc định 2 ngày), chưa phải kho lưu bản nháp dài hạn.
-Từ 07/10/2026, kho `ai_article_archives` chỉ lưu output Post AI được duyệt/Apply,
-kèm nguồn/brief/profile/model và trace phiên bản/usage. Checkpoint tạm giữ original
+Từ 07/10/2026, kho `ai_article_archives` lưu output AI được duyệt/Apply theo identity
+đa model `target_type` + `applied_target_id`, kèm nguồn/brief/profile/model và trace phiên bản/usage. Post là target đầu tiên có workflow hoàn chỉnh; Resource/Sound sẽ dùng chung kho sau AI-04. Checkpoint tạm giữ original
 trước edit; Post nhận bản biên tập khi được chọn. Retry thủ công tăng `generation_no`
 và bỏ checkpoint chưa duyệt của lần trước; retry queue giữ số cũ, unique key chặn
 bản trùng. Payload/hash bất biến, metadata quyết định/Apply riêng; không FK/cascade
 theo run hoặc Post. Cleanup/xóa candidate chưa duyệt không tạo archive; với bản
 approved v1 phải đối chiếu archive hợp lệ trước khi dọn, lỗi giữ run để phục hồi.
 Command chỉ phục hồi kho của bản đã chọn, không gọi lại AI. UI candidate hiện tại
-vẫn theo retention run; UI kho và evaluator ở các giai đoạn sau.
-[Contract và QA kho](../qa/AI_ARTICLE_ARCHIVES_2026-10-07.md).
-Menu dọc/ngang đều đặt AI Settings cùng Ai Content trong nhóm Systerm AI.
+vẫn theo retention run; trang `AI Approved` đọc archive approved, còn evaluator/chấm điểm
+ở các giai đoạn sau.
+[Contract và QA kho](../qa/AI_ARTICLE_ARCHIVES_2026-10-07.md) · [QA AI Approved](../qa/AI_APPROVED_UI_2026-10-08.md).
+Menu dọc/ngang đều đặt AI Settings, Ai Content và AI Approved trong nhóm Systerm AI.
 
 Thời gian chờ AI được lưu ở `ai_providers.request_timeout` (5–600 giây) và chỉnh
 qua `AiProviderConnectionDialog.vue`. `config/ai-providers.php` có `request_timeout`

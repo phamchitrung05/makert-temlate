@@ -19,6 +19,7 @@ const props = defineProps({
   draft: { type: Object, default: null },
   loading: { type: Boolean, default: false },
   active: { type: Boolean, default: true },
+  original: Boolean,
 })
 
 const syncScroll = shallowRef(true)
@@ -58,15 +59,17 @@ const sourcePanel = computed(() => ({
 }))
 
 const resultPanel = computed(() => ({
-  title: 'Nội dung AI sau biên tập', icon: 'tabler-sparkles', badge: 'Bản đã lưu',
-  description: 'Bản nháp hiện tại, gồm những chỉnh sửa đã lưu.',
+  title: props.original ? 'Bản AI gốc' : 'Nội dung AI sau biên tập', icon: 'tabler-sparkles',
+  badge: props.original ? 'Bản đã lưu lâu dài' : 'Bản đã lưu',
+  description: props.original ? 'Snapshot trước khi Post được biên tập, dùng để tra cứu và đánh giá về sau.' : 'Bản nháp hiện tại, gồm những chỉnh sửa đã lưu.',
   articleTitle: props.active ? props.draft?.title : '',
   modes: [
     { title: 'Xem trước bài viết', value: 'preview', icon: 'tabler-eye' },
     { title: 'Văn bản AI', value: 'text', icon: 'tabler-align-left' },
   ],
   ariaLabel: 'Văn bản AI', loading: disabled.value, loadingMessage: 'Đang tải nội dung AI…',
-  missing: false, html: resultHtml.value, blocks: resultBlocks.value, diffKind: 'added',
+  missing: props.original && !props.draft, missingMessage: 'Bản AI gốc không còn nội dung để hiển thị.',
+  html: resultHtml.value, blocks: resultBlocks.value, diffKind: 'added',
   previewHtml: disabled.value || resultView.value !== 'preview' ? '' : previewOfHtml(resultHtml.value, highlightDiff.value && canCompare.value ? sourceText.value : null),
   metadata: [
     { label: 'Tóm tắt', icon: 'tabler-text-caption', value: props.draft?.excerpt },

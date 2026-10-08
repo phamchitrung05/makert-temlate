@@ -4,13 +4,16 @@ namespace App\Models;
 
 use App\Exceptions\AiArticleArchiveException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Lưu snapshot AI gốc bất biến và metadata biên tập riêng.
  * =====================================================================
  *
- * Service kho chỉ tạo row khi Post AI được duyệt/Apply. Snapshot/hash bất biến; metadata biên tập mutable, JSON private và không FK/cascade theo run/Post/user.
+ * Service kho chỉ tạo row khi target AI được duyệt/Apply. `target_type` +
+ * `applied_target_id` là identity đa model (không FK/cascade), để archive
+ * sống độc lập với từng domain model; snapshot/hash bất biến, lifecycle mutable.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - booted().
@@ -93,5 +96,20 @@ class AiArticleArchive extends Model
             'context_snapshot_json' => 'array', 'diagnostics_json' => 'array', 'lifecycle_json' => 'array',
             'generation_started_at' => 'datetime', 'generation_completed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Trả Post được tạo hoặc cập nhật từ bản AI đã duyệt
+     * =====================================================================
+     * INPUT: archive.applied_target_id.
+     * OUTPUT: BelongsTo Post; có thể null khi Post đã bị xóa nhưng archive vẫn còn.
+     * SIDE EFFECT: chỉ dựng quan hệ Eloquent, chưa thực thi query.
+     * EXCEPTION/TRANSACTION: không mở transaction hoặc ghi database.
+     * =====================================================================
+     */
+    public function post(): BelongsTo
+    {
+        return $this->belongsTo(Post::class, 'applied_target_id');
     }
 }

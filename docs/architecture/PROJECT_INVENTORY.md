@@ -95,18 +95,25 @@ docs/                      Plans, handoff notes and this inventory
 
 - Model: `app/Models/Post.php`
 - Controller: `app/Http/Controllers/Admin/PostController.php`
-- Actions: `app/Actions/Posts/CreatePostAction.php`, `UpdatePostAction.php`
-- Requests: `app/Http/Requests/Admin/PostCreateRequest.php`, `PostUpdateRequest.php`
+- Actions: `app/Actions/Posts/CreatePostAction.php`, `UpdatePostAction.php`,
+  `SubmitPostForReviewAction.php`, `PublishPostAction.php`,
+  `RejectPostAction.php`, `ArchivePostAction.php`
+- Requests: `app/Http/Requests/Admin/PostCreateRequest.php`,
+  `PostUpdateRequest.php`, `PostRejectRequest.php`
 - Resource: `app/Http/Resources/PostResource.php`
 - Frontend page: `resources/js/pages/apps/blog/post/add/index.vue`
 - Frontend form: `resources/js/views/apps/blog/post/PostForm.vue`
 - Frontend services/store: `resources/js/services/post.js`, `resources/js/stores/post.js`
+- Post list filter: `GET /api/admin/posts?author_id=&created_from=&created_to=` và `GET /api/admin/posts/authors`; UI filter nằm ở `resources/js/pages/apps/blog/post/list/index.vue`.
 - SEO: `app/Services/SeoMetadataService.php`, `app/Support/SeoRules.php`, `resources/js/composables/seoMetadata.js`, `useSeoMetadata.js`
 - Slug: `app/Services/SlugService.php`, `resources/js/composables/useSlug.js`, `resources/js/stores/slug.js`
 - Media fields: `post.thumbnail`, `post.gallery`; ảnh content chỉ lưu URL trong HTML, không có media usage.
-- Content URL validator: `app/Services/Media/ContentImageUrlValidator.php`; ref của candidate AI và kiểm link khi cleanup ở `ContentMediaReferenceService.php`.
+- Content HTML: `app/Services/Content/ContentHtmlSanitizer.php` dùng chung cho Post thủ công và AI; `app/Services/Media/ContentImageUrlValidator.php` giữ contract URL ảnh; ref của candidate AI và kiểm link khi cleanup ở `ContentMediaReferenceService.php`.
 - Gallery migration: `database/migrations/2026_10_06_100000_separate_post_gallery_from_content_images.php`; bỏ usage inline legacy, giữ HTML/file và chuyển ảnh chọn riêng sang `post.gallery`.
-- Status enum: `draft`, `published`, `archived`
+- Status enum: `draft`, `pending_review`, `rejected`, `published`, `archived`.
+  Lifecycle transition dùng endpoint riêng và permission `posts.review`,
+  `posts.publish`, `posts.archive`; `published_at` do backend ghi.
+- P-04 chỉ bổ sung lọc tác giả/ngày tạo. `post_type` và Gallery đầy đủ vẫn là phạm vi backlog riêng.
 
 ### Taxonomy
 
@@ -290,6 +297,19 @@ npm run lint
 6. Add a dated entry to the change log below.
 
 ## 11. Change log
+
+AI Approved archive viewer bổ sung ngày 2026-10-08:
+
+- API read-only `AiArticleArchiveController`, request/resource allowlist và route
+  `/admin/ai-agent/approved-archives*` đọc archive có `review_status=approved` và
+  `has_generated_content=true`; snapshot HTML được sanitize lúc serialize.
+- `AiArticleArchive` giữ identity đa model bằng `target_type` +
+  `applied_target_id`; Post eager-load chỉ là liên kết đầu tiên có UI, không tạo FK
+  cố định để Resource/Sound có thể dùng chung kho sau khi có adapter/review.
+- Page `ai-approved` dùng `useAiArticleArchives`, filter riêng, `VDataTableServer`
+  và dialog đọc `AiContentComparison`; menu dọc/ngang đặt trong nhóm Systerm AI.
+- Tests: `AiArticleArchiveApiTest`, `aiArticleArchivesService.test.js`; không có
+  mutation mới và không thay retention candidate 2 ngày.
 
 Workflow review bổ sung ngày 2026-10-05 (FIX 1 mục 12.36):
 

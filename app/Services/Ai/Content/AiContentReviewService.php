@@ -307,7 +307,13 @@ final class AiContentReviewService
             if (! $target && blank($payload['title'] ?? null)) {
                 throw ValidationException::withMessages(['title' => 'Post nháp mới cần tiêu đề hợp lệ từ candidate.']);
             }
-            $payload['status'] = 'draft';
+            // Create luôn bắt đầu draft; Apply vào Post hiện hữu không được
+            // dùng update để đổi lifecycle ngoài workflow Post.
+            if ($target) {
+                unset($payload['status']);
+            } else {
+                $payload['status'] = 'draft';
+            }
             $post = $target ? $this->update->handle($target, $payload, $actor->id) : $this->create->handle($payload, $actor->id);
             $this->provenance->recordPost($actor->id, $post, $run->id, $data['fields'], $payload);
             $run->refresh();

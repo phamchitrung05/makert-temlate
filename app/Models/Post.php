@@ -6,6 +6,8 @@ use App\Enums\PostStatus;
 use App\Models\Concerns\HasMediaAssets;
 use App\Models\Concerns\HasSeoMetadata;
 use App\Models\Concerns\HasSlug;
+use Database\Factories\PostFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,14 +18,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Post với slug, media và metadata SEO độc lập.
- * CÁC HÀM/METHOD TRONG FILE: casts(), createdBy(), updatedBy(), slugs(),
- * seoFallbacks(), slugSource(), primarySlug(): cast dữ liệu, quan hệ và nguồn slug.
+ * CÁC HÀM/METHOD TRONG FILE: casts(), createdBy(), updatedBy(), categories(),
+ * tags(), seoFallbacks(), slugs(), slugSource(), primarySlug(), scopePublished():
+ * cast dữ liệu, quan hệ, nguồn slug và truy vấn Post công khai.
  * INPUT/OUTPUT CỦA CLASS (tổng thể): thuộc tính Post -> model/quan hệ Eloquent.
  * =====================================================================
  */
 class Post extends Model
 {
-    /** @use HasFactory<\Database\Factories\PostFactory> */
+    /** @use HasFactory<PostFactory> */
     use HasFactory, HasMediaAssets, HasSeoMetadata, HasSlug, SoftDeletes;
 
     protected $fillable = [
@@ -55,6 +58,26 @@ class Post extends Model
     public function updatedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Giới hạn query chỉ lấy Post đã xuất bản
+     * =====================================================================
+     *
+     * INPUT:
+     * - $query: Eloquent builder của Post.
+     *
+     * OUTPUT:
+     * - Builder: query có điều kiện status = published.
+     *
+     * SIDE EFFECT:
+     * - Chỉ thêm điều kiện query; không ghi database.
+     * =====================================================================
+     */
+    public function scopePublished(Builder $query): Builder
+    {
+        return $query->where('status', PostStatus::Published);
     }
 
     /** Input: model hiện tại. Output: danh mục được gắn qua pivot đa hình. */

@@ -1,3 +1,4 @@
+/* eslint-disable camelcase -- Query keys follow the Laravel API contract. */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { postService } from '@/services/post'
 import { createSeo } from '@/composables/seoMetadata'
@@ -53,6 +54,20 @@ describe('Post API payload', () => {
     expect(post.media).not.toHaveProperty('content_images')
     await postService.update(3, { title: 'Post', content: html, galleryImages: gallery })
     expect(mocks.api.mock.calls[1][1].body).toMatchObject({ content: html, media: { 'gallery_image_ids': [8, 7] } })
+  })
+
+  it('loads author options and forwards author/date list filters', async () => {
+    mocks.api
+      .mockResolvedValueOnce({ success: true, data: [{ id: 4, name: 'Author', email: 'author@example.test' }] })
+      .mockResolvedValueOnce({ success: true, data: [{ id: 8, title: 'Filtered' }], meta: { pagination: { total: 1 } } })
+
+    await expect(postService.authors()).resolves.toEqual([{ id: 4, name: 'Author', email: 'author@example.test' }])
+
+    await postService.list({ author_id: 4, created_from: '2026-10-01', created_to: '2026-10-08' })
+
+    expect(mocks.api.mock.calls[1]).toEqual(['/admin/posts', {
+      query: { author_id: 4, created_from: '2026-10-01', created_to: '2026-10-08' },
+    }])
   })
 
 })

@@ -180,7 +180,7 @@ final class AiArticleSnapshot
             'run_id' => (string) $run->id, 'session_id' => $run->session_id ?: $run->id,
             'parent_run_id' => $run->parent_id, 'generation_no' => max(1, (int) $run->generation_no),
             'snapshot_version' => 1, 'created_by' => $run->created_by === null ? null : (int) $run->created_by,
-            'target_type' => 'post', 'operation' => $run->operation ?: 'create',
+            'target_type' => (string) data_get($input, 'target_type', 'post'), 'operation' => $run->operation ?: 'create',
             'generation_status' => $result === null ? $run->status : 'ready', 'content_origin' => $origin,
             'has_generated_content' => $hasContent && ! $legacy,
             'source_hash' => $source === [] ? null : ArticleInputHasher::hash($source),

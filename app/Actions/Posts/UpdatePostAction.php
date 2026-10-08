@@ -2,9 +2,11 @@
 
 namespace App\Actions\Posts;
 
+use App\Enums\PostStatus;
 use App\Models\Post;
 use App\Models\User;
 use App\Services\Ai\Provenance\AiProvenanceService;
+use App\Services\Content\ContentHtmlSanitizer;
 use App\Services\Media\ContentImageUrlValidator;
 use App\Services\MediaAssetUsageService;
 use App\Services\SeoMetadataService;
@@ -34,7 +36,8 @@ class UpdatePostAction
      * =====================================================================
      * CHỨC NĂNG: Nhận service media, SEO và lineage AI từ container.
      * =====================================================================
-     * INPUT: MediaAssetUsageService, SeoMetadataService, AiProvenanceService và ContentImageUrlValidator.
+     * INPUT: MediaAssetUsageService, SeoMetadataService, AiProvenanceService,
+     * ContentImageUrlValidator và ContentHtmlSanitizer.
      * OUTPUT: action sẵn sàng xử lý.
      * SIDE EFFECT: không gọi database khi khởi tạo.
      * EXCEPTION/TRANSACTION: không có; không mở transaction.
@@ -45,6 +48,7 @@ class UpdatePostAction
         private readonly SeoMetadataService $seoMetadataService,
         private readonly AiProvenanceService $aiProvenanceService,
         private readonly ContentImageUrlValidator $contentImageUrlValidator,
+        private readonly ContentHtmlSanitizer $contentHtmlSanitizer,
     ) {}
 
     /**
@@ -67,10 +71,25 @@ class UpdatePostAction
              * =====================================================================
              */
             $post = Post::query()->whereKey($post->getKey())->lockForUpdate()->firstOrFail();
+            if (array_key_exists('status', $attributes)) {
+                $requestedStatus = $attributes['status'] instanceof PostStatus
+                    ? $attributes['status']
+                    : PostStatus::tryFrom((string) $attributes['status']);
+                if ($requestedStatus !== null && $requestedStatus !== $post->status) {
+                    throw new \DomainException('Trạng thái Post chỉ được thay đổi qua workflow review/publish/archive.');
+                }
+                unset($attributes['status']);
+            }
+            if (array_key_exists('published_at', $attributes)) {
+                throw new \DomainException('published_at chỉ được cập nhật qua workflow publish.');
+            }
             $media = (array) ($attributes['media'] ?? []);
-            // INPUT: content nếu được cập nhật. OUTPUT: kiểm link ảnh; giữ gallery theo payload riêng.
+            // INPUT: content nếu được cập nhật. OUTPUT: kiểm link ảnh rồi sanitize; giữ gallery theo payload riêng.
             if (array_key_exists('content', $attributes)) {
                 $this->contentImageUrlValidator->validate((string) ($attributes['content'] ?? ''));
+                if (is_string($attributes['content'])) {
+                    $attributes['content'] = $this->contentHtmlSanitizer->sanitize($attributes['content']);
+                }
             }
             $taxonomy = array_map(static fn ($ids): array => (array) $ids,
                 array_intersect_key($attributes, array_flip(['category_ids', 'tag_ids'])));

@@ -19,7 +19,16 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class PostResource extends JsonResource
 {
-    /** Input: request và Post đã load quan hệ. Output: payload không chứa score client. */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Serialize Post, author, SEO, taxonomy và media đã load
+     * =====================================================================
+     * INPUT: Request và Post; list endpoint eager load createdBy/relations.
+     * OUTPUT: mảng JSON API không chứa score client.
+     * SIDE EFFECT: chỉ đọc quan hệ; fallback SEO không ghi database.
+     * EXCEPTION/TRANSACTION: không mở transaction.
+     * =====================================================================
+     */
     public function toArray(Request $request): array
     {
         $usages = $this->resource->relationLoaded('mediaAssetUsages')
@@ -44,6 +53,10 @@ class PostResource extends JsonResource
         return [
             'id' => $this->id,
             'title' => $this->title,
+            'created_by' => $this->created_by,
+            'author' => $this->whenLoaded('createdBy', fn (): ?array => $this->createdBy
+                ? ['id' => $this->createdBy->id, 'name' => $this->createdBy->name, 'email' => $this->createdBy->email]
+                : null),
             'slug' => $slug,
             'content' => $this->content,
             'excerpt' => $this->excerpt,

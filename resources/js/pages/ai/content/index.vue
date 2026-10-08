@@ -96,6 +96,14 @@ function createNew() {
       </div>
       <div class="d-flex flex-wrap align-center gap-4">
         <VBtn
+          color="secondary"
+          variant="tonal"
+          prepend-icon="tabler-circle-check"
+          :to="{ name: 'ai-approved' }"
+        >
+          AI Approved
+        </VBtn>
+        <VBtn
           prepend-icon="tabler-plus"
           :disabled="generation.busy"
           @click="createNew"

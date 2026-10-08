@@ -2,9 +2,11 @@
 
 namespace App\Actions\Posts;
 
+use App\Enums\PostStatus;
 use App\Models\Post;
 use App\Models\User;
 use App\Services\Ai\Provenance\AiProvenanceService;
+use App\Services\Content\ContentHtmlSanitizer;
 use App\Services\Media\ContentImageUrlValidator;
 use App\Services\MediaAssetUsageService;
 use App\Services\SeoMetadataService;
@@ -37,7 +39,8 @@ class CreatePostAction
      * =====================================================================
      * CHỨC NĂNG: Nhận service media, SEO và lineage AI từ container.
      * =====================================================================
-     * INPUT: MediaAssetUsageService, SeoMetadataService, AiProvenanceService và ContentImageUrlValidator.
+     * INPUT: MediaAssetUsageService, SeoMetadataService, AiProvenanceService,
+     * ContentImageUrlValidator và ContentHtmlSanitizer.
      * OUTPUT: action sẵn sàng xử lý.
      * SIDE EFFECT: không gọi database khi khởi tạo.
      * EXCEPTION/TRANSACTION: không có; không mở transaction.
@@ -48,6 +51,7 @@ class CreatePostAction
         private readonly SeoMetadataService $seoMetadataService,
         private readonly AiProvenanceService $aiProvenanceService,
         private readonly ContentImageUrlValidator $contentImageUrlValidator,
+        private readonly ContentHtmlSanitizer $contentHtmlSanitizer,
     ) {}
 
     /**
@@ -63,10 +67,16 @@ class CreatePostAction
     public function handle(array $attributes, int $actorId): Post
     {
         return DB::transaction(function () use ($attributes, $actorId): Post {
+            // Create không được quyết định lifecycle; Post mới luôn là draft.
+            $attributes['status'] = PostStatus::Draft;
+            $attributes['published_at'] = null;
             $media = (array) ($attributes['media'] ?? []);
-            // INPUT: content mới. OUTPUT: kiểm link ảnh; không suy ra media usage từ HTML.
+            // INPUT: content mới. OUTPUT: kiểm link ảnh rồi sanitize; không suy ra media usage từ HTML.
             if (array_key_exists('content', $attributes)) {
                 $this->contentImageUrlValidator->validate((string) ($attributes['content'] ?? ''));
+                if (is_string($attributes['content'])) {
+                    $attributes['content'] = $this->contentHtmlSanitizer->sanitize($attributes['content']);
+                }
             }
             $taxonomy = $this->extractTaxonomy($attributes);
             $aiRunId = $attributes['ai_run_id'] ?? null;

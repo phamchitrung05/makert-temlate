@@ -6,6 +6,7 @@
  * Menu ngang dùng cùng route name với vertical navigation. Resource nằm
  * trong Ecommerce; Media là nhóm nghiệp vụ riêng cho file dùng chung.
  * Systerm AI tập trung Ai Content, Ai Prompt và AI Settings, cùng route với menu dọc.
+ * AI Approved hiển thị snapshot các bài AI đã duyệt lưu dài hạn.
  * Ai Prompt có List đọc mẫu đã lưu và Add phân tích bài tham khảo để tạo mẫu.
  * SYSTERM SETTING chứa trang SETTING trống.
  *
@@ -28,6 +29,7 @@ export default [
     icon: { icon: 'tabler-sparkles' },
     children: [
       { title: 'Ai Content', to: 'ai-content' },
+      { title: 'AI Approved', to: 'ai-approved', action: 'manage', subject: 'posts' },
       {
         title: 'Ai Prompt',
         icon: { icon: 'tabler-file-text' },

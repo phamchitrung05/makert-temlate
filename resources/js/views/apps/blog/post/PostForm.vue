@@ -1,7 +1,7 @@
 <!--
   =====================================================================
   Header/footer cố định qua AppDialogLayout; chỉ content ở giữa được cuộn.
-  CHỨC NĂNG FILE: Kết hợp giao diện tạo/chỉnh sửa Post và phát payload lưu
+  CHỨC NĂNG FILE: Kết hợp giao diện tạo/chỉnh sửa Post và phát payload workflow
   =====================================================================
 
   Component là form container cho giao diện Post mới. Nó đồng bộ dữ liệu Post
@@ -15,14 +15,14 @@
   - moreActions: cấu hình menu Vuexy MoreBtn cho thao tác discard
   - createPostOptions(): tạo state mặc định cho nhóm tùy chọn bài viết
   - sync(): đồng bộ Post prop vào form state
-  - submit(): validate và emit payload với trạng thái được chọn
+  - submit(): validate và emit payload kèm ý định save/review/publish
   - applyAiThumbnail()/commitAiThumbnail(): áp dụng ảnh thumbnail và giữ lineage run
   - watcher props.post: cập nhật form khi API tải xong Post
   - mediaBusy: khóa lưu/publish trong lúc picker/upload hoặc còn URL ảnh tạm.
 
   INPUT/OUTPUT CỦA COMPONENT (tổng thể):
   - INPUT : post, loading, saving và error từ page/store
-  - OUTPUT: emit submit payload title/content/status/media/SEO và provenance hoặc emit discard
+  - OUTPUT: emit submit payload title/content/status/media/SEO/provenance/workflow hoặc emit discard
   =====================================================================
 -->
 <script setup>
@@ -140,19 +140,18 @@ watch(() => props.post, sync, { immediate: true })
 
 /**
  * =====================================================================
- * CHỨC NĂNG: Validate form và phát payload lưu Post.
+ * CHỨC NĂNG: Validate form và phát payload workflow Post.
  * =====================================================================
- * INPUT: status đích; mặc định dùng status đang chọn trong sidebar.
- * OUTPUT: emit `submit` khi form hợp lệ.
- * SIDE EFFECT: cập nhật form.status trước khi phát payload cho page.
+ * INPUT: workflow `save`, `review` hoặc `publish`.
+ * OUTPUT: emit `submit` khi form hợp lệ, status hiện tại không tự đổi bởi UI.
+ * SIDE EFFECT: page caller gọi endpoint lifecycle tương ứng sau khi save.
  * EXCEPTION: dừng im lặng khi Vuetify validation không đạt.
  * =====================================================================
  */
-const submit = async (status = form.status) => {
+const submit = async (workflow = 'save') => {
   if (mediaBusy.value || props.saving) return
   if (props.loading || props.saving)
     return
-  form.status = status
 
   const validation = await formRef.value?.validate()
 
@@ -165,6 +164,7 @@ const submit = async (status = form.status) => {
     excerpt: form.excerpt,
     seo: { ...form.seo },
     status: form.status,
+    workflowAction: workflow,
     categories: [...form.categories],
     tags: [...form.tags],
     thumbnail: form.thumbnail,
@@ -235,17 +235,29 @@ const commitAiThumbnail = () => {
           variant="tonal"
           color="primary"
           prepend-icon="tabler-device-floppy"
-          :loading="props.saving && form.status === 'draft'"
+          :loading="props.saving"
           :disabled="props.loading || props.saving || mediaBusy"
-          @click="submit('draft')"
+          @click="submit('save')"
         >
           Save as Draft
         </VBtn>
         <VBtn
-          prepend-icon="tabler-send"
-          :loading="props.saving && form.status === 'published'"
+          v-if="['draft', 'rejected'].includes(form.status)"
+          variant="tonal"
+          color="warning"
+          prepend-icon="tabler-eye-check"
+          :loading="props.saving"
           :disabled="props.loading || props.saving || mediaBusy"
-          @click="submit('published')"
+          @click="submit('review')"
+        >
+          Submit for Review
+        </VBtn>
+        <VBtn
+          v-if="['draft', 'pending_review', 'rejected'].includes(form.status)"
+          prepend-icon="tabler-send"
+          :loading="props.saving"
+          :disabled="props.loading || props.saving || mediaBusy"
+          @click="submit('publish')"
         >
           Publish
         </VBtn>
@@ -303,7 +315,7 @@ const commitAiThumbnail = () => {
     <VForm
       ref="formRef"
       :disabled="props.loading || props.saving"
-      @submit.prevent="submit(form.status)"
+      @submit.prevent="submit('save')"
     >
       <VRow>
         <VCol

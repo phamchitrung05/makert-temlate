@@ -2,7 +2,8 @@
  * =====================================================================
  * CHỨC NĂNG FILE: API client Post với media và metadata SEO; slug qua Pinia store riêng.
  * CÁC HÀM/METHOD TRONG FILE: unwrap(), normalize(), toPayload(),
- * list(), show(), create(), update(), remove().
+ * list(), authors(), show(), create(), update(), submitReview(), publish(),
+ * reject(), archive(), remove().
  * INPUT/OUTPUT CỦA CLASS (tổng thể): state form/ID/query -> payload API hoặc Post.
  * AI lineage nhiều run được gửi dưới dạng ai_runs; khóa legacy vẫn được giữ cho
  * client cũ. Provider/model chỉ do backend resolve.
@@ -53,10 +54,10 @@ const normalize = post => post ? {
  * EXCEPTION/TRANSACTION: Không gọi API; validation do backend đảm nhiệm.
  * =====================================================================
  */
-const toPayload = payload => ({
+const toPayload = (payload, includeStatus = true) => ({
   title: payload.title,
   content: payload.content,
-  status: payload.status,
+  ...(includeStatus ? { status: payload.status } : {}),
   excerpt: payload.excerpt,
   'focus_keyword': payload.seo?.focusKeyword,
   'seo_title': payload.seo?.title,
@@ -140,6 +141,23 @@ export const postService = {
 
   /**
    * =====================================================================
+   * CHỨC NĂNG: Tải danh sách tác giả đang có Post
+   * =====================================================================
+   * INPUT: Không có; backend tự lấy các User đang xuất hiện ở Post.
+   * OUTPUT: Danh sách { id, name, email } cho bộ lọc tác giả.
+   * SIDE EFFECT: Gọi GET Admin API; không ghi dữ liệu.
+   * EXCEPTION/TRANSACTION: Lỗi API truyền lên caller.
+   * =====================================================================
+   */
+  async authors() {
+    const response = await $api('/admin/posts/authors')
+    const payload = unwrap(response)
+
+    return Array.isArray(payload) ? payload : payload?.items ?? []
+  },
+
+  /**
+   * =====================================================================
    * CHỨC NĂNG: Tải một Post và chuẩn hóa dữ liệu form
    * =====================================================================
    * INPUT: Post ID.
@@ -177,7 +195,63 @@ export const postService = {
    * =====================================================================
    */
   async update(id, payload) {
-    return normalize(unwrap(await $api(`/admin/posts/${id}`, { method: 'PUT', body: toPayload(payload) })))
+    return normalize(unwrap(await $api(`/admin/posts/${id}`, { method: 'PUT', body: toPayload(payload, false) })))
+  },
+
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Gửi Post vào hàng chờ review
+   * =====================================================================
+   * INPUT: Post ID.
+   * OUTPUT: Post pending_review đã normalize.
+   * SIDE EFFECT: Gọi POST lifecycle API; backend ghi audit và kiểm permission.
+   * EXCEPTION/TRANSACTION: Lỗi API truyền lên caller.
+   * =====================================================================
+   */
+  async submitReview(id) {
+    return normalize(unwrap(await $api(`/admin/posts/${id}/submit-review`, { method: 'POST' })))
+  },
+
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Publish Post qua endpoint lifecycle
+   * =====================================================================
+   * INPUT: Post ID.
+   * OUTPUT: Post published có published_at từ server.
+   * SIDE EFFECT: Gọi POST lifecycle API; không tự đặt thời gian phía client.
+   * EXCEPTION/TRANSACTION: Lỗi API truyền lên caller.
+   * =====================================================================
+   */
+  async publish(id) {
+    return normalize(unwrap(await $api(`/admin/posts/${id}/publish`, { method: 'POST' })))
+  },
+
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Từ chối Post đang chờ review
+   * =====================================================================
+   * INPUT: Post ID và reason.
+   * OUTPUT: Post rejected đã normalize.
+   * SIDE EFFECT: Gọi POST lifecycle API; backend lưu reason vào audit.
+   * EXCEPTION/TRANSACTION: Lỗi validation/permission/API truyền lên caller.
+   * =====================================================================
+   */
+  async reject(id, reason) {
+    return normalize(unwrap(await $api(`/admin/posts/${id}/reject`, { method: 'POST', body: { reason } })))
+  },
+
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Archive Post qua endpoint lifecycle
+   * =====================================================================
+   * INPUT: Post ID.
+   * OUTPUT: Post archived đã normalize.
+   * SIDE EFFECT: Gọi POST lifecycle API; published_at lịch sử được giữ server-side.
+   * EXCEPTION/TRANSACTION: Lỗi API truyền lên caller.
+   * =====================================================================
+   */
+  async archive(id) {
+    return normalize(unwrap(await $api(`/admin/posts/${id}/archive`, { method: 'POST' })))
   },
 
   /**

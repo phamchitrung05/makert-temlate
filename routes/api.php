@@ -12,6 +12,7 @@
 use App\Http\Controllers\Admin\AccessPermissionController;
 use App\Http\Controllers\Admin\AdminUserRoleController;
 use App\Http\Controllers\Admin\AiContentReviewController;
+use App\Http\Controllers\Admin\AiArticleArchiveController;
 use App\Http\Controllers\Admin\AiImageGenerationController;
 use App\Http\Controllers\Admin\AiImportController;
 use App\Http\Controllers\Admin\AiProviderController;
@@ -206,6 +207,9 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
             Route::patch('/ai-agent/candidates/{aiImport}', [AiImportController::class, 'updateCandidate'])->whereUuid('aiImport');
             Route::post('/ai-agent/candidates/{aiImport}/apply', [AiImportController::class, 'apply'])->whereUuid('aiImport');
             Route::middleware('permission:posts.manage,admin')->group(function (): void {
+                Route::get('/ai-agent/approved-archives', [AiArticleArchiveController::class, 'index']);
+                Route::get('/ai-agent/approved-archives/{aiArticleArchive}', [AiArticleArchiveController::class, 'show'])
+                    ->whereNumber('aiArticleArchive');
                 Route::get('/ai-agent/candidates/{aiImport}/review', [AiContentReviewController::class, 'show'])->whereUuid('aiImport');
                 Route::get('/ai-agent/candidates/{aiImport}/review/history', [AiContentReviewController::class, 'history'])->whereUuid('aiImport');
                 Route::post('/ai-agent/candidates/{aiImport}/approve', [AiContentReviewController::class, 'approve'])->whereUuid('aiImport');
@@ -222,12 +226,36 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
             Route::post('/posts/ai/import/{aiImport}/apply', [AiImportController::class, 'apply'])->whereUuid('aiImport');
             Route::post('/posts/ai/import/{aiImport}/cancel', [AiImportController::class, 'cancel'])->whereUuid('aiImport');
             Route::delete('/posts/ai/import/{aiImport}', [AiImportController::class, 'destroy'])->whereUuid('aiImport');
-            Route::get('/posts', [PostController::class, 'index']);
-            Route::post('/posts', [PostController::class, 'store']);
-            Route::get('/posts/{post}', [PostController::class, 'show'])->whereNumber('post');
-            Route::put('/posts/{post}', [PostController::class, 'update'])->whereNumber('post');
-            Route::delete('/posts/{post}', [PostController::class, 'destroy'])->whereNumber('post');
         });
+
+        // Post CRUD và lifecycle dùng permission chi tiết; posts.manage là alias toàn quyền.
+        Route::get('/posts', [PostController::class, 'index'])
+            ->middleware('permission:posts.view|posts.manage,admin');
+        Route::get('/posts/authors', [PostController::class, 'authors'])
+            ->middleware('permission:posts.view|posts.manage,admin');
+        Route::post('/posts', [PostController::class, 'store'])
+            ->middleware('permission:posts.create|posts.manage,admin');
+        Route::get('/posts/{post}', [PostController::class, 'show'])
+            ->whereNumber('post')
+            ->middleware('permission:posts.view|posts.manage,admin');
+        Route::put('/posts/{post}', [PostController::class, 'update'])
+            ->whereNumber('post')
+            ->middleware('permission:posts.update|posts.manage,admin');
+        Route::delete('/posts/{post}', [PostController::class, 'destroy'])
+            ->whereNumber('post')
+            ->middleware('permission:posts.delete|posts.manage,admin');
+        Route::post('/posts/{post}/submit-review', [PostController::class, 'submitReview'])
+            ->whereNumber('post')
+            ->middleware('permission:posts.review|posts.manage,admin');
+        Route::post('/posts/{post}/publish', [PostController::class, 'publish'])
+            ->whereNumber('post')
+            ->middleware('permission:posts.publish|posts.manage,admin');
+        Route::post('/posts/{post}/reject', [PostController::class, 'reject'])
+            ->whereNumber('post')
+            ->middleware('permission:posts.review|posts.manage,admin');
+        Route::post('/posts/{post}/archive', [PostController::class, 'archive'])
+            ->whereNumber('post')
+            ->middleware('permission:posts.archive|posts.manage,admin');
 
         /**
          * =====================================================================
