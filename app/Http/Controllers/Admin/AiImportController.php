@@ -13,6 +13,7 @@ use App\Http\Resources\AiSessionSummaryResource;
 use App\Http\Resources\MediaAssetResource;
 use App\Http\Responses\BaseResponse;
 use App\Models\AiImport;
+use App\Models\AiTaskRun;
 use App\Models\MediaAsset;
 use App\Services\Ai\Content\AiContentReviewService;
 use App\Services\Ai\Content\AiContentSanitizer;
@@ -27,6 +28,7 @@ use App\Services\Ai\Registries\SchemaRegistry;
 use App\Services\Ai\Registries\TargetRegistry;
 use App\Services\Ai\Runs\AiRunAssetCleaner;
 use App\Services\Ai\Runs\AiRunService;
+use App\Services\Ai\Runs\AiTaskRunService;
 use App\Services\Ai\Settings\AiSettingsService;
 use App\Services\Media\ContentMediaReferenceService;
 use Illuminate\Http\JsonResponse;
@@ -41,9 +43,21 @@ use Illuminate\Validation\ValidationException;
  * =====================================================================
  * CHỨC NĂNG FILE: HTTP API tạo, polling, retry, hủy và dọn AI import.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: index(), targets(), capabilities(), store(), show(), regenerate(), retry(), updateCandidate(),
- * candidates(), apply(), cancel(), destroy(), payload(), ensureOwner(),
- * loadThumbnails(), cleanupThumbnail().
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - index(): danh sách import/candidate có pagination, filter target và owner scope.
+ * - targets(), capabilities(): trả catalog target/model được phép cho form AI.
+ * - store(): tạo import và dispatch generation mới.
+ * - regenerate(): tạo candidate generation mới từ run parent.
+ * - retry(): reset run terminal, tăng generation và dispatch lại tracker.
+ * - show(): đọc detail run của owner.
+ * - candidates(): đọc candidate cùng session của owner.
+ * - updateCandidate(): sửa candidate theo version/status.
+ * - apply(): apply bản ready qua service/action.
+ * - cancel(): hủy lifecycle run.
+ * - destroy(): xóa mềm run theo rule terminal.
+ * - payload(): serialize run/thumbnail bounded cho API.
+ * - ensureOwner(): kiểm actor sở hữu run trước mutation/detail.
+ * - loadThumbnails(), cleanupThumbnail(): hydrate và dọn media thumbnail domain.
  * INPUT: admin request URL/options hoặc UUID job; OUTPUT: envelope JSON.
  * SIDE EFFECT: tạo/dispatch queue job, cập nhật vòng đời và dọn thumbnail tạm.
  * INPUT/OUTPUT CỦA CLASS (tổng thể): request admin -> tác vụ/candidate an toàn.
@@ -481,7 +495,7 @@ class AiImportController extends Controller
      * =====================================================================
      * INPUT: Run failed/cancelled/expired thuộc actor; image run cần media.upload.
      * OUTPUT: Run hiện tại đã reset trạng thái queued.
-     * SIDE EFFECT: Cập nhật timeout theo provider hiện tại, lifecycle/retention;
+     * SIDE EFFECT: Cập nhật timeout theo provider hiện tại, lifecycle/retention và tracker projection;
      * giữ identity/input, bỏ checkpoint chưa duyệt của lần trước, tăng generation_no;
      * dispatch sau commit. Bản đã Apply không được retry.
      * EXCEPTION/TRANSACTION: Lock row trong transaction; 403/404/409 hoặc validation
@@ -522,6 +536,8 @@ class AiImportController extends Controller
                 'expires_at' => now()->addDays((int) config('ai-import.retention_days', 2)),
             ])->save();
             app(AiThumbnailService::class)->sync($run);
+            // Tạo projection generation mới trước khi dispatch để popup thấy retry ngay.
+            app(AiTaskRunService::class)->registerImport($run->refresh());
             DB::afterCommit(fn () => $runs->dispatch($run));
 
             return $run;
@@ -707,6 +723,11 @@ class AiImportController extends Controller
         }
         $diagnostics = AiResponseDiagnostics::sanitize((array) data_get($import->source_meta_json, 'ai_response', []));
         $pipeline = (array) data_get($import->source_meta_json, 'article_pipeline', []);
+        $taskRunId = AiTaskRun::query()
+            ->where('taskable_type', AiImport::class)
+            ->where('taskable_id', $import->id)
+            ->where('dedupe_key', ($import->operation === 'image' ? 'image_generation' : 'article_generation').':'.$import->id.':'.(int) $import->generation_no)
+            ->value('id');
         $steps = $import->steps->map(fn ($step): array => [
             'key' => $step->step_key, 'status' => $step->status, 'attempt' => $step->attempt,
             'diagnostics' => AiResponseDiagnostics::sanitize((array) $step->diagnostics_json),
@@ -716,6 +737,7 @@ class AiImportController extends Controller
         return [
             ...$result,
             'job_id' => $import->id, 'status' => $import->status, 'current_step' => $import->current_step,
+            'task_run_id' => $taskRunId,
             'generation_no' => (int) $import->generation_no,
             'steps' => $steps,
             // Allowlist dùng cả cho nhánh một lượt; không expose source/intermediate/raw response.

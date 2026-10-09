@@ -2,7 +2,7 @@
 
 **Cập nhật:** 09/10/2026
 
-**Trạng thái:** DONE giai đoạn 1 — task mở rộng đa worker/model đang TODO
+**Trạng thái:** DONE giai đoạn 2 — tracker dùng chung cho nhiều worker/model
 
 ## Mục tiêu
 
@@ -21,7 +21,7 @@ Worker và database queue đã hỗ trợ nhiều job. Phần cần bổ sung ch
 
 ### 2. API danh sách tác vụ
 
-- Bổ sung endpoint danh sách analysis của user hiện tại, có phân trang và lọc `queued`, `analyzing`, `ready`, `failed`, `cancelled`.
+- Bổ sung endpoint danh sách analysis của user hiện tại, có phân trang và lọc `queued`, `running`, `processing`, `analyzing`, `ready`, `failed`, `cancelled`, `expired`.
 - Chỉ trả metadata cần cho popup: ID, tên, trạng thái, thời gian tạo/bắt đầu/kết thúc, lỗi an toàn và thời điểm hết hạn.
 - Endpoint summary không trả `reference_text`, snapshot kết nối hoặc secret; endpoint detail của đúng owner trả lại nguồn đã gửi để mở trang edit.
 - Giữ quyền truy cập theo user/role hiện có; không để user xem analysis của người khác.
@@ -31,10 +31,10 @@ Worker và database queue đã hỗ trợ nhiều job. Phần cần bổ sung ch
 - Gắn ở Admin layout để chuyển trang vẫn nhìn thấy.
 - Vị trí mặc định: góc phải dưới, nằm phía trên nút `ScrollToTop`; có thể thu gọn thành nút hiển thị số tác vụ đang chờ/chạy.
 - Nút tròn được giữ lại khi popup mở để người dùng có thể chuyển nhanh giữa trạng thái mở và ẩn.
-- Badge trên nút tròn hiển thị số task còn `queued`; danh sách task tự cuộn khi vượt 420px.
+- Badge trên nút tròn hiển thị số task còn `queued`; danh sách task tự cuộn trong phần chiều cao còn lại của popup và chạm footer.
 - Hiển thị mỗi tác vụ: tên văn phong, trạng thái, thời gian và thông báo lỗi nếu có.
 - Có nút mở kết quả khi `ready`, xem lỗi khi `failed` và hủy khi trạng thái còn cho phép.
-- Polling ngắn trong lúc có tác vụ `queued`/`analyzing`; dừng polling khi không còn tác vụ đang chạy.
+- Polling ngắn trong lúc có tác vụ `queued`/`running`/`processing`/`analyzing`; dừng polling khi không còn tác vụ đang chạy, kể cả task `expired`.
 - Tải lại trang vẫn khôi phục danh sách từ API, không phụ thuộc riêng vào state trong trình duyệt.
 
 ### 4. Chuẩn bị mở rộng
@@ -42,7 +42,7 @@ Worker và database queue đã hỗ trợ nhiều job. Phần cần bổ sung ch
 - Dùng kiểu dữ liệu có `task_type`/`source` để sau này hiển thị tạo bài, tạo ảnh và job AI khác trong cùng popup.
 - Giai đoạn đầu chỉ nối `AiWritingProfileAnalysis`; không thay đổi cách worker chạy hoặc tăng số worker.
 
-### 5. Task mở rộng: theo dõi worker/model dùng chung (TODO — tiếp tục ngày 09/10/2026)
+### 5. Task mở rộng: theo dõi worker/model dùng chung (DONE — 09/10/2026)
 
 **Mục tiêu:** đưa tiến trình của các worker AI khác vào cùng popup mà không làm mất dữ liệu nghiệp vụ riêng của từng module.
 
@@ -106,3 +106,12 @@ Worker và database queue đã hỗ trợ nhiều job. Phần cần bổ sung ch
 - Khi queue nhận trạng thái `ready`, List tự tải lại để profile nháp mới xuất hiện ngay mà không cần F5.
 - Kiểm chứng: backend `AiWritingProfilesApiTest` 11 tests/131 assertions; frontend queue/API/flow/list/dialogs 52 tests; ESLint scoped và Vite build đạt.
 - Có command một lần `ai:sync-writing-profile-drafts` để bù các analysis ready cũ thiếu draft; luồng worker mới đã tạo draft trong cùng transaction.
+- Bổ sung `ai_task_runs` làm projection lifecycle dùng chung; bảng nghiệp vụ vẫn là nguồn chuẩn và migration backfill analysis/import hiện có.
+- Tách `AiTaskRunAdapter` và `AiTaskRunRegistry`: model/worker mới chỉ cần thêm adapter vào `config/ai-task-runs.php`, không phải sửa service/popup/API theo từng model.
+- API dùng chung: `GET /api/admin/ai/tasks`, `GET /api/admin/ai/tasks/{taskRun}`, `POST /api/admin/ai/tasks/{taskRun}/cancel`, có scope owner/quyền module, filter và pagination.
+- Worker hiện tại đồng bộ tracker sau khi queue, bắt đầu/kết thúc/hủy; projection chỉ chứa metadata allowlist và lỗi generic.
+- Adapter import chuẩn hóa trạng thái legacy `completed`/`succeeded` thành `ready`, đồng thời reconcile run quá hạn thành `expired` để popup không poll vô hạn.
+- Kiểm chứng giai đoạn 2: `AiTaskRunsApiTest` 2 tests/10 assertions; `AiTask2RunApiTest` 15 tests; `AiWritingProfilesApiTest` 11 tests; nhóm content/image 20 tests/295 assertions; frontend queue/API/flow/list/dialogs 41 tests; ESLint scoped và Vite build đạt.
+- Cập nhật UI sau nghiệm thu: task mới không tự mở popup, chỉ cập nhật badge; event đến trước lúc popup mount được replay; row có icon theo mode; vùng list dùng hết chiều cao và chạm footer.
+- Ai Content dùng cùng tracker với writing profile/image: sau POST thành công form reset ngay để nhập nguồn tiếp theo, task cũ được theo dõi độc lập.
+- Quality grounding bổ sung đối chiếu số viết bằng chữ Anh/Việt trong ngữ cảnh nội dung; code/link và số liệu bị thay đổi thật vẫn bị chặn.

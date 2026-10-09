@@ -41,7 +41,7 @@ describe('Ai Content create form', () => {
     wrapper.unmount()
   })
 
-  it('enables generation, emits submit and then blocks while a queued run is being monitored', async () => {
+  it('blocks during POST and unlocks fields after the task is accepted', async () => {
     const wrapper = renderForm()
 
     expect(wrapper.get('button').element.disabled).toBe(false)
@@ -49,23 +49,20 @@ describe('Ai Content create form', () => {
     expect(wrapper.emitted('generate')).toHaveLength(1)
     await wrapper.setProps({ generation: { ...initial, busy: true, canGenerate: false, session: { status: 'queued', current_step: 'queued', progress: 0 } } })
     expect(wrapper.findAll('button').find(button => button.text() === 'Phân tích & Tạo content').element.disabled).toBe(true)
-    expect(wrapper.text()).toContain('Chờ worker')
+    expect(wrapper.text()).toContain('Đang gửi nguồn vào hàng đợi')
     expect(wrapper.get('fieldset').element.disabled).toBe(true)
+    await wrapper.setProps({ generation: { ...initial, canGenerate: false } })
+    expect(wrapper.get('fieldset').element.disabled).toBe(false)
     wrapper.unmount()
   })
 
-  it('explains an incompatible model and displays errors, success and monitoring retry independently', async () => {
+  it('explains an incompatible model and displays request errors', async () => {
     const wrapper = renderForm({ ...initial, canGenerate: false, blockedReason: 'Model này không hỗ trợ viết nội dung.' })
 
     expect(wrapper.get('button').element.disabled).toBe(true)
     expect(wrapper.text()).toContain('không hỗ trợ viết')
     await wrapper.setProps({ generation: { ...initial, error: 'Provider failed' } })
     expect(wrapper.text()).toContain('Provider failed')
-    await wrapper.setProps({ generation: { ...initial, session: { status: 'ready' } } })
-    expect(wrapper.text()).toContain('lưu vào danh sách chờ duyệt')
-    await wrapper.setProps({ generation: { ...initial, busy: true, canGenerate: false, monitorMessage: 'Mất kết nối' } })
-    await wrapper.findAll('button').find(button => button.text() === 'Cập nhật trạng thái').trigger('click')
-    expect(wrapper.emitted('resumePolling')).toHaveLength(1)
     wrapper.unmount()
   })
 })

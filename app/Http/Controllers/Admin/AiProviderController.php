@@ -22,8 +22,17 @@ use Illuminate\Validation\ValidationException;
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: HTTP boundary cho Settings > AI Providers và model catalog.
- * CÁC HÀM/METHOD TRONG FILE: index(), store(), update(), disable(), test(), sync(),
- * storeModel(), updateModel(), settings(), updateSettings().
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - index(): trả catalog provider/model, AI settings và profile active/enabled.
+ * - store(): tạo provider qua catalog service.
+ * - update(): cập nhật provider qua catalog service.
+ * - disable(): tắt provider và xử lý model liên quan.
+ * - test(): kiểm tra kết nối provider.
+ * - sync(): đồng bộ model catalog.
+ * - storeModel(): tạo model thủ công thuộc provider.
+ * - updateModel(): cập nhật model thủ công.
+ * - settings(): đọc AI settings typed.
+ * - updateSettings(): cập nhật AI settings typed.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * INPUT: FormRequest đã whitelist; OUTPUT: BaseResponse/Resource không chứa API key.
  * SIDE EFFECT: ghi encrypted key, gọi provider test/sync, audit qua service.
@@ -48,7 +57,7 @@ final class AiProviderController extends Controller
         return BaseResponse::success([
             'providers' => AiProviderResource::collection(AiProvider::query()->with('models')->orderBy('name')->get()),
             'settings' => $settings->all(),
-            'writing_profiles' => AiWritingProfile::query()->where('is_enabled', true)
+            'writing_profiles' => AiWritingProfile::query()->where('status', 'active')->where('is_enabled', true)
                 ->orderBy('name')->orderBy('id')->get(['id', 'name'])->toArray(),
             'presets' => collect((array) config('ai-providers.presets', []))->map(fn (array $preset, string $key): array => [
                 'key' => $key, 'label' => $preset['label'] ?? $key, 'kind' => $preset['kind'] ?? 'custom',

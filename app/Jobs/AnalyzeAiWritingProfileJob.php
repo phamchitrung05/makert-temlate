@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Exceptions\AiImportException;
 use App\Models\AiWritingProfileAnalysis;
 use App\Services\Ai\WritingProfiles\WritingProfileAnalysisService;
+use App\Services\Ai\Runs\AiTaskRunService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Throwable;
@@ -13,7 +14,11 @@ use Throwable;
  * =====================================================================
  * CHỨC NĂNG FILE: Worker phân tích bài mẫu, lưu lỗi an toàn và không tự thử lại.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: __construct(), handle(), failed(), markFailed().
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - __construct(): nhận analysis UUID và timeout worker.
+ * - handle(): chạy service trong queue và luôn đồng bộ tracker cuối lượt.
+ * - failed(): route lỗi queue terminal vào markFailed().
+ * - markFailed(): ghi lỗi bounded, không ghi đè ready/cancelled.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : UUID analysis và timeout server-side; không serialize bài mẫu/key.
  * - OUTPUT: lifecycle tác vụ và profile draft cập nhật để polling/edit.
@@ -57,6 +62,10 @@ final class AnalyzeAiWritingProfileJob implements ShouldQueue
             $service->process($this->analysisId);
         } catch (Throwable $exception) {
             $this->markFailed($exception);
+        } finally {
+            if ($analysis = AiWritingProfileAnalysis::query()->find($this->analysisId)) {
+                app(AiTaskRunService::class)->syncFromAnalysis($analysis);
+            }
         }
     }
 

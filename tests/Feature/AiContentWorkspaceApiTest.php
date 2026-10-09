@@ -152,7 +152,7 @@ class AiContentWorkspaceApiTest extends TestCase
         $response = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
             'target_type' => $target, 'input' => ['type' => 'text', 'text' => 'Nguồn tài nguyên đã xác thực.'],
             'provider' => 'deterministic', 'model' => 'deterministic', 'generate_thumbnail' => false,
-        ])->assertAccepted();
+        ])->assertAccepted()->assertJsonPath('data.task_run_id', fn ($value): bool => is_string($value) && $value !== '');
 
         return AiImport::findOrFail($response->json('data.job_id'));
     }

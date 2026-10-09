@@ -9,7 +9,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * =====================================================================
  * CHỨC NĂNG FILE: Polling analysis qua payload an toàn, có nguồn của owner để edit.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: toArray().
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - toArray(): trả status/result và nguồn của owner; thêm task_run_id runtime nhưng giữ payload private.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : analysis của actor đã kiểm quyền.
  * - OUTPUT: status/result/error/timestamps, nguồn của owner và model public, không endpoint/key.
@@ -31,7 +32,7 @@ final class AiWritingProfileAnalysisResource extends JsonResource
         $snapshot = $this->connection_snapshot_json ?? [];
 
         return [
-            'id' => $this->id, 'name' => $this->name, 'status' => $this->status,
+            'id' => $this->id, 'task_run_id' => $this->task_run_id, 'name' => $this->name, 'status' => $this->status,
             'reference_text' => $this->status === 'ready' ? $this->reference_text : null,
             'source_type' => $this->source_type ?? 'paste', 'source_url' => $this->source_url,
             'model_id' => $snapshot['model_id'] ?? null, 'draft_profile_id' => $this->draft_profile_id,

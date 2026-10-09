@@ -9,8 +9,18 @@ use App\Exceptions\AiImportException;
  * CHỨC NĂNG FILE: Gate copy/ngôn ngữ/code/link/số liệu trên output AI mới.
  * =====================================================================
  * Chạy trước merge/thumbnail; similarity chỉ warning, detector cho phép chưa rõ.
- * CÁC HÀM/METHOD TRONG FILE: inspect(), prose(), language(), preserve(),
- * numberText(), numbers(), missingNumbers(), failure().
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - inspect(): chạy các quality check theo thứ tự copy, language và grounding.
+ * - prose(): chuẩn hóa phần văn xuôi, bỏ code/quote khỏi phép đo copy.
+ * - language(): kiểm tra tín hiệu ngôn ngữ của nội dung mới.
+ * - preserve(): kiểm tra code, link và số liệu quan trọng so với nguồn.
+ * - codeBlocks(): lấy riêng các khối pre trong HTML kết quả để đối chiếu.
+ * - containsCode(): kiểm một code block nguồn có còn trong kết quả không.
+ * - normalizeCode(): chuẩn hóa whitespace bên ngoài literal khi so code.
+ * - numberText(): lấy text có ranh giới block để đếm số liệu.
+ * - numbers(): trích token số/ngày/giờ/thế kỷ từ text.
+ * - missingNumbers(): tìm số liệu nguồn chưa xuất hiện trong kết quả.
+ * - failure(): ném lỗi quality với mã và reason bounded.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : source snapshot, output mới, ngôn ngữ và facts đã có anchors.
  * - OUTPUT: checks pass/skipped/undetermined/warning; lỗi chặn có mã rõ ràng.
@@ -112,9 +122,9 @@ final class ArticleQualityGate
      */
     private function preserve(array $source, string $html, array $analysis): array
     {
-        $decodedOutput = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $outputCodeBlocks = $this->codeBlocks($html);
         foreach ($source['blocks'] ?? [] as $block) {
-            if ($block['type'] === 'pre' && ! str_contains(str_replace("\r\n", "\n", $decodedOutput), str_replace("\r\n", "\n", trim($block['text'])))) {
+            if ($block['type'] === 'pre' && ! $this->containsCode($outputCodeBlocks, (string) ($block['text'] ?? ''))) {
                 $this->failure('AI_QUALITY_GROUNDING', 'Nội dung AI làm mất hoặc sửa code nguồn.', 'source_code_changed');
             }
         }
@@ -142,6 +152,76 @@ final class ArticleQualityGate
             ['check' => 'unanchored_numbers', 'status' => $unanchoredNumbers === [] ? 'pass' : 'warning', 'count' => count($unanchoredNumbers), 'reason' => 'requires_editor_review'],
             ['check' => 'semantic_grounding', 'status' => 'undetermined', 'reason' => 'source_anchors_are_not_external_fact_verification'],
         ];
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Lấy text từng khối pre khỏi HTML kết quả.
+     * =====================================================================
+     * Input: HTML candidate có thể chứa code nằm trong pre/code/div.
+     * Output: danh sách code block đã bỏ markup; không trộn với văn xuôi.
+     * Side effect: hàm thuần, không sửa HTML hoặc gọi provider.
+     * =====================================================================
+     */
+    private function codeBlocks(string $html): array
+    {
+        preg_match_all('/<pre\b[^>]*>(.*?)<\/pre>/isu', $html, $matches);
+
+        return array_values(array_filter(array_map(
+            fn (string $block): string => $this->normalizeCode(strip_tags($block)),
+            $matches[1] ?? [],
+        ), static fn (string $block): bool => $block !== ''));
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm code nguồn xuất hiện trong một block kết quả.
+     * =====================================================================
+     * Input: các code block đã tách và text pre từ source snapshot.
+     * Output: true khi token code giữ nguyên, cho phép đổi line break/indent.
+     * Side effect: hàm thuần; literal chuỗi được giữ nguyên khi chuẩn hóa.
+     * =====================================================================
+     */
+    private function containsCode(array $outputBlocks, string $sourceCode): bool
+    {
+        $expected = $this->normalizeCode($sourceCode);
+        if ($expected === '') {
+            return true;
+        }
+
+        foreach ($outputBlocks as $outputCode) {
+            if (str_contains($outputCode, $expected)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Chuẩn hóa whitespace code mà không đổi literal chuỗi.
+     * =====================================================================
+     * Input: code text sau khi bỏ HTML markup.
+     * Output: code so sánh ổn định qua syntax highlighting/line wrapping.
+     * Side effect: hàm thuần; không thực thi hoặc format lại code nguồn.
+     * =====================================================================
+     */
+    private function normalizeCode(string $code): string
+    {
+        $code = html_entity_decode($code, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $code = str_replace(["\r\n", "\r", "\u{00A0}", "\u{200B}"], ["\n", "\n", ' ', ''], $code);
+        $literals = [];
+        $code = preg_replace_callback('/("(?:\\\\.|[^"\\\\])*"|\'(?:\\\\.|[^\'\\\\])*\'|`(?:\\\\.|[^`\\\\])*`)/us', function (array $match) use (&$literals): string {
+            $key = "\u{0000}".count($literals)."\u{0000}";
+            $literals[$key] = $match[0];
+
+            return $key;
+        }, $code) ?? $code;
+        $code = preg_replace('/\s+/u', ' ', trim($code)) ?? trim($code);
+        $code = preg_replace('/\s*([{}()\[\],;])\s*/u', '$1', $code) ?? $code;
+
+        return strtr($code, $literals);
     }
 
     /**

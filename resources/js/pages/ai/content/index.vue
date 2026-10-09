@@ -6,11 +6,13 @@
 
   CÁC HÀM/METHOD TRONG FILE:
   - useAiContentWorkspace()/useAiContentCatalog(): nguồn và catalog/list thật.
-  - useAiContentGeneration(): tạo và polling, không tự apply bài vào Post.
+  - useAiContentGeneration(): gửi nguồn vào queue và khóa form chỉ trong lúc POST.
   - useAiContentActions(): dialog biên tập và action riêng từng candidate.
   - useAiContentReview(): so sánh nguồn/lịch sử và duyệt hoặc từ chối.
   - editReviewedContent()/clearNotice(): mở editor hiện có và đóng thông báo.
-  - createNew(): reset nguồn khi không đang chạy tác vụ.
+  - handleQueued(): reset nguồn sau xác nhận queue và hiển thị thông báo.
+  - createNew(): reset nguồn khi form không đang gửi request.
+  - openTaskFromQuery(): mở kết quả task mà popup đã điều hướng tới.
   - onMounted(): tải list và catalog độc lập.
 
   INPUT/OUTPUT CỦA CLASS (tổng thể):
@@ -21,6 +23,7 @@
 -->
 <script setup>
 import { computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import AiContentList from '@/views/ai/content/AiContentList.vue'
 import AiContentCreateForm from '@/views/ai/content/AiContentCreateForm.vue'
 import { useAiContentWorkspace } from '@/composables/useAiContentWorkspace'
@@ -35,21 +38,30 @@ import AiContentReviewDecisionDialog from '@/views/ai/content/dialog/AiContentRe
 import { useAiRunFeedback } from '@/composables/useAiRunFeedback'
 import { getAlertColor } from '@/config/alertColors'
 
-const { snackbar, observeRun, setSnackbarVisible } = useAiRunFeedback()
+const { snackbar, observeRun, showSnackbar, setSnackbarVisible } = useAiRunFeedback()
+const route = useRoute()
 
 const { items, source, listLoading, listError, loadItems, updateSession, removeItem, resetSource } = useAiContentWorkspace()
 const { catalog, loadCatalog, resetContentDefaults } = useAiContentCatalog(source)
 
 const onRunFeedback = (run, fallback, options = catalog.value.outputOptions) => observeRun(run, fallback, options)
-const { generation, generate, retryRun, reset, resumePolling, cancel } = useAiContentGeneration(source, catalog, updateSession, onRunFeedback)
+
+/** Bàn giao task accepted cho list và dựng lại form để nhập nguồn kế tiếp. */
+function handleQueued() {
+  resetSource(catalog.value.contentDefaults)
+  resetContentDefaults()
+  showSnackbar('Đã nhận tác vụ. Theo dõi trong hàng đợi và tiếp tục nhập nguồn mới.', 'success')
+}
+
+const { generation, generate, retryRun, reset } = useAiContentGeneration(source, catalog, updateSession, onRunFeedback, handleQueued)
 
 const { editor, editorLoading, editorSaving, editorError, action, actionBusy, actionError, notice, busyId,
   openEditor, closeEditor, saveEditor, requestAction, closeAction, confirmAction, resumeRun, trackRuns, thumbnailAction } = useAiContentActions({
   updateSession, removeItem, onFeedback: onRunFeedback, getOutputOptions: () => catalog.value.outputOptions,
 })
 
-// INPUT: list/form hiện hành. OUTPUT: theo dõi lại thumbnail còn chạy sau reload.
-watch([items, () => generation.value.session?.job_id], () => trackRuns(items.value, generation.value.session?.job_id))
+// INPUT: list hiện hành. OUTPUT: theo dõi mọi bài/thumbnail còn chạy, độc lập form.
+watch(items, () => trackRuns(items.value))
 
 const { state: reviewState, notice: reviewNotice, openReview, loadReview, loadHistory, requestDecision,
   closeDecision, confirmDecision, closeReview, finishClose } = useAiContentReview(updateSession, notice)
@@ -71,10 +83,29 @@ function clearNotice() {
   reviewNotice.value = null
 }
 
-onMounted(loadCatalog)
-onMounted(loadItems)
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Mở candidate từ deep link do popup task gửi tới.
+ * =====================================================================
+ * INPUT: query session chứa UUID AiImport. OUTPUT: editor load đúng session.
+ * SIDE EFFECT: GET detail qua openEditor; không tạo lại hoặc dispatch worker.
+ * =====================================================================
+ */
+async function openTaskFromQuery() {
+  const sessionId = typeof route.query.session === 'string' ? route.query.session : null
+  if (!sessionId) return
 
-/** Input: thao tác tạo mới. Output: reset form/thông báo, giữ list; không reset khi AI đang chạy. */
+  const item = items.value.find(candidate => candidate.id === sessionId)
+  if (item && item.status !== 'generating') await openEditor(item)
+}
+
+onMounted(loadCatalog)
+onMounted(async () => {
+  await loadItems()
+  await openTaskFromQuery()
+})
+
+/** Input: thao tác tạo mới. Output: reset nguồn; chỉ chặn khi form đang gửi request. */
 function createNew() {
   if (reset()) {
     resetSource(catalog.value.contentDefaults)
@@ -158,9 +189,7 @@ function createNew() {
           :generation="generation"
           @generate="generate"
           @retry-run="retryRun"
-          @resume-polling="resumePolling"
           @reload-catalog="loadCatalog"
-          @cancel="cancel"
         />
       </VCol>
     </VRow>

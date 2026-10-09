@@ -43,6 +43,8 @@ use Tests\TestCase;
  * - test_existing_inline_asset_is_restored_at_placeholder().
  * - test_inline_figure_keeps_caption_and_position_when_restored_after_regenerate().
  * - test_extractor_preserves_form_content_code_whitespace_and_main_instead_of_empty_first_article().
+ * - test_code_gate_allows_syntax_highlight_whitespace_changes().
+ * - test_code_gate_still_rejects_changed_code_tokens().
  * - test_oversize_source_is_rejected_instead_of_silent_truncation().
  * - test_request_budget_is_checked_before_first_paid_call().
  * - test_source_image_metadata_resolves_lazy_and_relative_urls_without_auto_import().
@@ -315,6 +317,58 @@ final class ArticleGenerationPipelineTest extends TestCase
         $this->assertStringNotContainsString('Footer', $content);
         $this->assertSame(['S001', 'S002', 'S003', 'S004'], array_column($snapshot['blocks'], 'id'));
         $this->assertSame('pre', $snapshot['blocks'][1]['type']);
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Cho phép provider đổi line break/indent của code highlight.
+     * =====================================================================
+     * INPUT: source pre có div syntax highlight và output code đã format lại.
+     * OUTPUT: quality gate pass phần source_code_links.
+     * SIDE EFFECT: chỉ chạy extractor/gate trong memory, không gọi provider.
+     * EXCEPTION/TRANSACTION: không ném lỗi khi token code vẫn giữ nguyên.
+     * =====================================================================
+     */
+    public function test_code_gate_allows_syntax_highlight_whitespace_changes(): void
+    {
+        $extractor = new ArticleSourceExtractor;
+        $source = $extractor->snapshot($extractor->extract(
+            '<article><p>Nguồn giải thích cách đăng ký route bằng QUERY.</p><pre><code><!-- Syntax highlighted --><div>Route::query(\'/search\', function () {</div><div>    return request()->input(\'filter\');</div><div>});</div></code></pre></article>'
+        ), []);
+
+        $checks = (new ArticleQualityGate)->inspect($source, [
+            'content_html' => "<p>Bài viết diễn giải cách dùng route QUERY cho người mới.</p><pre><code>Route::query('/search', function () {\n    return request()->input('filter');\n});</code></pre>",
+        ], 'vi', [], ['minimum_prose_characters' => 0, 'language_minimum_words' => 0, 'exact_copy_blocks' => false]);
+
+        $this->assertSame('pass', array_column($checks, 'status', 'check')['source_code_links']);
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Vẫn chặn code bị đổi token sau khi nới khác biệt format.
+     * =====================================================================
+     * INPUT: source code QUERY và output đổi thành GET.
+     * OUTPUT: AI_QUALITY_GROUNDING/source_code_changed.
+     * SIDE EFFECT: chỉ chạy quality gate trong memory, không gọi provider.
+     * EXCEPTION/TRANSACTION: gate ném AiImportException có reason bounded.
+     * =====================================================================
+     */
+    public function test_code_gate_still_rejects_changed_code_tokens(): void
+    {
+        $source = (new ArticleSourceExtractor)->snapshot(
+            '<p>Nguồn hướng dẫn route.</p><pre><code>Route::query(\'/search\', fn () => request()->input(\'filter\'));</code></pre>',
+            []
+        );
+
+        try {
+            (new ArticleQualityGate)->inspect($source, [
+                'content_html' => '<p>Bài viết hướng dẫn route.</p><pre><code>Route::get(\'/search\', fn () => request()->input(\'filter\'));</code></pre>',
+            ], 'vi', [], ['minimum_prose_characters' => 0, 'language_minimum_words' => 0, 'exact_copy_blocks' => false]);
+            $this->fail('Changed code token must fail.');
+        } catch (AiImportException $exception) {
+            $this->assertSame('AI_QUALITY_GROUNDING', $exception->errorCode);
+            $this->assertSame('source_code_changed', data_get($exception->diagnostics, 'validation_errors.0.reason'));
+        }
     }
 
     /**

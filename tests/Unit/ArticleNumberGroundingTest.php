@@ -54,6 +54,8 @@ final class ArticleNumberGroundingTest extends TestCase
             'word group count' => ['4 nhóm chương trình chính.', 'Chương trình tập trung vào bốn nhóm.'],
             'written topic count' => ['Thảo luận về 3 nội dung.', 'Phiên họp tập trung vào ba nội dung.'],
             'written topic count with nonbreaking spaces' => ['Thảo luận về 3 nội dung.', "Phiên họp tập trung vào ba\u{00A0}nội\u{00A0}dung."],
+            'English prose number words' => ['Three questions in one request return a score of 7 out of 10.', 'Ba câu hỏi trong một yêu cầu trả về điểm 7 trên 10.'],
+            'Vietnamese prose number words' => ['Ba câu hỏi trong một yêu cầu.', '3 câu hỏi trong 1 yêu cầu.'],
             'reordered topic retains its regulation number' => ['Nội dung thứ 2 là Quy định 15/2006 về đảng viên làm kinh tế tư nhân.', 'Một trong ba nội dung là Quy định 15/2006 về đảng viên làm kinh tế tư nhân.'],
             'third topic retains its resolution number' => ['Nội dung thứ 3 là tổng kết Nghị quyết 26/2018.', 'Hội nghị thảo luận tổng kết Nghị quyết 26/2018.'],
             'explicit two days by enumeration' => ['02 ngày trong tuần vào Thứ ba và Thứ sáu.', 'Miễn phí vào Thứ ba và Thứ sáu.'],

@@ -16,7 +16,11 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
  * =====================================================================
  * CHỨC NĂNG FILE: Boundary tạo run, quota, idempotency và dispatch text/image.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: create(), snapshotInput(), dispatch(), ensureAsyncQueue().
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - create(): khóa actor, áp quota/idempotency, lưu import và tracker rồi dispatch after commit.
+ * - snapshotInput(): chụp profile/config immutable trước worker.
+ * - dispatch(): chọn text/image worker và truyền generation/budget.
+ * - ensureAsyncQueue(): chặn sync/null queue trước khi tạo task.
  * =====================================================================
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : actor và attributes nội bộ đã được resolver/request whitelist.
@@ -34,7 +38,7 @@ final class AiRunService
      * =====================================================================
      * INPUT: actor ID, run attributes; fresh=true khi admin yêu cầu candidate mới.
      * OUTPUT: AiImport persisted; connection snapshot private không trả qua API.
-     * SIDE EFFECT: khóa theo actor (chờ tối đa một giây), ghi metadata trong transaction và dispatch sau commit.
+     * SIDE EFFECT: khóa theo actor (chờ tối đa một giây), ghi metadata/tracker trong transaction và dispatch sau commit.
      * EXCEPTION/TRANSACTION: 429 nếu quota giờ đầy, 409 nếu đang tạo run, 503 khi tắt AI.
      * =====================================================================
      */
@@ -69,6 +73,7 @@ final class AiRunService
                         'expires_at' => now()->addDays((int) config('ai-import.retention_days', 2)),
                     ]));
                     $import->forceFill(['session_id' => $attributes['session_id'] ?? $import->id])->save();
+                    app(AiTaskRunService::class)->registerImport($import->refresh());
 
                     return $import;
                 });
@@ -120,7 +125,7 @@ final class AiRunService
      * CHỨC NĂNG: Dispatch job nội dung hoặc ảnh theo operation của run
      * =====================================================================
      * INPUT: AiImport đã được lưu.
-     * OUTPUT: Queue job mang UUID và ngân sách HTTP của run, không mang API key.
+     * OUTPUT: Queue job mang UUID/generation và ngân sách HTTP của run, không mang API key.
      * SIDE EFFECT: Dispatch ProcessAiImageGenerationJob hoặc ProcessAiImportJob.
      * EXCEPTION/TRANSACTION: Không mở transaction riêng; caller dispatch sau khi ghi run.
      * =====================================================================
@@ -130,7 +135,7 @@ final class AiRunService
         $this->ensureAsyncQueue();
         $requestTimeout = (int) data_get($import->input_json, 'ai_connection.timeout', 30);
         if ($import->operation === 'image') {
-            ProcessAiImageGenerationJob::dispatch($import->id, $requestTimeout);
+            ProcessAiImageGenerationJob::dispatch($import->id, $requestTimeout, (int) $import->generation_no);
         } else {
             ProcessAiImportJob::dispatch($import->id, $requestTimeout, AiRunBudget::calls((array) $import->input_json), (int) $import->generation_no);
         }

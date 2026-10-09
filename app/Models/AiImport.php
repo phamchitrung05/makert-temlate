@@ -35,7 +35,8 @@ class AiImport extends Model
 
     public const RUNNING_STATUSES = ['queued', 'fetching', 'extracting', 'rewriting', 'analyzing', 'planning', 'writing', 'editing', 'validating', 'seo', 'thumbnail'];
 
-    public const TERMINAL_STATUSES = ['ready', 'failed', 'cancelled', 'expired'];
+    // completed/succeeded là trạng thái terminal của các run tạo trước lifecycle ready.
+    public const TERMINAL_STATUSES = ['ready', 'completed', 'succeeded', 'failed', 'cancelled', 'expired'];
 
     public $incrementing = false;
 

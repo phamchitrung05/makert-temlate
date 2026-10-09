@@ -10,7 +10,9 @@ use Illuminate\Validation\ValidationException;
  * =====================================================================
  * CHỨC NĂNG FILE: Chụp profile đã bật để article run không phụ thuộc chỉnh sửa sau.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: __construct(), snapshot().
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - __construct(): nhận AiSettingsService để resolve default profile.
+ * - snapshot(): đọc profile active/enabled và tạo snapshot immutable.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : ID profile rõ ràng hoặc null để dùng mặc định website.
  * - OUTPUT: snapshot immutable theo dữ liệu, hoặc null khi không có mặc định.
@@ -44,7 +46,7 @@ final class WritingProfileSnapshotService
         if ($profileId === null) {
             return null;
         }
-        $profile = AiWritingProfile::query()->where('is_enabled', true)->find($profileId);
+        $profile = AiWritingProfile::query()->where('status', 'active')->where('is_enabled', true)->find($profileId);
         if (! $profile) {
             throw ValidationException::withMessages(['writing_profile_id' => 'Mẫu văn phong không tồn tại hoặc đã bị tắt.']);
         }

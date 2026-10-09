@@ -1,145 +1,105 @@
+/* eslint-disable camelcase -- DTO giữ tên field theo contract Laravel. */
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Tạo và theo dõi tác vụ viết bài AI của form Ai Content.
+ * CHỨC NĂNG FILE: Gửi tác vụ Ai Content vào hàng đợi dùng chung.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: useAiContentGeneration(), acceptSession(),
- * schedulePoll(), poll(), generate(), retryRun(), cancel(), reset(), resumePolling(), cleanup scope.
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - useAiContentGeneration(): tạo state và action cho form nhập nguồn.
+ * - acceptSession(): nhận phản hồi server và hiển thị lỗi terminal.
+ * - announceQueued(): gửi metadata bounded của task tới popup hàng đợi.
+ * - generate(): kiểm tra nguồn, POST một lần và bàn giao task cho queue.
+ * - retryRun(): gửi lại run failed khi người dùng chủ động yêu cầu.
+ * - reset(): xóa state kết quả của form mà không xóa task trên server.
+ * - cleanup scope: vô hiệu response đến trễ khi component bị hủy.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
- * - INPUT : nguồn/catalog refs và callback cập nhật danh sách.
- * - OUTPUT: validation, tiến trình và lỗi reactive; ngăn gửi trùng/stale response.
- * - SIDE EFFECT: POST/GET AI Agent API; không tự apply hoặc publish Post.
+ * - INPUT: source/catalog refs và callback cập nhật danh sách/task queue.
+ * - OUTPUT: validation, trạng thái gửi và lỗi request của form.
+ * - SIDE EFFECT: POST AI Agent API; worker được queue dùng chung theo dõi.
  * =====================================================================
  */
 import { computed, onScopeDispose, shallowRef } from 'vue'
+import { AI_TASK_QUEUED_EVENT } from '@/composables/useAiTaskQueue'
 import { aiAgentService } from '@/services/aiAgent'
 import { buildAiContentRequest, validateAiContentSource } from '@/utils/aiContentInput'
 import { formatAiError } from '@/utils/aiErrors'
-import { isAiContentPending } from '@/utils/aiThumbnail'
 
-const terminalStatuses = ['ready', 'completed', 'succeeded', 'failed', 'cancelled', 'expired']
-
-/**
- * =====================================================================
- * Input: nguồn, catalog, callback lifecycle.
- * Output: action/state page-scoped có cleanup timer.
- * =====================================================================
- */
-export function useAiContentGeneration(source, catalog, onSession, onFeedback = () => {}) {
+/** Tạo state form; task accepted sẽ được chuyển cho danh sách queue qua onQueued. */
+export function useAiContentGeneration(source, catalog, onSession, onFeedback = () => {}, onQueued = () => {}) {
   const submitting = shallowRef(false)
-  const cancelling = shallowRef(false)
   const session = shallowRef(null)
   const error = shallowRef('')
-  const monitorMessage = shallowRef('')
   let version = 0
-  let timer
-  let attempts = 0
-  let pendingPollToken = null
 
-  const busy = computed(() => submitting.value || Boolean(session.value && !terminalStatuses.includes(session.value.status)))
+  const busy = computed(() => submitting.value)
   const blockedReason = computed(() => validateAiContentSource(source.value, catalog.value))
   const canGenerate = computed(() => !busy.value && !blockedReason.value)
   const canRetry = computed(() => !busy.value && session.value?.status === 'failed')
 
   const generation = computed(() => ({
-    busy: busy.value, canGenerate: canGenerate.value, canRetry: canRetry.value, blockedReason: blockedReason.value,
-    session: session.value, error: error.value, monitorMessage: monitorMessage.value, cancelling: cancelling.value,
+    busy: busy.value,
+    canGenerate: canGenerate.value,
+    canRetry: canRetry.value,
+    blockedReason: blockedReason.value,
+    session: session.value,
+    error: error.value,
   }))
 
-  /**
-   * =====================================================================
-   * Input: lifecycle DTO.
-   * Output: session/list mới; lỗi terminal hiển thị cho người dùng.
-   * =====================================================================
-   */
+  /** Nhận DTO lifecycle và chỉ giữ lại lỗi khi server xác nhận run thất bại. */
   function acceptSession(value) {
     session.value = value
     onSession(value)
     onFeedback(value, 'AI không tạo được nội dung. Hãy kiểm tra provider/model và thử lại.', catalog.value.outputOptions)
     if (value.status === 'failed') error.value = formatAiError(value, undefined, catalog.value.outputOptions)
-    if (['cancelled', 'expired'].includes(value.status)) error.value = 'Tác vụ đã hủy hoặc hết hạn. Bạn có thể tạo lại.'
   }
 
-  /**
-   * =====================================================================
-   * Input: version của run.
-   * Output: timer polling tối đa 120 lần; không chạy khi terminal.
-   * =====================================================================
-   */
-  function schedulePoll(token) {
-    clearTimeout(timer)
-    if (!session.value || !isAiContentPending(session.value) || token !== version) return
-    if (attempts >= 120) {
-      monitorMessage.value = 'Tác vụ vẫn đang xử lý. Bấm Cập nhật trạng thái để kiểm tra tiếp.'
+  /** Phát DTO bounded để popup chung nhận task ngay sau khi API xác nhận queued. */
+  function announceQueued(value) {
+    if (typeof window === 'undefined') return
 
-      return
+    const detail = {
+      task_run_id: value.task_run_id,
+      taskable_id: value.job_id,
+      task_type: 'article_generation',
+      source: 'ai_content',
+      name: 'Tạo nội dung AI',
+      status: ['ready', 'completed', 'succeeded'].includes(value.status) ? 'ready' : value.status === 'queued' ? 'queued' : 'processing',
+      progress: value.progress ?? 0,
+      created_at: value.created_at ?? new Date().toISOString(),
     }
-    timer = setTimeout(() => { void poll(token) }, Math.min(1000 + attempts * 500, 5000))
+
+    window.__aiTaskQueuePending = [...(window.__aiTaskQueuePending ?? []), detail].slice(-100)
+    window.dispatchEvent(new CustomEvent(AI_TASK_QUEUED_EVENT, { detail }))
   }
 
-  /**
-   * =====================================================================
-   * Input: run version.
-   * Output: status mới hoặc thông báo mất kết nối; không gửi lại tác vụ AI.
-   * =====================================================================
-   */
-  async function poll(token) {
-    if (token !== version || pendingPollToken === token || !session.value) return
-    pendingPollToken = token
-    attempts += 1
-    try {
-      const value = await aiAgentService.status(session.value.job_id, session.value.target_type ?? 'post')
-      if (token !== version) return
-      monitorMessage.value = ''
-      acceptSession(value)
-      schedulePoll(token)
-    }
-    catch {
-      if (token === version) monitorMessage.value = 'Chưa đọc được trạng thái. Tác vụ vẫn được lưu; bấm Cập nhật trạng thái để kiểm tra lại.'
-    }
-    finally {
-      if (pendingPollToken === token) pendingPollToken = null
-    }
-  }
-
-  /**
-   * =====================================================================
-   * Input: thao tác tạo bài.
-   * Output: queued/progress/lỗi; snapshot input, chặn double submit, bỏ callback sau unmount.
-   * =====================================================================
-   */
+  /** Gửi nguồn mới; task accepted được bàn giao cho queue và form được reset ngay. */
   async function generate() {
     if (!canGenerate.value) return
     const token = ++version
 
     submitting.value = true
     error.value = ''
-    monitorMessage.value = ''
     session.value = null
-    attempts = 0
     try {
       const payload = await buildAiContentRequest({ ...source.value }, catalog.value.selectedModel)
       if (token !== version) return
       const value = await aiAgentService.createSession(payload)
       if (token !== version) return
       acceptSession(value)
+      if (!['failed', 'cancelled', 'expired'].includes(value.status)) {
+        announceQueued(value)
+        onQueued(value)
+        session.value = null
+      }
     }
     catch (requestError) {
       if (token === version) error.value = formatAiError(requestError, 'Không thể tạo bài AI. Hãy thử lại.', catalog.value.outputOptions)
     }
     finally {
-      if (token === version) {
-        submitting.value = false
-        schedulePoll(token)
-      }
+      if (token === version) submitting.value = false
     }
   }
 
-  /**
-   * =====================================================================
-   * Input: người dùng bấm thử lại run failed.
-   * Output: requeue UUID cũ, chặn gửi trùng và tiếp tục đọc status; không tự retry.
-   * =====================================================================
-   */
+  /** Retry run failed theo UUID cũ; khi accepted cũng trả task về queue chung. */
   async function retryRun() {
     if (!canRetry.value) return
     const token = ++version
@@ -147,77 +107,35 @@ export function useAiContentGeneration(source, catalog, onSession, onFeedback = 
 
     submitting.value = true
     error.value = ''
-    monitorMessage.value = ''
-    attempts = 0
-    clearTimeout(timer)
     try {
       const value = await aiAgentService.retry(jobId)
       if (token !== version) return
       acceptSession(value)
+      if (!['failed', 'cancelled', 'expired'].includes(value.status)) {
+        announceQueued(value)
+        onQueued(value)
+        session.value = null
+      }
     }
     catch (requestError) {
       if (token === version) error.value = formatAiError(requestError, 'Chưa thể thử lại tác vụ AI.', catalog.value.outputOptions)
     }
     finally {
-      if (token === version) {
-        submitting.value = false
-        schedulePoll(token)
-      }
+      if (token === version) submitting.value = false
     }
   }
 
-  /**
-   * =====================================================================
-   * CHỨC NĂNG: Hủy run theo thao tác người dùng, vẫn theo dõi trạng thái server.
-   * Input: UUID active. Output: terminal hoặc cảnh báo nếu cancel chưa xác định.
-   * SIDE EFFECT: POST một lần; request upstream đã gửi không thể thu hồi.
-   * =====================================================================
-   */
-  async function cancel() {
-    if (!session.value || !busy.value || cancelling.value) return
-    cancelling.value = true
-
-    const token = version
-    try {
-      const value = await aiAgentService.cancel(session.value.job_id)
-      if (token !== version) return
-      acceptSession(value)
-      if (terminalStatuses.includes(value.status)) clearTimeout(timer)
-    }
-    catch (reason) { if (token === version) monitorMessage.value = formatAiError(reason, 'Chưa xác nhận được hủy. Hãy cập nhật trạng thái trước thao tác tiếp theo.') }
-    finally { if (token === version) cancelling.value = false }
-  }
-
-  /**
-   * =====================================================================
-   * Input: thao tác tạo mới khi không chạy.
-   * Output: xóa thông báo/session; giữ dữ liệu đã lưu trong list.
-   * =====================================================================
-   */
+  /** Xóa state form hiện tại; task đã gửi vẫn được queue popup theo dõi. */
   function reset() {
     if (busy.value) return false
     version += 1
-    clearTimeout(timer)
     session.value = null
     error.value = ''
-    monitorMessage.value = ''
 
     return true
   }
 
-  /**
-   * =====================================================================
-   * Input: thao tác cập nhật status sau mất kết nối/timeout.
-   * Output: GET status, không tạo lại run.
-   * =====================================================================
-   */
-  function resumePolling() {
-    attempts = 0
-    clearTimeout(timer)
-    void poll(version)
-  }
+  onScopeDispose(() => { version += 1 })
 
-  onScopeDispose(() => { version += 1; clearTimeout(timer) })
-
-  return { generation, generate, retryRun, reset, resumePolling, cancel }
+  return { generation, generate, retryRun, reset }
 }

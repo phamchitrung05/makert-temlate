@@ -24,6 +24,7 @@ use App\Services\Ai\Registries\PromptRegistry;
 use App\Services\Ai\Registries\ProviderRegistry;
 use App\Services\Ai\Registries\SchemaRegistry;
 use App\Services\Ai\Registries\TargetRegistry;
+use App\Services\Ai\Runs\AiTaskRunRegistry;
 use App\Services\Settings\ProjectSettingsService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -79,6 +80,14 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(ProviderRegistry::class);
         $this->app->singleton(TargetRegistry::class);
         $this->app->singleton(SchemaRegistry::class);
+        $this->app->singleton(AiTaskRunRegistry::class, function ($app): AiTaskRunRegistry {
+            $registry = new AiTaskRunRegistry();
+            foreach ((array) config('ai-task-runs.adapters', []) as $adapterClass) {
+                $registry->register($app->make($adapterClass));
+            }
+
+            return $registry;
+        });
         $this->app->bind(ArticleImportService::class, fn ($app): ArticleImportService => new ArticleImportService(
             $app->make(AiProviderContract::class),
             $app->make(ArticleSourceFetcher::class),

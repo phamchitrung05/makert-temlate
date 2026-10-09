@@ -9,11 +9,12 @@
  * =====================================================================
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, shallowRef } from 'vue'
+import { effectScope, shallowRef, watch } from 'vue'
 import { useAiContentWorkspace } from '@/composables/useAiContentWorkspace'
 import { useAiContentGeneration } from '@/composables/useAiContentGeneration'
 import { buildAiContentRequest, createAiContentSource, validateAiContentSource } from '@/utils/aiContentInput'
 import { useAiRunFeedback } from '@/composables/useAiRunFeedback'
+import { useAiContentActions } from '@/composables/useAiContentActions'
 
 const { service } = vi.hoisted(() => ({ service: { createSession: vi.fn(), status: vi.fn(), listSessions: vi.fn(), retry: vi.fn() } }))
 
@@ -34,7 +35,12 @@ function createState() {
 
     const feedback = useAiRunFeedback()
 
-    return { ...workspace, ...feedback, ...useAiContentGeneration(workspace.source, shallowRef(catalog()), workspace.updateSession, feedback.observeRun) }
+    const actions = useAiContentActions({ updateSession: workspace.updateSession, removeItem: workspace.removeItem, onFeedback: feedback.observeRun })
+    const creation = useAiContentGeneration(workspace.source, shallowRef(catalog()), workspace.updateSession, feedback.observeRun, () => workspace.resetSource())
+
+    watch(workspace.items, () => actions.trackRuns(workspace.items.value))
+
+    return { ...workspace, ...feedback, ...actions, ...creation }
   })
 }
 
@@ -154,7 +160,7 @@ describe('Ai Content generation lifecycle', () => {
     expect(state.items.value[0].title).not.toBe('Invalid output')
     state.setSnackbarVisible(false)
     service.status.mockResolvedValue(failure)
-    state.resumePolling()
+    await state.resumeRun(state.items.value[0])
     await Promise.resolve()
     expect(state.snackbar.value.visible).toBe(false)
     service.listSessions.mockResolvedValue({ data: [{ ...failure, id: 'one', draft: undefined }], meta: { pagination: { last_page: 1 } } })
@@ -167,8 +173,7 @@ describe('Ai Content generation lifecycle', () => {
   it('waits for manual retry after failure and requeues the same run once', async () => {
     const state = createState()
 
-    service.createSession.mockResolvedValue({ job_id: 'one', status: 'queued' })
-    service.status.mockResolvedValueOnce({ job_id: 'one', status: 'failed', error: 'Kết nối bị ngắt' })
+    service.createSession.mockResolvedValue({ job_id: 'one', status: 'failed', error: 'Kết nối bị ngắt' })
     await state.generate()
     await vi.advanceTimersByTimeAsync(20000)
     expect(state.generation.value.canRetry).toBe(true)
@@ -222,11 +227,11 @@ describe('Ai Content generation lifecycle', () => {
     await pending
     expect(service.createSession).toHaveBeenCalledOnce()
     expect(state.items.value[0].status).toBe('generating')
-    expect(state.reset()).toBe(false)
+    expect(state.generation.value.busy).toBe(false)
     await vi.advanceTimersByTimeAsync(1000)
     expect(state.items.value[0]).toMatchObject({ title: 'Generated title', status: 'review' })
     expect(state.generation.value.busy).toBe(false)
-    expect(state.source.value.prompt).toBe('Viết bài hướng dẫn Laravel')
+    expect(state.source.value.prompt).toBe('')
     expect(state.reset()).toBe(true)
     state.resetSource()
     expect(state.source.value).toMatchObject({ prompt: '', url: '', provider: 'content', model: 'text-model' })
@@ -261,9 +266,10 @@ describe('Ai Content generation lifecycle', () => {
     expect(state.generation.value.canGenerate).toBe(true)
     service.createSession.mockResolvedValue({ job_id: 'one', status: 'queued' })
     service.status.mockResolvedValue({ job_id: 'one', status: 'failed', error: 'Provider không khả dụng' })
+    state.source.value = validSource()
     await state.generate()
     await vi.advanceTimersByTimeAsync(1000)
-    expect(state.generation.value.error).toBe('Provider không khả dụng')
+    expect(state.notice.value.message).toBe('Provider không khả dụng')
     expect(state.items.value[0].status).toBe('failed')
   })
 
@@ -274,10 +280,10 @@ describe('Ai Content generation lifecycle', () => {
     service.status.mockRejectedValueOnce(new Error('network'))
     await state.generate()
     await vi.advanceTimersByTimeAsync(1000)
-    expect(state.generation.value.monitorMessage).toContain('Cập nhật trạng thái')
+    expect(state.notice.value.message).toContain('Kiểm tra tiến trình')
     expect(state.generation.value.canGenerate).toBe(false)
     service.status.mockResolvedValue({ job_id: 'one', status: 'ready' })
-    state.resumePolling()
+    await state.resumeRun(state.items.value[0])
     await Promise.resolve()
     await Promise.resolve()
     expect(state.generation.value.busy).toBe(false)

@@ -9,9 +9,10 @@
 
   CÁC HÀM/METHOD TRONG FILE:
   - formatTaskTime(): định dạng mốc thời gian của task.
-  - taskSubtitle(): chọn mô tả theo source task.
-  - canCancel: computed kiểm tra task có thể hủy.
-  - statusMeta/statusIconBackground: computed metadata và màu nền theo theme.
+  - taskSubtitle(): chọn mô tả model/source theo task type.
+  - taskTypeMeta: chọn icon avatar theo mode của task.
+  - canCancel: computed kiểm tra mọi trạng thái active có thể hủy.
+  - statusMeta: computed nhãn/icon theo lifecycle allowlist.
 
   INPUT/OUTPUT CỦA COMPONENT (tổng thể):
   - INPUT : task summary, cancellingId và event handler từ queue container.
@@ -19,6 +20,7 @@
   =====================================================================
 -->
 <script setup>
+/* eslint-disable camelcase -- task_type values follow the backend queue contract. */
 import { computed } from 'vue'
 import { aiTaskStatusMeta } from '@/composables/useAiTaskQueue'
 
@@ -29,9 +31,20 @@ const props = defineProps({
 
 const emit = defineEmits(['open', 'error', 'cancel'])
 
-const canCancel = computed(() => ['queued', 'analyzing'].includes(props.task.status) && props.cancellingId !== props.task.id)
+const canCancel = computed(() => ['queued', 'running', 'processing', 'analyzing'].includes(props.task.status) && props.cancellingId !== props.task.id)
+
 const statusMeta = computed(() => aiTaskStatusMeta(props.task.status))
-const statusIconBackground = computed(() => `rgba(var(--v-theme-${statusMeta.value.color}), 0.12)`)
+
+const taskTypeMeta = computed(() => {
+  const metadata = {
+    writing_profile_analysis: { icon: 'tabler-writing-sign', color: 'secondary', label: 'Văn phong' },
+    article_generation: { icon: 'tabler-file-text', color: 'primary', label: 'Bài viết' },
+    image_generation: { icon: 'tabler-photo', color: 'success', label: 'Hình ảnh' },
+    sound_generation: { icon: 'tabler-volume', color: 'info', label: 'Âm thanh' },
+  }
+
+  return metadata[props.task.task_type] ?? { icon: 'tabler-sparkles', color: 'primary', label: 'AI' }
+})
 
 /**
  * =====================================================================
@@ -76,6 +89,10 @@ function formatTaskTime(task) {
 function taskSubtitle(task) {
   if (task.source === 'ai_writing_profile') return 'Phân tích văn phong'
 
+  if (task.source === 'ai_content') return `${task.model || 'Tạo nội dung AI'} · Bài viết`
+
+  if (task.source === 'ai_image') return `${task.model || 'Tạo ảnh AI'} · Hình ảnh`
+
   return 'Tác vụ AI'
 }
 </script>
@@ -84,16 +101,17 @@ function taskSubtitle(task) {
   <div class="task-item pa-2 my-1 rounded d-flex align-center justify-space-between">
     <div class="d-flex align-center task-item__identity">
       <VAvatar
-        :color="statusIconBackground"
+        :color="taskTypeMeta.color"
         rounded="lg"
         size="34"
         class="me-2 flex-shrink-0"
+        :aria-label="taskTypeMeta.label"
       >
         <VIcon
-          :color="statusMeta.color"
+          color="white"
           size="18"
         >
-          {{ statusMeta.icon }}
+          {{ taskTypeMeta.icon }}
         </VIcon>
       </VAvatar>
       <div class="text-truncate">
@@ -108,12 +126,13 @@ function taskSubtitle(task) {
 
     <div class="d-flex align-center justify-end flex-grow-1 ms-2 task-item__status">
       <div
-        v-if="task.status === 'analyzing'"
+        v-if="['running', 'processing', 'analyzing'].includes(task.status)"
         class="d-flex align-center gap-2"
       >
         <div class="task-progress">
           <VProgressLinear
-            indeterminate
+            :indeterminate="!task.progress"
+            :model-value="task.progress"
             color="primary"
             height="4"
             rounded

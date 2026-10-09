@@ -3,8 +3,16 @@
  * =====================================================================
  * CHỨC NĂNG FILE: Kết nối API mẫu văn phong và preview nguồn hiện có.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: unwrap(), createAnalysis(), analysis(), cancel(), listAnalyses(),
- * previewSource(), save(), profile(), list(), findProfiles(), options(), remove(), updateDefault().
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - unwrap(): lấy data khỏi BaseResponse thành công.
+ * - createAnalysis(): tạo analysis văn phong.
+ * - analysis(): đọc detail/result analysis.
+ * - cancel(): hủy analysis API cũ.
+ * - listAnalyses(): giữ API list analysis cũ cho tương thích.
+ * - listTaskRuns(), cancelTask(): đọc/hủy tracker queue dùng chung.
+ * - previewSource(): preview URL/HTML/file qua extractor backend.
+ * - save(), profile(), list(), findProfiles(): CRUD/list profile và xác minh save.
+ * - options(), remove(), updateDefault(): catalog, xóa profile và cập nhật mặc định.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : payload đã duyệt, UUID/ID và AbortSignal tùy chọn.
  * - OUTPUT: DTO công khai từ BaseResponse hoặc lỗi HTTP gốc.
@@ -66,6 +74,31 @@ export const aiWritingProfilesService = {
    */
   async listAnalyses(filters = {}, signal) {
     return $api('/admin/ai/writing-profiles/analyses', { query: filters, signal, retry: 0 })
+  },
+
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Đọc tracker task dùng chung cho toàn bộ AI modules.
+   * =====================================================================
+   * Input: page/per_page/status/task_type và AbortSignal tùy chọn.
+   * Output: envelope summary đã scope owner/quyền, không có payload nghiệp vụ.
+   * Side effect: chỉ GET; không tạo hoặc thay đổi task.
+   * =====================================================================
+   */
+  async listTaskRuns(filters = {}, signal) {
+    return $api('/admin/ai/tasks', { query: filters, signal, retry: 0 })
+  },
+
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Yêu cầu hủy task dùng chung theo tracker UUID.
+   * =====================================================================
+   * Input: tracker UUID. Output: status sau khi adapter xử lý cancellation.
+   * Side effect: POST một lần; không retry tự động hoặc gọi provider.
+   * =====================================================================
+   */
+  async cancelTask(id) {
+    return unwrap(await $api(`/admin/ai/tasks/${id}/cancel`, { method: 'POST', retry: 0 }))
   },
 
   /**

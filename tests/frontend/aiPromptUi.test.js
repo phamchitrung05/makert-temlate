@@ -10,8 +10,8 @@
  * - button(view, label): tìm nút theo nội dung người dùng đọc được.
  * - test edits/save/evidence/default: kiểm tra public events, không truy cập state.
  * - test real/static output: kiểm tra kết quả thật tách khỏi dữ liệu minh họa.
- * - test page workflow: nhập nguồn/tên -> POST analysis -> GET ready -> lưu/default
- *   -> reset Add -> tạo mẫu kế tiếp; giữ bản khi save/default lỗi hoặc chưa xác định.
+ * - test page workflow: nhập nguồn/tên -> POST analysis -> queue popup tiếp nhận;
+ *   form Add reset sau queued và không tự mở lại worker.
  * - test new-profile confirmation: không bỏ bản đang duyệt khi chưa xác nhận.
  * - test inaccessible resume: GET 403 không khóa Add hoặc gửi lại analysis.
  * - test history confirmation: giữ bản sửa khi mở UUID khác chưa được xác nhận.
@@ -305,95 +305,37 @@ describe('Ai Prompt page API wiring', () => {
     expect(api.mock.calls.map(([url]) => url)).toEqual(['/admin/settings/ai', `/admin/ai/writing-profiles/analyses/${id}`])
   })
 
-  it('saves/defaults the reviewed profile, clears Add and creates the next profile without reloading', async () => {
+  it('queues analysis, resets Add immediately and leaves review to the task popup', async () => {
     const id = '12345678-1234-1234-1234-123456789abc'
-    const nextId = 'abcdefab-abcd-abcd-abcd-abcdefabcdef'
     const sourceText = 'Một ví dụ rõ ràng từ bài tham khảo. Bài mẫu giải thích các khái niệm qua tình huống cụ thể.'
-    let analyses = 0
-    let profiles = 0
 
     api.mockImplementation(async (url, options = {}) => {
-      if (url === '/admin/settings/ai') return { providers: [], settings: { default_writing_profile_id: null } }
-      if (url === '/admin/ai/writing-profiles/analyses') {
-        analyses++
-
-        return { success: true, data: { id: analyses === 1 ? id : nextId, name: options.body.name, status: 'queued', result: null } }
-      }
-      if (url === `/admin/ai/writing-profiles/analyses/${id}`) return { success: true, data: { id, name: 'Văn phong từ giao diện', status: 'ready', provider: 'gateway', model: 'model-text', result } }
-      if (url === `/admin/ai/writing-profiles/analyses/${nextId}`) return { success: true, data: { id: nextId, name: 'Văn phong thứ hai', status: 'ready', result } }
-      if (url === '/admin/ai/writing-profiles') {
-        profiles++
-
-        return { success: true, data: { id: 10 + profiles, version: 1, ...options.body } }
-      }
-      if (url === '/admin/settings/ai/settings') return { success: true, data: options.body }
+      if (url === '/admin/settings/ai') return { providers: [], settings: {} }
+      if (url === '/admin/ai/writing-profiles/analyses') return { success: true, data: { id, name: options.body.name, status: 'queued', task_run_id: 'task-1' } }
       throw new Error(`Unexpected API: ${url}`)
     })
 
     const view = render(AiPromptPage)
 
     await flushPromises()
-    expect(api.mock.calls.map(([url]) => url)).toEqual(['/admin/settings/ai'])
     await view.get('input[aria-label="Tên văn phong nguồn"]').setValue('Văn phong từ giao diện')
     await view.get('textarea[aria-label="Bài tham khảo"]').setValue(`<p>${sourceText}</p>`)
     await button(view, 'Phân tích từ nguồn').trigger('click')
     await flushPromises()
 
     expect(api).toHaveBeenCalledWith('/admin/ai/writing-profiles/analyses', { method: 'POST', retry: 0, body: { name: 'Văn phong từ giao diện', reference_text: sourceText } })
-    expect(api).toHaveBeenCalledWith(`/admin/ai/writing-profiles/analyses/${id}`, expect.objectContaining({ retry: 0 }))
-    expect(view.text()).toContain(result.summary)
-    expect(api.mock.calls.filter(([url]) => url === '/admin/ai/writing-profiles')).toHaveLength(0)
-    await view.get('input[aria-label="Tên văn phong"]').setValue('Tên đã duyệt trước khi lưu')
-    await view.get('textarea[aria-label="Hướng dẫn văn phong"]').setValue('Chỉ dùng hướng dẫn đã được người dùng duyệt.')
-    await view.get('input[aria-label="Đặt làm văn phong mặc định"]').setValue(true)
-    await view.get('form').trigger('submit')
-    await flushPromises()
-
-    expect(api).toHaveBeenCalledWith('/admin/ai/writing-profiles', {
-      method: 'POST', retry: 0,
-      body: { name: 'Tên đã duyệt trước khi lưu', description: null, rules_json: result.rules, evidence_json: result.evidence, style_instructions: 'Chỉ dùng hướng dẫn đã được người dùng duyệt.', is_enabled: true, analysis_id: id },
-    })
-    expect(api).toHaveBeenCalledWith('/admin/settings/ai/settings', { method: 'PUT', retry: 0, body: { default_writing_profile_id: 11 } })
-    expect(view.text()).toContain('Đã lưu văn phong “Tên đã duyệt trước khi lưu”. Bạn có thể tạo văn phong mới.')
+    expect(view.text()).toContain('Đã đưa phân tích vào hàng đợi')
     expect(view.get('input[aria-label="Tên văn phong nguồn"]').element.value).toBe('')
     expect(view.get('textarea[aria-label="Bài tham khảo"]').element.value).toBe('')
     expect(view.find('form').exists()).toBe(false)
-    expect(view.text()).not.toContain(result.summary)
-    expect(button(view, 'Phân tích lại')).toBeUndefined()
-    expect(button(view, 'Phân tích với AI').element.disabled).toBe(false)
-    expect(window.sessionStorage.getItem('ai_prompt_analysis:8')).toBeNull()
-    expect(window.sessionStorage.getItem(`ai_prompt_profile:8:${id}`)).toBe('11')
-
-    await view.get('input[aria-label="Tên văn phong nguồn"]').setValue('Văn phong thứ hai')
-    await view.get('textarea[aria-label="Bài tham khảo"]').setValue(`<p>${sourceText} Đây là bài mẫu tiếp theo.</p>`)
-    await button(view, 'Phân tích từ nguồn').trigger('click')
-    await flushPromises()
-    expect(view.get('input[aria-label="Tên văn phong"]').element.value).toBe('Văn phong thứ hai')
-    expect(view.get('input[aria-label="Đặt làm văn phong mặc định"]').element.checked).toBe(false)
-    await view.get('form').trigger('submit')
-    await flushPromises()
-    expect(api).toHaveBeenCalledWith('/admin/ai/writing-profiles', {
-      method: 'POST', retry: 0,
-      body: { name: 'Văn phong thứ hai', description: null, rules_json: result.rules, evidence_json: result.evidence, style_instructions: result.style_instructions, is_enabled: true, analysis_id: nextId },
-    })
-    expect(view.text()).toContain('Đã lưu văn phong “Văn phong thứ hai”. Bạn có thể tạo văn phong mới.')
-    expect(view.find('form').exists()).toBe(false)
-    expect(api.mock.calls.filter(([url]) => url === '/admin/settings/ai/settings')).toHaveLength(1)
-    expect(api.mock.calls.filter(([url]) => url === '/admin/ai/writing-profiles/analyses')).toHaveLength(2)
-    expect(api.mock.calls.filter(([url]) => url === '/admin/ai/writing-profiles')).toHaveLength(2)
-    expect(api.mock.calls.some(([url]) => url === '/admin/ai/writing-profiles/11')).toBe(false)
-    expect(window.sessionStorage.getItem('ai_prompt_analysis:8')).toBeNull()
   })
 
-  it.each([422, 503])('keeps the source/review after HTTP %s and protects an uncertain save', async status => {
-    const id = '12345678-1234-1234-1234-123456789abc'
+  it.each([422, 503])('keeps the source and handles analysis submit HTTP %s safely', async status => {
     const reference = 'Một ví dụ rõ ràng từ bài tham khảo. Nội dung này cần được giữ lại nếu thao tác lưu thất bại.'
 
     api.mockImplementation(async (url, options = {}) => {
       if (url === '/admin/settings/ai') return { providers: [], settings: {} }
-      if (url === '/admin/ai/writing-profiles/analyses') return { success: true, data: { id, name: options.body.name, status: 'queued' } }
-      if (url === `/admin/ai/writing-profiles/analyses/${id}`) return { success: true, data: { id, name: 'Bản cần giữ', status: 'ready', result } }
-      if (url === '/admin/ai/writing-profiles') throw { status, data: { message: 'Chưa lưu được mẫu văn phong.' } }
+      if (url === '/admin/ai/writing-profiles/analyses') throw { status, data: { message: 'Chưa xếp được tác vụ.' } }
       throw new Error(`Unexpected API: ${url}`)
     })
 
@@ -404,17 +346,13 @@ describe('Ai Prompt page API wiring', () => {
     await view.get('textarea[aria-label="Bài tham khảo"]').setValue(reference)
     await button(view, 'Phân tích từ nguồn').trigger('click')
     await flushPromises()
-    await view.get('textarea[aria-label="Hướng dẫn văn phong"]').setValue('Hướng dẫn người dùng đang sửa phải giữ lại.')
-    await view.get('form').trigger('submit')
-    await flushPromises()
-
     expect(view.get('input[aria-label="Tên văn phong nguồn"]').element.value).toBe('Bản cần giữ')
     expect(view.get('textarea[aria-label="Bài tham khảo"]').element.value).toBe(reference)
-    expect(view.get('textarea[aria-label="Hướng dẫn văn phong"]').element.value).toBe('Hướng dẫn người dùng đang sửa phải giữ lại.')
-    expect(view.text()).toContain('Chưa lưu được mẫu văn phong.')
-    expect(window.sessionStorage.getItem('ai_prompt_analysis:8')).not.toBeNull()
-    expect(button(view, 'Văn phong mới').element.disabled).toBe(status === 503)
-    expect(api.mock.calls.filter(([url]) => url === '/admin/ai/writing-profiles')).toHaveLength(1)
+    expect(view.text()).toContain('Chưa xếp được tác vụ.')
+    if (status === 503) expect(window.sessionStorage.getItem('ai_prompt_analysis:8:pending')).toBe('true')
+    else expect(window.sessionStorage.getItem('ai_prompt_analysis:8:pending')).toBeNull()
+    expect(button(view, 'Phân tích với AI').element.disabled).toBe(status === 503)
+    expect(api.mock.calls.filter(([url]) => url === '/admin/ai/writing-profiles')).toHaveLength(0)
   })
 
   it('keeps a confirmed profile and the default error visible, allowing an explicit new profile', async () => {

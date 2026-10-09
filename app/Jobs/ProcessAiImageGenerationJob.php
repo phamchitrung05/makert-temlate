@@ -9,6 +9,7 @@ use App\Models\MediaAsset;
 use App\Services\Ai\Images\AiImageGenerationService;
 use App\Services\Ai\Images\AiThumbnailService;
 use App\Services\Ai\Registries\ProviderRegistry;
+use App\Services\Ai\Runs\AiTaskRunService;
 use App\Services\Media\ContentMediaReferenceService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -26,12 +27,16 @@ use Throwable;
  * CHỨC NĂNG FILE: Worker image độc lập, retry có kiểm soát và không làm fail text run.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE:
- * - __construct(), uniqueId(): ngân sách job và khóa dispatch riêng theo run.
- * - handle(), process(), complete(): khóa độc quyền, gọi provider và commit khi run còn active.
- * - mergeParentImage(): thumbnail mới dùng AiThumbnailService để sync ref canonical;
- *   image legacy chỉ merge metadata, giữ nguyên draft.
- * - failed(), discardUnattachedAsset(): giữ terminal state và dọn asset orphan.
- * INPUT: UUID image run đã lưu connection snapshot không có key.
+ * - __construct(): nhận image UUID, generation và ngân sách HTTP.
+ * - uniqueId(): tạo khóa unique theo image run.
+ * - handle(): giữ process lock và chạy image pipeline.
+ * - process(): gọi provider, upload asset và cập nhật lifecycle.
+ * - complete(): commit asset reference khi generation còn active.
+ * - syncTaskRun(): ghi projection tracker sau mọi nhánh worker.
+ * - mergeParentImage(): sync thumbnail hoặc merge metadata parent.
+ * - failed(): ghi terminal image failure và sync thumbnail.
+ * - discardUnattachedAsset(): dọn asset orphan sau response trễ.
+ * INPUT: UUID image run, generation tùy chọn và connection snapshot không có key.
  * OUTPUT: lifecycle/result có MediaAsset ID hoặc lỗi an toàn.
  * SIDE EFFECT: đọc key server-side, gọi provider, upload asset và cập nhật parent nếu có.
  * EXCEPTION/TRANSACTION: chỉ retry lỗi xác định an toàn; không có transaction bao trùm HTTP.
@@ -55,11 +60,11 @@ final class ProcessAiImageGenerationJob implements ShouldBeUnique, ShouldQueue
      * =====================================================================
      * CHỨC NĂNG: Khởi tạo ngân sách job ảnh và unique lock
      * =====================================================================
-     * Input: UUID image run và ngân sách HTTP trong snapshot.
+     * Input: UUID image run, generation và ngân sách HTTP trong snapshot.
      * Output: job/unique lock đủ dài cho HTTP và lưu ảnh; không đọc DB/provider.
      * =====================================================================
      */
-    public function __construct(public readonly string $importId, int $requestTimeout = 30)
+    public function __construct(public readonly string $importId, int $requestTimeout = 30, public readonly ?int $generationNo = null)
     {
         $this->timeout = max((int) config('ai-import.job_timeout', 180), $requestTimeout + 120);
         $this->uniqueFor = $this->timeout * $this->tries + array_sum($this->backoff) + 60;
@@ -85,8 +90,8 @@ final class ProcessAiImageGenerationJob implements ShouldBeUnique, ShouldQueue
      * CHỨC NĂNG: Tạo ảnh, lưu asset và cập nhật image run độc lập
      * =====================================================================
      * INPUT: UUID run và các service được container inject.
-     * OUTPUT: Run ready có MediaAsset ID hoặc failed với lỗi an toàn.
-     * SIDE EFFECT: Đọc key server-side, gọi image service, ghi lifecycle và metadata parent nếu có.
+     * OUTPUT: Run ready có MediaAsset ID hoặc failed với lỗi an toàn, tracker cùng trạng thái.
+     * SIDE EFFECT: Đọc key server-side, gọi image service, ghi lifecycle/tracker và metadata parent nếu có.
      * EXCEPTION/TRANSACTION: Chỉ retry lỗi domain an toàn có giới hạn; lỗi ảnh không đổi status của content parent, không transaction bao HTTP.
      * =====================================================================
      */
@@ -100,9 +105,30 @@ final class ProcessAiImageGenerationJob implements ShouldBeUnique, ShouldQueue
             return;
         }
         try {
-            $this->process($service, $providers);
+            try {
+                $this->process($service, $providers);
+            } finally {
+                $this->syncTaskRun();
+            }
         } finally {
             $lock->release();
+        }
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Đồng bộ tracker sau mọi nhánh của image worker.
+     * =====================================================================
+     * INPUT: UUID image run. OUTPUT: không trả giá trị.
+     * SIDE EFFECT: ghi projection trạng thái mới nhất; không gọi provider.
+     * EXCEPTION/TRANSACTION: source thiếu/stale được bỏ qua an toàn.
+     * =====================================================================
+     */
+    private function syncTaskRun(): void
+    {
+        if (($import = AiImport::query()->find($this->importId))
+            && ($this->generationNo === null || $this->generationNo === (int) $import->generation_no)) {
+            app(AiTaskRunService::class)->syncFromImport($import);
         }
     }
 
@@ -110,12 +136,19 @@ final class ProcessAiImageGenerationJob implements ShouldBeUnique, ShouldQueue
     private function process(AiImageGenerationService $service, ProviderRegistry $providers): void
     {
         $import = AiImport::query()->find($this->importId);
-        if (! $import || in_array($import->status, AiImport::TERMINAL_STATUSES, true)) {
+        if (! $import || ($this->generationNo !== null && $this->generationNo !== (int) $import->generation_no)
+            || in_array($import->status, AiImport::TERMINAL_STATUSES, true)) {
+            if ($import) {
+                app(AiTaskRunService::class)->syncFromImport($import);
+            }
             return;
         }
+        $taskRuns = app(AiTaskRunService::class);
+        $taskRuns->syncFromImport($import);
         if ($import->expires_at?->isPast()) {
             $import->update(['status' => 'expired', 'current_step' => 'expired', 'completed_at' => now()]);
             app(AiThumbnailService::class)->sync($import);
+            $taskRuns->syncFromImport($import->refresh());
 
             return;
         }
@@ -181,6 +214,9 @@ final class ProcessAiImageGenerationJob implements ShouldBeUnique, ShouldQueue
                 $this->discardUnattachedAsset($asset);
             }
             $thumbnails->sync($import->fresh());
+        }
+        if ($latest = AiImport::query()->find($this->importId)) {
+            $taskRuns->syncFromImport($latest);
         }
     }
 
@@ -258,12 +294,16 @@ final class ProcessAiImageGenerationJob implements ShouldBeUnique, ShouldQueue
      */
     public function failed(?Throwable $exception): void
     {
-        AiImport::query()->whereKey($this->importId)->whereNotIn('status', AiImport::TERMINAL_STATUSES)->update([
-            'status' => 'failed', 'current_step' => 'failed', 'error_code' => $exception instanceof AiImportException ? $exception->errorCode : 'AI_IMAGE_FAILED',
-            'error_message' => 'Tạo ảnh thất bại. Hãy kiểm tra cấu hình provider rồi thử lại.',
-            'completed_at' => now(),
-        ]);
-        app(AiThumbnailService::class)->sync(AiImport::find($this->importId));
+        try {
+            AiImport::query()->whereKey($this->importId)->whereNotIn('status', AiImport::TERMINAL_STATUSES)->update([
+                'status' => 'failed', 'current_step' => 'failed', 'error_code' => $exception instanceof AiImportException ? $exception->errorCode : 'AI_IMAGE_FAILED',
+                'error_message' => 'Tạo ảnh thất bại. Hãy kiểm tra cấu hình provider rồi thử lại.',
+                'completed_at' => now(),
+            ]);
+            app(AiThumbnailService::class)->sync(AiImport::find($this->importId));
+        } finally {
+            $this->syncTaskRun();
+        }
     }
 
     /**

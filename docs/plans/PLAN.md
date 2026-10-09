@@ -1,6 +1,6 @@
 # Kế hoạch tổng của dự án
 
-**Cập nhật:** 08/10/2026. Đây là nơi theo dõi tiến độ hiện tại; mỗi task chỉ có một checklist đang dùng.
+**Cập nhật:** 09/10/2026. Đây là nơi theo dõi tiến độ hiện tại; mỗi task chỉ có một checklist đang dùng.
 
 ## Tài liệu cần đọc
 
@@ -24,8 +24,8 @@ Các tài liệu API và QA trong `docs/` tiếp tục làm nguồn tham chiếu
 | Resource và taxonomy | DONE | Backend, admin CRUD, service/store và kiểm thử |
 | Media và version | DONE | Media Library task 1–10: upload/security, usage, API/quyền, picker, Resource/Post/Version và QA |
 | Blog Admin/Post | IN PROGRESS | CRUD, taxonomy, SEO metadata, editor, media, P-01 workflow, P-03 HTML sanitization và P-04 bộ lọc tác giả/ngày; post_type/Gallery mở thành plan riêng |
-| AI Content | DONE trong phạm vi kỹ thuật hiện tại | Pipeline C ba bước, nguồn URL/text/HTML/file, profile/brief, duyệt/từ chối, sửa/regenerate, Apply Post nháp và thumbnail từ AI Content |
-| Ai Prompt/Writing Profiles | DONE trong phạm vi hiện tại | CRUD, profile mặc định, chọn profile, phân tích văn phong qua queue và quyền/validation |
+| AI Content | DONE trong phạm vi kỹ thuật hiện tại | Pipeline C ba bước, nguồn URL/text/HTML/file, profile/brief, duyệt/từ chối, sửa/regenerate, Apply Post nháp, thumbnail, queue dùng chung và form enqueue liên tiếp |
+| Ai Prompt/Writing Profiles | DONE trong phạm vi hiện tại | CRUD, profile mặc định, chọn profile, phân tích văn phong qua queue dùng chung và quyền/validation |
 | Settings | DONE phần đã triển khai | 10 tab, typed settings/version/quyền, AI defaults, thông tin hệ thống, logo/favicon public/admin và QA upload thật |
 | Đánh giá 19 bài đã lưu | DONE — đánh giá AI | Điểm văn phong trung bình **4,49/5**; hai phiếu người đọc vẫn chờ |
 | Chấm bài AI và báo cáo định kỳ | IN PROGRESS — tạm hoãn, G1 DONE | Kho chỉ giữ bản Post AI được duyệt/Apply. Kế hoạch mới: chấm từng candidate trước duyệt, vòng tròn điểm, cổng > 4/đủ nguồn/đạt dữ kiện và tổng hợp điểm định kỳ; code giai đoạn 2–6 còn TODO. [Kế hoạch riêng](HE_THONG_TU_DANH_GIA_DINH_KY.md) |
@@ -54,6 +54,10 @@ Ngày 07/10/2026, chủ dự án yêu cầu để tính năng chấm bài và da
 - [x] 08/10: hoàn tất P-03: sanitize HTML Post thủ công ở backend, giữ markup/media hợp lệ, chặn URL ảnh nguy hiểm và dùng chung sanitizer với AI. [QA Post HTML](../qa/POST_CONTENT_SANITIZATION_2026-10-08.md).
 - [x] 08/10: hoàn tất P-04 trong phạm vi đã chốt: lọc Post theo tác giả và ngày tạo, danh sách tác giả cho filter, date range inclusive, UI panel filter riêng và fake API. `post_type`/Gallery không thuộc task này; sẽ lập plan riêng sau. [QA Post filters](../qa/POST_FILTERS_2026-10-08.md).
 - [x] 08/10: hoàn tất [AI Task Queue Popup](AI_TASK_QUEUE_POPUP.md): API list analysis có scope/filter/pagination, popup Admin dùng task thật, polling terminal, Add văn phong cho phép enqueue liên tiếp, worker tạo draft và trang `/ai/prompt/edit` khôi phục nguồn để duyệt/lưu.
+- [x] 09/10: hoàn tất mở rộng queue dùng chung cho writing profile, tạo bài và tạo ảnh: `ai_task_runs`, adapter/registry, API list/detail/cancel, tracker theo owner/quyền và đồng bộ lifecycle từ worker.
+- [x] 09/10: hoàn tất Ai Content enqueue liên tiếp: form chỉ khóa trong lúc POST, reset ngay sau khi task được nhận, popup theo dõi độc lập và bổ sung tracker ID trong payload.
+- [x] 09/10: hoàn tất ổn định popup queue: task mới chỉ cập nhật badge, event đến sớm được replay, icon avatar theo mode và danh sách cuộn sát footer.
+- [x] 09/10: hoàn tất regression quality grounding cho bài có code/link và số viết bằng chữ; giữ chặn số liệu/phiên bản bị thay đổi thật. Kiểm chứng nhóm grounding 48 tests/111 assertions và pipeline liên quan 85 tests/359 assertions.
 
 Bằng chứng FIX 1 ở [Acceptance/QA](../qa/FIX1_ACCEPTANCE_2026-10-07/README.md): backend 438 tests/2986 assertions; lượt scoped cuối 31/172; frontend scoped 7 files/51 tests và build đạt. Kiểm backend gần nhất sau bổ sung kho approved xem [QA giai đoạn 1](../qa/AI_ARTICLE_ARCHIVES_2026-10-07.md). Đây là các lượt có phần trùng nhau, không cộng thành tổng mới.
 

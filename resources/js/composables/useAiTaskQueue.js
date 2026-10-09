@@ -3,8 +3,19 @@
  * =====================================================================
  * CHỨC NĂNG FILE: Điều phối danh sách và polling task AI dùng chung toàn Admin.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: useAiTaskQueue(), start(), stop(), refresh(),
- * addTask(), cancelTask(), clearFinished(), scheduleNext(), notifyReady(), normalizeTask().
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - normalizeTask(): chuẩn hóa DTO mọi task type về shape popup.
+ * - aiTaskStatusMeta(): lấy nhãn/icon lifecycle từ allowlist frontend.
+ * - useAiTaskQueue(): tạo state queue, filter và lifecycle polling.
+ * - start(): gắn listener và tải queue lần đầu.
+ * - stop(): hủy request/timer/listener cũ.
+ * - refresh(): đọc tracker API, reconcile optimistic task và phát ready event.
+ * - addTask(): thêm task queued từ event trước lần refresh kế tiếp.
+ * - onQueued(): nhận task mới và đọc lại tracker API để đồng bộ metadata.
+ * - cancelTask(): gọi endpoint cancel dùng chung và cập nhật task.
+ * - clearFinished(): ẩn task terminal khỏi danh sách UI.
+ * - scheduleNext(): poll tuần tự khi còn active task.
+ * - notifyReady(): báo các màn hình cần tải lại draft/kết quả.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : API list/cancel và event task queued từ các luồng AI.
  * - OUTPUT: task summaries, filter counts, polling lifecycle và lỗi an toàn.
@@ -17,8 +28,8 @@ import { formatAiError } from '@/utils/aiErrors'
 
 export const AI_TASK_QUEUED_EVENT = 'ai-task-queued'
 export const AI_TASK_READY_EVENT = 'ai-task-ready'
-export const ACTIVE_AI_TASK_STATUSES = ['queued', 'analyzing']
-export const TERMINAL_AI_TASK_STATUSES = ['ready', 'failed', 'cancelled']
+export const ACTIVE_AI_TASK_STATUSES = ['queued', 'running', 'processing', 'analyzing']
+export const TERMINAL_AI_TASK_STATUSES = ['ready', 'failed', 'cancelled', 'expired']
 
 const FILTERS = [
   { label: 'Tất cả', value: 'all' },
@@ -27,14 +38,18 @@ const FILTERS = [
   { label: 'Hoàn thành', value: 'ready' },
   { label: 'Lỗi', value: 'failed' },
   { label: 'Đã hủy', value: 'cancelled' },
+  { label: 'Hết hạn', value: 'expired' },
 ]
 
 const STATUS_META = {
   queued: { label: 'Chờ xử lý', color: 'warning', icon: 'mdi-clock-outline', iconBg: '#fff2e8', iconColor: '#ff9f43' },
+  running: { label: 'Đang xử lý', color: 'info', icon: 'mdi-progress-clock', iconBg: '#f4f2fe', iconColor: '#7367F0' },
+  processing: { label: 'Đang xử lý', color: 'info', icon: 'mdi-progress-clock', iconBg: '#f4f2fe', iconColor: '#7367F0' },
   analyzing: { label: 'Đang xử lý', color: 'info', icon: 'mdi-file-find-outline', iconBg: '#f4f2fe', iconColor: '#7367F0' },
   ready: { label: 'Hoàn thành', color: 'success', icon: 'mdi-check-circle-outline', iconBg: '#e8fadf', iconColor: '#28c76f' },
   failed: { label: 'Lỗi', color: 'error', icon: 'mdi-alert-circle-outline', iconBg: '#ffebe9', iconColor: '#ea5455' },
   cancelled: { label: 'Đã hủy', color: 'secondary', icon: 'mdi-cancel', iconBg: '#eeeeef', iconColor: '#808390' },
+  expired: { label: 'Hết hạn', color: 'warning', icon: 'mdi-clock-alert-outline', iconBg: '#fff2e8', iconColor: '#ff9f43' },
 }
 
 /**
@@ -63,14 +78,20 @@ export function normalizeTask(value) {
     : 'queued'
 
   return {
-    id: value?.id,
+    id: value?.task_run_id ?? value?.id,
     task_type: value?.task_type ?? 'writing_profile_analysis',
     source: value?.source ?? 'ai_writing_profile',
     name: value?.name || 'Phân tích văn phong',
     status,
+    progress: Number.isFinite(Number(value?.progress)) ? Number(value.progress) : 0,
+    model: value?.model ?? null,
+    provider: value?.provider ?? null,
+    taskable_id: value?.taskable_id ?? value?.id,
     draft_profile_id: value?.draft_profile_id ?? null,
     error_code: value?.error_code ?? null,
     error_message: value?.error_message ?? null,
+    parent_id: value?.parent_id ?? null,
+    media_asset_id: value?.media_asset_id ?? null,
     created_at: value?.created_at ?? null,
     started_at: value?.started_at ?? null,
     completed_at: value?.completed_at ?? null,
@@ -107,13 +128,17 @@ export function useAiTaskQueue() {
 
   const filteredTasks = computed(() => currentFilter.value === 'all'
     ? visibleTasks.value
-    : visibleTasks.value.filter(task => task.status === currentFilter.value))
+    : visibleTasks.value.filter(task => currentFilter.value === 'analyzing'
+      ? ACTIVE_AI_TASK_STATUSES.includes(task.status)
+      : task.status === currentFilter.value))
 
   const filters = computed(() => FILTERS.map(filter => ({
     ...filter,
     count: filter.value === 'all'
       ? visibleTasks.value.length
-      : visibleTasks.value.filter(task => task.status === filter.value).length,
+      : visibleTasks.value.filter(task => filter.value === 'analyzing'
+        ? ACTIVE_AI_TASK_STATUSES.includes(task.status)
+        : task.status === filter.value).length,
   })))
 
   /**
@@ -182,7 +207,8 @@ export function useAiTaskQueue() {
     error.value = ''
 
     try {
-      const response = await aiWritingProfilesService.listAnalyses({ per_page: 100 }, controller.signal)
+      const listTasks = aiWritingProfilesService.listTaskRuns ?? aiWritingProfilesService.listAnalyses
+      const response = await listTasks({ per_page: 100 }, controller.signal)
       if (disposed || sequence !== requestSequence) return
       const rows = Array.isArray(response?.data) ? response.data : []
       const serverTasks = rows.map(normalizeTask).filter(task => task.id)
@@ -229,7 +255,7 @@ export function useAiTaskQueue() {
 
   /**
    * =====================================================================
-   * CHỨC NĂNG: Hủy một task còn queued/analyzing.
+   * CHỨC NĂNG: Hủy một task còn trong nhóm trạng thái active.
    * =====================================================================
    * Input: task id. Output: task status server sau cancel.
    * Side effect: POST cancel; lỗi được giữ ở error để popup hiển thị.
@@ -241,7 +267,8 @@ export function useAiTaskQueue() {
     cancellingId.value = id
     error.value = ''
     try {
-      const value = await aiWritingProfilesService.cancel(id)
+      const cancel = aiWritingProfilesService.cancelTask ?? aiWritingProfilesService.cancel
+      const value = await cancel(id)
 
       addTask(value)
 
@@ -282,11 +309,16 @@ export function useAiTaskQueue() {
     if (started || disposed) return
     started = true
     if (typeof window !== 'undefined') window.addEventListener(AI_TASK_QUEUED_EVENT, onQueued)
+    if (typeof window !== 'undefined' && Array.isArray(window.__aiTaskQueuePending)) {
+      window.__aiTaskQueuePending.splice(0).forEach(detail => addTask(detail))
+    }
     void refresh()
   }
 
+  /** Nhận event accepted; API refresh hỗ trợ cả response cũ chưa có tracker UUID. */
   function onQueued(event) {
     addTask(event.detail)
+    void refresh()
   }
 
   onScopeDispose(() => {

@@ -2,10 +2,14 @@
   * =====================================================================
   * CHỨC NĂNG FILE: Popup theo dõi analysis/job AI trong Admin layout.
   * =====================================================================
-  * CÁC HÀM/METHOD TRONG FILE: openTask(), showError(), startQueue();
-  * computed canUseQueue, terminalTaskCount, queuedTaskCount, queueStatus,
-  * errorDialogVisible;
-  * watcher quyền Admin và activeCount để tải/mở popup khi có task mới.
+  * CÁC HÀM/METHOD TRONG FILE:
+  * - openTask(): điều hướng theo task_type khi task ready.
+  * - showError(): mở dialog lỗi generic của task failed.
+  * - errorDialogTitle(): chọn tiêu đề lỗi theo task_type.
+  * - startQueue(): bắt đầu/dừng composable theo quyền Admin.
+  * - canUseQueue, terminalTaskCount, queuedTaskCount, queueStatus,
+  *   errorDialogVisible: computed quyền, badge, trạng thái và dialog.
+  * - watcher quyền: giữ polling theo quyền Admin; task mới chỉ cập nhật badge.
   * INPUT/OUTPUT CỦA CLASS (tổng thể):
   * - INPUT : task summary từ useAiTaskQueue và thao tác mở/kết quả/hủy.
   * - OUTPUT: popup cố định, filter lifecycle và dialog lỗi bounded.
@@ -28,12 +32,12 @@ const isMinimized = shallowRef(false)
 const errorTask = shallowRef(null)
 const { tasks, filteredTasks, filters, currentFilter, activeCount, loading, cancellingId, error } = queue
 
-const canUseQueue = computed(() => auth.isAuthenticated && auth.permissions.includes('ai_settings.manage'))
-const terminalTaskCount = computed(() => tasks.value.filter(task => ['ready', 'failed', 'cancelled'].includes(task.status)).length)
+const canUseQueue = computed(() => auth.isAuthenticated && auth.permissions.some(permission => ['ai_settings.manage', 'media.upload', 'posts.manage', 'resources.create'].includes(permission)))
+const terminalTaskCount = computed(() => tasks.value.filter(task => ['ready', 'failed', 'cancelled', 'expired'].includes(task.status)).length)
 const queuedTaskCount = computed(() => tasks.value.filter(task => task.status === 'queued').length)
 
 const queueStatus = computed(() => {
-  if (tasks.value.some(task => task.status === 'analyzing')) return 'Đang xử lý'
+  if (tasks.value.some(task => ['running', 'processing', 'analyzing'].includes(task.status))) return 'Đang xử lý'
   if (activeCount.value > 0) return 'Đang chờ'
 
   return 'Sẵn sàng'
@@ -55,7 +59,13 @@ const errorDialogVisible = computed({
 function openTask(task) {
   if (task.status !== 'ready') return
 
-  router.push({ path: '/ai/prompt/edit', query: { analysis: task.id, profile: task.draft_profile_id || undefined } })
+  if (task.task_type === 'writing_profile_analysis') {
+    router.push({ path: '/ai/prompt/edit', query: { analysis: task.taskable_id || task.id, profile: task.draft_profile_id || undefined } })
+
+    return
+  }
+
+  router.push({ path: '/ai/content', query: { session: task.parent_id || task.taskable_id } })
 }
 
 /**
@@ -72,6 +82,22 @@ function showError(task) {
 
 /**
  * =====================================================================
+ * CHỨC NĂNG: Chọn tiêu đề lỗi phù hợp với từng loại worker AI.
+ * =====================================================================
+ * Input: task failed. Output: nhãn bounded cho dialog lỗi.
+ * Side effect: hàm thuần; không đọc payload hoặc gọi API.
+ * =====================================================================
+ */
+function errorDialogTitle(task) {
+  return {
+    'writing_profile_analysis': 'Phân tích văn phong thất bại',
+    'article_generation': 'Tạo nội dung thất bại',
+    'image_generation': 'Tạo ảnh thất bại',
+  }[task?.task_type] || 'Tác vụ AI thất bại'
+}
+
+/**
+ * =====================================================================
  * CHỨC NĂNG: Khởi động queue sau khi phiên Admin sẵn sàng.
  * =====================================================================
  * Input: auth state. Output: queue GET/polling khi có quyền.
@@ -84,9 +110,6 @@ function startQueue() {
 }
 
 watch(canUseQueue, startQueue, { immediate: true })
-watch(activeCount, count => {
-  if (count > 0) isOpen.value = true
-})
 onMounted(startQueue)
 </script>
 
@@ -271,7 +294,7 @@ onMounted(startQueue)
     >
       <AppDialogLayout
         v-if="errorTask"
-        title="Phân tích thất bại"
+        :title="errorDialogTitle(errorTask)"
         :subtitle="errorTask.name"
         @close="errorTask = null"
       >
@@ -337,12 +360,11 @@ onMounted(startQueue)
   padding-block: 10px;
 }
 
-.queue-footer-divider { margin-block-start: auto; }
+.queue-footer-divider { flex-shrink: 0; }
 
 .task-list-container {
   overflow: hidden auto;
   flex: 1 1 0%;
-  max-block-size: 420px;
   min-block-size: 0;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;

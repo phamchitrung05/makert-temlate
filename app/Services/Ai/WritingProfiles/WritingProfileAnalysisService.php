@@ -11,6 +11,7 @@ use App\Services\Ai\Data\AiTaskRequest;
 use App\Services\Ai\Providers\Catalog\ModelResolver;
 use App\Services\Ai\Providers\Diagnostics\AiResponseDiagnostics;
 use App\Services\Ai\Registries\ProviderRegistry;
+use App\Services\Ai\Runs\AiTaskRunService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -18,7 +19,14 @@ use Illuminate\Validation\ValidationException;
  * =====================================================================
  * CHỨC NĂNG FILE: Queue và thực thi phân tích văn phong từ bài người dùng dán.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: __construct(), queue(), process(), syncReadyDrafts(), ensureDraft(), findExistingProfile(), instructions().
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - __construct(): nhận model resolver, provider registry và schema definition.
+ * - queue(): snapshot connection, tạo analysis/tracker và dispatch worker after commit.
+ * - process(): claim analysis, gọi provider, validate output và tạo draft.
+ * - syncReadyDrafts(): bù các analysis ready còn thiếu draft.
+ * - ensureDraft(): tạo/đọc draft profile idempotent.
+ * - findExistingProfile(): tìm profile trùng theo version/nguồn đã lưu.
+ * - instructions(): trả system instructions cho analysis pipeline.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : tên/bài mẫu/model selection và UUID analysis job.
  * - OUTPUT: tác vụ có result đã validate và profile nháp để người dùng duyệt.
@@ -45,8 +53,8 @@ final class WritingProfileAnalysisService
      * =====================================================================
      * CHỨC NĂNG: Chụp model/settings và tạo analysis, dispatch sau commit.
      * =====================================================================
-     * Input: payload đã validate và actorId. Output: analysis queued.
-     * Side effect: DB/queue; quota và queue worker bắt buộc, không gọi AI HTTP.
+     * Input: payload đã validate và actorId. Output: analysis queued kèm task_run_id runtime.
+     * Side effect: DB/ai_task_runs/queue; quota và queue worker bắt buộc, không gọi AI HTTP.
      * =====================================================================
      */
     public function queue(array $values, int $actorId): AiWritingProfileAnalysis
@@ -77,6 +85,9 @@ final class WritingProfileAnalysisService
                 'prompt_version' => WritingProfileDefinition::PROMPT_VERSION, 'schema_version' => WritingProfileDefinition::SCHEMA_VERSION,
                 'expires_at' => now()->addDays(max(1, (int) config('ai-import.retention_days', 2))),
             ]);
+            $taskRun = app(AiTaskRunService::class)->registerAnalysis($analysis);
+            // Giữ tracker id trong DTO queued để popup hủy đúng bản ghi dùng chung ngay lập tức.
+            $analysis->setAttribute('task_run_id', $taskRun->id);
             AnalyzeAiWritingProfileJob::dispatch($analysis->id, (int) ($snapshot['timeout'] ?? 30))->afterCommit();
 
             return $analysis;

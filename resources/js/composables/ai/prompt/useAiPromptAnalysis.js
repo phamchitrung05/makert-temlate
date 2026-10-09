@@ -298,8 +298,9 @@ export function useAiPromptAnalysis(source, actorId) {
       const stored = JSON.parse(window.sessionStorage.getItem(key) || 'null')
       const storedStatus = window.sessionStorage.getItem(`${key}:status`)
 
-      // Metadata từ phiên bản cũ không có status nên được dọn để không khôi phục kết quả cũ vào Add.
-      if (!storedStatus || !activeStatuses.includes(storedStatus)) {
+      // Metadata đời cũ chỉ lưu UUID; vẫn thử GET một lần để không làm mất lượt
+      // đang xử lý. Khi server trả terminal/expired, poll() sẽ tự dọn marker.
+      if (storedStatus && !activeStatuses.includes(storedStatus)) {
         clearRemembered()
 
         return

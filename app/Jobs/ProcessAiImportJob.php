@@ -10,6 +10,7 @@ use App\Services\Ai\Content\ArticleImportService;
 use App\Services\Ai\Images\AiThumbnailService;
 use App\Services\Ai\Providers\Diagnostics\AiResponseDiagnostics;
 use App\Services\Ai\Runs\AiRunBudget;
+use App\Services\Ai\Runs\AiTaskRunService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -25,7 +26,13 @@ use Throwable;
  * CHỨC NĂNG FILE: Worker queue xử lý pipeline AI import có retry có kiểm soát.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE:
- * - __construct(), handle(), process(), failed(), markArchiveFailure(), queueOptionalImage().
+ * - __construct(): nhận import UUID, timeout, budget và generation.
+ * - handle(): giữ process lock và chạy pipeline worker.
+ * - syncTaskRun(): ghi projection tracker sau mọi nhánh worker.
+ * - process(): claim source, gọi pipeline và commit result/lifecycle.
+ * - failed(): ghi terminal failure sau queue hết attempts.
+ * - markArchiveFailure(): ghi lỗi archive giữ checkpoint phục hồi.
+ * - queueOptionalImage(): tạo child image task sau content ready.
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : UUID AiImport được dispatch từ controller/command.
@@ -66,8 +73,8 @@ class ProcessAiImportJob implements ShouldQueue
      * CHỨC NĂNG: Chạy pipeline và cập nhật lifecycle AiImport
      * =====================================================================
      * INPUT: ArticleImportService từ container.
-     * OUTPUT: không trả giá trị; ghi ready/failed/cancelled vào AiImport.
-     * SIDE EFFECT: gọi fetch/provider/uploader qua service và cập nhật progress.
+     * OUTPUT: không trả giá trị; ghi ready/failed/cancelled vào AiImport và tracker.
+     * SIDE EFFECT: gọi fetch/provider/uploader qua service, cập nhật progress và đồng bộ projection cuối nhánh.
      * EXCEPTION/TRANSACTION: lỗi retryable được ném lại cho queue; không mở
      *   transaction bao trùm toàn bộ pipeline.
      * =====================================================================
@@ -75,7 +82,30 @@ class ProcessAiImportJob implements ShouldQueue
     public function handle(ArticleImportService $service): void
     {
         // Lock tồn tại suốt generation để queue redelivery không gọi trùng provider.
-        Cache::lock('ai-import-process-'.$this->importId, $this->timeout + 60)->get(fn () => $this->process($service));
+        Cache::lock('ai-import-process-'.$this->importId, $this->timeout + 60)->get(function () use ($service): void {
+            try {
+                $this->process($service);
+            } finally {
+                $this->syncTaskRun();
+            }
+        });
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Đồng bộ tracker dù pipeline kết thúc sớm hoặc ném retryable error.
+     * =====================================================================
+     * INPUT: UUID/generation của job. OUTPUT: không trả giá trị.
+     * SIDE EFFECT: đọc source mới nhất và ghi projection; không gọi provider.
+     * EXCEPTION/TRANSACTION: source thiếu/stale được bỏ qua an toàn.
+     * =====================================================================
+     */
+    private function syncTaskRun(): void
+    {
+        if (($import = AiImport::query()->find($this->importId))
+            && ($this->generationNo ?? 1) === (int) $import->generation_no) {
+            app(AiTaskRunService::class)->syncFromImport($import);
+        }
     }
 
     /**
@@ -94,12 +124,15 @@ class ProcessAiImportJob implements ShouldQueue
         if (! $import || ($this->generationNo ?? 1) !== (int) $import->generation_no) {
             return;
         }
+        $taskRuns = app(AiTaskRunService::class);
         $archives = app(AiArticleArchiveService::class);
         $generationNo = (int) $import->generation_no;
         $recovering = $import->status === 'failed' && $import->error_code === 'AI_ARCHIVE_WRITE_FAILED' && $import->archive_pending_json !== null;
         if (in_array($import->status, AiImport::TERMINAL_STATUSES, true) && ! $recovering) {
+            $taskRuns->syncFromImport($import);
             return;
         }
+        $taskRuns->syncFromImport($import);
         try {
             if ($archives->tracked($import) && $import->archive_pending_json !== null) {
                 if ($archives->resumeReady($import->id, $generationNo)) {
@@ -181,6 +214,9 @@ class ProcessAiImportJob implements ShouldQueue
                     'error_code' => 'AI_IMPORT_FAILED', 'error_message' => 'Tác vụ AI thất bại do lỗi hệ thống.'])->save();
             });
         }
+        if ($latest = AiImport::query()->find($this->importId)) {
+            $taskRuns->syncFromImport($latest);
+        }
     }
 
     /**
@@ -225,38 +261,42 @@ class ProcessAiImportJob implements ShouldQueue
      */
     public function failed(?Throwable $exception): void
     {
-        $import = AiImport::query()->find($this->importId);
-        if (! $import || ($this->generationNo ?? 1) !== (int) $import->generation_no
-            || in_array($import->status, AiImport::TERMINAL_STATUSES, true)) {
-            return;
-        }
-        if ($exception instanceof AiArticleArchiveException
-            || ($import->archive_pending_json !== null && app(AiArticleArchiveService::class)->tracked($import))) {
-            $this->markArchiveFailure((int) $import->generation_no,
-                $exception instanceof AiArticleArchiveException ? $exception : new AiArticleArchiveException);
-
-            return;
-        }
-        $updates = [
-            'status' => 'failed', 'current_step' => 'failed', 'error_code' => $exception instanceof AiImportException ? $exception->errorCode : 'AI_IMPORT_FAILED',
-            'error_message' => $exception instanceof AiImportException
-                ? Str::limit($exception->getMessage(), 500) : 'Tác vụ AI thất bại do lỗi hệ thống.',
-        ];
-        if ($exception instanceof AiImportException && $exception->diagnostics !== []) {
-            $updates['source_meta_json'] = array_replace((array) $import->source_meta_json, [
-                'ai_response' => AiResponseDiagnostics::sanitize(array_replace(
-                    (array) data_get($import->source_meta_json, 'ai_response', []),
-                    $exception->diagnostics,
-                )),
-            ]);
-        }
-        $updates['completed_at'] = now();
-        DB::transaction(function () use ($import, $updates): void {
-            $run = AiImport::query()->lockForUpdate()->find($import->id);
-            if ($run && (int) $run->generation_no === (int) $import->generation_no && ! in_array($run->status, AiImport::TERMINAL_STATUSES, true)) {
-                $run->forceFill($updates)->save();
+        try {
+            $import = AiImport::query()->find($this->importId);
+            if (! $import || ($this->generationNo ?? 1) !== (int) $import->generation_no
+                || in_array($import->status, AiImport::TERMINAL_STATUSES, true)) {
+                return;
             }
-        });
+            if ($exception instanceof AiArticleArchiveException
+                || ($import->archive_pending_json !== null && app(AiArticleArchiveService::class)->tracked($import))) {
+                $this->markArchiveFailure((int) $import->generation_no,
+                    $exception instanceof AiArticleArchiveException ? $exception : new AiArticleArchiveException);
+
+                return;
+            }
+            $updates = [
+                'status' => 'failed', 'current_step' => 'failed', 'error_code' => $exception instanceof AiImportException ? $exception->errorCode : 'AI_IMPORT_FAILED',
+                'error_message' => $exception instanceof AiImportException
+                    ? Str::limit($exception->getMessage(), 500) : 'Tác vụ AI thất bại do lỗi hệ thống.',
+            ];
+            if ($exception instanceof AiImportException && $exception->diagnostics !== []) {
+                $updates['source_meta_json'] = array_replace((array) $import->source_meta_json, [
+                    'ai_response' => AiResponseDiagnostics::sanitize(array_replace(
+                        (array) data_get($import->source_meta_json, 'ai_response', []),
+                        $exception->diagnostics,
+                    )),
+                ]);
+            }
+            $updates['completed_at'] = now();
+            DB::transaction(function () use ($import, $updates): void {
+                $run = AiImport::query()->lockForUpdate()->find($import->id);
+                if ($run && (int) $run->generation_no === (int) $import->generation_no && ! in_array($run->status, AiImport::TERMINAL_STATUSES, true)) {
+                    $run->forceFill($updates)->save();
+                }
+            });
+        } finally {
+            $this->syncTaskRun();
+        }
     }
 
     /**

@@ -3,7 +3,11 @@
  * =====================================================================
  * CHỨC NĂNG FILE: Kiểm polling, scope và trạng thái rỗng/lỗi của AI Task Queue.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: createQueue(), flushPromises() và các test lifecycle.
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - task(): tạo DTO task bounded cho từng trạng thái.
+ * - flushPromises(): chờ các promise mock hoàn tất trong test.
+ * - createQueue(): tạo composable trong effect scope để kiểm lifecycle cleanup.
+ * - các test queue(): kiểm empty, polling, terminal, expired, duplicate, cancel và lỗi mạng.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : list/cancel API mock và CustomEvent task queued.
  * - OUTPUT: task center cập nhật tuần tự, filter terminal và lỗi bounded.
@@ -12,7 +16,7 @@
  */
 import { effectScope } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { AI_TASK_QUEUED_EVENT, useAiTaskQueue } from '@/composables/useAiTaskQueue'
+import { AI_TASK_QUEUED_EVENT, aiTaskStatusMeta, normalizeTask, useAiTaskQueue } from '@/composables/useAiTaskQueue'
 
 const mocks = vi.hoisted(() => ({ listAnalyses: vi.fn(), cancel: vi.fn() }))
 
@@ -119,6 +123,93 @@ describe('AI task queue', () => {
     await queue.cancelTask('analysis-id')
     expect(mocks.cancel).toHaveBeenCalledWith('analysis-id')
     expect(queue.tasks.value[0].status).toBe('cancelled')
+    expect(queue.activeCount.value).toBe(0)
+    scope.stop()
+  })
+
+  it('replays a queued event emitted before the popup starts', async () => {
+    mocks.listAnalyses.mockResolvedValueOnce({ success: true, data: [], meta: {} })
+    window.__aiTaskQueuePending = [task('queued', 'before-popup')]
+
+    const { queue, scope } = createQueue()
+
+    queue.start()
+    await flushPromises()
+    expect(queue.tasks.value[0].id).toBe('before-popup')
+    expect(queue.activeCount.value).toBe(1)
+    delete window.__aiTaskQueuePending
+    scope.stop()
+  })
+
+  it('treats expired tasks as terminal and never polls them again', async () => {
+    mocks.listAnalyses.mockResolvedValueOnce({ success: true, data: [task('expired')], meta: {} })
+
+    const { queue, scope } = createQueue()
+
+    queue.start()
+    await flushPromises()
+
+    expect(normalizeTask(task('expired')).status).toBe('expired')
+    expect(aiTaskStatusMeta('expired').label).toBe('Hết hạn')
+    expect(queue.activeCount.value).toBe(0)
+    expect(queue.filters.value.find(filter => filter.value === 'expired').count).toBe(1)
+    await vi.advanceTimersByTimeAsync(10000)
+    expect(mocks.listAnalyses).toHaveBeenCalledTimes(1)
+    scope.stop()
+  })
+
+  it('keeps parent and media references bounded for image task navigation', () => {
+    expect(normalizeTask({ ...task('ready', 'image-task'), task_type: 'image_generation', source: 'ai_image', parent_id: 'article-1', media_asset_id: 42 }))
+      .toMatchObject({ id: 'image-task', parent_id: 'article-1', media_asset_id: 42 })
+  })
+
+  it('keeps one row when the same task is queued more than once', async () => {
+    mocks.listAnalyses.mockResolvedValueOnce({ success: true, data: [], meta: {} })
+
+    const { queue, scope } = createQueue()
+
+    queue.start()
+    await flushPromises()
+    queue.addTask(task('queued', 'duplicate'))
+    queue.addTask({ ...task('analyzing', 'duplicate'), progress: 42 })
+
+    expect(queue.tasks.value).toHaveLength(1)
+    expect(queue.tasks.value[0]).toMatchObject({ id: 'duplicate', status: 'analyzing', progress: 42 })
+    scope.stop()
+  })
+
+  it('ignores a late list response after the queue has stopped', async () => {
+    let resolveList
+    mocks.listAnalyses.mockReturnValueOnce(new Promise(resolve => { resolveList = resolve }))
+
+    const { queue, scope } = createQueue()
+
+    queue.start()
+    scope.stop()
+    resolveList({ success: true, data: [task('queued', 'late')], meta: {} })
+    await flushPromises()
+
+    expect(queue.tasks.value).toEqual([])
+    expect(queue.polling.value).toBe(false)
+  })
+
+  it('keeps active tasks and schedules a retry after a temporary list error', async () => {
+    mocks.listAnalyses
+      .mockResolvedValueOnce({ success: true, data: [task('queued', 'retryable')], meta: {} })
+      .mockRejectedValueOnce(Object.assign(new Error('network'), { status: 503 }))
+      .mockResolvedValueOnce({ success: true, data: [task('ready', 'retryable')], meta: {} })
+
+    const { queue, scope } = createQueue()
+
+    queue.start()
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(2000)
+    await flushPromises()
+    expect(queue.tasks.value[0].status).toBe('queued')
+    expect(queue.error.value).toContain('network')
+    await vi.advanceTimersByTimeAsync(2000)
+    await flushPromises()
+    expect(queue.tasks.value[0].status).toBe('ready')
     expect(queue.activeCount.value).toBe(0)
     scope.stop()
   })

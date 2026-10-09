@@ -35,6 +35,7 @@ final class ArticleNumberNormalizer
         $text = $this->times($text, $contexts);
         $text = $this->centuries($text, $contexts);
         $text = $this->weekdays($text, $contexts);
+        $text = $this->wordNumbers($text);
         $text = $this->listLabels($text);
         $text = $this->counts($text);
         $text = $this->integerCounts($text);
@@ -43,6 +44,32 @@ final class ArticleNumberNormalizer
         preg_match_all('/\d+(?:[.,]\d+)*/u', $text, $matches);
 
         return array_values(array_unique(array_merge($matches[0], $contexts)));
+    }
+
+    /** Input: văn xuôi có số viết bằng chữ Anh/Việt. Output: số chữ số tương đương để đối chiếu. */
+    private function wordNumbers(string $text): string
+    {
+        $numbers = [
+            'zero' => '0', 'one' => '1', 'two' => '2', 'three' => '3', 'four' => '4',
+            'five' => '5', 'six' => '6', 'seven' => '7', 'eight' => '8', 'nine' => '9', 'ten' => '10',
+        ];
+        $pattern = '/(?<![\pL\pN])('.implode('|', array_keys($numbers)).')(?![\pL\pN])/iu';
+
+        $normalized = preg_replace_callback($pattern, function (array $match) use ($numbers, $text): string {
+            $offset = (int) ($match[0][1] ?? 0);
+            $before = mb_strtolower(substr($text, max(0, $offset - 60), 60));
+            $after = mb_strtolower(substr($text, $offset + strlen($match[0][0]), 60));
+            if (preg_match('/(?:twenty|thirty|forty|mười|mươi|trăm|phẩy|point)\s*$/u', $before)
+                || preg_match('/^(?:groups?|nhóm|rưỡi|half)\b/u', ltrim($after))
+                || preg_match('/^(?:nội\s+dung)\s+rưỡi\b/u', ltrim($after))
+                || preg_match('/^(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|không|một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười)\b/u', ltrim($after))) {
+                return $match[0][0];
+            }
+
+            return $numbers[mb_strtolower($match[0][0])] ?? $match[0][0];
+        }, $text, -1, $count, PREG_OFFSET_CAPTURE) ?? $text;
+
+        return preg_replace_callback('/(?<![\pL\pN])(một|ba)(?=\s+(?:câu\s+hỏi|yêu\s+cầu|điểm)\b)/iu', fn (array $match): string => mb_strtolower($match[1]) === 'ba' ? '3' : '1', $normalized) ?? $normalized;
     }
 
     /** Input: số lượng nguyên có đơn vị đếm rõ. Output: nhóm nghìn cùng giá trị. */

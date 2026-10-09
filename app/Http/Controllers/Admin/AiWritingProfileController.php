@@ -16,7 +16,13 @@ use Illuminate\Http\Request;
  * =====================================================================
  * CHỨC NĂNG FILE: API quản lý profile đã duyệt và options cho form tạo bài.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: index(), options(), store(), show(), update(), destroy().
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - index(): danh sách profile quản trị có search và pagination.
+ * - options(): trả profile active/enabled và default cho người dùng tạo bài.
+ * - store(): tạo profile qua WritingProfileService.
+ * - show(): trả chi tiết profile thuộc quyền quản trị.
+ * - update(): cập nhật profile theo optimistic version.
+ * - destroy(): xóa mềm profile và xử lý default qua service.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : admin HTTP đã qua auth/permission và FormRequest.
  * - OUTPUT: BaseResponse envelope, optimistic 409 và validation 422.
@@ -56,7 +62,7 @@ final class AiWritingProfileController extends Controller
 
         return BaseResponse::success([
             'default_writing_profile_id' => $settings->all()['default_writing_profile_id'] ?? null,
-            'items' => AiWritingProfile::query()->where('is_enabled', true)->orderBy('name')->orderBy('id')->get(['id', 'name', 'description', 'version'])->toArray(),
+            'items' => AiWritingProfile::query()->where('status', 'active')->where('is_enabled', true)->orderBy('name')->orderBy('id')->get(['id', 'name', 'description', 'version'])->toArray(),
         ]);
     }
 

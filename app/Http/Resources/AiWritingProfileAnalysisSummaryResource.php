@@ -9,7 +9,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * =====================================================================
  * CHỨC NĂNG FILE: DTO tối thiểu cho popup hàng đợi analysis.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: toArray().
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - toArray(): trả summary popup bounded gồm task_run_id, lifecycle và lỗi an toàn.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : analysis đã được controller scope theo actor.
  * - OUTPUT: id/type/source/name/status/profile link/timestamps/error bounded; không có source/result/secret.
@@ -30,6 +31,7 @@ final class AiWritingProfileAnalysisSummaryResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'task_run_id' => $this->task_run_id,
             'task_type' => 'writing_profile_analysis',
             'source' => 'ai_writing_profile',
             'name' => $this->name,

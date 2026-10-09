@@ -3,8 +3,11 @@
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Đăng ký API health, admin và account/token.
- * CÁC HÀM/METHOD TRONG FILE: các route group closure cho auth/quyền;
- * Slug dùng endpoint chung đa model có throttle; không còn endpoint riêng của Post.
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - route health/login: health check và cấp admin token.
+ * - route admin AI task: list/detail/cancel tracker dùng chung.
+ * - route admin content/import/provider/profile: điều phối API nghiệp vụ và worker.
+ * - route account/media/slug: quản lý tài khoản, media và endpoint dùng chung đa model.
  * INPUT/OUTPUT CỦA CLASS (tổng thể): HTTP path và middleware -> controller JSON.
  * =====================================================================
  */
@@ -18,6 +21,7 @@ use App\Http\Controllers\Admin\AiImportController;
 use App\Http\Controllers\Admin\AiProviderController;
 use App\Http\Controllers\Admin\AiSourcePreviewController;
 use App\Http\Controllers\Admin\AiWritingProfileAnalysisController;
+use App\Http\Controllers\Admin\AiTaskRunController;
 use App\Http\Controllers\Admin\AiWritingProfileController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\MediaAssetController;
@@ -192,6 +196,9 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
 
         // Quyền tài nguyên được đọc từ config và kiểm tra tại từng AI endpoint.
         Route::group([], function (): void {
+            Route::get('/ai/tasks', [AiTaskRunController::class, 'index']);
+            Route::get('/ai/tasks/{taskRun}', [AiTaskRunController::class, 'show'])->whereUuid('taskRun');
+            Route::post('/ai/tasks/{taskRun}/cancel', [AiTaskRunController::class, 'cancel'])->whereUuid('taskRun');
             Route::get('/ai-agent/targets', [AiImportController::class, 'targets']);
             Route::post('/ai-agent/source-preview', [AiSourcePreviewController::class, '__invoke'])->middleware('throttle:6,1');
             Route::get('/ai-agent/capabilities/{target}', [AiImportController::class, 'capabilities'])

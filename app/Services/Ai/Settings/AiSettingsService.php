@@ -15,7 +15,10 @@ use Illuminate\Validation\ValidationException;
  * =====================================================================
  * CHỨC NĂNG FILE: Đọc/lưu typed settings AI bằng Spatie, giữ validation và audit.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: defaults(), all(), update().
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - defaults(): trả giá trị bootstrap khi chưa có settings table.
+ * - all(): đọc settings typed và fallback an toàn.
+ * - update(): validate capability/model/profile rồi ghi atomic và audit.
  * INPUT/OUTPUT CỦA CLASS (tổng thể): allowlisted values/actor -> settings typed.
  * INPUT: allowlisted typed values/actor ID.
  * OUTPUT: settings hiện tại.
@@ -98,7 +101,7 @@ final class AiSettingsService
             }
         }
         if (array_key_exists('default_writing_profile_id', $values) && $values['default_writing_profile_id'] !== null) {
-            $profile = AiWritingProfile::query()->where('is_enabled', true)->find($values['default_writing_profile_id']);
+            $profile = AiWritingProfile::query()->where('status', 'active')->where('is_enabled', true)->find($values['default_writing_profile_id']);
             if (! $profile) {
                 throw ValidationException::withMessages(['default_writing_profile_id' => 'Mẫu văn phong mặc định phải tồn tại và đang bật.']);
             }
@@ -135,7 +138,7 @@ final class AiSettingsService
             // trỏ tới mẫu vừa bị tắt/xóa ở request đồng thời.
             // =====================================================================
             if (isset($values['default_writing_profile_id'])
-                && ! AiWritingProfile::query()->where('is_enabled', true)->lockForUpdate()->find($values['default_writing_profile_id'])) {
+                && ! AiWritingProfile::query()->where('status', 'active')->where('is_enabled', true)->lockForUpdate()->find($values['default_writing_profile_id'])) {
                 throw ValidationException::withMessages(['default_writing_profile_id' => 'Mẫu văn phong mặc định phải tồn tại và đang bật.']);
             }
             app(AiSettings::class)->refresh()->fill($values)->save();
