@@ -4,13 +4,20 @@
   =====================================================================
   Dùng AppTextField, AppSelect, VDataTable và TablePagination.
 
-  CÁC HÀM/METHOD TRONG FILE:
+  CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
   - filteredItems/statusTabs: lọc bài và đếm trạng thái từ dữ liệu hiện có.
+  - failureMessage(): diễn giải lỗi run hiện tại hoặc lần tạo lại gần nhất.
+  - qualityScore()/qualityColor()/qualityLabel(): chọn điểm, màu và nhãn chấm bài.
+  - targetOptions: tra nhãn/icon target từ catalog.
   - watcher search/status/itemsPerPage: đưa phân trang về trang đầu.
+  - watcher filteredItems.length: giữ page trong giới hạn sau khi list đổi.
+  - props items/targets/loading/error/busyId/outputOptions: nhận dữ liệu page.
+  - emit reload/edit/review/history/remove/regenerate/refreshStatus/apply/cancel:
+    chuyển thao tác về page; retryThumbnail/cancelThumbnail: action riêng ảnh.
 
   INPUT/OUTPUT CỦA CLASS (tổng thể):
   - INPUT : items, loading và lỗi đọc danh sách từ page.
-  - OUTPUT: emit reload/edit/review/remove/regenerate/refreshStatus/apply/cancel;
+  - OUTPUT: emit reload/edit/review/history/remove/regenerate/refreshStatus/apply/cancel;
   không thay đổi form tạo mới hoặc tự publish Post.
   - SIDE EFFECT: không gọi API hoặc sửa items đầu vào.
   =====================================================================
@@ -30,7 +37,7 @@ const props = defineProps({
   outputOptions: { type: Array, default: () => [] },
 })
 
-const emit = defineEmits(['reload', 'edit', 'review', 'remove', 'regenerate', 'refreshStatus', 'apply', 'cancel', 'retryThumbnail', 'cancelThumbnail'])
+const emit = defineEmits(['reload', 'edit', 'review', 'history', 'remove', 'regenerate', 'refreshStatus', 'apply', 'cancel', 'retryThumbnail', 'cancelThumbnail'])
 const search = shallowRef('')
 const status = shallowRef('all')
 const page = shallowRef(1)
@@ -54,13 +61,53 @@ const headers = [
 const statusOptions = Object.fromEntries(statuses.map(item => [item.value, item]))
 const targetOptions = computed(() => Object.fromEntries(props.targets.map(target => [target.value, target])))
 
-const failureMessage = item => formatAiError({ error: item.error, validation_errors: item.validationErrors }, undefined, props.outputOptions)
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Diễn giải lỗi của run hoặc lần tạo lại thất bại gần nhất.
+ * =====================================================================
+ * INPUT: item đã gom theo session và output labels từ props.
+ * OUTPUT: câu tiếng Việt bounded.
+ * SIDE EFFECT: hàm thuần, không gọi API.
+ * EXCEPTION/TRANSACTION: không có.
+ * =====================================================================
+ */
+const failureMessage = item => formatAiError({ error: item.error, validation_errors: item.validationErrors, error_code: item.errorCode }, undefined, props.outputOptions)
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Lấy score quality hợp lệ để render vòng điểm.
+ * =====================================================================
+ * INPUT: evaluation DTO tùy chọn.
+ * OUTPUT: number score hoặc null khi chưa có.
+ * SIDE EFFECT: hàm thuần.
+ * EXCEPTION/TRANSACTION: không có.
+ * =====================================================================
+ */
 const qualityScore = evaluation => Number.isFinite(Number(evaluation?.score_total)) ? Number(evaluation.score_total) : null
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Chọn màu allowlist theo quality status/eligibility.
+ * =====================================================================
+ * INPUT: evaluation DTO.
+ * OUTPUT: màu Vuetify bounded.
+ * SIDE EFFECT: hàm thuần.
+ * EXCEPTION/TRANSACTION: không có.
+ * =====================================================================
+ */
 const qualityColor = evaluation => {
   if (evaluation?.status === 'ready') return evaluation?.eligibility?.eligible ? 'success' : 'error'
   if (evaluation?.status === 'failed' || evaluation?.status === 'expired') return 'error'
   return 'warning'
 }
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Chọn nhãn điểm hoặc trạng thái quality tiếng Việt.
+ * =====================================================================
+ * INPUT: evaluation DTO.
+ * OUTPUT: nhãn bounded cho tooltip.
+ * SIDE EFFECT: hàm thuần.
+ * EXCEPTION/TRANSACTION: không có.
+ * =====================================================================
+ */
 const qualityLabel = evaluation => {
   const score = qualityScore(evaluation)
   if (score !== null) return `Điểm chất lượng ${score.toFixed(2)}/5`
@@ -190,6 +237,14 @@ watch(() => filteredItems.value.length, total => {
               >
                 {{ statusOptions[item.status]?.title }}
               </VChip>
+              <VChip
+                v-if="item.versionCount > 1"
+                size="x-small"
+                color="secondary"
+                variant="tonal"
+              >
+                {{ item.versionCount }} phiên bản
+              </VChip>
               <VTooltip location="top">
                 <template #activator="{ props: tooltipProps }">
                   <VProgressCircular
@@ -264,6 +319,15 @@ watch(() => filteredItems.value.length, total => {
                 @click="emit('review', item)"
               />
               <VBtn
+                v-if="item.hasHistory"
+                icon="tabler-history"
+                size="small"
+                variant="text"
+                :aria-label="`Xem lịch sử tạo ${item.title}`"
+                title="Lịch sử tạo"
+                @click="emit('history', item)"
+              />
+              <VBtn
                 icon="tabler-refresh"
                 size="small"
                 variant="text"
@@ -288,11 +352,11 @@ watch(() => filteredItems.value.length, total => {
               >Bản tạo lại</span>
             </div>
             <div
-              v-if="item.status === 'failed'"
+              v-if="item.status === 'failed' || item.latestAttemptStatus === 'failed'"
               class="text-caption text-error text-wrap mt-1"
               role="status"
             >
-              {{ failureMessage(item) }}
+              {{ item.latestAttemptStatus === 'failed' && item.status !== 'failed' ? `Lần tạo lại thất bại: ${failureMessage(item)}` : failureMessage(item) }}
             </div>
             <AiThumbnailStatus
               :generation="item.thumbnailGeneration"

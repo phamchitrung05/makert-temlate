@@ -4,11 +4,12 @@ namespace App\Services\Ai\Runs\Adapters;
 
 use App\Models\AiImport;
 use App\Models\AiTaskRun;
+use App\Models\User;
+use App\Services\Ai\Errors\AiPublicErrorMessage;
 use App\Services\Ai\Images\AiThumbnailService;
 use App\Services\Ai\Runs\Contracts\AiTaskRunAdapter;
-use App\Models\User;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * =====================================================================
@@ -91,7 +92,8 @@ final class AiImportTaskAdapter implements AiTaskRunAdapter
                 'media_asset_id' => data_get($import->result_json, 'image.media_asset_id'),
             ],
             'error_code' => $errorCode ? mb_substr((string) $errorCode, 0, 120) : null,
-            'error_message' => $errorCode ? 'Tác vụ AI thất bại. Hãy kiểm tra cấu hình và thử lại.' : null,
+            'error_message' => $status === 'failed' ? AiPublicErrorMessage::message($errorCode, null, $type,
+                (array) data_get($import->source_meta_json, 'ai_response.validation_errors', [])) : null,
             'started_at' => $import->started_at,
             'completed_at' => in_array($status, ['ready', 'failed', 'cancelled', 'expired'], true) ? ($import->completed_at ?? now()) : null,
             'expires_at' => $import->expires_at,

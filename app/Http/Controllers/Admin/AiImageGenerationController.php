@@ -9,6 +9,7 @@ use App\Http\Resources\MediaAssetResource;
 use App\Http\Responses\BaseResponse;
 use App\Models\AiImport;
 use App\Models\MediaAsset;
+use App\Services\Ai\Errors\AiPublicErrorMessage;
 use App\Services\Ai\Providers\Catalog\ModelResolver;
 use App\Services\Ai\Runs\AiRunService;
 use Illuminate\Http\JsonResponse;
@@ -19,7 +20,9 @@ use Illuminate\Validation\ValidationException;
  * =====================================================================
  * CHỨC NĂNG FILE: API tạo/poll ảnh độc lập với luồng text Post.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: store(), show().
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - store(): xếp hàng image run theo model/capability đã resolve.
+ * - show(): đọc trạng thái image run của owner.
  * - payload(): trả trạng thái ảnh và asset qua envelope an toàn.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * INPUT: request prompt/model và actor admin.
@@ -102,7 +105,10 @@ final class AiImageGenerationController extends Controller
 
         return [
             'job_id' => $import->id, 'status' => $import->status, 'current_step' => $import->current_step,
-            'progress' => (int) $import->progress, 'error_code' => $import->error_code, 'error' => $import->error_message,
+            'progress' => (int) $import->progress, 'error_code' => $import->error_code,
+            'error' => in_array($import->status, ['failed', 'cancelled', 'expired'], true)
+                ? AiPublicErrorMessage::message($import->error_code, $import->error_message, 'image_generation')
+                : null,
             'provider' => $import->provider, 'model' => data_get($import->input_json, 'model'),
             'image' => $assetId ? [...$image, 'asset' => $asset] : null,
         ];

@@ -207,6 +207,23 @@ describe('AI content review dialog', () => {
     await button('Xem lịch sử trước').trigger('click')
     expect(wrapper.emitted('historyMore')).toHaveLength(1)
   })
+
+  it('renders quality rubric criteria as Vietnamese score badges', () => {
+    render(AiContentReviewDialog, { state: { open: true, loading: false, busy: false,
+      detail: { ...candidate, can_review: false, quality_evaluation: {
+        status: 'ready', score_total: 4.5, rubric_version: 'v1',
+        scores: { accuracy: 5, source_grounding: 5, clarity: 4, structure: 4.5, style: 4 },
+        eligibility: { eligible: true, reasons: [] },
+      } },
+      history: [], historyPagination: { current_page: 1, last_page: 1 } } })
+
+    expect(wrapper.text()).toContain('Độ chính xác: 5.0/5')
+    expect(wrapper.text()).toContain('Bám sát nguồn: 5.0/5')
+    expect(wrapper.text()).toContain('Độ rõ ràng: 4.0/5')
+    expect(wrapper.text()).toContain('Cấu trúc: 4.5/5')
+    expect(wrapper.text()).toContain('Văn phong: 4.0/5')
+    expect(wrapper.text()).not.toContain('source_grounding:')
+  })
 })
 
 describe('AI content source comparison', () => {

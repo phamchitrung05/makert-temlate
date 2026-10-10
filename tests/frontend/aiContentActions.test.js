@@ -2,7 +2,11 @@
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Kiểm thử action AI Content và các race condition API.
- * CÁC HÀM/METHOD TRONG FILE: beforeEach(), afterEach(), state(), các test_*.
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - state(): tạo workspace/action trong effect scope với service mock.
+ * - beforeEach(): reset service/timer và pending queue trước mỗi test.
+ * - afterEach(): hủy scope/timer sau mỗi test.
+ * - test cases: kiểm regenerate một dòng/history, queue event, error và race API.
  * INPUT/OUTPUT CỦA CLASS (tổng thể): fake service/timer -> assertion lifecycle
  * và payload; không gọi generation thật.
  * =====================================================================
@@ -11,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 import { useAiContentActions } from '@/composables/useAiContentActions'
 import { useAiContentWorkspace } from '@/composables/useAiContentWorkspace'
+import { AI_TASK_QUEUED_EVENT } from '@/composables/useAiTaskQueue'
 import { buildAiContentRegenerateRequest, buildAiContentRequest, createAiContentSource } from '@/utils/aiContentInput'
 import { useAiRunFeedback } from '@/composables/useAiRunFeedback'
 
@@ -44,7 +49,7 @@ function state() {
 }
 
 beforeEach(() => {
-  vi.resetAllMocks(); vi.useFakeTimers(); scope = effectScope()
+  vi.resetAllMocks(); vi.useFakeTimers(); scope = effectScope(); window.__aiTaskQueuePending = []
   service.status.mockResolvedValue({ job_id: parent.id, target_type: 'sound', status: 'ready', draft_version: 'v1', draft: { title: parent.title } })
 })
 afterEach(() => { scope.stop(); vi.useRealTimers() })
@@ -95,7 +100,8 @@ describe('AI Content actions', () => {
     expect(s.notice.value).toEqual({ type: 'error', message: 'AI trả nội dung rỗng' })
     expect(s.snackbar.value.visible).toBe(true)
     expect(s.items.value.find(item => item.id === parent.id)).toMatchObject({ title: parent.title, status: 'review' })
-    expect(s.items.value.find(item => item.id === 'child').error).toBe('AI trả nội dung rỗng')
+    expect(s.items.value).toHaveLength(1)
+    expect(s.items.value.find(item => item.id === parent.id)).toMatchObject({ error: 'AI trả nội dung rỗng', latestAttemptStatus: 'failed' })
     await vi.advanceTimersByTimeAsync(20000)
     expect(service.status).not.toHaveBeenCalled()
   })
@@ -110,13 +116,29 @@ describe('AI Content actions', () => {
     await s.confirmAction()
     await vi.advanceTimersByTimeAsync(1000)
     expect(s.notice.value.type).toBe('warning')
-    expect(s.items.value.find(item => item.id === 'child').status).toBe('generating')
-    service.status.mockResolvedValue({ job_id: 'child', parent_id: parent.id, status: 'failed', error: 'AI thiếu tiêu đề' })
-    await s.resumeRun(s.items.value.find(item => item.id === 'child'))
+    expect(s.items.value).toHaveLength(1)
+    expect(s.items.value[0]).toMatchObject({ id: parent.id, status: 'generating', activeRunId: 'child' })
+    service.status.mockResolvedValue({ job_id: 'child', parent_id: parent.id, session_id: parent.id, status: 'failed', error: 'AI thiếu tiêu đề' })
+    await s.resumeRun(s.items.value[0])
     expect(service.status).toHaveBeenLastCalledWith('child', 'sound')
     expect(s.snackbar.value.visible).toBe(true)
     expect(s.items.value.find(item => item.id === parent.id).title).toBe(parent.title)
     expect(service.regenerate).toHaveBeenCalledOnce()
+  })
+
+  it('announces a regenerate run to the shared queue immediately after acceptance', async () => {
+    const s = state()
+    const listener = vi.fn()
+    window.addEventListener(AI_TASK_QUEUED_EVENT, listener)
+    service.regenerate.mockResolvedValue({ job_id: 'child', task_run_id: 'tracker-child', session_id: parent.id, parent_id: parent.id, status: 'queued' })
+
+    await s.requestAction('regenerate', parent)
+    await s.confirmAction()
+
+    expect(listener).toHaveBeenCalledWith(expect.objectContaining({ detail: expect.objectContaining({
+      task_run_id: 'tracker-child', taskable_id: 'child', task_type: 'article_generation', source: 'ai_content',
+    }) }))
+    window.removeEventListener(AI_TASK_QUEUED_EVENT, listener)
   })
   it('builds separate regenerate groups and omits empty overrides', async () => {
     expect(buildAiContentRegenerateRequest({ fields: ['title', 'content_html', 'seo_title', 'focus_keyword', 'tag_ids', 'thumbnail_prompt'], prompt_key: null, provider: '', model_id: null }))
@@ -213,8 +235,9 @@ describe('AI Content actions', () => {
     expect(service.regenerate).toHaveBeenCalledExactlyOnceWith(parent.id, { fields: ['content'] })
     await vi.advanceTimersByTimeAsync(1000)
     expect(service.status).toHaveBeenCalledExactlyOnceWith('child', 'sound')
-    expect(s.items.value).toHaveLength(2)
-    expect(s.items.value.find(item => item.id === parent.id).title).toBe(parent.title)
+    expect(s.items.value).toHaveLength(1)
+    expect(s.items.value[0].versionCount).toBe(2)
+    expect(s.items.value.find(item => item.id === parent.id).title).toBe('Bản mới')
     expect(s.source.value).toBe(source)
     await vi.advanceTimersByTimeAsync(10000)
     expect(service.status).toHaveBeenCalledOnce()

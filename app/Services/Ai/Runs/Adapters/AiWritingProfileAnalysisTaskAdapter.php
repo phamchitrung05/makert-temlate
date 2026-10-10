@@ -4,10 +4,11 @@ namespace App\Services\Ai\Runs\Adapters;
 
 use App\Models\AiTaskRun;
 use App\Models\AiWritingProfileAnalysis;
-use App\Services\Ai\Runs\Contracts\AiTaskRunAdapter;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Model;
+use App\Services\Ai\Errors\AiPublicErrorMessage;
+use App\Services\Ai\Runs\Contracts\AiTaskRunAdapter;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * =====================================================================
@@ -74,7 +75,7 @@ final class AiWritingProfileAnalysisTaskAdapter implements AiTaskRunAdapter
             'taskable_id' => (string) $analysis->id,
             'metadata_json' => ['name' => $analysis->name, 'draft_profile_id' => $analysis->draft_profile_id],
             'error_code' => $errorCode ? mb_substr((string) $errorCode, 0, 120) : null,
-            'error_message' => $errorCode ? 'Tác vụ AI thất bại. Mở module tương ứng để kiểm tra cấu hình hoặc tạo lại.' : null,
+            'error_message' => $errorCode ? AiPublicErrorMessage::message($errorCode, $analysis->error_message, 'writing_profile_analysis') : null,
             'started_at' => $analysis->started_at,
             'completed_at' => in_array($status, ['ready', 'failed', 'cancelled', 'expired'], true) ? ($analysis->completed_at ?? now()) : null,
             'expires_at' => $analysis->expires_at,

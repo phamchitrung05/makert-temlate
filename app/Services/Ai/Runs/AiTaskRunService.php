@@ -6,6 +6,7 @@ use App\Models\AiImport;
 use App\Models\AiTaskRun;
 use App\Models\AiWritingProfileAnalysis;
 use App\Models\User;
+use App\Services\Ai\Errors\AiPublicErrorMessage;
 use App\Services\Ai\Runs\Contracts\AiTaskRunAdapter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -269,7 +270,9 @@ final class AiTaskRunService
             'started_at' => $task->started_at ?? ($status === 'queued' ? null : now()),
             'completed_at' => in_array($status, self::TERMINAL_STATUSES, true) ? now() : null,
             'error_code' => $status === 'failed' && $errorCode ? mb_substr($errorCode, 0, 120) : null,
-            'error_message' => $status === 'failed' ? 'Tác vụ AI thất bại. Hãy kiểm tra cấu hình và thử lại.' : null,
+            'error_message' => $status === 'failed'
+                ? AiPublicErrorMessage::message($errorCode, $errorMessage)
+                : null,
             'updated_at' => now(),
         ]);
 

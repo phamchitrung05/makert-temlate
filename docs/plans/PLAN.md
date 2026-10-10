@@ -57,6 +57,8 @@ Ngày 07/10/2026, chủ dự án yêu cầu để tính năng chấm bài và da
 - [x] 09/10: hoàn tất mở rộng queue dùng chung cho writing profile, tạo bài và tạo ảnh: `ai_task_runs`, adapter/registry, API list/detail/cancel, tracker theo owner/quyền và đồng bộ lifecycle từ worker.
 - [x] 09/10: hoàn tất Ai Content enqueue liên tiếp: form chỉ khóa trong lúc POST, reset ngay sau khi task được nhận, popup theo dõi độc lập và bổ sung tracker ID trong payload.
 - [x] 09/10: hoàn tất ổn định popup queue: task mới chỉ cập nhật badge, event đến sớm được replay, icon avatar theo mode và danh sách cuộn sát footer.
+- [x] 10/10: hoàn tất regenerate Content AI theo session: task mới phát event vào queue popup ngay, danh sách chỉ giữ một dòng hiện tại kèm lịch sử phiên bản và lỗi thất bại được diễn giải tiếng Việt; frontend/backend đều có comment cấu trúc đầy đủ.
+- [x] 10/10: hoàn thiện UI Content AI: lịch sử hiển thị điểm chất lượng cạnh từng phiên bản, rubric trong dialog duyệt dùng badge tiếng Việt và các dialog giữ snapshot đến `after-leave` để tránh nhấp nháy/bóng ma select khi đóng.
 - [x] 09/10: hoàn tất regression quality grounding cho bài có code/link và số viết bằng chữ; giữ chặn số liệu/phiên bản bị thay đổi thật. Kiểm chứng nhóm grounding 48 tests/111 assertions và pipeline liên quan 85 tests/359 assertions.
 - [x] 09/10: triển khai Q-01 G2–G3: evaluator rubric/version, job/queue theo hash, quality gate Approve/Apply, chấm lại sau edit, vòng tròn điểm và lưu score cùng archive lifecycle. [QA G2/G3](../qa/AI_QUALITY_G2_G3_2026-10-09.md)
 

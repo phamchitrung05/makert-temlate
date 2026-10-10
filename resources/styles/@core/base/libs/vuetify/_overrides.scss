@@ -213,6 +213,26 @@ body,
   opacity: 1 !important;
 }
 
+// Giữ màu scrim của theme nhưng cho phép transition Vuetify fade bình thường.
+// Nếu ép opacity 1 trong lúc leave, nội dung dialog và select teleport có thể
+// chớp qua nền trước khi overlay được gỡ hoàn toàn.
+@media (prefers-reduced-motion: no-preference) {
+  .v-overlay__scrim.fade-transition-enter-from,
+  .v-overlay__scrim.fade-transition-leave-to {
+    opacity: 0 !important;
+  }
+
+  .v-overlay__scrim.fade-transition-enter-active {
+    transition-duration: 225ms !important;
+    transition-timing-function: cubic-bezier(0, 0, 0.2, 1) !important;
+  }
+
+  .v-overlay__scrim.fade-transition-leave-active {
+    transition-duration: 125ms !important;
+    transition-timing-function: cubic-bezier(0.4, 0, 1, 1) !important;
+  }
+}
+
 // 👉 VMessages
 .v-messages {
   color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));

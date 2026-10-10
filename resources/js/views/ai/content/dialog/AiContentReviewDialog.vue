@@ -3,7 +3,7 @@
   CHỨC NĂNG FILE: Xem nguồn, kết quả AI, quyết định và lịch sử trước khi duyệt.
   =====================================================================
   CÁC HÀM/METHOD TRONG FILE: reviewLabel/reviewColor/postId/locked/displayLoading/qualityLabel/qualityColor (computed),
-  watcher open, finishEnter(), finishLeave(), dateLabel().
+  watcher open, finishEnter(), finishLeave(), dateLabel(), qualityCriterionLabel().
   INPUT/OUTPUT CỦA CLASS (tổng thể): state -> emit thao tác GET/biên tập/quyết định.
   SIDE EFFECT: không gọi API, không render HTML nguồn; giữ content đến after-leave.
   Header/footer cố định qua AppDialogLayout; đóng bị khóa khi POST đang chạy.
@@ -30,28 +30,86 @@ const locked = computed(() => displayLoading.value || props.state.busy || Boolea
 const quality = computed(() => props.state.detail?.quality_evaluation ?? null)
 const qualityScore = computed(() => Number.isFinite(Number(quality.value?.score_total)) ? Number(quality.value.score_total) : null)
 const qualityColor = computed(() => quality.value?.status === 'ready' ? (quality.value?.eligibility?.eligible ? 'success' : 'error') : 'warning')
+
 const qualityLabel = computed(() => {
   if (qualityScore.value !== null) return `Đánh giá chất lượng ${qualityScore.value.toFixed(2)}/5`
+
   return ({ pending: 'Đang chờ đánh giá chất lượng', queued: 'Đang xếp hàng đánh giá', running: 'Đang đánh giá', failed: 'Đánh giá lỗi', expired: 'Điểm đã hết hạn' }[quality.value?.status] ?? 'Chưa có đánh giá chất lượng')
 })
 
-/** Input: mở lại dialog. Output: trì hoãn text dài cho đến khi hiệu ứng mở hoàn tất. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Đổi tên rubric quality sang nhãn tiếng Việt dễ đọc.
+ * =====================================================================
+ * INPUT: mã tiêu chí từ quality.scores của API.
+ * OUTPUT: nhãn tiếng Việt theo allowlist; mã lạ dùng nhãn trung tính.
+ * SIDE EFFECT: hàm thuần, không gọi API hoặc mutate detail.
+ * EXCEPTION/TRANSACTION: không có.
+ * =====================================================================
+ */
+function qualityCriterionLabel(criterion) {
+  return {
+    accuracy: 'Độ chính xác',
+    source_grounding: 'Bám sát nguồn',
+    clarity: 'Độ rõ ràng',
+    structure: 'Cấu trúc',
+    style: 'Văn phong',
+  }[criterion] ?? 'Tiêu chí chất lượng'
+}
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Đặt lại cờ hiển thị phần so sánh khi mở review.
+ * =====================================================================
+ * INPUT: state.open từ composable review.
+ * OUTPUT: contentActive false để chờ after-enter trước khi render nội dung dài.
+ * SIDE EFFECT: cập nhật ref cục bộ; không gọi API hoặc mutate props.
+ * EXCEPTION/TRANSACTION: không có.
+ * =====================================================================
+ */
 watch(() => props.state.open, open => {
   if (open) contentActive.value = false
 })
 
-/** Input: after-enter. Output: bật nội dung nếu dialog vẫn mở, không gọi API. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Bật nội dung review sau khi hiệu ứng mở hoàn tất.
+ * =====================================================================
+ * INPUT: lifecycle after-enter của VDialog.
+ * OUTPUT: contentActive true nếu dialog vẫn mở.
+ * SIDE EFFECT: cập nhật ref cục bộ; không gọi API hoặc mutate props.
+ * EXCEPTION/TRANSACTION: không có.
+ * =====================================================================
+ */
 function finishEnter() {
   if (props.state.open) contentActive.value = true
 }
 
-/** Input: after-leave. Output: giữ nội dung hết hiệu ứng đóng, rồi báo caller dọn state. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Hoàn tất transition đóng review và báo page dọn state.
+ * =====================================================================
+ * INPUT: lifecycle after-leave của VDialog.
+ * OUTPUT: reset cờ hiển thị và emit afterLeave.
+ * SIDE EFFECT: emit cục bộ; không gọi API hoặc thay đổi dữ liệu server.
+ * EXCEPTION/TRANSACTION: không có.
+ * =====================================================================
+ */
 function finishLeave() {
   if (!props.state.open) contentActive.value = false
   emit('afterLeave')
 }
 
-/** Input: thời điểm ISO từ server. Output: ngày giờ theo locale hiện tại, không mutation. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Định dạng thời điểm review từ server.
+ * =====================================================================
+ * INPUT: timestamp ISO tùy chọn.
+ * OUTPUT: ngày giờ tiếng Việt hoặc nhãn chưa có thời điểm.
+ * SIDE EFFECT: hàm thuần, không gọi API hoặc mutate props.
+ * EXCEPTION/TRANSACTION: không có.
+ * =====================================================================
+ */
 const dateLabel = value => value && !Number.isNaN(new Date(value).getTime()) ? new Date(value).toLocaleString('vi-VN') : 'Chưa có thời điểm'
 </script>
 
@@ -160,7 +218,9 @@ const dateLabel = value => value && !Number.isNaN(new Date(value).getTime()) ? n
               </span>
             </VProgressCircular>
             <div class="flex-grow-1">
-              <div class="text-subtitle-2">{{ qualityLabel }}</div>
+              <div class="text-subtitle-2">
+                {{ qualityLabel }}
+              </div>
               <div class="text-caption text-medium-emphasis">
                 Rubric {{ quality.rubric_version }} · {{ quality.status === 'ready' ? (quality.eligibility?.eligible ? 'Đủ điều kiện duyệt' : 'Chưa đủ điều kiện duyệt') : 'Chưa thể kết luận' }}
               </div>
@@ -175,9 +235,11 @@ const dateLabel = value => value && !Number.isNaN(new Date(value).getTime()) ? n
                   v-for="(score, criterion) in quality.scores"
                   :key="criterion"
                   size="x-small"
-                  variant="outlined"
+                  variant="tonal"
+                  color="info"
+                  prepend-icon="tabler-star"
                 >
-                  {{ criterion }}: {{ Number(score).toFixed(1) }}
+                  {{ qualityCriterionLabel(criterion) }}: {{ Number(score).toFixed(1) }}/5
                 </VChip>
               </div>
             </div>
@@ -186,7 +248,9 @@ const dateLabel = value => value && !Number.isNaN(new Date(value).getTime()) ? n
             v-if="quality.evidence?.length || quality.source_references?.length"
             class="pt-0"
           >
-            <div class="text-caption font-weight-medium mb-1">Dẫn chứng nguồn</div>
+            <div class="text-caption font-weight-medium mb-1">
+              Dẫn chứng nguồn
+            </div>
             <div
               v-for="evidence in quality.evidence"
               :key="`${evidence.source_block_id}-${evidence.excerpt}`"

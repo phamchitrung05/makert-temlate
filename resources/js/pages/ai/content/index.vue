@@ -4,7 +4,7 @@
   =====================================================================
   Page dùng header giống Post, catalog AI Settings và API session hiện có.
 
-  CÁC HÀM/METHOD TRONG FILE:
+  CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
   - useAiContentWorkspace()/useAiContentCatalog(): nguồn và catalog/list thật.
   - useAiContentGeneration(): gửi nguồn vào queue và khóa form chỉ trong lúc POST.
   - useAiContentActions(): dialog biên tập và action riêng từng candidate.
@@ -12,8 +12,14 @@
   - editReviewedContent()/clearNotice(): mở editor hiện có và đóng thông báo.
   - handleQueued(): reset nguồn sau xác nhận queue và hiển thị thông báo.
   - createNew(): reset nguồn khi form không đang gửi request.
+  - openVersionHistory()/openVersion()/closeVersionHistory(): điều phối dialog lịch sử phiên bản.
   - openTaskFromQuery(): mở kết quả task mà popup đã điều hướng tới.
+  - historyItem/visibleNotice/contentBusyId: chọn dữ liệu dialog, notice và item bận.
+  - onRunFeedback(): chuyển lifecycle run thành feedback an toàn.
+  - watcher items: khôi phục polling active run sau tải list.
+  - watcher route.query.session: mở candidate từ popup khi route đổi.
   - onMounted(): tải list và catalog độc lập.
+  - props/emits: không có; page điều phối component con qua events.
 
   INPUT/OUTPUT CỦA CLASS (tổng thể):
   - INPUT : thao tác tìm kiếm và tạo bài viết mới.
@@ -22,7 +28,7 @@
   =====================================================================
 -->
 <script setup>
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, shallowRef, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AiContentList from '@/views/ai/content/AiContentList.vue'
 import AiContentCreateForm from '@/views/ai/content/AiContentCreateForm.vue'
@@ -35,18 +41,30 @@ import AiContentEditorDialog from '@/views/ai/content/AiContentEditorDialog.vue'
 import AiContentRunActionDialog from '@/views/ai/content/AiContentRunActionDialog.vue'
 import AiContentReviewDialog from '@/views/ai/content/dialog/AiContentReviewDialog.vue'
 import AiContentReviewDecisionDialog from '@/views/ai/content/dialog/AiContentReviewDecisionDialog.vue'
+import AiContentVersionHistoryDialog from '@/views/ai/content/AiContentVersionHistoryDialog.vue'
 import { useAiRunFeedback } from '@/composables/useAiRunFeedback'
 import { getAlertColor } from '@/config/alertColors'
 
 const { snackbar, observeRun, showSnackbar, setSnackbarVisible } = useAiRunFeedback()
 const route = useRoute()
+const versionHistory = shallowRef(null)
 
 const { items, source, listLoading, listError, loadItems, updateSession, removeItem, resetSource } = useAiContentWorkspace()
+const historyItem = computed(() => items.value.find(item => item.sessionId === versionHistory.value?.sessionId) ?? versionHistory.value)
 const { catalog, loadCatalog, resetContentDefaults } = useAiContentCatalog(source)
 
 const onRunFeedback = (run, fallback, options = catalog.value.outputOptions) => observeRun(run, fallback, options)
 
-/** Bàn giao task accepted cho list và dựng lại form để nhập nguồn kế tiếp. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Reset nguồn sau khi server nhận task để nhập nguồn tiếp theo.
+ * =====================================================================
+ * INPUT: callback accepted từ generation composable.
+ * OUTPUT: form nguồn mới và snackbar thành công.
+ * SIDE EFFECT: reset source/default state; không gọi API hoặc mở popup.
+ * EXCEPTION/TRANSACTION: không có.
+ * =====================================================================
+ */
 function handleQueued() {
   resetSource(catalog.value.contentDefaults)
   resetContentDefaults()
@@ -60,7 +78,16 @@ const { editor, editorLoading, editorSaving, editorError, action, actionBusy, ac
   updateSession, removeItem, onFeedback: onRunFeedback, getOutputOptions: () => catalog.value.outputOptions,
 })
 
-// INPUT: list hiện hành. OUTPUT: theo dõi mọi bài/thumbnail còn chạy, độc lập form.
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Khôi phục polling cho mọi run/thumbnail còn chạy trong list.
+ * =====================================================================
+ * INPUT: items computed sau mỗi lần list/live update.
+ * OUTPUT: không trả giá trị; action composable đăng ký GET polling.
+ * SIDE EFFECT: đặt timer polling; không ảnh hưởng form tạo nguồn.
+ * EXCEPTION/TRANSACTION: không có.
+ * =====================================================================
+ */
 watch(items, () => trackRuns(items.value))
 
 const { state: reviewState, notice: reviewNotice, openReview, loadReview, loadHistory, rescoreQuality, requestDecision,
@@ -69,7 +96,63 @@ const { state: reviewState, notice: reviewNotice, openReview, loadReview, loadHi
 const visibleNotice = computed(() => reviewNotice.value ?? notice.value)
 const contentBusyId = computed(() => reviewState.value.busy ? reviewState.value.detail?.job_id : busyId.value)
 
-/** Input: bài đã GET trong dialog duyệt. Output: mở editor hiện có, quyết định sau phải GET mới. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Mở dialog lịch sử các phiên bản của một content session.
+ * =====================================================================
+ * INPUT: item đã gom theo session, có versions/history.
+ * OUTPUT: trạng thái dialog được chọn; không gọi API.
+ * SIDE EFFECT: chỉ thay đổi state dialog cục bộ.
+ * EXCEPTION/TRANSACTION: không có.
+ * =====================================================================
+ */
+function openVersionHistory(item) {
+  versionHistory.value = item
+}
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Mở đúng candidate phiên bản được chọn từ lịch sử.
+ * =====================================================================
+ * INPUT: version record đã chuẩn hóa.
+ * OUTPUT: review dialog cho Post hoặc editor cho target khác.
+ * SIDE EFFECT: GET detail qua composable tương ứng; không tạo run mới.
+ * EXCEPTION/TRANSACTION: lỗi đọc do dialog/composable xử lý.
+ * =====================================================================
+ */
+function openVersion(version) {
+  versionHistory.value = null
+  if (version.targetType === 'post') {
+    void openReview({ id: version.id, runId: version.id, targetType: version.targetType, status: version.status })
+  } else {
+    void openEditor({ id: version.id, runId: version.id, targetType: version.targetType, status: version.status })
+  }
+}
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Đóng dialog lịch sử phiên bản.
+ * =====================================================================
+ * INPUT: không có.
+ * OUTPUT: xóa item đang mở khỏi state dialog; lịch sử server không đổi.
+ * SIDE EFFECT: chỉ thay đổi state UI.
+ * EXCEPTION/TRANSACTION: không có.
+ * =====================================================================
+ */
+function closeVersionHistory() {
+  versionHistory.value = null
+}
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Chuyển candidate đang review sang editor hiện có.
+ * =====================================================================
+ * INPUT: detail Post đã GET và đủ quyền can_edit.
+ * OUTPUT: review đóng, editor mở đúng job_id.
+ * SIDE EFFECT: GET detail qua editor composable; quyết định sau cần GET mới.
+ * EXCEPTION/TRANSACTION: lỗi đọc do editor xử lý, không mở transaction.
+ * =====================================================================
+ */
 function editReviewedContent() {
   const detail = reviewState.value.detail
   if (!detail?.can_edit || reviewState.value.busy || reviewState.value.loading) return
@@ -77,7 +160,16 @@ function editReviewedContent() {
   void openEditor({ id: detail.job_id, targetType: 'post', status: 'review' })
 }
 
-/** Input: đóng thông báo. Output: xóa notice ở hai workflow, không gọi API. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Đóng notice đang hiển thị từ action/review workflow.
+ * =====================================================================
+ * INPUT: thao tác đóng alert.
+ * OUTPUT: các notice refs trở về null.
+ * SIDE EFFECT: chỉ thay đổi UI state, không gọi API.
+ * EXCEPTION/TRANSACTION: không có.
+ * =====================================================================
+ */
 function clearNotice() {
   notice.value = null
   reviewNotice.value = null
@@ -89,15 +181,19 @@ function clearNotice() {
  * =====================================================================
  * INPUT: query session chứa UUID AiImport. OUTPUT: editor load đúng session.
  * SIDE EFFECT: GET detail qua openEditor; không tạo lại hoặc dispatch worker.
+ * EXCEPTION/TRANSACTION: lỗi đọc do editor composable xử lý.
  * =====================================================================
  */
 async function openTaskFromQuery() {
   const sessionId = typeof route.query.session === 'string' ? route.query.session : null
   if (!sessionId) return
 
-  const item = items.value.find(candidate => candidate.id === sessionId)
+  const item = items.value.flatMap(candidate => candidate.versions).find(candidate => candidate.id === sessionId)
+    ?? items.value.find(candidate => candidate.id === sessionId)
   if (item && item.status !== 'generating') await openEditor(item)
 }
+
+watch(() => route.query.session, openTaskFromQuery)
 
 onMounted(loadCatalog)
 onMounted(async () => {
@@ -105,7 +201,16 @@ onMounted(async () => {
   await openTaskFromQuery()
 })
 
-/** Input: thao tác tạo mới. Output: reset nguồn; chỉ chặn khi form đang gửi request. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Reset nguồn thủ công để tạo content AI mới.
+ * =====================================================================
+ * INPUT: thao tác nút Tạo content AI mới.
+ * OUTPUT: nguồn trống và content defaults hiện tại.
+ * SIDE EFFECT: reset state form; task accepted vẫn nằm trong queue.
+ * EXCEPTION/TRANSACTION: không reset khi POST còn đang chạy.
+ * =====================================================================
+ */
 function createNew() {
   if (reset()) {
     resetSource(catalog.value.contentDefaults)
@@ -171,6 +276,7 @@ function createNew() {
           @edit="openEditor"
           @remove="requestAction('remove', $event)"
           @regenerate="requestAction('regenerate', $event)"
+          @history="openVersionHistory"
           @refresh-status="resumeRun"
           @apply="openReview"
           @review="openReview"
@@ -232,6 +338,11 @@ function createNew() {
       @confirm="confirmDecision"
       @close="closeDecision"
       @reload="loadReview"
+    />
+    <AiContentVersionHistoryDialog
+      :item="historyItem"
+      @close="closeVersionHistory"
+      @open="openVersion"
     />
     <VSnackbar
       :model-value="snackbar.visible"

@@ -12,8 +12,8 @@ use App\Http\Requests\Admin\AiSessionIndexRequest;
 use App\Http\Resources\AiSessionSummaryResource;
 use App\Http\Resources\MediaAssetResource;
 use App\Http\Responses\BaseResponse;
-use App\Models\AiImport;
 use App\Models\AiArticleEvaluation;
+use App\Models\AiImport;
 use App\Models\AiTaskRun;
 use App\Models\MediaAsset;
 use App\Services\Ai\Content\AiContentReviewService;
@@ -21,6 +21,7 @@ use App\Services\Ai\Content\AiContentSanitizer;
 use App\Services\Ai\Content\Archives\AiArticleArchiveService;
 use App\Services\Ai\Content\ArticleSourceFetcher;
 use App\Services\Ai\Content\Quality\ArticleQualityEvaluationService;
+use App\Services\Ai\Errors\AiPublicErrorMessage;
 use App\Services\Ai\Images\AiThumbnailService;
 use App\Services\Ai\Providers\Catalog\ModelResolver;
 use App\Services\Ai\Providers\Diagnostics\AiResponseDiagnostics;
@@ -72,8 +73,7 @@ class AiImportController extends Controller
 {
     /**
      * =====================================================================
-     * CHỨC NĂNG: Đọc danh sách tác vụ thuộc admin hiện tại
-Đọc danh sách tác vụ và candidate con còn hạn của chính admin hiện tại.
+     * CHỨC NĂNG: Đọc danh sách tác vụ và candidate con còn hạn của admin hiện tại.
      * =====================================================================
      *
      * INPUT:
@@ -710,7 +710,7 @@ class AiImportController extends Controller
      * CHỨC NĂNG: Chuẩn hóa payload lifecycle/candidate cho API response
      * =====================================================================
      * INPUT: AiImport đã qua ownership check hoặc record nội bộ.
-     * OUTPUT: mảng public gồm status/progress/result; không lộ secret/path nội bộ.
+     * OUTPUT: mảng public gồm status/progress/result và lỗi tiếng Việt bounded; không lộ secret/path nội bộ.
      * SIDE EFFECT: đọc thumbnail/media nếu chưa tải; không ghi database.
      * EXCEPTION/TRANSACTION: không mở transaction.
      * =====================================================================
@@ -757,7 +757,11 @@ class AiImportController extends Controller
             'progress' => (int) $import->progress, 'error_code' => $import->error_code,
             'source_type' => data_get($import->input_json, 'source_type', filled($import->source_url) ? 'url' : 'text'),
             'source_url' => data_get($import->input_json, 'source_type') === 'text' ? null : $import->source_url,
-            'error' => $import->error_message, 'session_id' => $import->session_id ?: $import->id,
+            'error' => in_array($import->status, ['failed', 'cancelled', 'expired'], true)
+                ? AiPublicErrorMessage::message($import->error_code, $import->error_message,
+                    data_get($import->input_json, 'target_type', 'post'), (array) ($diagnostics['validation_errors'] ?? []))
+                : null,
+            'session_id' => $import->session_id ?: $import->id,
             'validation_errors' => $import->status === 'failed' ? ($diagnostics['validation_errors'] ?? []) : [],
             'parent_id' => $import->parent_id, 'operation' => $import->operation,
             'target_type' => data_get($import->input_json, 'target_type', 'post'),

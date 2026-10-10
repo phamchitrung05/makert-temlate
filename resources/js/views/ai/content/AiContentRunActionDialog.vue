@@ -2,8 +2,8 @@
   =====================================================================
   Header/footer cố định qua AppDialogLayout; chỉ content ở giữa được cuộn.
   CHỨC NĂNG FILE: Xác nhận regenerate/Apply draft/xóa/hủy một run riêng biệt.
-  CÁC HÀM/METHOD TRONG FILE: removing/applying/cancelling/regenerating/fieldOptions/blocked
-  (computed), confirm(), watcher action identity/session/capability.
+  CÁC HÀM/METHOD TRONG FILE: watcher action/displayAction/session/capability, finishLeave(),
+  removing/applying/cancelling/regenerating/fieldOptions/blocked (computed), confirm().
   INPUT/OUTPUT CỦA CLASS (tổng thể): action/detail/version/busy/error -> confirm
   options whitelist; GET capability qua service, không tự mutation hay publish.
   =====================================================================
@@ -34,27 +34,84 @@ const thumbnail = ref({ thumbnailMode: 'source', imageModelId: null, thumbnailPr
 const capability = shallowRef({})
 const loadingCapabilities = shallowRef(false)
 const capabilityError = shallowRef('')
-const removing = computed(() => props.action?.kind === 'remove')
-const applying = computed(() => props.action?.kind === 'apply')
-const cancelling = computed(() => props.action?.kind === 'cancel')
-const regenerating = computed(() => props.action?.kind === 'regenerate')
-const legacyTaxonomy = computed(() => applying.value && props.action?.session?.draft?.taxonomy_origin !== 'manual')
+const displayAction = shallowRef(null)
+const dialogOpen = shallowRef(false)
+const actionView = computed(() => displayAction.value ?? props.action)
+const removing = computed(() => actionView.value?.kind === 'remove')
+const applying = computed(() => actionView.value?.kind === 'apply')
+const cancelling = computed(() => actionView.value?.kind === 'cancel')
+const regenerating = computed(() => actionView.value?.kind === 'regenerate')
+const legacyTaxonomy = computed(() => applying.value && actionView.value?.session?.draft?.taxonomy_origin !== 'manual')
 const thumbnailRequested = computed(() => regenerating.value && capability.value.outputs?.includes('thumbnail') && (!fields.value.length || fields.value.includes('thumbnail')))
 
 const fieldOptions = computed(() => applying.value
-  ? ['title', 'excerpt', 'content', 'seo', 'taxonomy', ...(props.action?.session?.thumbnail ? ['thumbnail'] : [])].map(value => ({ title: { title: 'Tiêu đề', excerpt: 'Tóm tắt', content: 'Nội dung', seo: 'SEO', taxonomy: 'Danh mục và tag thủ công', thumbnail: 'Ảnh đại diện' }[value], value }))
+  ? ['title', 'excerpt', 'content', 'seo', 'taxonomy', ...(actionView.value?.session?.thumbnail ? ['thumbnail'] : [])].map(value => ({ title: { title: 'Tiêu đề', excerpt: 'Tóm tắt', content: 'Nội dung', seo: 'SEO', taxonomy: 'Danh mục và tag thủ công', thumbnail: 'Ảnh đại diện' }[value], value }))
   : withoutAiTaxonomyOutputs(capability.value.outputs ?? []).map(value => ({ title: capability.value.output_options?.find(item => item.value === value)?.title ?? value, value })))
 
-const blocked = computed(() => props.busy || props.action?.loading || props.action?.loadFailed
+const blocked = computed(() => props.busy || actionView.value?.loading || actionView.value?.loadFailed
   || (regenerating.value && (loadingCapabilities.value || Boolean(capabilityError.value)))
   || (thumbnailRequested.value && thumbnail.value.thumbnailMode === 'generate' && !(props.catalog.imageModelOptions ?? []).some(option => option.value === thumbnail.value.imageModelId))
-  || (applying.value && (!fields.value.length || props.action?.session?.status !== 'ready' || props.action?.session?.applied_target_id || props.action?.session?.review?.status === 'rejected' || (legacyTaxonomy.value && fields.value.includes('taxonomy') && !taxonomyConfirmed.value))))
+  || (applying.value && (!fields.value.length || actionView.value?.session?.status !== 'ready' || actionView.value?.session?.applied_target_id || actionView.value?.session?.review?.status === 'rejected' || (legacyTaxonomy.value && fields.value.includes('taxonomy') && !taxonomyConfirmed.value))))
 
-// =====================================================================
-// Input: action identity mới. Output: reset một lần, tải capability regen;
-// cleanup bỏ GET cũ, không reset yêu cầu người dùng khi detail trả về.
-// =====================================================================
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Giữ action snapshot trong thời gian VDialog chạy transition.
+ * =====================================================================
+ * INPUT: action từ page, null ngay sau thao tác đóng.
+ * OUTPUT: dialogOpen tắt trước; actionView chỉ dọn sau after-leave.
+ * SIDE EFFECT: cập nhật state cục bộ, không gọi API hoặc mutate action.
+ * EXCEPTION/TRANSACTION: không có.
+ * =====================================================================
+ */
+watch(() => props.action, value => {
+  if (value) {
+    displayAction.value = value
+    dialogOpen.value = true
+
+    return
+  }
+
+  dialogOpen.value = false
+}, { immediate: true })
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Dọn state action sau khi transition đóng hoàn tất.
+ * =====================================================================
+ * INPUT: lifecycle after-leave của VDialog.
+ * OUTPUT: snapshot và field tạm rỗng nếu action chưa mở lại.
+ * SIDE EFFECT: dọn state form cục bộ; không gọi API hoặc emit mutation.
+ * EXCEPTION/TRANSACTION: không có.
+ * =====================================================================
+ */
+function finishLeave() {
+  if (props.action) return
+  displayAction.value = null
+  fields.value = []
+  instructions.value = ''
+  writing.value = emptyWritingPreferences(true)
+  categoryIds.value = []
+  tagIds.value = []
+  manualOverride.value = false
+  taxonomyConfirmed.value = false
+  refreshSource.value = false
+  capability.value = {}
+  capabilityError.value = ''
+  loadingCapabilities.value = false
+}
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Khởi tạo lại form khi chuyển sang một action mới.
+ * =====================================================================
+ * INPUT: kind/item identity từ action và callback cleanup của watcher.
+ * OUTPUT: field mặc định, capability regenerate và trạng thái loading.
+ * SIDE EFFECT: GET capability cho target; hủy áp dụng kết quả của request cũ.
+ * EXCEPTION/TRANSACTION: lỗi capability hiển thị trong capabilityError; không mutation server.
+ * =====================================================================
+ */
 watch(() => `${props.action?.kind || ''}:${props.action?.item?.id || ''}:${props.action?.item?.targetType || ''}`, async (_, previous, onCleanup) => {
+  if (!props.action) return
   let active = true
   onCleanup(() => { active = false })
   fields.value = applying.value ? ['title', 'excerpt', 'content', 'seo', 'taxonomy'] : []
@@ -77,9 +134,16 @@ watch(() => `${props.action?.kind || ''}:${props.action?.item?.id || ''}:${props
   finally { if (active) loadingCapabilities.value = false }
 }, { immediate: true })
 
-// =====================================================================
-// Input: detail ready. Output: chỉ lấy taxonomy đã chọn thủ công; legacy để trống.
-// =====================================================================
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Đồng bộ taxonomy và thumbnail từ detail action đã tải.
+ * =====================================================================
+ * INPUT: session detail của action hiện tại.
+ * OUTPUT: category/tag/thumbnail form theo dữ liệu thủ công của session.
+ * SIDE EFFECT: cập nhật ref form cục bộ; không gọi API.
+ * EXCEPTION/TRANSACTION: bỏ qua session null để giữ snapshot trong transition đóng.
+ * =====================================================================
+ */
 watch(() => props.action?.session, session => {
   if (!session) return
   categoryIds.value = session.draft?.taxonomy_origin === 'manual' ? [...(session.draft.category_ids ?? [])] : []
@@ -108,11 +172,12 @@ function confirm() {
 
 <template>
   <VDialog
-    :model-value="Boolean(props.action)"
+    :model-value="dialogOpen"
     :persistent="props.busy"
     max-width="780"
     scrollable
     @update:model-value="!$event && emit('close')"
+    @after-leave="finishLeave"
   >
     <AppDialogLayout
       :title="removing ? 'Xóa content AI' : cancelling ? 'Hủy tác vụ AI' : applying ? 'Tạo Post nháp' : 'Tạo lại content AI'"
@@ -122,10 +187,10 @@ function confirm() {
     >
       <VCardText>
         <p class="font-weight-medium text-wrap">
-          {{ props.action?.item.title }}
+          {{ actionView?.item.title }}
         </p>
         <VProgressLinear
-          v-if="props.action?.loading"
+          v-if="actionView?.loading"
           indeterminate
           class="mb-4"
         />
@@ -146,21 +211,21 @@ function confirm() {
             chips
             clearable
             class="mb-4"
-            :disabled="props.busy || props.action?.loading || loadingCapabilities"
+            :disabled="props.busy || actionView?.loading || loadingCapabilities"
           />
           <template v-if="regenerating">
             <AiThumbnailOptions
               v-if="thumbnailRequested"
               v-model="thumbnail"
               :catalog="props.catalog"
-              :disabled="props.busy || props.action?.loading"
+              :disabled="props.busy || actionView?.loading"
               class="mb-4"
             />
             <AiWritingPreferences
               v-model="writing"
               regenerate
-              :parent-profile="props.action?.session?.writing_profile"
-              :disabled="props.busy || props.action?.loading"
+              :parent-profile="actionView?.session?.writing_profile"
+              :disabled="props.busy || actionView?.loading"
             />
             <AppTextarea
               v-model="instructions"
@@ -176,33 +241,33 @@ function confirm() {
               :disabled="props.busy"
             />
             <VCheckbox
-              v-if="props.action?.item.targetType === 'post'"
+              v-if="actionView?.item.targetType === 'post'"
               v-model="manualOverride"
               label="Thay danh mục và tag cho bản mới"
-              :disabled="props.busy || props.action?.loading"
+              :disabled="props.busy || actionView?.loading"
             />
           </template>
           <template v-if="applying || manualOverride">
             <AiManualTaxonomyFields
               v-model:categories="categoryIds"
               v-model:tags="tagIds"
-              :disabled="props.busy || props.action?.loading"
+              :disabled="props.busy || actionView?.loading"
             />
             <VCheckbox
               v-if="legacyTaxonomy && fields.includes('taxonomy')"
               v-model="taxonomyConfirmed"
               label="Tôi đã kiểm tra danh mục/tag và xác nhận các lựa chọn trên"
-              :disabled="props.busy || props.action?.loading"
+              :disabled="props.busy || actionView?.loading"
             />
           </template>
           <VAlert
-            v-if="applying && props.action?.session?.applied_target_id"
+            v-if="applying && actionView?.session?.applied_target_id"
             type="info"
             variant="tonal"
           >
-            Bản này đã được áp dụng vào Post #{{ props.action.session.applied_target_id }}.
+            Bản này đã được áp dụng vào Post #{{ actionView.session.applied_target_id }}.
           </VAlert>
-          <AiPipelineReport :session="props.action?.session" />
+          <AiPipelineReport :session="actionView?.session" />
         </template>
         <VAlert
           v-if="props.error || capabilityError"

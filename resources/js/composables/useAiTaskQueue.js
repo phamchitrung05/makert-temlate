@@ -3,9 +3,11 @@
  * =====================================================================
  * CHỨC NĂNG FILE: Điều phối danh sách và polling task AI dùng chung toàn Admin.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE:
+ * CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
+ * - announceAiTaskQueued(): phát DTO bounded khi server nhận run mới/retry/regenerate.
  * - normalizeTask(): chuẩn hóa DTO mọi task type về shape popup.
  * - aiTaskStatusMeta(): lấy nhãn/icon lifecycle từ allowlist frontend.
+ * - visibleTasks/activeCount/filteredTasks/filters: computed badge, filter và trạng thái.
  * - useAiTaskQueue(): tạo state queue, filter và lifecycle polling.
  * - start(): gắn listener và tải queue lần đầu.
  * - stop(): hủy request/timer/listener cũ.
@@ -16,6 +18,7 @@
  * - clearFinished(): ẩn task terminal khỏi danh sách UI.
  * - scheduleNext(): poll tuần tự khi còn active task.
  * - notifyReady(): báo các màn hình cần tải lại draft/kết quả.
+ * - props/emits: không có; queue lấy API service và window event.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : API list/cancel và event task queued từ các luồng AI.
  * - OUTPUT: task summaries, filter counts, polling lifecycle và lỗi an toàn.
@@ -54,6 +57,46 @@ const STATUS_META = {
 
 /**
  * =====================================================================
+ * CHỨC NĂNG: Phát thông báo một task AI đã được server nhận vào queue.
+ * =====================================================================
+ * INPUT: DTO run accepted và metadata task_type/source tùy chọn.
+ * OUTPUT: DTO bounded dùng cho queue popup; trả null nếu thiếu identity.
+ * SIDE EFFECT: Lưu tối đa 100 event chờ và phát CustomEvent nội bộ.
+ * EXCEPTION/TRANSACTION: Không gọi API, không ghi database hoặc mở transaction.
+ * =====================================================================
+ */
+export function announceAiTaskQueued(value, overrides = {}) {
+  if (typeof window === 'undefined') return null
+
+  if (['failed', 'cancelled', 'expired'].includes(value?.status)) return null
+  const taskRunId = value?.task_run_id ?? value?.id
+  const taskableId = value?.job_id ?? value?.taskable_id ?? value?.id
+  if (!taskRunId && !taskableId) return null
+
+  const detail = {
+    task_run_id: taskRunId,
+    taskable_id: taskableId ?? taskRunId,
+    task_type: overrides.task_type ?? value?.task_type ?? 'article_generation',
+    source: overrides.source ?? value?.source ?? 'ai_content',
+    name: overrides.name ?? value?.name ?? 'Tác vụ AI',
+    status: ['ready', 'completed', 'succeeded'].includes(value?.status) ? 'ready'
+      : ['queued', ...ACTIVE_AI_TASK_STATUSES].includes(value?.status) ? value.status : 'processing',
+    progress: value?.progress ?? 0,
+    model: value?.model ?? null,
+    provider: value?.provider ?? null,
+    parent_id: value?.parent_id ?? null,
+    draft_profile_id: value?.draft_profile_id ?? null,
+    created_at: value?.created_at ?? new Date().toISOString(),
+  }
+
+  window.__aiTaskQueuePending = [...(window.__aiTaskQueuePending ?? []), detail].slice(-100)
+  window.dispatchEvent(new CustomEvent(AI_TASK_QUEUED_EVENT, { detail }))
+
+  return detail
+}
+
+/**
+ * =====================================================================
  * CHỨC NĂNG: Chọn metadata hiển thị theo lifecycle server.
  * =====================================================================
  * Input: status. Output: label/color/icon bounded, không dùng dữ liệu từ server làm class.
@@ -70,6 +113,7 @@ export function aiTaskStatusMeta(status) {
  * =====================================================================
  * Input: summary hoặc DTO queued detail. Output: task có task_type/source ổn định.
  * Side effect: hàm thuần, không giữ reference tới response API.
+ * EXCEPTION/TRANSACTION: không có.
  * =====================================================================
  */
 export function normalizeTask(value) {
@@ -315,7 +359,16 @@ export function useAiTaskQueue() {
     void refresh()
   }
 
-  /** Nhận event accepted; API refresh hỗ trợ cả response cũ chưa có tracker UUID. */
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Nhận task accepted và đồng bộ lại metadata tracker từ API.
+   * =====================================================================
+   * INPUT: CustomEvent có detail bounded từ luồng tạo/retry/regenerate.
+   * OUTPUT: task xuất hiện ngay trong queue state.
+   * SIDE EFFECT: addTask và GET refresh; không tự mở popup.
+   * EXCEPTION/TRANSACTION: lỗi GET do refresh xử lý; không mở transaction.
+   * =====================================================================
+   */
   function onQueued(event) {
     addTask(event.detail)
     void refresh()

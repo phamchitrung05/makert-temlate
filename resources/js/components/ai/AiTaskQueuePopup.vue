@@ -2,14 +2,15 @@
   * =====================================================================
   * CHỨC NĂNG FILE: Popup theo dõi analysis/job AI trong Admin layout.
   * =====================================================================
-  * CÁC HÀM/METHOD TRONG FILE:
+  * CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
   * - openTask(): điều hướng theo task_type khi task ready.
-  * - showError(): mở dialog lỗi generic của task failed.
+  * - showError(): mở dialog lỗi tiếng Việt và mã kỹ thuật tùy chọn của task failed.
   * - errorDialogTitle(): chọn tiêu đề lỗi theo task_type.
   * - startQueue(): bắt đầu/dừng composable theo quyền Admin.
   * - canUseQueue, terminalTaskCount, queuedTaskCount, queueStatus,
   *   errorDialogVisible: computed quyền, badge, trạng thái và dialog.
   * - watcher quyền: giữ polling theo quyền Admin; task mới chỉ cập nhật badge.
+  * - props/emits: không có; dùng queue composable và router trong Admin layout.
   * INPUT/OUTPUT CỦA CLASS (tổng thể):
   * - INPUT : task summary từ useAiTaskQueue và thao tác mở/kết quả/hủy.
   * - OUTPUT: popup cố định, filter lifecycle và dialog lỗi bounded.
@@ -23,6 +24,7 @@ import { useAdminAuthStore } from '@/stores/adminAuth'
 import AiTaskQueueItem from '@/components/ai/AiTaskQueueItem.vue'
 import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 import { useAiTaskQueue } from '@/composables/useAiTaskQueue'
+import { formatAiError } from '@/utils/aiErrors'
 
 const auth = useAdminAuthStore()
 const router = useRouter()
@@ -50,10 +52,11 @@ const errorDialogVisible = computed({
 
 /**
  * =====================================================================
- * CHỨC NĂNG: Mở kết quả analysis đã sẵn sàng.
+ * CHỨC NĂNG: Mở kết quả đúng run theo loại task đã sẵn sàng.
  * =====================================================================
- * Input: task ready. Output: route có analysis UUID để trang resume.
- * Side effect: navigation; không tạo analysis mới.
+ * INPUT: task ready. OUTPUT: route chứa analysis/candidate UUID để trang resume.
+ * SIDE EFFECT: navigation; không tạo run mới.
+ * EXCEPTION/TRANSACTION: không mở transaction hoặc gọi provider.
  * =====================================================================
  */
 function openTask(task) {
@@ -65,7 +68,7 @@ function openTask(task) {
     return
   }
 
-  router.push({ path: '/ai/content', query: { session: task.parent_id || task.taskable_id } })
+  router.push({ path: '/ai/content', query: { session: task.task_type === 'image_generation' ? task.parent_id || task.taskable_id : task.taskable_id } })
 }
 
 /**
@@ -74,6 +77,7 @@ function openTask(task) {
  * =====================================================================
  * Input: task failed. Output: error dialog với message đã bounded.
  * Side effect: chỉ cập nhật UI state.
+ * EXCEPTION/TRANSACTION: không có.
  * =====================================================================
  */
 function showError(task) {
@@ -86,6 +90,7 @@ function showError(task) {
  * =====================================================================
  * Input: task failed. Output: nhãn bounded cho dialog lỗi.
  * Side effect: hàm thuần; không đọc payload hoặc gọi API.
+ * EXCEPTION/TRANSACTION: không có.
  * =====================================================================
  */
 function errorDialogTitle(task) {
@@ -102,6 +107,7 @@ function errorDialogTitle(task) {
  * =====================================================================
  * Input: auth state. Output: queue GET/polling khi có quyền.
  * Side effect: gọi composable start/stop.
+ * EXCEPTION/TRANSACTION: lỗi GET do composable xử lý.
  * =====================================================================
  */
 function startQueue() {
@@ -303,14 +309,15 @@ onMounted(startQueue)
             type="error"
             variant="tonal"
           >
-            {{ errorTask.error_message || 'Không thể phân tích bài mẫu.' }}
+            {{ formatAiError(errorTask) }}
           </VAlert>
-          <div
+          <details
             v-if="errorTask.error_code"
             class="text-caption text-medium-emphasis mt-3"
           >
+            <summary>Chi tiết kỹ thuật</summary>
             Mã lỗi: {{ errorTask.error_code }}
-          </div>
+          </details>
         </VCardText>
       </AppDialogLayout>
     </VDialog>
