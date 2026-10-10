@@ -32,11 +32,29 @@ Dùng admin bearer token. Target `post` yêu cầu `posts.manage`; các target k
 | PATCH | `/ai-agent/candidates/{uuid}` | Lưu chỉnh sửa candidate ready chưa Apply |
 | POST | `/ai-agent/candidates/{uuid}/apply` | Áp field được chọn vào Post **draft** |
 | GET | `/ai-agent/candidates/{uuid}/review` | Nguồn đã lưu, draft và trạng thái duyệt có version |
+| GET | `/ai-agent/candidates/{uuid}/quality` | Điểm rubric, evidence, source references và eligibility theo generation/hash |
+| POST | `/ai-agent/candidates/{uuid}/quality/rescore` | Xếp chấm lại candidate; HTTP 202 |
 | GET | `/ai-agent/candidates/{uuid}/review/history` | Lịch sử Spatie Activitylog phân trang |
 | POST | `/ai-agent/candidates/{uuid}/approve` | Duyệt, tạo một Post **draft** mới và ghi audit |
 | POST | `/ai-agent/candidates/{uuid}/reject` | Từ chối với lý do bắt buộc, không tạo Post |
 
 Các endpoint `/posts/ai/import/...` tương thích cũ vẫn được giữ; kết nối mới ưu tiên `/ai-agent`.
+
+### G2/G3 quality gate
+
+Khi một Post có `generation_meta.generated_fields` chứa `content_html` chuyển sang
+`ready`, worker tạo một evaluation theo `generation_no` và `candidate_hash`. Evaluator
+trả điểm 0–5 cho rubric `article-quality.v1`; backend tự tính trung bình, kiểm evidence
+phải nằm trong source block và source references phải hợp lệ. Candidate chỉ được
+Approve/Apply khi evaluation `ready`, điểm tổng **lớn hơn 4/5**, có nguồn và
+`factual_status=pass`. Evaluator lỗi hoặc thiếu cấu hình không tạo điểm 0 giả.
+
+GET summary/detail trả `quality_evaluation` với `status`, `score_total`, `scores`,
+`evidence`, `source_references`, `rubric_version`, `generation_no`, `candidate_hash`,
+`eligibility` và lỗi bounded. PATCH candidate tạo hash mới và xếp evaluation mới;
+điểm cũ không được dùng cho bản đã sửa. Khi duyệt thành công, snapshot quality được
+ghi cùng lifecycle của archive trong transaction. Điểm tạm bị xóa khi run bị xóa
+hoặc cleanup retention.
 
 ## Tạo run: text, URL, HTML và file HTML
 
@@ -81,7 +99,7 @@ URL thay `text` bằng `url`; raw HTML thay bằng `html`:
 
 File dùng `multipart/form-data`, field `html_file` là file `.html`/`.htm` tối đa 5 MB; field scalar như `target_type`, `language`; array dùng `requested_outputs[0]=title`, `requested_outputs[1]=content`. Không tự đặt `Content-Type` có boundary khi dùng browser `FormData`. MIME cho phép `text/html`, `application/xhtml+xml`, `text/plain`; backend tiếp tục kiểm nguồn và encoding. `.mhtml/.mht` chưa hỗ trợ; extension sai trả 422 với thông báo phạm vi file trước khi queue.
 
-`text` tối đa 200000 ký tự. HTML tối đa 5 MB; encoding mặc định UTF-8, có thể khai báo `Windows-1252`/`ISO-8859-1` cho file/HTML. Sau extract, budget mặc định là 100000 ký tự HTML và 250 source blocks (`config/ai-content.php`); vượt budget trả lỗi rõ ràng, không cắt thầm bài.
+`text` tối đa 200000 ký tự. HTML tối đa 5 MB; encoding mặc định UTF-8, có thể khai báo `Windows-1252`/`ISO-8859-1` cho file/HTML. Sau extract, budget mặc định là 100000 ký tự HTML và 250 source blocks (`config/ai/content.php`); vượt budget trả lỗi rõ ràng, không cắt thầm bài.
 
 `model_id` vắng mặt dùng text default/fallback khả dụng đã cấu hình, hoặc real provider legacy có kết nối hợp lệ. Từ 2026-10-07, Auto thiếu model/kết nối trả 422 ở `model_id` trước queue, không âm thầm dùng deterministic. Client cũ vẫn có thể chọn cặp `provider`/`model` allowlisted; deterministic phải được chọn rõ ràng. `prompt_key` là key registry, không nhận system prompt/schema/API key/endpoint từ request. `writing_profile_id` null/vắng mặt dùng default website; ID cụ thể phải đang bật. [API mẫu văn phong](AI_WRITING_PROFILES_API.md) cung cấp options/default và flow phân tích bài tham khảo.
 

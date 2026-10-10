@@ -107,7 +107,7 @@ Worker và database queue đã hỗ trợ nhiều job. Phần cần bổ sung ch
 - Kiểm chứng: backend `AiWritingProfilesApiTest` 11 tests/131 assertions; frontend queue/API/flow/list/dialogs 52 tests; ESLint scoped và Vite build đạt.
 - Có command một lần `ai:sync-writing-profile-drafts` để bù các analysis ready cũ thiếu draft; luồng worker mới đã tạo draft trong cùng transaction.
 - Bổ sung `ai_task_runs` làm projection lifecycle dùng chung; bảng nghiệp vụ vẫn là nguồn chuẩn và migration backfill analysis/import hiện có.
-- Tách `AiTaskRunAdapter` và `AiTaskRunRegistry`: model/worker mới chỉ cần thêm adapter vào `config/ai-task-runs.php`, không phải sửa service/popup/API theo từng model.
+- Tách `AiTaskRunAdapter` và `AiTaskRunRegistry`: model/worker mới chỉ cần thêm adapter vào `config/ai/task-runs.php`, không phải sửa service/popup/API theo từng model.
 - API dùng chung: `GET /api/admin/ai/tasks`, `GET /api/admin/ai/tasks/{taskRun}`, `POST /api/admin/ai/tasks/{taskRun}/cancel`, có scope owner/quyền module, filter và pagination.
 - Worker hiện tại đồng bộ tracker sau khi queue, bắt đầu/kết thúc/hủy; projection chỉ chứa metadata allowlist và lỗi generic.
 - Adapter import chuẩn hóa trạng thái legacy `completed`/`succeeded` thành `ready`, đồng thời reconcile run quá hạn thành `expired` để popup không poll vô hạn.

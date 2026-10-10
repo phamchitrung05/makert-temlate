@@ -26,7 +26,7 @@ final class AiGenerationPolicyTest extends TestCase
         parent::setUp();
         $this->useIsolatedDatabase();
         $this->seed(RolePermissionSeeder::class);
-        config(['queue.default' => 'database', 'ai-providers.default_provider' => 'deterministic']);
+        config(['queue.default' => 'database', 'ai.providers.default_provider' => 'deterministic']);
         Queue::fake();
         Http::preventStrayRequests();
     }
@@ -86,7 +86,7 @@ final class AiGenerationPolicyTest extends TestCase
 
     public function test_unconfigured_legacy_auto_cannot_report_deterministic_success(): void
     {
-        config(['ai-providers.default_provider' => 'http-json', 'ai-providers.connections.http-json.endpoint' => '', 'ai-providers.connections.http-json.api_key' => '']);
+        config(['ai.providers.default_provider' => 'http-json', 'ai.providers.connections.http-json.endpoint' => '', 'ai.providers.connections.http-json.api_key' => '']);
         $this->expectException(ValidationException::class);
         app(ModelResolver::class)->resolve(AiCapability::Text);
     }

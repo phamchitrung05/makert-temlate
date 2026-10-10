@@ -9,7 +9,7 @@
  * INPUT/OUTPUT CỦA FILE (tổng thể):
  * - INPUT : biến môi trường `AI_IMPORT_*`, không chứa secret mặc định.
  * - OUTPUT: timeout đọc nguồn/job, giới hạn payload, quota và retention.
- * - Provider, model và kết nối từ .env được khai báo trong ai-providers.php.
+ * - Provider, model và kết nối từ .env được khai báo trong config/ai/providers.php.
  * - SIDE EFFECT: không gọi network; application code đọc qua `config()`.
  * =====================================================================
  */

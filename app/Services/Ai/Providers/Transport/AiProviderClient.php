@@ -52,7 +52,7 @@ final class AiProviderClient
         if ($driver !== 'gemini' && empty(trim($parts['path'] ?? '', '/'))) {
             $base .= '/v1';
         }
-        $allowed = config('ai-providers.allowed_hosts', []);
+        $allowed = config('ai.providers.allowed_hosts', []);
         $host = strtolower(trim((string) ($parts['host'] ?? ''), '[]'));
         if ($allowed !== [] && ! in_array($host, $allowed, true)) {
             throw new AiImportException('Host endpoint chưa được phép bởi egress policy.', 'AI_ENDPOINT_NOT_ALLOWED');
@@ -145,7 +145,7 @@ final class AiProviderClient
             throw new AiImportException($message, 'AI_PROVIDER_HTTP_'.$response->status(),
                 $response->status() === 429 || ($method === 'GET' && $response->serverError()));
         }
-        if (strlen($response->body()) > (int) config('ai-providers.max_response_bytes')) {
+        if (strlen($response->body()) > (int) config('ai.providers.max_response_bytes')) {
             throw new AiImportException('Response provider vượt giới hạn.', 'AI_PROVIDER_RESPONSE_TOO_LARGE');
         }
         $json = $response->json();

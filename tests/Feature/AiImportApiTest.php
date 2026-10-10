@@ -456,7 +456,7 @@ class AiImportApiTest extends TestCase
             ->assertJsonPath('data.target_type', 'post')
             ->assertJsonPath('data.prompts.0.key', 'post.create.from_url')
             ->assertJsonPath('data.schemas.0.key', 'post.content.v1');
-        $configuredKey = (string) config('ai-providers.connections.http-json.key');
+        $configuredKey = (string) config('ai.providers.connections.http-json.key');
         if ($configuredKey !== '') {
             $this->assertStringNotContainsString($configuredKey, $response->getContent());
         }

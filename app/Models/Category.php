@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\TaxonomyStatus;
+use App\Models\Concerns\HasMediaAssets;
 use App\Models\Concerns\HasSlug;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,8 +24,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - parent(), children(): các cấp của cây danh mục
+ * - casts(): cast trạng thái, tùy chọn menu và thứ tự
  * - slugs(): tập slug của danh mục
+ * - slugSource(), slugSourceColumn(): nguồn sinh slug
  * - resources(): resource đã gắn vào danh mục này
+ * - posts(): bài viết đã gắn vào danh mục này
  * - scopeRoots(): lọc danh mục cấp cao nhất
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
@@ -35,7 +39,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Category extends Model
 {
     /** @use HasFactory<\Database\Factories\CategoryFactory> */
-    use HasFactory, HasSlug, SoftDeletes;
+    use HasFactory, HasMediaAssets, HasSlug, SoftDeletes;
 
     /**
      * @var list<string>
@@ -46,6 +50,7 @@ class Category extends Model
         'description',
         'status',
         'sort_order',
+        'show_on_menu',
     ];
 
     /**
@@ -61,6 +66,7 @@ class Category extends Model
         return [
             'status' => TaxonomyStatus::class,
             'sort_order' => 'integer',
+            'show_on_menu' => 'boolean',
         ];
     }
 
@@ -143,6 +149,17 @@ class Category extends Model
     public function resources(): MorphToMany
     {
         return $this->morphedByMany(Resource::class, 'categorizable')
+            ->withPivot('sort_order')
+            ->withTimestamps();
+    }
+
+    /**
+     * Lấy bài viết trong Category để API trả số lượng bài thực tế.
+     * Input: Category hiện tại. Output: quan hệ Post qua pivot categorizables.
+     */
+    public function posts(): MorphToMany
+    {
+        return $this->morphedByMany(Post::class, 'categorizable')
             ->withPivot('sort_order')
             ->withTimestamps();
     }

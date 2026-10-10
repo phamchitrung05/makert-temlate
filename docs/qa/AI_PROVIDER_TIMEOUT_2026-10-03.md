@@ -4,7 +4,7 @@
 
 - Thêm `ai_providers.request_timeout`: integer 5–600 giây, API resource không lộ key.
 - Provider hiện tại nhận 120 giây từ migration; edit bỏ field giữ giá trị đã lưu.
-- Mặc định provider mới đọc `config/ai-providers.php` / `AI_PROVIDER_REQUEST_TIMEOUT`.
+- Mặc định provider mới đọc `config/ai/providers.php` / `AI_PROVIDER_REQUEST_TIMEOUT`.
   Config trong workspace hiện là 200 giây, giữ thay đổi của người dùng.
 - Form dùng field số và icon Tabler; preset từ API mang default timeout.
 - Text/image resolver, provider test và model discovery dùng thời gian chờ riêng.

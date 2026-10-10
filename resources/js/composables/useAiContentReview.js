@@ -4,7 +4,7 @@
  * CHỨC NĂNG FILE: Điều phối xem nguồn/lịch sử và quyết định duyệt bài AI.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE: useAiContentReview(), openReview(), loadReview(),
- * loadHistory(), requestDecision(), closeDecision(), confirmDecision(), closeReview(),
+ * loadHistory(), rescoreQuality(), requestDecision(), closeDecision(), confirmDecision(), closeReview(),
  * finishClose(), scope dispose; state (computed).
  * INPUT/OUTPUT CỦA CLASS (tổng thể): item/callback -> dialog và trạng thái list.
  * SIDE EFFECT: GET có abort/sequence; POST một lần, lỗi chưa rõ yêu cầu GET kiểm lại.
@@ -91,6 +91,23 @@ export function useAiContentReview(updateSession, sharedNotice) {
     finally { if (!disposed && token === generation) loading.value = false }
   }
 
+  /** Input: candidate đang mở có quality failed/expired. Output: xếp chấm lại và tải trạng thái mới. */
+  async function rescoreQuality() {
+    if (!open.value || busy.value || loading.value || !detail.value?.job_id) return
+    busy.value = true
+    decisionError.value = ''
+    try {
+      await aiAgentService.rescoreQuality(detail.value.job_id)
+      busy.value = false
+      notice.value = { type: 'success', message: 'Đã xếp hàng chấm lại chất lượng.' }
+      await loadReview()
+    }
+    catch (failure) {
+      busy.value = false
+      decisionError.value = formatAiError(failure, 'Không thể xếp chấm lại chất lượng.')
+    }
+  }
+
   /** Input: item Post. Output: dialog khóa khi GET; không tự quyết định hoặc gọi model. */
   function openReview(item) {
     if (busy.value || item.targetType !== 'post') return
@@ -175,6 +192,6 @@ export function useAiContentReview(updateSession, sharedNotice) {
     historyAbort?.abort()
   })
 
-  return { state, notice, openReview, loadReview, loadHistory, requestDecision, closeDecision,
+  return { state, notice, openReview, loadReview, loadHistory, rescoreQuality, requestDecision, closeDecision,
     confirmDecision, closeReview, finishClose }
 }

@@ -2,8 +2,6 @@
 
 namespace App\Http\Requests\Admin;
 
-use Illuminate\Validation\Rule;
-
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Validate request tạo danh mục
@@ -15,8 +13,7 @@ use Illuminate\Validation\Rule;
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - rules(): rule tạo danh mục
- * - typeSpecificRules(): bổ sung parent_id và sort_order
- * - table(): tên bảng cho rule unique
+ * - Các rule parent/menu/media và kiểm tra cây kế thừa từ CategoryRequest.
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : payload tạo danh mục từ admin
@@ -26,7 +23,7 @@ use Illuminate\Validation\Rule;
  * - Không mở transaction; chỉ validate
  * =====================================================================
  */
-class CategoryCreateRequest extends TaxonomyRequest
+class CategoryCreateRequest extends CategoryRequest
 {
     /**
      * =====================================================================
@@ -44,35 +41,4 @@ class CategoryCreateRequest extends TaxonomyRequest
         return $this->sharedRules(true);
     }
 
-    /**
-     * =====================================================================
-     * CHỨC NĂNG: Bổ sung rule riêng cho cây danh mục
-     * =====================================================================
-     *
-     * INPUT:
-     * - $isCreate: không dùng, giữ đúng chữ ký của lớp cha
-     *
-     * OUTPUT:
-     * - array<string, array<int, string>>: parent_id và sort_order
-     */
-    protected function typeSpecificRules(bool $isCreate): array
-    {
-        return [
-            'parent_id' => ['nullable', 'integer', 'exists:categories,id'],
-            'sort_order' => ['sometimes', 'integer', 'min:0'],
-        ];
-    }
-
-    /**
-     * =====================================================================
-     * CHỨC NĂNG: Trả về tên bảng dùng cho rule unique
-     * =====================================================================
-     *
-     * OUTPUT:
-     * - string: categories
-     */
-    protected function table(): string
-    {
-        return 'categories';
-    }
 }

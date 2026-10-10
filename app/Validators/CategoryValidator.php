@@ -97,6 +97,7 @@ class CategoryValidator extends LaravelValidator
             'parent_id' => ['nullable', 'integer', 'exists:categories,id'],
             'description' => ['nullable', 'string'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
+            'show_on_menu' => ['sometimes', 'boolean'],
         ];
     }
 }

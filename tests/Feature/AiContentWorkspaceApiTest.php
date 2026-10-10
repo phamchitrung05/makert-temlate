@@ -189,13 +189,13 @@ class AiContentWorkspaceApiTest extends TestCase
         $this->assertSame(3, AiImport::distinct()->count('source_hash'));
         Queue::assertPushed(ProcessAiImportJob::class, 3);
         $this->withToken($token)->getJson('/api/admin/ai-agent/sessions')->assertJsonCount(3, 'data');
-        config(['ai-agent.targets.lesson' => [
+        config(['ai.agent.targets.lesson' => [
             'enabled' => true, 'label' => 'Lesson', 'permission' => 'posts.manage',
             'content_instructions' => 'Write a lesson.', 'inputs' => ['text'], 'outputs' => ['title', 'content'],
         ]]);
         $this->withToken($token)->getJson('/api/admin/ai-agent/targets')->assertJsonPath('data.3.label', 'Lesson');
         $this->createRun($token, 'lesson');
-        config(['ai-agent.targets.lesson.enabled' => false]);
+        config(['ai.agent.targets.lesson.enabled' => false]);
         $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
             'target_type' => 'lesson', 'text' => 'A lesson',
         ])->assertUnprocessable()->assertJsonValidationErrors('target_type');

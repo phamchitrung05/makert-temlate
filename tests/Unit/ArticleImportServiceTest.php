@@ -29,8 +29,8 @@ class ArticleImportServiceTest extends TestCase
      */
     public function test_extracts_deterministic_draft_from_article_fixture(): void
     {
-        config()->set('ai-providers.connections.http-json.endpoint', null);
-        config()->set('ai-providers.connections.http-json.key', null);
+        config()->set('ai.providers.connections.http-json.endpoint', null);
+        config()->set('ai.providers.connections.http-json.key', null);
         Http::fake(['https://example.test/article' => Http::response('<html><head><title>Tiêu đề thử nghiệm</title><meta name="description" content="Mô tả"></head><body><article><h2>Mục một</h2><p>Nội dung bài viết an toàn.</p></article></body></html>')]);
 
         $result = (new ArticleImportService(new StructuredAiProvider))->run(new AiImport(['source_url' => 'https://example.test/article']));
@@ -88,8 +88,8 @@ class ArticleImportServiceTest extends TestCase
      */
     public function test_sanitizes_event_handlers_and_javascript_links(): void
     {
-        config()->set('ai-providers.connections.http-json.endpoint', null);
-        config()->set('ai-providers.connections.http-json.key', null);
+        config()->set('ai.providers.connections.http-json.endpoint', null);
+        config()->set('ai.providers.connections.http-json.key', null);
         Http::fake(['https://example.test/article' => Http::response('<article><p onclick="alert(1)">An toàn <a href="javascript:alert(1)" onmouseover="bad()">link</a></p></article>')]);
 
         $result = (new ArticleImportService(new StructuredAiProvider))->run(new AiImport(['source_url' => 'https://example.test/article']));
@@ -104,8 +104,8 @@ class ArticleImportServiceTest extends TestCase
      */
     public function test_preserves_code_examples_and_safe_table_markup(): void
     {
-        config()->set('ai-providers.connections.http-json.endpoint', null);
-        config()->set('ai-providers.connections.http-json.key', null);
+        config()->set('ai.providers.connections.http-json.endpoint', null);
+        config()->set('ai.providers.connections.http-json.key', null);
         Http::fake(['https://example.test/article' => Http::response('<article><pre class="language-php"><code>&lt;?php echo "ok";</code></pre><table onclick="bad()"><tr><th scope="col">Tên</th><td colspan="2">Giá trị</td></tr></table></article>')]);
 
         $result = (new ArticleImportService(new StructuredAiProvider))->run(new AiImport(['source_url' => 'https://example.test/article']));
@@ -139,7 +139,7 @@ class ArticleImportServiceTest extends TestCase
      */
     public function test_rejects_oversized_source_html(): void
     {
-        config()->set('ai-import.max_html_bytes', 10);
+        config()->set('ai.import.max_html_bytes', 10);
         Http::fake(['https://example.test/article' => Http::response('<article>too large</article>')]);
 
         $this->expectException(AiImportException::class);

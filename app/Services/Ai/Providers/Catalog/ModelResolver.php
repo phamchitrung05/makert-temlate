@@ -76,7 +76,7 @@ final class ModelResolver
             throw ValidationException::withMessages(['model_id' => 'Hãy cấu hình model mặc định hoặc fallback khả dụng cho tác vụ này.']);
         }
 
-        $provider = (string) config('ai-providers.default_provider', 'deterministic');
+        $provider = (string) config('ai.providers.default_provider', 'deterministic');
         if ($provider === 'deterministic') {
             throw ValidationException::withMessages(['model_id' => 'Chưa có model AI mặc định. Chọn model hoặc cấu hình model mặc định/fallback trong AI & Content.']);
         }

@@ -78,7 +78,7 @@ final class AiOutputValidationLifecycleTest extends TestCase
             'media-library.asset_disks.public' => 'media_public',
             'media-library.asset_disks.private' => 'media_private',
             'media-assets.temporary_disk' => 'media_private',
-            'ai-providers.allowed_hosts' => [],
+            'ai.providers.allowed_hosts' => [],
             'queue.default' => 'database',
         ]);
         $actor = User::factory()->create(['status' => 'active']);

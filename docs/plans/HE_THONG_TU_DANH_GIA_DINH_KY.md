@@ -2,7 +2,7 @@
 
 **Cập nhật:** 07/10/2026
 
-**Trạng thái:** IN PROGRESS — Giai đoạn 1 DONE, migration đã chạy trên database local. Ngày 07/10/2026 đã cập nhật kế hoạch theo thảo luận mới: chấm từng bài trước khi duyệt, vòng tròn điểm trong Content AI và báo cáo tổng hợp định kỳ. Giai đoạn 2–6 còn TODO; lần cập nhật này chưa triển khai các chức năng đó.
+**Trạng thái:** IN PROGRESS — Giai đoạn 1–3 DONE trong phạm vi local, migration G2 đã chạy trên database local. G2/G3 đã có evaluator theo hash, cổng Approve/Apply và vòng tròn điểm; G4–G6 còn TODO cho báo cáo, cấu hình và kiểm thử host/provider thật.
 
 Kho bài gốc đã triển khai. Phần code evaluator, cổng duyệt, giao diện điểm và báo cáo vẫn tạm hoãn theo yêu cầu trước đó; cập nhật kế hoạch không đồng nghĩa đã bật chấm AI hoặc lịch chạy. Tiến độ các task khác xem kế hoạch tổng.
 
@@ -30,7 +30,7 @@ Phạm vi đầu tiên là bài Post do AI Content tạo; image run và lượt 
 | --- | --- |
 | [AiImport](../../app/Models/AiImport.php), nguồn `source_meta.article_source`, result và checkpoint tạm | Chấm từng candidate khi có nội dung; vòng tròn điểm và chi tiết trong Content AI |
 | [AiArticleArchive](../../app/Models/AiArticleArchive.php) giữ bài gốc/nguồn/ngữ cảnh đã duyệt; [AiProvenance](../../app/Models/AiProvenance.php) giữ metadata/hash của field đã Apply | Giữ thêm kết quả chấm đúng bản được chọn, cùng transaction duyệt/Apply |
-| [Cleanup](../../app/Console/Commands/CleanupAiImportsCommand.php), retention mặc định [2 ngày](../../config/ai-import.php) | Dọn điểm/dẫn chứng tạm của candidate chưa duyệt; bảo toàn bài và điểm của bản đã duyệt |
+| [Cleanup](../../app/Console/Commands/CleanupAiImportsCommand.php), retention mặc định [2 ngày](../../config/ai/import.php) | Dọn điểm/dẫn chứng tạm của candidate chưa duyệt; bảo toàn bài và điểm của bản đã duyệt |
 | [ProjectScheduleRegistry](../../app/Services/Settings/ProjectScheduleRegistry.php), queue, Settings và provider/model catalog | Job chấm ngay, lịch tổng hợp báo cáo, cấu hình evaluator và ngân sách riêng |
 | [Rubric chất lượng](../quality/AI_ARTICLE_QUALITY_EVALUATION.md), gate kỹ thuật và bộ đánh giá offline | Tiêu chí/version dùng chung, cổng duyệt phía backend, kiểm chứng kết quả AI và báo cáo |
 
@@ -177,23 +177,23 @@ Giai đoạn 1 đã đạt các kiểm thử này và truy được bản gốc 
 
 **Ranh giới với kế hoạch mới:** bằng chứng G1 xác nhận cơ chế lưu bài, chưa xác nhận cổng điểm hay lưu kết quả chấm. Hành vi duyệt legacy ghi trên đây là hành vi hiện có; khi triển khai cổng mới, không tự cho legacy thiếu nguồn/điểm đạt điều kiện. Post đã duyệt trước đó không bị hủy; lịch sử thiếu dữ liệu giữ nhãn riêng.
 
-### Giai đoạn 2 — bộ chấm từng bài (`TODO`, ưu tiên tiếp theo của Q-01)
+### Giai đoạn 2 — bộ chấm từng bài (`IMPLEMENTED`, 09/10/2026)
 
-- [ ] Chốt rubric/version, công thức điểm tổng, prompt/schema có dẫn chứng và các trạng thái đủ nguồn/đạt dữ kiện. Ngưỡng duyệt đã chọn là **> 4/5**.
-- [ ] Schema/model/service lưu điểm tạm theo candidate/generation/hash; migration mới nếu cần, không thay migration G1 đã chạy. Kết quả được duyệt tồn tại độc lập với run tạm.
-- [ ] Service/job chấm nguồn + bài + brief/profile; cấu hình evaluator riêng qua provider/catalog hiện có; timeout, retry hữu hạn, khóa chống trùng và ngân sách.
-- [ ] Validator điểm/evidence/source references; backend tính tổng và kết luận đủ điều kiện. Lưu attempt/usage/chi phí an toàn; lỗi chấm không tạo điểm giả.
-- [ ] Thử trên bộ bài đã lưu, đối chiếu với [lượt chấm AI hiện tại](../qa/FIX1_ACCEPTANCE_2026-10-07/ai-review/README.md); ghi chênh lệch có lý do, không sửa điểm lịch sử. Chuẩn bị đối chiếu người đọc khi có phiếu.
+- [x] Chốt rubric/version, công thức điểm tổng, prompt/schema có dẫn chứng và các trạng thái đủ nguồn/đạt dữ kiện. Ngưỡng duyệt là **> 4/5**.
+- [x] Schema/model/service lưu điểm tạm theo candidate/generation/hash trong `ai_article_evaluations`; kết quả archive giữ độc lập với run tạm.
+- [x] Service/job chấm source + draft + brief/profile qua ProviderRegistry; timeout, retry hữu hạn và khóa chống chấm trùng đã có.
+- [x] Validator điểm/evidence/source references; backend tính tổng/eligibility. Usage/diagnostics bounded; lỗi chấm không tạo điểm giả.
+- [ ] Chạy đối chiếu provider thật trên bộ bài đã lưu và phiếu người đọc; để G6 thực hiện sau khi cấu hình evaluator/budget trên host.
 
-### Giai đoạn 3 — chấm ngay, cổng duyệt và vòng tròn điểm (`TODO`, sau giai đoạn 2)
+### Giai đoạn 3 — chấm ngay, cổng duyệt và vòng tròn điểm (`IMPLEMENTED`, 09/10/2026)
 
-- [ ] Enqueue chấm khi nội dung/checkpoint đã lưu thành công; phân biệt retry kỹ thuật, regenerate và bản được sửa; bỏ kết quả đến muộn sai hash/generation.
-- [ ] Cổng backend cho mọi đường duyệt/Apply vào Post: kết quả hợp lệ/đúng phiên bản, điểm > 4, đủ nguồn và đạt dữ kiện; chưa đủ điều kiện trả lý do rõ ràng.
-- [ ] Vòng tròn điểm bên phải mỗi bài trong Danh sách Content AI; trạng thái chờ/đang chấm/lỗi/thiếu căn cứ; bấm mở điểm thành phần, nhận xét, dẫn chứng và version.
-- [ ] Chấm lại bản đã sửa trước duyệt, giữ điểm/bản AI gốc riêng; snapshot/hash bản đã sửa được duyệt gắn đúng kết quả của nó.
-- [ ] Giữ điểm được chọn cùng transaction duyệt/Apply và archive; lỗi rollback. Cleanup xóa điểm tạm chưa chọn sau 2 ngày, không xóa bài/điểm đã lưu lâu dài.
-- [ ] Quyền xem/chấm lại/duyệt và trạng thái nút Duyệt/Apply; kiểm cả API gọi trực tiếp. Kiểm thử ba bản đều có điểm tạm, chỉ bản 2 được chọn tồn tại sau cleanup.
-- [ ] Ghi QA chấm trước duyệt: ranh giới điểm 4,00, lỗi/thiếu nguồn, điểm cũ sau edit, evaluator lỗi, rollback và không tự duyệt.
+- [x] Enqueue chấm sau commit `ready`; generation/hash chống kết quả đến muộn; PATCH candidate tạo evaluation mới.
+- [x] Cổng backend cho Approve và Apply: evaluation đúng phiên bản, điểm > 4, đủ nguồn và đạt dữ kiện; lý do trả về 409.
+- [x] Vòng tròn điểm bên phải mỗi bài; trạng thái chờ/đang chấm/lỗi/thiếu căn cứ; dialog hiển thị điểm thành phần, rubric, nhận xét, evidence, references và version.
+- [x] Chấm lại bản đã sửa theo hash mới; điểm cũ không được dùng; archive giữ snapshot quality của bản được duyệt.
+- [x] Ghi điểm được chọn cùng lifecycle archive trong transaction duyệt/Apply; cleanup/delete xóa evaluation tạm theo run, retention 2 ngày.
+- [x] Quyền xem/chấm lại/duyệt theo owner + `posts.manage`; nút Duyệt/Apply đọc cờ `can_approve`; test API gọi trực tiếp.
+- [x] QA tự động kiểm boundary gate trước/sau evaluation, idempotency hash, archive score và frontend build/test. Kiểm provider thật/host để G6.
 
 ### Giai đoạn 4 — lịch tổng hợp, số liệu và bài phân tích (`TODO`, sau giai đoạn 3)
 

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Exceptions\AiArticleArchiveException;
 use App\Exceptions\AiImportException;
+use App\Jobs\EvaluateAiArticleJob;
 use App\Jobs\ProcessAiImportJob;
 use App\Models\AiArticleArchive;
 use App\Models\AiImport;
@@ -249,6 +250,17 @@ class AiArticleArchiveTest extends TestCase
         $this->assertSame('ready', $run->fresh()->status);
         $this->assertNotNull($run->fresh()->archive_pending_json);
         $this->assertDatabaseMissing('ai_article_archives', ['run_id' => $run->id]);
+        $quality = app(\App\Services\Ai\Content\Quality\ArticleQualityEvaluationService::class);
+        if ($quality->supports($run->fresh())) {
+            $evaluation = $quality->latestFor($run->fresh());
+            $evaluation?->forceFill([
+                'status' => 'ready', 'score_total' => 4.5,
+                'scores_json' => ['accuracy' => 4.5, 'source_grounding' => 4.5, 'clarity' => 4.5, 'structure' => 4.5, 'style' => 4.5],
+                'source_references_json' => ['S001'],
+                'eligibility_json' => ['score' => true, 'source' => true, 'facts' => true, 'eligible' => true, 'reasons' => []],
+                'completed_at' => now(),
+            ])->save();
+        }
     }
 
     /**
@@ -272,6 +284,17 @@ class AiArticleArchiveTest extends TestCase
      */
     private function approve(AiImport $run, array $fields = ['title', 'content']): int
     {
+        $quality = app(\App\Services\Ai\Content\Quality\ArticleQualityEvaluationService::class);
+        if ($quality->supports($run->fresh())) {
+            $evaluation = $quality->schedule($run->fresh());
+            $evaluation?->forceFill([
+                'status' => 'ready', 'score_total' => 4.5,
+                'scores_json' => ['accuracy' => 4.5, 'source_grounding' => 4.5, 'clarity' => 4.5, 'structure' => 4.5, 'style' => 4.5],
+                'source_references_json' => ['S001'],
+                'eligibility_json' => ['score' => true, 'source' => true, 'facts' => true, 'eligible' => true, 'reasons' => []],
+                'completed_at' => now(),
+            ])->save();
+        }
         $token = $this->token($run);
         $response = $this->withToken($token)->postJson('/api/admin/ai-agent/candidates/'.$run->id.'/apply', [
             'fields' => $fields,
@@ -1176,6 +1199,15 @@ class AiArticleArchiveTest extends TestCase
     {
         foreach ([null, ['hash' => 'invalid', 'snapshot' => [], 'result' => []]] as $pending) {
             $run = $this->makeRun(['status' => 'ready', 'result_json' => $this->fixtureResult(), 'archive_pending_json' => $pending]);
+            $quality = app(\App\Services\Ai\Content\Quality\ArticleQualityEvaluationService::class);
+            $evaluation = $quality->schedule($run);
+            $evaluation?->forceFill([
+                'status' => 'ready', 'score_total' => 4.5,
+                'scores_json' => ['accuracy' => 4.5, 'source_grounding' => 4.5, 'clarity' => 4.5, 'structure' => 4.5, 'style' => 4.5],
+                'source_references_json' => ['S001'],
+                'eligibility_json' => ['score' => true, 'source' => true, 'facts' => true, 'eligible' => true, 'reasons' => []],
+                'completed_at' => now(),
+            ])->save();
             $this->withToken($this->token($run))->postJson('/api/admin/ai-agent/candidates/'.$run->id.'/apply', [
                 'fields' => ['title', 'content'],
             ])->assertStatus(500);
@@ -1388,7 +1420,7 @@ class AiArticleArchiveTest extends TestCase
         $this->artisan('ai-articles:archive', ['--limit' => 1001])->assertExitCode(2);
         $this->artisan('ai-articles:archive', ['--run-id' => ['invalid-uuid']])->assertExitCode(2);
         Http::assertNothingSent();
-        Queue::assertNothingPushed();
+        Queue::assertPushed(EvaluateAiArticleJob::class, 2);
     }
 
     /**

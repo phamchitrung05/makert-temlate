@@ -263,7 +263,7 @@ abstract class AbstractStructuredAiProvider implements AiProviderContract, AiRes
         string $promptKey = 'post.create.from_url',
         string $instructions = '',
     ): array {
-        $this->responseMetadata = ['stage' => 'request', 'requested_groups' => $this->outputFields ?? (array) config('ai-agent.legacy_required_outputs', ['title', 'content'])];
+        $this->responseMetadata = ['stage' => 'request', 'requested_groups' => $this->outputFields ?? (array) config('ai.agent.legacy_required_outputs', ['title', 'content'])];
         if (! $this->configured()) {
             $this->responseMetadata['stage'] = 'skipped';
 
@@ -284,7 +284,7 @@ abstract class AbstractStructuredAiProvider implements AiProviderContract, AiRes
         if ($this->outputFields !== null) {
             $selectedFields = [];
             foreach ($this->outputFields as $group) {
-                $selectedFields = array_merge($selectedFields, (array) config('ai-agent.output_definitions.'.$group.'.fields', []));
+                $selectedFields = array_merge($selectedFields, (array) config('ai.agent.output_definitions.'.$group.'.fields', []));
             }
             $allowedFields = array_values(array_intersect($allowedFields, $selectedFields));
             if ($allowedFields === []) {
@@ -328,7 +328,7 @@ abstract class AbstractStructuredAiProvider implements AiProviderContract, AiRes
 
         try {
             $payload = $this->normalizePayload($payload);
-            foreach ((array) config('ai-agent.output_aliases', []) as $alias => $canonical) {
+            foreach ((array) config('ai.agent.output_aliases', []) as $alias => $canonical) {
                 if (! array_key_exists($canonical, $payload) && array_key_exists($alias, $payload)) {
                     $payload[$canonical] = $payload[$alias];
                 }

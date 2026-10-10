@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\TaxonomyStatus;
 use App\Enums\TechnologyType;
 use App\Models\Category;
+use App\Models\MediaAsset;
 use App\Models\Tag;
 use App\Models\Technology;
 use App\Models\User;
@@ -127,6 +128,97 @@ class TaxonomyCrudTest extends TestCase
             'sluggable_type' => (new Category)->getMorphClass(),
             'slug' => 'giao-dien-quan-tri',
             'is_primary' => true,
+        ]);
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm tra field cây/menu và chặn vòng lặp Category
+     * =====================================================================
+     *
+     * INPUT:
+     * - Category gốc, Category con và request cập nhật parent_id.
+     *
+     * OUTPUT:
+     * - Field show_on_menu/parent_id trả đúng qua resource; self-parent bị 422.
+     * =====================================================================
+     */
+    public function test_category_persists_tree_visibility_and_rejects_self_parent(): void
+    {
+        $token = $this->createAdminWithPermissions(['resources.view', 'taxonomy.manage']);
+
+        $rootResponse = $this->withToken($token)
+            ->postJson('/api/admin/categories', [
+                'name' => 'Root Category',
+                'description' => 'Root description',
+                'show_on_menu' => false,
+                'sort_order' => 2,
+                'status' => TaxonomyStatus::Active->value,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.show_on_menu', false)
+            ->assertJsonPath('data.parent_id', null);
+
+        $rootId = $rootResponse->json('data.id');
+
+        $this->withToken($token)
+            ->postJson('/api/admin/categories', [
+                'name' => 'Child Category',
+                'parent_id' => $rootId,
+                'status' => TaxonomyStatus::Active->value,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.parent_id', $rootId);
+
+        $this->withToken($token)
+            ->putJson("/api/admin/categories/{$rootId}", ['parent_id' => $rootId])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['parent_id']);
+
+        $this->withToken($token)
+            ->putJson("/api/admin/categories/{$rootId}", [
+                'name' => 'Root Category',
+                'status' => TaxonomyStatus::Active->value,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Root Category');
+
+        $this->assertDatabaseHas('categories', [
+            'id' => $rootId,
+            'show_on_menu' => 0,
+        ]);
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm tra Category đồng bộ thumbnail qua Media Library
+     * =====================================================================
+     *
+     * INPUT:
+     * - MediaAsset ảnh public và payload media.thumbnail_id.
+     *
+     * OUTPUT:
+     * - HTTP 201, usage field category.thumbnail được ghi đúng model.
+     * =====================================================================
+     */
+    public function test_category_can_attach_public_thumbnail(): void
+    {
+        $token = $this->createAdminWithPermissions(['resources.view', 'taxonomy.manage', 'media.attach']);
+        $asset = MediaAsset::factory()->image()->create();
+
+        $this->withToken($token)
+            ->postJson('/api/admin/categories', [
+                'name' => 'Category có ảnh',
+                'status' => TaxonomyStatus::Active->value,
+                'media' => ['thumbnail_id' => $asset->id],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.media.thumbnail.id', $asset->id);
+
+        $this->assertDatabaseHas('media_asset_usages', [
+            'media_asset_id' => $asset->id,
+            'linkable_type' => 'category',
+            'field' => 'category.thumbnail',
         ]);
     }
 

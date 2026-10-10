@@ -70,7 +70,7 @@ final class AiImageGenerationService
     private function upload(string $binary, int $actorId, string $title, ?string $altText): MediaAsset
     {
         $imageInfo = @getimagesizefromstring($binary);
-        if ($imageInfo === false || strlen($binary) > (int) config('ai-import.max_image_bytes', 10 * 1024 * 1024)) {
+        if ($imageInfo === false || strlen($binary) > (int) config('ai.import.max_image_bytes', 10 * 1024 * 1024)) {
             throw new AiImportException('Provider trả ảnh không hợp lệ hoặc vượt giới hạn.', 'AI_IMAGE_INVALID');
         }
         $mime = strtolower((string) ($imageInfo['mime'] ?? ''));

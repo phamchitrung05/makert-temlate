@@ -10,6 +10,7 @@ use App\Models\MediaAsset;
 use App\Models\Post;
 use App\Models\User;
 use App\Services\Ai\Content\Archives\AiArticleArchiveService;
+use App\Services\Ai\Content\Quality\ArticleQualityEvaluationService;
 use App\Services\Ai\Images\AiThumbnailService;
 use App\Services\Ai\Provenance\AiProvenanceService;
 use App\Services\Ai\Registries\TargetRegistry;
@@ -70,6 +71,7 @@ final class AiContentReviewService
         private readonly TargetRegistry $targets,
         private readonly AiProvenanceService $provenance,
         private readonly AiContentSanitizer $sanitizer,
+        private readonly ArticleQualityEvaluationService $quality,
     ) {}
 
     /**
@@ -189,6 +191,8 @@ final class AiContentReviewService
         }
         $review = self::state($run);
         $canReview = $review['status'] === 'pending_review' && ! $run->expires_at?->isPast();
+        $quality = $this->quality->summary($run);
+        $qualityReady = ! $this->quality->requiresGate($run) || (($quality['eligibility']['eligible'] ?? false) === true);
         $thumbnail = MediaAsset::query()->with('media')->find(data_get($run->result_json, 'draft.thumbnail.media_asset_id'));
 
         return [
@@ -202,7 +206,8 @@ final class AiContentReviewService
             'review' => $review,
             'review_version' => self::version($run),
             'can_review' => $canReview,
-            'can_approve' => $canReview && ! AiThumbnailService::pending($run),
+            'can_approve' => $canReview && $qualityReady && ! AiThumbnailService::pending($run),
+            'quality_evaluation' => $quality,
             'can_edit' => $canReview,
             'applied_target_id' => $run->applied_target_id,
             'has_thumbnail' => filled(data_get($run->result_json, 'draft.thumbnail.media_asset_id')),
@@ -283,6 +288,9 @@ final class AiContentReviewService
             $run = AiImport::query()->lockForUpdate()->findOrFail($candidate->id);
             $this->authorize($actor, $run);
             $this->assertPending($run, $data);
+            if ($this->quality->requiresGate($run)) {
+                $this->quality->assertEligible($run);
+            }
             abort_if(AiThumbnailService::pending($run), 409, 'Thumbnail đang được tạo. Hãy chờ ảnh hoặc hủy tác vụ ảnh trước khi duyệt.');
             $outputs = (array) data_get($run->result_json, 'draft', []);
             if (in_array('taxonomy', $data['fields'], true)) {

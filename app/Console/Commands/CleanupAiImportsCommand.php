@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Exceptions\AiArticleArchiveException;
+use App\Models\AiArticleEvaluation;
 use App\Models\AiImport;
 use App\Services\Ai\Content\Archives\AiArticleArchiveService;
 use App\Services\Ai\Runs\AiRunAssetCleaner;
@@ -39,7 +40,7 @@ class CleanupAiImportsCommand extends Command
      * CHỨC NĂNG: Dọn các import hết hạn theo retention policy
      * =====================================================================
      * INPUT:
-     * - Không nhận tham số; đọc `ai-import.retention_days` và `expires_at`.
+     * - Không nhận tham số; đọc `ai.import.retention_days` và `expires_at`.
      * OUTPUT:
      * - int: SUCCESS khi quét an toàn; FAILURE nếu giữ run vì lỗi kho/cleanup.
      * SIDE EFFECT:
@@ -54,7 +55,7 @@ class CleanupAiImportsCommand extends Command
         $skipped = [];
         AiImport::query()->where(function ($query): void {
             $query->where('expires_at', '<', now())->orWhere(function ($nested): void {
-                $nested->whereIn('status', AiImport::RUNNING_STATUSES)->where('created_at', '<', now()->subDays((int) config('ai-import.retention_days', 2)));
+                $nested->whereIn('status', AiImport::RUNNING_STATUSES)->where('created_at', '<', now()->subDays((int) config('ai.import.retention_days', 2)));
             });
         })->chunkById(100, function ($imports) use (&$count, &$skipped): void {
             foreach ($imports as $import) {
@@ -63,7 +64,7 @@ class CleanupAiImportsCommand extends Command
                         $run = AiImport::query()->lockForUpdate()->find($import->id);
                         if (! $run || ! ($run->expires_at?->isPast()
                             || (in_array($run->status, AiImport::RUNNING_STATUSES, true)
-                                && $run->created_at->lt(now()->subDays((int) config('ai-import.retention_days', 2)))))) {
+                                && $run->created_at->lt(now()->subDays((int) config('ai.import.retention_days', 2)))))) {
                             return false;
                         }
                         if (in_array($run->status, AiImport::RUNNING_STATUSES, true)) {
@@ -72,6 +73,7 @@ class CleanupAiImportsCommand extends Command
                         }
                         app(AiArticleArchiveService::class)->preserve($run, removalReason: 'retention_cleanup');
                         app(AiRunAssetCleaner::class)->cleanup($run);
+                        AiArticleEvaluation::query()->where('run_id', $run->id)->delete();
                         $run->delete();
 
                         return true;

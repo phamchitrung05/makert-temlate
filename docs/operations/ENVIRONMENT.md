@@ -55,13 +55,17 @@ file `.env`; chỉ commit `.env.example` với giá trị mẫu không nhạy c�
 ## AI Content Agent
 
 AI chỉ được gọi từ backend; không đưa API key hoặc endpoint secret vào bundle
-Vue. Ba file cấu hình có trách nhiệm riêng:
+Vue. Các file cấu hình được gom trong `config/ai/` và có trách nhiệm riêng:
 
 | File | Nội dung |
 | --- | --- |
-| `config/ai-agent.php` | Target, quyền, các nhóm đầu ra được phép chọn (`targets.*.outputs`), nhãn nhóm (`output_definitions`), prompt và schema kết quả. Không lưu provider hoặc credential. |
-| `config/ai-providers.php` | Driver/preset/adapter, khả năng model, giới hạn đồng bộ, provider mặc định và `connections` lấy từ môi trường. |
-| `config/ai-import.php` | Bật/tắt pipeline, timeout đọc nguồn/job, giới hạn URL/HTML/ảnh, quota, retention và idempotency. Không lưu credential/model/provider. |
+| `config/ai/agent.php` | Target, quyền, các nhóm đầu ra được phép chọn (`targets.*.outputs`), nhãn nhóm (`output_definitions`), prompt và schema kết quả. Không lưu provider hoặc credential. |
+| `config/ai/providers.php` | Driver/preset/adapter, khả năng model, giới hạn đồng bộ, provider mặc định và `connections` lấy từ môi trường. |
+| `config/ai/import.php` | Bật/tắt pipeline, timeout đọc nguồn/job, giới hạn URL/HTML/ảnh, quota, retention và idempotency. Không lưu credential/model/provider. |
+| `config/ai/content.php` | Pipeline ba bước, prompt/version, schema và quality gate kỹ thuật của luồng tạo bài. |
+| `config/ai/quality.php` | Prompt/schema version và vòng đời queue của evaluator chấm chất lượng. |
+| `config/ai/scoring.php` | Rubric, thang điểm, ngưỡng đạt và 5 tiêu chí chấm điểm; đây là nguồn cấu hình duy nhất cho điểm chất lượng. |
+| `config/ai/task-runs.php` | Registry adapter cho tracker các tác vụ AI dùng chung. |
 
 Các tên biến môi trường đang dùng được giữ nguyên; chỉ nơi đọc cấu hình được
 chuyển về đúng file. Các biến giới hạn URL/job và quota có giá trị mặc định trong
@@ -70,13 +74,14 @@ chuyển về đúng file. Các biến giới hạn URL/job và quota có giá t
 | Nhóm | Biến |
 | --- | --- |
 | Pipeline | `AI_IMPORT_ENABLED` |
-| Provider mặc định | `AI_IMPORT_PROVIDER` → `ai-providers.default_provider` |
-| HTTP JSON | `AI_IMPORT_ENDPOINT`, `AI_IMPORT_KEY`, `AI_IMPORT_MODEL` → `ai-providers.connections.http-json` |
-| OpenAI | `AI_OPENAI_KEY`, `AI_OPENAI_ENDPOINT`, `AI_OPENAI_MODEL`, `AI_OPENAI_TEMPERATURE` → `ai-providers.connections.openai` |
-| Gemini | `AI_GEMINI_KEY`, `AI_GEMINI_ENDPOINT`, `AI_GEMINI_MODEL`, `AI_GEMINI_TEMPERATURE` → `ai-providers.connections.gemini` |
+| Provider mặc định | `AI_IMPORT_PROVIDER` → `ai.providers.default_provider` |
+| HTTP JSON | `AI_IMPORT_ENDPOINT`, `AI_IMPORT_KEY`, `AI_IMPORT_MODEL` → `ai.providers.connections.http-json` |
+| OpenAI | `AI_OPENAI_KEY`, `AI_OPENAI_ENDPOINT`, `AI_OPENAI_MODEL`, `AI_OPENAI_TEMPERATURE` → `ai.providers.connections.openai` |
+| Gemini | `AI_GEMINI_KEY`, `AI_GEMINI_ENDPOINT`, `AI_GEMINI_MODEL`, `AI_GEMINI_TEMPERATURE` → `ai.providers.connections.gemini` |
 | Timeout/retry | `AI_PROVIDER_REQUEST_TIMEOUT`, `AI_IMPORT_TIMEOUT`, `AI_IMPORT_CONNECT_TIMEOUT`, `AI_IMPORT_JOB_TIMEOUT`, `AI_IMPORT_MAX_REDIRECTS` |
 | Payload/file | `AI_IMPORT_MAX_HTML_BYTES`, `AI_IMPORT_MAX_IMAGE_BYTES`, `AI_IMPORT_USER_AGENT` |
 | Prompt/lifecycle | `AI_IMPORT_PROMPT_VERSION`, `AI_IMPORT_RETENTION_DAYS`, `AI_IMPORT_IDEMPOTENCY_WINDOW_MINUTES` |
+| Quality scoring | `AI_QUALITY_RUBRIC_VERSION`, `AI_QUALITY_PROMPT_VERSION`, `AI_QUALITY_SCHEMA_VERSION`, `AI_QUALITY_THRESHOLD`, `AI_QUALITY_RETENTION_DAYS`, `AI_QUALITY_REQUEST_TIMEOUT`, `AI_QUALITY_MAX_ATTEMPTS` |
 | Quota | `AI_IMPORT_QUOTA_PER_HOUR` |
 
 Provider/API key/model chỉnh trong AI Settings được lưu ở database. Bản ghi
@@ -85,7 +90,7 @@ bị tắt không tự quay về connection môi trường. API capability chỉ
 đã lọc, không trả credential hoặc endpoint. Driver/preset dùng một định nghĩa
 adapter chung cho cả connection database và connection môi trường.
 
-`config/ai-providers.php` có `request_timeout` làm mặc định cho provider mới,
+`config/ai/providers.php` có `request_timeout` làm mặc định cho provider mới,
 có thể override bằng `AI_PROVIDER_REQUEST_TIMEOUT`. Giá trị lưu riêng trong
 `ai_providers.request_timeout` được ưu tiên (5–600 giây). Provider hiện tại
 nhận 120 giây từ migration và có thể sửa bằng AI Settings. Thay đổi config trên

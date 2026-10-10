@@ -60,6 +60,6 @@ final class SchemaRegistry
      */
     public function all(): array
     {
-        return (array) config('ai-agent.schemas', []);
+        return (array) config('ai.agent.schemas', []);
     }
 }

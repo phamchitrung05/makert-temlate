@@ -31,6 +31,7 @@ enum MediaAssetField: string
     // Chỉ giữ để đọc dữ liệu/rollback cũ; không còn là field được phép attach.
     case PostContentImages = 'post.content_images';
     case PostOgImage = 'post.og_image';
+    case CategoryThumbnail = 'category.thumbnail';
     case ResourceCover = 'resource.cover';
     case ResourcePreview = 'resource.preview';
     case ResourceVersionPackage = 'resource_version.package';
@@ -64,6 +65,7 @@ enum MediaAssetField: string
             'post.thumbnail' => 'Post thumbnail',
             'post.gallery' => 'Post image gallery',
             'post.og_image' => 'Post Open Graph image',
+            'category.thumbnail' => 'Category thumbnail',
             'resource.cover' => 'Resource cover',
             'resource.preview' => 'Resource preview',
             'resource_version.package' => 'Resource package',
@@ -86,6 +88,7 @@ enum MediaAssetField: string
             self::PostGallery,
             self::PostContentImages,
             self::PostOgImage,
+            self::CategoryThumbnail,
             self::ResourceCover,
             self::ResourcePreview => MediaAssetKind::Image,
             self::ResourceVersionPackage => MediaAssetKind::Archive,
@@ -110,6 +113,7 @@ enum MediaAssetField: string
             self::ResourceVersionDocumentation => true,
             self::PostThumbnail,
             self::PostOgImage,
+            self::CategoryThumbnail,
             self::ResourceCover,
             self::ResourceVersionPackage => false,
         };

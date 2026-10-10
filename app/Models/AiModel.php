@@ -95,6 +95,6 @@ class AiModel extends Model
         }
 
         return $capability !== AiCapability::Image
-            || (bool) config('ai-providers.presets.'.$provider->driver.'.image_supported', false);
+            || (bool) config('ai.providers.presets.'.$provider->driver.'.image_supported', false);
     }
 }

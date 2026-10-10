@@ -18,6 +18,11 @@
  */
 
 export const mediaAssetFieldConfig = Object.freeze({
+  'category.thumbnail': Object.freeze({
+    title: 'Category thumbnail',
+    kind: 'image',
+    multiple: false,
+  }),
   'post.thumbnail': Object.freeze({
     title: 'Post thumbnail',
     kind: 'image',

@@ -15,8 +15,7 @@ use Illuminate\Validation\Rule;
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - rules(): rule cập nhật danh mục
- * - typeSpecificRules(): bổ sung parent_id và sort_order
- * - table(): tên bảng cho rule unique
+ * - Các rule parent/menu/media và kiểm tra cây kế thừa từ CategoryRequest.
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : payload cập nhật danh mục, kèm route param category
@@ -26,7 +25,7 @@ use Illuminate\Validation\Rule;
  * - Không mở transaction; chỉ validate
  * =====================================================================
  */
-class CategoryUpdateRequest extends TaxonomyRequest
+class CategoryUpdateRequest extends CategoryRequest
 {
     /**
      * =====================================================================
@@ -52,16 +51,4 @@ class CategoryUpdateRequest extends TaxonomyRequest
         ]);
     }
 
-    /**
-     * =====================================================================
-     * CHỨC NĂNG: Trả về tên bảng dùng cho rule unique
-     * =====================================================================
-     *
-     * OUTPUT:
-     * - string: categories
-     */
-    protected function table(): string
-    {
-        return 'categories';
-    }
 }

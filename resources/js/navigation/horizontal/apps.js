@@ -5,10 +5,11 @@
  *
  * Menu ngang dùng cùng route name với vertical navigation. Resource nằm
  * trong Ecommerce; Media là nhóm nghiệp vụ riêng cho file dùng chung.
+ * Blog, Taxonomy và SYSTERM được tách thành các nhóm menu nghiệp vụ riêng.
  * Systerm AI tập trung Ai Content, Ai Prompt và AI Settings, cùng route với menu dọc.
  * AI Approved hiển thị snapshot các bài AI đã duyệt lưu dài hạn.
  * Ai Prompt có List đọc mẫu đã lưu và Add phân tích bài tham khảo để tạo mẫu.
- * SYSTERM SETTING chứa trang SETTING trống.
+ * Các mục Page/Category/Tag hiện là placeholder vì giao diện sẽ bổ sung sau.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - Không có; file export một mảng cấu hình menu.
@@ -20,9 +21,47 @@
  */
 export default [
   {
-    title: 'SYSTERM SETTING',
+    title: 'Blog',
+    icon: { icon: 'tabler-news' },
+    children: [
+      {
+        title: 'Post',
+        children: [
+          { title: 'List', to: 'apps-blog-post-list' },
+          { title: 'Add', to: 'apps-blog-post-add' },
+        ],
+      },
+      {
+        title: 'Page',
+        children: [
+          { title: 'List', to: null },
+          { title: 'Add', to: null },
+        ],
+      },
+    ],
+  },
+  {
+    title: 'Taxonomy',
+    icon: { icon: 'tabler-category' },
+    children: [
+      { title: 'Category', to: 'apps-taxonomy-category' },
+      { title: 'Tag', to: null },
+    ],
+  },
+  {
+    title: 'SYSTERM',
     icon: { icon: 'tabler-settings' },
-    children: [{ title: 'SETTING', to: 'settings' }],
+    children: [
+      { title: 'SETTING', to: 'settings' },
+      {
+        title: 'User',
+        children: [
+          { title: 'List', to: 'apps-user-list' },
+          { title: 'View', to: { name: 'apps-user-view-id', params: { id: 21 } } },
+        ],
+      },
+      { title: 'Role & Permissions', to: 'apps-roles' },
+    ],
   },
   {
     title: 'Systerm AI',
@@ -106,14 +145,6 @@ export default [
         ],
       },
       {
-        title: 'Blog',
-        icon: { icon: 'tabler-news' },
-        children: [
-          { title: 'Posts', to: 'apps-blog-post-list' },
-          { title: 'Add Post', to: 'apps-blog-post-add' },
-        ],
-      },
-      {
         title: 'Media',
         icon: { icon: 'tabler-photo' },
         children: [
@@ -167,19 +198,6 @@ export default [
           { title: 'Edit', to: { name: 'apps-invoice-edit-id', params: { id: '5036' } } },
           { title: 'Add', to: 'apps-invoice-add' },
         ],
-      },
-      {
-        title: 'User',
-        icon: { icon: 'tabler-users' },
-        children: [
-          { title: 'List', to: 'apps-user-list' },
-          { title: 'View', to: { name: 'apps-user-view-id', params: { id: 21 } } },
-        ],
-      },
-      {
-        title: 'Roles & Permissions',
-        icon: { icon: 'tabler-settings' },
-        to: 'apps-roles',
       },
     ],
   },

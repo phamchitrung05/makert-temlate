@@ -112,8 +112,8 @@ class AiOutputSelectionApiTest extends TestCase
     public function test_target_and_capability_options_follow_config_labels_and_allowlist(): void
     {
         config([
-            'ai-agent.targets.post.outputs' => ['excerpt', 'seo'],
-            'ai-agent.output_definitions.excerpt.label' => 'Mô tả theo config',
+            'ai.agent.targets.post.outputs' => ['excerpt', 'seo'],
+            'ai.agent.output_definitions.excerpt.label' => 'Mô tả theo config',
         ]);
         $token = $this->token();
         $this->withToken($token)->getJson('/api/admin/ai-agent/targets')->assertOk()
@@ -164,7 +164,7 @@ class AiOutputSelectionApiTest extends TestCase
      */
     public function test_empty_or_unsupported_output_selections_are_rejected_for_the_target(): void
     {
-        config(['ai-agent.targets.post.outputs' => ['title']]);
+        config(['ai.agent.targets.post.outputs' => ['title']]);
         $token = $this->token();
         $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', $this->payload() + [
             'requested_outputs' => ['thumbnail'],

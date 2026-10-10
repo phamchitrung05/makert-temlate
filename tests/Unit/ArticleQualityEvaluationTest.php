@@ -53,7 +53,7 @@ final class ArticleQualityEvaluationTest extends TestCase
      */
     private function input(): array
     {
-        return ['language' => 'vi', 'writing_brief' => ['audience' => 'Người mới'], 'writing_profile_snapshot' => ['id' => 7, 'version' => 2, 'style_instructions' => 'Viết tự nhiên.'], 'pipeline_snapshot' => config('ai-content')];
+        return ['language' => 'vi', 'writing_brief' => ['audience' => 'Người mới'], 'writing_profile_snapshot' => ['id' => 7, 'version' => 2, 'style_instructions' => 'Viết tự nhiên.'], 'pipeline_snapshot' => config('ai.content')];
     }
 
     /**

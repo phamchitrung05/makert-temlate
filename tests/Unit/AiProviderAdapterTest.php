@@ -31,8 +31,8 @@ class AiProviderAdapterTest extends TestCase
 {
     public function test_temperature_zero_and_existing_temperature_are_sent_without_fallback(): void
     {
-        Config::set('ai-providers.connections.openai.key', 'test-openai-key');
-        Config::set('ai-providers.connections.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
+        Config::set('ai.providers.connections.openai.key', 'test-openai-key');
+        Config::set('ai.providers.connections.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
         foreach ([0.0, 0.2] as $temperature) {
             Http::fake(['https://api.openai.test/*' => Http::response(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => json_encode(['title' => 'Title', 'content_html' => '<p>Content</p>'])]]]])]);
             (new OpenAiProvider)->withRunSettings(['temperature' => $temperature])->generate('Nguồn', '<p>Gốc</p>');
@@ -49,8 +49,8 @@ class AiProviderAdapterTest extends TestCase
      */
     public function test_null_optional_fields_are_omitted_but_incorrect_types_are_rejected(): void
     {
-        Config::set('ai-providers.connections.openai.key', 'test-openai-key');
-        Config::set('ai-providers.connections.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
+        Config::set('ai.providers.connections.openai.key', 'test-openai-key');
+        Config::set('ai.providers.connections.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
         Http::fake(['https://api.openai.test/*' => Http::sequence()
             ->push(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => json_encode(['title' => 'Title', 'content_html' => '<p>Content</p>', 'canonical_url' => null, 'thumbnail_prompt' => null, 'robots_index' => false, 'suggested_category_ids' => []])]]]])
             ->push(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => json_encode(['title' => ['value' => 'Title'], 'content_html' => '<p>Content</p>'])]]]]),
@@ -78,15 +78,15 @@ class AiProviderAdapterTest extends TestCase
      */
     public function test_openai_provider_maps_chat_json_output(): void
     {
-        Config::set('ai-providers.connections.openai.key', 'test-openai-key');
-        Config::set('ai-providers.connections.openai.model', 'gpt-test');
+        Config::set('ai.providers.connections.openai.key', 'test-openai-key');
+        Config::set('ai.providers.connections.openai.model', 'gpt-test');
         Http::fake(['https://api.openai.test/*' => Http::response([
             'choices' => [[
                 'finish_reason' => 'stop',
                 'message' => ['content' => json_encode(['title' => 'Tiêu đề', 'content_html' => '<p>Nội dung</p>'])],
             ]],
         ])]);
-        Config::set('ai-providers.connections.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
+        Config::set('ai.providers.connections.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
 
         $result = (new OpenAiProvider)->generate('Nguồn', '<p>Gốc</p>');
 
@@ -108,9 +108,9 @@ class AiProviderAdapterTest extends TestCase
      */
     public function test_gemini_provider_maps_generate_content_output(): void
     {
-        Config::set('ai-providers.connections.gemini.key', 'test-gemini-key');
-        Config::set('ai-providers.connections.gemini.model', 'gemini-test');
-        Config::set('ai-providers.connections.gemini.endpoint', 'https://generativelanguage.test/v1beta');
+        Config::set('ai.providers.connections.gemini.key', 'test-gemini-key');
+        Config::set('ai.providers.connections.gemini.model', 'gemini-test');
+        Config::set('ai.providers.connections.gemini.endpoint', 'https://generativelanguage.test/v1beta');
         Http::fake(['https://generativelanguage.test/*' => Http::response([
             'candidates' => [[
                 'finishReason' => 'STOP',
@@ -141,8 +141,8 @@ class AiProviderAdapterTest extends TestCase
      */
     public function test_provider_rejects_malformed_json(): void
     {
-        Config::set('ai-providers.connections.openai.key', 'test-openai-key');
-        Config::set('ai-providers.connections.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
+        Config::set('ai.providers.connections.openai.key', 'test-openai-key');
+        Config::set('ai.providers.connections.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
         Http::fake(['https://api.openai.test/*' => Http::response([
             'choices' => [[
                 'finish_reason' => 'stop',
@@ -171,8 +171,8 @@ class AiProviderAdapterTest extends TestCase
      */
     public function test_provider_normalizes_connection_timeout(): void
     {
-        Config::set('ai-providers.connections.openai.key', 'test-openai-key');
-        Config::set('ai-providers.connections.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
+        Config::set('ai.providers.connections.openai.key', 'test-openai-key');
+        Config::set('ai.providers.connections.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
         Http::fake(fn () => throw new ConnectionException('timeout'));
 
         try {
@@ -196,13 +196,13 @@ class AiProviderAdapterTest extends TestCase
      */
     public function test_provider_rejects_refusal_response(): void
     {
-        Config::set('ai-providers.connections.openai.key', 'test-openai-key');
+        Config::set('ai.providers.connections.openai.key', 'test-openai-key');
         Http::fake(['https://api.openai.test/*' => Http::response([
             'choices' => [[
                 'message' => ['refusal' => 'safety'],
             ]],
         ])]);
-        Config::set('ai-providers.connections.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
+        Config::set('ai.providers.connections.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
 
         $this->expectExceptionCode(0);
         $this->expectExceptionMessage('từ chối');
@@ -221,9 +221,9 @@ class AiProviderAdapterTest extends TestCase
      */
     public function test_provider_marks_quota_error_as_retryable(): void
     {
-        Config::set('ai-providers.connections.openai.key', 'test-openai-key');
+        Config::set('ai.providers.connections.openai.key', 'test-openai-key');
         Http::fake(['https://api.openai.test/*' => Http::response([], 429)]);
-        Config::set('ai-providers.connections.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
+        Config::set('ai.providers.connections.openai.endpoint', 'https://api.openai.test/v1/chat/completions');
 
         try {
             (new OpenAiProvider)->generate('Nguồn', '<p>Gốc</p>');

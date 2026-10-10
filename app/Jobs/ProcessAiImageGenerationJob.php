@@ -66,7 +66,7 @@ final class ProcessAiImageGenerationJob implements ShouldBeUnique, ShouldQueue
      */
     public function __construct(public readonly string $importId, int $requestTimeout = 30, public readonly ?int $generationNo = null)
     {
-        $this->timeout = max((int) config('ai-import.job_timeout', 180), $requestTimeout + 120);
+        $this->timeout = max((int) config('ai.import.job_timeout', 180), $requestTimeout + 120);
         $this->uniqueFor = $this->timeout * $this->tries + array_sum($this->backoff) + 60;
     }
 
@@ -239,7 +239,7 @@ final class ProcessAiImageGenerationJob implements ShouldBeUnique, ShouldQueue
             }
             $updates = (new AiImport)->forceFill([
                 'status' => 'ready', 'current_step' => 'ready', 'progress' => 100, 'result_json' => $result,
-                'completed_at' => now(), 'expires_at' => now()->addDays((int) config('ai-import.retention_days', 2)),
+                'completed_at' => now(), 'expires_at' => now()->addDays((int) config('ai.import.retention_days', 2)),
                 'error_code' => null, 'error_message' => null,
             ])->getAttributes();
 

@@ -46,7 +46,7 @@ final class ArticleGenerationPipeline
     {
         $this->usedSteps = [];
         $input = (array) $import->input_json;
-        $settings = (array) ($input['pipeline_snapshot'] ?? config('ai-content', []));
+        $settings = (array) ($input['pipeline_snapshot'] ?? config('ai.content', []));
         $groups = array_values(array_diff($fields === [] ? ['title', 'content'] : $fields, ['thumbnail', 'taxonomy']));
         $profile = (array) ($input['writing_profile_snapshot'] ?? []);
         $writingBrief = (array) ($input['writing_brief'] ?? []);

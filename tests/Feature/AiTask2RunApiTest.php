@@ -540,7 +540,7 @@ class AiTask2RunApiTest extends TestCase
      */
     public function test_new_run_forces_three_steps_even_with_legacy_configuration(): void
     {
-        config()->set('ai-content.pipeline', 'single_step');
+        config()->set('ai.content.pipeline', 'single_step');
         $run = $this->createRun($this->token());
         $this->assertSame('three_step', $run->input_json['pipeline_snapshot']['pipeline']);
         $this->assertSame(3, AiRunBudget::calls(array_replace((array) $run->input_json, ['provider' => 'openai'])));

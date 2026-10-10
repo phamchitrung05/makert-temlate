@@ -59,11 +59,11 @@ final class AiProviderController extends Controller
             'settings' => $settings->all(),
             'writing_profiles' => AiWritingProfile::query()->where('status', 'active')->where('is_enabled', true)
                 ->orderBy('name')->orderBy('id')->get(['id', 'name'])->toArray(),
-            'presets' => collect((array) config('ai-providers.presets', []))->map(fn (array $preset, string $key): array => [
+            'presets' => collect((array) config('ai.providers.presets', []))->map(fn (array $preset, string $key): array => [
                 'key' => $key, 'label' => $preset['label'] ?? $key, 'kind' => $preset['kind'] ?? 'custom',
                 'driver' => $preset['driver'] ?? $key, 'base_url' => $preset['base_url'] ?? null,
                 'image_supported' => (bool) ($preset['image_supported'] ?? false),
-                'request_timeout' => (int) config('ai-providers.request_timeout', 120),
+                'request_timeout' => (int) config('ai.providers.request_timeout', 120),
             ])->values()->all(),
         ], 'Cấu hình AI.');
     }

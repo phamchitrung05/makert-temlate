@@ -11,7 +11,7 @@ use LogicException;
  * CHỨC NĂNG FILE: Registry ánh xạ model nghiệp vụ vào adapter task AI.
  * =====================================================================
  * Registry là composition point cho task type mới. Một worker mới chỉ cần
- * tạo adapter, thêm class vào config/ai-task-runs.php và gọi syncFrom().
+ * tạo adapter, thêm class vào config/ai/task-runs.php và gọi syncFrom().
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - register(): thêm adapter theo model class.

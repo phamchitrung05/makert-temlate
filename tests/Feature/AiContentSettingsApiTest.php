@@ -343,12 +343,12 @@ final class AiContentSettingsApiTest extends TestCase
     {
         $token = $this->token();
         config([
-            'ai-providers.connections.openai.enabled' => true, 'ai-providers.connections.openai.model' => 'env-text',
-            'ai-providers.connections.gemini.enabled' => true, 'ai-providers.connections.gemini.model' => 'env-text',
-            'ai-providers.connections.http-json.enabled' => true, 'ai-providers.connections.http-json.model' => 'env-text',
-            'ai-providers.connections.openai.key' => 'offline-key', 'ai-providers.connections.openai.endpoint' => 'https://openai.example/v1/chat/completions',
-            'ai-providers.connections.gemini.key' => 'offline-key', 'ai-providers.connections.gemini.endpoint' => 'https://gemini.example/v1beta',
-            'ai-providers.connections.http-json.key' => 'offline-key', 'ai-providers.connections.http-json.endpoint' => 'https://custom.example/generate',
+            'ai.providers.connections.openai.enabled' => true, 'ai.providers.connections.openai.model' => 'env-text',
+            'ai.providers.connections.gemini.enabled' => true, 'ai.providers.connections.gemini.model' => 'env-text',
+            'ai.providers.connections.http-json.enabled' => true, 'ai.providers.connections.http-json.model' => 'env-text',
+            'ai.providers.connections.openai.key' => 'offline-key', 'ai.providers.connections.openai.endpoint' => 'https://openai.example/v1/chat/completions',
+            'ai.providers.connections.gemini.key' => 'offline-key', 'ai.providers.connections.gemini.endpoint' => 'https://gemini.example/v1beta',
+            'ai.providers.connections.http-json.key' => 'offline-key', 'ai.providers.connections.http-json.endpoint' => 'https://custom.example/generate',
         ]);
         $this->withToken($token)->putJson('/api/admin/settings/ai/settings', [
             'default_temperature' => 0.9, 'min_word_count' => 350, 'default_system_prompt' => 'Dùng các câu ngắn.',

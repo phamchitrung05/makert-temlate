@@ -2,7 +2,7 @@
   =====================================================================
   CHỨC NĂNG FILE: Xem nguồn, kết quả AI, quyết định và lịch sử trước khi duyệt.
   =====================================================================
-  CÁC HÀM/METHOD TRONG FILE: reviewLabel/reviewColor/postId/locked/displayLoading (computed),
+  CÁC HÀM/METHOD TRONG FILE: reviewLabel/reviewColor/postId/locked/displayLoading/qualityLabel/qualityColor (computed),
   watcher open, finishEnter(), finishLeave(), dateLabel().
   INPUT/OUTPUT CỦA CLASS (tổng thể): state -> emit thao tác GET/biên tập/quyết định.
   SIDE EFFECT: không gọi API, không render HTML nguồn; giữ content đến after-leave.
@@ -20,13 +20,20 @@ import AiContentComparison from '@/views/ai/content/AiContentComparison.vue'
 import AiContentReviewHistory from '@/views/ai/content/AiContentReviewHistory.vue'
 
 const props = defineProps({ state: { type: Object, required: true } })
-const emit = defineEmits(['close', 'afterLeave', 'reload', 'historyReload', 'historyMore', 'approve', 'reject', 'edit'])
+const emit = defineEmits(['close', 'afterLeave', 'reload', 'rescore', 'historyReload', 'historyMore', 'approve', 'reject', 'edit'])
 const contentActive = shallowRef(false)
 const displayLoading = computed(() => props.state.loading || (props.state.open && !contentActive.value))
 const reviewLabel = computed(() => ({ pending_review: 'Chờ duyệt', approved: 'Đã duyệt', rejected: 'Từ chối', not_ready: 'Chưa sẵn sàng' }[props.state.detail?.review?.status] ?? 'Đang tải'))
 const reviewColor = computed(() => ({ pending_review: 'warning', approved: 'success', rejected: 'error' }[props.state.detail?.review?.status] ?? 'secondary'))
 const postId = computed(() => props.state.detail?.review?.post_id || props.state.detail?.applied_target_id)
 const locked = computed(() => displayLoading.value || props.state.busy || Boolean(props.state.error))
+const quality = computed(() => props.state.detail?.quality_evaluation ?? null)
+const qualityScore = computed(() => Number.isFinite(Number(quality.value?.score_total)) ? Number(quality.value.score_total) : null)
+const qualityColor = computed(() => quality.value?.status === 'ready' ? (quality.value?.eligibility?.eligible ? 'success' : 'error') : 'warning')
+const qualityLabel = computed(() => {
+  if (qualityScore.value !== null) return `Đánh giá chất lượng ${qualityScore.value.toFixed(2)}/5`
+  return ({ pending: 'Đang chờ đánh giá chất lượng', queued: 'Đang xếp hàng đánh giá', running: 'Đang đánh giá', failed: 'Đánh giá lỗi', expired: 'Điểm đã hết hạn' }[quality.value?.status] ?? 'Chưa có đánh giá chất lượng')
+})
 
 /** Input: mở lại dialog. Output: trì hoãn text dài cho đến khi hiệu ứng mở hoàn tất. */
 watch(() => props.state.open, open => {
@@ -134,6 +141,64 @@ const dateLabel = value => value && !Number.isNaN(new Date(value).getTime()) ? n
         >
           Lý do: {{ props.state.detail.review.reason }}
         </VAlert>
+        <VCard
+          v-if="quality"
+          variant="tonal"
+          class="mb-4"
+        >
+          <VCardText class="d-flex flex-wrap align-center gap-4 py-3">
+            <VProgressCircular
+              :model-value="(qualityScore ?? 0) * 20"
+              :indeterminate="qualityScore === null && ['queued', 'running'].includes(quality.status)"
+              :color="qualityColor"
+              :size="56"
+              :width="6"
+              :aria-label="qualityLabel"
+            >
+              <span class="text-body-2 font-weight-bold">
+                {{ qualityScore === null ? '–' : qualityScore.toFixed(1) }}
+              </span>
+            </VProgressCircular>
+            <div class="flex-grow-1">
+              <div class="text-subtitle-2">{{ qualityLabel }}</div>
+              <div class="text-caption text-medium-emphasis">
+                Rubric {{ quality.rubric_version }} · {{ quality.status === 'ready' ? (quality.eligibility?.eligible ? 'Đủ điều kiện duyệt' : 'Chưa đủ điều kiện duyệt') : 'Chưa thể kết luận' }}
+              </div>
+              <div
+                v-if="quality.eligibility?.reasons?.length"
+                class="text-caption text-medium-emphasis mt-1"
+              >
+                {{ quality.eligibility.reasons.join(' ') }}
+              </div>
+              <div class="d-flex flex-wrap gap-1 mt-2">
+                <VChip
+                  v-for="(score, criterion) in quality.scores"
+                  :key="criterion"
+                  size="x-small"
+                  variant="outlined"
+                >
+                  {{ criterion }}: {{ Number(score).toFixed(1) }}
+                </VChip>
+              </div>
+            </div>
+          </VCardText>
+          <VCardText
+            v-if="quality.evidence?.length || quality.source_references?.length"
+            class="pt-0"
+          >
+            <div class="text-caption font-weight-medium mb-1">Dẫn chứng nguồn</div>
+            <div
+              v-for="evidence in quality.evidence"
+              :key="`${evidence.source_block_id}-${evidence.excerpt}`"
+              class="text-caption text-medium-emphasis mb-1"
+            >
+              <strong>{{ evidence.source_block_id }}</strong>: “{{ evidence.excerpt }}” — {{ evidence.reason }}
+            </div>
+            <div class="text-caption text-disabled">
+              Block tham chiếu: {{ quality.source_references?.join(', ') || 'Chưa có' }}
+            </div>
+          </VCardText>
+        </VCard>
         <AiContentComparison
           :source="props.state.detail?.source ?? {}"
           :draft="props.state.detail?.draft ?? {}"
@@ -178,6 +243,16 @@ const dateLabel = value => value && !Number.isNaN(new Date(value).getTime()) ? n
             @click="emit('reload')"
           >
             Tải lại trạng thái
+          </VBtn>
+          <VBtn
+            v-if="['failed', 'expired'].includes(quality?.status)"
+            variant="text"
+            color="warning"
+            prepend-icon="tabler-rotate-clockwise"
+            :disabled="locked"
+            @click="emit('rescore')"
+          >
+            Chấm lại
           </VBtn>
           <VBtn
             v-if="postId"

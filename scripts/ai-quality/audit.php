@@ -45,7 +45,7 @@ $caseIndex = array_column($manifest['cases'], null, 'case_id');
 $policy = new ArticleSourceLinkPolicy;
 $evidence = new ArticleEvidenceValidator;
 $gate = new ArticleQualityGate;
-$report = ['mode' => 'saved_outputs_only', 'model_calls' => 0, 'prompt_version_current' => config('ai-content.prompt_version'),
+$report = ['mode' => 'saved_outputs_only', 'model_calls' => 0, 'prompt_version_current' => config('ai.content.prompt_version'),
     'captured_at' => now()->toIso8601String(), 'manifest_sha256' => auditJsonHash($manifestPath),
     'human_quality' => 'not_evaluated', 'cases' => []];
 foreach ($names as $name) {

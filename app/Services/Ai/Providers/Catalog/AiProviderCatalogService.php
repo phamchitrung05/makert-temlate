@@ -54,7 +54,7 @@ final class AiProviderCatalogService
         if ($provider->exists && isset($data['driver']) && $data['driver'] !== $driver) {
             throw ValidationException::withMessages(['driver' => 'Tạo connection mới để đổi loại provider.']);
         }
-        $preset = config('ai-providers.presets.'.$driver);
+        $preset = config('ai.providers.presets.'.$driver);
         if (! is_array($preset)) {
             throw ValidationException::withMessages(['driver' => 'Driver AI chưa được khai báo.']);
         }
@@ -75,7 +75,7 @@ final class AiProviderCatalogService
                 'name' => $data['name'], 'kind' => $preset['kind'], 'driver' => $driver,
                 'base_url' => $url, 'is_active' => $data['is_active'] ?? $provider->is_active ?? true,
                 'discovery_mode' => $data['discovery_mode'] ?? $provider->discovery_mode ?? 'models_endpoint',
-                'request_timeout' => $data['request_timeout'] ?? ($provider->exists ? $provider->request_timeout : config('ai-providers.request_timeout', 120)),
+                'request_timeout' => $data['request_timeout'] ?? ($provider->exists ? $provider->request_timeout : config('ai.providers.request_timeout', 120)),
             ]);
             if (filled($data['api_key'] ?? null)) {
                 $provider->api_key = $data['api_key'];
@@ -115,7 +115,7 @@ final class AiProviderCatalogService
             throw ValidationException::withMessages(['remote_model_id' => 'Remote model ID không thể đổi; thêm model mới để giữ provenance.']);
         }
         if (in_array(AiCapability::Image->value, $data['capabilities'], true)
-            && ! config('ai-providers.presets.'.$provider->driver.'.image_supported', false)) {
+            && ! config('ai.providers.presets.'.$provider->driver.'.image_supported', false)) {
             throw ValidationException::withMessages(['capabilities' => 'Driver này chưa hỗ trợ tạo ảnh.']);
         }
         $model->fill($data);
@@ -277,7 +277,7 @@ final class AiProviderCatalogService
             if ($pageToken !== null && (! is_string($pageToken) || strlen($pageToken) > 2048)) {
                 throw new AiImportException('Catalog trả pagination token không hợp lệ.', 'AI_MODELS_INVALID');
             }
-            if (count($items) > config('ai-providers.max_models') || ($pageToken && in_array($pageToken, $seenTokens, true))) {
+            if (count($items) > config('ai.providers.max_models') || ($pageToken && in_array($pageToken, $seenTokens, true))) {
                 throw new AiImportException('Catalog vượt giới hạn hoặc pagination không hợp lệ.', 'AI_MODELS_INVALID');
             }
             $seenTokens[] = $pageToken;
@@ -308,7 +308,7 @@ final class AiProviderCatalogService
          * Không dùng data_get cho key remote do provider có thể trả ID chứa dấu chấm.
          * =====================================================================
          */
-        $known = config('ai-providers.presets.'.$provider->driver.'.models', [])[$item['id']] ?? null;
+        $known = config('ai.providers.presets.'.$provider->driver.'.models', [])[$item['id']] ?? null;
         if (is_array($known)) {
             return [$known, 'preset'];
         }

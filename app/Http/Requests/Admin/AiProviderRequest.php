@@ -46,7 +46,7 @@ final class AiProviderRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:120'],
-            'driver' => ['required', 'string', Rule::in(array_keys((array) config('ai-providers.presets', [])))],
+            'driver' => ['required', 'string', Rule::in(array_keys((array) config('ai.providers.presets', [])))],
             'base_url' => ['nullable', 'url:https', 'max:2048', 'required_if:driver,openai-compatible'],
             'api_key' => [$isUpdate ? 'nullable' : 'required', 'string', 'max:10000'],
             'discovery_mode' => ['nullable', Rule::in(['models_endpoint', 'manual'])],

@@ -63,7 +63,7 @@ const { editor, editorLoading, editorSaving, editorError, action, actionBusy, ac
 // INPUT: list hiện hành. OUTPUT: theo dõi mọi bài/thumbnail còn chạy, độc lập form.
 watch(items, () => trackRuns(items.value))
 
-const { state: reviewState, notice: reviewNotice, openReview, loadReview, loadHistory, requestDecision,
+const { state: reviewState, notice: reviewNotice, openReview, loadReview, loadHistory, rescoreQuality, requestDecision,
   closeDecision, confirmDecision, closeReview, finishClose } = useAiContentReview(updateSession, notice)
 
 const visibleNotice = computed(() => reviewNotice.value ?? notice.value)
@@ -215,6 +215,7 @@ function createNew() {
       @close="closeReview"
       @after-leave="finishClose"
       @reload="loadReview"
+      @rescore="rescoreQuality"
       @history-reload="loadHistory"
       @history-more="loadHistory(reviewState.historyPagination.current_page + 1)"
       @approve="requestDecision('approve')"

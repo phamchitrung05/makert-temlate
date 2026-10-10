@@ -51,7 +51,7 @@ final class TargetRegistry
      */
     public function get(string $key): array
     {
-        $target = config("ai-agent.targets.{$key}");
+        $target = config("ai.agent.targets.{$key}");
         if (! is_array($target) || ($target['enabled'] ?? false) !== true) {
             throw new InvalidArgumentException("AI target [{$key}] chưa được bật.");
         }
@@ -93,7 +93,7 @@ final class TargetRegistry
      */
     public function all(): array
     {
-        return collect((array) config('ai-agent.targets', []))
+        return collect((array) config('ai.agent.targets', []))
             ->filter(fn (array $target): bool => ($target['enabled'] ?? false) === true)
             ->map(fn (array $target, string $key): array => $target + ['key' => $key])
             ->all();
@@ -111,7 +111,7 @@ final class TargetRegistry
     public function outputOptions(string $key): array
     {
         $target = $this->get($key);
-        $definitions = (array) config('ai-agent.output_definitions', []);
+        $definitions = (array) config('ai.agent.output_definitions', []);
 
         return collect($target['outputs'] ?? [])
             ->filter(fn (string $output): bool => isset($definitions[$output]))

@@ -32,17 +32,17 @@ final class AiOutputValidator
      */
     public function validate(array $payload, ?array $groups = null, bool $sanitizeContent = false): array
     {
-        $definitions = (array) config('ai-agent.output_definitions', []);
+        $definitions = (array) config('ai.agent.output_definitions', []);
         $selected = $groups === null ? array_keys($definitions) : array_values(array_unique($groups));
         if (array_diff($selected, array_keys($definitions)) !== []) {
             throw new AiImportException('Nhóm đầu ra AI chưa được hỗ trợ.', 'AI_PROVIDER_SCHEMA');
         }
-        foreach ((array) config('ai-agent.output_aliases', []) as $alias => $canonical) {
+        foreach ((array) config('ai.agent.output_aliases', []) as $alias => $canonical) {
             if (! array_key_exists($canonical, $payload) && array_key_exists($alias, $payload)) {
                 $payload[$canonical] = $payload[$alias];
             }
         }
-        $requiredGroups = $groups === null ? (array) config('ai-agent.legacy_required_outputs', ['title', 'content']) : $selected;
+        $requiredGroups = $groups === null ? (array) config('ai.agent.legacy_required_outputs', ['title', 'content']) : $selected;
         $result = [];
         $errors = [];
         foreach ($selected as $group) {
@@ -151,8 +151,8 @@ final class AiOutputValidator
      */
     public function instructions(?array $groups = null): string
     {
-        $definitions = (array) config('ai-agent.output_definitions', []);
-        $requiredGroups = $groups ?? (array) config('ai-agent.legacy_required_outputs', ['title', 'content']);
+        $definitions = (array) config('ai.agent.output_definitions', []);
+        $requiredGroups = $groups ?? (array) config('ai.agent.legacy_required_outputs', ['title', 'content']);
         $instructions = [];
         foreach ($requiredGroups as $group) {
             $definition = $definitions[$group] ?? [];

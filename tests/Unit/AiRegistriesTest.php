@@ -127,7 +127,7 @@ class AiRegistriesTest extends TestCase
      */
     public function test_rejects_disabled_target(): void
     {
-        config(['ai-agent.targets.sound.enabled' => false]);
+        config(['ai.agent.targets.sound.enabled' => false]);
         $this->assertArrayHasKey('post', app(TargetRegistry::class)->all());
         $this->assertArrayNotHasKey('sound', app(TargetRegistry::class)->all());
         $this->expectException(InvalidArgumentException::class);
@@ -145,9 +145,9 @@ class AiRegistriesTest extends TestCase
     public function test_provider_boundary_is_bound_and_options_are_redacted(): void
     {
         config([
-            'ai-providers.connections.http-json.enabled' => true,
-            'ai-providers.connections.http-json.key' => 'secret-token',
-            'ai-providers.connections.http-json.endpoint' => 'https://private-provider.example/generate',
+            'ai.providers.connections.http-json.enabled' => true,
+            'ai.providers.connections.http-json.key' => 'secret-token',
+            'ai.providers.connections.http-json.endpoint' => 'https://private-provider.example/generate',
         ]);
 
         $this->assertInstanceOf(AiProviderContract::class, app(AiProviderContract::class));
@@ -174,7 +174,7 @@ class AiRegistriesTest extends TestCase
      */
     public function test_provider_boolean_configuration_respects_false_string(): void
     {
-        config(['ai-providers.connections.http-json.enabled' => filter_var('false', FILTER_VALIDATE_BOOLEAN)]);
+        config(['ai.providers.connections.http-json.enabled' => filter_var('false', FILTER_VALIDATE_BOOLEAN)]);
 
         $options = app(ProviderRegistry::class)->publicOptions();
 
@@ -190,8 +190,8 @@ class AiRegistriesTest extends TestCase
      */
     public function test_ai_configuration_keeps_provider_settings_out_of_agent_and_import(): void
     {
-        $agent = config('ai-agent');
-        $runtime = config('ai-import');
+        $agent = config('ai.agent');
+        $runtime = config('ai.import');
 
         $this->assertArrayNotHasKey('providers', $agent);
         foreach (['provider', 'endpoint', 'key', 'model', 'openai', 'gemini'] as $providerKey) {
@@ -206,8 +206,8 @@ class AiRegistriesTest extends TestCase
             $this->assertArrayHasKey($output, $agent['output_definitions']);
             $this->assertNotEmpty($agent['output_definitions'][$output]['label']);
         }
-        $this->assertSame(OpenAiProvider::class, config('ai-providers.presets.openai.adapter'));
-        $this->assertSame(DeterministicAiProvider::class, config('ai-providers.internal.deterministic.adapter'));
+        $this->assertSame(OpenAiProvider::class, config('ai.providers.presets.openai.adapter'));
+        $this->assertSame(DeterministicAiProvider::class, config('ai.providers.internal.deterministic.adapter'));
     }
 
     /**
@@ -220,10 +220,10 @@ class AiRegistriesTest extends TestCase
     public function test_environment_provider_resolves_shared_driver_metadata_and_adapter(): void
     {
         config([
-            'ai-providers.connections.test-connection' => [
+            'ai.providers.connections.test-connection' => [
                 'enabled' => true, 'driver' => 'deterministic', 'model' => 'custom-model',
             ],
-            'ai-providers.internal.deterministic.label' => 'Configured extraction',
+            'ai.providers.internal.deterministic.label' => 'Configured extraction',
         ]);
         $registry = app(ProviderRegistry::class);
         $metadata = $registry->get('test-connection');
@@ -243,9 +243,9 @@ class AiRegistriesTest extends TestCase
     public function test_database_provider_takes_priority_and_resolves_the_configured_adapter(): void
     {
         config([
-            'ai-providers.connections.openai.enabled' => true,
-            'ai-providers.connections.openai.model' => 'environment-model',
-            'ai-providers.presets.openai.adapter' => DeterministicAiProvider::class,
+            'ai.providers.connections.openai.enabled' => true,
+            'ai.providers.connections.openai.model' => 'environment-model',
+            'ai.providers.presets.openai.adapter' => DeterministicAiProvider::class,
         ]);
         $record = AiProvider::create([
             'key' => 'openai', 'name' => 'Database connection', 'kind' => 'official',

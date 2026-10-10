@@ -51,7 +51,7 @@ final class GeminiProvider extends AbstractStructuredAiProvider
      */
     public function configured(): bool
     {
-        return $this->connection() !== null || (string) config('ai-providers.connections.gemini.key') !== '';
+        return $this->connection() !== null || (string) config('ai.providers.connections.gemini.key') !== '';
     }
 
     /**
@@ -81,7 +81,7 @@ final class GeminiProvider extends AbstractStructuredAiProvider
      */
     public function modelName(): string
     {
-        return $this->requestedModel() ?: (string) ($this->connection()?->snapshot['model'] ?? config('ai-providers.connections.gemini.model', 'gemini-3.6-flash'));
+        return $this->requestedModel() ?: (string) ($this->connection()?->snapshot['model'] ?? config('ai.providers.connections.gemini.model', 'gemini-3.6-flash'));
     }
 
     /**
@@ -101,7 +101,7 @@ final class GeminiProvider extends AbstractStructuredAiProvider
         $payload = [
             'contents' => [['role' => 'user', 'parts' => [['text' => $input['instructions']."\n".$this->canonicalInput($input)]]]],
             'generationConfig' => [
-                'temperature' => (float) ($this->runSettings()['temperature'] ?? config('ai-providers.connections.gemini.temperature', 0.2)),
+                'temperature' => (float) ($this->runSettings()['temperature'] ?? config('ai.providers.connections.gemini.temperature', 0.2)),
             ],
         ];
         if ($this->connection() === null || in_array(AiCapability::Structured->value, $this->connection()->snapshot['capabilities'] ?? [], true)) {
@@ -109,9 +109,9 @@ final class GeminiProvider extends AbstractStructuredAiProvider
         }
         $connection = $this->connection() ?? new AiConnection([
             'driver' => 'gemini', 'provider' => 'gemini',
-            'base_url' => (string) config('ai-providers.connections.gemini.endpoint'),
-            'model' => $input['model'], 'timeout' => (int) config('ai-providers.connections.gemini.timeout', 12),
-        ], (string) config('ai-providers.connections.gemini.key'));
+            'base_url' => (string) config('ai.providers.connections.gemini.endpoint'),
+            'model' => $input['model'], 'timeout' => (int) config('ai.providers.connections.gemini.timeout', 12),
+        ], (string) config('ai.providers.connections.gemini.key'));
 
         return app(AiProviderClient::class)->send(
             $connection, 'POST', 'models/'.rawurlencode((string) $input['model']).':generateContent', $payload,

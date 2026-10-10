@@ -152,8 +152,8 @@ class AiCandidateApiTest extends TestCase
     public function test_regenerate_selected_field_preserves_unselected_parent_fields(): void
     {
         Queue::fake();
-        config()->set('ai-providers.connections.http-json.endpoint', null);
-        config()->set('ai-providers.connections.http-json.key', null);
+        config()->set('ai.providers.connections.http-json.endpoint', null);
+        config()->set('ai.providers.connections.http-json.key', null);
         Http::fake([
             'https://example.test/partial-regenerate' => Http::response(
                 '<html><head><title>Tiêu đề mới</title></head><body><article><p>Nội dung mới không được chọn.</p></article></body></html>',

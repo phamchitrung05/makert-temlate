@@ -44,7 +44,7 @@ final class AiRunService
      */
     public function create(int $actorId, array $attributes, bool $fresh = false): AiImport
     {
-        if (! config('ai-import.enabled', true)) {
+        if (! config('ai.import.enabled', true)) {
             throw new HttpException(503, 'AI đang tắt.');
         }
         $this->ensureAsyncQueue();
@@ -54,14 +54,14 @@ final class AiRunService
                 if (! $fresh) {
                     $existing = AiImport::query()->where('created_by', $actorId)
                         ->where('source_hash', $attributes['source_hash'])
-                        ->where('created_at', '>=', now()->subMinutes((int) config('ai-import.idempotency_window_minutes', 30)))
+                        ->where('created_at', '>=', now()->subMinutes((int) config('ai.import.idempotency_window_minutes', 30)))
                         ->whereNotIn('status', ['failed', 'cancelled', 'expired'])->latest()->first();
                     if ($existing) {
                         return $existing;
                     }
                 }
                 if (AiImport::query()->where('created_by', $actorId)->where('created_at', '>=', now()->subHour())->count()
-                    >= (int) config('ai-import.quota_per_hour', 20)) {
+                    >= (int) config('ai.import.quota_per_hour', 20)) {
                     throw new HttpException(429, 'Bạn đã đạt giới hạn tác vụ AI trong giờ này.');
                 }
                 $import = DB::transaction(function () use ($actorId, $attributes): AiImport {
@@ -70,7 +70,7 @@ final class AiRunService
                         'generation_no' => 1,
                         'archive_version' => ($attributes['operation'] ?? 'create') !== 'image'
                             && data_get($attributes, 'input_json.target_type', 'post') === 'post' ? 1 : null,
-                        'expires_at' => now()->addDays((int) config('ai-import.retention_days', 2)),
+                        'expires_at' => now()->addDays((int) config('ai.import.retention_days', 2)),
                     ]));
                     $import->forceFill(['session_id' => $attributes['session_id'] ?? $import->id])->save();
                     app(AiTaskRunService::class)->registerImport($import->refresh());
@@ -107,9 +107,9 @@ final class AiRunService
                 isset($input['writing_profile_id']) ? (int) $input['writing_profile_id'] : null,
             );
         }
-        $input['pipeline_snapshot'] ??= (array) config('ai-content', []);
+        $input['pipeline_snapshot'] ??= (array) config('ai.content', []);
         $input['pipeline_snapshot']['pipeline'] = 'three_step';
-        $input['pipeline_snapshot']['output_definitions'] ??= (array) config('ai-agent.output_definitions', []);
+        $input['pipeline_snapshot']['output_definitions'] ??= (array) config('ai.agent.output_definitions', []);
         $input['taxonomy_origin'] = 'manual';
         $attributes['input_json'] = $input;
         $attributes['source_hash'] = hash('sha256', ($attributes['source_hash'] ?? '').'|'.json_encode([

@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\AiSessionIndexRequest;
 use App\Http\Responses\BaseResponse;
 use App\Models\AiImport;
 use App\Services\Ai\Content\AiContentReviewService;
+use App\Services\Ai\Content\Quality\ArticleQualityEvaluationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -16,9 +17,9 @@ use Illuminate\Http\Request;
  * =====================================================================
  * CHỨC NĂNG FILE: HTTP boundary xem nguồn/lịch sử và duyệt/từ chối bài AI.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: show(), history(), approve(), reject().
+ * CÁC HÀM/METHOD TRONG FILE: show(), quality(), rescore(), history(), approve(), reject().
  * INPUT/OUTPUT CỦA CLASS (tổng thể): admin request -> BaseResponse từ review service.
- * SIDE EFFECT: chỉ approve/reject ghi nghiệp vụ; không dispatch hoặc gọi provider.
+ * SIDE EFFECT: quality/rescore ghi lifecycle và dispatch worker; approve/reject ghi nghiệp vụ; HTTP không gọi provider trực tiếp.
  * =====================================================================
  */
 class AiContentReviewController extends Controller
@@ -34,6 +35,37 @@ class AiContentReviewController extends Controller
     public function show(Request $request, AiImport $aiImport, AiContentReviewService $review): JsonResponse
     {
         return BaseResponse::success($review->view($request->user(), $aiImport));
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Trả điểm/evidence và cổng duyệt của candidate hiện tại
+     * INPUT: admin Request và candidate binding theo UUID.
+     * OUTPUT: DTO quality bounded theo owner; không gọi evaluator.
+     * SIDE EFFECT: chỉ đọc DB.
+     * =====================================================================
+     */
+    public function quality(Request $request, AiImport $aiImport, ArticleQualityEvaluationService $quality): JsonResponse
+    {
+        return BaseResponse::success($quality->show($request->user(), $aiImport));
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Xếp chấm lại candidate sau khi editor yêu cầu
+     * INPUT: admin Request và candidate Post ready của owner.
+     * OUTPUT: evaluation queued/pending ở HTTP 202.
+     * SIDE EFFECT: ghi lifecycle evaluation và dispatch queue; không chấm trong request.
+     * =====================================================================
+     */
+    public function rescore(Request $request, AiImport $aiImport, ArticleQualityEvaluationService $quality): JsonResponse
+    {
+        $quality->show($request->user(), $aiImport);
+        abort_unless($quality->supports($aiImport), 422, 'Candidate chưa có nội dung AI cần chấm.');
+        abort_unless(AiContentReviewService::state($aiImport)['status'] === 'pending_review', 409, 'Chỉ có thể chấm lại candidate đang chờ duyệt.');
+        $quality->schedule($aiImport, true);
+
+        return BaseResponse::success($quality->summary($aiImport), 'Đã xếp hàng chấm lại chất lượng.', 202);
     }
 
     /**

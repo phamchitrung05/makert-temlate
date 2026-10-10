@@ -5,7 +5,7 @@
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE: unwrap(), isMissingRoute(), generationCapabilities(), fallbackCapabilities(),
  * capabilities(), listSessions(), createSession(), status(), regenerate(), retry(), cancel(),
- * review(), reviewHistory(), approveCandidate(), rejectCandidate(),
+ * review(), quality(), rescoreQuality(), reviewHistory(), approveCandidate(), rejectCandidate(),
  * applyCandidate(), targets(), updateCandidate(), removeSession().
  * INPUT/OUTPUT CỦA CLASS (tổng thể): target/capability/request -> session,
  * candidate hoặc lỗi API chuẩn hóa; không chứa logic nghiệp vụ của Post.
@@ -307,6 +307,16 @@ export const aiAgentService = {
   /** Input: UUID và AbortSignal. Output: nguồn snapshot/draft/review có quyền; chỉ GET. */
   async review(candidateId, options = {}) {
     return unwrap(await $api(`/admin/ai-agent/candidates/${candidateId}/review`, { ...options, retry: 0 }))
+  },
+
+  /** Input: UUID và AbortSignal. Output: điểm/evidence/cổng evaluator; chỉ GET. */
+  async quality(candidateId, options = {}) {
+    return unwrap(await $api(`/admin/ai-agent/candidates/${candidateId}/quality`, { ...options, retry: 0 }))
+  },
+
+  /** Input: UUID candidate. Output: evaluation queued; POST không tự retry. */
+  async rescoreQuality(candidateId) {
+    return unwrap(await $api(`/admin/ai-agent/candidates/${candidateId}/quality/rescore`, { method: 'POST', retry: 0 }))
   },
 
   /** Input: UUID/page và AbortSignal. Output: lịch sử cùng meta.pagination; không gọi AI. */

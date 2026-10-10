@@ -38,6 +38,7 @@ function toListItem(summary, previous) {
     thumbnail: summary.thumbnail === undefined ? previous?.thumbnail ?? null : summary.thumbnail,
     thumbnailGeneration: summary.thumbnail_generation === undefined ? previous?.thumbnailGeneration ?? null : summary.thumbnail_generation,
     review: summary.review ?? previous?.review ?? null,
+    qualityEvaluation: summary.quality_evaluation ?? previous?.qualityEvaluation ?? null,
     source: summary.source_host || previous?.source || (summary.source_type === 'url' ? 'Nguồn URL' : 'Nội dung văn bản'),
     date: date.toLocaleDateString('vi-VN'), time: date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
   }

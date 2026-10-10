@@ -92,7 +92,7 @@ final class HttpAiImageProvider implements AiImageProviderContract
      */
     private function decodeImage(string $encoded): string
     {
-        $maxBytes = (int) config('ai-import.max_image_bytes', 10 * 1024 * 1024);
+        $maxBytes = (int) config('ai.import.max_image_bytes', 10 * 1024 * 1024);
         if (strlen($encoded) > (int) ceil($maxBytes * 1.5)) {
             throw new AiImportException('Dữ liệu ảnh provider vượt giới hạn.', 'AI_IMAGE_TOO_LARGE');
         }

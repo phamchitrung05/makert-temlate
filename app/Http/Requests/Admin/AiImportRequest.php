@@ -134,7 +134,7 @@ class AiImportRequest extends FormRequest
             'image_model' => ['nullable', 'string', 'max:190'],
             'image_model_id' => ['nullable', 'integer', 'min:1'],
             'requested_outputs' => ['sometimes', 'array', 'min:1'],
-            'requested_outputs.*' => ['string', 'distinct', Rule::in((array) config('ai-agent.targets.'.($this->input('target_type') ?: 'post').'.outputs', []))],
+            'requested_outputs.*' => ['string', 'distinct', Rule::in((array) config('ai.agent.targets.'.($this->input('target_type') ?: 'post').'.outputs', []))],
         ];
     }
 
@@ -157,7 +157,7 @@ class AiImportRequest extends FormRequest
             }
             $html = $this->hasFile('html_file') && $this->file('html_file')->isValid()
                 ? (string) $this->file('html_file')->getContent() : (string) $this->input('html', '');
-            if (strlen($html) > (int) config('ai-import.max_html_bytes', 5242880)) {
+            if (strlen($html) > (int) config('ai.import.max_html_bytes', 5242880)) {
                 $validator->errors()->add('html', 'HTML vượt giới hạn 5 MB.');
             }
             if ($html !== '' && ($this->input('source_encoding', 'UTF-8') ?? 'UTF-8') === 'UTF-8' && ! mb_check_encoding($html, 'UTF-8')) {

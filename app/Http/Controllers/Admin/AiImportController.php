@@ -13,12 +13,14 @@ use App\Http\Resources\AiSessionSummaryResource;
 use App\Http\Resources\MediaAssetResource;
 use App\Http\Responses\BaseResponse;
 use App\Models\AiImport;
+use App\Models\AiArticleEvaluation;
 use App\Models\AiTaskRun;
 use App\Models\MediaAsset;
 use App\Services\Ai\Content\AiContentReviewService;
 use App\Services\Ai\Content\AiContentSanitizer;
 use App\Services\Ai\Content\Archives\AiArticleArchiveService;
 use App\Services\Ai\Content\ArticleSourceFetcher;
+use App\Services\Ai\Content\Quality\ArticleQualityEvaluationService;
 use App\Services\Ai\Images\AiThumbnailService;
 use App\Services\Ai\Providers\Catalog\ModelResolver;
 use App\Services\Ai\Providers\Diagnostics\AiResponseDiagnostics;
@@ -245,7 +247,7 @@ class AiImportController extends Controller
         AiRunService $runs,
         AiSettingsService $settings,
     ): JsonResponse {
-        if (! config('ai-import.enabled', true)) {
+        if (! config('ai.import.enabled', true)) {
             return BaseResponse::error('AI import đang tắt.', 503);
         }
         $userId = (int) $request->user()->getKey();
@@ -335,13 +337,13 @@ class AiImportController extends Controller
         }
         $sourceText = $sourceHtml !== '' ? $sourceHtml : trim((string) ($data['text'] ?? ''));
         $sourceHashValue = $sourceType === 'text' ? $sourceText : (string) $normalizedUrl;
-        $hash = hash('sha256', $sourceType.'|'.$sourceHashValue.'|'.json_encode($input, JSON_UNESCAPED_UNICODE).'|'.config('ai-import.prompt_version', 'v1'));
+        $hash = hash('sha256', $sourceType.'|'.$sourceHashValue.'|'.json_encode($input, JSON_UNESCAPED_UNICODE).'|'.config('ai.import.prompt_version', 'v1'));
         $import = $runs->create($userId, [
             'source_url' => $sourceType === 'url' ? $data['url'] : '',
             'source_text' => $sourceType === 'text' ? $sourceText : null,
             'normalized_url' => $normalizedUrl, 'source_hash' => $hash, 'status' => 'queued',
             'current_step' => 'queued', 'progress' => 0, 'input_json' => $input,
-            'provider' => $providerKey, 'prompt_version' => config('ai-import.prompt_version', 'v1'),
+            'provider' => $providerKey, 'prompt_version' => config('ai.import.prompt_version', 'v1'),
         ]);
 
         return BaseResponse::success($this->payload($import), 'Đã xếp hàng import bài viết.', 202);
@@ -402,7 +404,7 @@ class AiImportController extends Controller
             'image_model' => ['sometimes', 'nullable', 'string', 'max:190'],
             'image_model_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'fields' => ['sometimes', 'array'],
-            'fields.*' => ['string', 'distinct', Rule::in((array) config('ai-agent.targets.'.($aiImport->input_json['target_type'] ?? 'post').'.outputs', []))],
+            'fields.*' => ['string', 'distinct', Rule::in((array) config('ai.agent.targets.'.($aiImport->input_json['target_type'] ?? 'post').'.outputs', []))],
         ]);
         $currentInput = (array) $aiImport->input_json;
         $profileOverride = array_key_exists('writing_profile_id', $options);
@@ -533,7 +535,7 @@ class AiImportController extends Controller
                 'generation_no' => (int) $run->generation_no + 1,
                 'archive_version' => $archives->supports($run) ? 1 : null,
                 'archive_pending_json' => null, 'result_json' => null, 'started_at' => null,
-                'expires_at' => now()->addDays((int) config('ai-import.retention_days', 2)),
+                'expires_at' => now()->addDays((int) config('ai.import.retention_days', 2)),
             ])->save();
             app(AiThumbnailService::class)->sync($run);
             // Tạo projection generation mới trước khi dispatch để popup thấy retry ngay.
@@ -593,7 +595,7 @@ class AiImportController extends Controller
      *
      * =====================================================================
      */
-    public function updateCandidate(AiCandidateUpdateRequest $request, AiImport $aiImport, AiContentSanitizer $sanitizer): JsonResponse
+    public function updateCandidate(AiCandidateUpdateRequest $request, AiImport $aiImport, AiContentSanitizer $sanitizer, ArticleQualityEvaluationService $quality): JsonResponse
     {
         $this->ensureOwner($request, $aiImport);
         $data = $request->validated();
@@ -624,7 +626,11 @@ class AiImportController extends Controller
             return $run;
         });
 
-        return BaseResponse::success($this->payload($run), 'Đã lưu nội dung AI.');
+        if ($quality->supports($run)) {
+            $quality->schedule($run, true);
+        }
+
+        return BaseResponse::success($this->payload($run), 'Đã lưu nội dung AI. Đã xếp lại đánh giá chất lượng.');
     }
 
     /**
@@ -692,6 +698,7 @@ class AiImportController extends Controller
             abort_if(in_array($run->status, AiImport::RUNNING_STATUSES, true), 409, 'Hãy đợi tác vụ kết thúc trước khi xóa.');
             app(AiArticleArchiveService::class)->preserve($run, removalReason: 'user_deleted');
             $this->cleanupThumbnail($run);
+            AiArticleEvaluation::query()->where('run_id', $run->id)->delete();
             $run->delete();
         });
 
@@ -757,6 +764,7 @@ class AiImportController extends Controller
             'created_at' => $import->created_at?->toIso8601String(),
             'draft_version' => hash('sha256', json_encode(data_get($import->result_json, 'draft', []))),
             'review' => AiContentReviewService::state($import),
+            'quality_evaluation' => app(ArticleQualityEvaluationService::class)->summary($import),
             'review_version' => AiContentReviewService::version($import),
             'expires_at' => $import->expires_at?->toIso8601String(),
             'applied_target_id' => $import->applied_target_id, 'applied_fields' => $import->applied_fields,
@@ -825,7 +833,7 @@ class AiImportController extends Controller
     {
         abort_unless((int) $import->created_by === (int) $request->user()->getKey(), 404);
         $target = (string) data_get($import->input_json, 'target_type', 'post');
-        abort_unless($request->user()->can(config('ai-agent.targets.'.$target.'.permission', 'posts.manage')), 403);
+        abort_unless($request->user()->can(config('ai.agent.targets.'.$target.'.permission', 'posts.manage')), 403);
     }
 
     /**

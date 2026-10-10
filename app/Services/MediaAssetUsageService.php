@@ -457,10 +457,10 @@ class MediaAssetUsageService
             ]);
         }
 
-        if (in_array($field, [MediaAssetField::PostThumbnail, MediaAssetField::PostGallery, MediaAssetField::PostOgImage], true)
+        if (in_array($field, [MediaAssetField::PostThumbnail, MediaAssetField::PostGallery, MediaAssetField::PostOgImage, MediaAssetField::CategoryThumbnail], true)
             && $asset->visibility !== MediaAssetVisibility::Public) {
             throw ValidationException::withMessages([
-                'media_asset_id' => 'Ảnh bài viết phải có visibility public.',
+                'media_asset_id' => 'Ảnh bài viết và danh mục phải có visibility public.',
             ]);
         }
 

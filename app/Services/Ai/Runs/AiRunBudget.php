@@ -47,6 +47,6 @@ final class AiRunBudget
      */
     public static function timeout(int $requestTimeout, int $calls = 1): int
     {
-        return max((int) config('ai-import.job_timeout', 180), max(5, min(600, $requestTimeout)) * max(1, min(3, $calls)) + 120);
+        return max((int) config('ai.import.job_timeout', 180), max(5, min(600, $requestTimeout)) * max(1, min(3, $calls)) + 120);
     }
 }

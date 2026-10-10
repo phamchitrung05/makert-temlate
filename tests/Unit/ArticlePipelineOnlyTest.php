@@ -44,9 +44,9 @@ final class ArticlePipelineOnlyTest extends TestCase
     /** Input: config/snapshot B còn sót. Output: transient run dùng để kiểm routing. */
     private function legacyRun(): AiImport
     {
-        config()->set('ai-content.pipeline', 'single_step');
+        config()->set('ai.content.pipeline', 'single_step');
 
-        return new AiImport(['source_text' => 'Bản nháp được dùng để chỉnh sửa trước khi công bố.', 'input_json' => ['source_type' => 'text', 'fields' => ['title', 'content'], 'pipeline_snapshot' => array_replace(config('ai-content'), ['pipeline' => 'single_step'])]]);
+        return new AiImport(['source_text' => 'Bản nháp được dùng để chỉnh sửa trước khi công bố.', 'input_json' => ['source_type' => 'text', 'fields' => ['title', 'content'], 'pipeline_snapshot' => array_replace(config('ai.content'), ['pipeline' => 'single_step'])]]);
     }
 
     /** Input: snapshot cũ. Output: đủ ba task C, tuyệt đối không gọi B. */

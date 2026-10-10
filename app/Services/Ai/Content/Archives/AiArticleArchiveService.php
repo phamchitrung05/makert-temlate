@@ -6,6 +6,7 @@ use App\Exceptions\AiArticleArchiveException;
 use App\Models\AiArticleArchive;
 use App\Models\AiImport;
 use App\Services\Ai\Content\Data\ArticleInputHasher;
+use App\Services\Ai\Content\Quality\ArticleQualityEvaluationService;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -215,7 +216,7 @@ class AiArticleArchiveService
                 'result_json' => $result, 'provider' => $result['provider'] ?? $run->provider,
                 'prompt_version' => $result['prompt_version'] ?? $run->prompt_version,
                 'completed_at' => $pending['snapshot']['generation_completed_at'],
-                'expires_at' => now()->addDays((int) config('ai-import.retention_days', 2)),
+                'expires_at' => now()->addDays((int) config('ai.import.retention_days', 2)),
                 'error_code' => null, 'error_message' => null,
             ])->save();
 
@@ -500,6 +501,20 @@ class AiArticleArchiveService
         if ($removalReason !== null) {
             $lifecycle['removed_at'] = now()->toIso8601String();
             $lifecycle['removed_reason'] = $removalReason;
+        }
+        $quality = app(ArticleQualityEvaluationService::class)->summary($run);
+        if (($quality['status'] ?? null) === 'ready' && filled($quality['evaluation_id'] ?? null)) {
+            $lifecycle['quality_evaluation'] ??= [
+                'evaluation_id' => $quality['evaluation_id'],
+                'generation_no' => $quality['generation_no'],
+                'candidate_hash' => $quality['candidate_hash'],
+                'rubric_version' => $quality['rubric_version'],
+                'score_total' => $quality['score_total'],
+                'scores' => $quality['scores'],
+                'source_references' => $quality['source_references'],
+                'eligibility' => $quality['eligibility'],
+                'completed_at' => $quality['completed_at'],
+            ];
         }
         $archive->forceFill(['lifecycle_json' => $lifecycle, 'applied_target_id' => $run->applied_target_id])->save();
     }

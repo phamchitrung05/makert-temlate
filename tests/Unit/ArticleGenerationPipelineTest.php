@@ -395,7 +395,7 @@ final class ArticleGenerationPipelineTest extends TestCase
     public function test_request_budget_is_checked_before_first_paid_call(): void
     {
         $provider = new PipelineFixtureProvider($this->responses());
-        $import = new AiImport(['input_json' => ['pipeline_snapshot' => array_replace(config('ai-content'), ['max_request_characters' => 20])]]);
+        $import = new AiImport(['input_json' => ['pipeline_snapshot' => array_replace(config('ai.content'), ['max_request_characters' => 20])]]);
         try {
             (new ArticleGenerationPipeline)->run($import, $provider, $this->source(), ['content']);
             $this->fail('Request budget must fail.');
@@ -568,10 +568,10 @@ final class ArticleGenerationPipelineTest extends TestCase
     {
         $builder = new ArticlePromptBuilder;
         $old = $builder->schema('article.analysis-plan', ['title', 'content'], ['prompt_version' => '2.0']);
-        $new = $builder->schema('article.analysis-plan', ['title', 'content'], config('ai-content'));
+        $new = $builder->schema('article.analysis-plan', ['title', 'content'], config('ai.content'));
         $this->assertArrayNotHasKey('description', data_get($old, 'properties.knowledge.properties.facts.items.properties.evidence'));
         $this->assertStringContainsString('source.blocks[].text', data_get($new, 'properties.knowledge.properties.facts.items.properties.evidence.description'));
-        $this->assertStringContainsString('NEVER copy from its html', config('ai-content.prompts')['article.analysis-plan']);
+        $this->assertStringContainsString('NEVER copy from its html', config('ai.content.prompts')['article.analysis-plan']);
     }
 
     /**
@@ -621,8 +621,8 @@ final class ArticleGenerationPipelineTest extends TestCase
      */
     public function test_openai_execute_accepts_nested_task_schema_and_preserves_strict_finish_guard(): void
     {
-        config()->set('ai-providers.connections.openai.key', 'fixture-key');
-        config()->set('ai-providers.connections.openai.endpoint', 'https://api.openai.com/v1/chat/completions');
+        config()->set('ai.providers.connections.openai.key', 'fixture-key');
+        config()->set('ai.providers.connections.openai.endpoint', 'https://api.openai.com/v1/chat/completions');
         Http::preventStrayRequests();
         Http::fake(['https://api.openai.com/v1/chat/completions' => Http::sequence()
             ->push(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => json_encode(['profile' => ['tone' => 'neutral']])]]]])

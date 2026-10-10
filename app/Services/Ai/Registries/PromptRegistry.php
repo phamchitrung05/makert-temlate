@@ -9,7 +9,7 @@ use InvalidArgumentException;
  * CHỨC NĂNG FILE: Registry prompt AI tập trung, có version và allowlist.
  * =====================================================================
  *
- * Prompt được cấu hình trong config/ai-agent.php để review bằng Git. Registry
+ * Prompt được cấu hình trong config/ai/agent.php để review bằng Git. Registry
  * không render hoặc gọi provider; nó chỉ đảm bảo task chỉ dùng prompt hợp lệ.
  *
  * CÁC HÀM/METHOD TRONG FILE:
@@ -141,9 +141,9 @@ final class PromptRegistry
      */
     public function all(): array
     {
-        $prompts = (array) config('ai-agent.prompts', []);
+        $prompts = (array) config('ai.agent.prompts', []);
         // Input: target bật trong config. Output: prompt content chung, có hướng dẫn riêng từng tài nguyên.
-        foreach ((array) config('ai-agent.targets', []) as $key => $target) {
+        foreach ((array) config('ai.agent.targets', []) as $key => $target) {
             if (($target['enabled'] ?? false) !== true || empty($target['content_instructions'])) {
                 continue;
             }

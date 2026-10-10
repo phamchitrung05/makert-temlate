@@ -139,7 +139,7 @@ final class AiImportTaskAdapter implements AiTaskRunAdapter
      */
     public function applyVisibility(Builder $query, User $actor): void
     {
-        $targets = collect((array) config('ai-agent.targets'))
+        $targets = collect((array) config('ai.agent.targets'))
             ->filter(fn ($target) => $actor->can($target['permission'] ?? 'posts.manage'))
             ->keys()->all();
         if ($targets !== []) {
@@ -162,7 +162,7 @@ final class AiImportTaskAdapter implements AiTaskRunAdapter
      */
     public function canUse(User $actor): bool
     {
-        return $actor->can('media.upload') || collect((array) config('ai-agent.targets'))
+        return $actor->can('media.upload') || collect((array) config('ai.agent.targets'))
             ->contains(fn ($target) => $actor->can($target['permission'] ?? 'posts.manage'));
     }
 

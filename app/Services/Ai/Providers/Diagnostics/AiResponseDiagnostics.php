@@ -69,12 +69,12 @@ final class AiResponseDiagnostics
             $result['stage'] = $stage;
         }
         if (is_string($metadata['schema_version'] ?? null)
-            && array_key_exists($metadata['schema_version'], (array) config('ai-agent.schemas', []))) {
+            && array_key_exists($metadata['schema_version'], (array) config('ai.agent.schemas', []))) {
             $result['schema_version'] = $metadata['schema_version'];
         }
-        $groups = array_keys((array) config('ai-agent.output_definitions', []));
+        $groups = array_keys((array) config('ai.agent.output_definitions', []));
         $fields = [];
-        foreach ((array) config('ai-agent.schemas', []) as $schema) {
+        foreach ((array) config('ai.agent.schemas', []) as $schema) {
             $fields = array_merge($fields, (array) ($schema['fields'] ?? []));
         }
         foreach (['requested_groups' => $groups, 'returned_fields' => $fields] as $key => $allowed) {

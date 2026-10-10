@@ -29,6 +29,7 @@ use Tests\TestCase;
  * test_saved_corrupted_navigation_url_remains_blocked_with_safe_diagnostics(),
  * test_missing_or_changed_body_references_are_still_blocked(),
  * test_reference_lists_and_body_fragments_are_not_exempted(),
+ * test_same_site_blog_taxonomy_links_are_optional_but_article_links_are_required(),
  * test_href_parser_decodes_entities_and_handles_unquoted_attributes(),
  * test_roman_quarters_are_equivalent_but_changed_quarters_fail(),
  * test_storey_word_counts_keep_value_and_reject_partial_large_numbers(),
@@ -171,6 +172,31 @@ final class ArticleQualityPilotRegressionTest extends TestCase
         $this->assertSame(['#two'], $manifest['optional_navigation_hrefs']);
     }
 
+    /** Input: nguồn có link taxonomy cùng site và link bài viết. Output: chỉ taxonomy được tùy chọn. */
+    public function test_same_site_blog_taxonomy_links_are_optional_but_article_links_are_required(): void
+    {
+        $source = [
+            'source_url' => 'https://example.test/blog/posts/travel/',
+            'content_html' => '<p><a href="https://example.test/blog/tag/travel/">Travel</a></p>'
+                .'<p><a href="https://example.test/blog/category/guides/">Guides</a></p>'
+                .'<p><a href="https://example.test/blog/">Blog</a></p>'
+                .'<p><a href="https://example.test/blog/posts/other/">Related article</a></p>'
+                .'<p><a href="https://other.test/blog/tag/travel/">External taxonomy</a></p>',
+        ];
+
+        $manifest = (new ArticleSourceLinkPolicy)->manifest($source);
+
+        $this->assertSame([
+            'https://example.test/blog/posts/other/',
+            'https://other.test/blog/tag/travel/',
+        ], $manifest['required_hrefs']);
+        $this->assertSame([
+            'https://example.test/blog/tag/travel/',
+            'https://example.test/blog/category/guides/',
+            'https://example.test/blog/',
+        ], $manifest['optional_navigation_hrefs']);
+    }
+
     /** Input: entity/quote/unquoted/code. Output: parser DOM nhận href thực, không code mẫu. */
     public function test_href_parser_decodes_entities_and_handles_unquoted_attributes(): void
     {
@@ -251,7 +277,7 @@ final class ArticleQualityPilotRegressionTest extends TestCase
         $requests = [];
         $provider = $this->provider(array_column($artifact['calls'], 'output'), $requests);
         try {
-            (new ArticleGenerationPipeline)->run(new AiImport(['input_json' => ['language' => 'vi', 'pipeline_snapshot' => config('ai-content')]]), $provider, $this->artifact('corpus-v1/Q18.json'), ['title', 'content']);
+            (new ArticleGenerationPipeline)->run(new AiImport(['input_json' => ['language' => 'vi', 'pipeline_snapshot' => config('ai.content')]]), $provider, $this->artifact('corpus-v1/Q18.json'), ['title', 'content']);
             $this->fail('An unknown fact ID must stop before the editor call.');
         } catch (AiImportException $exception) {
             $this->assertSame('AI_PROVIDER_SCHEMA', $exception->errorCode);
@@ -267,12 +293,12 @@ final class ArticleQualityPilotRegressionTest extends TestCase
         $context = $this->context();
         $context['analysis'] = ['knowledge' => ['facts' => [['id' => 'F1']]]];
         $builder = new ArticlePromptBuilder;
-        $schema = $builder->schema('article.writer', ['content'], config('ai-content'), $context);
+        $schema = $builder->schema('article.writer', ['content'], config('ai.content'), $context);
         $output = ['draft' => ['content_html' => '<p>Nội dung.</p>'], 'used_fact_ids' => ['F1'], 'used_asset_ids' => ['I1']];
         $this->assertSame($output, (new AiTaskSchemaValidator)->validate($output, $schema));
-        $this->assertSame(['F1'], $builder->schema('article.editor', ['content'], config('ai-content'), $context)['properties']['used_fact_ids']['items']['enum']);
+        $this->assertSame(['F1'], $builder->schema('article.editor', ['content'], config('ai.content'), $context)['properties']['used_fact_ids']['items']['enum']);
         $context['images'] = [];
-        $schema = $builder->schema('article.writer', ['content'], config('ai-content'), $context);
+        $schema = $builder->schema('article.writer', ['content'], config('ai.content'), $context);
         $this->assertSame(0, $schema['properties']['used_asset_ids']['maxItems']);
         $this->expectException(AiImportException::class);
         (new AiTaskSchemaValidator)->validate($output, $schema);
@@ -288,7 +314,7 @@ final class ArticleQualityPilotRegressionTest extends TestCase
             $requests = [];
             $provider = $this->provider([$analysis], $requests);
             try {
-                (new ArticleGenerationPipeline)->run(new AiImport(['input_json' => ['language' => 'vi', 'pipeline_snapshot' => config('ai-content')]]), $provider, $this->artifact('corpus-v1/Q18.json'), ['title', 'content']);
+                (new ArticleGenerationPipeline)->run(new AiImport(['input_json' => ['language' => 'vi', 'pipeline_snapshot' => config('ai.content')]]), $provider, $this->artifact('corpus-v1/Q18.json'), ['title', 'content']);
                 $this->fail('Fact IDs must remain distinct from block and image IDs.');
             } catch (AiImportException $exception) {
                 $this->assertSame('AI_PROVIDER_SCHEMA', $exception->errorCode);
@@ -306,7 +332,7 @@ final class ArticleQualityPilotRegressionTest extends TestCase
         $artifact = $this->artifact('pilot-2026-10-05-five-cases/Q02-C.json');
         $requests = [];
         $provider = $this->provider(array_column($artifact['calls'], 'output'), $requests);
-        $result = (new ArticleGenerationPipeline)->run(new AiImport(['input_json' => ['language' => 'vi', 'pipeline_snapshot' => config('ai-content')]]), $provider, $source, ['title', 'content']);
+        $result = (new ArticleGenerationPipeline)->run(new AiImport(['input_json' => ['language' => 'vi', 'pipeline_snapshot' => config('ai.content')]]), $provider, $source, ['title', 'content']);
         $manifest = (new ArticleSourceLinkPolicy)->manifest($source);
         foreach ($requests as $request) {
             $this->assertSame($manifest, $request->input['link_requirements']);

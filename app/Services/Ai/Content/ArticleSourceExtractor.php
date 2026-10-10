@@ -177,8 +177,8 @@ final class ArticleSourceExtractor
         if ($blocks === [] && trim(strip_tags($modelContent)) !== '') {
             $blocks[] = ['id' => 'S001', 'type' => 'text', 'text' => trim(strip_tags($modelContent)), 'html' => $modelContent];
         }
-        if (mb_strlen($modelContent) > ($options['max_source_characters'] ?? config('ai-content.max_source_characters', 100000))
-            || count($blocks) > ($options['max_source_blocks'] ?? config('ai-content.max_source_blocks', 250))) {
+        if (mb_strlen($modelContent) > ($options['max_source_characters'] ?? config('ai.content.max_source_characters', 100000))
+            || count($blocks) > ($options['max_source_blocks'] ?? config('ai.content.max_source_blocks', 250))) {
             throw new AiImportException('Nguồn vượt budget pipeline. Hãy chọn phần bài cần viết hoặc rút gọn nguồn; hệ thống không cắt thầm nội dung.', 'SOURCE_TOO_LARGE');
         }
         $snapshot = array_replace($metadata, [

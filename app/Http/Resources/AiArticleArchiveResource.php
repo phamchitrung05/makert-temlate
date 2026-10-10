@@ -50,6 +50,7 @@ final class AiArticleArchiveResource extends JsonResource
                 'reviewed_at' => $lifecycle['reviewed_at'] ?? null,
                 'applied_at' => $lifecycle['applied_at'] ?? null,
                 'applied_fields' => array_values((array) ($lifecycle['applied_fields'] ?? [])),
+                'quality_evaluation' => $lifecycle['quality_evaluation'] ?? null,
             ],
             'source' => [
                 'available' => $originalAvailable && $source !== [],

@@ -51,7 +51,7 @@ final class OpenAiProvider extends AbstractStructuredAiProvider
      */
     public function configured(): bool
     {
-        return $this->connection() !== null || (string) config('ai-providers.connections.openai.key') !== '';
+        return $this->connection() !== null || (string) config('ai.providers.connections.openai.key') !== '';
     }
 
     /**
@@ -81,7 +81,7 @@ final class OpenAiProvider extends AbstractStructuredAiProvider
      */
     public function modelName(): string
     {
-        return $this->requestedModel() ?: (string) ($this->connection()?->snapshot['model'] ?? config('ai-providers.connections.openai.model', 'gpt-4o-mini'));
+        return $this->requestedModel() ?: (string) ($this->connection()?->snapshot['model'] ?? config('ai.providers.connections.openai.model', 'gpt-4o-mini'));
     }
 
     /**
@@ -100,7 +100,7 @@ final class OpenAiProvider extends AbstractStructuredAiProvider
     {
         $payload = [
             'model' => $input['model'],
-            'temperature' => (float) ($this->runSettings()['temperature'] ?? config('ai-providers.connections.openai.temperature', 0.2)),
+            'temperature' => (float) ($this->runSettings()['temperature'] ?? config('ai.providers.connections.openai.temperature', 0.2)),
             'messages' => [
                 ['role' => 'system', 'content' => $input['instructions']],
                 ['role' => 'user', 'content' => $this->canonicalInput($input)],
@@ -114,9 +114,9 @@ final class OpenAiProvider extends AbstractStructuredAiProvider
         }
         $connection = $this->connection() ?? new AiConnection([
             'driver' => 'openai', 'provider' => 'openai',
-            'base_url' => preg_replace('#/chat/completions/?$#', '', (string) config('ai-providers.connections.openai.endpoint')),
-            'model' => $input['model'], 'timeout' => (int) config('ai-providers.connections.openai.timeout', 12),
-        ], (string) config('ai-providers.connections.openai.key'));
+            'base_url' => preg_replace('#/chat/completions/?$#', '', (string) config('ai.providers.connections.openai.endpoint')),
+            'model' => $input['model'], 'timeout' => (int) config('ai.providers.connections.openai.timeout', 12),
+        ], (string) config('ai.providers.connections.openai.key'));
 
         return app(AiProviderClient::class)->send($connection, 'POST', 'chat/completions', $payload);
     }

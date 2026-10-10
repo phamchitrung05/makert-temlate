@@ -82,7 +82,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(SchemaRegistry::class);
         $this->app->singleton(AiTaskRunRegistry::class, function ($app): AiTaskRunRegistry {
             $registry = new AiTaskRunRegistry();
-            foreach ((array) config('ai-task-runs.adapters', []) as $adapterClass) {
+            foreach ((array) config('ai.task-runs.adapters', []) as $adapterClass) {
                 $registry->register($app->make($adapterClass));
             }
 

@@ -55,6 +55,17 @@ const statusOptions = Object.fromEntries(statuses.map(item => [item.value, item]
 const targetOptions = computed(() => Object.fromEntries(props.targets.map(target => [target.value, target])))
 
 const failureMessage = item => formatAiError({ error: item.error, validation_errors: item.validationErrors }, undefined, props.outputOptions)
+const qualityScore = evaluation => Number.isFinite(Number(evaluation?.score_total)) ? Number(evaluation.score_total) : null
+const qualityColor = evaluation => {
+  if (evaluation?.status === 'ready') return evaluation?.eligibility?.eligible ? 'success' : 'error'
+  if (evaluation?.status === 'failed' || evaluation?.status === 'expired') return 'error'
+  return 'warning'
+}
+const qualityLabel = evaluation => {
+  const score = qualityScore(evaluation)
+  if (score !== null) return `Điểm chất lượng ${score.toFixed(2)}/5`
+  return ({ pending: 'Đang chờ chấm', queued: 'Đang xếp hàng chấm', running: 'Đang chấm', failed: 'Chấm lỗi', expired: 'Điểm đã hết hạn' }[evaluation?.status] ?? 'Chưa có điểm')
+}
 
 const statusTabs = computed(() => statuses.map(item => ({
   ...item,
@@ -179,6 +190,24 @@ watch(() => filteredItems.value.length, total => {
               >
                 {{ statusOptions[item.status]?.title }}
               </VChip>
+              <VTooltip location="top">
+                <template #activator="{ props: tooltipProps }">
+                  <VProgressCircular
+                    v-bind="tooltipProps"
+                    :model-value="(qualityScore(item.qualityEvaluation) ?? 0) * 20"
+                    :indeterminate="qualityScore(item.qualityEvaluation) === null && ['queued', 'running'].includes(item.qualityEvaluation?.status)"
+                    :color="qualityColor(item.qualityEvaluation)"
+                    :size="30"
+                    :width="4"
+                    :aria-label="qualityLabel(item.qualityEvaluation)"
+                  >
+                    <span class="text-caption font-weight-medium">
+                      {{ qualityScore(item.qualityEvaluation) === null ? '–' : qualityScore(item.qualityEvaluation).toFixed(1) }}
+                    </span>
+                  </VProgressCircular>
+                </template>
+                {{ qualityLabel(item.qualityEvaluation) }}
+              </VTooltip>
               <span class="text-caption text-disabled">
                 {{ item.date }} · {{ item.time }}
               </span>

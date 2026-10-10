@@ -98,8 +98,8 @@ if (! $exportOnly && isset($options['input-snapshot'])) {
     $input = array_replace($input, array_intersect_key($savedInput, array_flip(['writing_profile_snapshot', 'pipeline_snapshot'])));
 }
 if (isset($options['current-prompts'])) {
-    $input['pipeline_snapshot']['prompts'] = config('ai-content.prompts');
-    $input['pipeline_snapshot']['prompt_version'] = config('ai-content.prompt_version');
+    $input['pipeline_snapshot']['prompts'] = config('ai.content.prompts');
+    $input['pipeline_snapshot']['prompt_version'] = config('ai.content.prompt_version');
 }
 if (! $exportOnly) {
     $input['pipeline_snapshot']['pipeline'] = 'three_step';

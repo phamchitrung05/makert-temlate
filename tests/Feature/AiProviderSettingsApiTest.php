@@ -612,7 +612,7 @@ final class AiProviderSettingsApiTest extends TestCase
      */
     public function test_provider_timeout_can_be_saved_and_validated_without_changing_key(): void
     {
-        config(['ai-providers.request_timeout' => 120]);
+        config(['ai.providers.request_timeout' => 120]);
         $token = $this->token();
         $payload = ['name' => 'Timeout gateway', 'driver' => 'openai-compatible', 'base_url' => 'https://gateway.example/v1', 'api_key' => 'offline-key'];
         $id = $this->withToken($token)->postJson('/api/admin/settings/ai/providers', $payload)
@@ -842,7 +842,7 @@ final class AiProviderSettingsApiTest extends TestCase
      */
     public function test_new_provider_and_form_use_configured_timeout_default(): void
     {
-        config(['ai-providers.request_timeout' => 240]);
+        config(['ai.providers.request_timeout' => 240]);
         $token = $this->token();
         $this->withToken($token)->getJson('/api/admin/settings/ai')->assertOk()->assertJsonPath('data.presets.0.request_timeout', 240);
         $this->withToken($token)->postJson('/api/admin/settings/ai/providers', [

@@ -58,9 +58,9 @@ class AiImportThumbnailTest extends TestCase
         config()->set('media-library.asset_disks.public', 'media_public');
         config()->set('media-library.asset_disks.private', 'media_private');
         config()->set('media-assets.temporary_disk', 'media_private');
-        config()->set('ai-providers.connections.http-json.endpoint', 'https://provider.test/generate');
-        config()->set('ai-providers.connections.http-json.key', 'test-key');
-        config()->set('ai-providers.connections.thumbnail-test', [
+        config()->set('ai.providers.connections.http-json.endpoint', 'https://provider.test/generate');
+        config()->set('ai.providers.connections.http-json.key', 'test-key');
+        config()->set('ai.providers.connections.thumbnail-test', [
             'enabled' => true,
             'driver' => 'http-json',
             'model' => 'test-model',

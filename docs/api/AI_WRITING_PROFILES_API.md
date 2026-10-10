@@ -83,7 +83,7 @@ Content-Type: application/json
 }
 ```
 
-`model_id` là tùy chọn; vắng mặt dùng model text mặc định/fallback hiện có. Client cũ có thể gửi cặp `provider`/`model` được resolver allowlist. Không nhận API key, endpoint, schema hoặc system prompt từ request. HTTP trả `202` với `data.id` UUID và `data.status=queued`; worker queue thực hiện AI call. Driver queue `sync`/`null`, kể cả connection alias, bị từ chối `422`. Giới hạn tạo analysis mỗi actor theo `ai-import.quota_per_hour` (mặc định 20/giờ).
+`model_id` là tùy chọn; vắng mặt dùng model text mặc định/fallback hiện có. Client cũ có thể gửi cặp `provider`/`model` được resolver allowlist. Không nhận API key, endpoint, schema hoặc system prompt từ request. HTTP trả `202` với `data.id` UUID và `data.status=queued`; worker queue thực hiện AI call. Driver queue `sync`/`null`, kể cả connection alias, bị từ chối `422`. Giới hạn tạo analysis mỗi actor theo `ai.import.quota_per_hour` (mặc định 20/giờ).
 
 2. Polling cho đến `ready`, `failed` hoặc `cancelled`:
 
@@ -187,7 +187,7 @@ Gửi null để bỏ default. Profile phải tồn tại và đang bật; Setti
 
 Analysis job có một attempt, budget request timeout + 45 giây (tối thiểu 60); timeout/kết nối/schema/evidence sai lưu lỗi an toàn. Hủy không thu hồi được request đã gửi provider, nhưng response về trễ không ghi đè `cancelled`. Khi lỗi, frontend giữ bài người dùng dán để chỉnh và tạo analysis mới; không tự retry tạo chi phí.
 
-`ai:cleanup-writing-profile-analyses` xóa analysis/reference quá `expires_at`. Retention dùng `ai-import.retention_days` (mặc định 2 ngày), profile và evidence đã duyệt vẫn tồn tại. Chạy scheduler/queue worker như cấu hình AI hiện tại; migrations tạo hai bảng và một typed Settings property.
+`ai:cleanup-writing-profile-analyses` xóa analysis/reference quá `expires_at`. Retention dùng `ai.import.retention_days` (mặc định 2 ngày), profile và evidence đã duyệt vẫn tồn tại. Chạy scheduler/queue worker như cấu hình AI hiện tại; migrations tạo hai bảng và một typed Settings property.
 
 ## Kiểm chứng
 

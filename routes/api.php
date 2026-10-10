@@ -217,8 +217,10 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
                 Route::get('/ai-agent/approved-archives', [AiArticleArchiveController::class, 'index']);
                 Route::get('/ai-agent/approved-archives/{aiArticleArchive}', [AiArticleArchiveController::class, 'show'])
                     ->whereNumber('aiArticleArchive');
-                Route::get('/ai-agent/candidates/{aiImport}/review', [AiContentReviewController::class, 'show'])->whereUuid('aiImport');
-                Route::get('/ai-agent/candidates/{aiImport}/review/history', [AiContentReviewController::class, 'history'])->whereUuid('aiImport');
+                 Route::get('/ai-agent/candidates/{aiImport}/review', [AiContentReviewController::class, 'show'])->whereUuid('aiImport');
+                 Route::get('/ai-agent/candidates/{aiImport}/quality', [AiContentReviewController::class, 'quality'])->whereUuid('aiImport');
+                 Route::post('/ai-agent/candidates/{aiImport}/quality/rescore', [AiContentReviewController::class, 'rescore'])->whereUuid('aiImport');
+                 Route::get('/ai-agent/candidates/{aiImport}/review/history', [AiContentReviewController::class, 'history'])->whereUuid('aiImport');
                 Route::post('/ai-agent/candidates/{aiImport}/approve', [AiContentReviewController::class, 'approve'])->whereUuid('aiImport');
                 Route::post('/ai-agent/candidates/{aiImport}/reject', [AiContentReviewController::class, 'reject'])->whereUuid('aiImport');
             });

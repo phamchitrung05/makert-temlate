@@ -35,15 +35,15 @@ class ArticleSourceFetcher
     public function downloadImage(string $url): string
     {
         $url = $this->validateUrl($url);
-        $response = Http::connectTimeout((int) config('ai-import.connect_timeout', 5))
-            ->timeout((int) config('ai-import.timeout', 12))
+        $response = Http::connectTimeout((int) config('ai.import.connect_timeout', 5))
+            ->timeout((int) config('ai.import.timeout', 12))
             ->withOptions(['allow_redirects' => false])
             ->get($url);
         if (! $response->successful() || ! str_starts_with(strtolower((string) $response->header('Content-Type')), 'image/')) {
             throw new AiImportException('Ảnh thumbnail nguồn không hợp lệ.', 'THUMBNAIL_INVALID');
         }
         $binary = (string) $response->body();
-        if (strlen($binary) > (int) config('ai-import.max_image_bytes', 10 * 1024 * 1024) || @getimagesizefromstring($binary) === false) {
+        if (strlen($binary) > (int) config('ai.import.max_image_bytes', 10 * 1024 * 1024) || @getimagesizefromstring($binary) === false) {
             throw new AiImportException('Ảnh thumbnail nguồn vượt giới hạn.', 'THUMBNAIL_TOO_LARGE');
         }
 
@@ -65,13 +65,13 @@ class ArticleSourceFetcher
     public function fetch(string $url): array
     {
         $current = $this->validateUrl($url);
-        $maxRedirects = (int) config('ai-import.max_redirects', 3);
+        $maxRedirects = (int) config('ai.import.max_redirects', 3);
 
         for ($redirect = 0; $redirect <= $maxRedirects; $redirect++) {
-            $response = Http::connectTimeout((int) config('ai-import.connect_timeout', 5))
-                ->timeout((int) config('ai-import.timeout', 12))
+            $response = Http::connectTimeout((int) config('ai.import.connect_timeout', 5))
+                ->timeout((int) config('ai.import.timeout', 12))
                 ->withHeaders([
-                    'User-Agent' => (string) config('ai-import.user_agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36'),
+                    'User-Agent' => (string) config('ai.import.user_agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36'),
                     'Accept' => 'text/html,application/xhtml+xml',
                 ])
                 ->withOptions(['allow_redirects' => false])
@@ -103,7 +103,7 @@ class ArticleSourceFetcher
             if ($contentType !== '' && ! str_contains($contentType, 'text/html') && ! str_contains($contentType, 'application/xhtml')) {
                 throw new AiImportException('URL nguồn không phải HTML.', 'SOURCE_NOT_HTML');
             }
-            $maxBytes = (int) config('ai-import.max_html_bytes', 5 * 1024 * 1024);
+            $maxBytes = (int) config('ai.import.max_html_bytes', 5 * 1024 * 1024);
             if ((int) $response->header('Content-Length', 0) > $maxBytes) {
                 throw new AiImportException('HTML nguồn vượt giới hạn kích thước.', 'SOURCE_TOO_LARGE');
             }

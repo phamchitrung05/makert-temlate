@@ -84,7 +84,7 @@ final class ProviderRegistry
     {
         $metadata = $this->get($key);
         $class = isset($metadata['record'])
-            ? config('ai-providers.presets.'.$metadata['driver'].'.adapter')
+            ? config('ai.providers.presets.'.$metadata['driver'].'.adapter')
             : ($metadata['adapter'] ?? null);
         if (! is_string($class) || ! is_a($class, AiProviderContract::class, true)) {
             throw new InvalidArgumentException('AI provider chưa khai báo adapter hợp lệ.');
@@ -179,7 +179,7 @@ final class ProviderRegistry
             })->values()->all();
         // Bản ghi DB cùng key luôn thắng, kể cả khi bị tắt hoặc không có model hợp lệ.
         $storedKeys = $records->pluck('key')->all();
-        $environment = $capability === AiCapability::Image ? [] : collect((array) config('ai-providers.connections', []))
+        $environment = $capability === AiCapability::Image ? [] : collect((array) config('ai.providers.connections', []))
             ->filter(fn (array $connection, string $key): bool => ($connection['enabled'] ?? false) === true && ! in_array($key, $storedKeys, true))
             ->map(fn (array $connection, string $key): array => $this->configuredProvider($key))
             ->map(fn (array $provider): array => [
@@ -206,9 +206,9 @@ final class ProviderRegistry
      */
     private function configuredProvider(string $key): array
     {
-        $connection = config('ai-providers.connections.'.$key);
+        $connection = config('ai.providers.connections.'.$key);
         $driver = is_array($connection) ? (string) ($connection['driver'] ?? '') : '';
-        $definition = config('ai-providers.presets.'.$driver) ?? config('ai-providers.internal.'.$driver);
+        $definition = config('ai.providers.presets.'.$driver) ?? config('ai.providers.internal.'.$driver);
         if (! is_array($connection) || ($connection['enabled'] ?? false) !== true || ! is_array($definition)) {
             throw new InvalidArgumentException('AI provider chưa được cấu hình hoặc đã tắt.');
         }

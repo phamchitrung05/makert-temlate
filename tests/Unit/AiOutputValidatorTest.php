@@ -140,8 +140,8 @@ final class AiOutputValidatorTest extends TestCase
         $this->assertSame('AI_PROVIDER_MISSING_FIELDS', $this->failure(['title' => 'Title'], null)->errorCode);
         $this->assertSame([], $validator->validate(['thumbnail' => ['source_url' => 'https://fake.test', 'media_asset_id' => 999]], ['thumbnail']));
         $this->assertSame([], $validator->validate(['category_ids' => [1, 1]], []));
-        $this->assertArrayNotHasKey('taxonomy', config('ai-agent.output_definitions'));
-        $this->assertArrayNotHasKey('category_ids', config('ai-agent.output_aliases'));
+        $this->assertArrayNotHasKey('taxonomy', config('ai.agent.output_definitions'));
+        $this->assertArrayNotHasKey('category_ids', config('ai.agent.output_aliases'));
     }
 
     /**

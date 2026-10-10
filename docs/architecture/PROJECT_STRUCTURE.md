@@ -600,10 +600,13 @@ app/Models/AiArticleArchive.php         bản AI gốc độc lập với retent
 app/Models/AiProvenance.php             provenance theo field đã apply
 app/Http/Controllers/Admin/AiImportController.php
 app/Console/Commands/ArchiveAiArticlesCommand.php  phục hồi/kiểm kê kho, không gọi AI
-config/ai-agent.php                    target/output/prompt/schema
-config/ai-providers.php                driver/preset/adapter và connection môi trường
-config/ai-import.php                   giới hạn nguồn và lifecycle của pipeline
-config/ai-content.php                  pipeline mode, prompt/version và budget/gates
+config/ai/agent.php                    target/output/prompt/schema
+config/ai/providers.php                driver/preset/adapter và connection môi trường
+config/ai/import.php                   giới hạn nguồn và lifecycle của pipeline
+config/ai/content.php                  pipeline mode, prompt/version và budget/gates
+config/ai/quality.php                  evaluator prompt/schema và queue lifecycle
+config/ai/scoring.php                  rubric, thang điểm, ngưỡng và 5 tiêu chí
+config/ai/task-runs.php                registry adapter cho AI task runs
 database/migrations/*ai_import*         lifecycle và lineage fields
 resources/js/services/aiAgent.js
 resources/js/stores/aiAgent.js
@@ -671,18 +674,18 @@ Từ 2026-10-05, Post List/Add/Edit không có nút hoặc dialog tạo nội du
 Luồng tạo/review/regenerate/Apply tập trung ở trang AI Content; PostForm phụ trách
 nhập/sửa/lưu bài viết. Khung dialog bắt buộc vẫn là `AppDialogLayout` ở mục 4.3.1.
 
-`ai-agent.targets.<target>.outputs` là allowlist nhóm đầu ra của từng tài nguyên:
+`ai.agent.targets.<target>.outputs` là allowlist nhóm đầu ra của từng tài nguyên:
 `title`, `excerpt`, `content`, `seo`, `thumbnail` cho Post. Taxonomy do người dùng chọn thủ công; không thuộc generation schema/outputs.
-Nhãn hiển thị và ánh xạ field canonical thuộc `ai-agent.output_definitions`.
+Nhãn hiển thị và ánh xạ field canonical thuộc `ai.agent.output_definitions`.
 Capability của target cung cấp danh sách này cho select nhiều lựa chọn dạng tag;
 frontend gửi nhóm đã chọn qua `requested_outputs`. Nhóm đầu ra mô tả dữ liệu AI
 được phép tạo, không phải toàn bộ cột của model domain hoặc các trường publish.
 
-Provider được khai báo tập trung trong `ai-providers`: `presets` chứa các driver
+Provider được khai báo tập trung trong `ai.providers`: `presets` chứa các driver
 AI Settings hỗ trợ, `internal` chứa adapter trích xuất/HTTP JSON và `connections`
 đọc cấu hình môi trường. `ProviderRegistry` resolve adapter từ định nghĩa driver
-chung, ưu tiên bản ghi database cùng key; không lấy credential từ `ai-agent` hoặc
-`ai-import`. Catalog public không trả API key/endpoint. `ai-import` giữ timeout
+chung, ưu tiên bản ghi database cùng key; không lấy credential từ `ai.agent` hoặc
+`ai.import`. Catalog public không trả API key/endpoint. `ai.import` giữ timeout
 nguồn/job, giới hạn payload, quota, retention và idempotency.
 
 Trạng thái và việc còn lại được cập nhật tại [PLAN](../plans/PLAN.md).
@@ -786,7 +789,7 @@ vẫn theo retention run; trang `AI Approved` đọc archive approved, còn eval
 Menu dọc/ngang đều đặt AI Settings, Ai Content và AI Approved trong nhóm Systerm AI.
 
 Thời gian chờ AI được lưu ở `ai_providers.request_timeout` (5–600 giây) và chỉnh
-qua `AiProviderConnectionDialog.vue`. `config/ai-providers.php` có `request_timeout`
+qua `AiProviderConnectionDialog.vue`. `config/ai/providers.php` có `request_timeout`
 đọc `AI_PROVIDER_REQUEST_TIMEOUT`, dùng làm mặc định trên form/API tạo provider mới;
 provider đã lưu được ưu tiên. Migration thêm cột cho provider hiện tại với 120 giây.
 `ModelResolver` chụp timeout riêng vào connection của text/image;
@@ -951,9 +954,9 @@ php artisan test
 - `database/migrations/2026_10_03_100000_migrate_settings_to_spatie.php` chuyển
   key/value sang group/name/payload/locked. `legacy_settings` giữ bản lưu cũ.
 - `database/settings/*`: property migration; không ghi đè giá trị đã chuyển.
-- `config/ai-agent.php` khai báo target label/icon/color/permission, đầu ra được
+- `config/ai/agent.php` khai báo target label/icon/color/permission, đầu ra được
   chọn, nhãn/field của từng nhóm và hướng dẫn nội dung. `PromptRegistry` tạo prompt
-  URL/text dùng schema content chung; provider/credential thuộc `ai-providers`.
+  URL/text dùng schema content chung; provider/credential thuộc `ai.providers`.
   Thêm target văn bản mới bằng một khai báo trong config; apply vào model domain
   vẫn cần adapter/action riêng. Resource/Sound hiện chưa có domain apply/audio.
 - `GET /api/admin/ai-agent/targets`: catalog public, chỉ trả target actor có quyền.

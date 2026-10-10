@@ -7,6 +7,7 @@ use App\Exceptions\AiImportException;
 use App\Models\AiImport;
 use App\Services\Ai\Content\Archives\AiArticleArchiveService;
 use App\Services\Ai\Content\ArticleImportService;
+use App\Services\Ai\Content\Quality\ArticleQualityEvaluationService;
 use App\Services\Ai\Images\AiThumbnailService;
 use App\Services\Ai\Providers\Diagnostics\AiResponseDiagnostics;
 use App\Services\Ai\Runs\AiRunBudget;
@@ -136,7 +137,9 @@ class ProcessAiImportJob implements ShouldQueue
         try {
             if ($archives->tracked($import) && $import->archive_pending_json !== null) {
                 if ($archives->resumeReady($import->id, $generationNo)) {
-                    $this->queueOptionalImage($import->fresh());
+                    $ready = $import->fresh();
+                    $this->queueOptionalImage($ready);
+                    $this->queueQualityEvaluation($ready);
                 }
 
                 return;
@@ -151,7 +154,9 @@ class ProcessAiImportJob implements ShouldQueue
             if ($archives->tracked($import)) {
                 if ($archives->stageCompletion($import->id, $generationNo, $result)
                     && $archives->resumeReady($import->id, $generationNo)) {
-                    $this->queueOptionalImage($import->fresh());
+                    $ready = $import->fresh();
+                    $this->queueOptionalImage($ready);
+                    $this->queueQualityEvaluation($ready);
                 }
 
                 return;
@@ -160,7 +165,7 @@ class ProcessAiImportJob implements ShouldQueue
                 'status' => 'ready', 'current_step' => 'ready', 'progress' => 100,
                 'result_json' => $result, 'provider' => $result['provider'],
                 'prompt_version' => $result['prompt_version'], 'completed_at' => now(),
-                'expires_at' => now()->addDays((int) config('ai-import.retention_days', 2)),
+                'expires_at' => now()->addDays((int) config('ai.import.retention_days', 2)),
                 'error_code' => null, 'error_message' => null,
             ];
             DB::transaction(function () use ($import, $completion, $generationNo): void {
@@ -171,6 +176,7 @@ class ProcessAiImportJob implements ShouldQueue
                 $parent->forceFill($completion)->save();
                 $this->queueOptionalImage($parent);
             });
+            $this->queueQualityEvaluation(AiImport::query()->find($this->importId));
         } catch (AiArticleArchiveException $exception) {
             $this->markArchiveFailure($generationNo, $exception);
             throw $exception;
@@ -322,6 +328,25 @@ class ProcessAiImportJob implements ShouldQueue
             $result['thumbnail_generation'] = ['job_id' => null, 'status' => 'failed', 'progress' => 0,
                 'error_code' => 'AI_IMAGE_QUEUE_FAILED', 'error' => 'Không thể xếp hàng tạo ảnh; nội dung vẫn sẵn sàng. Hãy tạo lại thumbnail.'];
             $import->update(['result_json' => $result]);
+        }
+    }
+
+    /**
+     * Xếp chấm G2 sau khi candidate ready, không làm hỏng bài nếu evaluator lỗi cấu hình.
+     *
+     * Input: run vừa commit ready.
+     * Output: void; evaluation queued bởi service nếu run Post có content AI.
+     * Side effect: ghi evaluation và dispatch worker sau transaction; lỗi được log bounded.
+     */
+    private function queueQualityEvaluation(?AiImport $import): void
+    {
+        if (! $import) {
+            return;
+        }
+        try {
+            app(ArticleQualityEvaluationService::class)->schedule($import);
+        } catch (Throwable $exception) {
+            report($exception);
         }
     }
 }

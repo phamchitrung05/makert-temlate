@@ -8,7 +8,8 @@ use App\Services\Ai\Targets\PostAiAdapter;
  * =====================================================================
  *
  * Khai báo tài nguyên, nhóm đầu ra, prompt và schema. Provider/kết nối thuộc
- * ai-providers.php; giới hạn xử lý và vòng đời tác vụ thuộc ai-import.php.
+ * config/ai/providers.php; giới hạn xử lý và vòng đời tác vụ thuộc
+ * config/ai/import.php.
  *
  * CÁC HÀM/METHOD TRONG FILE: Không có function; file chỉ trả mảng cấu hình.
  * INPUT/OUTPUT CỦA FILE (tổng thể):

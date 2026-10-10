@@ -28,7 +28,7 @@ Các tài liệu API và QA trong `docs/` tiếp tục làm nguồn tham chiếu
 | Ai Prompt/Writing Profiles | DONE trong phạm vi hiện tại | CRUD, profile mặc định, chọn profile, phân tích văn phong qua queue dùng chung và quyền/validation |
 | Settings | DONE phần đã triển khai | 10 tab, typed settings/version/quyền, AI defaults, thông tin hệ thống, logo/favicon public/admin và QA upload thật |
 | Đánh giá 19 bài đã lưu | DONE — đánh giá AI | Điểm văn phong trung bình **4,49/5**; hai phiếu người đọc vẫn chờ |
-| Chấm bài AI và báo cáo định kỳ | IN PROGRESS — tạm hoãn, G1 DONE | Kho chỉ giữ bản Post AI được duyệt/Apply. Kế hoạch mới: chấm từng candidate trước duyệt, vòng tròn điểm, cổng > 4/đủ nguồn/đạt dữ kiện và tổng hợp điểm định kỳ; code giai đoạn 2–6 còn TODO. [Kế hoạch riêng](HE_THONG_TU_DANH_GIA_DINH_KY.md) |
+| Chấm bài AI và báo cáo định kỳ | IN PROGRESS — G1–G3 DONE | Đã có evaluator theo candidate/generation/hash, enqueue sau ready, cổng > 4/đủ nguồn/đạt dữ kiện, vòng tròn điểm và archive score; G4–G6 còn TODO. [Kế hoạch riêng](HE_THONG_TU_DANH_GIA_DINH_KY.md) |
 | Public, download và thương mại | TODO/IN PROGRESS theo phạm vi | Public UI được làm ở luồng riêng; tích hợp và nghiệp vụ phía sau còn backlog |
 
 Chủ dự án chấp nhận mức **4,49/5** và hiện chưa yêu cầu chỉnh bài, prompt hoặc model thêm. Không mở lại các task kỹ thuật đã xong chỉ vì checklist cũ chưa được cập nhật.
@@ -58,6 +58,7 @@ Ngày 07/10/2026, chủ dự án yêu cầu để tính năng chấm bài và da
 - [x] 09/10: hoàn tất Ai Content enqueue liên tiếp: form chỉ khóa trong lúc POST, reset ngay sau khi task được nhận, popup theo dõi độc lập và bổ sung tracker ID trong payload.
 - [x] 09/10: hoàn tất ổn định popup queue: task mới chỉ cập nhật badge, event đến sớm được replay, icon avatar theo mode và danh sách cuộn sát footer.
 - [x] 09/10: hoàn tất regression quality grounding cho bài có code/link và số viết bằng chữ; giữ chặn số liệu/phiên bản bị thay đổi thật. Kiểm chứng nhóm grounding 48 tests/111 assertions và pipeline liên quan 85 tests/359 assertions.
+- [x] 09/10: triển khai Q-01 G2–G3: evaluator rubric/version, job/queue theo hash, quality gate Approve/Apply, chấm lại sau edit, vòng tròn điểm và lưu score cùng archive lifecycle. [QA G2/G3](../qa/AI_QUALITY_G2_G3_2026-10-09.md)
 
 Bằng chứng FIX 1 ở [Acceptance/QA](../qa/FIX1_ACCEPTANCE_2026-10-07/README.md): backend 438 tests/2986 assertions; lượt scoped cuối 31/172; frontend scoped 7 files/51 tests và build đạt. Kiểm backend gần nhất sau bổ sung kho approved xem [QA giai đoạn 1](../qa/AI_ARTICLE_ARCHIVES_2026-10-07.md). Đây là các lượt có phần trùng nhau, không cộng thành tổng mới.
 
@@ -67,7 +68,7 @@ Các ID dưới đây để theo dõi ổn định, không phải yêu cầu tri
 
 | ID | Trạng thái | Việc còn lại / điều kiện bắt đầu |
 | --- | --- | --- |
-| Q-01 | IN PROGRESS — tạm hoãn, G1 DONE | G1-01–G1-06 đã đạt. Tiếp theo khi mở lại: G2 bộ chấm từng bài → G3 chấm ngay/cổng duyệt/vòng tròn điểm → G4 lịch tổng hợp/báo cáo → G5 Admin/cấu hình → G6 kiểm thử host. Kế hoạch đã cập nhật; code còn TODO. [Task chi tiết](HE_THONG_TU_DANH_GIA_DINH_KY.md) |
+| Q-01 | IN PROGRESS — G1–G3 DONE | G1-01–G1-06, G2 và G3 đã đạt trong phạm vi local; tiếp theo G4 lịch tổng hợp/báo cáo → G5 Admin/cấu hình → G6 kiểm thử host/provider thật. [Task chi tiết](HE_THONG_TU_DANH_GIA_DINH_KY.md) |
 | Q-02 | TODO — chờ chấm sau | Hai người đọc chấm độc lập và kết luận nghiệm thu theo [bộ chấm đã chuẩn bị](../qa/FIX1_ACCEPTANCE_2026-10-07/review/README.md). Điểm AI không điền thay vào hai phiếu này |
 | Q-03 | TODO — tạm hoãn | Nghiệm thu chất lượng nhận xét Ai Prompt; đối chiếu temperature 0/0.2 và hiệu chỉnh language/exact-copy/similarity theo loại bài/ngôn ngữ khi chủ dự án yêu cầu. Similarity không phải điểm chất lượng tổng thể |
 | A-01 | TODO — tạm hoãn | Để làm sau khi có khách hàng theo yêu cầu ngày 07/10/2026. Admin xem danh sách customer bằng API thật: tên/email, trạng thái, ngày tạo/lần đăng nhập gần nhất; tìm kiếm, lọc trạng thái và phân trang |

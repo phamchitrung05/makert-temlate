@@ -106,7 +106,7 @@ class ArticleImportService
                 'source_url' => $source['url'], 'canonical_url' => $this->meta($html, 'canonical') ?: $source['url'],
                 'content_type' => $source['content_type'], 'title' => $title, 'description' => $description,
                 'thumbnail_source_url' => $this->meta($html, 'og:image'),
-            ], (array) ($input['pipeline_snapshot'] ?? config('ai-content', [])));
+            ], (array) ($input['pipeline_snapshot'] ?? config('ai.content', [])));
             $content = $snapshot['content_html'];
         }
         $parentDraft = array_key_exists('parent_draft_snapshot', $input)
@@ -192,7 +192,7 @@ class ArticleImportService
                 $diagnostics['returned_fields'] = array_keys($generated);
                 $generated = $validator->validate($generated, $validationGroups, sanitizeContent: true);
                 $allowedGeneratedFields = $hasFieldSelection
-                    ? array_merge(...array_map(fn (string $group): array => (array) config('ai-agent.output_definitions.'.$group.'.fields', []), $requestedFields))
+                    ? array_merge(...array_map(fn (string $group): array => (array) config('ai.agent.output_definitions.'.$group.'.fields', []), $requestedFields))
                     : array_keys($generated);
                 $generatedFields = array_values(array_intersect(array_keys($generated), $allowedGeneratedFields));
                 if (in_array('content', $generatedFields, true) && ! in_array('content_html', $generatedFields, true)) {
@@ -212,7 +212,7 @@ class ArticleImportService
                 }
                 if ($needsTextGeneration && $hasFieldSelection) {
                     $draft = $this->mergeRequestedFields($draft, $sourceDraft, $requestedFields);
-                    $replacedFields = array_merge(...array_map(fn (string $group): array => (array) config('ai-agent.output_definitions.'.$group.'.fields', []), $requestedFields));
+                    $replacedFields = array_merge(...array_map(fn (string $group): array => (array) config('ai.agent.output_definitions.'.$group.'.fields', []), $requestedFields));
                     $inheritedFields = array_values(array_diff($inheritedFields, $replacedFields));
                 }
                 $validator->validate($draft, $validationGroups, sanitizeContent: true);
@@ -388,7 +388,7 @@ class ArticleImportService
     {
         $merged = $parent;
         foreach ($fields as $group) {
-            $canonicalFields = (array) config('ai-agent.output_definitions.'.$group.'.fields', []);
+            $canonicalFields = (array) config('ai.agent.output_definitions.'.$group.'.fields', []);
             $values = array_intersect_key($fresh, array_flip($canonicalFields));
             if ($group === 'content' && (isset($fresh['content_html']) || isset($fresh['content']))) {
                 $values['content_html'] = $fresh['content_html'] ?? $fresh['content'];

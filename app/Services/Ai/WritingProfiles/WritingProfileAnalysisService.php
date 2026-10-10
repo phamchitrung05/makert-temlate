@@ -63,7 +63,7 @@ final class WritingProfileAnalysisService
         if (in_array(config('queue.connections.'.$connection.'.driver', $connection), ['sync', 'null'], true)) {
             throw ValidationException::withMessages(['reference_text' => 'Phân tích văn phong cần queue worker; không hỗ trợ chạy đồng bộ trong HTTP request.']);
         }
-        $quota = max(1, (int) config('ai-import.quota_per_hour', 20));
+        $quota = max(1, (int) config('ai.import.quota_per_hour', 20));
         if (AiWritingProfileAnalysis::query()->where('created_by', $actorId)->where('created_at', '>=', now()->subHour())->count() >= $quota) {
             throw ValidationException::withMessages(['reference_text' => 'Đã đạt giới hạn phân tích văn phong trong một giờ.']);
         }
@@ -83,7 +83,7 @@ final class WritingProfileAnalysisService
                 'source_type' => $values['source_type'] ?? 'paste', 'source_url' => $values['source_url'] ?? null,
                 'source_hash' => hash('sha256', $text), 'status' => 'queued', 'connection_snapshot_json' => $snapshot,
                 'prompt_version' => WritingProfileDefinition::PROMPT_VERSION, 'schema_version' => WritingProfileDefinition::SCHEMA_VERSION,
-                'expires_at' => now()->addDays(max(1, (int) config('ai-import.retention_days', 2))),
+                'expires_at' => now()->addDays(max(1, (int) config('ai.import.retention_days', 2))),
             ]);
             $taskRun = app(AiTaskRunService::class)->registerAnalysis($analysis);
             // Giữ tracker id trong DTO queued để popup hủy đúng bản ghi dùng chung ngay lập tức.
