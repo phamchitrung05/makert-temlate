@@ -14,13 +14,33 @@ use Illuminate\Support\Facades\DB;
  *
  * Version ready không được thay package trong cùng một request; caller phải
  * chuyển version về draft theo policy nghiệp vụ trước khi thay file.
+ *
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - __construct(): nhận service đồng bộ media usage.
+ * - handle(): cập nhật version và media trong transaction.
+ *
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : ResourceVersion, attributes đã validate và actor id.
+ * - OUTPUT: ResourceVersion fresh; rollback nếu update/media thất bại.
  */
 class UpdateResourceVersionAction
 {
+    /**
+     * Khởi tạo service đồng bộ media usage.
+     *
+     * Input: MediaAssetUsageService.
+     * Output: instance action; chưa mở transaction.
+     */
     public function __construct(
         private readonly MediaAssetUsageService $mediaAssetUsageService,
     ) {}
 
+    /**
+     * Cập nhật Resource Version và các media usage được chọn.
+     *
+     * Input: version hiện tại, attributes và actor id.
+     * Output: ResourceVersion fresh; ném DomainException nếu version ready đổi media.
+     */
     public function handle(
         ResourceVersion $version,
         array $attributes,

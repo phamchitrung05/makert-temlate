@@ -15,6 +15,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * SIDE EFFECT: Ghi DB khi caller save.
  * EXCEPTION/TRANSACTION: Không mở transaction.
  * =====================================================================
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : dữ liệu theo contract và method chính của file.
+ * - OUTPUT: kết quả public của file; side effect/exception theo implementation.
  */
 class AiProvider extends Model
 {

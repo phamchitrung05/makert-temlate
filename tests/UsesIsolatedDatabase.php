@@ -3,6 +3,7 @@
 namespace Tests;
 
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
@@ -38,6 +39,10 @@ trait UsesIsolatedDatabase
      * CHỨC NĂNG: Migrate SQLite in-memory rồi trỏ database.default sang đó
      * =====================================================================
      *
+     * INPUT/OUTPUT:
+     * - Input: không có; cấu hình nằm trong trait.
+     * - Output: connection `isolated_test` trỏ tới SQLite in-memory.
+     *
      * SIDE EFFECT:
      * - Ghi config database và chạy migrate cho connection isolated_test
      */
@@ -46,6 +51,9 @@ trait UsesIsolatedDatabase
         Config::set('app.key', 'base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=');
         Config::set('cache.default', 'array');
         Config::set('permission.cache.store', 'array');
+        // Mỗi test bắt đầu với cache array mới để throttle/rate limiter không
+        // giữ quota của user đã được tạo ở test trước.
+        Cache::store('array')->flush();
         Config::set('database.connections.isolated_test', [
             'driver' => 'sqlite',
             'database' => ':memory:',
@@ -69,6 +77,10 @@ trait UsesIsolatedDatabase
      * CHỨC NĂNG: Rollback schema và giải phóng connection sau test
      * =====================================================================
      *
+     * INPUT/OUTPUT:
+     * - Input: connection `isolated_test` đã migrate.
+     * - Output: schema được reset và connection bị purge.
+     *
      * SIDE EFFECT:
      * - Reset migration rồi purge connection isolated_test
      */
@@ -86,6 +98,10 @@ trait UsesIsolatedDatabase
      * =====================================================================
      * CHỨC NĂNG: Xoá cache permission của Spatie giữa các bước trong test
      * =====================================================================
+     *
+     * INPUT/OUTPUT:
+     * - Input: PermissionRegistrar hiện tại.
+     * - Output: void; cache permission được xóa.
      *
      * SIDE EFFECT:
      * - Gọi forgetCachedPermissions(); không đụng dữ liệu

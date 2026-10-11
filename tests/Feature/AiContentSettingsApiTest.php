@@ -245,7 +245,8 @@ final class AiContentSettingsApiTest extends TestCase
         $this->assertTrue($child->input_json['generate_thumbnail']);
         $this->assertSame($image->id, $child->input_json['image_connection']['model_id']);
         Http::fake(['https://gateway.example/v1/chat/completions' => Http::response(['choices' => [['finish_reason' => 'stop', 'message' => ['content' => json_encode([
-            'title' => 'Không thay tiêu đề', 'content_html' => '<p>Không thay nội dung.</p>', 'seo_title' => 'SEO mới',
+            'seo_title' => 'SEO mới',
+            'focus_keyword' => 'nguồn tác vụ', 'seo_description' => 'Mô tả SEO mới.',
         ])]]]])]);
         (new ProcessAiImportJob($childId))->handle(app(ArticleImportService::class));
         $draft = AiImport::findOrFail($childId)->result_json['draft'];
@@ -353,7 +354,11 @@ final class AiContentSettingsApiTest extends TestCase
         $this->withToken($token)->putJson('/api/admin/settings/ai/settings', [
             'default_temperature' => 0.9, 'min_word_count' => 350, 'default_system_prompt' => 'Dùng các câu ngắn.',
         ])->assertOk();
-        $output = ['title' => 'Mới', 'content_html' => '<p>Nội dung.</p>'];
+        $output = [
+            'title' => 'Mới', 'content_html' => '<p>Nội dung.</p>',
+            'focus_keyword' => 'nội dung mới', 'seo_title' => 'Nội dung mới',
+            'seo_description' => 'Mô tả nội dung mới.',
+        ];
         Http::fake([
             'https://openai.example/v1/chat/completions' => fn ($request) => Http::response(['choices' => [[
                 'finish_reason' => 'stop', 'message' => ['content' => json_encode(ArticlePipelineFixture::httpOutput($request, $output))],
@@ -371,11 +376,13 @@ final class AiContentSettingsApiTest extends TestCase
             (new ProcessAiImportJob($id))->handle(app(ArticleImportService::class));
             $this->assertSame('ready', AiImport::findOrFail($id)->status);
         }
-        Http::assertSentCount(9);
+        Http::assertSentCount(12);
         foreach (Http::recorded() as [$request]) {
             $context = ArticlePipelineFixture::httpContext($request)['input'];
-            $this->assertSame('Dùng các câu ngắn.', $context['brief']['website_instructions']);
-            $this->assertSame('Khoảng 350 từ, tránh kéo dài hoặc lặp ý', $context['brief']['length']);
+            if (isset($context['brief'])) {
+                $this->assertSame('Dùng các câu ngắn.', $context['brief']['website_instructions']);
+                $this->assertSame('Khoảng 350 từ, tránh kéo dài hoặc lặp ý', $context['brief']['length']);
+            }
             $this->assertSame(0.9, $request['temperature'] ?? $request['generationConfig']['temperature']);
         }
     }

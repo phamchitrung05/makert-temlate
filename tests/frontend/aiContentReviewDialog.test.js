@@ -2,7 +2,8 @@
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Kiểm form quyết định và so sánh nguồn không thực thi HTML.
- * CÁC HÀM/METHOD TRONG FILE: render(), afterEach(), button(), test cases.
+ * CÁC HÀM/METHOD TRONG FILE: render(), afterEach(), button(), test cases,
+ * kiểm metadata SEO, tô khác biệt và đồng bộ cuộn.
  * INPUT/OUTPUT CỦA CLASS (tổng thể): props/DOM interaction -> event options/locks.
  * SIDE EFFECT: component DOM test, service không được gọi.
  * =====================================================================
@@ -227,46 +228,6 @@ describe('AI content review dialog', () => {
 })
 
 describe('AI content source comparison', () => {
-  it('binds saved metadata and switches between escaped source HTML, preview and clean text', async () => {
-    render(AiContentComparison, {
-      source: { available: true, title: 'Nguồn động', content_html: '<p>Đoạn chung.</p><p>Đoạn nguồn.</p>' },
-      draft: { title: 'Bài động', content_html: '<p>Đoạn chung.</p><p>Đoạn AI mới.</p><table><tr><td>Dữ liệu bảng</td></tr></table>',
-        excerpt: 'Tóm tắt động', seo_title: 'SEO động', seo_description: 'Mô tả động', focus_keyword: 'Từ khóa động' },
-    })
-    expect(wrapper.text()).toContain('Tóm tắt động')
-    expect(wrapper.text()).toContain('SEO động')
-    expect(wrapper.text()).toContain('Mô tả động')
-    expect(wrapper.text()).toContain('Từ khóa động')
-    expect(wrapper.get('[aria-label="Văn bản AI"] table').text()).toContain('Dữ liệu bảng')
-    expect(wrapper.get('[aria-label="Văn bản AI"] .ai-comparison-added').text()).toBe('Đoạn AI mới.')
-    await button('HTML gốc').trigger('click')
-    expect(wrapper.get('[aria-label="Văn bản nguồn"] pre').text()).toContain('<p>Đoạn nguồn.</p>')
-    expect(wrapper.find('[aria-label="Văn bản nguồn"] pre p').exists()).toBe(false)
-    await wrapper.get('input[aria-label="Chỉ xem nội dung sạch"]').setValue(true)
-    expect(wrapper.find('[aria-label="Văn bản nguồn"] pre').exists()).toBe(false)
-    expect(wrapper.find('[aria-label="Văn bản AI"] table').exists()).toBe(false)
-    expect(wrapper.get('[aria-label="Văn bản AI"]').text()).toContain('Dữ liệu bảng')
-    await wrapper.get('input[aria-label="Tô khác biệt"]').setValue(false)
-    expect(wrapper.find('.ai-comparison-panel__block--added').exists()).toBe(false)
-  })
-
-  it('synchronizes relative scroll positions only while the option is enabled', async () => {
-    render(AiContentComparison, { source: { available: true, content_html: '<p>Nguồn</p>' }, draft: { content_html: '<p>AI</p>' } })
-
-    const source = wrapper.get('[aria-label="Văn bản nguồn"]')
-    const result = wrapper.get('[aria-label="Văn bản AI"]')
-
-    Object.defineProperties(source.element, { scrollHeight: { value: 1000 }, clientHeight: { value: 200 } })
-    Object.defineProperties(result.element, { scrollHeight: { value: 2000 }, clientHeight: { value: 200 } })
-    source.element.scrollTop = 200
-    await source.trigger('scroll')
-    expect(result.element.scrollTop).toBe(450)
-    await wrapper.get('input[aria-label="Đồng bộ cuộn"]').setValue(false)
-    source.element.scrollTop = 400
-    await source.trigger('scroll')
-    expect(result.element.scrollTop).toBe(450)
-  })
-
   it('keeps the comparison headings while loading and shows saved data after the read completes', async () => {
     render(AiContentComparison, { loading: true })
     expect(wrapper.text()).toContain('Nguồn đã lưu')
@@ -291,6 +252,62 @@ describe('AI content source comparison', () => {
     expect(wrapper.text()).toContain('Nhãn liên kết')
     expect(wrapper.text()).not.toContain('malicious()')
     expect(wrapper.find('script,iframe,img,a').exists()).toBe(false)
+  })
+
+  it('shows both comparison controls and SEO metadata below the source panels', () => {
+    render(AiContentComparison, {
+      source: {
+        available: true,
+        title: 'Nguồn gốc',
+        seo_title: 'Tiêu đề nguồn',
+        focus_keyword: 'từ khóa nguồn',
+        seo_description: 'Mô tả nguồn',
+        content_html: '<p>Đoạn nguồn.</p>',
+      },
+      draft: {
+        title: 'Bài AI',
+        seo_title: 'Tiêu đề AI',
+        focus_keyword: 'từ khóa AI',
+        seo_description: 'Mô tả AI',
+        content_html: '<p>Đoạn AI.</p>',
+      },
+    })
+
+    expect(wrapper.text()).toContain('Đồng bộ cuộn')
+    expect(wrapper.text()).toContain('Tô khác biệt')
+    expect(wrapper.findAll('.ai-content-comparison__panel')).toHaveLength(2)
+    expect(wrapper.findAll('.ai-content-comparison__metadata')).toHaveLength(2)
+    expect(wrapper.text()).toContain('Tiêu đề nguồn')
+    expect(wrapper.text()).toContain('từ khóa nguồn')
+    expect(wrapper.text()).toContain('Mô tả nguồn')
+    expect(wrapper.text()).toContain('Tiêu đề AI')
+    expect(wrapper.text()).toContain('từ khóa AI')
+    expect(wrapper.text()).toContain('Mô tả AI')
+    expect(wrapper.find('.ai-content-comparison__block--removed').exists()).toBe(true)
+    expect(wrapper.find('.ai-content-comparison__block--added').exists()).toBe(true)
+  })
+
+  it('synchronizes the other panel scroll position by the current ratio', async () => {
+    render(AiContentComparison, {
+      source: { available: true, content_html: '<p>Nguồn dài.</p>' },
+      draft: { content_html: '<p>Bản AI dài.</p>' },
+    })
+
+    const sourceViewer = wrapper.get('[aria-label="Văn bản nguồn"]').element
+    const resultViewer = wrapper.get('[aria-label="Văn bản AI"]').element
+
+    Object.defineProperties(sourceViewer, {
+      scrollHeight: { configurable: true, value: 200 },
+      clientHeight: { configurable: true, value: 100 },
+    })
+    Object.defineProperties(resultViewer, {
+      scrollHeight: { configurable: true, value: 500 },
+      clientHeight: { configurable: true, value: 100 },
+    })
+    sourceViewer.scrollTop = 50
+    await wrapper.get('[aria-label="Văn bản nguồn"]').trigger('scroll')
+
+    expect(resultViewer.scrollTop).toBe(200)
   })
 
   it('explains a missing saved source without fetching it', () => {

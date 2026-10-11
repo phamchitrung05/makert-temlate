@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\AiArticleArchiveIndexRequest;
-use App\Http\Resources\AiArticleArchiveResource;
-use App\Http\Resources\AiArticleArchiveSummaryResource;
+use App\Http\Requests\Admin\Ai\AiArticleArchiveIndexRequest;
+use App\Http\Resources\Ai\AiArticleArchiveResource;
+use App\Http\Resources\Ai\AiArticleArchiveSummaryResource;
 use App\Http\Responses\BaseResponse;
 use App\Models\AiArticleArchive;
 use Illuminate\Http\JsonResponse;

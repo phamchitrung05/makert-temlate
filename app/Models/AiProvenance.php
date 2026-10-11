@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Audit bất biến nguồn AI của field đã áp dụng vào tài nguyên.
- * CÁC HÀM/METHOD: dùng persistence Eloquent. INPUT: metadata backend đã xác minh.
+ * CÁC HÀM/METHOD TRONG FILE: dùng persistence Eloquent. INPUT: metadata backend đã xác minh.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - Model persistence mặc định; không thêm mutation ngoài fillable audit fields.

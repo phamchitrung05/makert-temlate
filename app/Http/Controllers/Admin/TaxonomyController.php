@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\BaseCrudController;
-use App\Http\Resources\TaxonomyItem;
+use App\Http\Resources\Taxonomy\TaxonomyItem;
 
 /**
  * =====================================================================

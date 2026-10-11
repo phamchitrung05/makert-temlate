@@ -46,6 +46,7 @@ class CategoryRepositoryEloquent extends BaseRepository implements CategoryRepos
      *
      * OUTPUT:
      * - string: Category::class
+     * Input: tham số theo chữ ký `model()` và state đã hydrate của class.
      */
     public function model()
     {
@@ -59,6 +60,8 @@ class CategoryRepositoryEloquent extends BaseRepository implements CategoryRepos
      *
      * SIDE EFFECT:
      * - Push RequestCriteria vào hàng đợi criteria của repository
+     * Input: tham số theo chữ ký `boot()` và state đã hydrate của class.
+     * Output: giá trị theo kiểu trả về của `boot()`; side effect/exception giữ theo implementation.
      */
     public function boot()
     {
@@ -72,6 +75,7 @@ class CategoryRepositoryEloquent extends BaseRepository implements CategoryRepos
      *
      * OUTPUT:
      * - string: CategoryValidator::class
+     * Input: tham số theo chữ ký `validator()` và state đã hydrate của class.
      */
     public function validator()
     {
@@ -85,6 +89,7 @@ class CategoryRepositoryEloquent extends BaseRepository implements CategoryRepos
      *
      * OUTPUT:
      * - Collection: các Category có parent_id null
+     * Input: tham số theo chữ ký `roots()` và state đã hydrate của class.
      */
     public function roots(): Collection
     {

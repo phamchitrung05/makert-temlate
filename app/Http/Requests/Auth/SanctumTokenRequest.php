@@ -17,6 +17,9 @@ use Illuminate\Foundation\Http\FormRequest;
  * - authorize(): cho phép account đã authenticated yêu cầu token
  * - rules(): giới hạn device_name
  * =====================================================================
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : dữ liệu theo contract và method chính của file.
+ * - OUTPUT: kết quả public của file; side effect/exception theo implementation.
  */
 class SanctumTokenRequest extends FormRequest
 {
@@ -28,6 +31,7 @@ class SanctumTokenRequest extends FormRequest
      * OUTPUT:
      * - bool: true; auth middleware quyết định account đã đăng nhập
      * =====================================================================
+     * Input: tham số theo chữ ký `authorize()` và state đã hydrate của class.
      */
     public function authorize(): bool
     {
@@ -42,6 +46,7 @@ class SanctumTokenRequest extends FormRequest
      * OUTPUT:
      * - array<string, array<int, string>>: device_name optional và giới hạn độ dài
      * =====================================================================
+     * Input: tham số theo chữ ký `rules()` và state đã hydrate của class.
      */
     public function rules(): array
     {

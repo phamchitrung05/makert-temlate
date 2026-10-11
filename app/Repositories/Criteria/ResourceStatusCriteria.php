@@ -33,6 +33,7 @@ class ResourceStatusCriteria implements CriteriaInterface
      *
      * INPUT:
      * - $status: giá trị status thô từ query
+     * Output: giá trị theo kiểu trả về của `__construct()`; side effect/exception giữ theo implementation.
      */
     public function __construct(private readonly string $status) {}
 

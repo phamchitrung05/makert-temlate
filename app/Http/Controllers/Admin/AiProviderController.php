@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Exceptions\AiImportException;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\AiModelRequest;
-use App\Http\Requests\Admin\AiProviderRequest;
-use App\Http\Requests\Admin\AiSettingsRequest;
-use App\Http\Resources\AiModelResource;
-use App\Http\Resources\AiProviderResource;
+use App\Http\Requests\Admin\Ai\AiModelRequest;
+use App\Http\Requests\Admin\Ai\AiProviderRequest;
+use App\Http\Requests\Admin\Ai\AiSettingsRequest;
+use App\Http\Resources\Ai\AiModelResource;
+use App\Http\Resources\Ai\AiProviderResource;
 use App\Http\Responses\BaseResponse;
 use App\Models\AiModel;
 use App\Models\AiProvider;

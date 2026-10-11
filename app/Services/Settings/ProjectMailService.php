@@ -6,14 +6,38 @@ use App\Mail\SettingsTestMail;
 use Illuminate\Contracts\Mail\Factory;
 
 /**
- * Áp dụng cấu hình mail đã lưu tại boundary gửi, không mutate .env.
- * Input: Settings; Output: config runtime. sendTest gửi mail thật theo thao tác admin.
+ * =====================================================================
+ * CHỨC NĂNG FILE: Áp dụng cấu hình mail và gửi email kiểm tra.
+ * =====================================================================
+ * Refresh mail transport từ settings đã lưu tại boundary gửi, không mutate
+ * .env; email kiểm tra chỉ được gọi sau khi request đã authorize.
+ *
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - __construct(): nhận settings service và mail factory.
+ * - configure(): nạp cấu hình mail runtime và quên mailer cũ.
+ * - sendTest(): gửi SettingsTestMail tới recipient.
+ *
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : ProjectSettingsService, mail Factory và recipient.
+ * - OUTPUT: config runtime; sendTest trả driver và có side effect gửi mail.
+ * =====================================================================
  */
 final class ProjectMailService
 {
+    /**
+     * Khởi tạo service với nguồn settings và mail factory.
+     *
+     * Input: ProjectSettingsService và Illuminate mail Factory.
+     * Output: instance sẵn sàng configure/sendTest; không ghi database.
+     */
     public function __construct(private ProjectSettingsService $settings, private Factory $mail) {}
 
-    /** Refresh transport trước mỗi lần gửi để worker không giữ SMTP cũ. */
+    /**
+     * Nạp settings mail vào config runtime và reset mailer cache.
+     *
+     * Input: settings mail đã lưu.
+     * Output: array settings hiệu lực; thay đổi config runtime, không đổi .env.
+     */
     public function configure(): array
     {
         $values = $this->settings->effective('mail');
@@ -29,7 +53,12 @@ final class ProjectMailService
         return $values;
     }
 
-    /** Input: recipient. Output: driver để UI phân biệt gửi SMTP và ghi log; không trả secret. */
+    /**
+     * Gửi email kiểm tra theo mailer hiện tại.
+     *
+     * Input: recipient email đã validate.
+     * Output: tên driver; gửi mail và không trả password/credential.
+     */
     public function sendTest(string $recipient): string
     {
         $values = $this->configure();

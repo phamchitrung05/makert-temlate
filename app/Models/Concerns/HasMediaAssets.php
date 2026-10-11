@@ -37,6 +37,7 @@ trait HasMediaAssets
      *
      * OUTPUT:
      * - MorphMany: MediaAssetUsage thuộc model hiện tại
+     * Input: tham số theo chữ ký `mediaAssetUsages()` và state đã hydrate của class.
      */
     public function mediaAssetUsages(): MorphMany
     {
@@ -50,6 +51,7 @@ trait HasMediaAssets
      *
      * OUTPUT:
      * - MorphToMany: MediaAsset kèm field và sort_order ở pivot
+     * Input: tham số theo chữ ký `mediaAssets()` và state đã hydrate của class.
      */
     public function mediaAssets(): MorphToMany
     {

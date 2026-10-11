@@ -11,12 +11,15 @@ use Throwable;
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Điều phối thumbnail ảnh độc lập với nội dung candidate.
- * CÁC HÀM: requested(), state(), pending(), editable(), schedule(),
+ * CÁC HÀM/METHOD TRONG FILE: requested(), state(), pending(), editable(), schedule(),
  * accepts(), prepareRetry(), sync(), metadata().
  * INPUT/OUTPUT: run nội dung/ảnh -> child job, trạng thái public và ref ảnh.
  * SIDE EFFECT: khóa parent, ghi JSON và dispatch sau commit; không gọi AI.
  * EXCEPTION: lỗi dispatch giữ bài ready; retry parent đã quyết định trả 409.
  * =====================================================================
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : dữ liệu theo contract và method chính của file.
+ * - OUTPUT: kết quả public của file; side effect/exception theo implementation.
  */
 final class AiThumbnailService
 {

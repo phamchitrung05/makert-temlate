@@ -4,7 +4,7 @@ namespace App\Services\Ai\Content;
 
 use App\Actions\Posts\CreatePostAction;
 use App\Actions\Posts\UpdatePostAction;
-use App\Http\Resources\MediaAssetResource;
+use App\Http\Resources\Media\MediaAssetResource;
 use App\Models\AiImport;
 use App\Models\MediaAsset;
 use App\Models\Post;
@@ -194,6 +194,14 @@ final class AiContentReviewService
         $quality = $this->quality->summary($run);
         $qualityReady = ! $this->quality->requiresGate($run) || (($quality['eligibility']['eligible'] ?? false) === true);
         $thumbnail = MediaAsset::query()->with('media')->find(data_get($run->result_json, 'draft.thumbnail.media_asset_id'));
+        $sourceTitle = trim((string) ($source['title'] ?? ''));
+        $sourceDescription = trim((string) ($source['description'] ?? ''));
+        $sourceSeoTitle = trim((string) ($source['seo_title'] ?? $source['meta_title'] ?? $sourceTitle));
+        $sourceSeoDescription = trim((string) ($source['seo_description'] ?? $source['meta_description'] ?? $sourceDescription));
+        $sourceKeyword = $source['focus_keyword'] ?? $source['seo_keyword'] ?? $source['keywords'] ?? '';
+        $sourceFocusKeyword = is_array($sourceKeyword)
+            ? implode(', ', array_values(array_filter(array_map(static fn ($value): string => is_string($value) ? trim($value) : '', $sourceKeyword))))
+            : (is_string($sourceKeyword) ? trim($sourceKeyword) : '');
 
         return [
             'job_id' => $run->id,
@@ -214,7 +222,15 @@ final class AiContentReviewService
             'thumbnail' => $thumbnail ? MediaAssetResource::make($thumbnail) : null,
             'thumbnail_generation' => AiThumbnailService::state($run),
             'expires_at' => $run->expires_at?->toIso8601String(),
-            'source' => ['title' => (string) ($source['title'] ?? ''), 'content_html' => $this->sanitizer->sanitize($html), 'available' => $html !== ''],
+            'source' => [
+                'title' => $sourceTitle,
+                'description' => $sourceDescription,
+                'seo_title' => $sourceSeoTitle,
+                'seo_description' => $sourceSeoDescription,
+                'focus_keyword' => $sourceFocusKeyword,
+                'content_html' => $this->sanitizer->sanitize($html),
+                'available' => $html !== '',
+            ],
             'provider' => $run->provider,
             'model' => data_get($run->input_json, 'model'),
         ];

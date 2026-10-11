@@ -30,7 +30,7 @@ final class AiResponseDiagnostics
                 $result[$key] = mb_substr($value, 0, $limit);
             }
         }
-        if (in_array($metadata['task'] ?? null, ['article.analysis-plan', 'article.writer', 'article.editor', 'writing-profile.analysis'], true)) {
+        if (in_array($metadata['task'] ?? null, ['article.analysis-plan', 'article.writer', 'article.editor', 'article.seo', 'writing-profile.analysis'], true)) {
             $result['task'] = $metadata['task'];
         }
         if (is_string($metadata['prompt_version'] ?? null) && preg_match('/\A[0-9]{1,3}(?:\.[0-9]{1,3}){0,2}\z/D', $metadata['prompt_version'])) {
@@ -47,7 +47,7 @@ final class AiResponseDiagnostics
         }
         $errorCodes = ['AI_PROVIDER_NOT_CONFIGURED', 'AI_PROVIDER_TIMEOUT', 'AI_PROVIDER_REFUSAL', 'AI_PROVIDER_TOOL_OUTPUT',
             'AI_PROVIDER_INCOMPLETE', 'AI_PROVIDER_EMPTY_CONTENT', 'AI_PROVIDER_INVALID_JSON', 'AI_PROVIDER_SCHEMA', 'AI_PROVIDER_MISSING_FIELDS',
-            'AI_SOURCE_REFERENCE', 'AI_QUALITY_EXACT_COPY', 'AI_QUALITY_LANGUAGE', 'AI_QUALITY_GROUNDING', 'AI_QUALITY_EDITOR',
+            'AI_SOURCE_REFERENCE', 'AI_QUALITY_EXACT_COPY', 'AI_QUALITY_LANGUAGE', 'AI_QUALITY_GROUNDING', 'AI_QUALITY_EDITOR', 'AI_SEO_INVALID_OUTPUT',
             'CANCELLED', 'EXPIRED', 'RUN_NOT_ACTIVE', 'SOURCE_TOO_LARGE', 'SOURCE_EMPTY', 'AI_LEGACY_TAXONOMY', 'AI_IMPORT_FAILED', 'AI_ACTOR_NOT_FOUND', 'AI_MEDIA_REFERENCE', 'AI_INPUT_BUDGET'];
         if (in_array($metadata['error_code'] ?? null, $errorCodes, true)) {
             $result['error_code'] = $metadata['error_code'];

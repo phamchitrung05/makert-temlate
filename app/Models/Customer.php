@@ -55,6 +55,7 @@ class Customer extends Authenticatable
      * SIDE EFFECT:
      * - Không có
      * =====================================================================
+     * Input: tham số theo chữ ký `casts()` và state đã hydrate của class.
      */
     protected function casts(): array
     {

@@ -40,6 +40,12 @@ use Illuminate\Support\Str;
  */
 class UploadMediaAssetAction
 {
+    /**
+     * Khởi tạo các validator/scanner/checksum và database manager.
+     *
+     * Input: các service xử lý upload đã được container bind.
+     * Output: instance action; chưa ghi file hoặc database.
+     */
     public function __construct(
         private readonly MediaUploadValidator $validator,
         private readonly ArchiveSecurityScanner $archiveScanner,

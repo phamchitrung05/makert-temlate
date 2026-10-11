@@ -25,6 +25,9 @@ use Symfony\Component\HttpFoundation\Response;
  * - revokeCurrentToken(): xóa token đang dùng trong Authorization header
  * - revokeAllTokens(): xóa toàn bộ token của account hiện tại
  * =====================================================================
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : dữ liệu theo contract và method chính của file.
+ * - OUTPUT: kết quả public của file; side effect/exception theo implementation.
  */
 class SanctumTokenController extends Controller
 {
@@ -64,16 +67,16 @@ class SanctumTokenController extends Controller
      * CHỨC NĂNG: Revoke Sanctum token đang dùng
      * =====================================================================
      *
-     * INPUT:
+         * INPUT:
      * - Request authenticated bởi auth:sanctum
      *
-     * OUTPUT:
+         * OUTPUT:
      * - HTTP 204 sau khi token bị xóa
      *
      * SIDE EFFECT:
      * - DELETE current personal_access_tokens row
      * =====================================================================
-     */
+         */
     public function revokeCurrentToken(Request $request): Response
     {
         $token = $request->user()?->currentAccessToken();

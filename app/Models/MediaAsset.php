@@ -75,6 +75,7 @@ class MediaAsset extends Model implements HasMedia
      *
      * OUTPUT:
      * - array<string, string>: kind và visibility dùng enum contract
+     * Input: tham số theo chữ ký `casts()` và state đã hydrate của class.
      */
     protected function casts(): array
     {
@@ -91,6 +92,7 @@ class MediaAsset extends Model implements HasMedia
      *
      * OUTPUT:
      * - BelongsTo: User hoặc null nếu asset do hệ thống tạo
+     * Input: tham số theo chữ ký `createdBy()` và state đã hydrate của class.
      */
     public function createdBy(): BelongsTo
     {
@@ -104,6 +106,7 @@ class MediaAsset extends Model implements HasMedia
      *
      * OUTPUT:
      * - HasMany: MediaAssetUsage của các model/field nghiệp vụ
+     * Input: tham số theo chữ ký `usages()` và state đã hydrate của class.
      */
     public function usages(): HasMany
     {
@@ -149,6 +152,7 @@ class MediaAsset extends Model implements HasMedia
      *
      * OUTPUT:
      * - string: disk cấu hình cho asset public hoặc private; archive luôn private
+     * Input: tham số theo chữ ký `mediaDisk()` và state đã hydrate của class.
      */
     public function mediaDisk(): string
     {
@@ -174,6 +178,7 @@ class MediaAsset extends Model implements HasMedia
      *
      * OUTPUT:
      * - Collection `library` dùng disk theo visibility hiện tại
+     * Input: tham số theo chữ ký `registerMediaCollections()` và state đã hydrate của class.
      */
     public function registerMediaCollections(): void
     {
@@ -263,6 +268,7 @@ class MediaAsset extends Model implements HasMedia
      *
      * OUTPUT:
      * - LogOptions: log_name media, chỉ ghi thay đổi metadata cần audit
+     * Input: tham số theo chữ ký `getActivitylogOptions()` và state đã hydrate của class.
      */
     public function getActivitylogOptions(): LogOptions
     {

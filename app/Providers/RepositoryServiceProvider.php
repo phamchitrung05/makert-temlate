@@ -40,6 +40,8 @@ class RepositoryServiceProvider extends ServiceProvider
      * SIDE EFFECT:
      * - Ghi binding vào container; binding được resolve lazily khi lần đầu
      *   được inject nên chưa truy vấn database tại thời điểm đăng ký
+     * Input: tham số theo chữ ký `register()` và state đã hydrate của class.
+     * Output: giá trị theo kiểu trả về của `register()`; side effect/exception giữ theo implementation.
      */
     public function register(): void
     {
@@ -56,6 +58,8 @@ class RepositoryServiceProvider extends ServiceProvider
      *
      * SIDE EFFECT:
      * - Không có; giữ lại để tuân thủ chữ ký của ServiceProvider
+     * Input: tham số theo chữ ký `boot()` và state đã hydrate của class.
+     * Output: giá trị theo kiểu trả về của `boot()`; side effect/exception giữ theo implementation.
      */
     public function boot(): void
     {

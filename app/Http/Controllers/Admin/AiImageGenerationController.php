@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\AiCapability;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\AiImageGenerationRequest;
-use App\Http\Resources\MediaAssetResource;
+use App\Http\Requests\Admin\Ai\AiImageGenerationRequest;
+use App\Http\Resources\Media\MediaAssetResource;
 use App\Http\Responses\BaseResponse;
 use App\Models\AiImport;
 use App\Models\MediaAsset;

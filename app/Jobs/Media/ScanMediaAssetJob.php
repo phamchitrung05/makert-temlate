@@ -44,6 +44,12 @@ class ScanMediaAssetJob implements ShouldQueue
     /** @var array<int, int> */
     public array $backoff = [60, 300, 900];
 
+    /**
+     * Khởi tạo job scan theo media id.
+     *
+     * Input: id của Media Spatie cần scan.
+     * Output: job queue; chưa đọc file hoặc ghi database.
+     */
     public function __construct(public readonly int $mediaId) {}
 
     /**

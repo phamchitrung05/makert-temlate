@@ -54,6 +54,8 @@ trait HasSlug
      *
      * SIDE EFFECT:
      * - Đăng ký listener cho event created và updated của model
+     * Input: tham số theo chữ ký `bootHasSlug()` và state đã hydrate của class.
+     * Output: giá trị theo kiểu trả về của `bootHasSlug()`; side effect/exception giữ theo implementation.
      */
     public static function bootHasSlug(): void
     {
@@ -76,6 +78,7 @@ trait HasSlug
      *
      * SIDE EFFECT:
      * - INSERT bản ghi slugable với is_primary = true
+     * Output: giá trị theo kiểu trả về của `handleSlugWasCreated()`; side effect/exception giữ theo implementation.
      */
     private function handleSlugWasCreated(): void
     {
@@ -96,6 +99,7 @@ trait HasSlug
      *
      * SIDE EFFECT:
      * - INSERT slug mới và hạ cấp slug cũ nếu cột nguồn thực sự đổi
+     * Output: giá trị theo kiểu trả về của `handleSlugSourceChanged()`; side effect/exception giữ theo implementation.
      */
     private function handleSlugSourceChanged(): void
     {
@@ -152,6 +156,7 @@ trait HasSlug
      *
      * OUTPUT:
      * - string: tên cột nguồn slug
+     * Input: tham số theo chữ ký `slugSourceColumn()` và state đã hydrate của class.
      */
     public function slugSourceColumn(): string
     {
@@ -165,6 +170,7 @@ trait HasSlug
      *
      * OUTPUT:
      * - bool: mặc định true; model nội bộ có thể override thành false
+     * Input: tham số theo chữ ký `shouldGenerateSlug()` và state đã hydrate của class.
      */
     public function shouldGenerateSlug(): bool
     {

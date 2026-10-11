@@ -19,6 +19,9 @@ use Symfony\Component\HttpFoundation\Response;
  * CÁC HÀM/METHOD TRONG FILE:
  * - handle(): đọc guard, kiểm tra account và chuyển request tiếp tục
  * =====================================================================
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : dữ liệu theo contract và method chính của file.
+ * - OUTPUT: kết quả public của file; side effect/exception theo implementation.
  */
 class EnsureAccountIsActive
 {

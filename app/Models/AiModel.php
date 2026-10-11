@@ -16,6 +16,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * SIDE EFFECT: Eloquent persistence thuộc caller.
  * EXCEPTION/TRANSACTION: Không mở transaction.
  * =====================================================================
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : dữ liệu theo contract và method chính của file.
+ * - OUTPUT: kết quả public của file; side effect/exception theo implementation.
  */
 class AiModel extends Model
 {

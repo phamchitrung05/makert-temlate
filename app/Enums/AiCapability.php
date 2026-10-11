@@ -11,6 +11,11 @@ namespace App\Enums;
  * SIDE EFFECT: Không ghi database hoặc gọi network.
  * EXCEPTION/TRANSACTION: Không mở transaction.
  * =====================================================================
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : dữ liệu theo contract và method chính của file.
+ * - OUTPUT: kết quả public của file; side effect/exception theo implementation.
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - Không có method nghiệp vụ; enum chỉ khai báo capability cases.
  */
 enum AiCapability: string
 {

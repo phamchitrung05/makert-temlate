@@ -48,6 +48,7 @@ class Tag extends Model
      *
      * OUTPUT:
      * - array<string, string>: status thành TaxonomyStatus
+     * Input: tham số theo chữ ký `casts()` và state đã hydrate của class.
      */
     protected function casts(): array
     {
@@ -63,6 +64,7 @@ class Tag extends Model
      *
      * OUTPUT:
      * - MorphMany: tập Slug, morph name `sluggable` khớp tên cột trong DB
+     * Input: tham số theo chữ ký `slugs()` và state đã hydrate của class.
      */
     public function slugs(): MorphMany
     {
@@ -92,6 +94,7 @@ class Tag extends Model
      *
      * OUTPUT:
      * - string: name
+     * Input: tham số theo chữ ký `slugSourceColumn()` và state đã hydrate của class.
      */
     public function slugSourceColumn(): string
     {
@@ -105,6 +108,7 @@ class Tag extends Model
      *
      * OUTPUT:
      * - MorphToMany: Resource qua pivot taggables
+     * Input: tham số theo chữ ký `resources()` và state đã hydrate của class.
      */
     public function resources(): MorphToMany
     {

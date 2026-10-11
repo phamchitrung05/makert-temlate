@@ -82,7 +82,7 @@ class AiContentReviewApiTest extends TestCase
             'provider' => 'deterministic', 'source_text' => 'Nguồn văn bản lưu sẵn.',
             'source_url' => 'https://example.test/saved-source',
             'input_json' => ['target_type' => 'post', 'model' => 'test-model', 'connection' => ['key' => 'private-credential']],
-            'source_meta_json' => ['article_source' => ['title' => 'Nguồn gốc', 'content_html' => '<p>Nguồn gốc 123.</p><script>alert(1)</script>'], 'private' => 'private-credential'],
+            'source_meta_json' => ['article_source' => ['title' => 'Nguồn gốc', 'description' => 'Mô tả nguồn', 'content_html' => '<p>Nguồn gốc 123.</p><script>alert(1)</script>'], 'private' => 'private-credential'],
             'result_json' => ['provider' => 'deterministic', 'draft' => ['title' => 'Bài AI', 'content_html' => '<p>Bài AI 123.</p>', 'excerpt' => 'Tóm tắt', 'taxonomy_origin' => 'manual', 'category_ids' => [], 'tag_ids' => []]],
             'expires_at' => now()->addDays(2), 'completed_at' => now(),
         ], $overrides));
@@ -147,7 +147,9 @@ class AiContentReviewApiTest extends TestCase
         $run = $this->candidate($actor);
         $response = $this->withToken($token)->getJson('/api/admin/ai-agent/candidates/'.$run->id.'/review')->assertOk()
             ->assertJsonPath('data.review.status', 'pending_review')->assertJsonPath('data.can_review', true)
-            ->assertJsonPath('data.source.title', 'Nguồn gốc')->assertJsonPath('data.source.available', true)
+            ->assertJsonPath('data.source.title', 'Nguồn gốc')->assertJsonPath('data.source.seo_title', 'Nguồn gốc')
+            ->assertJsonPath('data.source.seo_description', 'Mô tả nguồn')->assertJsonPath('data.source.focus_keyword', '')
+            ->assertJsonPath('data.source.available', true)
             ->assertJsonPath('data.review_version', AiContentReviewService::version($run));
         $this->assertStringContainsString('Nguồn gốc 123.', $response->json('data.source.content_html'));
         $this->assertStringNotContainsString('<script', $response->getContent());

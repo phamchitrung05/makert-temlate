@@ -43,6 +43,7 @@ class TechnologyRepositoryEloquent extends BaseRepository implements TechnologyR
      *
      * OUTPUT:
      * - string: Technology::class
+     * Input: tham số theo chữ ký `model()` và state đã hydrate của class.
      */
     public function model()
     {
@@ -56,6 +57,8 @@ class TechnologyRepositoryEloquent extends BaseRepository implements TechnologyR
      *
      * SIDE EFFECT:
      * - Push RequestCriteria vào hàng đợi criteria của repository
+     * Input: tham số theo chữ ký `boot()` và state đã hydrate của class.
+     * Output: giá trị theo kiểu trả về của `boot()`; side effect/exception giữ theo implementation.
      */
     public function boot()
     {
@@ -69,6 +72,7 @@ class TechnologyRepositoryEloquent extends BaseRepository implements TechnologyR
      *
      * OUTPUT:
      * - string: TechnologyValidator::class
+     * Input: tham số theo chữ ký `validator()` và state đã hydrate của class.
      */
     public function validator()
     {

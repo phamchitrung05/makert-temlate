@@ -127,6 +127,7 @@ return [
         'article.analysis-plan.v1' => ['version' => '1.0', 'fields' => ['knowledge', 'writing_plan']],
         'article.writer.v1' => ['version' => '1.0', 'fields' => ['draft', 'used_fact_ids', 'used_asset_ids']],
         'article.editor.v1' => ['version' => '1.0', 'fields' => ['final', 'used_fact_ids', 'issues']],
+        'article.seo.v1' => ['version' => '1.0', 'fields' => ['focus_keyword', 'seo_title', 'seo_description', 'canonical_url', 'robots_index', 'robots_follow', 'og_title', 'og_description']],
         'writing-profile.analysis.v1' => ['version' => '1.0', 'fields' => ['summary', 'rules', 'evidence', 'style_instructions']],
         'post.content.v1' => [
             'version' => '1.0',

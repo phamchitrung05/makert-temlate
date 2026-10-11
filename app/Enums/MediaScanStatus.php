@@ -33,6 +33,7 @@ enum MediaScanStatus: string
      *
      * OUTPUT:
      * - list<string>: value dùng cho custom property và test
+     * Input: tham số theo chữ ký `values()` và state đã hydrate của class.
      */
     public static function values(): array
     {

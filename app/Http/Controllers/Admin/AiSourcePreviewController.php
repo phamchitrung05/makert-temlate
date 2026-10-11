@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Exceptions\AiImportException;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\AiImportRequest;
+use App\Http\Requests\Admin\Ai\AiImportRequest;
 use App\Http\Responses\BaseResponse;
 use App\Services\Ai\Content\ArticleSourceExtractor;
 use App\Services\Ai\Content\ArticleSourceFetcher;

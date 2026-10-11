@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\AccessIndexRequest;
-use App\Http\Resources\AccessPermissionResource;
+use App\Http\Requests\Admin\Access\AccessIndexRequest;
+use App\Http\Resources\Access\AccessPermissionResource;
 use App\Http\Responses\BaseResponse;
 use App\Services\Access\RoleManagementService;
 use Illuminate\Http\JsonResponse;
@@ -16,7 +16,7 @@ use Illuminate\Http\JsonResponse;
  * Quyền chỉ đọc từ cấu hình/server; FormRequest kiểm users.view/manage hoặc
  * một action vòng đời role.
  * CÁC HÀM/METHOD TRONG FILE: __construct(), index(), catalog().
- * INPUT/OUTPUT CỦA CLASS: Request đã validate và actor có quyền access -> BaseResponse catalog/bảng quyền.
+ * INPUT/OUTPUT CỦA CLASS (tổng thể): Request đã validate và actor có quyền access -> BaseResponse catalog/bảng quyền.
  * SIDE EFFECT: Query read-only qua service; không ghi database.
  * EXCEPTION/TRANSACTION: FormRequest chặn 403/422; controller không mở transaction.
  * =====================================================================

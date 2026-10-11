@@ -5,12 +5,28 @@ namespace App\Services\Settings;
 use Illuminate\Console\Scheduling\Schedule;
 
 /**
- * Nguồn khai báo lịch dùng chung console/web; không query DB hay chạy command.
- * Input: Schedule. Output: registry thật, đăng ký idempotent để HTTP không rỗng.
+ * =====================================================================
+ * CHỨC NĂNG FILE: Đăng ký các lịch command được project hỗ trợ.
+ * =====================================================================
+ * Dùng chung cho console và endpoint diagnostics; chỉ đăng ký command cố
+ * định, idempotent và không nhận command tùy ý từ HTTP.
+ *
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - register(): thêm các task vào Schedule nếu chưa tồn tại.
+ *
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : Illuminate Console Schedule.
+ * - OUTPUT: Schedule đã đăng ký; không query DB hoặc chạy command ngay.
+ * =====================================================================
  */
 final class ProjectScheduleRegistry
 {
-    /** Tạo lịch đã được project hỗ trợ; không nhận command tùy ý từ Settings. */
+    /**
+     * Đăng ký lịch cleanup/sync đã allowlist.
+     *
+     * Input: Schedule cần bổ sung event.
+     * Output: void; mutate Schedule trong memory theo cách idempotent.
+     */
     public function register(Schedule $schedule): void
     {
         $tasks = [

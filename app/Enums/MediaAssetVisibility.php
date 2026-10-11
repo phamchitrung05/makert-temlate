@@ -31,6 +31,7 @@ enum MediaAssetVisibility: string
      *
      * OUTPUT:
      * - list<string>: danh sách dùng cho validation rule `in:...`
+     * Input: tham số theo chữ ký `values()` và state đã hydrate của class.
      */
     public static function values(): array
     {
@@ -44,6 +45,7 @@ enum MediaAssetVisibility: string
      *
      * OUTPUT:
      * - array<string, string>: value => nhãn admin
+     * Input: tham số theo chữ ký `options()` và state đã hydrate của class.
      */
     public static function options(): array
     {

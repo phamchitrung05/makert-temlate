@@ -16,6 +16,9 @@ use Illuminate\Foundation\Http\FormRequest;
  * - authorize(): cho phép request đi tới controller; permission kiểm tra sau khi login
  * - rules(): validate email, password và device_name
  * =====================================================================
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : dữ liệu theo contract và method chính của file.
+ * - OUTPUT: kết quả public của file; side effect/exception theo implementation.
  */
 class AdminLoginRequest extends FormRequest
 {
@@ -27,6 +30,7 @@ class AdminLoginRequest extends FormRequest
      * OUTPUT:
      * - bool: luôn true vì endpoint tự xử lý credential và rate limit
      * =====================================================================
+     * Input: tham số theo chữ ký `authorize()` và state đã hydrate của class.
      */
     public function authorize(): bool
     {
@@ -41,6 +45,7 @@ class AdminLoginRequest extends FormRequest
      * OUTPUT:
      * - array<string, array<int, string>>: rule cho email, password và device_name
      * =====================================================================
+     * Input: tham số theo chữ ký `rules()` và state đã hydrate của class.
      */
     public function rules(): array
     {

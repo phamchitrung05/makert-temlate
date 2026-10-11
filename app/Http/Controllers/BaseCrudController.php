@@ -241,10 +241,10 @@ abstract class BaseCrudController extends BaseController
      * CHỨC NĂNG: Resolve id route thành Model bằng repository domain
      * =====================================================================
      *
-     * INPUT:
+         * INPUT:
      * - $value: id thô từ route hoặc Model đã được binding
      *
-     * OUTPUT:
+         * OUTPUT:
      * - Model: model tồn tại và được đặt lại vào route parameter
      *
      * SIDE EFFECT:
@@ -254,7 +254,7 @@ abstract class BaseCrudController extends BaseController
      * EXCEPTION/TRANSACTION:
      * - ModelNotFoundException từ repository khi id không tồn tại
      * =====================================================================
-     */
+         */
     protected function resolveRouteModel(mixed $value): Model
     {
         $model = $value instanceof Model ? $value : $this->repository()->find($value);

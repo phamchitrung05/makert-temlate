@@ -431,6 +431,7 @@
     "aiTaskStatusMeta": true,
     "normalizeTask": true,
     "useAiTaskQueue": true,
-    "AI_TASK_READY_EVENT": true
+    "AI_TASK_READY_EVENT": true,
+    "announceAiTaskQueued": true
   }
 }

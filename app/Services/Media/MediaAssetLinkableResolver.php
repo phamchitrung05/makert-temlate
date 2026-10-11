@@ -77,6 +77,7 @@ class MediaAssetLinkableResolver
      *
      * OUTPUT:
      * - list<string>: alias duy nhất được dùng ở API attach/reorder
+     * Input: tham số theo chữ ký `allowedAliases()` và state đã hydrate của class.
      */
     private function allowedAliases(): array
     {

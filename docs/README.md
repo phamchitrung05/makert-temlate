@@ -4,7 +4,7 @@
 
 | Thư mục | Nội dung | Tài liệu |
 | --- | --- | --- |
-| `plans/` | Kế hoạch, tiến độ và task | [Kế hoạch tổng](plans/PLAN.md) · [Tự đánh giá định kỳ](plans/HE_THONG_TU_DANH_GIA_DINH_KY.md) · [AI Task Queue Popup](plans/AI_TASK_QUEUE_POPUP.md) |
+| `plans/` | Kế hoạch, tiến độ và task | [Kế hoạch tổng](plans/PLAN.md) · [Public backend Blade](plans/PUBLIC_BACKEND.md) · [Tự đánh giá định kỳ](plans/HE_THONG_TU_DANH_GIA_DINH_KY.md) · [AI Task Queue Popup](plans/AI_TASK_QUEUE_POPUP.md) |
 | `architecture/` | Cấu trúc, inventory và quy ước phát triển | [Cấu trúc dự án](architecture/PROJECT_STRUCTURE.md) · [Inventory](architecture/PROJECT_INVENTORY.md) · [Quy ước code/giao diện](architecture/DEVELOPMENT_GUIDELINES.md) |
 | `api/` | Contract và cách dùng API đã triển khai | [Roles/Permissions](api/ACCESS_MANAGEMENT_API.md) · [AI Content pipeline](api/AI_ARTICLE_PIPELINE_API.md) · [Writing Profiles](api/AI_WRITING_PROFILES_API.md) · [Ảnh content/Gallery](api/TASK2_INLINE_MEDIA_API.md) · [Branding Settings](api/SETTINGS_BRANDING_API.md) |
 | `operations/` | Môi trường local/test/production, queue và storage | [Hướng dẫn môi trường](operations/ENVIRONMENT.md) |

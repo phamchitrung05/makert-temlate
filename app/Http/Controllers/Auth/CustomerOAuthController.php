@@ -28,6 +28,9 @@ use Laravel\Socialite\Facades\Socialite;
  * - supportedProviders(): trả danh sách provider được phép
  * - resolveCustomer(): tìm hoặc tạo customer/identity trong transaction
  * =====================================================================
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : dữ liệu theo contract và method chính của file.
+ * - OUTPUT: kết quả public của file; side effect/exception theo implementation.
  */
 class CustomerOAuthController extends Controller
 {
@@ -147,6 +150,7 @@ class CustomerOAuthController extends Controller
      * OUTPUT:
      * - list<string>: provider đã có credentials và route callback
      * =====================================================================
+     * Input: tham số theo chữ ký `supportedProviders()` và state đã hydrate của class.
      */
     private function supportedProviders(): array
     {

@@ -183,7 +183,10 @@ class SanctumFoundationTest extends TestCase
             'status' => 'active',
         ]);
 
-        $response = $this->actingAs($customer, 'customer')
+        $csrfToken = 'test-csrf-token';
+        $response = $this->withSession(['_token' => $csrfToken])
+            ->actingAs($customer, 'customer')
+            ->withHeader('X-CSRF-TOKEN', $csrfToken)
             ->postJson('/api/account/token', ['device_name' => 'browser']);
 
         $response->assertCreated()

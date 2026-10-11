@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Requests\Admin\TechnologyCreateRequest;
-use App\Http\Requests\Admin\TechnologyUpdateRequest;
+use App\Http\Requests\Admin\Taxonomy\TechnologyCreateRequest;
+use App\Http\Requests\Admin\Taxonomy\TechnologyUpdateRequest;
 use App\Repositories\Contracts\TechnologyRepositoryInterface;
 
 /**
@@ -35,6 +35,7 @@ class TechnologyController extends TaxonomyController
      *
      * OUTPUT:
      * - string: technology
+     * Input: tham số theo chữ ký `messageKey()` và state đã hydrate của class.
      */
     protected function messageKey(): string
     {
@@ -48,6 +49,7 @@ class TechnologyController extends TaxonomyController
      *
      * OUTPUT:
      * - class-string: TechnologyRepositoryInterface
+     * Input: tham số theo chữ ký `repositoryInterface()` và state đã hydrate của class.
      */
     protected function repositoryInterface(): string
     {
@@ -61,6 +63,7 @@ class TechnologyController extends TaxonomyController
      *
      * OUTPUT:
      * - class-string: TechnologyCreateRequest
+     * Input: tham số theo chữ ký `createRequestClass()` và state đã hydrate của class.
      */
     protected function createRequestClass(): string
     {
@@ -74,6 +77,7 @@ class TechnologyController extends TaxonomyController
      *
      * OUTPUT:
      * - class-string: TechnologyUpdateRequest
+     * Input: tham số theo chữ ký `updateRequestClass()` và state đã hydrate của class.
      */
     protected function updateRequestClass(): string
     {

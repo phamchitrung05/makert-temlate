@@ -6,10 +6,21 @@ use App\Services\Ai\Content\Data\ArticleInputHasher;
 use InvalidArgumentException;
 
 /**
- * Evaluates agreed criteria against a validated study without inventing scores or approving rollout.
- * Methods: evaluate(), markdown(), validateCriteria().
- * Input: validated study/criteria arrays. Output: acceptance checks or Markdown.
- * No database writes, HTTP calls, model calls or Apply/Publish actions.
+ * =====================================================================
+ * CHỨC NĂNG FILE: Kiểm tra điều kiện nghiệm thu chất lượng bài AI.
+ * =====================================================================
+ * Đánh giá study đã được validate theo tiêu chí chủ dự án, không tự chấm
+ * điểm, không tự approve rollout và không gọi database/provider.
+ *
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - evaluate(): tạo các check passed/failed/pending.
+ * - markdown(): xuất kết quả check thành Markdown.
+ * - validateCriteria(): kiểm tra contract tiêu chí và giới hạn số liệu.
+ *
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : report study và criteria dạng array đã canonicalize.
+ * - OUTPUT: acceptance result/Markdown; ném InvalidArgumentException khi sai contract.
+ * =====================================================================
  */
 final class ArticleQualityAcceptance
 {

@@ -5,8 +5,19 @@ namespace App\Settings;
 use Spatie\LaravelSettings\Settings;
 
 /**
- * Cấu hình typed nhóm media; null dùng config môi trường.
- * Input: repository settings. Output: giá trị có kiểu; group/encrypted không ghi DB.
+ * =====================================================================
+ * CHỨC NĂNG FILE: Khai báo typed settings cho upload và conversion media.
+ * =====================================================================
+ * Settings mô tả giới hạn dung lượng, extension và chất lượng conversion;
+ * service settings chịu trách nhiệm fallback và persist.
+ *
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - group(): trả tên group media.
+ *
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : media settings từ repository.
+ * - OUTPUT: object settings typed; không tự ghi database.
+ * =====================================================================
  */
 final class MediaSettings extends Settings
 {
@@ -26,7 +37,12 @@ final class MediaSettings extends Settings
 
     public int $version;
 
-    /** Output: tên nhóm lưu trong settings. */
+    /**
+     * Trả tên group settings được repository sử dụng.
+     *
+     * Input: không có.
+     * Output: string `media`.
+     */
     public static function group(): string
     {
         return 'media';

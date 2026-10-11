@@ -54,6 +54,7 @@ class ResourceVersion extends Model
      *
      * OUTPUT:
      * - array<string, string>: status thành enum, requirements thành array
+     * Input: tham số theo chữ ký `casts()` và state đã hydrate của class.
      */
     protected function casts(): array
     {
@@ -72,6 +73,7 @@ class ResourceVersion extends Model
      *
      * OUTPUT:
      * - BelongsTo: Resource
+     * Input: tham số theo chữ ký `resource()` và state đã hydrate của class.
      */
     public function resource(): BelongsTo
     {
@@ -85,6 +87,7 @@ class ResourceVersion extends Model
      *
      * OUTPUT:
      * - BelongsTo: User hoặc null
+     * Input: tham số theo chữ ký `createdBy()` và state đã hydrate của class.
      */
     public function createdBy(): BelongsTo
     {

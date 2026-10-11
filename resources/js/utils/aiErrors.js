@@ -46,6 +46,7 @@ const codeMessages = {
   AI_QUALITY_EDITOR: 'Bản tạo mới chưa đạt yêu cầu biên tập. Bản trước vẫn được giữ để bạn kiểm tra.',
   AI_PROVIDER_MISSING_FIELDS: 'AI trả về thiếu trường nội dung bắt buộc. Hãy kiểm tra model hoặc tạo lại.',
   AI_PROVIDER_INVALID_OUTPUT: 'AI trả về dữ liệu không đúng cấu trúc. Hãy chọn model khác hoặc tạo lại.',
+  AI_SEO_INVALID_OUTPUT: 'AI trả metadata SEO chưa đầy đủ hoặc tiêu đề bị cắt. Hãy tạo lại SEO hoặc chọn model khác.',
   AI_PROVIDER_TIMEOUT: 'AI phản hồi quá lâu. Hãy thử lại sau hoặc chọn model khác.',
   AI_IMPORT_FAILED: 'Không thể tạo nội dung AI do lỗi hệ thống. Hãy kiểm tra cấu hình rồi thử lại.',
   AI_IMAGE_FAILED: 'Không thể tạo ảnh AI. Hãy kiểm tra model ảnh rồi thử lại.',

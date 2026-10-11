@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\AiWritingProfileAnalysisIndexRequest;
-use App\Http\Requests\Admin\AiWritingProfileAnalysisRequest;
-use App\Http\Resources\AiWritingProfileAnalysisResource;
-use App\Http\Resources\AiWritingProfileAnalysisSummaryResource;
+use App\Http\Requests\Admin\Ai\AiWritingProfileAnalysisIndexRequest;
+use App\Http\Requests\Admin\Ai\AiWritingProfileAnalysisRequest;
+use App\Http\Resources\Ai\AiWritingProfileAnalysisResource;
+use App\Http\Resources\Ai\AiWritingProfileAnalysisSummaryResource;
 use App\Http\Responses\BaseResponse;
 use App\Models\AiWritingProfileAnalysis;
 use App\Services\Ai\WritingProfiles\WritingProfileAnalysisService;

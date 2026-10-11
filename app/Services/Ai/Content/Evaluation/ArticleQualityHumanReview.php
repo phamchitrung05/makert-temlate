@@ -7,11 +7,14 @@ use InvalidArgumentException;
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Kiểm hai bảng chấm người, không điền hoặc suy điểm còn thiếu.
- * CÁC HÀM/METHOD: fields(), readCsv(), summarize(), validateRow(), distribution().
+ * CÁC HÀM/METHOD TRONG FILE: fields(), readCsv(), summarize(), validateRow(), distribution().
  * INPUT/OUTPUT: rows CSV + nhãn mù/output có bài -> tiến độ/điểm/bất đồng.
  * SIDE EFFECT: readCsv chỉ đọc file; không AI, DB, viết CSV hoặc quyết định rollout.
  * Lỗi critical/major và coverage báo riêng khỏi điểm diễn đạt.
  * =====================================================================
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : dữ liệu theo contract và method chính của file.
+ * - OUTPUT: kết quả public của file; side effect/exception theo implementation.
  */
 final class ArticleQualityHumanReview
 {

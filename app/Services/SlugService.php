@@ -192,6 +192,7 @@ class SlugService
      *
      * SIDE EFFECT:
      * - UPDATE is_primary = false cho các slug primary cùng locale
+     * Output: giá trị theo kiểu trả về của `demoteExistingSlugs()`; side effect/exception giữ theo implementation.
      */
     private function demoteExistingSlugs(MorphMany $relation, string $locale): void
     {

@@ -121,11 +121,20 @@ function openVersionHistory(item) {
  * =====================================================================
  */
 function openVersion(version) {
+  const versionId = version?.id ?? version?.job_id
+  const targetType = version?.targetType ?? version?.target_type ?? 'post'
+
+  if (!versionId) {
+    showSnackbar('Không xác định được phiên bản content để mở.', 'error')
+
+    return
+  }
+
   versionHistory.value = null
-  if (version.targetType === 'post') {
-    void openReview({ id: version.id, runId: version.id, targetType: version.targetType, status: version.status })
+  if (targetType === 'post') {
+    void openReview({ id: versionId, runId: versionId, targetType, status: version?.status })
   } else {
-    void openEditor({ id: version.id, runId: version.id, targetType: version.targetType, status: version.status })
+    void openEditor({ id: versionId, runId: versionId, targetType, status: version?.status })
   }
 }
 
@@ -190,6 +199,7 @@ async function openTaskFromQuery() {
 
   const item = items.value.flatMap(candidate => candidate.versions).find(candidate => candidate.id === sessionId)
     ?? items.value.find(candidate => candidate.id === sessionId)
+
   if (item && item.status !== 'generating') await openEditor(item)
 }
 

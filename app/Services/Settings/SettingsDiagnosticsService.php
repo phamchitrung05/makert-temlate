@@ -8,14 +8,38 @@ use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 /**
- * Đọc scheduler và môi trường thật; không chạy command, không lộ đường dẫn/secret.
- * Input: runtime Laravel. Output: diagnostics read-only; truy vấn DB không mutate.
+ * =====================================================================
+ * CHỨC NĂNG FILE: Đọc diagnostics scheduler, runtime, database và disk.
+ * =====================================================================
+ * Chỉ probe trạng thái thật, không chạy command, không sửa dữ liệu và không
+ * trả đường dẫn/credential nhạy cảm ra HTTP.
+ *
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - __construct(): nhận registry lịch dùng chung.
+ * - cron(): trả event scheduler đã đăng ký.
+ * - system(): trả trạng thái runtime, DB, queue và disk.
+ *
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : Schedule và runtime Laravel.
+ * - OUTPUT: array diagnostics read-only; lỗi probe thành trạng thái unavailable.
+ * =====================================================================
  */
 final class SettingsDiagnosticsService
 {
+    /**
+     * Khởi tạo service với registry lịch.
+     *
+     * Input: ProjectScheduleRegistry.
+     * Output: instance diagnostics; không có side effect.
+     */
     public function __construct(private ProjectScheduleRegistry $registry) {}
 
-    /** Output: registry scheduler, không bịa lịch sử hoặc khẳng định scheduler đang chạy. */
+    /**
+     * Trả danh sách event scheduler đã được đăng ký.
+     *
+     * Input: Schedule hiện tại.
+     * Output: array event và health metadata; chỉ mutate Schedule trong memory.
+     */
     public function cron(Schedule $schedule): array
     {
         $this->registry->register($schedule);
@@ -34,7 +58,12 @@ final class SettingsDiagnosticsService
         ];
     }
 
-    /** Output: phiên bản/DB/disk/queue thật; lỗi probe thành trạng thái unavailable. */
+    /**
+     * Probe phiên bản runtime, database, queue và dung lượng disk.
+     *
+     * Input: không có tham số; đọc config/runtime hiện tại.
+     * Output: array diagnostics; bắt Throwable và không làm lộ lỗi kết nối.
+     */
     public function system(): array
     {
         $db = ['driver' => config('database.connections.'.config('database.default').'.driver'), 'status' => 'unavailable', 'version' => null];

@@ -29,7 +29,7 @@ Các tài liệu API và QA trong `docs/` tiếp tục làm nguồn tham chiếu
 | Settings | DONE phần đã triển khai | 10 tab, typed settings/version/quyền, AI defaults, thông tin hệ thống, logo/favicon public/admin và QA upload thật |
 | Đánh giá 19 bài đã lưu | DONE — đánh giá AI | Điểm văn phong trung bình **4,49/5**; hai phiếu người đọc vẫn chờ |
 | Chấm bài AI và báo cáo định kỳ | IN PROGRESS — G1–G3 DONE | Đã có evaluator theo candidate/generation/hash, enqueue sau ready, cổng > 4/đủ nguồn/đạt dữ kiện, vòng tròn điểm và archive score; G4–G6 còn TODO. [Kế hoạch riêng](HE_THONG_TU_DANH_GIA_DINH_KY.md) |
-| Public, download và thương mại | TODO/IN PROGRESS theo phạm vi | Public UI được làm ở luồng riêng; tích hợp và nghiệp vụ phía sau còn backlog |
+| Public, download và thương mại | IN PROGRESS — backend plan | Đã chốt kế hoạch backend cho public Blade; route/query/SEO/download triển khai theo [PUBLIC_BACKEND](PUBLIC_BACKEND.md). Giao diện Blade do chủ dự án bổ sung sau; commerce vẫn chờ sau free download |
 
 Chủ dự án chấp nhận mức **4,49/5** và hiện chưa yêu cầu chỉnh bài, prompt hoặc model thêm. Không mở lại các task kỹ thuật đã xong chỉ vì checklist cũ chưa được cập nhật.
 
@@ -61,6 +61,7 @@ Ngày 07/10/2026, chủ dự án yêu cầu để tính năng chấm bài và da
 - [x] 10/10: hoàn thiện UI Content AI: lịch sử hiển thị điểm chất lượng cạnh từng phiên bản, rubric trong dialog duyệt dùng badge tiếng Việt và các dialog giữ snapshot đến `after-leave` để tránh nhấp nháy/bóng ma select khi đóng.
 - [x] 09/10: hoàn tất regression quality grounding cho bài có code/link và số viết bằng chữ; giữ chặn số liệu/phiên bản bị thay đổi thật. Kiểm chứng nhóm grounding 48 tests/111 assertions và pipeline liên quan 85 tests/359 assertions.
 - [x] 09/10: triển khai Q-01 G2–G3: evaluator rubric/version, job/queue theo hash, quality gate Approve/Apply, chấm lại sau edit, vòng tròn điểm và lưu score cùng archive lifecycle. [QA G2/G3](../qa/AI_QUALITY_G2_G3_2026-10-09.md)
+- [ ] 11/10: chốt kế hoạch backend cho public website Blade: catalog Resource/Post, slug/SEO/sitemap/robots và download; giao diện Blade/CSS để chủ dự án triển khai sau. [Kế hoạch](PUBLIC_BACKEND.md)
 
 Bằng chứng FIX 1 ở [Acceptance/QA](../qa/FIX1_ACCEPTANCE_2026-10-07/README.md): backend 438 tests/2986 assertions; lượt scoped cuối 31/172; frontend scoped 7 files/51 tests và build đạt. Kiểm backend gần nhất sau bổ sung kho approved xem [QA giai đoạn 1](../qa/AI_ARTICLE_ARCHIVES_2026-10-07.md). Đây là các lượt có phần trùng nhau, không cộng thành tổng mới.
 
@@ -89,7 +90,7 @@ Các ID dưới đây để theo dõi ổn định, không phải yêu cầu tri
 | S-02 | TODO | Scheduler run history, heartbeat worker, GA/GSC, 2FA/CAPTCHA và kiểm SMTP production |
 | H-01 | TODO — tạm hoãn đợt hiện tại | Host/VPS: worker/process manager, scheduler, storage, timeout/lease với DB/queue thật và nhiều worker; Reverb/Echo có fallback. Staging kiểm provider text/image bằng key thật, có quyền tạo ảnh; local/fixture đã kiểm không thay nghiệm thu staging |
 | M-01 | TODO — mở rộng khi chọn phạm vi | MediaFolder, Trash/restore và các filter/option nâng cao chưa được nối đầy đủ; không mở lại Media Library task 1–10 |
-| W-01 | TODO — phối hợp luồng public | Tích hợp visibility/SEO/canonical/OG, sitemap/robots/structured data và trang pháp lý với public website |
+| W-01 | IN PROGRESS — backend plan | Triển khai theo PB-01–PB-07: route/query public, slug/SEO/canonical/OG, sitemap/robots, cache/security và contract Blade. UI public để chủ dự án làm sau. [Kế hoạch](PUBLIC_BACKEND.md) |
 | D-01 | TODO | Free download: auth, URL ký có hạn, lịch sử, rate limit và counter; chốt verify email, license và retention thông tin truy cập |
 | C-01 | TODO — sau free download | Commerce/payment: variants/license snapshot, chốt cart hoặc direct checkout, provider test mode, currency/tax/giá, order/invoice, refund/chargeback, entitlement, webhook signature/idempotency và paid download sau xác nhận |
 | O-01 | TODO — trước production | Backup/restore, giám sát/audit, quyền truy cập, accessibility, tải và kiểm SEO phù hợp phạm vi phát hành |

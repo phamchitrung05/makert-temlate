@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Actions\Taxonomy\SaveCategoryAction;
-use App\Http\Requests\Admin\CategoryCreateRequest;
-use App\Http\Requests\Admin\CategoryUpdateRequest;
-use App\Http\Resources\CategoryResource;
+use App\Http\Requests\Admin\Taxonomy\CategoryCreateRequest;
+use App\Http\Requests\Admin\Taxonomy\CategoryUpdateRequest;
+use App\Http\Resources\Taxonomy\CategoryResource;
 use App\Http\Responses\BaseResponse;
 use App\Repositories\Contracts\CategoryRepositoryInterface;
 use App\Services\MediaAssetUsageService;
@@ -114,6 +114,7 @@ class CategoryController extends TaxonomyController
      *
      * OUTPUT:
      * - string: category
+     * Input: tham số theo chữ ký `messageKey()` và state đã hydrate của class.
      */
     protected function messageKey(): string
     {
@@ -127,6 +128,7 @@ class CategoryController extends TaxonomyController
      *
      * OUTPUT:
      * - class-string: CategoryRepositoryInterface
+     * Input: tham số theo chữ ký `repositoryInterface()` và state đã hydrate của class.
      */
     protected function repositoryInterface(): string
     {
@@ -140,6 +142,7 @@ class CategoryController extends TaxonomyController
      *
      * OUTPUT:
      * - class-string: CategoryCreateRequest
+     * Input: tham số theo chữ ký `createRequestClass()` và state đã hydrate của class.
      */
     protected function createRequestClass(): string
     {
@@ -153,6 +156,7 @@ class CategoryController extends TaxonomyController
      *
      * OUTPUT:
      * - class-string: CategoryUpdateRequest
+     * Input: tham số theo chữ ký `updateRequestClass()` và state đã hydrate của class.
      */
     protected function updateRequestClass(): string
     {

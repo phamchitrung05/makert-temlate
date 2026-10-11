@@ -62,6 +62,7 @@ class ArticleImportService
         private readonly ?UploadMediaAssetAction $uploader = null,
         private readonly ?ProviderRegistry $providers = null,
         private readonly ?AiOutputValidator $validator = null,
+        private readonly ?SeoGenerationService $seo = null,
     ) {}
 
     /**
@@ -136,13 +137,26 @@ class ArticleImportService
             ['source_type' => $sourceType, 'language' => (string) ($input['language'] ?? 'vi')],
         );
         $promptKey = (string) $prompt['key'];
-        $requestedFields = array_values(array_unique(array_map('strval', (array) ($input['fields'] ?? $input['requested_outputs'] ?? []))));
+        $rawRequestedFields = (array) ($input['fields'] ?? []);
+        // Create mới có thể gửi fields=[] kèm requested_outputs mặc định; chỉ dùng
+        // requested_outputs ở create, còn regenerate fields=[] nghĩa là chạy đủ luồng.
+        if ($rawRequestedFields === [] && ! $import->parent_id) {
+            $rawRequestedFields = (array) ($input['requested_outputs'] ?? []);
+        }
+        $requestedFields = array_values(array_unique(array_map('strval', $rawRequestedFields)));
         if (in_array('taxonomy', $requestedFields, true)) {
             throw new AiImportException('Run cũ còn yêu cầu taxonomy từ AI. Hãy tạo run mới và chọn danh mục/tag thủ công.', 'AI_LEGACY_TAXONOMY');
         }
         $hasFieldSelection = $requestedFields !== [] || (array_key_exists('requested_outputs', $input) && ! $import->parent_id);
-        if ($hasFieldSelection && method_exists($provider, 'withOutputFields')) {
-            $provider = $provider->withOutputFields($requestedFields);
+        $contentFields = $hasFieldSelection
+            ? array_values(array_diff($requestedFields, ['seo', 'thumbnail', 'taxonomy']))
+            : ['title', 'content'];
+        // SEO luôn chạy ở task riêng; không để writer/editor hoặc generate() tự sinh SEO lần nữa.
+        $seoRequested = in_array('seo', $requestedFields, true)
+            || (! $hasFieldSelection && ($input['generate_seo'] ?? false) === true);
+        $contentProvider = $provider;
+        if ($hasFieldSelection && method_exists($contentProvider, 'withOutputFields')) {
+            $contentProvider = $contentProvider->withOutputFields($contentFields);
         }
         $this->progress($import, 'extracting', 40);
         $draftTitle = filled($input['title'] ?? null) ? (string) $input['title'] : $title;
@@ -157,52 +171,92 @@ class ArticleImportService
                 $draft['thumbnail'] = $sourceThumbnail;
             }
         }
+        // Partial regeneration must use the inherited draft as AI context, including manual edits.
+        $generationTitle = (string) ($draft['title'] ?? $draftTitle);
+        $generationContent = (string) ($draft['content_html'] ?? $draft['content'] ?? $content);
         $validator = $this->validator ?? new AiOutputValidator;
-        $validationGroups = $hasFieldSelection ? $requestedFields : null;
-        $needsTextGeneration = ! $hasFieldSelection || array_diff($requestedFields, ['thumbnail']) !== [];
+        $validationGroups = $hasFieldSelection ? $contentFields : null;
+        $finalValidationGroups = $hasFieldSelection ? $requestedFields : null;
+        $needsContentGeneration = ! $hasFieldSelection || $contentFields !== [];
+        $needsTextGeneration = $needsContentGeneration || $seoRequested;
+        $requestedGroups = $hasFieldSelection
+            ? $requestedFields
+            : array_values(array_unique(array_merge($contentFields, $seoRequested ? ['seo'] : [])));
         $diagnostics = [
-            'requested_groups' => $hasFieldSelection ? $requestedFields : ['title', 'content'],
+            'requested_groups' => $requestedGroups,
             'schema_version' => (string) $prompt['schema'],
             'stage' => 'source',
         ];
         $generationCalled = false;
+        $activeProvider = $provider;
         $generatedFields = [];
         $generationMode = 'source_only';
         try {
             if ($needsTextGeneration && $provider->configured()) {
                 $diagnostics['stage'] = 'transport';
-                $generationCalled = true;
-                $fullPostContent = ($input['target_type'] ?? 'post') === 'post' && (! $hasFieldSelection || in_array('content', $requestedFields, true));
-                if ($fullPostContent) {
-                    $generated = (new ArticleGenerationPipeline)->run($import, $provider, $snapshot, $hasFieldSelection ? $requestedFields : ['title', 'content']);
-                } else {
-                    $this->progress($import, 'rewriting', 55);
-                    $profileInstructions = (string) data_get($input, 'writing_profile_snapshot.style_instructions', '');
-                    $instructions = trim((string) ($input['instructions'] ?? '').($profileInstructions === '' ? '' : "\nStyle guidance (explicit article requirements take precedence): ".$profileInstructions));
-                    if (! empty($input['writing_brief'])) {
-                        $instructions .= "\nArticle brief: ".json_encode($input['writing_brief'], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+                $diagnostics['returned_fields'] = [];
+                if ($needsContentGeneration) {
+                    $generationCalled = true;
+                    $activeProvider = $contentProvider;
+                    $fullPostContent = ($input['target_type'] ?? 'post') === 'post'
+                        && (! $hasFieldSelection || in_array('content', $contentFields, true));
+                    if ($fullPostContent) {
+                        $generated = (new ArticleGenerationPipeline)->run($import, $contentProvider, $snapshot, $contentFields);
+                    } else {
+                        $this->progress($import, 'rewriting', 55);
+                        $profileInstructions = (string) data_get($input, 'writing_profile_snapshot.style_instructions', '');
+                        $instructions = trim((string) ($input['instructions'] ?? '').($profileInstructions === '' ? '' : "\nStyle guidance (explicit article requirements take precedence): ".$profileInstructions));
+                        if (! empty($input['writing_brief'])) {
+                            $instructions .= "\nArticle brief: ".json_encode($input['writing_brief'], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+                        }
+                        $generated = $contentProvider->generate($generationTitle, $generationContent, (string) ($input['language'] ?? 'vi'), (string) ($input['rewrite_style'] ?? 'informative'), $promptKey, $instructions);
                     }
-                    $generated = $provider->generate($draftTitle, $content, (string) ($input['language'] ?? 'vi'), (string) ($input['rewrite_style'] ?? 'informative'), $promptKey, $instructions);
+                    if ($contentProvider instanceof AiResponseMetadataProvider) {
+                        $diagnostics = array_replace($diagnostics, $contentProvider->responseMetadata());
+                    }
+                    // Source URLs and uploaded media are pipeline results, never model output.
+                    unset($generated['thumbnail']);
+                    $diagnostics['returned_fields'] = array_values(array_unique(array_merge($diagnostics['returned_fields'], array_keys($generated))));
+                    $generated = $validator->validate($generated, $validationGroups, sanitizeContent: true);
+                    $allowedGeneratedFields = $hasFieldSelection
+                        ? array_merge(...array_map(fn (string $group): array => (array) config('ai.agent.output_definitions.'.$group.'.fields', []), $contentFields))
+                        : array_keys($generated);
+                    $generated = array_intersect_key($generated, array_flip($allowedGeneratedFields));
+                    $generatedFields = array_values(array_intersect(array_keys($generated), $allowedGeneratedFields));
+                    if (in_array('content', $generatedFields, true) && ! in_array('content_html', $generatedFields, true)) {
+                        $generatedFields[] = 'content_html';
+                    }
+                    $generationMode = 'ai';
+                    $inheritedFields = array_values(array_diff($inheritedFields, $generatedFields));
+                    $draft = $hasFieldSelection
+                        ? $this->mergeRequestedFields($draft, $generated, $contentFields)
+                        : array_replace($draft, $generated);
                 }
-                if ($provider instanceof AiResponseMetadataProvider) {
-                    $diagnostics = array_replace($diagnostics, $provider->responseMetadata());
+                if ($seoRequested) {
+                    $this->progress($import, 'seo', 82);
+                    $generationCalled = true;
+                    $activeProvider = $provider;
+                    $seoResult = ($this->seo ?? new SeoGenerationService)->generate(
+                        $provider,
+                        $snapshot,
+                        $draft,
+                        (string) ($input['language'] ?? 'vi'),
+                        (array) ($input['pipeline_snapshot'] ?? config('ai.content', [])),
+                    );
+                    $seoFields = $seoResult['fields'];
+                    $diagnostics = array_replace($diagnostics, array_diff_key($seoResult['diagnostics'], array_flip(['requested_groups', 'returned_fields'])));
+                    $diagnostics['returned_fields'] = array_values(array_unique(array_merge($diagnostics['returned_fields'], array_keys($seoFields))));
+                    $generatedFields = array_values(array_unique(array_merge($generatedFields, array_keys($seoFields))));
+                    $inheritedFields = array_values(array_diff($inheritedFields, array_keys($seoFields)));
+                    $draft = $hasFieldSelection
+                        ? $this->mergeRequestedFields($draft, $seoFields, ['seo'])
+                        : array_replace($draft, $seoFields);
+                    $generationMode = 'ai';
+                    if ($provider instanceof AiResponseMetadataProvider) {
+                        $diagnostics = array_replace($diagnostics, $provider->responseMetadata());
+                    }
                 }
-                // Source URLs and uploaded media are pipeline results, never model output.
-                unset($generated['thumbnail']);
-                $diagnostics['returned_fields'] = array_keys($generated);
-                $generated = $validator->validate($generated, $validationGroups, sanitizeContent: true);
-                $allowedGeneratedFields = $hasFieldSelection
-                    ? array_merge(...array_map(fn (string $group): array => (array) config('ai.agent.output_definitions.'.$group.'.fields', []), $requestedFields))
-                    : array_keys($generated);
-                $generatedFields = array_values(array_intersect(array_keys($generated), $allowedGeneratedFields));
-                if (in_array('content', $generatedFields, true) && ! in_array('content_html', $generatedFields, true)) {
-                    $generatedFields[] = 'content_html';
-                }
-                $generationMode = 'ai';
-                $inheritedFields = array_values(array_diff($inheritedFields, $generatedFields));
-                $draft = $hasFieldSelection
-                    ? $this->mergeRequestedFields($draft, $generated, $requestedFields)
-                    : array_replace($draft, $generated);
+                $diagnostics['requested_groups'] = $requestedGroups;
                 $diagnostics['stage'] = 'ready';
             } else {
                 $selectedProvider = (string) ($input['provider'] ?? data_get($input, 'ai_connection.provider')
@@ -215,13 +269,13 @@ class ArticleImportService
                     $replacedFields = array_merge(...array_map(fn (string $group): array => (array) config('ai.agent.output_definitions.'.$group.'.fields', []), $requestedFields));
                     $inheritedFields = array_values(array_diff($inheritedFields, $replacedFields));
                 }
-                $validator->validate($draft, $validationGroups, sanitizeContent: true);
+                $validator->validate($draft, $finalValidationGroups, sanitizeContent: true);
                 $diagnostics['stage'] = $needsTextGeneration ? 'deterministic' : 'skipped';
                 $generationMode = $needsTextGeneration ? 'deterministic' : 'source_only';
             }
         } catch (AiImportException $exception) {
-            $providerMetadata = $generationCalled && $provider instanceof AiResponseMetadataProvider ? $provider->responseMetadata() : [];
-            $this->persistResponseMetadata($import, array_replace($diagnostics, $providerMetadata, $exception->diagnostics));
+            $providerMetadata = $generationCalled && $activeProvider instanceof AiResponseMetadataProvider ? $activeProvider->responseMetadata() : [];
+            $this->persistResponseMetadata($import, array_replace($diagnostics, $providerMetadata, $exception->diagnostics, ['error_code' => $exception->errorCode]));
             throw $exception;
         }
         $draft['content_html'] = $draft['content_html'] ?? $draft['content'];
@@ -276,7 +330,7 @@ class ArticleImportService
             'requested_fields' => $requestedFields,
             'generation_meta' => [
                 'mode' => $generationMode, 'generated_fields' => $generatedFields, 'inherited_fields' => $inheritedFields,
-                'requested_groups' => $hasFieldSelection ? $requestedFields : ['title', 'content'],
+                'requested_groups' => $requestedGroups,
             ],
         ];
     }

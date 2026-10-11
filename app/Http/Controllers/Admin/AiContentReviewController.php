@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\AiCandidateApproveRequest;
-use App\Http\Requests\Admin\AiCandidateRejectRequest;
-use App\Http\Requests\Admin\AiSessionIndexRequest;
+use App\Http\Requests\Admin\Ai\AiCandidateApproveRequest;
+use App\Http\Requests\Admin\Ai\AiCandidateRejectRequest;
+use App\Http\Requests\Admin\Ai\AiSessionIndexRequest;
 use App\Http\Responses\BaseResponse;
 use App\Models\AiImport;
 use App\Services\Ai\Content\AiContentReviewService;

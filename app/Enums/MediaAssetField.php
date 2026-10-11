@@ -44,6 +44,7 @@ enum MediaAssetField: string
      *
      * OUTPUT:
      * - list<string>: danh sách dùng cho validation rule `in:...`
+     * Input: tham số theo chữ ký `values()` và state đã hydrate của class.
      */
     public static function values(): array
     {
@@ -58,6 +59,7 @@ enum MediaAssetField: string
      *
      * OUTPUT:
      * - array<string, string>: field => nhãn picker/admin
+     * Input: tham số theo chữ ký `options()` và state đã hydrate của class.
      */
     public static function options(): array
     {
@@ -80,6 +82,7 @@ enum MediaAssetField: string
      *
      * OUTPUT:
      * - MediaAssetKind: kind được backend dùng để validate attach
+     * Input: tham số theo chữ ký `kind()` và state đã hydrate của class.
      */
     public function kind(): MediaAssetKind
     {
@@ -103,6 +106,7 @@ enum MediaAssetField: string
      *
      * OUTPUT:
      * - bool: true cho gallery/content images hoặc documentation nhiều file
+     * Input: tham số theo chữ ký `allowsMultiple()` và state đã hydrate của class.
      */
     public function allowsMultiple(): bool
     {
@@ -126,6 +130,7 @@ enum MediaAssetField: string
      *
      * OUTPUT:
      * - string: alias dùng trong cột `media_asset_usages.linkable_type`
+     * Input: tham số theo chữ ký `linkableMorphAlias()` và state đã hydrate của class.
      */
     public function linkableMorphAlias(): string
     {

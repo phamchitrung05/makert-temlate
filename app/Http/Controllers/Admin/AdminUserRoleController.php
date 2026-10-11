@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\AccessIndexRequest;
-use App\Http\Requests\Admin\AdminUserRolesRequest;
-use App\Http\Resources\AdminRoleUserResource;
+use App\Http\Requests\Admin\Access\AccessIndexRequest;
+use App\Http\Requests\Admin\Access\AdminUserRolesRequest;
+use App\Http\Resources\Access\AdminRoleUserResource;
 use App\Http\Responses\BaseResponse;
 use App\Models\User;
 use App\Services\Access\RoleManagementService;

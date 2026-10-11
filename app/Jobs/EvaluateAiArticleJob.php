@@ -35,6 +35,12 @@ final class EvaluateAiArticleJob implements ShouldQueue
 
     public int $timeout;
 
+    /**
+     * Khởi tạo job với evaluation id và policy retry/timeout hiện hành.
+     *
+     * Input: UUID evaluation.
+     * Output: job đã cấu hình tries/timeout; chưa chạy provider.
+     */
     public function __construct(public readonly string $evaluationId)
     {
         $this->tries = max(1, (int) config('ai.quality.max_attempts', 2));

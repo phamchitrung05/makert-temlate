@@ -46,6 +46,7 @@ class CategoryValidator extends LaravelValidator
      *
      * SIDE EFFECT:
      * - Gán giá trị vào property `$rules` qua setRules()
+     * Output: giá trị theo kiểu trả về của `__construct()`; side effect/exception giữ theo implementation.
      */
     public function __construct(ValidationFactory $validator)
     {

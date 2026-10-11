@@ -43,6 +43,7 @@ class TagRepositoryEloquent extends BaseRepository implements TagRepositoryInter
      *
      * OUTPUT:
      * - string: Tag::class
+     * Input: tham số theo chữ ký `model()` và state đã hydrate của class.
      */
     public function model()
     {
@@ -56,6 +57,8 @@ class TagRepositoryEloquent extends BaseRepository implements TagRepositoryInter
      *
      * SIDE EFFECT:
      * - Push RequestCriteria vào hàng đợi criteria của repository
+     * Input: tham số theo chữ ký `boot()` và state đã hydrate của class.
+     * Output: giá trị theo kiểu trả về của `boot()`; side effect/exception giữ theo implementation.
      */
     public function boot()
     {
@@ -69,6 +72,7 @@ class TagRepositoryEloquent extends BaseRepository implements TagRepositoryInter
      *
      * OUTPUT:
      * - string: TagValidator::class
+     * Input: tham số theo chữ ký `validator()` và state đã hydrate của class.
      */
     public function validator()
     {

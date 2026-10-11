@@ -19,6 +19,9 @@ namespace App\Http\Requests\Admin\Concerns;
  * - OUTPUT: mảng rule Laravel cho cặp ai_run_id/ai_fields.
  * - SIDE EFFECT: không gọi database, provider hoặc ghi audit.
  * =====================================================================
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : dữ liệu theo contract và method chính của file.
+ * - OUTPUT: kết quả public của file; side effect/exception theo implementation.
  */
 trait ValidatesAiProvenance
 {

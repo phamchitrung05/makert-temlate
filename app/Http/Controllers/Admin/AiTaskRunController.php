@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\AiTaskRunIndexRequest;
-use App\Http\Resources\AiTaskRunResource;
+use App\Http\Requests\Admin\Ai\AiTaskRunIndexRequest;
+use App\Http\Resources\Ai\AiTaskRunResource;
 use App\Http\Responses\BaseResponse;
 use App\Models\AiTaskRun;
 use App\Services\Ai\Runs\AiTaskRunService;

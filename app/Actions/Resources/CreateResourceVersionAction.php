@@ -15,15 +15,31 @@ use Illuminate\Support\Facades\DB;
  * Action giữ insert version và đồng bộ package/documentation trong cùng
  * transaction. Payload media chỉ chứa id; kind, field và permission được
  * kiểm tra tại MediaAssetUsageService.
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : dữ liệu theo contract và method chính của file.
+ * - OUTPUT: kết quả public của file; side effect/exception theo implementation.
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - __construct(): nhận service đồng bộ media usage.
+ * - handle(): tạo version draft và đồng bộ media trong transaction.
+ * - syncMedia(): ghi các media usage được chọn.
+ * - fresh(): reload version cùng quan hệ API cần trả về.
  */
 class CreateResourceVersionAction
 {
+    /**
+     * Khởi tạo service đồng bộ media usage.
+     *
+     * Input: MediaAssetUsageService.
+     * Output: instance action; chưa mở transaction.
+     */
     public function __construct(
         private readonly MediaAssetUsageService $mediaAssetUsageService,
     ) {}
 
     /**
      * Tạo version ở trạng thái draft; ready phải đi qua ready().
+     * Input: tham số theo chữ ký `handle()` và state đã hydrate của class.
+     * Output: giá trị theo kiểu trả về của `handle()`; side effect/exception giữ theo implementation.
      */
     public function handle(array $attributes, int $actorId): ResourceVersion
     {
@@ -42,6 +58,12 @@ class CreateResourceVersionAction
         });
     }
 
+    /**
+     * Đồng bộ package/documentation media của version.
+     *
+     * Input: ResourceVersion, media ids và actor id.
+     * Output: void; ghi pivot qua MediaAssetUsageService khi media có dữ liệu.
+     */
     private function syncMedia(ResourceVersion $version, array $media, int $actorId): void
     {
         if ($media === []) {
@@ -64,6 +86,12 @@ class CreateResourceVersionAction
         $this->mediaAssetUsageService->syncFields($actor, $version, $fields);
     }
 
+    /**
+     * Reload version cùng quan hệ cần trả về API.
+     *
+     * Input: ResourceVersion vừa tạo.
+     * Output: ResourceVersion fresh với resource/media usages.
+     */
     private function fresh(ResourceVersion $version): ResourceVersion
     {
         return $version->fresh([

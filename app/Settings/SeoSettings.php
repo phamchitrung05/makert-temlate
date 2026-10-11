@@ -5,8 +5,19 @@ namespace App\Settings;
 use Spatie\LaravelSettings\Settings;
 
 /**
- * Cấu hình typed nhóm seo; null dùng config môi trường.
- * Input: repository settings. Output: giá trị có kiểu; group/encrypted không ghi DB.
+ * =====================================================================
+ * CHỨC NĂNG FILE: Khai báo typed settings cho SEO mặc định.
+ * =====================================================================
+ * Settings lưu format title, description và robots.txt; service settings
+ * xử lý fallback và persist theo version.
+ *
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - group(): trả tên group seo.
+ *
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : SEO settings từ repository.
+ * - OUTPUT: object settings typed; không tự ghi database.
+ * =====================================================================
  */
 final class SeoSettings extends Settings
 {
@@ -18,7 +29,12 @@ final class SeoSettings extends Settings
 
     public int $version;
 
-    /** Output: tên nhóm lưu trong settings. */
+    /**
+     * Trả tên group settings được repository sử dụng.
+     *
+     * Input: không có.
+     * Output: string `seo`.
+     */
     public static function group(): string
     {
         return 'seo';

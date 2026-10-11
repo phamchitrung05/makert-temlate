@@ -38,6 +38,7 @@ enum PostStatus: string
      * SIDE EFFECT:
      * - Không đọc/ghi database và không mở transaction.
      * =====================================================================
+     * Input: tham số theo chữ ký `values()` và state đã hydrate của class.
      */
     public static function values(): array
     {
@@ -55,6 +56,7 @@ enum PostStatus: string
      * SIDE EFFECT:
      * - Không thay đổi model hoặc database.
      * =====================================================================
+     * Input: tham số theo chữ ký `isPublic()` và state đã hydrate của class.
      */
     public function isPublic(): bool
     {

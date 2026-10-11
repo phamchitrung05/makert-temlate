@@ -30,6 +30,10 @@ use Tests\TestCase;
  * - tearDown().
  * - test_excerpt_selection_filters_unselected_fields_even_when_their_types_are_invalid().
  * - test_partial_seo_output_does_not_require_title_or_content_and_selection_overrides_legacy_flag().
+ * - test_seo_regeneration_uses_a_separate_task_with_required_metadata().
+ * - test_complete_generation_runs_seo_after_editor_for_create_and_full_regeneration().
+ * - test_seo_missing_required_metadata_fails_instead_of_using_source_fallback().
+ * - test_seo_title_with_truncation_marker_is_rejected().
  * - test_selected_field_still_rejects_invalid_type().
  * - test_create_preserves_manual_title_source_content_and_source_thumbnail().
  * - test_content_selection_sanitizes_generated_html_and_preserves_other_source_fields().
@@ -167,6 +171,106 @@ final class AiSelectedOutputsTest extends TestCase
 
         $this->assertSame(['seo_title' => 'Tiêu đề SEO', 'robots_index' => false], $provider->generate('Nguồn', '<p>Nội dung gốc</p>'));
         $this->assertStringNotContainsString('Allowed fields: title', $provider->captured->input['instructions']);
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm SEO regeneration dùng task riêng với contract bắt buộc
+     * =====================================================================
+     * INPUT: import chỉ chọn SEO và provider structured fixture.
+     * OUTPUT: task article.seo nhận source/draft và merge đủ metadata SEO.
+     * SIDE EFFECT: chỉ xử lý fixture trong memory; không gọi HTTP thật.
+     * EXCEPTION/TRANSACTION: lỗi contract truyền ra PHPUnit; không transaction.
+     * =====================================================================
+     */
+    public function test_seo_regeneration_uses_a_separate_task_with_required_metadata(): void
+    {
+        $provider = new SelectedOutputsStructuredProvider([
+            'focus_keyword' => 'lễ khất thực Luang Prabang',
+            'seo_title' => 'Lễ khất thực tại Luang Prabang: Ý nghĩa và lưu ý',
+            'seo_description' => 'Những điều cần biết khi tìm hiểu và tham gia lễ khất thực tại Luang Prabang.',
+        ]);
+        $result = (new ArticleImportService($provider))->run($this->inlineImport(['fields' => ['seo'], 'generate_seo' => false]));
+
+        $this->assertSame('article.seo', $provider->captured->input['task']);
+        $this->assertSame(['focus_keyword', 'seo_title', 'seo_description'], $provider->captured->input['json_schema']['required']);
+        $this->assertSame('lễ khất thực Luang Prabang', $result['draft']['focus_keyword']);
+        $this->assertSame('Lễ khất thực tại Luang Prabang: Ý nghĩa và lưu ý', $result['draft']['seo_title']);
+    }
+
+    /**
+     * =====================================================================
+     * Input: create và regenerate toàn bộ với fields rỗng, SEO được bật.
+     * Output: SEO chạy sau editor, dùng bài cuối và thay đủ ba field fallback.
+     * SIDE EFFECT: chỉ dùng DB/AI fixture đã cô lập, không gọi provider thật.
+     * =====================================================================
+     */
+    public function test_complete_generation_runs_seo_after_editor_for_create_and_full_regeneration(): void
+    {
+        $parent = AiImport::query()->create(['result_json' => ['draft' => ['title' => 'Bản trước']]]);
+        foreach ([null, $parent->getKey()] as $parentId) {
+            $provider = new SelectedOutputsRawProvider([
+                'title' => 'Lễ khất thực tại Luang Prabang: Ý nghĩa và lưu ý',
+                'content_html' => '<p>Lễ khất thực là sinh hoạt tôn giáo tại Luang Prabang. Người tham gia cần giữ thái độ tôn trọng.</p>',
+                'focus_keyword' => 'lễ khất thực tại Luang Prabang',
+                'seo_title' => 'Lễ khất thực Luang Prabang: Ý nghĩa và lưu ý',
+                'seo_description' => 'Tìm hiểu ý nghĩa lễ khất thực và cách tham gia với thái độ tôn trọng tại Luang Prabang.',
+            ]);
+            $import = $this->inlineImport([
+                'fields' => [], 'requested_outputs' => ['title', 'content', 'seo'], 'generate_seo' => true,
+                'pipeline_snapshot' => ['prompt_version' => '2.2'],
+            ]);
+            $import->parent_id = $parentId;
+            $result = (new ArticleImportService($provider))->run($import);
+
+            $this->assertSame(['article.analysis-plan', 'article.writer', 'article.editor', 'article.seo'], array_column($provider->requests, 'task'));
+            $this->assertArrayNotHasKey('seo_title', $provider->requests[1]->schema['properties']['draft']['properties']);
+            $this->assertArrayNotHasKey('focus_keyword', $provider->requests[2]->schema['properties']['final']['properties']);
+            $this->assertSame($result['draft']['title'], $provider->requests[3]->input['draft']['title']);
+            $this->assertStringContainsString('Người tham gia cần giữ thái độ tôn trọng.', $provider->requests[3]->input['draft']['content_text']);
+            $this->assertSame('lễ khất thực tại Luang Prabang', $result['draft']['focus_keyword']);
+            $this->assertSame('Lễ khất thực Luang Prabang: Ý nghĩa và lưu ý', $result['draft']['seo_title']);
+            $this->assertContains('seo', $result['generation_meta']['requested_groups']);
+            foreach (['focus_keyword', 'seo_title', 'seo_description'] as $field) {
+                $this->assertContains($field, $result['generation_meta']['generated_fields']);
+            }
+        }
+    }
+
+    /**
+     * =====================================================================
+     * Input: SEO-only request nhưng provider bỏ sót keyword và description.
+     * Output: lỗi schema được truyền ra; không nhận fallback hoặc chạy lại content.
+     * SIDE EFFECT: chỉ dùng provider fixture, không HTTP/DB development.
+     * =====================================================================
+     */
+    public function test_seo_missing_required_metadata_fails_instead_of_using_source_fallback(): void
+    {
+        $provider = new SelectedOutputsRawProvider(['seo_title' => 'Tiêu đề SEO mới']);
+        try {
+            (new ArticleImportService($provider))->run($this->inlineImport(['fields' => ['seo']]));
+            $this->fail('Missing SEO metadata must not use fallback.');
+        } catch (AiImportException $exception) {
+            $this->assertSame('AI_PROVIDER_SCHEMA', $exception->errorCode);
+            $this->assertSame(['article.seo'], array_column($provider->requests, 'task'));
+        }
+    }
+
+    /**
+     * =====================================================================
+     * Input: provider trả tiêu đề SEO có dấu cắt nội dung.
+     * Output: lỗi SEO rõ ràng; không lưu tiêu đề thiếu nghĩa.
+     * SIDE EFFECT: chỉ chạy fixture, không gọi AI thật.
+     * =====================================================================
+     */
+    public function test_seo_title_with_truncation_marker_is_rejected(): void
+    {
+        $this->expectException(AiImportException::class);
+        $this->expectExceptionMessage('tiêu đề SEO bị cắt dở');
+        (new ArticleImportService(new SelectedOutputsRawProvider([
+            'focus_keyword' => 'lễ khất thực', 'seo_title' => 'Lễ khất thực tại Luang Prabang...',
+            'seo_description' => 'Mô tả về lễ khất thực tại Luang Prabang.',
+        ])))->run($this->inlineImport(['fields' => ['seo']]));
     }
 
     /**
@@ -362,7 +466,8 @@ final class AiSelectedOutputsTest extends TestCase
         $import = $this->inlineImport(['fields' => ['seo']]);
         $import->parent_id = $parent->getKey();
         $result = (new ArticleImportService(new SelectedOutputsRawProvider([
-            'seo_title' => 'SEO mới', 'title' => 'Không được thay', 'excerpt' => 'Không được thay',
+            'seo_title' => 'SEO mới', 'focus_keyword' => 'luang prabang', 'seo_description' => 'Mô tả SEO mới.',
+            'title' => 'Không được thay', 'excerpt' => 'Không được thay',
         ])))->run($import);
 
         foreach (['title', 'excerpt', 'content_html', 'content', 'thumbnail'] as $field) {
@@ -428,7 +533,9 @@ final class AiSelectedOutputsTest extends TestCase
         $parent = AiImport::query()->create(['result_json' => ['draft' => ['title' => 'Live title sau enqueue', 'content_html' => '<p>Live content sau enqueue.</p>']]]);
         $import = $this->inlineImport(['fields' => ['seo'], 'parent_draft_snapshot' => $queuedDraft]);
         $import->parent_id = $parent->getKey();
-        $result = (new ArticleImportService(new SelectedOutputsRawProvider(['seo_title' => 'SEO mới'])))->run($import);
+        $result = (new ArticleImportService(new SelectedOutputsRawProvider([
+            'seo_title' => 'SEO mới', 'focus_keyword' => 'luang prabang', 'seo_description' => 'Mô tả SEO mới.',
+        ])))->run($import);
 
         $this->assertSame($queuedDraft['title'], $result['draft']['title']);
         $this->assertSame($queuedDraft['content_html'], $result['draft']['content_html']);
@@ -671,6 +778,8 @@ final class SelectedOutputsStructuredProvider extends AbstractStructuredAiProvid
  */
 final class SelectedOutputsRawProvider implements AiProviderContract
 {
+    public array $requests = [];
+
     /**
      * =====================================================================
      * CHỨC NĂNG: Khởi tạo provider fixture cho ca kiểm thử
@@ -737,6 +846,8 @@ final class SelectedOutputsRawProvider implements AiProviderContract
      */
     public function execute(AiTaskRequest $request): AiTaskResponse
     {
+        $this->requests[] = $request;
+
         return new AiTaskResponse(ArticlePipelineFixture::output($request->task, $request->input, $this->response, $request->schema));
     }
 

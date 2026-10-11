@@ -61,6 +61,7 @@ class MediaAssetContractTest extends TestCase
             'post.thumbnail',
             'post.gallery',
             'post.og_image',
+            'category.thumbnail',
             'resource.cover',
             'resource.preview',
             'resource_version.package',
@@ -70,9 +71,12 @@ class MediaAssetContractTest extends TestCase
         $this->assertSame(MediaAssetKind::Image, MediaAssetField::ResourceCover->kind());
         $this->assertSame(MediaAssetKind::Image, MediaAssetField::PostOgImage->kind());
         $this->assertSame(MediaAssetKind::Image, MediaAssetField::PostGallery->kind());
+        $this->assertSame(MediaAssetKind::Image, MediaAssetField::CategoryThumbnail->kind());
         $this->assertTrue(MediaAssetField::PostGallery->allowsMultiple());
         $this->assertSame('post', MediaAssetField::PostGallery->linkableMorphAlias());
         $this->assertFalse(MediaAssetField::PostOgImage->allowsMultiple());
+        $this->assertFalse(MediaAssetField::CategoryThumbnail->allowsMultiple());
+        $this->assertSame('category', MediaAssetField::CategoryThumbnail->linkableMorphAlias());
         $this->assertSame(MediaAssetKind::Archive, MediaAssetField::ResourceVersionPackage->kind());
         $this->assertTrue(MediaAssetField::ResourcePreview->allowsMultiple());
         $this->assertFalse(MediaAssetField::ResourceCover->allowsMultiple());

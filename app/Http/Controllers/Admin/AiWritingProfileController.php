@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\AiWritingProfileRequest;
-use App\Http\Resources\AiWritingProfileResource;
+use App\Http\Requests\Admin\Ai\AiWritingProfileRequest;
+use App\Http\Resources\Ai\AiWritingProfileResource;
 use App\Http\Responses\BaseResponse;
 use App\Models\AiWritingProfile;
 use App\Services\Ai\Settings\AiSettingsService;

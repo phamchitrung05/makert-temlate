@@ -21,6 +21,7 @@ declare global {
   const analysisReport: typeof import('./resources/js/utils/aiWritingProfile.js')['analysisReport']
   const analyzeContent: typeof import('./resources/js/composables/seoMetadata.js')['analyzeContent']
   const analyzeSeo: typeof import('./resources/js/composables/seoMetadata.js')['analyzeSeo']
+  const announceAiTaskQueued: typeof import('./resources/js/composables/useAiTaskQueue.js')['announceAiTaskQueued']
   const applySiteBranding: typeof import('./resources/js/composables/useSiteBranding.js')['applySiteBranding']
   const articleRequestBody: typeof import('./resources/js/utils/aiArticleOptions.js')['articleRequestBody']
   const articleSourcePayload: typeof import('./resources/js/utils/aiArticleOptions.js')['articleSourcePayload']
@@ -452,6 +453,7 @@ declare module 'vue' {
     readonly analysisReport: UnwrapRef<typeof import('./resources/js/utils/aiWritingProfile.js')['analysisReport']>
     readonly analyzeContent: UnwrapRef<typeof import('./resources/js/composables/seoMetadata.js')['analyzeContent']>
     readonly analyzeSeo: UnwrapRef<typeof import('./resources/js/composables/seoMetadata.js')['analyzeSeo']>
+    readonly announceAiTaskQueued: UnwrapRef<typeof import('./resources/js/composables/useAiTaskQueue.js')['announceAiTaskQueued']>
     readonly applySiteBranding: UnwrapRef<typeof import('./resources/js/composables/useSiteBranding.js')['applySiteBranding']>
     readonly articleRequestBody: UnwrapRef<typeof import('./resources/js/utils/aiArticleOptions.js')['articleRequestBody']>
     readonly articleSourcePayload: UnwrapRef<typeof import('./resources/js/utils/aiArticleOptions.js')['articleSourcePayload']>

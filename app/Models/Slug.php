@@ -56,6 +56,7 @@ class Slug extends Model
      *
      * OUTPUT:
      * - array<string, string>: is_primary được cast sang boolean
+     * Input: tham số theo chữ ký `casts()` và state đã hydrate của class.
      */
     protected function casts(): array
     {

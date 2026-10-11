@@ -1,0 +1,69 @@
+<?php
+
+namespace App\Http\Requests\Admin\Posts;
+
+use App\Enums\PostStatus;
+use App\Http\Requests\Admin\Concerns\ValidatesAiProvenance;
+use App\Http\Requests\Admin\Concerns\ValidatesContentMedia;
+use App\Http\Requests\Admin\Concerns\ValidatesPostSeo;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Validate tạo Post, media và metadata SEO.
+ * CÁC HÀM/METHOD TRONG FILE: authorize(), rules(); seoRules(), after() từ trait.
+ * INPUT/OUTPUT CỦA CLASS (tổng thể): request admin -> dữ liệu hợp lệ hoặc lỗi 422.
+ * =====================================================================
+ */
+class PostCreateRequest extends FormRequest
+{
+    use ValidatesAiProvenance;
+    use ValidatesContentMedia;
+    use ValidatesPostSeo;
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Ủy quyền validation sau middleware posts.create/posts.manage
+     * =====================================================================
+     * INPUT: Request đã qua xác thực/permission ở route.
+     * OUTPUT: true để Laravel thực hiện validation.
+     * SIDE EFFECT: Không ghi database hoặc gọi provider.
+     * EXCEPTION/TRANSACTION: Không mở transaction; authorization thực tế do middleware route bảo vệ.
+     * =====================================================================
+     */
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Khai báo rules tạo Post, media, SEO và AI lineage
+     * =====================================================================
+     * INPUT: Không có đối số; dùng rules từ các trait dùng chung.
+     * OUTPUT: Mảng rules; title bắt buộc, điểm SEO không chặn lưu.
+     * SIDE EFFECT: Chỉ tạo rules; Laravel có thể query DB khi kiểm tra exists.
+     * EXCEPTION/TRANSACTION: Validation lỗi trả 422; không mở transaction.
+     * =====================================================================
+     */
+    public function rules(): array
+    {
+        return [
+            ...$this->seoRules(),
+            ...$this->aiProvenanceRules(),
+            'title' => ['required', 'string', 'max:255'],
+            'content' => ['nullable', 'string'],
+            // Post mới luôn bắt đầu ở draft; Publish phải đi qua lifecycle endpoint.
+            'status' => ['sometimes', 'string', Rule::in([PostStatus::Draft->value])],
+            'category_ids' => ['sometimes', 'array'],
+            'category_ids.*' => ['integer', 'distinct', 'exists:categories,id'],
+            'tag_ids' => ['sometimes', 'array'],
+            'tag_ids.*' => ['integer', 'distinct', 'exists:tags,id'],
+            'media' => ['sometimes', 'array:thumbnail_id,gallery_image_ids'],
+            'media.thumbnail_id' => ['nullable', 'integer', 'min:1'],
+            'media.gallery_image_ids' => ['sometimes', 'array'],
+            'media.gallery_image_ids.*' => ['integer', 'distinct', 'min:1'],
+        ];
+    }
+}

@@ -78,6 +78,7 @@ class Resource extends Model
      * OUTPUT:
      * - array<string, string>: type/status/visibility thành enum, các cột
      *   boolean và datetime được cast tương ứng
+     * Input: tham số theo chữ ký `casts()` và state đã hydrate của class.
      */
     protected function casts(): array
     {
@@ -99,6 +100,7 @@ class Resource extends Model
      *
      * OUTPUT:
      * - BelongsTo: User hoặc null nếu resource được tạo bởi hệ thống
+     * Input: tham số theo chữ ký `author()` và state đã hydrate của class.
      */
     public function author(): BelongsTo
     {
@@ -112,6 +114,7 @@ class Resource extends Model
      *
      * OUTPUT:
      * - BelongsTo: User hoặc null
+     * Input: tham số theo chữ ký `createdBy()` và state đã hydrate của class.
      */
     public function createdBy(): BelongsTo
     {
@@ -125,6 +128,7 @@ class Resource extends Model
      *
      * OUTPUT:
      * - BelongsTo: User hoặc null
+     * Input: tham số theo chữ ký `updatedBy()` và state đã hydrate của class.
      */
     public function updatedBy(): BelongsTo
     {
@@ -138,6 +142,7 @@ class Resource extends Model
      *
      * OUTPUT:
      * - MorphMany: tập Slug, morph name `sluggable` khớp tên cột trong DB
+     * Input: tham số theo chữ ký `slugs()` và state đã hydrate của class.
      */
     public function slugs(): MorphMany
     {
@@ -151,6 +156,7 @@ class Resource extends Model
      *
      * OUTPUT:
      * - MorphToMany: Category qua pivot categorizables, có thêm sort_order
+     * Input: tham số theo chữ ký `categories()` và state đã hydrate của class.
      */
     public function categories(): MorphToMany
     {
@@ -166,6 +172,7 @@ class Resource extends Model
      *
      * OUTPUT:
      * - MorphToMany: Tag qua pivot taggables
+     * Input: tham số theo chữ ký `tags()` và state đã hydrate của class.
      */
     public function tags(): MorphToMany
     {
@@ -179,6 +186,7 @@ class Resource extends Model
      *
      * OUTPUT:
      * - BelongsToMany: Technology qua pivot resource_technology
+     * Input: tham số theo chữ ký `technologies()` và state đã hydrate của class.
      */
     public function technologies(): BelongsToMany
     {
@@ -194,6 +202,7 @@ class Resource extends Model
      *
      * OUTPUT:
      * - HasMany: ResourceVersion
+     * Input: tham số theo chữ ký `versions()` và state đã hydrate của class.
      */
     public function versions(): HasMany
     {
@@ -277,6 +286,7 @@ class Resource extends Model
      *
      * OUTPUT:
      * - LogOptions: chỉ ghi thay đổi, bỏ qua counter và mô tả dài
+     * Input: tham số theo chữ ký `getActivitylogOptions()` và state đã hydrate của class.
      */
     public function getActivitylogOptions(): LogOptions
     {

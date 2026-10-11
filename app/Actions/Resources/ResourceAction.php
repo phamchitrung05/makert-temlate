@@ -36,6 +36,12 @@ use Illuminate\Support\Facades\DB;
  */
 abstract class ResourceAction
 {
+    /**
+     * Khởi tạo các service dùng chung cho create/update resource.
+     *
+     * Input: MediaAssetUsageService và SeoMetadataService.
+     * Output: instance action base; chưa mở transaction.
+     */
     public function __construct(
         protected readonly MediaAssetUsageService $mediaAssetUsageService,
         protected readonly SeoMetadataService $seoMetadataService,
@@ -79,6 +85,7 @@ abstract class ResourceAction
      *
      * SIDE EFFECT:
      * - Ghi đè pivot tương ứng; không đụng loại taxonomy không có trong payload
+     * Output: giá trị theo kiểu trả về của `syncTaxonomy()`; side effect/exception giữ theo implementation.
      */
     protected function syncTaxonomy(Resource $resource, array $taxonomy): void
     {

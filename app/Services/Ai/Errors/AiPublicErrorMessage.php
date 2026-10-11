@@ -86,6 +86,7 @@ final class AiPublicErrorMessage
             'AI_PROVIDER_EMPTY_CONTENT' => 'AI không trả về nội dung. Hãy kiểm tra nguồn và thử lại hoặc đổi model.',
             'AI_PROVIDER_INVALID_JSON' => 'AI trả dữ liệu không đọc được. Hãy thử lại hoặc chọn model khác.',
             'AI_PROVIDER_SCHEMA' => 'Dữ liệu AI trả về không đúng cấu trúc yêu cầu. Hãy thử lại hoặc chọn model khác.',
+            'AI_SEO_INVALID_OUTPUT' => 'AI trả metadata SEO chưa đầy đủ hoặc tiêu đề bị cắt. Hãy tạo lại SEO hoặc chọn model khác.',
             'AI_SOURCE_REFERENCE' => 'AI sử dụng dẫn chứng không khớp nguồn. Hãy kiểm tra dữ kiện và tạo lại.',
             'AI_INPUT_BUDGET' => 'Nguồn và yêu cầu vượt giới hạn của model. Hãy rút ngắn nguồn hoặc chọn model có giới hạn lớn hơn.',
             'AI_ARCHIVE_WRITE_FAILED' => 'Nội dung đã tạo nhưng chưa lưu được kết quả. Hãy thử lại để phục hồi kết quả.',

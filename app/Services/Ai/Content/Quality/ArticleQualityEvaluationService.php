@@ -46,6 +46,12 @@ final class ArticleQualityEvaluationService
 
     private const TERMINAL = ['ready', 'failed', 'cancelled', 'expired'];
 
+    /**
+     * Khởi tạo registry dùng để resolve provider evaluator.
+     *
+     * Input: ProviderRegistry.
+     * Output: instance service; chưa đọc database hoặc gọi provider.
+     */
     public function __construct(private readonly ProviderRegistry $providers) {}
 
     /**

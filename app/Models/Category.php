@@ -60,6 +60,7 @@ class Category extends Model
      *
      * OUTPUT:
      * - array<string, string>: status thành TaxonomyStatus, sort_order thành int
+     * Input: tham số theo chữ ký `casts()` và state đã hydrate của class.
      */
     protected function casts(): array
     {
@@ -77,6 +78,7 @@ class Category extends Model
      *
      * OUTPUT:
      * - BelongsTo: Category hoặc null khi là cấp cao nhất
+     * Input: tham số theo chữ ký `parent()` và state đã hydrate của class.
      */
     public function parent(): BelongsTo
     {
@@ -90,6 +92,7 @@ class Category extends Model
      *
      * OUTPUT:
      * - HasMany: các Category có parent_id trỏ về bản ghi hiện tại
+     * Input: tham số theo chữ ký `children()` và state đã hydrate của class.
      */
     public function children(): HasMany
     {
@@ -103,6 +106,7 @@ class Category extends Model
      *
      * OUTPUT:
      * - MorphMany: tập Slug, morph name `sluggable` khớp tên cột trong DB
+     * Input: tham số theo chữ ký `slugs()` và state đã hydrate của class.
      */
     public function slugs(): MorphMany
     {
@@ -132,6 +136,7 @@ class Category extends Model
      *
      * OUTPUT:
      * - string: name
+     * Input: tham số theo chữ ký `slugSourceColumn()` và state đã hydrate của class.
      */
     public function slugSourceColumn(): string
     {
@@ -145,6 +150,7 @@ class Category extends Model
      *
      * OUTPUT:
      * - MorphToMany: Resource qua pivot categorizables
+     * Input: tham số theo chữ ký `resources()` và state đã hydrate của class.
      */
     public function resources(): MorphToMany
     {

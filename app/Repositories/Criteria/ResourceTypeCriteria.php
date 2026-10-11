@@ -33,6 +33,7 @@ class ResourceTypeCriteria implements CriteriaInterface
      *
      * INPUT:
      * - $type: giá trị type thô từ query
+     * Output: giá trị theo kiểu trả về của `__construct()`; side effect/exception giữ theo implementation.
      */
     public function __construct(private readonly string $type) {}
 

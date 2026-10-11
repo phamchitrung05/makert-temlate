@@ -25,6 +25,9 @@ use Illuminate\Validation\ValidationException;
  * - login(): xác thực admin active và cấp token có ability `admin`
  * - me(): trả profile, roles và permissions của Bearer token hiện tại
  * =====================================================================
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : dữ liệu theo contract và method chính của file.
+ * - OUTPUT: kết quả public của file; side effect/exception theo implementation.
  */
 class AdminTokenController extends Controller
 {

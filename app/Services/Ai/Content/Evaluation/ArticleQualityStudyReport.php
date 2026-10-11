@@ -8,10 +8,13 @@ use InvalidArgumentException;
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Tổng hợp phiên C và báo cáo B/C lịch sử, giữ cả bài lỗi.
- * CÁC HÀM/METHOD: build(), verifyPair(), markdown(), number().
+ * CÁC HÀM/METHOD TRONG FILE: build(), verifyPair(), markdown(), number().
  * INPUT/OUTPUT: manifest/sources/artifacts/nhãn/rows -> report JSON/Markdown.
  * SIDE EFFECT: không AI/DB/I/O; không suy accuracy từ gate hoặc token thiếu = 0.
  * =====================================================================
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : dữ liệu theo contract và method chính của file.
+ * - OUTPUT: kết quả public của file; side effect/exception theo implementation.
  */
 final class ArticleQualityStudyReport
 {

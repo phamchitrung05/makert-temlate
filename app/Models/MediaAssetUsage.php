@@ -50,6 +50,7 @@ class MediaAssetUsage extends Model
      *
      * OUTPUT:
      * - array<string, string>: field thành enum, sort_order thành integer
+     * Input: tham số theo chữ ký `casts()` và state đã hydrate của class.
      */
     protected function casts(): array
     {
@@ -66,6 +67,7 @@ class MediaAssetUsage extends Model
      *
      * OUTPUT:
      * - BelongsTo: MediaAsset liên kết
+     * Input: tham số theo chữ ký `mediaAsset()` và state đã hydrate của class.
      */
     public function mediaAsset(): BelongsTo
     {
@@ -79,6 +81,7 @@ class MediaAssetUsage extends Model
      *
      * OUTPUT:
      * - MorphTo: Resource, ResourceVersion hoặc model linkable khác
+     * Input: tham số theo chữ ký `linkable()` và state đã hydrate của class.
      */
     public function linkable(): MorphTo
     {

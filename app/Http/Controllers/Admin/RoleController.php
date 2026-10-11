@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\AccessIndexRequest;
-use App\Http\Requests\Admin\RoleCreateRequest;
-use App\Http\Requests\Admin\RoleDeleteRequest;
-use App\Http\Requests\Admin\RoleUpdateRequest;
-use App\Http\Resources\RoleResource;
+use App\Http\Requests\Admin\Access\AccessIndexRequest;
+use App\Http\Requests\Admin\Access\RoleCreateRequest;
+use App\Http\Requests\Admin\Access\RoleDeleteRequest;
+use App\Http\Requests\Admin\Access\RoleUpdateRequest;
+use App\Http\Resources\Access\RoleResource;
 use App\Http\Responses\BaseResponse;
 use App\Services\Access\RoleManagementService;
 use Illuminate\Http\JsonResponse;

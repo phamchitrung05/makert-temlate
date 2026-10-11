@@ -32,6 +32,7 @@ class ResourceCategoryCriteria implements CriteriaInterface
      *
      * INPUT:
      * - $categoryId: id danh mục, null nghĩa là không lọc
+     * Output: giá trị theo kiểu trả về của `__construct()`; side effect/exception giữ theo implementation.
      */
     public function __construct(private readonly ?int $categoryId) {}
 

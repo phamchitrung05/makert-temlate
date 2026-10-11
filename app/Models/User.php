@@ -69,6 +69,7 @@ class User extends Authenticatable
      * SIDE EFFECT:
      * - Không có; Laravel dùng cấu hình này khi hydrate/serialize model
      * =====================================================================
+     * Input: tham số theo chữ ký `casts()` và state đã hydrate của class.
      */
     protected function casts(): array
     {

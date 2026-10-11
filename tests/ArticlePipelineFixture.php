@@ -24,6 +24,11 @@ final class ArticlePipelineFixture
             return ['knowledge' => ['facts' => [['id' => 'F01', 'claim' => $block['text'], 'source_block_ids' => [$block['id']], 'evidence' => $block['text'], 'important' => false]], 'terms' => [], 'uncertainties' => []],
                 'writing_plan' => ['article_type' => 'Giải thích', 'audience' => 'Người đọc', 'angle' => 'Nội dung nguồn', 'outline' => ['Nội dung'], 'coverage_fact_ids' => ['F01']]];
         }
+        if ($task === 'article.seo') {
+            return array_intersect_key($fields, $schema['properties'] ?? [
+                'focus_keyword' => [], 'seo_title' => [], 'seo_description' => [],
+            ]);
+        }
         $key = $task === 'article.writer' ? 'draft' : 'final';
         $schema = $schema ?: (new ArticlePromptBuilder)->schema($task, (array) ($context['brief']['requested_fields'] ?? ['title', 'content']), [], $context);
         if (! array_key_exists('content_html', $fields) && array_key_exists('content', $fields)) {

@@ -319,7 +319,8 @@ final class AiOutputValidationLifecycleTest extends TestCase
         $parent = $this->readyParent();
         $before = $parent->result_json;
         Http::fake(['https://validation-provider.test/*' => Http::response($this->response([
-            'seo_title' => 'Updated SEO title', 'robots_index' => false,
+            'seo_title' => 'Updated SEO title', 'focus_keyword' => 'source content',
+            'seo_description' => 'Edited parent SEO description.', 'robots_index' => false,
         ]))]);
         $child = $this->regenerate($parent, ['seo']);
 
@@ -334,6 +335,12 @@ final class AiOutputValidationLifecycleTest extends TestCase
         }
         $this->assertSame($before, $parent->fresh()->result_json);
         Http::assertSentCount(1);
+        Http::assertSent(function (Request $request): bool {
+            $input = ArticlePipelineFixture::httpContext($request);
+
+            return ($input['input']['draft']['title'] ?? null) === 'Edited parent title'
+                && ($input['input']['draft']['content_text'] ?? null) === 'Edited parent content.';
+        });
     }
 
     /**

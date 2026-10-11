@@ -62,6 +62,7 @@ class ResourceRepositoryEloquent extends BaseRepository implements ResourceRepos
      *
      * SIDE EFFECT:
      * - Không có; BaseRepository gọi method này một lần trong constructor
+     * Input: tham số theo chữ ký `model()` và state đã hydrate của class.
      */
     public function model()
     {
@@ -76,6 +77,8 @@ class ResourceRepositoryEloquent extends BaseRepository implements ResourceRepos
      * SIDE EFFECT:
      * - Push RequestCriteria vào hàng đợi criteria; đọc tham số `search`,
      *   `searchFields`, `orderBy`, `sortedBy`, `with` từ request hiện tại
+     * Input: tham số theo chữ ký `boot()` và state đã hydrate của class.
+     * Output: giá trị theo kiểu trả về của `boot()`; side effect/exception giữ theo implementation.
      */
     public function boot()
     {
@@ -89,6 +92,7 @@ class ResourceRepositoryEloquent extends BaseRepository implements ResourceRepos
      *
      * OUTPUT:
      * - string: ResourceValidator::class
+     * Input: tham số theo chữ ký `validator()` và state đã hydrate của class.
      */
     public function validator()
     {
@@ -102,6 +106,7 @@ class ResourceRepositoryEloquent extends BaseRepository implements ResourceRepos
      *
      * OUTPUT:
      * - static: chính repository, đã gắn PublishedResourceCriteria
+     * Input: tham số theo chữ ký `published()` và state đã hydrate của class.
      */
     public function published(): static
     {
@@ -117,6 +122,7 @@ class ResourceRepositoryEloquent extends BaseRepository implements ResourceRepos
      *
      * OUTPUT:
      * - static: chính repository, đã gắn PubliclyVisibleResourceCriteria
+     * Input: tham số theo chữ ký `publiclyVisible()` và state đã hydrate của class.
      */
     public function publiclyVisible(): static
     {

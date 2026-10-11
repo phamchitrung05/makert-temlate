@@ -7,10 +7,10 @@ use App\Actions\Resources\CreateResourceAction;
 use App\Actions\Resources\PublishResourceAction;
 use App\Actions\Resources\UpdateResourceAction;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\ResourceCreateRequest;
-use App\Http\Requests\Admin\ResourceUpdateRequest;
-use App\Http\Resources\ResourceItem;
-use App\Http\Resources\ResourceSummary;
+use App\Http\Requests\Admin\Resources\ResourceCreateRequest;
+use App\Http\Requests\Admin\Resources\ResourceUpdateRequest;
+use App\Http\Resources\Resources\ResourceItem;
+use App\Http\Resources\Resources\ResourceSummary;
 use App\Http\Responses\BaseResponse;
 use App\Models\Resource;
 use App\Models\User;
@@ -269,6 +269,7 @@ class ResourceController extends Controller
      *
      * SIDE EFFECT:
      * - Push Criteria vào repository; chỉ đọc query, không ghi database
+     * Output: giá trị theo kiểu trả về của `applyFilters()`; side effect/exception giữ theo implementation.
      */
     private function applyFilters(ResourceRepositoryInterface $repository, Request $request): void
     {

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Requests\Admin\TagCreateRequest;
-use App\Http\Requests\Admin\TagUpdateRequest;
+use App\Http\Requests\Admin\Taxonomy\TagCreateRequest;
+use App\Http\Requests\Admin\Taxonomy\TagUpdateRequest;
 use App\Repositories\Contracts\TagRepositoryInterface;
 
 /**
@@ -34,6 +34,7 @@ class TagController extends TaxonomyController
      *
      * OUTPUT:
      * - string: tag
+     * Input: tham số theo chữ ký `messageKey()` và state đã hydrate của class.
      */
     protected function messageKey(): string
     {
@@ -47,6 +48,7 @@ class TagController extends TaxonomyController
      *
      * OUTPUT:
      * - class-string: TagRepositoryInterface
+     * Input: tham số theo chữ ký `repositoryInterface()` và state đã hydrate của class.
      */
     protected function repositoryInterface(): string
     {
@@ -60,6 +62,7 @@ class TagController extends TaxonomyController
      *
      * OUTPUT:
      * - class-string: TagCreateRequest
+     * Input: tham số theo chữ ký `createRequestClass()` và state đã hydrate của class.
      */
     protected function createRequestClass(): string
     {
@@ -73,6 +76,7 @@ class TagController extends TaxonomyController
      *
      * OUTPUT:
      * - class-string: TagUpdateRequest
+     * Input: tham số theo chữ ký `updateRequestClass()` và state đã hydrate của class.
      */
     protected function updateRequestClass(): string
     {

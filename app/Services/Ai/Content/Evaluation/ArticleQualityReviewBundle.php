@@ -7,10 +7,13 @@ use App\Services\Ai\Content\AiContentSanitizer;
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Render form chấm mù độc lập, không lộ nhánh/model/usage.
- * CÁC HÀM/METHOD: render(), input(), text().
+ * CÁC HÀM/METHOD TRONG FILE: render(), input(), text().
  * INPUT/OUTPUT: corpus, outputs, key, reviewer slot -> HTML chứa nhãn X/Y.
  * SIDE EFFECT: không ghi file/AI/DB; sanitize mọi HTML nguồn/model.
  * =====================================================================
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : dữ liệu theo contract và method chính của file.
+ * - OUTPUT: kết quả public của file; side effect/exception theo implementation.
  */
 final class ArticleQualityReviewBundle
 {

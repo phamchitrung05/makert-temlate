@@ -97,6 +97,15 @@ export default [
     action: 'manage',
     subject: 'ai_settings',
   },
+  { heading: 'Media' },
+  {
+    title: 'Media',
+    icon: { icon: 'tabler-photo' },
+    children: [
+      { title: 'File', to: 'apps-media-file' },
+      { title: 'Media Asset', to: 'apps-media-media-asset' },
+    ],
+  },
   { heading: 'Apps & Pages' },
   {
     title: 'Ecommerce',
@@ -148,14 +157,6 @@ export default [
         title: 'Settings',
         to: 'apps-ecommerce-settings',
       },
-    ],
-  },
-  {
-    title: 'Media',
-    icon: { icon: 'tabler-photo' },
-    children: [
-      { title: 'File', to: 'apps-media-file' },
-      { title: 'Media Asset', to: 'apps-media-media-asset' },
     ],
   },
   {
