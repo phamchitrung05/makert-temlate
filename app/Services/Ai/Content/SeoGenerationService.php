@@ -50,6 +50,11 @@ final class SeoGenerationService
         $prompts = (array) ($settings['prompts'] ?? []);
         $seoPrompt = $prompts['article.seo']
             ?? config('ai.content.prompts.article.seo', 'Generate accurate SEO metadata from the source and final draft.');
+        $seoPolicy = (array) ($settings['seo'] ?? config('ai.seo', []));
+        $seoInstructions = trim((string) ($seoPolicy['instructions'] ?? ''));
+        if ($seoInstructions !== '') {
+            $seoPrompt .= "\n\nSEO policy:\n".$seoInstructions;
+        }
         $promptVersion = isset($prompts['article.seo'])
             ? ($settings['prompt_version'] ?? config('ai.content.prompt_version', '1.0'))
             : config('ai.content.prompt_version', '1.0');

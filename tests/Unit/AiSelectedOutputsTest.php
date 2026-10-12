@@ -194,6 +194,8 @@ final class AiSelectedOutputsTest extends TestCase
 
         $this->assertSame('article.seo', $provider->captured->input['task']);
         $this->assertSame(['focus_keyword', 'seo_title', 'seo_description'], $provider->captured->input['json_schema']['required']);
+        $this->assertStringContainsString('Google Search SEO policy', $provider->captured->input['instructions']);
+        $this->assertStringContainsString('meta keywords tag', $provider->captured->input['instructions']);
         $this->assertSame('lễ khất thực Luang Prabang', $result['draft']['focus_keyword']);
         $this->assertSame('Lễ khất thực tại Luang Prabang: Ý nghĩa và lưu ý', $result['draft']['seo_title']);
     }

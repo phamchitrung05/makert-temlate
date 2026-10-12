@@ -111,6 +111,7 @@ final class AiRunService
         $input['pipeline_snapshot']['pipeline'] = 'three_step';
         $input['pipeline_snapshot']['output_definitions'] ??= (array) config('ai.agent.output_definitions', []);
         $input['pipeline_snapshot']['requirements'] = (array) config('ai.requirements', []);
+        $input['pipeline_snapshot']['seo'] = (array) config('ai.seo', []);
         $input['taxonomy_origin'] = 'manual';
         $attributes['input_json'] = $input;
         $attributes['source_hash'] = hash('sha256', ($attributes['source_hash'] ?? '').'|'.json_encode([

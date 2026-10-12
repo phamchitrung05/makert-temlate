@@ -25,6 +25,7 @@
 import { computed, onMounted, reactive, ref, shallowRef } from 'vue'
 import { useSlug } from '@/composables/useSlug'
 import { categoryService } from '@/services/category'
+import { flattenCategoryOptions } from '@/utils/categoryTree'
 import MediaAssetField from '@/views/apps/media/field/MediaAssetField.vue'
 
 const searchQuery = shallowRef('')
@@ -155,9 +156,7 @@ const parentOptions = computed(() => {
 
   return [
     { title: 'Không có (Danh mục gốc)', value: null },
-    ...allCategories.value
-      .filter(category => !blocked.has(category.id))
-      .map(category => ({ title: category.name, value: category.id })),
+    ...flattenCategoryOptions(categoriesTree.value, blocked),
   ]
 })
 
@@ -555,6 +554,8 @@ onMounted(loadCategories)
                   <VSelect
                     v-model="form.parent"
                     :items="parentOptions"
+                    item-title="title"
+                    item-value="value"
                     label="Danh mục cha"
                     clearable
                     :disabled="isSaving"
