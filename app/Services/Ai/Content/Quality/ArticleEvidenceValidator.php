@@ -23,7 +23,7 @@ final class ArticleEvidenceValidator
      * Output: xác nhận IDs/evidence/plan coverage; AI_SOURCE_REFERENCE nếu sai.
      * =====================================================================
      */
-    public function analysis(array $analysis, array $source): void
+    public function analysis(array $analysis, array $source, bool $requireImportant = true): void
     {
         $blocks = array_column($source['blocks'], null, 'id');
         $ids = [];
@@ -47,7 +47,7 @@ final class ArticleEvidenceValidator
                 $this->fail('evidence_not_in_source');
             }
         }
-        $this->references($analysis['writing_plan']['coverage_fact_ids'], $analysis, requireImportant: true);
+        $this->references($analysis['writing_plan']['coverage_fact_ids'], $analysis, requireImportant: $requireImportant);
     }
 
     /**

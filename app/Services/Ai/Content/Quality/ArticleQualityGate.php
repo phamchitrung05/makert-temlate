@@ -34,7 +34,7 @@ final class ArticleQualityGate
      * Output: metric safe; ném lỗi copy/ngôn ngữ/grounding với lý do bounded.
      * =====================================================================
      */
-    public function inspect(array $source, array $output, string $language, array $analysis = [], array $settings = []): array
+    public function inspect(array $source, array $output, string $language, array $analysis = [], array $settings = [], array $requirements = []): array
     {
         if (! isset($output['content_html'])) {
             return [['check' => 'rewrite', 'status' => 'skipped', 'reason' => 'short_field_task']];
@@ -66,7 +66,7 @@ final class ArticleQualityGate
             $checks[] = ['check' => 'similarity', 'status' => $similarity >= ($settings['similarity_warning_threshold'] ?? 0.85) ? 'warning' : 'pass', 'metric' => round($similarity, 3), 'reason' => 'lexical_metric_not_style_score'];
         }
         $checks[] = $this->language($fresh, $language, (int) ($settings['language_minimum_words'] ?? 60));
-        $checks = array_merge($checks, $this->preserve($source, $output['content_html'], $analysis));
+        $checks = array_merge($checks, $this->preserve($source, $output['content_html'], $analysis, $requirements));
 
         return $checks;
     }
@@ -120,16 +120,20 @@ final class ArticleQualityGate
      * Output: kiểm code/link/số liệu quan trọng; ngữ nghĩa đầy đủ vẫn do editor duyệt.
      * =====================================================================
      */
-    private function preserve(array $source, string $html, array $analysis): array
+    private function preserve(array $source, string $html, array $analysis, array $requirements = []): array
     {
         $outputCodeBlocks = $this->codeBlocks($html);
-        foreach ($source['blocks'] ?? [] as $block) {
-            if ($block['type'] === 'pre' && ! $this->containsCode($outputCodeBlocks, (string) ($block['text'] ?? ''))) {
-                $this->failure('AI_QUALITY_GROUNDING', 'Nội dung AI làm mất hoặc sửa code nguồn.', 'source_code_changed');
+        $preserveSourceCode = (bool) data_get($requirements, 'content.preserve_source_code', true);
+        if ($preserveSourceCode) {
+            foreach ($source['blocks'] ?? [] as $block) {
+                if ($block['type'] === 'pre' && ! $this->containsCode($outputCodeBlocks, (string) ($block['text'] ?? ''))) {
+                    $this->failure('AI_QUALITY_GROUNDING', 'Nội dung AI làm mất hoặc sửa code nguồn.', 'source_code_changed');
+                }
             }
         }
         $linkPolicy = new ArticleSourceLinkPolicy;
-        $linkManifest = $linkPolicy->manifest($source);
+        $linkRequirements = array_key_exists('links', $requirements) ? (array) $requirements['links'] : null;
+        $linkManifest = $linkPolicy->manifest($source, $linkRequirements);
         $finalLinks = $linkPolicy->hrefs($html);
         if (array_diff($linkManifest['required_hrefs'], $finalLinks) !== []) {
             $this->failure('AI_QUALITY_GROUNDING', 'Nội dung AI làm mất link tham khảo trong nguồn.', 'source_link_missing');
@@ -138,17 +142,22 @@ final class ArticleQualityGate
             $this->failure('AI_QUALITY_GROUNDING', 'Nội dung AI có link không khớp nguồn; hãy kiểm tra URL tham khảo.', 'source_link_unknown');
         }
         $outputNumbers = $this->numbers($this->numberText($html));
-        foreach ($analysis['knowledge']['facts'] ?? [] as $fact) {
-            if ($fact['important'] && $this->missingNumbers($this->numbers($fact['evidence']), $outputNumbers) !== []) {
-                $this->failure('AI_QUALITY_GROUNDING', 'Nội dung AI thiếu số liệu hoặc phiên bản trong bằng chứng quan trọng.', 'important_number_missing');
+        $preserveImportantNumbers = (bool) data_get($requirements, 'content.preserve_important_numbers', true);
+        if ($preserveImportantNumbers) {
+            foreach ($analysis['knowledge']['facts'] ?? [] as $fact) {
+                if ($fact['important'] && $this->missingNumbers($this->numbers($fact['evidence']), $outputNumbers) !== []) {
+                    $this->failure('AI_QUALITY_GROUNDING', 'Nội dung AI thiếu số liệu hoặc phiên bản trong bằng chứng quan trọng.', 'important_number_missing');
+                }
             }
         }
+        $sourceCodeLinksStatus = $preserveSourceCode || $linkManifest['required_hrefs'] !== [] ? 'pass' : 'skipped';
+        $importantNumbersStatus = $preserveImportantNumbers ? 'pass' : 'skipped';
         $sourceNumbers = $this->numbers($this->numberText($source['content_html']));
         $unanchoredNumbers = $this->missingNumbers($outputNumbers, $sourceNumbers, allowGroupedExpected: true);
 
         return [
-            ['check' => 'source_code_links', 'status' => 'pass'],
-            ['check' => 'important_numbers', 'status' => 'pass'],
+            ['check' => 'source_code_links', 'status' => $sourceCodeLinksStatus],
+            ['check' => 'important_numbers', 'status' => $importantNumbersStatus],
             ['check' => 'unanchored_numbers', 'status' => $unanchoredNumbers === [] ? 'pass' : 'warning', 'count' => count($unanchoredNumbers), 'reason' => 'requires_editor_review'],
             ['check' => 'semantic_grounding', 'status' => 'undetermined', 'reason' => 'source_anchors_are_not_external_fact_verification'],
         ];

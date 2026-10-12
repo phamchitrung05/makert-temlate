@@ -47,6 +47,10 @@ final class ArticleGenerationPipeline
         $this->usedSteps = [];
         $input = (array) $import->input_json;
         $settings = (array) ($input['pipeline_snapshot'] ?? config('ai.content', []));
+        $requirements = isset($settings['requirements']) && is_array($settings['requirements'])
+            ? $settings['requirements'] : [];
+        $requireImportantFacts = (bool) data_get($requirements, 'evidence.require_important_fact_coverage', true);
+        $blockingSeverities = array_values(array_filter((array) data_get($requirements, 'editor.blocking_severities', ['blocking']), 'is_string'));
         $groups = array_values(array_diff($fields === [] ? ['title', 'content'] : $fields, ['thumbnail', 'taxonomy']));
         $profile = (array) ($input['writing_profile_snapshot'] ?? []);
         $writingBrief = (array) ($input['writing_brief'] ?? []);
@@ -68,7 +72,7 @@ final class ArticleGenerationPipeline
         $evidence = new ArticleEvidenceValidator;
         $analysis = $this->step($import, $provider, 'analyzing', 'article.analysis-plan', $context, $groups, $settings,
             fn () => (new AnalyzerPlannerAgent)->run($provider, $context, $groups, $settings),
-            fn (array $output) => $evidence->analysis($output, $source));
+            fn (array $output) => $evidence->analysis($output, $source, $requireImportantFacts));
         $context['analysis'] = $analysis;
         $writer = $this->step($import, $provider, 'writing', 'article.writer', $context, $groups, $settings,
             fn () => (new WriterAgent)->run($provider, $context, $groups, $settings),
@@ -82,10 +86,10 @@ final class ArticleGenerationPipeline
         $context['draft'] = $writer['draft'];
         $editor = $this->step($import, $provider, 'editing', 'article.editor', $context, $groups, $settings,
             fn () => (new EditorAgent)->run($provider, $context, $groups, $settings),
-            function (array $output) use ($evidence, $analysis, $groups): void {
-                $evidence->references($output['used_fact_ids'], $analysis, requireImportant: true);
+            function (array $output) use ($evidence, $analysis, $groups, $requireImportantFacts, $blockingSeverities): void {
+                $evidence->references($output['used_fact_ids'], $analysis, requireImportant: $requireImportantFacts);
                 (new AiOutputValidator)->validate($output['final'], $groups);
-                if (array_filter($output['issues'], fn (array $issue): bool => $issue['severity'] === 'blocking') !== []) {
+                if (array_filter($output['issues'], fn (array $issue): bool => in_array($issue['severity'], $blockingSeverities, true)) !== []) {
                     throw new AiImportException('Editor phát hiện thông tin chưa đủ căn cứ; hãy xem nguồn và tạo lại có chủ ý.', 'AI_QUALITY_EDITOR');
                 }
             });
@@ -96,7 +100,7 @@ final class ArticleGenerationPipeline
             [$final['content_html'], $imageWarnings] = $this->restoreImages($final['content_html'], $refs);
         }
         $final = (new AiOutputValidator)->validate($final, $groups, sanitizeContent: true);
-        $checks = (new ArticleQualityGate)->inspect($source, $final, (string) ($input['language'] ?? 'vi'), $analysis, (array) ($settings['quality'] ?? []));
+        $checks = (new ArticleQualityGate)->inspect($source, $final, (string) ($input['language'] ?? 'vi'), $analysis, (array) ($settings['quality'] ?? []), $requirements);
         $this->metadata($import, [
             'pipeline' => 'three_step', 'quality' => $checks, 'image_warnings' => $imageWarnings,
             'editor_warning_count' => count($editor['issues']),

@@ -71,7 +71,14 @@ final class ArticleQualityEvaluation
             $result['status'] = 'ready';
             $result['final'] = array_intersect_key($generated['draft'], array_flip(['title', 'content_html']));
             $analysis = $recorder->calls[0]['output'] ?? [];
-            $result['quality_checks'] = (new ArticleQualityGate)->inspect($source, $result['final'], (string) ($input['language'] ?? 'vi'), $analysis, $input['pipeline_snapshot']['quality'] ?? []);
+            $result['quality_checks'] = (new ArticleQualityGate)->inspect(
+                $source,
+                $result['final'],
+                (string) ($input['language'] ?? 'vi'),
+                $analysis,
+                $input['pipeline_snapshot']['quality'] ?? [],
+                $input['pipeline_snapshot']['requirements'] ?? [],
+            );
         } catch (AiImportException $exception) {
             $result['error_code'] = $exception->errorCode;
             $result['diagnostics'] = $exception->diagnostics;
