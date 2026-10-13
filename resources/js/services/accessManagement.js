@@ -9,6 +9,7 @@
  * - unwrap(): lấy payload data từ response envelope.
  * - listRoles(): tải danh sách role admin.
  * - getRole(): tải chi tiết một role.
+ * - getUser(): tải chi tiết một tài khoản admin.
  * - getCatalog(): tải catalog permission và role options.
  * - listUsers(): tải danh sách admin đang được gán role.
  * - createRole(): tạo role tùy chỉnh.
@@ -73,19 +74,31 @@ const getCatalog = () => $api('/admin/permissions/catalog').then(unwrap)
 /**
  * Tải tài khoản admin để hiển thị người dùng theo role.
  *
- * Input: query search/page/perPage tùy chọn.
+ * Input: query search/status/role/page/perPage/sort/direction tùy chọn.
  * Output: payload bảng user và pagination.
  */
-const listUsers = ({ search = '', page = 1, perPage = 100 } = {}) => $api('/admin/access/users', {
+const listUsers = ({ search = '', status = '', roleId = null, page = 1, perPage = 100, sort = 'name', direction = 'asc' } = {}) => $api('/admin/access/users', {
   query: {
     search: search || undefined,
+    status: status || undefined,
+    'role_id': roleId || undefined,
     page,
     'per_page': perPage,
+    sort,
+    direction,
   },
 }).then(response => ({
   ...unwrap(response),
   pagination: response?.meta?.pagination ?? {},
 }))
+
+/**
+ * Tải chi tiết tài khoản admin cho User View.
+ *
+ * Input: userId số nguyên.
+ * Output: DTO user đã unwrap khỏi envelope API.
+ */
+const getUser = userId => $api(`/admin/access/users/${userId}`).then(unwrap)
 
 /**
  * Tạo role tùy chỉnh từ dialog.
@@ -128,6 +141,7 @@ export {
   deleteRole,
   getCatalog,
   getRole,
+  getUser,
   listRoles,
   listUsers,
   updateRole,

@@ -11,7 +11,7 @@
   - perform(action, options): điều phối thao tác API, loading và feedback.
   - refreshCatalog(), selectProvider(provider), showSnackbar(): tải catalog, chọn provider và hiển thị thông báo.
   - openNew(), editProvider(provider), saveProviderForm(payload): tạo/sửa connection provider.
-  - test(provider), sync(provider), disable(provider): kiểm tra, đồng bộ và tắt provider.
+  - test(provider), sync(provider), disable(provider), remove(provider): kiểm tra, đồng bộ, tắt và xóa provider.
   - openModel(provider, model), saveModelForm(payload), testModel(provider, model): thêm/sửa capability và test model.
   INPUT/OUTPUT CỦA CLASS (tổng thể):
   - INPUT: catalog provider/model từ composable và thao tác quản trị.
@@ -29,7 +29,7 @@ import AiProviderConnectionDialog from '@/views/settings/ai/AiProviderConnection
 
 definePage({ meta: { action: 'manage', subject: 'ai_settings' } })
 
-const { providers, presets, loading, saving, error, load, saveProvider, disableProvider, testProvider, syncProvider, saveModel } = useAiProviderSettings()
+const { providers, presets, loading, saving, error, load, saveProvider, deleteProvider, disableProvider, testProvider, syncProvider, saveModel } = useAiProviderSettings()
 const providerDialog = ref(false)
 const modelDialog = ref(false)
 const selectedProvider = ref(null)
@@ -353,6 +353,27 @@ function disable(provider) {
 
 /**
  * =====================================================================
+ * CHỨC NĂNG: Xóa vĩnh viễn provider khỏi catalog
+ * =====================================================================
+ * INPUT: provider catalog item.
+ * OUTPUT: provider được bỏ khỏi danh sách và detail panel.
+ * SIDE EFFECT: hỏi xác nhận rồi gọi endpoint xóa provider/model.
+ * EXCEPTION/TRANSACTION: người dùng từ chối thì không gọi API; lỗi hiển thị trong snackbar.
+ * =====================================================================
+ */
+function remove(provider) {
+  if (!window.confirm(`Xóa vĩnh viễn ${provider.name}? Tất cả model thuộc provider này cũng sẽ bị xóa.`)) return
+
+  return perform(() => deleteProvider(provider.id), {
+    message: 'Đã xóa provider.',
+    after: () => {
+      if (selectedProvider.value?.id === provider.id) selectedProvider.value = providers.value[0] ?? null
+    },
+  })
+}
+
+/**
+ * =====================================================================
  * CHỨC NĂNG: Mở dialog thêm hoặc chỉnh sửa model catalog
  * =====================================================================
  * INPUT: provider catalog và model cần sửa; null khi thêm mới.
@@ -667,6 +688,12 @@ onMounted(() => refreshCatalog().catch(() => showSnackbar(error.value || 'Không
                             </template>
                             <VListItemTitle>Tắt provider</VListItemTitle>
                           </VListItem>
+                          <VListItem @click="remove(provider)">
+                            <template #prepend>
+                              <VIcon icon="tabler-trash" />
+                            </template>
+                            <VListItemTitle>Xóa provider</VListItemTitle>
+                          </VListItem>
                         </VList>
                       </VMenu>
                     </div>
@@ -731,11 +758,12 @@ onMounted(() => refreshCatalog().catch(() => showSnackbar(error.value || 'Không
             </VTabs>
             <VDivider class="flex-shrink-0" />
 
-            <VWindow
-              v-model="activeDetailTab"
-              class="provider-detail-window"
-            >
-              <VWindowItem value="overview">
+            <div class="provider-detail-window">
+              <section
+                v-show="activeDetailTab === 'overview'"
+                class="provider-detail-tab"
+                role="tabpanel"
+              >
                 <VCardText>
                   <div class="d-flex align-center justify-space-between mb-3">
                     <div>
@@ -862,11 +890,15 @@ onMounted(() => refreshCatalog().catch(() => showSnackbar(error.value || 'Không
                     </VBtn>
                   </div>
                 </VCardText>
-              </VWindowItem>
+              </section>
 
-              <VWindowItem value="models">
-                <VCardText>
-                  <div class="d-flex flex-wrap align-center justify-space-between gap-3 mb-4">
+              <section
+                v-show="activeDetailTab === 'models'"
+                class="provider-detail-tab provider-models-tab"
+                role="tabpanel"
+              >
+                <VCardText class="provider-models-content">
+                  <div class="d-flex flex-wrap align-center justify-space-between gap-3 mb-4 provider-model-toolbar">
                     <VTextField
                       v-model="modelSearch[selectedProviderDetail.id]"
                       prepend-inner-icon="tabler-search"
@@ -886,14 +918,18 @@ onMounted(() => refreshCatalog().catch(() => showSnackbar(error.value || 'Không
                     </VBtn>
                   </div>
 
-                  <VDataTable
-                    :headers="modelHeaders"
-                    :items="providerModels(selectedProviderDetail)"
-                    :loading="loading"
-                    density="compact"
-                    class="text-no-wrap"
-                    hide-default-footer
-                  >
+                  <div class="provider-model-table-wrap">
+                    <VDataTable
+                      :headers="modelHeaders"
+                      :items="providerModels(selectedProviderDetail)"
+                      :loading="loading"
+                      :items-per-page="-1"
+                      density="compact"
+                      fixed-header
+                      height="100%"
+                      class="text-no-wrap provider-model-table"
+                      hide-default-footer
+                    >
                     <template #item.capabilities="{ item }">
                       <div class="d-flex flex-wrap gap-1 py-1">
                         <VChip
@@ -962,11 +998,16 @@ onMounted(() => refreshCatalog().catch(() => showSnackbar(error.value || 'Không
                         Provider chưa có model trong catalog.
                       </div>
                     </template>
-                  </VDataTable>
+                    </VDataTable>
+                  </div>
                 </VCardText>
-              </VWindowItem>
+              </section>
 
-              <VWindowItem value="api">
+              <section
+                v-show="activeDetailTab === 'api'"
+                class="provider-detail-tab"
+                role="tabpanel"
+              >
                 <VCardText>
                   <div class="text-subtitle-1 font-weight-bold mb-1">
                     API connection
@@ -1027,9 +1068,13 @@ onMounted(() => refreshCatalog().catch(() => showSnackbar(error.value || 'Không
                     Chỉnh sửa connection
                   </VBtn>
                 </VCardText>
-              </VWindowItem>
+              </section>
 
-              <VWindowItem value="advanced">
+              <section
+                v-show="activeDetailTab === 'advanced'"
+                class="provider-detail-tab"
+                role="tabpanel"
+              >
                 <VCardText>
                   <div class="text-subtitle-1 font-weight-bold mb-1">
                     Advanced settings
@@ -1070,10 +1115,18 @@ onMounted(() => refreshCatalog().catch(() => showSnackbar(error.value || 'Không
                     >
                       Tắt provider
                     </VBtn>
+                    <VBtn
+                      color="error"
+                      variant="text"
+                      prepend-icon="tabler-trash"
+                      @click="remove(selectedProviderDetail)"
+                    >
+                      Xóa provider
+                    </VBtn>
                   </div>
                 </VCardText>
-              </VWindowItem>
-            </VWindow>
+              </section>
+            </div>
           </VCard>
 
           <VCard
@@ -1153,10 +1206,51 @@ onMounted(() => refreshCatalog().catch(() => showSnackbar(error.value || 'Không
 }
 
 .provider-detail-window {
+  display: flex;
+  flex-direction: column;
   flex: 1 1 0;
+  min-block-size: 0;
+  overflow: hidden;
+}
+
+.provider-detail-tab {
+  block-size: 100%;
   min-block-size: 0;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.provider-models-tab {
+  overflow: hidden;
+}
+
+.provider-models-content {
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+  min-block-size: 0;
+  overflow: hidden;
+}
+
+.provider-model-toolbar {
+  flex: 0 0 auto;
+}
+
+.provider-model-table-wrap {
+  flex: 1 1 0;
+  min-block-size: 0;
+  overflow: hidden;
+}
+
+.provider-model-table {
+  max-inline-size: 100%;
+  block-size: 100%;
+}
+
+.provider-model-table :deep(.v-table__wrapper) {
+  min-block-size: 0;
+  overscroll-behavior: contain;
   scrollbar-gutter: stable;
 }
 

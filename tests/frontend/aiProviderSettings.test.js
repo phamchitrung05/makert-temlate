@@ -5,7 +5,7 @@ import { findProvider, normalizeProvider, providerModels } from '../../resources
 import { activeAiLineage, mergeAiLineage } from '../../resources/js/composables/aiCandidate'
 
 const { service } = vi.hoisted(() => ({
-  service: { list: vi.fn(), saveProvider: vi.fn(), disableProvider: vi.fn(), testProvider: vi.fn(), syncProvider: vi.fn(), saveModel: vi.fn(), updateSettings: vi.fn() },
+  service: { list: vi.fn(), saveProvider: vi.fn(), deleteProvider: vi.fn(), disableProvider: vi.fn(), testProvider: vi.fn(), syncProvider: vi.fn(), saveModel: vi.fn(), updateSettings: vi.fn() },
 }))
 
 vi.mock('@/services/aiProviderSettings', () => ({ aiProviderSettingsService: service }))
@@ -83,6 +83,18 @@ describe('AI settings orchestration', () => {
     service.saveProvider.mockRejectedValue(new Error('Write failed'))
     await expect(state.saveProvider({ name: 'Test' })).rejects.toThrow('Write failed')
     expect(state.saving.value).toBe(false)
+  })
+
+  it('removes a provider locally after a successful delete', async () => {
+    const state = useAiProviderSettings()
+
+    state.providers.value = [{ id: 1 }, { id: 2 }]
+    service.deleteProvider.mockResolvedValue({ message: 'Deleted' })
+
+    await state.deleteProvider(1)
+
+    expect(service.deleteProvider).toHaveBeenCalledWith(1)
+    expect(state.providers.value).toEqual([{ id: 2 }])
   })
 })
 

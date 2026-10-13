@@ -156,7 +156,7 @@ const resolveUserRoleVariant = role => {
                 <h6 class="text-h6">
                   Username:
                   <div class="d-inline-block text-body-1">
-                    {{ props.userData.fullName }}
+                    {{ props.userData.username || props.userData.fullName }}
                   </div>
                 </h6>
               </VListItemTitle>

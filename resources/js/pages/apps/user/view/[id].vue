@@ -1,13 +1,16 @@
 <script setup>
+import { computed, ref } from 'vue'
 import UserBioPanel from '@/views/apps/user/view/UserBioPanel.vue'
 import UserTabAccount from '@/views/apps/user/view/UserTabAccount.vue'
 import UserTabBillingsPlans from '@/views/apps/user/view/UserTabBillingsPlans.vue'
 import UserTabConnections from '@/views/apps/user/view/UserTabConnections.vue'
 import UserTabNotifications from '@/views/apps/user/view/UserTabNotifications.vue'
 import UserTabSecurity from '@/views/apps/user/view/UserTabSecurity.vue'
+import { getUser } from '@/services/accessManagement'
 
 const route = useRoute('apps-user-view-id')
 const userTab = ref(null)
+const userData = ref(null)
 
 const tabs = [
   {
@@ -32,11 +35,31 @@ const tabs = [
   },
 ]
 
-const { data: userData } = await useApi(`/apps/users/${ route.params.id }`)
+try {
+  const user = await getUser(route.params.id)
+
+  userData.value = {
+    ...user,
+    fullName: user.name,
+    role: user.roles?.[0]?.name ?? 'No role',
+    avatar: '',
+    taskDone: 0,
+    projectDone: 0,
+    taxId: '—',
+    language: '—',
+    contact: '—',
+    country: '—',
+  }
+}
+catch {
+  userData.value = null
+}
+
+const hasUser = computed(() => Boolean(userData.value))
 </script>
 
 <template>
-  <VRow v-if="userData">
+  <VRow v-if="hasUser">
     <VCol
       cols="12"
       md="5"
@@ -99,7 +122,7 @@ const { data: userData } = await useApi(`/apps/users/${ route.params.id }`)
       type="error"
       variant="tonal"
     >
-      Invoice with ID  {{ route.params.id }} not found!
+      User with ID {{ route.params.id }} was not found.
     </VAlert>
   </div>
 </template>

@@ -299,6 +299,7 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
             Route::put('/settings', [AiProviderController::class, 'updateSettings']);
             Route::post('/providers', [AiProviderController::class, 'store']);
             Route::put('/providers/{provider}', [AiProviderController::class, 'update'])->whereNumber('provider');
+            Route::delete('/providers/{provider}', [AiProviderController::class, 'destroy'])->whereNumber('provider');
             Route::post('/providers/{provider}/disable', [AiProviderController::class, 'disable'])->whereNumber('provider');
             Route::post('/providers/{provider}/test', [AiProviderController::class, 'test'])
                 ->whereNumber('provider')->middleware('throttle:6,1');

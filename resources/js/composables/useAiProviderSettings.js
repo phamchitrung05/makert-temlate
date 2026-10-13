@@ -5,7 +5,7 @@ import { aiProviderSettingsService } from '@/services/aiProviderSettings'
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: State orchestration dùng chung cho AI settings page.
- * METHODS: load(), saveProvider(), disableProvider(), testProvider(), syncProvider(),
+ * METHODS: load(), saveProvider(), deleteProvider(), disableProvider(), testProvider(), syncProvider(),
  * saveModel(), updateSettings(). INPUT: form payload; OUTPUT: reactive catalog.
  * SIDE EFFECT: gọi service API; không chứa markup hoặc quy tắc capability.
  * =====================================================================
@@ -82,6 +82,24 @@ export function useAiProviderSettings() {
     finally {
       saving.value = false
     }
+  }
+
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Xóa provider khỏi server và catalog reactive.
+   * =====================================================================
+   * INPUT: provider ID.
+   * OUTPUT: response thành công; danh sách local bỏ provider đã xóa.
+   * SIDE EFFECT: Gọi service API và cập nhật reactive catalog.
+   * EXCEPTION/TRANSACTION: lỗi API truyền lại caller.
+   * =====================================================================
+   */
+  async function deleteProvider(providerId) {
+    const result = await aiProviderSettingsService.deleteProvider(providerId)
+
+    providers.value = providers.value.filter(provider => provider.id !== providerId)
+
+    return result
   }
 
   /**
@@ -174,5 +192,5 @@ export function useAiProviderSettings() {
     return settings.value
   }
 
-  return { providers, presets, writingProfiles, settings, modelOptions, loading, saving, error, load, saveProvider, disableProvider, testProvider, syncProvider, saveModel, updateSettings }
+  return { providers, presets, writingProfiles, settings, modelOptions, loading, saving, error, load, saveProvider, deleteProvider, disableProvider, testProvider, syncProvider, saveModel, updateSettings }
 }

@@ -40,7 +40,7 @@ final class AccessIndexRequest extends FormRequest
      * =====================================================================
      * CHỨC NĂNG: Giới hạn filter và phân trang
      * INPUT: Query HTTP.
-     * OUTPUT: Rules search/status/group/role_id/page/per_page.
+     * OUTPUT: Rules search/status/group/role_id/page/per_page/sort/direction.
      * SIDE EFFECT: Validation exists query guard admin.
      * EXCEPTION/TRANSACTION: 422 nếu query sai.
      * =====================================================================
@@ -54,6 +54,8 @@ final class AccessIndexRequest extends FormRequest
             'role_id' => ['sometimes', 'nullable', 'integer', Rule::exists('roles', 'id')->where('guard_name', 'admin')],
             'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'sort' => ['sometimes', 'nullable', 'string', Rule::in(['name', 'email', 'username', 'status', 'created_at'])],
+            'direction' => ['sometimes', 'nullable', 'string', Rule::in(['asc', 'desc'])],
         ];
     }
 }

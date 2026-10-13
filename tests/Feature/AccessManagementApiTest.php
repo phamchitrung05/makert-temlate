@@ -588,6 +588,47 @@ final class AccessManagementApiTest extends TestCase
 
     /**
      * =====================================================================
+     * CHỨC NĂNG: Kiểm sort allow-list và tìm kiếm username của bảng user
+     * =====================================================================
+     * INPUT: Hai admin có username khác nhau và query sort từ DataTableServer.
+     * OUTPUT: Thứ tự ổn định theo cột được chọn; identifier không hợp lệ bị chặn.
+     * SIDE EFFECT: Chỉ tạo dữ liệu test và đọc API.
+     * EXCEPTION/TRANSACTION: 422 cho sort/direction ngoài allow-list.
+     * =====================================================================
+     */
+    public function test_user_list_supports_safe_sort_and_username_search(): void
+    {
+        $token = $this->superAdminToken();
+        User::factory()->create([
+            'name' => 'Sortable Alpha',
+            'username' => 'zeta-user',
+            'status' => 'active',
+        ]);
+        User::factory()->create([
+            'name' => 'Sortable Beta',
+            'username' => 'alpha-user',
+            'status' => 'active',
+        ]);
+
+        $this->withToken($token)
+            ->getJson('/api/admin/access/users?search=user&sort=username&direction=asc&per_page=10')
+            ->assertOk()
+            ->assertJsonPath('data.items.0.username', 'alpha-user')
+            ->assertJsonPath('data.items.1.username', 'zeta-user');
+
+        $this->withToken($token)
+            ->getJson('/api/admin/access/users?sort=password')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('sort');
+
+        $this->withToken($token)
+            ->getJson('/api/admin/access/users?direction=sideways')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('direction');
+    }
+
+    /**
+     * =====================================================================
      * CHỨC NĂNG: Mutation rollback khi audit không ghi được
      * INPUT: Trigger SQLite từ chối insert activity_log.
      * OUTPUT: 500 an toàn, role/pivot không tồn tại sau request lỗi.

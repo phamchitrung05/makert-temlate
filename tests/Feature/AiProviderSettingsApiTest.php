@@ -38,6 +38,7 @@ use Tests\UsesIsolatedDatabase;
  * - token().
  * - test_text_capability_alone_is_visible_and_runs_without_native_json_mode().
  * - test_provider_key_is_write_only_and_model_can_be_selected_as_image_default().
+ * - test_provider_can_be_deleted_with_models_and_clears_model_defaults().
  * - test_model_test_delegates_capability_validation_to_provider().
  * - test_model_test_reports_upstream_errors_without_leaking_secrets().
  * - test_sync_imports_models_without_deleting_stale_catalog().
@@ -222,6 +223,62 @@ final class AiProviderSettingsApiTest extends TestCase
         $this->withToken($token)->putJson('/api/admin/settings/ai/settings', ['default_image_model_id' => $model['id']])
             ->assertOk()->assertJsonPath('data.default_image_model_id', $model['id']);
         $this->assertDatabaseHas('settings', ['group' => 'ai', 'name' => 'default_image_model_id']);
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm provider có thể xóa cùng model và default model liên quan
+     * =====================================================================
+     *
+     * INPUT:
+     * - Provider có text/image model đang được chọn làm default và fallback.
+     *
+     * OUTPUT:
+     * - API xóa thành công, provider/model biến mất và bốn default model được reset.
+     *
+     * SIDE EFFECT:
+     * - Chỉ ghi dữ liệu trong database test cô lập; không gọi AI thật.
+     *
+     * EXCEPTION/TRANSACTION:
+     * - Assertion/dependency lỗi truyền ra PHPUnit; nghiệp vụ xóa chạy atomic.
+     *
+     * =====================================================================
+     */
+    public function test_provider_can_be_deleted_with_models_and_clears_model_defaults(): void
+    {
+        $token = $this->token();
+        $provider = $this->connection();
+        $text = $provider->models()->create([
+            'remote_model_id' => 'delete-text', 'label' => 'Delete text',
+            'capabilities' => ['text_generation'],
+        ]);
+        $image = $provider->models()->create([
+            'remote_model_id' => 'delete-image', 'label' => 'Delete image',
+            'capabilities' => ['image_generation'],
+        ]);
+
+        $this->withToken($token)->putJson('/api/admin/settings/ai/settings', [
+            'default_text_model_id' => $text->id,
+            'fallback_text_model_id' => $text->id,
+            'default_image_model_id' => $image->id,
+            'fallback_image_model_id' => $image->id,
+        ])->assertOk();
+
+        $this->withToken($token)->deleteJson('/api/admin/settings/ai/providers/'.$provider->id)
+            ->assertOk()
+            ->assertJsonPath('message', 'Đã xóa provider AI.');
+
+        $this->assertDatabaseMissing('ai_providers', ['id' => $provider->id]);
+        $this->assertDatabaseMissing('ai_models', ['id' => $text->id]);
+        $this->assertDatabaseMissing('ai_models', ['id' => $image->id]);
+        $this->assertSame([
+            'default_text_model_id' => null,
+            'default_image_model_id' => null,
+            'fallback_text_model_id' => null,
+            'fallback_image_model_id' => null,
+        ], collect(app(AiSettingsService::class)->all())->only([
+            'default_text_model_id', 'fallback_text_model_id', 'default_image_model_id', 'fallback_image_model_id',
+        ])->all());
     }
 
     /**

@@ -9,6 +9,7 @@ use App\Models\AiProvider;
 use App\Models\User;
 use App\Services\Ai\Providers\Transport\AiConnection;
 use App\Services\Ai\Providers\Transport\AiProviderClient;
+use App\Settings\AiSettings;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +20,7 @@ use Illuminate\Validation\ValidationException;
  * =====================================================================
  * CHỨC NĂNG FILE: Connection CRUD, model discovery/manual và connection/model test.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: __construct(), save(), saveModel(), sync(), test(), discover(), capabilities(), audit().
+ * CÁC HÀM/METHOD TRONG FILE: __construct(), save(), delete(), saveModel(), sync(), test(), discover(), capabilities(), audit().
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * INPUT: validated admin data.
  * OUTPUT: catalog/result không secret.
@@ -91,6 +92,46 @@ final class AiProviderCatalogService
             $this->audit($provider, $actorId, $changed ? 'provider.rotated_or_updated' : 'provider.saved');
 
             return $provider->load('models');
+        });
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Xóa provider cùng catalog model và dọn default model liên quan.
+     * =====================================================================
+     * INPUT: provider đã route-bind và actor ID.
+     * OUTPUT: không trả dữ liệu; caller trả response thành công.
+     * SIDE EFFECT: xóa provider/model, reset default/fallback model và ghi audit trong transaction.
+     * EXCEPTION/TRANSACTION: transaction atomic; lỗi sẽ rollback toàn bộ thay đổi.
+     * =====================================================================
+     */
+    public function delete(AiProvider $provider, int $actorId): void
+    {
+        DB::transaction(function () use ($provider, $actorId): void {
+            $modelIds = $provider->models()->lockForUpdate()->pluck('id');
+
+            DB::table('settings')
+                ->where('group', AiSettings::group())
+                ->lockForUpdate()
+                ->get();
+
+            if ($modelIds->isNotEmpty()) {
+                $settings = app(AiSettings::class)->refresh();
+                $changed = false;
+                foreach (['default_text_model_id', 'fallback_text_model_id', 'default_image_model_id', 'fallback_image_model_id'] as $key) {
+                    if ($settings->{$key} !== null && $modelIds->contains((int) $settings->{$key})) {
+                        $settings->{$key} = null;
+                        $changed = true;
+                    }
+                }
+                if ($changed) {
+                    $settings->save();
+                }
+            }
+
+            $this->audit($provider, $actorId, 'provider.deleted', ['model_ids' => $modelIds->values()->all()]);
+            $provider->models()->delete();
+            $provider->delete();
         });
     }
 

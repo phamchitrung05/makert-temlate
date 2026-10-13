@@ -210,21 +210,26 @@ final class RoleManagementService
     /**
      * =====================================================================
      * CHỨC NĂNG: Phân trang tài khoản admin để gán role
-     * INPUT: search/status/role_id/page/per_page đã validate.
+     * INPUT: search/status/role_id/page/per_page/sort/direction đã validate.
      * OUTPUT: Paginator User không password/token, eager load role permissions và direct permissions.
-     * SIDE EFFECT: Query read-only, sort name rồi ID.
+     * SIDE EFFECT: Query read-only, sort theo cột allow-list rồi ID để phân trang ổn định.
      * EXCEPTION/TRANSACTION: Không mở transaction.
      * =====================================================================
      */
     public function users(array $filters): LengthAwarePaginator
     {
+        $sort = $filters['sort'] ?? 'name';
+        $direction = $filters['direction'] ?? 'asc';
+
         return User::query()->select(['id', 'name', 'email', 'username', 'status', 'created_at'])
             ->with(['roles.permissions', 'permissions'])
             ->when($filters['search'] ?? null, fn ($query, $search) => $query->where(fn ($nested) => $nested
-                ->where('name', 'like', '%'.$search.'%')->orWhere('email', 'like', '%'.$search.'%')))
+                ->where('name', 'like', '%'.$search.'%')
+                ->orWhere('email', 'like', '%'.$search.'%')
+                ->orWhere('username', 'like', '%'.$search.'%')))
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($filters['role_id'] ?? null, fn ($query, $id) => $query->whereHas('roles', fn ($role) => $role->where('roles.id', $id)->where('guard_name', 'admin')))
-            ->orderBy('name')->orderBy('id')->paginate($filters['per_page'] ?? 10);
+            ->orderBy($sort, $direction)->orderBy('id', $direction)->paginate($filters['per_page'] ?? 10);
     }
 
     /**

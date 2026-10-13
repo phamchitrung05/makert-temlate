@@ -35,6 +35,7 @@ final class AdminRoleUserResource extends JsonResource
         return [
             'id' => $this->id, 'name' => $this->name, 'email' => $this->email,
             'username' => $this->username, 'status' => $this->status,
+            'created_at' => $this->created_at?->toISOString(),
             'roles' => $this->roles->where('guard_name', 'admin')->map(fn ($role) => $role->only(['id', 'name']))->values()->all(),
             'version' => RoleManagementService::userVersion($this->resource),
             'can_edit_roles' => $actor->can('users.manage') && $actor->id !== $this->id

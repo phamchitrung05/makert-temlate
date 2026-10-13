@@ -26,6 +26,7 @@ use Illuminate\Validation\ValidationException;
  * - index(): trả catalog provider/model, AI settings và profile active/enabled.
  * - store(): tạo provider qua catalog service.
  * - update(): cập nhật provider qua catalog service.
+ * - destroy(): xóa provider, model catalog và các default model liên quan.
  * - disable(): tắt provider và xử lý model liên quan.
  * - test(): kiểm tra kết nối provider.
  * - sync(): đồng bộ model catalog.
@@ -100,6 +101,23 @@ final class AiProviderController extends Controller
         $saved = $catalog->save($request->validated(), (int) $request->user()->getKey(), $provider);
 
         return BaseResponse::success(new AiProviderResource($saved), 'Đã cập nhật provider AI.');
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Xóa vĩnh viễn provider và catalog model thuộc provider.
+     * =====================================================================
+     * INPUT: provider route và actor hiện tại.
+     * OUTPUT: response thành công không chứa secret.
+     * SIDE EFFECT: xóa provider/model, bỏ các default model trỏ tới catalog này và ghi activity log.
+     * EXCEPTION/TRANSACTION: transaction do catalog service quản lý.
+     * =====================================================================
+     */
+    public function destroy(Request $request, AiProvider $provider, AiProviderCatalogService $catalog): JsonResponse
+    {
+        $catalog->delete($provider, (int) $request->user()->getKey());
+
+        return BaseResponse::success(null, 'Đã xóa provider AI.');
     }
 
     /**

@@ -432,6 +432,8 @@
     "normalizeTask": true,
     "useAiTaskQueue": true,
     "AI_TASK_READY_EVENT": true,
-    "announceAiTaskQueued": true
+    "announceAiTaskQueued": true,
+    "flattenCategoryOptions": true,
+    "useUserList": true
   }
 }

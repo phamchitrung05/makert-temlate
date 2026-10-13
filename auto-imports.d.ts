@@ -72,6 +72,7 @@ declare global {
   const extendRef: typeof import('@vueuse/core')['extendRef']
   const extractHtmlText: typeof import('./resources/js/utils/aiContentInput.js')['extractHtmlText']
   const findProvider: typeof import('./resources/js/utils/aiModelOptions.js')['findProvider']
+  const flattenCategoryOptions: typeof import('./resources/js/utils/categoryTree.js')['flattenCategoryOptions']
   const formatAiError: typeof import('./resources/js/utils/aiErrors.js')['formatAiError']
   const formatDate: typeof import('./resources/js/@core/utils/formatters.js')['formatDate']
   const formatDateToMonthShort: typeof import('./resources/js/@core/utils/formatters.js')['formatDateToMonthShort']
@@ -390,6 +391,7 @@ declare global {
   const useTransition: typeof import('@vueuse/core')['useTransition']
   const useTrunc: typeof import('@vueuse/math')['useTrunc']
   const useUrlSearchParams: typeof import('@vueuse/core')['useUrlSearchParams']
+  const useUserList: typeof import('./resources/js/composables/useUserList.js')['useUserList']
   const useUserMedia: typeof import('@vueuse/core')['useUserMedia']
   const useVModel: typeof import('@vueuse/core')['useVModel']
   const useVModels: typeof import('@vueuse/core')['useVModels']
@@ -504,6 +506,7 @@ declare module 'vue' {
     readonly extendRef: UnwrapRef<typeof import('@vueuse/core')['extendRef']>
     readonly extractHtmlText: UnwrapRef<typeof import('./resources/js/utils/aiContentInput.js')['extractHtmlText']>
     readonly findProvider: UnwrapRef<typeof import('./resources/js/utils/aiModelOptions.js')['findProvider']>
+    readonly flattenCategoryOptions: UnwrapRef<typeof import('./resources/js/utils/categoryTree.js')['flattenCategoryOptions']>
     readonly formatAiError: UnwrapRef<typeof import('./resources/js/utils/aiErrors.js')['formatAiError']>
     readonly formatDate: UnwrapRef<typeof import('./resources/js/@core/utils/formatters.js')['formatDate']>
     readonly formatDateToMonthShort: UnwrapRef<typeof import('./resources/js/@core/utils/formatters.js')['formatDateToMonthShort']>
@@ -822,6 +825,7 @@ declare module 'vue' {
     readonly useTransition: UnwrapRef<typeof import('@vueuse/core')['useTransition']>
     readonly useTrunc: UnwrapRef<typeof import('@vueuse/math')['useTrunc']>
     readonly useUrlSearchParams: UnwrapRef<typeof import('@vueuse/core')['useUrlSearchParams']>
+    readonly useUserList: UnwrapRef<typeof import('./resources/js/composables/useUserList.js')['useUserList']>
     readonly useUserMedia: UnwrapRef<typeof import('@vueuse/core')['useUserMedia']>
     readonly useVModel: UnwrapRef<typeof import('@vueuse/core')['useVModel']>
     readonly useVModels: UnwrapRef<typeof import('@vueuse/core')['useVModels']>

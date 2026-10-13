@@ -1,7 +1,7 @@
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: API client cho Settings > AI Providers.
- * METHODS: list(), saveProvider(), disableProvider(), testProvider(), syncProvider(),
+ * METHODS: list(), saveProvider(), deleteProvider(), disableProvider(), testProvider(), syncProvider(),
  * saveModel(), updateSettings(). INPUT: form data; OUTPUT: catalog/settings envelope.
  * SIDE EFFECT: chỉ gọi HTTP; API key chỉ đi chiều ghi và không lưu ở frontend.
  * =====================================================================
@@ -43,6 +43,20 @@ export const aiProviderSettingsService = {
       method: providerId ? 'PUT' : 'POST',
       body: payload,
     }))
+  },
+
+  /**
+   * =====================================================================
+   * CHỨC NĂNG: Xóa provider và catalog model.
+   * =====================================================================
+   * INPUT: provider ID.
+   * OUTPUT: response thành công từ Admin API.
+   * SIDE EFFECT: Gọi Admin API; provider/model bị xóa server-side.
+   * EXCEPTION/TRANSACTION: API trả lỗi nếu thao tác không thành công.
+   * =====================================================================
+   */
+  async deleteProvider(providerId) {
+    return unwrap(await $api(`/admin/settings/ai/providers/${providerId}`, { method: 'DELETE' }))
   },
 
   /**
