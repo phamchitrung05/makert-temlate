@@ -15,12 +15,13 @@ use Tests\TestCase;
  * =====================================================================
  *
  * Test khóa danh sách field được phép, kind tương ứng, cardinality và morph
- * alias trước khi Task 2 tạo model/migration.
+ * alias dùng chung cho Media Library, gồm field preview của template screen.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - test_media_asset_kind_and_visibility_values_are_stable(): kiểm tra enum chính
  * - test_media_asset_fields_define_kind_cardinality_and_morph_alias(): kiểm tra field contract
  * - test_resource_version_morph_alias_is_registered(): kiểm tra morph map
+ * - test_template_screen_preview_field_is_image_and_single(): kiểm field screenshot template
  * =====================================================================
  */
 class MediaAssetContractTest extends TestCase
@@ -66,6 +67,7 @@ class MediaAssetContractTest extends TestCase
             'resource.preview',
             'resource_version.package',
             'resource_version.documentation',
+            'template_screen.preview',
         ], MediaAssetField::values());
 
         $this->assertSame(MediaAssetKind::Image, MediaAssetField::ResourceCover->kind());
@@ -81,6 +83,24 @@ class MediaAssetContractTest extends TestCase
         $this->assertTrue(MediaAssetField::ResourcePreview->allowsMultiple());
         $this->assertFalse(MediaAssetField::ResourceCover->allowsMultiple());
         $this->assertSame('resource_version', MediaAssetField::ResourceVersionPackage->linkableMorphAlias());
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm field screenshot của template screen
+     * =====================================================================
+     * OUTPUT:
+     * - template_screen.preview nhận image, chỉ một asset và morph alias đúng.
+     * SIDE EFFECT:
+     * - Không có.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
+    public function test_template_screen_preview_field_is_image_and_single(): void
+    {
+        $this->assertSame(MediaAssetKind::Image, MediaAssetField::TemplateScreenPreview->kind());
+        $this->assertFalse(MediaAssetField::TemplateScreenPreview->allowsMultiple());
+        $this->assertSame('template_screen', MediaAssetField::TemplateScreenPreview->linkableMorphAlias());
     }
 
     /**

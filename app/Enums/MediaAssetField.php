@@ -36,6 +36,7 @@ enum MediaAssetField: string
     case ResourcePreview = 'resource.preview';
     case ResourceVersionPackage = 'resource_version.package';
     case ResourceVersionDocumentation = 'resource_version.documentation';
+    case TemplateScreenPreview = 'template_screen.preview';
 
     /**
      * =====================================================================
@@ -72,6 +73,7 @@ enum MediaAssetField: string
             'resource.preview' => 'Resource preview',
             'resource_version.package' => 'Resource package',
             'resource_version.documentation' => 'Resource documentation',
+            'template_screen.preview' => 'Template screen preview',
         ];
     }
 
@@ -96,6 +98,7 @@ enum MediaAssetField: string
             self::ResourcePreview => MediaAssetKind::Image,
             self::ResourceVersionPackage => MediaAssetKind::Archive,
             self::ResourceVersionDocumentation => MediaAssetKind::Document,
+            self::TemplateScreenPreview => MediaAssetKind::Image,
         };
     }
 
@@ -115,11 +118,13 @@ enum MediaAssetField: string
             self::PostContentImages,
             self::ResourcePreview,
             self::ResourceVersionDocumentation => true,
+            self::TemplateScreenPreview => false,
             self::PostThumbnail,
             self::PostOgImage,
             self::CategoryThumbnail,
             self::ResourceCover,
             self::ResourceVersionPackage => false,
+            self::TemplateScreenPreview => false,
         };
     }
 

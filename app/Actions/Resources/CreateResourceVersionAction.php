@@ -45,7 +45,7 @@ class CreateResourceVersionAction
     {
         return DB::transaction(function () use ($attributes, $actorId): ResourceVersion {
             $media = (array) ($attributes['media'] ?? []);
-            unset($attributes['media']);
+            unset($attributes['media'], $attributes['status'], $attributes['is_default']);
 
             $version = ResourceVersion::query()->create(array_merge($attributes, [
                 'status' => 'draft',

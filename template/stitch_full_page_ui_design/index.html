@@ -1,0 +1,657 @@
+<!DOCTYPE html><html lang="en"><head><title>FlowTask - Trang chủ</title><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-secondary-fixed-variant": "#005236", "surface-container-low": "#eff4ff", "on-tertiary-container": "#ffeedd", "inverse-primary": "#b4c5ff", "secondary": "#006c49", "surface": "#f8f9ff", "tertiary-container": "#996100", "on-secondary-fixed": "#002113", "on-secondary": "#ffffff", "on-primary": "#ffffff", "surface-container-highest": "#d3e4fe", "error-container": "#ffdad6", "surface-bright": "#f8f9ff", "error": "#ba1a1a", "secondary-container": "#6cf8bb", "on-surface-variant": "#434655", "surface-variant": "#d3e4fe", "primary-container": "#2563eb", "inverse-on-surface": "#eaf1ff", "on-error": "#ffffff", "surface-container-lowest": "#ffffff", "on-tertiary-fixed": "#2a1700", "on-primary-fixed-variant": "#003ea8", "on-tertiary": "#ffffff", "primary-fixed": "#dbe1ff", "outline-variant": "#c3c6d7", "surface-container-high": "#dce9ff", "secondary-fixed-dim": "#4edea3", "on-primary-container": "#eeefff", "background": "#f8f9ff", "inverse-surface": "#213145", "secondary-fixed": "#6ffbbe", "outline": "#737686", "on-background": "#0b1c30", "on-secondary-container": "#00714d", "tertiary": "#784b00", "primary": "#004ac6", "primary-fixed-dim": "#b4c5ff", "on-surface": "#0b1c30", "tertiary-fixed": "#ffddb8", "on-tertiary-fixed-variant": "#653e00", "surface-tint": "#0053db", "on-error-container": "#93000a", "tertiary-fixed-dim": "#ffb95f", "on-primary-fixed": "#00174b", "surface-dim": "#cbdbf5", "surface-container": "#e5eeff" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-xl": "2rem", "margin": "1.5rem", "space-sm": "0.5rem", "space-md": "1rem", "space-xs": "0.25rem", "space-lg": "1.5rem", "gutter": "1.25rem" }, "fontFamily": { "body-sm": ["Inter"], "headline-md": ["Plus Jakarta Sans"], "label-sm": ["Inter"], "body-md": ["Inter"], "headline-lg-mobile": ["Plus Jakarta Sans"], "headline-lg": ["Plus Jakarta Sans"], "label-md": ["Inter"], "title-sm": ["Plus Jakarta Sans"], "stat-metric": ["Plus Jakarta Sans"], "display-hero": ["Plus Jakarta Sans"] }, "fontSize": { "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "700" }], "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "600" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }], "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "700" }], "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }], "title-sm": ["16px", { "lineHeight": "24px", "fontWeight": "600" }], "stat-metric": ["28px", { "lineHeight": "32px", "fontWeight": "800" }], "display-hero": ["56px", { "lineHeight": "64px", "fontWeight": "800" }] } } } };</script>  <link rel="stylesheet" href="assets/css/style.css"/>
+  <script src="assets/js/tailwind.config.js"></script>
+</head><body class="bg-background font-body-md text-body-md text-on-surface antialiased min-h-screen"><aside class="fixed left-0 top-0 h-screen w-64 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between overflow-y-auto min-h-screen">
+  <div class="flex flex-col flex-1 min-h-0">
+    <!-- Requirement 1: Standardized FLOWTASK Brand Logo -->
+    <div class="p-space-md pb-2 flex-shrink-0">
+      <a href="index.html" class="flex items-center gap-3 px-2 py-1.5 rounded-xl hover:bg-surface-container transition-all group cursor-pointer" title="FLOWTASK Dashboard">
+        <div class="w-9 h-9 rounded-xl overflow-hidden shadow-sm shadow-primary/25 flex-shrink-0 group-hover:scale-105 transition-transform">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" class="w-full h-full">
+            <rect width="48" height="48" rx="12" fill="#2563EB"/>
+            <path d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V20C34 21.1046 33.1046 22 32 22H16C14.8954 22 14 21.1046 14 20V16Z" fill="#FFFFFF"/>
+            <path d="M14 26C14 24.8954 14.8954 24 16 24H26C27.1046 24 28 24.8954 28 26V30C28 31.1046 27.1046 32 26 32H16C14.8954 32 14 31.1046 14 30V26Z" fill="#6CF8BB"/>
+            <circle cx="33" cy="28" r="4" fill="#B4C5FF"/>
+          </svg>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="font-headline-md text-[20px] font-extrabold tracking-tight text-on-surface">FlowTask</span>
+          <span class="font-label-sm text-[11px] uppercase px-1.5 py-0.5 rounded-md bg-primary-fixed text-on-primary-fixed font-bold tracking-wider">PRO</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- Workspace Context Switcher -->
+    <div class="px-space-md mb-2 flex-shrink-0">
+      <div class="flex items-center justify-between p-2 rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-7 h-7 rounded-lg bg-primary text-white flex items-center justify-center font-bold text-[12px] flex-shrink-0 shadow-xs">FL</div>
+          <div class="min-w-0 flex-1 text-left">
+            <p class="font-title-sm text-[13px] font-bold text-on-surface truncate leading-tight">FlowTech Lab</p>
+            <p class="font-label-sm text-[11px] text-on-surface-variant truncate leading-tight">14 members • Enterprise</p>
+          </div>
+        </div>
+        <span class="material-symbols-outlined text-[18px] text-outline flex-shrink-0">unfold_more</span>
+      </div>
+    </div>
+
+    <!-- Menu Label -->
+    <div class="px-space-md pt-1 pb-1 flex-shrink-0">
+      <span class="text-[10px] font-extrabold uppercase tracking-wider text-outline px-1">MAIN MENU</span>
+    </div>
+
+    <!-- Requirement 4: Standardized Navigation Menu -->
+    <div class="flex-1 overflow-y-auto px-space-md py-1">
+      <nav class="flex flex-col gap-0.5" data-active-classes="bg-primary-container text-on-primary font-semibold shadow-xs">
+        <a class="flex items-center h-10 px-3.5 py-2 rounded-xl bg-primary-container text-on-primary font-semibold text-[14px] shadow-xs active" data-path="dashboard" href="index.html" aria-current="page"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">dashboard</span><span class="nav-text truncate leading-none">Dashboard</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="projects" href="projects.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">folder_open</span><span class="nav-text truncate leading-none">Projects</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="tasks" href="kanban.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">check_box</span><span class="nav-text truncate leading-none">Tasks</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="kanban" href="kanban.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">view_kanban</span><span class="nav-text truncate leading-none">Kanban</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="sprint-planning" href="sprint-planning.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">flag</span><span class="nav-text truncate leading-none">Sprint Planning</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="calendar" href="calendar.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">calendar_today</span><span class="nav-text truncate leading-none">Calendar</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="time-tracking" href="time-tracking.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">schedule</span><span class="nav-text truncate leading-none">Time Tracking</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="reports" href="forecast.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">bar_chart</span><span class="nav-text truncate leading-none">Reports & Forecast</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="analytics" href="analytics.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">insights</span><span class="nav-text truncate leading-none">Analytics</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="invoices" href="invoices.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">receipt_long</span><span class="nav-text truncate leading-none">Invoices & Billing</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="team" href="team.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">groups</span><span class="nav-text truncate leading-none">Team</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="clients" href="clients.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">corporate_fare</span><span class="nav-text truncate leading-none">Clients</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="client-portal" href="client-portal.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">space_dashboard</span><span class="nav-text truncate leading-none">Client Portal</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="documents" href="documents.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">description</span><span class="nav-text truncate leading-none">Documents</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="notifications" href="notifications.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">notifications</span><span class="nav-text truncate leading-none">Notifications</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="audit-log" href="audit-log.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">history</span><span class="nav-text truncate leading-none">Audit Log</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="settings" href="settings.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">settings</span><span class="nav-text truncate leading-none">Settings</span></a>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Requirement 3: Standardized Upgrade to Pro -->
+  <div class="p-space-md border-t border-outline-variant/20 flex-shrink-0 mt-auto">
+    <div class="bg-gradient-to-br from-primary to-primary-container p-3.5 rounded-2xl text-on-primary shadow-sm border border-primary/20">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="material-symbols-outlined text-[18px] text-secondary-container">auto_awesome</span>
+        <span class="font-title-sm text-[14px] font-bold text-white tracking-tight">Upgrade to Pro</span>
+      </div>
+      <p class="font-body-sm text-[12px] leading-relaxed text-on-primary-container/90 mb-3">
+        Unlock enterprise features, workflows and team limits.
+      </p>
+      <a class="flex items-center justify-center gap-1.5 w-full py-2 px-3 bg-surface-container-lowest text-primary font-label-md text-[13px] font-bold rounded-xl shadow-xs hover:bg-surface-container-low transition-all" data-path="billing-plans" href="settings.html">
+        <span>View Plans</span>
+        <span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+      </a>
+    </div>
+  </div>
+</aside>
+<div class="pl-64 min-h-screen flex flex-col"><header class="fixed top-0 left-64 right-0 h-16 bg-surface-container-lowest/85 backdrop-blur-xl border-b border-outline-variant/20 shadow-[0_1px_8px_rgba(0,0,0,0.03)] z-40 flex items-center justify-between px-space-xl">
+  <!-- Global Search Bar (Ctrl+K) -->
+  <div class="flex items-center gap-space-md flex-1 max-w-lg">
+    <div class="relative w-full flex items-center">
+      <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px] pointer-events-none">search</span>
+      <input class="w-full pl-10 pr-20 py-2 rounded-xl bg-surface-container-low font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" placeholder="Search projects, tasks, or people... (Ctrl+K)" type="text">
+      <div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
+        <kbd class="px-2 py-0.5 rounded bg-surface-container font-mono text-[11px] font-semibold text-outline border border-outline-variant/30 shadow-2xs">⌘ K</kbd>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header Right Actions & Profile -->
+  <div class="flex items-center gap-space-md">
+    <!-- Quick Add Button -->
+    <button class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary-container text-on-primary font-label-md text-label-md font-semibold hover:bg-primary transition-all shadow-xs active:scale-95 cursor-pointer" type="button" title="Quick Add">
+      <span class="material-symbols-outlined text-[18px]">add</span>
+      <span>Quick Add</span>
+    </button>
+
+    <!-- Notification Button with Pulse Badge -->
+    <a href="notifications.html" class="relative p-2 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors cursor-pointer" title="Notifications">
+      <span class="material-symbols-outlined text-[22px]">notifications</span>
+      <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full ring-2 ring-surface-container-lowest animate-pulse"></span>
+    </a>
+
+    <!-- Help & Documentation -->
+    <a href="documents.html" class="p-2 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors cursor-pointer" title="Help & Documentation">
+      <span class="material-symbols-outlined text-[22px]">help_outline</span>
+    </a>
+
+    <!-- User Profile Dropdown Trigger -->
+    <div class="flex items-center gap-space-sm pl-space-xs border-l border-outline-variant/30 cursor-pointer group select-none" id="user-profile-trigger">
+      <img alt="Sarah Miller" class="w-8 h-8 rounded-full object-cover ring-2 ring-primary-container/20 group-hover:ring-primary-container/40 transition-all flex-shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBckQHV06Vgo_oFLBwU0NVVlVj_0WT6m3kovkvHYvLXeJDHSAbjz_ic-BVlm809docSBQu7aOl7vlGuVNJprduqHxlMutvrVC2EN0FdG_IZE5mGnpWA1zjWRCSOaLN_1UsjuWHJ8m19nAJXMyXhJ04WX6BMw7ftynqkzezR6QVgXxPcKXLHIk5stEHtNEdV-8Yd1tsttFTGMzhCF9UESmsGn6lY91mbxiJIUFNlOW3P4YSkFDx5dtV6Sg">
+      <div class="hidden md:flex flex-col text-left">
+        <span class="font-label-md text-label-md text-on-surface font-bold leading-tight group-hover:text-primary transition-colors">Sarah Miller</span>
+        <span class="font-label-sm text-label-sm text-on-surface-variant leading-tight">Product Manager</span>
+      </div>
+      <span class="material-symbols-outlined text-[20px] text-outline group-hover:text-on-surface transition-colors flex-shrink-0">expand_more</span>
+    </div>
+  </div>
+</header><main class="relative pt-16 bg-background min-h-screen">
+  <div class="content-fixed-container w-full max-w-[1600px] mx-auto p-space-lg lg:p-space-xl flex flex-col gap-space-lg">
+<div class="w-full space-y-space-lg">
+<!-- Standardized Page Header -->
+<div class="page-header flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+  <div class="min-w-0 flex-1">
+    <div class="flex items-center gap-2 mb-1">
+      <span class="text-[12px] font-semibold text-primary uppercase tracking-wider">Dashboard &amp; Overview</span>
+    </div>
+    <div class="flex items-center gap-2.5 flex-wrap">
+      <h1 class="text-[26px] lg:text-[28px] font-bold text-on-surface tracking-tight leading-tight">
+        Dashboard Overview
+      </h1>
+      <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-semibold bg-secondary-container/40 text-on-secondary-container"><span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>Live Active</span>
+    </div>
+    <p class="text-[14px] text-on-surface-variant font-normal leading-normal mt-1 max-w-3xl">
+      Tổng quan tình hình thực hiện dự án, tiến độ công việc, năng suất đội ngũ và cảnh báo thời gian thực.
+    </p>
+  </div>
+  <div class="flex items-center gap-2.5 flex-wrap flex-shrink-0 self-start md:self-center">
+    <button class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-container-lowest text-on-surface font-medium text-[13px] border border-outline-variant/30 shadow-xs hover:bg-surface-container transition-all" type="button">
+  <span class="material-symbols-outlined text-[18px]">file_download</span>
+  <span>Export CSV</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-container-lowest text-on-surface font-medium text-[13px] border border-outline-variant/30 shadow-xs hover:bg-surface-container transition-all" type="button">
+  <span class="material-symbols-outlined text-[18px]">tune</span>
+  <span>Bộ lọc</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-on-primary font-medium text-[13px] shadow-sm hover:bg-primary-dark transition-all" type="button">
+  <span class="material-symbols-outlined text-[18px]">add</span>
+  <span>+ Tạo Dự án Mới</span>
+</button>
+  </div>
+</div>
+<!-- 4 KPI Summary Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+<!-- Card 1: Total Projects -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex items-center justify-between transition-transform hover:-translate-y-0.5">
+<div class="flex items-center gap-space-md">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]">folder_copy</span>
+</div>
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Total Projects</span>
+<div class="font-stat-metric text-stat-metric text-on-surface tracking-tight mt-0.5">18</div>
+<div class="flex items-center gap-1 font-label-sm text-label-sm text-secondary font-medium">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+<span class="">+3 this month</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2: In Progress -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex items-center justify-between transition-transform hover:-translate-y-0.5">
+<div class="flex items-center gap-space-md">
+<div class="w-12 h-12 rounded-full bg-surface-container-highest flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined text-[24px]">pending_actions</span>
+</div>
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">In Progress</span>
+<div class="font-stat-metric text-stat-metric text-on-surface tracking-tight mt-0.5">8</div>
+<div class="flex items-center gap-1 font-label-sm text-label-sm text-primary font-medium">
+<span class="material-symbols-outlined text-[14px]">donut_large</span>
+<span class="">44% of total</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 3: Under Review -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex items-center justify-between transition-transform hover:-translate-y-0.5">
+<div class="flex items-center gap-space-md">
+<div class="w-12 h-12 rounded-full bg-tertiary-fixed flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[24px]">schedule</span>
+</div>
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Under Review</span>
+<div class="font-stat-metric text-stat-metric text-on-surface tracking-tight mt-0.5">4</div>
+<div class="flex items-center gap-1 font-label-sm text-label-sm text-tertiary font-medium">
+<span class="material-symbols-outlined text-[14px]">hourglass_top</span>
+<span class="">22% of total</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 4: Completed -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex items-center justify-between transition-transform hover:-translate-y-0.5">
+<div class="flex items-center gap-space-md">
+<div class="w-12 h-12 rounded-full bg-secondary-fixed flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[24px]">check_circle</span>
+</div>
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Completed</span>
+<div class="font-stat-metric text-stat-metric text-on-surface tracking-tight mt-0.5">6</div>
+<div class="flex items-center gap-1 font-label-sm text-label-sm text-secondary font-medium">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span>
+<span class="">+12% vs last quarter</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Filter and View Controls Toolbar -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+<!-- Status Tabs -->
+<div class="flex items-center gap-1 overflow-x-auto pb-1 lg:pb-0 scrollbar-none" id="project-tabs">
+<button class="px-space-md py-1.5 rounded-lg font-title-sm text-title-sm bg-primary-container text-on-primary whitespace-nowrap shadow-sm">
+          All Projects (18)
+        </button>
+<button class="px-space-md py-1.5 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container whitespace-nowrap transition-colors">
+          Active (8)
+        </button>
+<button class="px-space-md py-1.5 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container whitespace-nowrap transition-colors">
+          In Review (4)
+        </button>
+<button class="px-space-md py-1.5 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container whitespace-nowrap transition-colors">
+          Completed (6)
+        </button>
+<button class="px-space-md py-1.5 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container whitespace-nowrap transition-colors">
+          Archived
+        </button>
+</div>
+<!-- Search, Categories, Priority & Layout Toggle -->
+<div class="flex items-center gap-space-sm flex-wrap sm:flex-nowrap">
+<div class="relative flex-1 sm:w-56">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline text-[18px]">search</span>
+<input class="w-full pl-8 pr- space-xs py-1.5 rounded-lg bg-surface-container-low font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary-container" placeholder="Filter projects..." type="text">
+</div>
+<div class="relative">
+<select class="appearance-none bg-surface-container-low text-on-surface-variant font-label-md text-label-md pl-3 pr-7 py-1.5 rounded-lg focus:outline-none cursor-pointer">
+<option>All Clients</option>
+<option>Acme Corp</option>
+<option>FinTech Global</option>
+<option>RetailPlus</option>
+<option>Internal</option>
+</select>
+<span class="material-symbols-outlined pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-outline text-[16px]">expand_more</span>
+</div>
+<div class="relative">
+<select class="appearance-none bg-surface-container-low text-on-surface-variant font-label-md text-label-md pl-3 pr-7 py-1.5 rounded-lg focus:outline-none cursor-pointer">
+<option>All Priorities</option>
+<option>High Priority</option>
+<option>Medium Priority</option>
+<option>Low Priority</option>
+</select>
+<span class="material-symbols-outlined pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-outline text-[16px]">expand_more</span>
+</div>
+<!-- View Switcher -->
+<div class="flex items-center bg-surface-container-low p-1 rounded-lg">
+<button class="p-1 rounded bg-surface-container-lowest text-primary shadow-xs" title="Grid View" type="button">
+<span class="material-symbols-outlined text-[18px]">grid_view</span>
+</button>
+<button class="p-1 rounded text-on-surface-variant hover:text-on-surface" title="List View" type="button">
+<span class="material-symbols-outlined text-[18px]">view_list</span>
+</button>
+</div>
+</div>
+</div>
+<!-- 6 Projects Responsive Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-lg">
+<!-- Project 1: Website Redesign -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+<div>
+<!-- Header info & Badges -->
+<div class="flex items-start justify-between gap-space-xs mb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded-full font-label-sm text-label-sm bg-error-container text-error">High</span>
+<span class="px-2 py-0.5 rounded-full font-label-sm text-label-sm bg-surface-container text-on-surface-variant">Acme Corp</span>
+</div>
+<button class="text-outline hover:text-on-surface transition-colors p-1" type="button">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors">Website Redesign</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 line-clamp-2">Complete design refresh, UX restructuring, and headless CMS implementation for corporate hub.</p>
+<!-- Tags -->
+<div class="flex items-center gap-1.5 mt-space-sm flex-wrap">
+<span class="px-2 py-0.5 rounded-md font-label-sm text-label-sm bg-surface-container-low text-primary">UI/UX</span>
+<span class="px-2 py-0.5 rounded-md font-label-sm text-label-sm bg-surface-container-low text-primary">Web</span>
+<span class="px-2 py-0.5 rounded-md font-label-sm text-label-sm bg-surface-container-low text-primary">Design System</span>
+</div>
+<!-- Progress Bar & Percentage -->
+<div class="mt-space-md">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Progress</span>
+<span class="font-title-sm text-title-sm font-bold text-primary">78%</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-primary-container rounded-full" style="width: 78%;"></div>
+</div>
+</div>
+<!-- Metric strip: Tasks & Budget -->
+<div class="grid grid-cols-2 gap-space-xs py-space-sm mt-space-sm bg-surface-container-low rounded-lg px-space-sm">
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Tasks</span>
+<span class="font-title-sm text-title-sm font-bold text-on-surface">32 / 41 done</span>
+</div>
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Budget</span>
+<span class="font-title-sm text-title-sm font-bold text-on-surface">$24,500</span>
+</div>
+</div>
+</div>
+<!-- Card Footer -->
+<div class="flex items-center justify-between pt-space-md mt-space-md">
+<div class="flex items-center -space-x-2">
+<img class="w-7 h-7 rounded-full object-cover" data-alt="Close up professional headshot of a software developer with glasses in a bright modern tech office" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXa3Agyhw9j8-r8BcVh66vshSpCzNx5_GQ0Gt1nUJR25wrC56vtC3spV6uvMqhXSdEd2HGZVpnPpm2dUwVXbaxsnPgFuVDfIECUh9UwGKQRkVp3b9zpdFgFsQqh6IMOpmkBND24RSyTbyTFWnFKG9biTUrH7iVcVhcYhuyP-48NxM5RIlUjZINtsoC6hIQwrJlqEh9rT5OM1E5vANAI-0y6uqUmg6ULGE8Ru4lXbEzjPHLttF7ytAD5A">
+<img class="w-7 h-7 rounded-full object-cover" data-alt="Portrait of an experienced female UI designer smiling against a subtle gray studio background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjFPHQtJqEWYIEqIA3w495L2IvO-U-iv-en0ZMGeSZKWpPyZ7k1YfH3V3AmIWPEjh0XWqkzRPPoNSV7rgq28FmnbK9oZSM0r7SxaIlYjR27jGINl4r7v2SUnTytZW_XF9F2thpdL3xbaEW3k24TYWxaQ6WvLehbth3flHK-sjUPOb6hKnlZ3C4YfdiYMWqVSQ-UeEgbJe9g1Vv_DHJBTydO__Kq8QRJo7pG62LPzyKes8Z-4fp6GyWCw">
+<img class="w-7 h-7 rounded-full object-cover" data-alt="Creative product strategist avatar portrait in a minimal modern setting with soft daylight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAnhVhClva2Uio3sIE9GKDWbhy7mihpNk205Z8lWspsfHTtbwFXw58IvbBqMgY1FN91s8MnZ-ui7M8oLHm_rAAfKNMeiIP712sQo_6MBlh1IdJpPdwWlwKLONt2NqCY-66HDSvB-3V9FqUqJ93jpZI4-y4ZoDw8XAZC2ImGN0FfAxnHJzObvsG1uB8DT-NOGxFMJyumI4b56ugH8UXUS5TgZvWYGXqat1Bp29j6-xjSTTM5s3Zbf7VdLw">
+<div class="w-7 h-7 rounded-full bg-surface-container font-label-sm text-label-sm text-on-surface-variant flex items-center justify-center font-bold">+1</div>
+</div>
+<div class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-error">calendar_today</span>
+<span class="">Due May 28, 2025</span>
+</div>
+</div>
+</div>
+<!-- Project 2: Mobile App Development -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+<div>
+<!-- Header info & Badges -->
+<div class="flex items-start justify-between gap-space-xs mb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded-full font-label-sm text-label-sm bg-error-container text-error">High</span>
+<span class="px-2 py-0.5 rounded-full font-label-sm text-label-sm bg-surface-container text-on-surface-variant">FinTech Global</span>
+</div>
+<button class="text-outline hover:text-on-surface transition-colors p-1" type="button">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors">Mobile App Development</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 line-clamp-2">Cross-platform digital banking iOS and Android application with biometric security flows.</p>
+<!-- Tags -->
+<div class="flex items-center gap-1.5 mt-space-sm flex-wrap">
+<span class="px-2 py-0.5 rounded-md font-label-sm text-label-sm bg-surface-container-low text-primary">iOS</span>
+<span class="px-2 py-0.5 rounded-md font-label-sm text-label-sm bg-surface-container-low text-primary">Android</span>
+<span class="px-2 py-0.5 rounded-md font-label-sm text-label-sm bg-surface-container-low text-primary">Flutter</span>
+</div>
+<!-- Progress Bar & Percentage -->
+<div class="mt-space-md">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Progress</span>
+<span class="font-title-sm text-title-sm font-bold text-primary">62%</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-primary-container rounded-full" style="width: 62%;"></div>
+</div>
+</div>
+<!-- Metric strip: Tasks & Budget -->
+<div class="grid grid-cols-2 gap-space-xs py-space-sm mt-space-sm bg-surface-container-low rounded-lg px-space-sm">
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Tasks</span>
+<span class="font-title-sm text-title-sm font-bold text-on-surface">45 / 72 done</span>
+</div>
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Budget</span>
+<span class="font-title-sm text-title-sm font-bold text-on-surface">$48,000</span>
+</div>
+</div>
+</div>
+<!-- Card Footer -->
+<div class="flex items-center justify-between pt-space-md mt-space-md">
+<div class="flex items-center -space-x-2">
+<img class="w-7 h-7 rounded-full object-cover" data-alt="Portrait photo of a young female mobile app architect wearing headphones in high tech workspace" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPiisdhquytfJLr7E6ivCu8Tpp0Kxk1yxMZsP3-B5I76USUw8S7mUI3qFdUlBaKzjkcoCupR_QJpaElSfT1gDpZzh5_hlgDCW8QAbwdNgzN8eh4_7Fda6xh9zsIr3tePvYBv8ryvzZJmV5SHzpoxaN7C9agpW7gP9e64C3IPuKsXc831YlEVfl07v0pxxhVMxLs407QAh8yBr4WZgRDwMWi6CiyCNiWEbjwhbwjgw2-1vN5yyhOxgK8Q">
+<img class="w-7 h-7 rounded-full object-cover" data-alt="Smiling software engineer in smart casual button-up shirt in an illuminated modern co-working room" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBeV-E4CLvAWZRVYYIP57mvsm5Cec1hhum3yfHiKfQLPHSc_4GAS3ZmwW0_xJbqbMzDyzoZ-PsudR_7JkKLrM_lHYt9sZx5wMXKSupL8ndaLBvKgNlxYDqH1FkuOEI7VEfvSOErMlTkvuN3ZAKzOE61XGlxv-l3YE5A0HBz0sG9fD9SLAW-7Tf0AhEKBXrOEVthOJYMiYnOOPKY2J0IpqQabXMWWsJpI48ZHvsKg0oFUjDSD3pTvKloWw">
+<img class="w-7 h-7 rounded-full object-cover" data-alt="Portrait of senior product manager in executive attire during daytime office conference" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxVsDeshRN1fJ4w2Ltmpivlw6YCDZFOPo6LRknyiMqChqAUFfOGMk2FacbTMcwh2yU2Zt4ufXYim68pktTh3EotYawLcQ7Kp9k48EAVxpXv6sYWAHuffr8vmhO6ko9Oc-gjs_whEPeP-PWi0p9wUNpDX7dDWyXQaiX147MPsXhLiX6jL4BuX4qQCc0uqNdhy1r3H7J0tvOZHy9Rx8aPp_SADqHoA8UnC9wvW0jZS96Vu9GxuImAe-xeg">
+<div class="w-7 h-7 rounded-full bg-surface-container font-label-sm text-label-sm text-on-surface-variant flex items-center justify-center font-bold">+2</div>
+</div>
+<div class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-tertiary">calendar_today</span>
+<span class="">Due June 15, 2025</span>
+</div>
+</div>
+</div>
+<!-- Project 3: CRM Integration -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+<div>
+<!-- Header info & Badges -->
+<div class="flex items-start justify-between gap-space-xs mb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded-full font-label-sm text-label-sm bg-tertiary-fixed text-on-tertiary-fixed-variant">Medium</span>
+<span class="px-2 py-0.5 rounded-full font-label-sm text-label-sm bg-surface-container text-on-surface-variant">RetailPlus</span>
+</div>
+<button class="text-outline hover:text-on-surface transition-colors p-1" type="button">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors">CRM Integration</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 line-clamp-2">Enterprise synchronization linking internal customer databases with modern sales automation pipelines.</p>
+<!-- Tags -->
+<div class="flex items-center gap-1.5 mt-space-sm flex-wrap">
+<span class="px-2 py-0.5 rounded-md font-label-sm text-label-sm bg-surface-container-low text-primary">API</span>
+<span class="px-2 py-0.5 rounded-md font-label-sm text-label-sm bg-surface-container-low text-primary">Backend</span>
+<span class="px-2 py-0.5 rounded-md font-label-sm text-label-sm bg-surface-container-low text-primary">Salesforce</span>
+</div>
+<!-- Progress Bar & Percentage -->
+<div class="mt-space-md">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Progress</span>
+<span class="font-title-sm text-title-sm font-bold text-tertiary">45%</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-gradient-to-r from-tertiary-container to-tertiary rounded-full" style="width: 45%;"></div>
+</div>
+</div>
+<!-- Metric strip: Tasks & Budget -->
+<div class="grid grid-cols-2 gap-space-xs py-space-sm mt-space-sm bg-surface-container-low rounded-lg px-space-sm">
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Tasks</span>
+<span class="font-title-sm text-title-sm font-bold text-on-surface">18 / 40 done</span>
+</div>
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Budget</span>
+<span class="font-title-sm text-title-sm font-bold text-on-surface">$18,200</span>
+</div>
+</div>
+</div>
+<!-- Card Footer -->
+<div class="flex items-center justify-between pt-space-md mt-space-md">
+<div class="flex items-center -space-x-2">
+<img class="w-7 h-7 rounded-full object-cover" data-alt="Avatar portrait of a focused database developer in an open office plan with computer monitors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDk0Jyh6N5AVAHtGgN69bgX-pUsuO0FdRJnHZESwukMPZcQNz2it7MMx4VKtTqEqZwciOZLCwihamhBsPHT8KyhJHUl3yrpDjAEczybOBHYuYGL3-y1BhhwMBuaSK6FB0Wa7-r_dA_2zDX7b7jy9NTkaS9pOA1z4MjPN5xQJ_tOF837j5E8O_4Y2Toh-61nViV2dN1dfDINguCAToWuWv1-ib56qbwVS9KaXjDvfdzcKjkdFQ4pYhBVXA">
+<img class="w-7 h-7 rounded-full object-cover" data-alt="Business solutions engineer looking confident in smart casual attire near natural office window" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5WmUURCywoDfYAbDX6Xx6BhBwd5qYUGFuHjDwC34XEivQYoXMvvnoUeb3GoHCorJv-e8RGvVNJouyVcfWCdMivk7lVznq7OtmaQekRuBOVPTj4RnbUS7F5W8z0_ZX8MubPuCVxTz_m_qxba5bLpuPDDNDIuBEakJoGJcQTostTDjpQd89xfYF28Oxx26zGO8TFn1apHHMmszrMdcu0l84kLzq1u3Y9yMcCINXN9vPjT982txutttruw">
+<img class="w-7 h-7 rounded-full object-cover" data-alt="Portrait shot of an agile team lead reviewing sprint goals in a modern conference area" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAN15k5BcLB4YI24_6nXPir4phQO34EHPjbaj452iXIu6e_MqWD3WLoP--y9CsfSfH0L5a8XeOPZDYKNvCoZLE_8RZVdR7mvwf8K8Z3x2QgcWz21x-4xgGcwXOyP4ax-FDaFKgFfKtkO0V4kxjuqOy9TT9m52yk7Yv99uihLUMZg-RX93pOD0nhE6Yh2rLaWxnHLoeAjlSStLRdAcNvj-Be1kb2fsTh5jvkBxUVx7G7muHijg9mUAPmjg">
+</div>
+<div class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-outline">calendar_today</span>
+<span class="">Due June 30, 2025</span>
+</div>
+</div>
+</div>
+<!-- Project 4: Marketing Campaign Q3 -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+<div>
+<!-- Header info & Badges -->
+<div class="flex items-start justify-between gap-space-xs mb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded-full font-label-sm text-label-sm bg-tertiary-fixed text-on-tertiary-fixed-variant">Medium</span>
+<span class="px-2 py-0.5 rounded-full font-label-sm text-label-sm bg-surface-container text-on-surface-variant">Internal</span>
+</div>
+<button class="text-outline hover:text-on-surface transition-colors p-1" type="button">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors">Marketing Campaign Q3</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 line-clamp-2">Multi-channel brand awareness campaign, inbound content engines, and strategic performance ads.</p>
+<!-- Tags -->
+<div class="flex items-center gap-1.5 mt-space-sm flex-wrap">
+<span class="px-2 py-0.5 rounded-md font-label-sm text-label-sm bg-surface-container-low text-primary">Marketing</span>
+<span class="px-2 py-0.5 rounded-md font-label-sm text-label-sm bg-surface-container-low text-primary">Social</span>
+<span class="px-2 py-0.5 rounded-md font-label-sm text-label-sm bg-surface-container-low text-primary">Growth</span>
+</div>
+<!-- Progress Bar & Percentage -->
+<div class="mt-space-md">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Progress</span>
+<span class="font-title-sm text-title-sm font-bold text-secondary">90%</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-gradient-to-r from-secondary-container to-secondary rounded-full" style="width: 90%;"></div>
+</div>
+</div>
+<!-- Metric strip: Tasks & Budget -->
+<div class="grid grid-cols-2 gap-space-xs py-space-sm mt-space-sm bg-surface-container-low rounded-lg px-space-sm">
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Tasks</span>
+<span class="font-title-sm text-title-sm font-bold text-on-surface">27 / 30 done</span>
+</div>
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Budget</span>
+<span class="font-title-sm text-title-sm font-bold text-on-surface">$12,000</span>
+</div>
+</div>
+</div>
+<!-- Card Footer -->
+<div class="flex items-center justify-between pt-space-md mt-space-md">
+<div class="flex items-center -space-x-2">
+<img class="w-7 h-7 rounded-full object-cover" data-alt="Portrait of an energetic social media marketer holding coffee in a modern startup studio" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkZekPDj6ySOZ_P2HgXeKQIkEHySv2jTO7w9oLajPT3e6vK_syVswKx61A8ZJKKzzjHuv6iRTHNBu1Z5QA_fjopqAVNkelg2wnu16hrT8dfKE0ZbI9GLkG3xbqyseewLvU-YELM9oji1BQCaoEtj7VNCgiLE0ME7OaXJ3b6v2RwTj9qHTSRXTQ5C4PORGhLxPH5OM_i-NspVyKIQo1nNKCZMLcyvGLxis2_8o4uH5QN3wYjViyG-e9lg">
+<img class="w-7 h-7 rounded-full object-cover" data-alt="Creative copywriter avatar photo with natural smile and soft blue background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBm2MYpAxEOb_DcjJBmH-pjCRuE53e3irPXOOcyCwfELkQvmHkF3mNrIk5NtKpXpcleJQnjp329IVRiTyzAwh8cFdHAAhiDRikS1wJqzfi9wDOqvYGka4p4rBaTnh0acZF1OMZhdqNcuKQmbxUZRnQvuPmGnfZp2NaZB4KuNXnd_N9IGZVWr1Qh3_4_TKMNbs8_0-jE70OXH8GePRa-TjKaTVI7HBxD92yXUtPCT3jLOCFRkE_IssgmwQ">
+<img class="w-7 h-7 rounded-full object-cover" data-alt="Digital marketing executive professional headshot in an artistic coworking space" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbISyjymFp2NhbMIZ6ZbOeVVynCeL_c7oB8zVzlPbGfuRiC53iVN3E1d2qidOv29HiLWxjZWTjEmg5P_YeYCBGSTgNndBy6CCbLv46pZyWNL-y30S37cvlKwZAjXnD1i7BATu1RCDI3SI4zNlc9_g-hiS0jsnod3DrPm3GZSaHu5862lq5sOUwoeCkCsYju1YCFp2U0-Xr_PvsjjvOUnhwdCikNuIJvRm97Bk1hAoLBp8h0tbSQVwIeQ">
+</div>
+<div class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-secondary">calendar_today</span>
+<span class="">Due May 20, 2025</span>
+</div>
+</div>
+</div>
+<!-- Project 5: Design System 2.0 -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+<div>
+<!-- Header info & Badges -->
+<div class="flex items-start justify-between gap-space-xs mb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded-full font-label-sm text-label-sm bg-secondary-container text-on-secondary-container">Low</span>
+<span class="px-2 py-0.5 rounded-full font-label-sm text-label-sm bg-surface-container text-on-surface-variant">Core Team</span>
+</div>
+<button class="text-outline hover:text-on-surface transition-colors p-1" type="button">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors">Design System 2.0</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 line-clamp-2">Standardized component ecosystem, universal tokens, Figma community kits, and code libraries.</p>
+<!-- Tags -->
+<div class="flex items-center gap-1.5 mt-space-sm flex-wrap">
+<span class="px-2 py-0.5 rounded-md font-label-sm text-label-sm bg-surface-container-low text-primary">Design</span>
+<span class="px-2 py-0.5 rounded-md font-label-sm text-label-sm bg-surface-container-low text-primary">Tokens</span>
+<span class="px-2 py-0.5 rounded-md font-label-sm text-label-sm bg-surface-container-low text-primary">Storybook</span>
+</div>
+<!-- Progress Bar & Percentage -->
+<div class="mt-space-md">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Progress</span>
+<span class="font-title-sm text-title-sm font-bold text-primary">85%</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-secondary rounded-full" style="width: 85%;"></div>
+</div>
+</div>
+<!-- Metric strip: Tasks & Budget -->
+<div class="grid grid-cols-2 gap-space-xs py-space-sm mt-space-sm bg-surface-container-low rounded-lg px-space-sm">
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Tasks</span>
+<span class="font-title-sm text-title-sm font-bold text-on-surface">34 / 40 done</span>
+</div>
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Budget</span>
+<span class="font-title-sm text-title-sm font-bold text-on-surface">$15,000</span>
+</div>
+</div>
+</div>
+<!-- Card Footer -->
+<div class="flex items-center justify-between pt-space-md mt-space-md">
+<div class="flex items-center -space-x-2">
+<img class="w-7 h-7 rounded-full object-cover" data-alt="Senior design systems lead smiling warmly in an architectural studio setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5GEPpUufSi_xOuuWxYhIGtwOVInweMP873Htuzw088JJaPH6QmOQ5Vg-9DglojXfH54yyGqtztipiJ89uKQyF9mG1aD8ico5dl1bWjNiYDEYka77yWXOs7XkjX_UfjGxkpnIUwbwHwqt8k4BQAw7GjoCZsvqIMgrkzze7So-gVKBbMDofaF4je7D9OXL9mbVqbpZl2i3-bJMTSV6HpBO3eBrWPyG_hnbeRQTc79YORnUGC2XUU6T2Ng">
+<img class="w-7 h-7 rounded-full object-cover" data-alt="Front-end developer portrait with curly hair smiling near tech equipment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCn1ixiGTEQC2SRnik76WLALxJhXWtMqacHoJTrS7z1laCe-LWwQuejuZYZ99VEBnQWcGLGAsstvQweeCjlhbPDoDCdIqXK03yO00rqHg73IvhBqe9k-lhzSS_xuq_5hoRkPwpeYMhdE8JI06stkibZIO0VKxmTEpFNz7HV-yzjGR7dlbjlU7ie9AqyUvV6Xx7x_tNOM8DNcWUaitGw5IFRi6qLBduBf_xe9t57r5boq9-5hCb_JOnp5A">
+<img class="w-7 h-7 rounded-full object-cover" data-alt="Headshot of a product specialist in smart business casual in an open collaborative office space" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCi9iBhfjBiZGJCuk4XiRa18mmmI1Et1IEkyn9I_pW5H7WIk1G4FoSfgWO3LTGRbR2z0SE7PNsmLbUqZIW2T25T_vnVMcGKohRzkLAkzYfhHNdCV_RAuVI37KaxcNYVDAd0IDfLZUxwUDh-VwIa0y7mBQMklLy5g0M2qmyN2aCosqz3hd2fVoVi82VgNeKgJ0SUoCTpi-ANz_ke-PAFUFFl8pWEmoJNMrS08Jl7-0yWqDcEo2vXkSsc5Q">
+<div class="w-7 h-7 rounded-full bg-surface-container font-label-sm text-label-sm text-on-surface-variant flex items-center justify-center font-bold">+1</div>
+</div>
+<div class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-secondary">calendar_today</span>
+<span class="">Due May 25, 2025</span>
+</div>
+</div>
+</div>
+<!-- Project 6: Cloud Infrastructure Migration -->
+<div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
+<div>
+<!-- Header info & Badges -->
+<div class="flex items-start justify-between gap-space-xs mb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded-full font-label-sm text-label-sm bg-error-container text-error">High</span>
+<span class="px-2 py-0.5 rounded-full font-label-sm text-label-sm bg-surface-container text-on-surface-variant">CloudScale</span>
+</div>
+<button class="text-outline hover:text-on-surface transition-colors p-1" type="button">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors">Cloud Infrastructure Migration</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 line-clamp-2">Legacy bare-metal migration to serverless AWS clusters with autoscaling and zero downtime guarantees.</p>
+<!-- Tags -->
+<div class="flex items-center gap-1.5 mt-space-sm flex-wrap">
+<span class="px-2 py-0.5 rounded-md font-label-sm text-label-sm bg-surface-container-low text-primary">DevOps</span>
+<span class="px-2 py-0.5 rounded-md font-label-sm text-label-sm bg-surface-container-low text-primary">AWS</span>
+<span class="px-2 py-0.5 rounded-md font-label-sm text-label-sm bg-surface-container-low text-primary">Docker</span>
+</div>
+<!-- Progress Bar & Percentage -->
+<div class="mt-space-md">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Progress</span>
+<span class="font-title-sm text-title-sm font-bold text-primary">30%</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-primary-container rounded-full" style="width: 30%;"></div>
+</div>
+</div>
+<!-- Metric strip: Tasks & Budget -->
+<div class="grid grid-cols-2 gap-space-xs py-space-sm mt-space-sm bg-surface-container-low rounded-lg px-space-sm">
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Tasks</span>
+<span class="font-title-sm text-title-sm font-bold text-on-surface">12 / 40 done</span>
+</div>
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Budget</span>
+<span class="font-title-sm text-title-sm font-bold text-on-surface">$65,000</span>
+</div>
+</div>
+</div>
+<!-- Card Footer -->
+<div class="flex items-center justify-between pt-space-md mt-space-md">
+<div class="flex items-center -space-x-2">
+<img class="w-7 h-7 rounded-full object-cover" data-alt="Portrait of senior DevOps infrastructure engineer with focused expression in server room background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAksr2tQkfww_TfOcLvNxNLdaeo9H_AKXm4hrHc1-VAgbJhh2TMw-tULK9mVYudUQ4e2uWCHhPT_xqDYzcsSFHK0jtLiYvElZQOci28OYgQF-0P8DmRr-N2mF83EtcvrvRUBNIHuwzXu9GkAptPVerzGNFS5wyOWtcnJDwkm1uzs7upQ2c_QygKu__hzLeeWkBTvUbXrI9Y7c_uxsu_UXGHJvJILuhMTxEfFkzgMujd_a0M8gRqXbcA4Q">
+<img class="w-7 h-7 rounded-full object-cover" data-alt="Cybersecurity analyst woman wearing glasses smiling in an innovative IT office" src="https://lh3.googleusercontent.com/aida-public/AB6AXuATw5kw_6jYESHgB8O8larWUN38Ur2rUeiXG-T49V3r7m9c4M09b0STQZkywIqjtgph3EKQ2TFDr8ETY87cyPXx0UrNBrAApiN3zYWiMnKlcGICXCo8M1mXIMAXjZrwjpW2mu3OYFn5T9FnajIgnfRYoaGBAK9TVdzryWtwy-VAdEnCf7Hm1VPJHfNi-2izvlybYcgCglti436o_zNjWQXjs4H6Vf8dfBfbopocEvLrWy2_gGmp-tbBCw">
+<img class="w-7 h-7 rounded-full object-cover" data-alt="Cloud systems architect avatar photo in casual business polo against clean office interior" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDteK58pArNDE2lWz1OTZnYm4b-ZrWl36gPjU0wq8sZIAX4JDRYIGga0q-NYP5Gmga516dqlDaoR6HoDxIlUWfsRcKtyzoM693saHso5OCxqGBPOs29pfzkTWFCfj0jncKArUruxFZzwvE-bvXYunnZ23GSaSpznfCxjb4DCK1MbfNQLUQXFJkZlpX9cC-slGq1jeqjQsljFZpKJ-BU_VetbYHM9Nn6JG2xToc6-esejrJLJ6UGoS-uPw">
+<div class="w-7 h-7 rounded-full bg-surface-container font-label-sm text-label-sm text-on-surface-variant flex items-center justify-center font-bold">+1</div>
+</div>
+<div class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-outline">calendar_today</span>
+<span class="">Due July 10, 2025</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Pagination & Results Count Footer -->
+<div class="bg-surface-container-lowest rounded-xl px-space-md py-3 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-space-sm">
+<div class="font-body-sm text-body-sm text-on-surface-variant">
+        Showing <span class="font-bold text-on-surface">1-6</span> of <span class="font-bold text-on-surface">18</span> projects
+      </div>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:bg-surface-container hover:text-on-surface disabled:opacity-40 transition-colors" disabled="" type="button">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center font-label-md text-label-md bg-primary-container text-on-primary font-bold shadow-xs" type="button">
+          1
+        </button>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center font-label-md text-label-md text-on-surface-variant hover:bg-surface-container transition-colors" type="button">
+          2
+        </button>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center font-label-md text-label-md text-on-surface-variant hover:bg-surface-container transition-colors" type="button">
+          3
+        </button>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main></div>
+
+
+
+
+
+  <script src="assets/js/main.js"></script>
+</body></html>

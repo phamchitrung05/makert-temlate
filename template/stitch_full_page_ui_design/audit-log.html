@@ -1,0 +1,841 @@
+<!DOCTYPE html><html lang="en" style=""><head><title>FlowTask - Nhật ký Hoạt động & An ninh</title><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"on-primary-fixed-variant":"#003ea8","inverse-on-surface":"#ebf1ff","on-primary":"#ffffff","on-primary-container":"#eeefff","on-secondary-container":"#0c714d","outline-variant":"#c3c6d7","on-error":"#ffffff","secondary-container":"#9af2c5","on-secondary-fixed":"#002113","tertiary-container":"#996100","surface-bright":"#f8f9ff","inverse-surface":"#213146","secondary-fixed":"#6ffbbe","error-container":"#ffdad6","error":"#ba1a1a","surface-container-high":"#dce9ff","tertiary-fixed":"#ffddb8","on-tertiary-fixed-variant":"#653e00","on-secondary":"#ffffff","tertiary-fixed-dim":"#fabb6b","primary-container":"#004ac6","surface":"#f8f9ff","primary-fixed":"#dbe1ff","surface-container-highest":"#d3e3ff","on-tertiary-fixed":"#2a1700","surface-container-low":"#eff4ff","surface-container-lowest":"#ffffff","secondary":"#006c49","surface-dim":"#cbdbf6","on-surface-variant":"#434655","on-background":"#0b1c30","on-primary-fixed":"#00174b","primary-fixed-dim":"#b4c5ff","surface-tint":"#1b55d0","primary":"#003594","secondary-fixed-dim":"#81d8ad","surface-container":"#e5eeff","on-tertiary-container":"#fdbe6e","on-tertiary":"#ffffff","outline":"#737686","background":"#f8f9ff","surface-variant":"#d3e3ff","on-error-container":"#93000a","on-secondary-fixed-variant":"#005236","tertiary":"#593600","inverse-primary":"#b4c5ff","on-surface":"#0b1c30"},"borderRadius":{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},"spacing":{"space-lg":"1.5rem","margin":"1.5rem","gutter":"1.25rem","space-xl":"2rem","space-sm":"0.5rem","space-xs":"0.25rem","space-md":"1rem"},"fontFamily":{"title-sm":["Plus Jakarta Sans"],"label-md":["Inter"],"body-sm":["Inter"],"body-md":["Inter"],"headline-lg-mobile":["Plus Jakarta Sans"],"stat-metric":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"display-hero":["Plus Jakarta Sans"],"label-sm":["Inter"]},"fontSize":{"title-sm":["16px",{"lineHeight":"24px","fontWeight":"600"}],"label-md":["12px",{"lineHeight":"16px","fontWeight":"500"}],"body-sm":["13px",{"lineHeight":"18px","fontWeight":"400"}],"body-md":["14px",{"lineHeight":"20px","fontWeight":"400"}],"headline-lg-mobile":["24px",{"lineHeight":"32px","fontWeight":"700"}],"stat-metric":["28px",{"lineHeight":"32px","fontWeight":"800"}],"headline-lg":["32px",{"lineHeight":"40px","fontWeight":"700"}],"headline-md":["20px",{"lineHeight":"28px","fontWeight":"700"}],"display-hero":["56px",{"lineHeight":"64px","fontWeight":"800"}],"label-sm":["11px",{"lineHeight":"14px","fontWeight":"600"}]}}}}</script>  <link rel="stylesheet" href="assets/css/style.css"/>
+  <script src="assets/js/tailwind.config.js"></script>
+</head><body class="bg-background font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-screen w-64 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between overflow-y-auto min-h-screen">
+  <div class="flex flex-col flex-1 min-h-0">
+    <!-- Requirement 1: Standardized FLOWTASK Brand Logo -->
+    <div class="p-space-md pb-2 flex-shrink-0">
+      <a href="index.html" class="flex items-center gap-3 px-2 py-1.5 rounded-xl hover:bg-surface-container transition-all group cursor-pointer" title="FLOWTASK Dashboard">
+        <div class="w-9 h-9 rounded-xl overflow-hidden shadow-sm shadow-primary/25 flex-shrink-0 group-hover:scale-105 transition-transform">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" class="w-full h-full">
+            <rect width="48" height="48" rx="12" fill="#2563EB"/>
+            <path d="M14 16C14 14.8954 14.8954 14 16 14H32C33.1046 14 34 14.8954 34 16V20C34 21.1046 33.1046 22 32 22H16C14.8954 22 14 21.1046 14 20V16Z" fill="#FFFFFF"/>
+            <path d="M14 26C14 24.8954 14.8954 24 16 24H26C27.1046 24 28 24.8954 28 26V30C28 31.1046 27.1046 32 26 32H16C14.8954 32 14 31.1046 14 30V26Z" fill="#6CF8BB"/>
+            <circle cx="33" cy="28" r="4" fill="#B4C5FF"/>
+          </svg>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="font-headline-md text-[20px] font-extrabold tracking-tight text-on-surface">FlowTask</span>
+          <span class="font-label-sm text-[11px] uppercase px-1.5 py-0.5 rounded-md bg-primary-fixed text-on-primary-fixed font-bold tracking-wider">PRO</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- Workspace Context Switcher -->
+    <div class="px-space-md mb-2 flex-shrink-0">
+      <div class="flex items-center justify-between p-2 rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-7 h-7 rounded-lg bg-primary text-white flex items-center justify-center font-bold text-[12px] flex-shrink-0 shadow-xs">FL</div>
+          <div class="min-w-0 flex-1 text-left">
+            <p class="font-title-sm text-[13px] font-bold text-on-surface truncate leading-tight">FlowTech Lab</p>
+            <p class="font-label-sm text-[11px] text-on-surface-variant truncate leading-tight">14 members • Enterprise</p>
+          </div>
+        </div>
+        <span class="material-symbols-outlined text-[18px] text-outline flex-shrink-0">unfold_more</span>
+      </div>
+    </div>
+
+    <!-- Menu Label -->
+    <div class="px-space-md pt-1 pb-1 flex-shrink-0">
+      <span class="text-[10px] font-extrabold uppercase tracking-wider text-outline px-1">MAIN MENU</span>
+    </div>
+
+    <!-- Requirement 4: Standardized Navigation Menu -->
+    <div class="flex-1 overflow-y-auto px-space-md py-1">
+      <nav class="flex flex-col gap-0.5" data-active-classes="bg-primary-container text-on-primary font-semibold shadow-xs">
+        <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="dashboard" href="index.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">dashboard</span><span class="nav-text truncate leading-none">Dashboard</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="projects" href="projects.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">folder_open</span><span class="nav-text truncate leading-none">Projects</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="tasks" href="kanban.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">check_box</span><span class="nav-text truncate leading-none">Tasks</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="kanban" href="kanban.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">view_kanban</span><span class="nav-text truncate leading-none">Kanban</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="sprint-planning" href="sprint-planning.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">flag</span><span class="nav-text truncate leading-none">Sprint Planning</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="calendar" href="calendar.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">calendar_today</span><span class="nav-text truncate leading-none">Calendar</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="time-tracking" href="time-tracking.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">schedule</span><span class="nav-text truncate leading-none">Time Tracking</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="reports" href="forecast.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">bar_chart</span><span class="nav-text truncate leading-none">Reports & Forecast</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="analytics" href="analytics.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">insights</span><span class="nav-text truncate leading-none">Analytics</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="invoices" href="invoices.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">receipt_long</span><span class="nav-text truncate leading-none">Invoices & Billing</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="team" href="team.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">groups</span><span class="nav-text truncate leading-none">Team</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="clients" href="clients.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">corporate_fare</span><span class="nav-text truncate leading-none">Clients</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="client-portal" href="client-portal.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">space_dashboard</span><span class="nav-text truncate leading-none">Client Portal</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="documents" href="documents.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">description</span><span class="nav-text truncate leading-none">Documents</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="notifications" href="notifications.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">notifications</span><span class="nav-text truncate leading-none">Notifications</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl bg-primary-container text-on-primary font-semibold text-[14px] shadow-xs active" data-path="audit-log" href="audit-log.html" aria-current="page"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">history</span><span class="nav-text truncate leading-none">Audit Log</span></a>
+      <a class="flex items-center h-10 px-3.5 py-2 rounded-xl text-on-surface-variant font-medium text-[14px] hover:bg-surface-container hover:text-on-surface transition-colors duration-150" data-path="settings" href="settings.html"><span class="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center flex-shrink-0 mr-3">settings</span><span class="nav-text truncate leading-none">Settings</span></a>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Requirement 3: Standardized Upgrade to Pro -->
+  <div class="p-space-md border-t border-outline-variant/20 flex-shrink-0 mt-auto">
+    <div class="bg-gradient-to-br from-primary to-primary-container p-3.5 rounded-2xl text-on-primary shadow-sm border border-primary/20">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="material-symbols-outlined text-[18px] text-secondary-container">auto_awesome</span>
+        <span class="font-title-sm text-[14px] font-bold text-white tracking-tight">Upgrade to Pro</span>
+      </div>
+      <p class="font-body-sm text-[12px] leading-relaxed text-on-primary-container/90 mb-3">
+        Unlock enterprise features, workflows and team limits.
+      </p>
+      <a class="flex items-center justify-center gap-1.5 w-full py-2 px-3 bg-surface-container-lowest text-primary font-label-md text-[13px] font-bold rounded-xl shadow-xs hover:bg-surface-container-low transition-all" data-path="billing-plans" href="settings.html">
+        <span>View Plans</span>
+        <span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+      </a>
+    </div>
+  </div>
+</aside>
+<div class="pl-64 min-h-screen flex flex-col"><header class="fixed top-0 left-64 right-0 h-16 bg-surface-container-lowest/85 backdrop-blur-xl border-b border-outline-variant/20 shadow-[0_1px_8px_rgba(0,0,0,0.03)] z-40 flex items-center justify-between px-space-xl">
+  <!-- Global Search Bar (Ctrl+K) -->
+  <div class="flex items-center gap-space-md flex-1 max-w-lg">
+    <div class="relative w-full flex items-center">
+      <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px] pointer-events-none">search</span>
+      <input class="w-full pl-10 pr-20 py-2 rounded-xl bg-surface-container-low font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" placeholder="Search projects, tasks, or people... (Ctrl+K)" type="text">
+      <div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
+        <kbd class="px-2 py-0.5 rounded bg-surface-container font-mono text-[11px] font-semibold text-outline border border-outline-variant/30 shadow-2xs">⌘ K</kbd>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header Right Actions & Profile -->
+  <div class="flex items-center gap-space-md">
+    <!-- Quick Add Button -->
+    <button class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary-container text-on-primary font-label-md text-label-md font-semibold hover:bg-primary transition-all shadow-xs active:scale-95 cursor-pointer" type="button" title="Quick Add">
+      <span class="material-symbols-outlined text-[18px]">add</span>
+      <span>Quick Add</span>
+    </button>
+
+    <!-- Notification Button with Pulse Badge -->
+    <a href="notifications.html" class="relative p-2 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors cursor-pointer" title="Notifications">
+      <span class="material-symbols-outlined text-[22px]">notifications</span>
+      <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full ring-2 ring-surface-container-lowest animate-pulse"></span>
+    </a>
+
+    <!-- Help & Documentation -->
+    <a href="documents.html" class="p-2 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors cursor-pointer" title="Help & Documentation">
+      <span class="material-symbols-outlined text-[22px]">help_outline</span>
+    </a>
+
+    <!-- User Profile Dropdown Trigger -->
+    <div class="flex items-center gap-space-sm pl-space-xs border-l border-outline-variant/30 cursor-pointer group select-none" id="user-profile-trigger">
+      <img alt="Sarah Miller" class="w-8 h-8 rounded-full object-cover ring-2 ring-primary-container/20 group-hover:ring-primary-container/40 transition-all flex-shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBckQHV06Vgo_oFLBwU0NVVlVj_0WT6m3kovkvHYvLXeJDHSAbjz_ic-BVlm809docSBQu7aOl7vlGuVNJprduqHxlMutvrVC2EN0FdG_IZE5mGnpWA1zjWRCSOaLN_1UsjuWHJ8m19nAJXMyXhJ04WX6BMw7ftynqkzezR6QVgXxPcKXLHIk5stEHtNEdV-8Yd1tsttFTGMzhCF9UESmsGn6lY91mbxiJIUFNlOW3P4YSkFDx5dtV6Sg">
+      <div class="hidden md:flex flex-col text-left">
+        <span class="font-label-md text-label-md text-on-surface font-bold leading-tight group-hover:text-primary transition-colors">Sarah Miller</span>
+        <span class="font-label-sm text-label-sm text-on-surface-variant leading-tight">Product Manager</span>
+      </div>
+      <span class="material-symbols-outlined text-[20px] text-outline group-hover:text-on-surface transition-colors flex-shrink-0">expand_more</span>
+    </div>
+  </div>
+</header><main class="relative pt-16 bg-background min-h-screen">
+  <div class="content-fixed-container w-full max-w-[1600px] mx-auto p-space-lg lg:p-space-xl flex flex-col gap-space-lg">
+<!-- Subtle decorative ambient glow contained within context -->
+<div class="relative w-full overflow-hidden mb-6">
+<div class="absolute -top-24 right-10 w-96 h-96 bg-primary-container/10 rounded-full blur-3xl pointer-events-none"></div>
+<div class="absolute top-1/2 left-1/4 w-64 h-64 bg-secondary-container/20 rounded-full blur-3xl pointer-events-none"></div>
+<!-- Breadcrumb Navigation -->
+
+<!-- Standardized Page Header -->
+<div class="page-header flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+  <div class="min-w-0 flex-1">
+    <div class="flex items-center gap-2 mb-1">
+      <span class="text-[12px] font-semibold text-primary uppercase tracking-wider">Compliance &amp; Security Trail</span>
+    </div>
+    <div class="flex items-center gap-2.5 flex-wrap">
+      <h1 class="text-[26px] lg:text-[28px] font-bold text-on-surface tracking-tight leading-tight">
+        Nhật ký Hoạt động &amp; An ninh
+      </h1>
+      <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-semibold bg-secondary-container/40 text-on-secondary-container">Audit Trail SOC-2</span>
+    </div>
+    <p class="text-[14px] text-on-surface-variant font-normal leading-normal mt-1 max-w-3xl">
+      Ghi nhận toàn bộ thao tác hệ thống, thay đổi dữ liệu, đăng nhập và phân quyền bảo mật chuẩn SOC-2 &amp; ISO 27001.
+    </p>
+  </div>
+  <div class="flex items-center gap-2.5 flex-wrap flex-shrink-0 self-start md:self-center">
+    <button class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-container-lowest text-on-surface font-medium text-[13px] border border-outline-variant/30 shadow-xs hover:bg-surface-container transition-all" type="button">
+  <span class="material-symbols-outlined text-[18px]">tune</span>
+  <span>Bộ lọc nâng cao</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-container-lowest text-on-surface font-medium text-[13px] border border-outline-variant/30 shadow-xs hover:bg-surface-container transition-all" type="button">
+  <span class="material-symbols-outlined text-[18px]">file_download</span>
+  <span>Xuất CSV</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-on-primary font-medium text-[13px] shadow-sm hover:bg-primary-dark transition-all" type="button">
+  <span class="material-symbols-outlined text-[18px]">security</span>
+  <span>+ Cấu hình Retention</span>
+</button>
+  </div>
+</div>
+</div>
+<!-- KPI Summary Cards (4 Cards Bento) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<!-- Metric 1: Events Today -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Events Today</span>
+<p class="font-stat-metric text-stat-metric text-on-surface mt-1 leading-none">4,829</p>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]">sensors</span>
+</div>
+</div>
+<div class="mt-4 pt-3 bg-surface-container-low rounded-lg px-2.5 py-1.5 flex items-center justify-between">
+<span class="inline-flex items-center gap-1.5 font-label-sm text-label-sm text-secondary font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> WebSocket Realtime
+        </span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">42 msg/sec</span>
+</div>
+</div>
+<!-- Metric 2: Privileged Actions -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Thao tác nhạy cảm</span>
+<p class="font-stat-metric text-stat-metric text-on-surface mt-1 leading-none">18 <span class="font-body-sm text-body-sm text-on-surface-variant font-normal">lượt</span></p>
+</div>
+<div class="w-10 h-10 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed-variant">
+<span class="material-symbols-outlined text-[22px]">admin_panel_settings</span>
+</div>
+</div>
+<div class="mt-4 pt-3 bg-surface-container-low rounded-lg px-2.5 py-1.5 flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant truncate">Sửa quyền, API Key, Xóa repo</span>
+<span class="font-label-sm text-label-sm text-tertiary font-semibold">+3 mới</span>
+</div>
+</div>
+<!-- Metric 3: Security Flags -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Cảnh báo An ninh</span>
+<p class="font-stat-metric text-stat-metric text-on-surface mt-1 leading-none">0 <span class="font-body-sm text-body-sm text-secondary font-semibold">nghiêm trọng</span></p>
+</div>
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined text-[22px]">verified_user</span>
+</div>
+</div>
+<div class="mt-4 pt-3 bg-surface-container-low rounded-lg px-2.5 py-1.5 flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant truncate">1 IP Singapore (Đã 2FA)</span>
+<span class="px-1.5 py-0.2 rounded-full font-label-sm text-label-sm bg-tertiary-fixed text-on-tertiary-fixed-variant font-bold">Audit pass</span>
+</div>
+</div>
+<!-- Metric 4: Immutable Compliance -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Lưu trữ tuân thủ</span>
+<p class="font-stat-metric text-stat-metric text-primary mt-1 leading-none">100% <span class="font-body-sm text-body-sm text-on-surface-variant font-normal">Encrypted</span></p>
+</div>
+<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]">lock</span>
+</div>
+</div>
+<div class="mt-4 pt-3 bg-surface-container-low rounded-lg px-2.5 py-1.5 flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Retention: 365 ngày WORM</span>
+<span class="font-label-sm text-label-sm text-primary font-bold">SHA-256</span>
+</div>
+</div>
+</div>
+<!-- Interactive Search & Filter Controls -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm mb-6 flex flex-col gap-3">
+<div class="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+<!-- Search Input -->
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline text-[20px]">filter_list</span>
+<input class="w-full bg-surface-container-low rounded-xl py-2 pl-11 pr-24 font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary-container transition-all" id="auditSearch" placeholder="Tìm theo Actor, Địa chỉ IP, Hành động hoặc Mã đối tượng (#INV, PR, Role)..." type="text">
+<span class="absolute right-3 top-1/2 -translate-y-1/2 font-label-sm text-label-sm text-outline">Press Enter ↵</span>
+</div>
+<!-- Quick time selector -->
+<div class="flex items-center bg-surface-container-low p-1 rounded-lg">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-lowest text-primary font-label-md text-label-md font-semibold shadow-xs transition-all" type="button">24 giờ qua</button>
+<button class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all" type="button">7 ngày</button>
+<button class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all" type="button">30 ngày</button>
+<button class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all flex items-center gap-1" type="button">
+<span class="">Tùy chỉnh</span>
+<span class="material-symbols-outlined text-[16px]">calendar_month</span>
+</button>
+</div>
+</div>
+<!-- Second Row Filter Chips -->
+<div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-outline-variant/10">
+<div class="flex flex-wrap items-center gap-2">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-semibold mr-1">Cấp độ:</span>
+<button class="px-2.5 py-1 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-semibold flex items-center gap-1" type="button">
+<span class="">Tất cả</span>
+<span class="material-symbols-outlined text-[14px]">check</span>
+</button>
+<button class="px-2.5 py-1 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant font-label-sm text-label-sm flex items-center gap-1.5" type="button">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="">Thông tin (Info)</span>
+</button>
+<button class="px-2.5 py-1 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant font-label-sm text-label-sm flex items-center gap-1.5" type="button">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="">Chú ý (Warning)</span>
+</button>
+<button class="px-2.5 py-1 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant font-label-sm text-label-sm flex items-center gap-1.5" type="button">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span class="">Cảnh báo (Critical)</span>
+</button>
+<span class="h-4 w-[1px] bg-outline-variant/30 mx-1"></span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-semibold mr-1">Phân hệ:</span>
+<button class="px-2.5 py-1 rounded-md bg-surface-container-low hover:bg-surface-container text-on-surface font-label-sm text-label-sm" type="button">Dự án</button>
+<button class="px-2.5 py-1 rounded-md bg-surface-container-low hover:bg-surface-container text-on-surface font-label-sm text-label-sm" type="button">Thành viên &amp; Phân quyền</button>
+<button class="px-2.5 py-1 rounded-md bg-surface-container-low hover:bg-surface-container text-on-surface font-label-sm text-label-sm" type="button">Tài chính &amp; Invoices</button>
+<button class="px-2.5 py-1 rounded-md bg-surface-container-low hover:bg-surface-container text-on-surface font-label-sm text-label-sm" type="button">Bảo mật &amp; Tokens</button>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm text-outline">Hiển thị 6 / 4,829 sự kiện</span>
+<button class="p-1 rounded-lg hover:bg-surface-container text-on-surface-variant" title="Làm mới" type="button">
+<span class="material-symbols-outlined text-[18px]">sync</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Main Content Mosaic: Table & Side Widgets -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+<!-- Audit Table (8 of 12 columns) -->
+<div class="xl:col-span-8 flex flex-col">
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
+<!-- Table Header Panel -->
+<div class="p-space-md border-b border-outline-variant/20 flex items-center justify-between bg-surface-container-low/40">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">format_list_bulleted</span>
+<span class="font-title-sm text-title-sm text-on-surface">Dòng thời gian sự kiện (Immutable Audit Stream)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm text-outline font-mono">HASH: SHA256-V2</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-surface-container text-on-surface font-label-sm text-label-sm font-semibold">Tự động khóa ghi đè</span>
+</div>
+</div>
+<!-- Table Responsive Container -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low/80 text-outline font-label-sm text-label-sm uppercase tracking-wider">
+<th class="py-3 px-4 font-semibold">Thời gian (Timestamp)</th>
+<th class="py-3 px-4 font-semibold">Người thực hiện (Actor)</th>
+<th class="py-3 px-4 font-semibold">Hành động &amp; Đối tượng</th>
+<th class="py-3 px-4 font-semibold">Địa chỉ IP &amp; Vị trí</th>
+<th class="py-3 px-4 font-semibold text-center">Mức độ</th>
+<th class="py-3 px-4 font-semibold text-right">Chi tiết</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/15 font-body-sm text-body-sm text-on-surface">
+<!-- Event Row 1: Privilege Update -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="py-3.5 px-4 font-mono text-label-sm text-on-surface-variant whitespace-nowrap">
+<div class="font-semibold text-on-surface">24/10/2024</div>
+<div class="text-outline">14:32:05 GMT+7</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-title-sm text-label-sm font-bold">
+                      SM
+                    </div>
+<div class="min-w-0">
+<div class="font-title-sm text-label-md text-on-surface leading-tight font-semibold">Sarah Miller</div>
+<div class="font-label-sm text-label-sm text-outline truncate">s.miller@flowtech.internal</div>
+<span class="inline-block mt-0.5 px-1.5 py-0.2 rounded bg-surface-container text-on-surface-variant font-label-sm text-[10px] font-semibold">Super Admin</span>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-4">
+<div class="font-title-sm text-label-md text-on-surface font-semibold flex items-center gap-1.5">
+<span class="">Cập nhật quyền hạn thành viên</span>
+<span class="material-symbols-outlined text-tertiary text-[16px]">security_update_warning</span>
+</div>
+<div class="text-on-surface-variant font-label-md text-label-sm mt-0.5 flex items-center gap-1">
+<span class="text-outline">Đối tượng:</span>
+<span class="font-semibold text-primary">Alex Chen</span>
+<span class="text-outline">→ Nâng cấp thành</span>
+<span class="px-1.5 py-0.2 rounded bg-primary-fixed text-on-primary-fixed font-bold font-label-sm text-[10px]">Security Lead</span>
+</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<div class="font-mono text-label-sm text-on-surface font-medium">118.69.182.42</div>
+<div class="font-label-sm text-label-sm text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">location_on</span>
+<span class="">Hanoi, Vietnam</span>
+</div>
+<div class="text-outline text-[11px] font-sans">Chrome 128 • MacOS</div>
+</td>
+<td class="py-3.5 px-4 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-label-sm text-label-sm bg-tertiary-fixed text-on-tertiary-fixed-variant font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Chú ý
+                  </span>
+</td>
+<td class="py-3.5 px-4 text-right whitespace-nowrap">
+<button class="px-2.5 py-1.5 rounded-lg bg-surface-container-low text-primary hover:bg-surface-container hover:text-primary-container font-label-sm text-label-sm font-semibold transition-all inline-flex items-center gap-1" onclick="openDiffModal('diff-1')" type="button">
+<span class="material-symbols-outlined text-[15px]">difference</span>
+<span class="">Xem Diff</span>
+</button>
+</td>
+</tr>
+<!-- Event Row 2: Sensitive Invoice Generation -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="py-3.5 px-4 font-mono text-label-sm text-on-surface-variant whitespace-nowrap">
+<div class="font-semibold text-on-surface">24/10/2024</div>
+<div class="text-outline">14:15:22 GMT+7</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-full bg-surface-container-high text-primary flex items-center justify-center font-title-sm text-label-sm font-bold">
+                      DN
+                    </div>
+<div class="min-w-0">
+<div class="font-title-sm text-label-md text-on-surface leading-tight font-semibold">David Nguyen</div>
+<div class="font-label-sm text-label-sm text-outline truncate">d.nguyen@flowtech.internal</div>
+<span class="inline-block mt-0.5 px-1.5 py-0.2 rounded bg-surface-container text-on-surface-variant font-label-sm text-[10px] font-semibold">Finance Director</span>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-4">
+<div class="font-title-sm text-label-md text-on-surface font-semibold flex items-center gap-1.5">
+<span class="">Tạo hóa đơn thanh toán</span>
+<span class="material-symbols-outlined text-secondary text-[16px]">receipt_long</span>
+</div>
+<div class="text-on-surface-variant font-label-md text-label-sm mt-0.5 flex items-center gap-1">
+<span class="text-outline">Hồ sơ:</span>
+<span class="font-semibold text-on-surface">#INV-2024-089</span>
+<span class="text-outline">| Khách hàng:</span>
+<span class="font-semibold text-primary">Fintech Banking 3.0</span>
+</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<div class="font-mono text-label-sm text-on-surface font-medium">14.191.56.108</div>
+<div class="font-label-sm text-label-sm text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">location_on</span>
+<span class="">Ho Chi Minh City, VN</span>
+</div>
+<div class="text-outline text-[11px] font-sans">Firefox 130 • Windows 11</div>
+</td>
+<td class="py-3.5 px-4 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-label-sm text-label-sm bg-surface-container-high text-primary font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span> Thông tin
+                  </span>
+</td>
+<td class="py-3.5 px-4 text-right whitespace-nowrap">
+<button class="px-2.5 py-1.5 rounded-lg bg-surface-container-low text-primary hover:bg-surface-container hover:text-primary-container font-label-sm text-label-sm font-semibold transition-all inline-flex items-center gap-1" onclick="openDiffModal('diff-2')" type="button">
+<span class="material-symbols-outlined text-[15px]">difference</span>
+<span class="">Xem Diff</span>
+</button>
+</td>
+</tr>
+<!-- Event Row 3: Git Branch Deletion (Critical Repo Operation) -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="py-3.5 px-4 font-mono text-label-sm text-on-surface-variant whitespace-nowrap">
+<div class="font-semibold text-on-surface">24/10/2024</div>
+<div class="text-outline">13:58:10 GMT+7</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-full bg-error-container text-error flex items-center justify-center font-title-sm text-label-sm font-bold">
+                      TK
+                    </div>
+<div class="min-w-0">
+<div class="font-title-sm text-label-md text-on-surface leading-tight font-semibold">Tung K. Pham</div>
+<div class="font-label-sm text-label-sm text-outline truncate">tung.kp@flowtech.internal</div>
+<span class="inline-block mt-0.5 px-1.5 py-0.2 rounded bg-surface-container text-on-surface-variant font-label-sm text-[10px] font-semibold">DevOps Lead</span>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-4">
+<div class="font-title-sm text-label-md text-error font-semibold flex items-center gap-1.5">
+<span class="">Xóa chi nhánh kho Git Core</span>
+<span class="material-symbols-outlined text-error text-[16px]">delete_forever</span>
+</div>
+<div class="text-on-surface-variant font-label-md text-label-sm mt-0.5 flex items-center gap-1">
+<span class="text-outline">Mã nhánh:</span>
+<code class="px-1.5 py-0.2 bg-error-container/40 text-error rounded font-mono text-[11px]">release/hotfix-payment-gw-v1.4</code>
+</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<div class="font-mono text-label-sm text-on-surface font-medium">103.20.148.91</div>
+<div class="font-label-sm text-label-sm text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">location_on</span>
+<span class="">Da Nang, Vietnam</span>
+</div>
+<div class="text-outline text-[11px] font-sans">Git CLI 2.45 • Arch Linux</div>
+</td>
+<td class="py-3.5 px-4 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-label-sm text-label-sm bg-error-container text-error font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span> Cảnh báo
+                  </span>
+</td>
+<td class="py-3.5 px-4 text-right whitespace-nowrap">
+<button class="px-2.5 py-1.5 rounded-lg bg-surface-container-low text-primary hover:bg-surface-container hover:text-primary-container font-label-sm text-label-sm font-semibold transition-all inline-flex items-center gap-1" onclick="openDiffModal('diff-3')" type="button">
+<span class="material-symbols-outlined text-[15px]">difference</span>
+<span class="">Xem Diff</span>
+</button>
+</td>
+</tr>
+<!-- Event Row 4: 2FA Login from Overseas IP -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="py-3.5 px-4 font-mono text-label-sm text-on-surface-variant whitespace-nowrap">
+<div class="font-semibold text-on-surface">24/10/2024</div>
+<div class="text-outline">12:44:01 GMT+7</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-title-sm text-label-sm font-bold">
+                      EL
+                    </div>
+<div class="min-w-0">
+<div class="font-title-sm text-label-md text-on-surface leading-tight font-semibold">Elena Lindqvist</div>
+<div class="font-label-sm text-label-sm text-outline truncate">elena.l@nordicpartner.se</div>
+<span class="inline-block mt-0.5 px-1.5 py-0.2 rounded bg-surface-container text-on-surface-variant font-label-sm text-[10px] font-semibold">Auditor 3rd</span>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-4">
+<div class="font-title-sm text-label-md text-on-surface font-semibold flex items-center gap-1.5">
+<span class="">Đăng nhập thành công với 2FA TOTP</span>
+<span class="material-symbols-outlined text-secondary text-[16px]">verified</span>
+</div>
+<div class="text-on-surface-variant font-label-md text-label-sm mt-0.5 flex items-center gap-1">
+<span class="text-outline">Phương thức:</span>
+<span class="font-semibold text-on-surface">YubiKey Hardware Key</span>
+<span class="text-outline">| Trạng thái: Passed</span>
+</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<div class="font-mono text-label-sm text-on-surface font-medium">165.225.112.44</div>
+<div class="font-label-sm text-label-sm text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">location_on</span>
+<span class="">Singapore (SG-AWS)</span>
+</div>
+<div class="text-outline text-[11px] font-sans">Safari 17 • iPadOS</div>
+</td>
+<td class="py-3.5 px-4 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-label-sm text-label-sm bg-tertiary-fixed text-on-tertiary-fixed-variant font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Chú ý
+                  </span>
+</td>
+<td class="py-3.5 px-4 text-right whitespace-nowrap">
+<button class="px-2.5 py-1.5 rounded-lg bg-surface-container-low text-primary hover:bg-surface-container hover:text-primary-container font-label-sm text-label-sm font-semibold transition-all inline-flex items-center gap-1" onclick="openDiffModal('diff-4')" type="button">
+<span class="material-symbols-outlined text-[15px]">difference</span>
+<span class="">Xem Diff</span>
+</button>
+</td>
+</tr>
+<!-- Event Row 5: API Key Rotation -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="py-3.5 px-4 font-mono text-label-sm text-on-surface-variant whitespace-nowrap">
+<div class="font-semibold text-on-surface">24/10/2024</div>
+<div class="text-outline">11:12:48 GMT+7</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-title-sm text-label-sm font-bold">
+                      SM
+                    </div>
+<div class="min-w-0">
+<div class="font-title-sm text-label-md text-on-surface leading-tight font-semibold">Sarah Miller</div>
+<div class="font-label-sm text-label-sm text-outline truncate">s.miller@flowtech.internal</div>
+<span class="inline-block mt-0.5 px-1.5 py-0.2 rounded bg-surface-container text-on-surface-variant font-label-sm text-[10px] font-semibold">Super Admin</span>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-4">
+<div class="font-title-sm text-label-md text-on-surface font-semibold flex items-center gap-1.5">
+<span class="">Xoay vòng khóa bí mật (API Key Rotation)</span>
+<span class="material-symbols-outlined text-primary text-[16px]">key</span>
+</div>
+<div class="text-on-surface-variant font-label-md text-label-sm mt-0.5 flex items-center gap-1">
+<span class="text-outline">Khóa:</span>
+<code class="px-1.5 py-0.2 bg-surface-container rounded font-mono text-[11px]">sec_live_99f8***83b0</code>
+<span class="text-outline">| Staging Webhook</span>
+</div>
+</td>
+<td class="py-3.5 px-4 whitespace-nowrap">
+<div class="font-mono text-label-sm text-on-surface font-medium">118.69.182.42</div>
+<div class="font-label-sm text-label-sm text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">location_on</span>
+<span class="">Hanoi, Vietnam</span>
+</div>
+<div class="text-outline text-[11px] font-sans">Chrome 128 • MacOS</div>
+</td>
+<td class="py-3.5 px-4 text-center whitespace-nowrap">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-label-sm text-label-sm bg-surface-container-high text-primary font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span> Thông tin
+                  </span>
+</td>
+<td class="py-3.5 px-4 text-right whitespace-nowrap">
+<button class="px-2.5 py-1.5 rounded-lg bg-surface-container-low text-primary hover:bg-surface-container hover:text-primary-container font-label-sm text-label-sm font-semibold transition-all inline-flex items-center gap-1" onclick="openDiffModal('diff-1')" type="button">
+<span class="material-symbols-outlined text-[15px]">difference</span>
+<span class="">Xem Diff</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Footer / Pagination -->
+<div class="p-space-md bg-surface-container-low/40 border-t border-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-3">
+<div class="font-body-sm text-body-sm text-on-surface-variant">
+            Hiển thị <span class="font-semibold text-on-surface">1 - 5</span> trong số <span class="font-semibold text-on-surface">4,829</span> bản ghi sự kiện đã ký số
+          </div>
+<div class="flex items-center gap-1">
+<button class="p-1.5 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container transition-colors disabled:opacity-30" disabled="" type="button">
+<span class="material-symbols-outlined text-[18px]">keyboard_double_arrow_left</span>
+</button>
+<button class="p-1.5 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container transition-colors disabled:opacity-30" disabled="" type="button">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<button class="px-3 py-1 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md font-bold shadow-xs" type="button">1</button>
+<button class="px-3 py-1 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-md text-label-md transition-colors" type="button">2</button>
+<button class="px-3 py-1 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-md text-label-md transition-colors" type="button">3</button>
+<span class="px-1 text-outline">...</span>
+<button class="px-3 py-1 rounded-lg text-on-surface-variant hover:bg-surface-container font-label-md text-label-md transition-colors" type="button">966</button>
+<button class="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+<button class="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">keyboard_double_arrow_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column Sidebar Widgets (4 of 12 columns) -->
+<div class="xl:col-span-4 flex flex-col gap-6">
+<!-- Widget 1: Geo-IP Access Heatmap Map Card -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">public</span>
+<h3 class="font-title-sm text-title-sm text-on-surface">Phân bổ Geo-IP Đăng nhập</h3>
+</div>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-semibold">99.8% Nội địa</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-3">
+          Giám sát nguồn gốc lưu lượng phiên truy cập quản trị viên và phát hiện đăng nhập dị thường theo khu vực địa lý.
+        </p>
+<!-- Static Map Integration -->
+<div class="w-full h-44 bg-cover bg-center rounded-xl overflow-hidden relative shadow-inner mb-3" data-location="Hanoi, Vietnam">
+<div class="absolute inset-0 bg-gradient-to-t from-inverse-surface/60 via-transparent to-transparent flex items-end p-3">
+<div class="text-inverse-on-surface flex items-center justify-between w-full">
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary-fixed animate-ping"></span>
+<span class="font-label-md text-label-md font-bold">Hanoi DC &amp; Singapore Gateway</span>
+</div>
+<span class="font-mono text-label-sm opacity-90">118.69.x.x</span>
+</div>
+</div>
+</div>
+<!-- Geo Distribution List -->
+<div class="space-y-2">
+<div class="flex items-center justify-between text-body-sm font-label-md">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="text-on-surface font-medium">Hà Nội &amp; Miền Bắc</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-on-surface-variant font-mono text-label-sm">3,412 (70.6%)</span>
+<div class="w-16 h-1.5 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 70%"></div>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between text-body-sm font-label-md">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="text-on-surface font-medium">TP. Hồ Chí Minh &amp; Phía Nam</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-on-surface-variant font-mono text-label-sm">1,280 (26.5%)</span>
+<div class="w-16 h-1.5 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 26%"></div>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between text-body-sm font-label-md">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="text-on-surface font-medium">Singapore (AWS Proxy)</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-on-surface-variant font-mono text-label-sm">137 (2.9%)</span>
+<div class="w-16 h-1.5 rounded-full bg-surface-container overflow-hidden">
+<div class="h-full bg-tertiary-fixed-dim rounded-full" style="width: 4%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Widget 2: Security Webhook Integrations (Slack & MS Teams) -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">hub</span>
+<h3 class="font-title-sm text-title-sm text-on-surface">Kênh cảnh báo tự động</h3>
+</div>
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-4">
+          Cảnh báo tức thì được gửi đến trung tâm phản ứng sự cố DevSecOps thông qua Webhook ký HMAC.
+        </p>
+<div class="flex flex-col gap-2.5">
+<!-- Slack Integration Item -->
+<div class="p-3 rounded-xl bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-[#4A154B] text-white flex items-center justify-center font-bold text-label-md font-mono">
+                #
+              </div>
+<div>
+<p class="font-title-sm text-label-md text-on-surface font-semibold leading-tight">Slack: #sec-incident-ops</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Level: Warning &amp; Critical</p>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold">Active</span>
+</div>
+<!-- Teams Integration Item -->
+<div class="p-3 rounded-xl bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-[#5B5FC7] text-white flex items-center justify-center font-bold text-label-md">
+                T
+              </div>
+<div>
+<p class="font-title-sm text-label-md text-on-surface font-semibold leading-tight">MS Teams: Security Audit</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Level: All Events (Raw Stream)</p>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold">Active</span>
+</div>
+</div>
+<div class="mt-4 pt-3 border-t border-outline-variant/20 flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-outline">Độ trễ trung bình: 140ms</span>
+<a class="font-label-sm text-label-sm text-primary font-semibold hover:underline flex items-center gap-0.5" href="#">
+<span class="">Kiểm tra kết nối</span>
+<span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+</div>
+</div>
+<!-- Widget 3: Compliance & Integrity Snapshot -->
+<div class="bg-gradient-to-br from-surface-container to-surface-container-low rounded-xl p-space-md shadow-sm">
+<div class="flex items-center gap-2 mb-2 text-primary">
+<span class="material-symbols-outlined text-[20px]">gavel</span>
+<span class="font-title-sm text-label-md font-bold uppercase tracking-wider">Tuân thủ &amp; Pháp lý</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+          Tệp nhật ký được niêm phong mật mã mỗi 60 phút. Mọi hành vi sửa đổi tệp nhật ký trên cơ sở dữ liệu sẽ vô hiệu hóa khóa kiểm định ISO/IEC 27001.
+        </p>
+<div class="mt-3 flex items-center justify-between bg-surface-container-lowest p-2 rounded-lg">
+<span class="font-mono text-label-sm text-on-surface-variant text-[11px] truncate mr-2">Block #891,241 (Mã hóa SHA-256)</span>
+<span class="material-symbols-outlined text-secondary text-[18px]">verified</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Interactive JSON Diff Modal (Hidden by Default, toggled via JS) -->
+<div class="fixed inset-0 z-50 bg-inverse-surface/40 backdrop-blur-sm hidden items-center justify-center p-4" id="diffModal">
+<div class="bg-surface-container-lowest rounded-xl max-w-2xl w-full shadow-xl overflow-hidden flex flex-col max-h-[921px]">
+<!-- Modal Header -->
+<div class="p-space-md border-b border-outline-variant/20 flex items-center justify-between bg-surface-container-low/60">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[22px]">data_object</span>
+<div>
+<h3 class="font-title-sm text-title-sm text-on-surface">Chi tiết Biến động Dữ liệu (State Diff Payload)</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Transaction ID: <span class="font-mono text-primary font-bold">TX-88390-SEC-DIFF</span></p>
+</div>
+</div>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" onclick="closeDiffModal()" type="button">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Modal Body (Before / After Comparison Grid) -->
+<div class="p-space-md overflow-y-auto flex-1 flex flex-col gap-4">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+<!-- Before Value -->
+<div class="bg-surface-container-low rounded-lg p-3 border border-outline-variant/20">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider font-bold">Giá trị trước đó (Before)</span>
+<span class="px-1.5 py-0.2 rounded bg-error-container text-error font-mono text-[11px]">- Old State</span>
+</div>
+<pre class="font-mono text-[11px] text-on-surface bg-surface-container-lowest p-2 rounded leading-relaxed overflow-x-auto">{
+  "user_id": "usr_9921_alex",
+  "name": "Alex Chen",
+  "role": "Software Engineer II",
+  "permissions": [
+    "repo:read",
+    "repo:write",
+    "ci:trigger"
+  ],
+  "mfa_enforced": true,
+  "access_tier": 2
+}</pre>
+</div>
+<!-- After Value -->
+<div class="bg-surface-container-low rounded-lg p-3 border border-outline-variant/20">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-bold">Giá trị cập nhật (After)</span>
+<span class="px-1.5 py-0.2 rounded bg-secondary-container text-on-secondary-container font-mono text-[11px]">+ New State</span>
+</div>
+<pre class="font-mono text-[11px] text-on-surface bg-surface-container-lowest p-2 rounded leading-relaxed overflow-x-auto">{
+  "user_id": "usr_9921_alex",
+  "name": "Alex Chen",
+  "role": "Security Lead",
+  "permissions": [
+    "repo:read",
+    "repo:write",
+    "ci:trigger",
+    "sec:keys_rotation",
+    "audit:log_export"
+  ],
+  "mfa_enforced": true,
+  "access_tier": 1
+}</pre>
+</div>
+</div>
+<!-- Metadata Strip inside Modal -->
+<div class="bg-surface-container-low/50 rounded-lg p-3 flex flex-wrap items-center justify-between gap-2 text-label-sm font-label-sm text-on-surface-variant">
+<div><span class="text-outline">Actor Signature:</span> <span class="font-mono text-on-surface">ED25519-74f8a...1109</span></div>
+<div><span class="text-outline">Cơ chế xác thực:</span> <span class="font-semibold text-secondary">SSO Okta + WebAuthn FIDO2</span></div>
+<div><span class="text-outline">Timestamp UTC:</span> <span class="font-mono">2024-10-24T07:32:05.182Z</span></div>
+</div>
+</div>
+<!-- Modal Footer -->
+<div class="p-space-md border-t border-outline-variant/20 flex items-center justify-between bg-surface-container-low/40">
+<button class="inline-flex items-center gap-1.5 font-label-md text-label-md text-primary font-semibold hover:underline" type="button">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+<span class="">Sao chép Raw JSON</span>
+</button>
+<button class="px-4 py-1.5 rounded-xl bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md text-label-md font-semibold transition-colors" onclick="closeDiffModal()" type="button">
+          Đóng cửa sổ
+        </button>
+</div>
+</div>
+</div>
+<!-- Vanilla Interaction Script for Modal Toggle -->
+<script>
+    function openDiffModal(diffId) {
+      const modal = document.getElementById('diffModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    function closeDiffModal() {
+      const modal = document.getElementById('diffModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    // Close on outside click
+    window.addEventListener('click', function(e) {
+      const modal = document.getElementById('diffModal');
+      if (e.target === modal) {
+        closeDiffModal();
+      }
+    });
+
+    // Close on escape key
+    window.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeDiffModal();
+      }
+    });
+  </script>
+</div>
+</main></div>
+
+  <script src="assets/js/main.js"></script>
+</body></html>

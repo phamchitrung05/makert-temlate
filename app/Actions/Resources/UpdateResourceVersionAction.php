@@ -2,18 +2,20 @@
 
 namespace App\Actions\Resources;
 
+use App\Enums\ResourceVersionStatus;
 use App\Models\ResourceVersion;
 use App\Models\User;
 use App\Services\MediaAssetUsageService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Cập nhật Resource Version và media usage
  * =====================================================================
  *
- * Version ready không được thay package trong cùng một request; caller phải
- * chuyển version về draft theo policy nghiệp vụ trước khi thay file.
+ * Action đọc lại/khóa version trước khi cập nhật. Version ready không được
+ * thay media; status/default chỉ được đổi qua action lifecycle chuyên trách.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - __construct(): nhận service đồng bộ media usage.
@@ -39,7 +41,7 @@ class UpdateResourceVersionAction
      * Cập nhật Resource Version và các media usage được chọn.
      *
      * Input: version hiện tại, attributes và actor id.
-     * Output: ResourceVersion fresh; ném DomainException nếu version ready đổi media.
+     * Output: ResourceVersion fresh; ném ValidationException nếu version ready đổi media.
      */
     public function handle(
         ResourceVersion $version,
@@ -47,13 +49,17 @@ class UpdateResourceVersionAction
         int $actorId,
     ): ResourceVersion {
         return DB::transaction(function () use ($version, $attributes, $actorId): ResourceVersion {
-            if ($version->status->value === 'ready' && array_key_exists('media', $attributes)) {
-                throw new \DomainException('Không thể thay media của version đang ready.');
+            $version = ResourceVersion::query()->whereKey($version->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($version->status === ResourceVersionStatus::Ready && array_key_exists('media', $attributes)) {
+                throw ValidationException::withMessages([
+                    'media' => 'Không thể thay media của version đang ready.',
+                ]);
             }
 
             $media = (array) ($attributes['media'] ?? []);
             unset($attributes['media']);
-            unset($attributes['status']);
+            unset($attributes['status'], $attributes['is_default']);
 
             $version->fill($attributes);
             $version->save();

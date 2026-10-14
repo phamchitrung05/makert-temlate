@@ -10,6 +10,7 @@ use App\Models\MediaAssetUsage;
 use App\Models\Post;
 use App\Models\Resource;
 use App\Models\ResourceVersion;
+use App\Models\ResourceVersionTemplateScreen;
 use App\Models\Tag;
 use App\Models\Technology;
 use App\Models\User;
@@ -81,7 +82,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(TargetRegistry::class);
         $this->app->singleton(SchemaRegistry::class);
         $this->app->singleton(AiTaskRunRegistry::class, function ($app): AiTaskRunRegistry {
-            $registry = new AiTaskRunRegistry();
+            $registry = new AiTaskRunRegistry;
             foreach ((array) config('ai.task-runs.adapters', []) as $adapterClass) {
                 $registry->register($app->make($adapterClass));
             }
@@ -158,6 +159,7 @@ class AppServiceProvider extends ServiceProvider
         Relation::enforceMorphMap([
             'resource' => Resource::class,
             'resource_version' => ResourceVersion::class,
+            'template_screen' => ResourceVersionTemplateScreen::class,
             'media_asset' => MediaAsset::class,
             'media_asset_usage' => MediaAssetUsage::class,
             'post' => Post::class,

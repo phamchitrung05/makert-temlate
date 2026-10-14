@@ -1,0 +1,32 @@
+{
+  "valid": {
+    "minimal": {"schema_version": 1, "entry_screen": "home", "screens": [{"slug": "home", "title": "Home", "path": "index.html"}]},
+    "optional-metadata": {"name": "demo", "title": "Demo", "version": "v1.0", "description": "Demo package", "schema_version": 1, "entry_screen": "home", "screens": [{"slug": "home", "title": "Home", "path": "pages/index.HTML", "screenshot": "screenshots/home.PNG"}]},
+    "nested-path": {"schema_version": 1, "entry_screen": "home", "screens": [{"slug": "home", "title": "Trang chủ", "path": "pages/home/index.htm"}]}
+  },
+  "invalid": {
+    "schema-version": {"schema_version": 2, "entry_screen": "home", "screens": [{"slug": "home", "title": "Home", "path": "index.html"}]},
+    "unknown-field": {"schema_version": 1, "entry_screen": "home", "command": "npm run build", "screens": [{"slug": "home", "title": "Home", "path": "index.html"}]},
+    "empty-screens": {"schema_version": 1, "entry_screen": "home", "screens": []},
+    "object-screens": {"schema_version": 1, "entry_screen": "home", "screens": {"0": {"slug": "home", "title": "Home", "path": "index.html"}}},
+    "non-object-screen": {"schema_version": 1, "entry_screen": "home", "screens": [["home", "Home", "index.html"]]},
+    "invalid-slug": {"schema_version": 1, "entry_screen": "Home Screen", "screens": [{"slug": "Home Screen", "title": "Home", "path": "index.html"}]},
+    "unsafe-state": {"schema_version": 1, "entry_screen": "home", "screens": [{"slug": "home", "title": "Home", "path": "index.html", "is_default": true}]},
+    "blank-title": {"schema_version": 1, "entry_screen": "home", "screens": [{"slug": "home", "title": "   ", "path": "index.html"}]},
+    "metadata-type": {"name": 123, "schema_version": 1, "entry_screen": "home", "screens": [{"slug": "home", "title": "Home", "path": "index.html"}]},
+    "null-screenshot": {"schema_version": 1, "entry_screen": "home", "screens": [{"slug": "home", "title": "Home", "path": "index.html", "screenshot": null}]},
+    "unsafe-screenshot": {"schema_version": 1, "entry_screen": "home", "screens": [{"slug": "home", "title": "Home", "path": "index.html", "screenshot": "../home.png"}]},
+    "html-screenshot": {"schema_version": 1, "entry_screen": "home", "screens": [{"slug": "home", "title": "Home", "path": "index.html", "screenshot": "home.html"}]}
+  },
+  "unsafe_paths": [
+    "../index.html", "pages/../index.html", "pages/./index.html", "/index.html", "C:/index.html",
+    "pages\\index.html", "//host/index.html", "pages//index.html", "https://example.test/index.html",
+    ".hidden/index.html", "pages./index.html", "pages /index.html", "index.html\u0000", "index.html\n",
+    "index.html?token=x", "index.html#fragment", "%2e%2e/index.html", "file:stream.html", " index.html"
+  ],
+  "semantic_invalid": {
+    "entry-not-found": {"schema_version": 1, "entry_screen": "missing", "screens": [{"slug": "home", "title": "Home", "path": "index.html"}]},
+    "duplicate-slug": {"schema_version": 1, "entry_screen": "home", "screens": [{"slug": "home", "title": "Home", "path": "index.html"}, {"slug": "home", "title": "Other", "path": "other.html"}]},
+    "duplicate-path": {"schema_version": 1, "entry_screen": "home", "screens": [{"slug": "home", "title": "Home", "path": "index.html"}, {"slug": "other", "title": "Other", "path": "INDEX.html"}]}
+  }
+}

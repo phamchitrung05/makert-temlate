@@ -1,0 +1,72 @@
+{
+    "discovery_version": 1,
+    "source_root": "stitch_full_page_ui_design",
+    "manifest_present": false,
+    "entry_screen": null,
+    "requires_entry_selection": true,
+    "screens": [
+        {
+            "slug": "calendar-flowtask",
+            "title": "Calendar Flowtask",
+            "path": "calendar_flowtask/code.html",
+            "screenshot": "calendar_flowtask/screen.png"
+        },
+        {
+            "slug": "clients-flowtask",
+            "title": "Clients Flowtask",
+            "path": "clients_flowtask/code.html",
+            "screenshot": "clients_flowtask/screen.png"
+        },
+        {
+            "slug": "documents-flowtask",
+            "title": "Documents Flowtask",
+            "path": "documents_flowtask/code.html",
+            "screenshot": "documents_flowtask/screen.png"
+        },
+        {
+            "slug": "kanban-board-flowtask",
+            "title": "Kanban Board Flowtask",
+            "path": "kanban_board_flowtask/code.html",
+            "screenshot": "kanban_board_flowtask/screen.png"
+        },
+        {
+            "slug": "projects-flowtask",
+            "title": "Projects Flowtask",
+            "path": "projects_flowtask/code.html",
+            "screenshot": "projects_flowtask/screen.png"
+        },
+        {
+            "slug": "reports-flowtask",
+            "title": "Reports Flowtask",
+            "path": "reports_flowtask/code.html",
+            "screenshot": "reports_flowtask/screen.png"
+        },
+        {
+            "slug": "settings-flowtask",
+            "title": "Settings Flowtask",
+            "path": "settings_flowtask/code.html",
+            "screenshot": "settings_flowtask/screen.png"
+        },
+        {
+            "slug": "team-flowtask",
+            "title": "Team Flowtask",
+            "path": "team_flowtask/code.html",
+            "screenshot": "team_flowtask/screen.png"
+        },
+        {
+            "slug": "time-tracking-flowtask",
+            "title": "Time Tracking Flowtask",
+            "path": "time_tracking_flowtask/code.html",
+            "screenshot": "time_tracking_flowtask/screen.png"
+        }
+    ],
+    "ignored_documents": [
+        "vibrant_saas_productivity/DESIGN.md"
+    ],
+    "warning_codes": [
+        "manifest_missing",
+        "entry_selection_required",
+        "external_dependency",
+        "placeholder_link"
+    ]
+}

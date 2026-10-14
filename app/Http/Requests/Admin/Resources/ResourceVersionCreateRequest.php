@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Admin\Resources;
 
-use App\Enums\ResourceVersionStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -59,11 +58,6 @@ class ResourceVersionCreateRequest extends FormRequest
             'media.package_id' => ['nullable', 'integer', 'min:1'],
             'media.documentation_ids' => ['sometimes', 'array'],
             'media.documentation_ids.*' => ['integer', 'distinct', 'min:1'],
-            'status' => ['sometimes', 'string', Rule::in([
-                ResourceVersionStatus::Draft->value,
-                ResourceVersionStatus::Archived->value,
-            ])],
-            'is_default' => ['sometimes', 'boolean'],
         ];
     }
 }

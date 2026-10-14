@@ -2,14 +2,10 @@
 
 namespace App\Actions\Resources;
 
-use App\Enums\MediaAssetField;
-use App\Enums\MediaAssetKind;
-use App\Enums\MediaAssetVisibility;
-use App\Enums\MediaScanStatus;
 use App\Enums\ResourceVersionStatus;
 use App\Models\ResourceVersion;
+use App\Services\ResourceVersionPackageGuard;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 /**
  * =====================================================================
@@ -22,10 +18,20 @@ use Illuminate\Validation\ValidationException;
  * - INPUT : dữ liệu theo contract và method chính của file.
  * - OUTPUT: kết quả public của file; side effect/exception theo implementation.
  * CÁC HÀM/METHOD TRONG FILE:
+ * - __construct(): nhận guard package dùng chung.
  * - handle(): kiểm tra package archive và chuyển version sang ready.
  */
 class MarkResourceVersionReadyAction
 {
+    /**
+     * Nhận guard dùng chung cho ready, process và preview.
+     * Input: ResourceVersionPackageGuard từ container.
+     * Output: action sẵn sàng xử lý; chưa mở transaction.
+     */
+    public function __construct(
+        private readonly ResourceVersionPackageGuard $packageGuard,
+    ) {}
+
     /**
      * Chuyển version sang ready sau khi kiểm tra đúng một package archive sạch.
      *
@@ -40,27 +46,7 @@ class MarkResourceVersionReadyAction
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $usage = $version->mediaAssetUsagesForField(MediaAssetField::ResourceVersionPackage)
-                ->with('mediaAsset.media')
-                ->first();
-
-            if ($usage === null || $version->mediaAssetUsagesForField(MediaAssetField::ResourceVersionPackage)->count() !== 1) {
-                throw ValidationException::withMessages([
-                    'package' => 'Version phải có đúng một package archive trước khi ready.',
-                ]);
-            }
-
-            $asset = $usage->mediaAsset;
-            $media = $asset?->getFirstMedia('library');
-
-            if ($asset === null
-                || $asset->kind !== MediaAssetKind::Archive
-                || $asset->visibility !== MediaAssetVisibility::Private
-                || $media?->getCustomProperty('scan_status') !== MediaScanStatus::Clean->value) {
-                throw ValidationException::withMessages([
-                    'package' => 'Package phải là archive private và có security scan clean.',
-                ]);
-            }
+            $this->packageGuard->cleanPackageFor($version);
 
             $version->status = ResourceVersionStatus::Ready;
             $version->released_at ??= now();

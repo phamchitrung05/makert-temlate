@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Actions\Resources\CreateResourceVersionAction;
+use App\Actions\Resources\DeleteResourceVersionAction;
 use App\Actions\Resources\MarkResourceVersionReadyAction;
 use App\Actions\Resources\UpdateResourceVersionAction;
 use App\Http\Controllers\Controller;
@@ -12,10 +13,8 @@ use App\Http\Resources\Resources\ResourceVersionResource;
 use App\Http\Responses\BaseResponse;
 use App\Models\ResourceVersion;
 use App\Models\User;
-use App\Services\MediaAssetUsageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -117,22 +116,22 @@ class ResourceVersionController extends Controller
     }
 
     /**
-     * Gỡ toàn bộ media usage rồi xóa Resource Version atomically.
-     *
-     * Input: Request, ResourceVersion và MediaAssetUsageService.
-     * Output: HTTP 204; transaction rollback khi thao tác thất bại.
+     * =====================================================================
+     * CHỨC NĂNG: Xóa mềm ResourceVersion qua action có guard retention
+     * =====================================================================
+     * INPUT: Request đã qua resource_versions.manage, version và delete action.
+     * OUTPUT: HTTP 204 sau khi action xóa mềm thành công.
+     * SIDE EFFECT: Action tháo usage/snapshot và ghi deleted_at/audit.
+     * EXCEPTION/TRANSACTION: Action khóa version và rollback nếu default,
+     * ready hoặc lịch sử download yêu cầu retention; lỗi validation trả 422.
+     * =====================================================================
      */
     public function destroy(
         Request $request,
         ResourceVersion $resourceVersion,
-        MediaAssetUsageService $mediaAssetUsageService,
+        DeleteResourceVersionAction $action,
     ): Response {
-        $actor = $this->adminUser($request);
-
-        DB::transaction(function () use ($actor, $mediaAssetUsageService, $resourceVersion): void {
-            $mediaAssetUsageService->detachAll($actor, $resourceVersion);
-            $resourceVersion->delete();
-        });
+        $action->handle($resourceVersion, $this->adminUser($request)->getKey());
 
         return BaseResponse::noContent();
     }

@@ -4,7 +4,7 @@
 
 **Backlog tổng:** RT-01 trong [PLAN.md](PLAN.md)
 
-**Trạng thái triển khai:** TODO. Tài liệu là phương án đề xuất dựa trên code hiện tại; việc tạo plan không đồng nghĩa tính năng đã được triển khai.
+**Trạng thái triển khai:** IN PROGRESS — TPL-00, TPL-01 và TPL-02 DONE; TPL-03–TPL-12 chưa bắt đầu. Chưa có processing hoặc live preview.
 
 **Mã task trong tài liệu:** TPL-00–TPL-12.
 
@@ -57,26 +57,24 @@ Catalog là danh mục tài nguyên cho người dùng tìm kiếm, lọc và m�
 
 ### 2.3 Mẫu Stitch đã kiểm tra
 
-File mẫu: [app-thoi-tiet-mobile-2.zip](../../template/app-thoi-tiet-mobile-2.zip).
+Baseline TPL-00 ngày 14/10/2026 dùng hai snapshot trong
+[`tests/Fixtures/ResourceTemplate`](../../tests/Fixtures/ResourceTemplate/README.md):
 
-- Có 8 thư mục màn hình chứa code.html.
-- Có 8 file tên screen.png, nhưng 5 file chỉ dài 28 byte và là placeholder lỗi tải ảnh; phải kiểm nội dung/MIME thay vì tin đuôi PNG.
-- Có DESIGN.md ở thư mục thiết kế phụ; không tính thành màn hình.
-- HTML dùng Tailwind CDN, Google Fonts/Material Symbols và ảnh ngoài; một số liên kết là href="#" hoặc fragment.
-- Bộ mẫu hiện tại giúp kiểm khả năng phát hiện screen, nhưng chưa chứng minh đã có navigation hoàn chỉnh hoặc chạy offline.
+| Fixture | Nội dung | Expected |
+| --- | --- | --- |
+| `normalized/package.zip` | FlowTask đã gom/link: 18 HTML, 18 screenshot, assets chung và `template.json`; không có `manifest.json` | `expected/normalized-manifest.json` |
+| `raw-stitch/package.zip` | Stitch gốc: một source wrapper, 9 folder có `code.html`/`screen.png`, `DESIGN.md` không thành screen | `expected/raw-discovery.json` |
 
-Mapping tham khảo cho bộ mẫu, không hardcode tên thư mục này trong parser tổng quát:
-
-| Thư mục | Slug gợi ý |
-| --- | --- |
-| trang_ch_th_i_ti_t_montreal | home |
-| ng_nh_p_nocturne_weather | login |
-| ch_s_kh_h_u_chi_ti_t | weather-details |
-| d_b_o_10_ng_y_t_i | forecast-10-days |
-| t_m_ki_m_th_nh_ph | city-search |
-| c_i_t_t_y_bi_n | settings |
-| c_nh_b_o_th_i_ti_t_s_c_kh_e | weather-alert |
-| radar_th_i_ti_t_tr_c_ti_p | radar |
+- Source normalized được lấy từ `template/stitch_full_page_ui_design/`;
+  source raw được snapshot từ `.original.zip` trước khi file local thay đổi.
+- Test dùng snapshot đóng băng và checksum, không đọc nguồn `template/` đang chỉnh sửa.
+- Raw không có `<title>`/entry: fallback theo tên folder, thứ tự path tăng dần;
+  admin chọn entry trước ready. Không hardcode mapping screen thành `home`.
+- HTML dùng Tailwind CDN, Google Fonts/Material Symbols và ảnh ngoài;
+  normalized local href/src đã kiểm tồn tại, chưa chứng nhận browser/offline.
+- Mẫu weather `app-thoi-tiet-mobile-2.zip` trong plan ban đầu không còn local.
+  Có 5 synthetic PNG placeholder 28 byte để giữ ca kiểm MIME/content;
+  không coi chúng là screenshot gốc được phục hồi.
 
 ## 3. Contract thư mục trước upload
 
@@ -111,6 +109,10 @@ Manifest đầu vào đề xuất:
 ```json
 {
   "schema_version": 1,
+  "name": "weather-template",
+  "title": "Weather Template",
+  "version": "1.0.0",
+  "description": "Giao diện weather tĩnh nhiều màn hình.",
   "entry_screen": "home",
   "screens": [
     {
@@ -130,6 +132,12 @@ Manifest đầu vào đề xuất:
 ```
 
 Path tương đối so với thư mục gốc manifest; thứ tự screen theo mảng. Backend kiểm path tồn tại, kiểu file, slug unique và entry_screen thuộc screens. Schema không nhận id MediaAsset, storage path hoặc trạng thái từ file upload.
+
+`template.json` là tên canonical duy nhất; `manifest.json` không được đọc làm
+manifest đầu vào. Bốn metadata `name/title/version/description` là tùy chọn,
+không ghi đè dữ liệu Resource/ResourceVersion tự động. Giới hạn, source-root,
+discovery, warning/blocking và process deadline đã chốt trong
+[contract v1](../api/RESOURCE_TEMPLATE_MANIFEST_V1.md).
 
 ### 3.2 Khi chưa có manifest
 
@@ -407,34 +415,45 @@ Các route trên chỉ là contract cần chốt; cập nhật theo naming trong
 
 **Mục tiêu:** khóa cấu trúc input, output và policy trước khi sửa schema.
 
-- [ ] Chốt manifest schema version 1 và JSON Schema/validator.
-- [ ] Chốt folder contract cho bộ đã gom: entry files, assets, screenshots và relative links.
-- [ ] Chốt discovery rule cho ZIP Stitch: code.html, screen.png, source root, slug/title heuristic.
-- [ ] Chốt entry screen bắt buộc ở ready; nếu không có thì admin phải chọn.
-- [ ] Chốt mức warning/blocking: placeholder screenshot là warning; thiếu HTML, duplicate path, invalid link nội bộ cần thiết là blocking.
-- [ ] Chốt capability: admin preview trước; public preview sau W-01.
-- [ ] Chốt định lượng archive dựa config media-assets.php và giới hạn thời gian process.
-- [ ] Đưa ZIP mẫu, ZIP đã gom/link và expected manifest vào fixture; giữ 5 placeholder PNG để test.
-- [ ] Viết contract note về external CDN/Google Fonts và không đảm bảo network dependency.
+- [x] Chốt manifest schema version 1 và JSON Schema/validator.
+- [x] Chốt folder contract cho bộ đã gom: entry files, assets, screenshots và relative links.
+- [x] Chốt discovery rule cho ZIP Stitch: code.html, screen.png, source root, slug/title heuristic.
+- [x] Chốt entry screen bắt buộc ở ready; nếu không có thì admin phải chọn.
+- [x] Chốt mức warning/blocking: placeholder screenshot là warning; thiếu HTML, duplicate path, invalid link nội bộ cần thiết là blocking.
+- [x] Chốt capability: admin preview trước; public preview sau W-01.
+- [x] Chốt định lượng archive dựa config media-assets.php và giới hạn thời gian process.
+- [x] Đưa ZIP mẫu, ZIP đã gom/link và expected manifest vào fixture; giữ 5 placeholder PNG để test.
+- [x] Viết contract note về external CDN/Google Fonts và không đảm bảo network dependency.
 
 **Phụ thuộc:** không.
 
 **Đầu ra:** manifest v1, fixture input/output, decision log.
 
+**Kết quả 14/10/2026:** DONE phạm vi contract/fixture; validator PHP, JSON Schema,
+hai ZIP snapshot và expected output đã có. Process deadline 120s, job timeout
+180s được chốt để enforce ở TPL-04/12; chưa có job/parser hoặc preview.
+[Contract](../api/RESOURCE_TEMPLATE_MANIFEST_V1.md) · [QA](../qa/resource-template/TPL-00.md).
+
 ### TPL-01 — Schema và model template
 
 **Mục tiêu:** lưu processing state và screen metadata theo ResourceVersion.
 
-- [ ] Tạo migration resource_version_templates với FK unique đến resource_versions.
-- [ ] Tạo migration resource_version_template_screens với FK cascade, unique slug và sort index.
-- [ ] Thêm source_media_id, checksum/token và preview artifact pointer như contract ở mục 4.
-- [ ] Tạo enum processing status pending/processing/ready/failed.
-- [ ] Tạo model/resource relation, cast JSON và query scopes ready/processing.
-- [ ] Thêm ResourceVersion relations template/screen.
-- [ ] Thêm model HasMediaAssets cho screen nếu dùng screenshot.
-- [ ] Đăng ký morph aliases và field template_screen.preview; cập nhật validation/picker contract.
-- [ ] Thêm factory/fixture tối thiểu, không thay migration đã chạy.
-- [ ] Quyết định FK screenshot: dùng usage service làm nguồn duy nhất, không thêm preview_media_asset_id.
+- [x] Tạo migration resource_version_templates với FK unique đến resource_versions.
+- [x] Tạo migration resource_version_template_screens với FK cascade, unique slug/path và sort index.
+- [x] Thêm source_media_id, checksum/token và preview artifact pointer như contract ở mục 4.
+- [x] Tạo enum processing status pending/processing/ready/failed.
+- [x] Tạo model/resource relation, cast JSON và query scopes ready/processing.
+- [x] Thêm ResourceVersion relations template/screen.
+- [x] Thêm model HasMediaAssets cho screen để screenshot dùng usage service.
+- [x] Đăng ký morph aliases và field template_screen.preview; cập nhật validation/picker contract.
+- [x] Thêm factory/fixture tối thiểu, không thay migration đã chạy.
+- [x] Quyết định FK screenshot: dùng usage service làm nguồn duy nhất, không thêm preview_media_asset_id.
+
+**Kết quả 14/10/2026:** TPL-01 DONE phạm vi schema/model. AI chuẩn hóa
+`template.json` trước import; database lưu snapshot manifest, processing state,
+input checksum/token và screen rows, không tự đoán navigation. Screenshot
+không có FK riêng; `template_screen.preview` đi qua MediaAssetUsageService.
+[QA TPL-01](../qa/resource-template/TPL-01.md).
 
 **Phụ thuộc:** TPL-00.
 
@@ -444,18 +463,18 @@ Các route trên chỉ là contract cần chốt; cập nhật theo naming trong
 
 **Mục tiêu:** bảo đảm ZIP đi qua đúng pipeline hiện tại ở mọi entry point.
 
-- [ ] Không sửa UploadMediaAssetAction thành template-specific; chỉ thêm metadata/context nếu thật sự cần.
-- [ ] Verify package gắn ở resource_version.package, one-to-one.
-- [ ] Chặn archive public; dùng MediaAssetUsageService attach/replace/detach.
-- [ ] Kiểm scan_status khi process/ready/request preview, không chỉ lúc upload.
-- [ ] Bổ sung guard cho MediaAssetUsageService nếu linkable là ResourceVersion ready: không thay package, không detach package không có promote/rebuild policy.
-- [ ] Guard destroy ResourceVersion: không xóa default; không xóa ready nếu policy chưa cho; giữ usage/download retention.
-- [ ] Không cho UpdateResourceVersionAction hay request client set status ready/is_default trực tiếp.
-- [ ] Xử lý detach package của draft: invalidate template processing và preview grant.
+- [x] Không sửa UploadMediaAssetAction thành template-specific; package tiếp tục đi qua pipeline upload chung.
+- [x] Verify package gắn ở resource_version.package, one-to-one; service khóa version trước mutation để chống race.
+- [x] Chặn archive public; attach/replace/detach dùng MediaAssetUsageService.
+- [x] Dùng ResourceVersionPackageGuard đọc lại archive/private/scan_status clean ở ready và tái sử dụng được cho process/preview.
+- [x] MediaAssetUsageService chặn thay/tháo package khi ResourceVersion ready.
+- [x] Guard destroy ResourceVersion: không xóa default hoặc ready; usage/download retention được giữ.
+- [x] Request và action không nhận status/is_default từ client; ready chỉ qua lifecycle action.
+- [x] Detach/replace package của draft invalidate processing metadata, screen snapshot và preview path.
 
 **Phụ thuộc:** TPL-01 và action/media hiện tại.
 
-**Kiểm chứng:** attach API, replace API, detach API, destroy version và concurrency test.
+**Kiểm chứng:** attach/replace/detach service, scan gate, destroy version, lifecycle payload và lock version cho package one-to-one. Chi tiết ở [QA TPL-02](../qa/resource-template/TPL-02.md).
 
 ### TPL-03 — Extractor, parser và manifest
 
@@ -471,7 +490,7 @@ Các route trên chỉ là contract cần chốt; cập nhật theo naming trong
 - [ ] Validate entry, screen count, duplicate path và file type.
 - [ ] Reject PHP/server-side/executable/dotfiles theo policy static preview.
 - [ ] Ghi warning bounded, không lưu nội dung HTML khổng lồ vào JSON.
-- [ ] Tạo parser fixture cho Stitch 8 screen và bộ folder đã gom.
+- [ ] Áp parser vào raw Stitch 9 screen và normalized 18 screen đã đóng băng, so với expected TPL-00.
 
 **Phụ thuộc:** TPL-00, TPL-01, TPL-02.
 
@@ -583,7 +602,7 @@ Component map dự kiến:
 
 **Phụ thuộc:** TPL-04, TPL-06.
 
-**Kiểm chứng:** test route/path/security + browser smoke 8 screen + external dependency diagnostics.
+**Kiểm chứng:** test route/path/security + browser smoke normalized 18 screen/raw 9 screen + external dependency diagnostics.
 
 ### TPL-09 — Public catalog và public preview
 
@@ -629,7 +648,7 @@ Component map dự kiến:
 - [ ] Security: traversal, absolute path, encoded path, symlink, encrypted/oversized ZIP, executable entry, CSP/path leak.
 - [ ] Queue: scan → process → ready, retry, duplicate job, stale token, missing artifact rebuild.
 - [ ] Frontend: service/store/panel/polling/screen sort/entry/promotion dialog.
-- [ ] Browser: admin upload, 8 screen preview, relative asset/link, external CDN warning, fallback screenshot.
+- [ ] Browser: admin upload, raw 9 screen/normalized 18 screen preview, relative asset/link, external CDN warning, fallback screenshot.
 - [ ] Public: catalog visibility, default version, pinned old version, noindex/private media.
 - [ ] Concurrency: two process jobs, two promote requests, attach while process, detach/destroy guard.
 - [ ] Lưu fixture kết quả tại docs/qa/resource-template/; cập nhật PLAN chỉ khi acceptance hoàn tất.
@@ -713,4 +732,4 @@ RT-01 chỉ chuyển DONE khi:
 - [Inventory dự án](../architecture/PROJECT_INVENTORY.md)
 - [Hướng dẫn môi trường](../operations/ENVIRONMENT.md)
 - [Media asset config](../../config/media-assets.php)
-- [Template fixture](../../template/app-thoi-tiet-mobile-2.zip)
+- [Template fixture và expected TPL-00](../../tests/Fixtures/ResourceTemplate/README.md)

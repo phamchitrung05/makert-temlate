@@ -1,0 +1,42 @@
+{
+    "expected/normalized-manifest.json": {
+        "bytes": 3536,
+        "sha256": "34012ef983ef1c827dafb9161bee919048cdef65735687c83cef442fda5b88bc"
+    },
+    "expected/raw-discovery.json": {
+        "bytes": 2354,
+        "sha256": "10238854284477cdd447bd3c1c2276c8d14e14b1e1f6e7013c83b9aaffe28a65"
+    },
+    "invalid-screenshots/placeholder-1.png": {
+        "bytes": 28,
+        "sha256": "731f7cce89c57e53246abb353b09b6322736ca1f1ef2416746b9ef3d12aec5b0"
+    },
+    "invalid-screenshots/placeholder-2.png": {
+        "bytes": 28,
+        "sha256": "6dc9f31a318fa5d3d9aa27524e122270369945e6f9d6106744da958a59039c19"
+    },
+    "invalid-screenshots/placeholder-3.png": {
+        "bytes": 28,
+        "sha256": "7da415978292b9a11dac851fbf92918133af8fd48b54415faaeca84289dd4896"
+    },
+    "invalid-screenshots/placeholder-4.png": {
+        "bytes": 28,
+        "sha256": "b6b2e8ab64c836ff77a562494943e5f38b2673fd8f8b9d4650707a370c6f80da"
+    },
+    "invalid-screenshots/placeholder-5.png": {
+        "bytes": 28,
+        "sha256": "df68fec5c1982ce439ac82d7fdff1f8921dc4b1a1fb04489322b955a6608b49f"
+    },
+    "manifest-cases.json": {
+        "bytes": 3333,
+        "sha256": "a3b11a9c41487bfc2e4400fb064b9cde15ca829a7f4112fd45b233f2c2109ee3"
+    },
+    "normalized/package.zip": {
+        "bytes": 9179806,
+        "sha256": "62227194093a5abec083f44cf8adc00d77f4f992d230e35997d1bd6e94d43a78"
+    },
+    "raw-stitch/package.zip": {
+        "bytes": 3729185,
+        "sha256": "022d019788b2e0454b8b0e3c2b778557771da2a9d436f30bd02c928991f456fb"
+    }
+}

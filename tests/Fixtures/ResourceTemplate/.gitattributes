@@ -1,0 +1,4 @@
+# Expected JSON bytes/hashes phải ổn định khi checkout trên Windows và Linux.
+*.json text eol=lf
+*.zip binary
+*.png binary

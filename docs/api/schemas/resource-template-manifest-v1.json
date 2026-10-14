@@ -1,0 +1,112 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://market-template.local/schemas/resource-template-manifest-v1.json",
+  "title": "Resource Template Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "entry_screen",
+    "screens"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "\\S"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "\\S"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "\\S"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000,
+      "pattern": "\\S"
+    },
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "entry_screen": {
+      "$ref": "#/definitions/slug"
+    },
+    "screens": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "$ref": "#/definitions/screen"
+      }
+    }
+  },
+  "definitions": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "maxLength": 120
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?![.\\s])[^\\\\/:*?\"<>|%#\\u0000-\\u001F\\u007F]+(?<![.\\s])(?:/(?![.\\s])[^\\\\/:*?\"<>|%#\\u0000-\\u001F\\u007F]+(?<![.\\s]))*$"
+    },
+    "htmlPath": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/relativePath"
+        },
+        {
+          "pattern": "\\.[hH][tT][mM][lL]?$"
+        }
+      ]
+    },
+    "imagePath": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/relativePath"
+        },
+        {
+          "pattern": "\\.(?:[pP][nN][gG]|[jJ][pP][eE]?[gG]|[wW][eE][bB][pP]|[gG][iI][fF])$"
+        }
+      ]
+    },
+    "screen": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "slug",
+        "title",
+        "path"
+      ],
+      "properties": {
+        "slug": {
+          "$ref": "#/definitions/slug"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "\\S"
+        },
+        "path": {
+          "$ref": "#/definitions/htmlPath"
+        },
+        "screenshot": {
+          "$ref": "#/definitions/imagePath"
+        }
+      }
+    }
+  }
+}

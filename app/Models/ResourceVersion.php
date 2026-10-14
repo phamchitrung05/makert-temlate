@@ -4,9 +4,12 @@ namespace App\Models;
 
 use App\Enums\ResourceVersionStatus;
 use App\Models\Concerns\HasMediaAssets;
+use Database\Factories\ResourceVersionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -20,6 +23,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - resource(): resource cha của phiên bản
+ * - template(): metadata xử lý template 1:1 nếu resource type là template
+ * - templateScreens(): screens của template qua metadata 1:1
  * - scopeDefault(): lọc phiên bản mặc định
  * - scopeReady(): lọc phiên bản sẵn sàng phát hành
  *
@@ -30,7 +35,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class ResourceVersion extends Model
 {
-    /** @use HasFactory<\Database\Factories\ResourceVersionFactory> */
+    /** @use HasFactory<ResourceVersionFactory> */
     use HasFactory, HasMediaAssets, SoftDeletes;
 
     /**
@@ -92,6 +97,44 @@ class ResourceVersion extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Lấy metadata template gắn một-một với version
+     * =====================================================================
+     * INPUT: Không có; dùng resource_version_id của model hiện tại.
+     * OUTPUT: HasOne ResourceVersionTemplate hoặc null.
+     * SIDE EFFECT: Query khi relation được gọi.
+     * EXCEPTION/TRANSACTION: Không tự mở transaction.
+     * =====================================================================
+     */
+    public function template(): HasOne
+    {
+        return $this->hasOne(ResourceVersionTemplate::class);
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Lấy screens của template version qua metadata
+     * =====================================================================
+     * INPUT: Không có; relation đi qua resource_version_templates.
+     * OUTPUT: HasManyThrough ResourceVersionTemplateScreen.
+     * SIDE EFFECT: Query khi relation được gọi.
+     * EXCEPTION/TRANSACTION: Không tự mở transaction.
+     * =====================================================================
+     */
+    public function templateScreens(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            ResourceVersionTemplateScreen::class,
+            ResourceVersionTemplate::class,
+            'resource_version_id',
+            'resource_version_template_id',
+            'id',
+            'id',
+        )->orderBy('resource_version_template_screens.sort_order')
+            ->orderBy('resource_version_template_screens.id');
     }
 
     /**

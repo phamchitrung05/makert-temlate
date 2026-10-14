@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Enums\MediaAssetField;
 use App\Enums\MediaAssetVisibility;
+use App\Enums\ResourceVersionStatus;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
+use App\Models\ResourceVersion;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -33,6 +35,9 @@ use Illuminate\Validation\ValidationException;
  * - replace(): thay toàn bộ asset của một field
  * - lockAssets(): đọc lại và khóa asset trước khi ghi usage
  * - assertAttachable(): kiểm tra invariant và quyền attach
+ * - assertPackageMutationAllowed(): đọc lại và khóa version trước package mutation
+ * - assertVersionCanDetachAll(): guard destroy version
+ * - invalidateTemplateProcessing(): xóa snapshot template stale
  * - nextSortOrder(): tính thứ tự kế tiếp của usage
  * - morphAlias(): lấy alias của linkable model
  * - logUsageActivity(): ghi audit activity cho mutation
@@ -135,6 +140,7 @@ class MediaAssetUsageService
     public function detachAll(User $actor, Model $linkable): void
     {
         DB::transaction(function () use ($actor, $linkable): void {
+            $this->assertVersionCanDetachAll($linkable);
             $usages = $linkable->mediaAssetUsages()->with('mediaAsset')->get();
 
             foreach ($usages as $usage) {
@@ -144,6 +150,8 @@ class MediaAssetUsageService
                     $this->logUsageActivity($actor, $usage->mediaAsset, 'media_asset.detached', $usage);
                 }
             }
+
+            $this->invalidateTemplateProcessing($actor, $linkable);
         });
     }
 
@@ -177,6 +185,7 @@ class MediaAssetUsageService
         ?int $sortOrder = null,
     ): MediaAssetUsage {
         return DB::transaction(function () use ($actor, $linkable, $asset, $field, $sortOrder): MediaAssetUsage {
+            $this->assertPackageMutationAllowed($linkable, $field);
             $asset = $this->lockAssets(collect([$asset]))->first();
             $this->assertAttachable($actor, $linkable, $asset, $field);
 
@@ -203,6 +212,10 @@ class MediaAssetUsageService
 
             $this->logUsageActivity($actor, $asset, 'media_asset.attached', $usage);
 
+            if ($field === MediaAssetField::ResourceVersionPackage) {
+                $this->invalidateTemplateProcessing($actor, $linkable);
+            }
+
             return $usage;
         });
     }
@@ -227,11 +240,23 @@ class MediaAssetUsageService
     public function detach(User $actor, MediaAssetUsage $usage): void
     {
         DB::transaction(function () use ($actor, $usage): void {
+            $linkable = $usage->linkable;
+            if (! $linkable instanceof Model) {
+                throw ValidationException::withMessages([
+                    'usage' => 'Usage không còn model nghiệp vụ hợp lệ.',
+                ]);
+            }
+            $this->assertPackageMutationAllowed($linkable, $usage->field);
+            $usage = MediaAssetUsage::query()->whereKey($usage->getKey())->lockForUpdate()->firstOrFail();
             $asset = $usage->mediaAsset()->withTrashed()->firstOrFail();
             Gate::forUser($actor)->authorize('attach', $asset);
 
             $usage->delete();
             $this->logUsageActivity($actor, $asset, 'media_asset.detached', $usage);
+
+            if ($usage->field === MediaAssetField::ResourceVersionPackage) {
+                $this->invalidateTemplateProcessing($actor, $linkable);
+            }
         });
     }
 
@@ -328,6 +353,7 @@ class MediaAssetUsageService
         }
 
         return DB::transaction(function () use ($actor, $linkable, $field, $assets): Collection {
+            $this->assertPackageMutationAllowed($linkable, $field);
             $assets = $this->lockAssets($assets);
             $assets->each(fn (mixed $asset) => $this->assertAttachable(
                 $actor,
@@ -336,9 +362,33 @@ class MediaAssetUsageService
                 $field,
             ));
 
-            $linkable->mediaAssetUsagesForField($field)->delete();
+            if ($field === MediaAssetField::ResourceVersionPackage) {
+                $previousUsages = $linkable->mediaAssetUsagesForField($field)
+                    ->with(['mediaAsset' => fn ($query) => $query->withTrashed()])
+                    ->get();
 
-            return $assets->values()->map(function (MediaAsset $asset, int $sortOrder) use (
+                foreach ($previousUsages as $usage) {
+                    if ($usage->mediaAsset instanceof MediaAsset) {
+                        Gate::forUser($actor)->authorize('attach', $usage->mediaAsset);
+                    }
+                }
+
+                if ($previousUsages->count() === 1 && $assets->count() === 1
+                    && (int) $previousUsages->first()->media_asset_id === (int) $assets->first()->getKey()) {
+                    return $previousUsages;
+                }
+
+                foreach ($previousUsages as $usage) {
+                    $usage->delete();
+                    if ($usage->mediaAsset instanceof MediaAsset) {
+                        $this->logUsageActivity($actor, $usage->mediaAsset, 'media_asset.detached', $usage);
+                    }
+                }
+            } else {
+                $linkable->mediaAssetUsagesForField($field)->delete();
+            }
+
+            $usages = $assets->values()->map(function (MediaAsset $asset, int $sortOrder) use (
                 $actor,
                 $linkable,
                 $field,
@@ -353,6 +403,12 @@ class MediaAssetUsageService
 
                 return $usage;
             });
+
+            if ($field === MediaAssetField::ResourceVersionPackage) {
+                $this->invalidateTemplateProcessing($actor, $linkable);
+            }
+
+            return $usages;
         });
     }
 
@@ -469,6 +525,105 @@ class MediaAssetUsageService
                 'field' => "Field {$field->value} không thuộc model {$this->morphAlias($linkable)}.",
             ]);
         }
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Chặn thay package của ResourceVersion đã ready
+     * =====================================================================
+     * INPUT: model linkable và field đang mutation.
+     * OUTPUT: không trả giá trị nếu version còn mutable.
+     * EXCEPTION/TRANSACTION: ValidationException; row version được khóa để
+     * chống race giữa attach/replace/detach và ready.
+     * =====================================================================
+     */
+    private function assertPackageMutationAllowed(Model $linkable, MediaAssetField $field): void
+    {
+        if ($field !== MediaAssetField::ResourceVersionPackage || ! $linkable instanceof ResourceVersion) {
+            return;
+        }
+
+        $version = ResourceVersion::query()
+            ->whereKey($linkable->getKey())
+            ->lockForUpdate()
+            ->firstOrFail();
+
+        if ($version->status === ResourceVersionStatus::Ready) {
+            throw ValidationException::withMessages([
+                'package' => 'Không thể thay đổi hoặc tháo package của version đã ready.',
+            ]);
+        }
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Bảo vệ version default/ready trước detach toàn bộ
+     * =====================================================================
+     * INPUT: model linkable của thao tác destroy.
+     * OUTPUT: không trả giá trị nếu model có thể detach.
+     * EXCEPTION/TRANSACTION: ValidationException cho ResourceVersion default,
+     * ready hoặc có download record; các model khác không bị ảnh hưởng.
+     * =====================================================================
+     */
+    private function assertVersionCanDetachAll(Model $linkable): void
+    {
+        if (! $linkable instanceof ResourceVersion) {
+            return;
+        }
+
+        $version = ResourceVersion::query()
+            ->whereKey($linkable->getKey())
+            ->lockForUpdate()
+            ->firstOrFail();
+
+        if ($version->is_default) {
+            throw ValidationException::withMessages([
+                'version' => 'Không thể xóa version mặc định.',
+            ]);
+        }
+
+        if ($version->status === ResourceVersionStatus::Ready) {
+            throw ValidationException::withMessages([
+                'version' => 'Không thể xóa version đã ready khi chưa có policy rollback.',
+            ]);
+        }
+
+        if (DB::table('downloads')->where('resource_version_id', $version->getKey())->exists()) {
+            throw ValidationException::withMessages([
+                'version' => 'Không thể xóa version đang được lịch sử download giữ lại.',
+            ]);
+        }
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Xóa snapshot template sau khi package draft bị đổi
+     * =====================================================================
+     * INPUT: Actor đã qua authorization và model nghiệp vụ đang thay package.
+     * OUTPUT: không trả giá trị; metadata/template preview cũ được invalidate.
+     * SIDE EFFECT: Tháo usage screenshot qua service, cập nhật metadata và
+     * xóa screen rows; giữ MediaAsset shared và file artifact trên disk.
+     * EXCEPTION/TRANSACTION: caller phải đang ở trong transaction mutation.
+     * =====================================================================
+     */
+    private function invalidateTemplateProcessing(User $actor, Model $linkable): void
+    {
+        if (! $linkable instanceof ResourceVersion) {
+            return;
+        }
+
+        $template = $linkable->template()->lockForUpdate()->first();
+        if ($template === null) {
+            return;
+        }
+
+        foreach ($template->screens()->get() as $screen) {
+            $this->detachAll($actor, $screen);
+        }
+
+        $template->invalidateForPackageMutation();
+        $linkable->unsetRelation('template');
+        $linkable->unsetRelation('templateScreens');
     }
 
     /**

@@ -61,7 +61,6 @@ class ResourceVersionUpdateRequest extends FormRequest
             'media.package_id' => ['nullable', 'integer', 'min:1'],
             'media.documentation_ids' => ['sometimes', 'array'],
             'media.documentation_ids.*' => ['integer', 'distinct', 'min:1'],
-            'is_default' => ['sometimes', 'boolean'],
         ];
     }
 }
