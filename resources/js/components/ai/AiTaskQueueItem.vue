@@ -41,6 +41,7 @@ const taskTypeMeta = computed(() => {
     article_generation: { icon: 'tabler-file-text', color: 'primary', label: 'Bài viết' },
     image_generation: { icon: 'tabler-photo', color: 'success', label: 'Hình ảnh' },
     sound_generation: { icon: 'tabler-volume', color: 'info', label: 'Âm thanh' },
+    resource_template_processing: { icon: 'tabler-layout-dashboard', color: 'warning', label: 'Template' },
   }
 
   return metadata[props.task.task_type] ?? { icon: 'tabler-sparkles', color: 'primary', label: 'AI' }
@@ -92,6 +93,8 @@ function taskSubtitle(task) {
   if (task.source === 'ai_content') return `${task.model || 'Tạo nội dung AI'} · Bài viết`
 
   if (task.source === 'ai_image') return `${task.model || 'Tạo ảnh AI'} · Hình ảnh`
+
+  if (task.source === 'resource_template') return 'Xử lý Resource Template'
 
   return 'Tác vụ AI'
 }

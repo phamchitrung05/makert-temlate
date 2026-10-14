@@ -34,7 +34,7 @@ const isMinimized = shallowRef(false)
 const errorTask = shallowRef(null)
 const { tasks, filteredTasks, filters, currentFilter, activeCount, loading, cancellingId, error } = queue
 
-const canUseQueue = computed(() => auth.isAuthenticated && auth.permissions.some(permission => ['ai_settings.manage', 'media.upload', 'posts.manage', 'resources.create'].includes(permission)))
+const canUseQueue = computed(() => auth.isAuthenticated && auth.permissions.some(permission => ['ai_settings.manage', 'media.upload', 'posts.manage', 'resources.create', 'resource_versions.manage'].includes(permission)))
 const terminalTaskCount = computed(() => tasks.value.filter(task => ['ready', 'failed', 'cancelled', 'expired'].includes(task.status)).length)
 const queuedTaskCount = computed(() => tasks.value.filter(task => task.status === 'queued').length)
 
@@ -64,6 +64,18 @@ function openTask(task) {
 
   if (task.task_type === 'writing_profile_analysis') {
     router.push({ path: '/ai/prompt/edit', query: { analysis: task.taskable_id || task.id, profile: task.draft_profile_id || undefined } })
+
+    return
+  }
+
+  if (task.task_type === 'resource_template_processing') {
+    router.push({
+      name: 'apps-ecommerce-resource-version-add',
+      query: {
+        version: task.resource_version_id || task.taskable_id,
+        resource: task.resource_id || undefined,
+      },
+    })
 
     return
   }
@@ -98,6 +110,7 @@ function errorDialogTitle(task) {
     'writing_profile_analysis': 'Phân tích văn phong thất bại',
     'article_generation': 'Tạo nội dung thất bại',
     'image_generation': 'Tạo ảnh thất bại',
+    'resource_template_processing': 'Xử lý template thất bại',
   }[task?.task_type] || 'Tác vụ AI thất bại'
 }
 

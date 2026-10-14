@@ -4,7 +4,7 @@
 
 **Backlog tổng:** RT-01 trong [PLAN.md](PLAN.md)
 
-**Trạng thái triển khai:** IN PROGRESS — TPL-00, TPL-01 và TPL-02 DONE; TPL-03–TPL-12 chưa bắt đầu. Chưa có processing hoặc live preview.
+**Trạng thái triển khai:** IN PROGRESS — TPL-00 đến TPL-04 DONE; TPL-05–TPL-12 chưa bắt đầu. Chưa có ready/promote hoặc live preview.
 
 **Mã task trong tài liệu:** TPL-00–TPL-12.
 
@@ -480,41 +480,57 @@ không có FK riêng; `template_screen.preview` đi qua MediaAssetUsageService.
 
 **Mục tiêu:** biến ZIP sạch thành cấu trúc template version có thể preview.
 
-- [ ] Tạo TemplatePackageExtractor dùng staging private, ZipArchive và path normalize.
-- [ ] Recheck archive policy trước extract; không dùng shell unzip.
-- [ ] Phát hiện source root và tránh double nesting.
-- [ ] Parse template.json theo allowlist; fallback discovery khi thiếu manifest.
-- [ ] Nhận code.html ở screen folder và file HTML theo manifest.
-- [ ] Tạo slug ổn định, unique; title từ manifest/title HTML/tên folder theo thứ tự có tài liệu.
-- [ ] Thu thập source_path, relative assets, link diagnostic, external dependencies và screenshot candidate.
-- [ ] Validate entry, screen count, duplicate path và file type.
-- [ ] Reject PHP/server-side/executable/dotfiles theo policy static preview.
-- [ ] Ghi warning bounded, không lưu nội dung HTML khổng lồ vào JSON.
-- [ ] Áp parser vào raw Stitch 9 screen và normalized 18 screen đã đóng băng, so với expected TPL-00.
+- [x] Tạo TemplatePackageExtractor dùng staging private, ZipArchive và path normalize.
+- [x] Recheck archive policy trước extract; không dùng shell unzip.
+- [x] Phát hiện source root và tránh double nesting.
+- [x] Parse template.json theo allowlist; fallback discovery khi thiếu manifest.
+- [x] Nhận code.html ở screen folder và file HTML theo manifest.
+- [x] Tạo slug ổn định, unique; title từ manifest/title HTML/tên folder theo thứ tự có tài liệu.
+- [x] Thu thập source_path, relative assets, link diagnostic, external dependencies và screenshot candidate.
+- [x] Validate entry, screen count, duplicate path và file type.
+- [x] Reject PHP/server-side/executable/dotfiles theo policy static preview.
+- [x] Ghi warning bounded, không lưu nội dung HTML khổng lồ vào JSON.
+- [x] Áp parser vào raw Stitch 9 screen và normalized 18 screen đã đóng băng, so với expected TPL-00.
 
 **Phụ thuộc:** TPL-00, TPL-01, TPL-02.
 
 **Kiểm chứng:** unit parser, security path test, expected manifest diff.
 
+**Kết quả 14/10/2026:** DONE. Extractor tạo run staging private bằng stream,
+recheck archive scanner và actual-byte limit; parser hỗ trợ manifest canonical và
+raw Stitch discovery. Diagnostics không giữ query/fragment của URL ngoài, local
+dependency thiếu là blocking, screenshot placeholder là warning. [QA TPL-03](../qa/resource-template/TPL-03.md).
+
 ### TPL-04 — ProcessTemplateVersionJob và artifact lifecycle
 
 **Mục tiêu:** xử lý bất đồng bộ, idempotent và có thể rebuild.
 
-- [ ] Tạo job/service nhận version id, media id, checksum và processing token.
-- [ ] Dispatch after commit, retry/backoff/timeout theo queue hiện tại.
-- [ ] Lock version hoặc unique run để chống hai job cùng ghi.
-- [ ] Extract vào template-processing staging; chỉ publish pointer sau khi hoàn tất.
-- [ ] Lưu site theo cây thư mục gốc để relative CSS/JS/ảnh/link hoạt động.
-- [ ] Copy/sanitize metadata; không copy package thành public disk.
-- [ ] Tạo screens và manifest trong transaction sau artifact ready.
-- [ ] Xóa run cũ/artifact orphan đúng owner; không xóa asset shared.
-- [ ] Nếu source checksum đổi, run cũ không được ghi đè run mới.
-- [ ] Khi job fail, set processing_error public-safe, log exception chi tiết, giữ package và default version.
-- [ ] Khi ready version artifact mất, endpoint trả unavailable và có nút rebuild theo checksum.
+- [x] Tạo job/service nhận version id, media id, checksum và processing token.
+- [x] Dispatch after commit, retry/backoff/timeout theo queue hiện tại.
+- [x] Lock version hoặc unique run để chống hai job cùng ghi.
+- [x] Extract vào template-processing staging; chỉ publish pointer sau khi hoàn tất.
+- [x] Lưu site theo cây thư mục gốc để relative CSS/JS/ảnh/link hoạt động.
+- [x] Copy/sanitize metadata; không copy package thành public disk.
+- [x] Tạo screens và manifest trong transaction sau artifact ready.
+- [x] Xóa run cũ/artifact orphan đúng owner; không xóa asset shared.
+- [x] Nếu source checksum đổi, run cũ không được ghi đè run mới.
+- [x] Khi job fail, set processing_error public-safe, log exception chi tiết, giữ package và default version.
+- [x] Khi ready version artifact mất, enqueue lại theo checksum sẽ tạo run rebuild mới; endpoint unavailable/rebuild thuộc TPL-06.
 
 **Phụ thuộc:** TPL-03.
 
 **Kiểm chứng:** queue fake/test, retry idempotent, fail giữa filesystem/DB, rebuild.
+
+**Kết quả 14/10/2026:** DONE. `ProcessTemplateVersionJob` nhận identity scalar,
+dispatch sau commit, unique theo version/token, retry tối đa 3 lần với backoff
+30/120/300 giây và timeout 180 giây. Service kiểm tra package private/clean,
+checksum và token, giải nén vào staging private, giữ nguyên cây site rồi publish
+pointer vào `media_private/template-previews/{version}/{token}` trước khi ghi
+screens/manifest trong transaction. Failure có log chi tiết nhưng chỉ lưu
+`processing_error` bounded/public-safe; worker cũ và checksum cũ không thể ghi đè
+run mới. Tracker `resource_template_processing` dùng chung với popup Admin,
+hiển thị queued/processing/ready/failed/cancelled và dọn staging khi hủy.
+Deadline parser mặc định 120 giây được kiểm tra theo config. [QA TPL-04](../qa/resource-template/TPL-04.md).
 
 ### TPL-05 — Ready, promote, rollback và archive policy
 

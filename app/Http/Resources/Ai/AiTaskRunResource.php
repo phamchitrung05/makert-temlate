@@ -43,6 +43,7 @@ final class AiTaskRunResource extends JsonResource
             'name' => $metadata['name'] ?? match ($this->task_type) {
                 'article_generation' => 'Tạo nội dung AI',
                 'image_generation' => 'Tạo ảnh AI',
+                'resource_template_processing' => 'Xử lý template',
                 default => 'Tác vụ AI',
             },
             'status' => $this->status,
@@ -59,6 +60,8 @@ final class AiTaskRunResource extends JsonResource
             'expires_at' => $this->expires_at?->toIso8601String(),
             'parent_id' => $metadata['parent_id'] ?? null,
             'media_asset_id' => $metadata['media_asset_id'] ?? null,
+            'resource_version_id' => $metadata['resource_version_id'] ?? null,
+            'resource_id' => $metadata['resource_id'] ?? null,
         ];
     }
 }

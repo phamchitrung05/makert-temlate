@@ -136,6 +136,8 @@ export function normalizeTask(value) {
     error_message: value?.error_message ?? null,
     parent_id: value?.parent_id ?? null,
     media_asset_id: value?.media_asset_id ?? null,
+    resource_version_id: value?.resource_version_id ?? null,
+    resource_id: value?.resource_id ?? null,
     created_at: value?.created_at ?? null,
     started_at: value?.started_at ?? null,
     completed_at: value?.completed_at ?? null,

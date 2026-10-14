@@ -19,6 +19,7 @@
 
 use App\Services\Ai\Runs\Adapters\AiImportTaskAdapter;
 use App\Services\Ai\Runs\Adapters\AiWritingProfileAnalysisTaskAdapter;
+use App\Services\Ai\Runs\Adapters\ResourceTemplateTaskAdapter;
 
 return [
     /*
@@ -28,5 +29,6 @@ return [
     'adapters' => [
         AiWritingProfileAnalysisTaskAdapter::class,
         AiImportTaskAdapter::class,
+        ResourceTemplateTaskAdapter::class,
     ],
 ];

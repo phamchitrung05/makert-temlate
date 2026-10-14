@@ -22,7 +22,7 @@ Các tài liệu API và QA trong `docs/` tiếp tục làm nguồn tham chiếu
 | Foundation | DONE | Dependencies, schema/migrations, môi trường local, health API, boundary public/admin |
 | Authentication và quyền | IN PROGRESS — A-02 backend DONE | Admin Sanctum, customer OAuth, token; backend quản lý role/permission bằng API thật đã xong. Hai page Vue để trống, giao diện mới do chủ dự án bổ sung sau; danh sách customer tạm hoãn |
 | Resource và taxonomy | DONE | Backend, admin CRUD, service/store và kiểm thử |
-| Resource Template | IN PROGRESS — TPL-02 DONE | Manifest/schema/fixture, template metadata và package invariant đã xong; tiếp theo ZIP processing. [Kế hoạch chi tiết](RESOURCE_TEMPLATE.md) |
+| Resource Template | IN PROGRESS — TPL-04 DONE | Manifest/schema/fixture, template metadata, package invariant, extractor/parser ZIP và process job/artifact lifecycle đã xong; tiếp theo ready/promote và live preview. [Kế hoạch chi tiết](RESOURCE_TEMPLATE.md) |
 | Media và version | DONE | Media Library task 1–10: upload/security, usage, API/quyền, picker, Resource/Post/Version và QA |
 | Blog Admin/Post | IN PROGRESS | CRUD, taxonomy, SEO metadata, editor, media, P-01 workflow, P-03 HTML sanitization và P-04 bộ lọc tác giả/ngày; post_type/Gallery mở thành plan riêng |
 | AI Content | DONE trong phạm vi kỹ thuật hiện tại | Pipeline C ba bước, nguồn URL/text/HTML/file, profile/brief, duyệt/từ chối, sửa/regenerate, Apply Post nháp, thumbnail, queue dùng chung và form enqueue liên tiếp |
@@ -67,6 +67,8 @@ Ngày 07/10/2026, chủ dự án yêu cầu để tính năng chấm bài và da
 - [x] 14/10: hoàn tất TPL-00: manifest canonical `template.json`, schema v1, validator bounded, normalized/raw Stitch fixture tách riêng, expected discovery/manifest, warning/blocking matrix và 47 test/548 assertions. [Contract](../api/RESOURCE_TEMPLATE_MANIFEST_V1.md) · [QA](../qa/resource-template/TPL-00.md)
 - [x] 14/10: hoàn tất TPL-01: migration/model metadata template, screen rows, processing enum, morph alias/field `template_screen.preview`, factory và 5 test/35 assertions; AI chuẩn hóa manifest trước import. [QA](../qa/resource-template/TPL-01.md)
 - [x] 14/10: hoàn tất TPL-02: package guard dùng chung, ready/default delete guard, draft invalidation và lifecycle request hardening; ResourceTemplateInvariantTest 6 test/23 assertions. [QA](../qa/resource-template/TPL-02.md)
+- [x] 14/10: hoàn tất TPL-03: extractor/parser ZIP staging private, source-root, manifest/discovery, path/static security và dependency diagnostics; parser kiểm normalized 18 screen và raw Stitch 9 screen. [QA](../qa/resource-template/TPL-03.md)
+- [x] 14/10: hoàn tất TPL-04: `ProcessTemplateVersionJob`, staging/publish artifact private, checksum/token guard, idempotency, retry/deadline, tracker queue dùng chung và cleanup khi hủy. [QA](../qa/resource-template/TPL-04.md)
 
 Bằng chứng FIX 1 ở [Acceptance/QA](../qa/FIX1_ACCEPTANCE_2026-10-07/README.md): backend 438 tests/2986 assertions; lượt scoped cuối 31/172; frontend scoped 7 files/51 tests và build đạt. Kiểm backend gần nhất sau bổ sung kho approved xem [QA giai đoạn 1](../qa/AI_ARTICLE_ARCHIVES_2026-10-07.md). Đây là các lượt có phần trùng nhau, không cộng thành tổng mới.
 
@@ -86,7 +88,7 @@ Các ID dưới đây để theo dõi ổn định, không phải yêu cầu tri
 | P-03 | DONE | Sanitization HTML Post server-side, allowlist markup/attribute, giữ media refs hợp lệ và test XSS/URL |
 | P-04 | DONE | Lọc Post theo tác giả/ngày tạo, endpoint option tác giả, validation khoảng ngày, UI panel filter riêng và test. Không bao gồm `post_type`/Gallery; sẽ làm theo plan riêng |
 | P-05 | TODO — tạm hoãn | Chốt các Post options đang minh họa; bổ sung persistence/validation cho option được chọn. Làm sau theo yêu cầu ngày 08/10/2026 |
-| RT-01 | IN PROGRESS — TPL-02 DONE | Resource Template: manifest/schema/fixture, model/template screen và package attach/invariant đã hoàn tất; tiếp theo ZIP processing, live preview, promote/rollback và public/download/share theo phase. [Task chi tiết](RESOURCE_TEMPLATE.md) |
+| RT-01 | IN PROGRESS — TPL-04 DONE | Resource Template: manifest/schema/fixture, model/template screen, package attach/invariant, extractor/parser ZIP và process job/artifact lifecycle đã hoàn tất; tiếp theo ready/promote, live preview và public/download/share theo phase. [Task chi tiết](RESOURCE_TEMPLATE.md) |
 | AI-01 | DONE — phạm vi archive approved | Trang `AI Approved` đọc archive bài AI đã duyệt dài hạn, có filter/ngày, datatable phân trang và dialog xem snapshot gốc. Kho dùng identity đa model `target_type` + `target_id`; draft chưa duyệt vẫn tạm thời và phạm vi Resource/Sound Apply thuộc AI-04 |
 | AI-02 | TODO — tạm hoãn | Sinh thumbnail từ nội dung Post đã được người dùng biên tập. Thumbnail tạo trong AI Content và dialog prompt ảnh thủ công đã có |
 | AI-03 | TODO | Ai Prompt: lịch sử phân tích phía server, quyền source preview riêng và mở rộng idempotency khi cần |

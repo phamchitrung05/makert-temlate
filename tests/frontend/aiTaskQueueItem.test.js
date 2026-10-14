@@ -6,7 +6,7 @@
  * CÁC HÀM/METHOD TRONG FILE:
  * - task(): tạo fixture task theo mode.
  * - renderItem(): mount row với UI stub, không gọi API.
- * - các test mode(): kiểm avatar icon theo article/image/writing/sound.
+ * - các test mode(): kiểm avatar icon theo article/image/writing/sound/template.
  * INPUT/OUTPUT CỦA CLASS (tổng thể): task summary -> icon và nhãn mode.
  * SIDE EFFECT: mount component trong DOM test; không gọi router/provider.
  * =====================================================================
@@ -37,6 +37,7 @@ describe('AI task queue item mode icons', () => {
     ['image_generation', 'ai_image', 'tabler-photo', 'Hình ảnh'],
     ['writing_profile_analysis', 'ai_writing_profile', 'tabler-writing-sign', 'Văn phong'],
     ['sound_generation', 'ai_sound', 'tabler-volume', 'Âm thanh'],
+    ['resource_template_processing', 'resource_template', 'tabler-layout-dashboard', 'Template'],
   ])('shows the %s mode icon before task details', (type, source, icon, label) => {
     const wrapper = renderItem(task(type, source))
 

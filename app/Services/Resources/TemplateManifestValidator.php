@@ -11,7 +11,8 @@ use stdClass;
  * =====================================================================
  *
  * Validator khóa contract JSON đầu vào trước khi TPL-03 xây parser ZIP.
- * Nó chỉ kiểm tra cấu trúc, field allowlist, slug/path, entry screen và
+ * Nó chỉ kiểm tra cấu trúc, field allowlist, slug/path (kể cả Windows device
+ * name), entry screen và
  * quan hệ với danh sách file đã discover; không đọc HTML, không giải nén
  * archive và không ghi database.
  *
@@ -22,7 +23,7 @@ use stdClass;
  * - validateScreens(): kiểm tra screen, path, slug và screenshot
  * - validateFieldSet(): chặn field ngoài allowlist
  * - validateString(): kiểm tra kiểu và giới hạn chuỗi
- * - normalizeRelativePath(): kiểm tra và chuẩn hóa path package
+ * - normalizeRelativePath(): kiểm tra path dùng chung cho manifest và extractor
  * - normalizeAvailablePaths(): dựng set file tồn tại, không đọc filesystem
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
@@ -344,13 +345,13 @@ final class TemplateManifestValidator
      * CHỨC NĂNG: Kiểm tra và chuẩn hóa relative path trong package
      * =====================================================================
      *
-     * INPUT: Path từ manifest hoặc danh sách file discover.
+     * INPUT: Path từ manifest, extractor hoặc danh sách file discover.
      * OUTPUT: Path dùng dấu slash hoặc null nếu path nguy hiểm.
      * SIDE EFFECT: Không có.
      * EXCEPTION/TRANSACTION: Không ném exception hoặc mở transaction.
      * =====================================================================
      */
-    private function normalizeRelativePath(mixed $path): ?string
+    public function normalizeRelativePath(mixed $path): ?string
     {
         if (! is_string($path) || $path === '' || mb_strlen($path) > self::MAX_PATH_LENGTH) {
             return null;
@@ -358,6 +359,10 @@ final class TemplateManifestValidator
 
         foreach (explode('/', $path) as $segment) {
             if (preg_match('/^(?![.\s])[^\\\\\/:*?"<>|%#\x00-\x1F\x7F]+(?<![.\s])$/Du', $segment) !== 1) {
+                return null;
+            }
+
+            if (preg_match('/^(?:con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/iu', $segment) === 1) {
                 return null;
             }
         }

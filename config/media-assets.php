@@ -30,6 +30,10 @@ return [
      */
     'temporary_disk' => env('MEDIA_TEMPORARY_DISK', 'media_private'),
     'temporary_directory' => env('MEDIA_TEMPORARY_DIRECTORY', 'media-assets/tmp'),
+    'template_processing_directory' => env('MEDIA_TEMPLATE_PROCESSING_DIRECTORY', 'template-processing'),
+    'template_artifact_directory' => env('MEDIA_TEMPLATE_ARTIFACT_DIRECTORY', 'template-previews'),
+    'template_process_deadline' => max(1, (int) env('MEDIA_TEMPLATE_PROCESS_DEADLINE', 120)),
+    'template_job_timeout' => (int) env('MEDIA_TEMPLATE_JOB_TIMEOUT', 180),
 
     'kinds' => [
         MediaAssetKind::Image->value => [
