@@ -4,7 +4,7 @@
 
 **Backlog tổng:** RT-01 trong [PLAN.md](PLAN.md)
 
-**Trạng thái triển khai:** IN PROGRESS — TPL-00 đến TPL-04 DONE; TPL-05–TPL-12 chưa bắt đầu. Chưa có ready/promote hoặc live preview.
+**Trạng thái triển khai:** DONE — TPL-00 đến TPL-12 đã triển khai và kiểm chứng theo QA reports.
 
 **Mã task trong tài liệu:** TPL-00–TPL-12.
 
@@ -536,15 +536,15 @@ Deadline parser mặc định 120 giây được kiểm tra theo config. [QA TPL
 
 **Mục tiêu:** tách “đã xử lý xong” khỏi “đang phát hành mặc định”.
 
-- [ ] Mở rộng MarkResourceVersionReadyAction cho resource type template và processing gate.
-- [ ] Tạo PromoteResourceVersionAction với lock Resource, transaction, permission và activity log.
-- [ ] Chặn is_default từ create/update request hoặc bỏ field khỏi public input.
-- [ ] Định nghĩa rollback = promote một version ready non-default.
-- [ ] Chặn archive default; chốt rule với active share/download retention.
-- [ ] Cập nhật ResourceVersionResource và scopes để trả template/processing state.
-- [ ] Invalidate catalog/preview cache sau promote/archive/publish.
-- [ ] Cập nhật activity events: template.processed, version.ready, version.promoted, version.rolled_back, version.archived.
-- [ ] Kiểm concurrent promote và stale request.
+- [x] Mở rộng MarkResourceVersionReadyAction cho resource type template và processing gate.
+- [x] Tạo PromoteResourceVersionAction với lock Resource, transaction, permission và activity log.
+- [x] Chặn is_default từ create/update request hoặc bỏ field khỏi public input.
+- [x] Định nghĩa rollback = promote một version ready non-default.
+- [x] Chặn archive default; chốt rule với active share/download retention.
+- [x] Cập nhật ResourceVersionResource và scopes để trả template/processing state.
+- [x] Invalidate catalog/preview cache sau promote/archive/publish.
+- [x] Cập nhật activity events: template.processed, version.ready, version.promoted, version.rolled_back, version.archived.
+- [x] Kiểm concurrent promote và stale request.
 
 **Phụ thuộc:** TPL-04.
 
@@ -554,15 +554,15 @@ Deadline parser mặc định 120 giây được kiểm tra theo config. [QA TPL
 
 **Mục tiêu:** cung cấp contract ổn định cho Vue.
 
-- [ ] Thêm FormRequest cho process, template settings, screen reorder/link mapping.
-- [ ] Thêm controller/API theo mục 9; controller chỉ orchestration.
-- [ ] Eager-load template/screens/media đúng field, tránh N+1.
-- [ ] Trả 202 khi enqueue; trả trạng thái terminal trong detail/poll.
-- [ ] Authorization bằng permission resource_versions.manage và policy linkable.
-- [ ] Validate screen id thuộc đúng version; version id thuộc đúng resource nếu route nested.
-- [ ] Không trả storage path/raw private disk/exception stack.
-- [ ] Trả signed/grant preview URL bounded và capability.
-- [ ] Thêm OpenAPI/API docs hoặc contract fixture trong docs/api khi API ổn định.
+- [x] Thêm FormRequest cho process, template settings, screen reorder/link mapping.
+- [x] Thêm controller/API theo mục 9; controller chỉ orchestration.
+- [x] Eager-load template/screens/media đúng field, tránh N+1.
+- [x] Trả 202 khi enqueue; trả trạng thái terminal trong detail/poll.
+- [x] Authorization bằng permission resource_versions.manage và policy linkable.
+- [x] Validate screen id thuộc đúng version; version id thuộc đúng resource nếu route nested.
+- [x] Không trả storage path/raw private disk/exception stack.
+- [x] Trả signed/grant preview URL bounded và capability.
+- [x] Thêm OpenAPI/API docs hoặc contract fixture trong docs/api khi API ổn định.
 
 **Phụ thuộc:** TPL-05.
 
@@ -583,16 +583,16 @@ Component map dự kiến:
 | useResourceTemplate.js | Fetch/process/update state và polling |
 | resourceTemplate service/store | HTTP contract và state riêng, không nhồi vào media store |
 
-- [ ] Giữ Composition API, script setup, comment header theo convention.
-- [ ] Hiển thị scan status và processing status riêng.
-- [ ] Process button disable đúng state; polling dừng ở ready/failed/cancelled.
-- [ ] Cho chọn entry, đổi thứ tự, sửa title/link mapping draft.
-- [ ] Gắn screenshot qua picker field template_screen.preview khi contract sẵn sàng.
-- [ ] Cho mở iframe admin theo grant; fallback screenshot/missing state rõ ràng.
-- [ ] Ready button chỉ enable khi backend capability/gate trả true; backend vẫn là authority.
-- [ ] Promote/rollback có dialog nêu version cũ/mới và refresh list sau thành công.
-- [ ] Không cho UI đổi is_default bằng checkbox cũ.
-- [ ] Thêm frontend tests cho polling, stale response và failed process.
+- [x] Giữ Composition API, script setup, comment header theo convention.
+- [x] Hiển thị scan status và processing status riêng.
+- [x] Process button disable đúng state; polling dừng ở ready/failed/cancelled.
+- [x] Cho chọn entry, đổi thứ tự, sửa title/link mapping draft.
+- [x] Gắn screenshot qua picker field template_screen.preview khi contract sẵn sàng.
+- [x] Cho mở iframe admin theo grant; fallback screenshot/missing state rõ ràng.
+- [x] Ready button chỉ enable khi backend capability/gate trả true; backend vẫn là authority.
+- [x] Promote/rollback có dialog nêu version cũ/mới và refresh list sau thành công.
+- [x] Không cho UI đổi is_default bằng checkbox cũ.
+- [x] Thêm frontend tests cho polling, stale response và failed process.
 
 **Phụ thuộc:** TPL-06; áp dụng vue-best-practices khi code Vue.
 
@@ -602,19 +602,19 @@ Component map dự kiến:
 
 **Mục tiêu:** live HTML preview an toàn, đúng version và đúng đường dẫn tương đối.
 
-- [ ] Tạo TemplatePreviewService resolve version/build/screen/manifest.
-- [ ] Tạo preview host/page và file controller riêng.
-- [ ] Mỗi request kiểm grant/policy/version state/scan status/processing status.
-- [ ] Normalize path, decode an toàn, reject traversal/symlink/outside manifest.
-- [ ] Allowlist Content-Type và extension; nosniff, no-referrer, private cache.
-- [ ] Set CSP sandbox header và response headers; host iframe set sandbox allow-scripts tối thiểu.
-- [ ] Ưu tiên origin/subdomain không có admin session cookie.
-- [ ] Không bật allow-same-origin/forms/popups/downloads/top-navigation nếu chưa có test/policy.
-- [ ] Cấu hình CDN allowlist theo environment; ghi diagnostics external dependency.
-- [ ] Serve source tree giữ relative paths; không đổi links làm hỏng site.
-- [ ] Bắt lỗi missing asset và iframe load error; cho screenshot fallback.
-- [ ] Kiểm HTML mở trực tiếp, iframe, revocation và private cache.
-- [ ] Ghi preview access audit bounded, không log token.
+- [x] Tạo TemplatePreviewService resolve version/build/screen/manifest.
+- [x] Tạo preview host/page và file controller riêng.
+- [x] Mỗi request kiểm grant/policy/version state/scan status/processing status.
+- [x] Normalize path, decode an toàn, reject traversal/symlink/outside manifest.
+- [x] Allowlist Content-Type và extension; nosniff, no-referrer, private cache.
+- [x] Set CSP sandbox header và response headers; host iframe set sandbox allow-scripts tối thiểu.
+- [x] Ưu tiên origin/subdomain không có admin session cookie.
+- [x] Không bật allow-same-origin/forms/popups/downloads/top-navigation nếu chưa có test/policy.
+- [x] Cấu hình CDN allowlist theo environment; ghi diagnostics external dependency.
+- [x] Serve source tree giữ relative paths; không đổi links làm hỏng site.
+- [x] Bắt lỗi missing asset và iframe load error; cho screenshot fallback.
+- [x] Kiểm HTML mở trực tiếp, iframe, revocation và private cache.
+- [x] Ghi preview access audit bounded, không log token.
 
 **Phụ thuộc:** TPL-04, TPL-06.
 
@@ -624,15 +624,15 @@ Component map dự kiến:
 
 **Mục tiêu:** nối template vào public backend sau khi admin MVP ổn định.
 
-- [ ] Hoàn thành W-01 PB-01/PB-02 public Resource query.
-- [ ] Catalog chỉ lấy Resource published, visibility public, slug primary; filter type template.
-- [ ] Default preview chỉ lấy ResourceVersion ready + is_default + template ready + package clean.
-- [ ] Tạo view model cho card/detail: cover, screenshots, screen count, default version, SEO.
-- [ ] Thêm canonical/OG/JSON-LD/sitemap theo PUBLIC_BACKEND.md.
-- [ ] Public preview giữ version cố định khi URL đã chọn; latest resolve default lúc mở page.
-- [ ] Resource members/private dùng auth/policy; không suy luận quyền từ iframe.
-- [ ] Cache invalidation khi promote, archive, visibility/status/slug/SEO đổi.
-- [ ] Không cho draft/processing/failed version lộ qua catalog, meta, sitemap.
+- [x] Hoàn thành W-01 PB-01/PB-02 public Resource query.
+- [x] Catalog chỉ lấy Resource published, visibility public, slug primary; filter type template.
+- [x] Default preview chỉ lấy ResourceVersion ready + is_default + template ready + package clean.
+- [x] Tạo view model cho card/detail: cover, screenshots, screen count, default version, SEO.
+- [x] Thêm canonical/OG/JSON-LD/sitemap theo PUBLIC_BACKEND.md.
+- [x] Public preview giữ version cố định khi URL đã chọn; latest resolve default lúc mở page.
+- [x] Resource members/private dùng auth/policy; không suy luận quyền từ iframe.
+- [x] Cache invalidation khi promote, archive, visibility/status/slug/SEO đổi.
+- [x] Không cho draft/processing/failed version lộ qua catalog, meta, sitemap.
 
 **Phụ thuộc:** TPL-08 và W-01.
 
@@ -642,16 +642,16 @@ Component map dự kiến:
 
 **Mục tiêu:** reuse downloads hiện tại và chỉ cấp capability đã chốt.
 
-- [ ] Xác nhận D-01 policy guest/customer, verify email, quota, license, retention.
-- [ ] Tạo public DownloadTemplateAction/controller riêng.
-- [ ] Resolve package media đúng resource_version_id; kiểm Resource published/public, version ready, clean, template ready.
-- [ ] Cấp signed/temporary URL có hạn hoặc stream; không lộ disk path.
-- [ ] Ghi downloads atomic, status/error và tránh double-count retry.
-- [ ] Bổ sung rate limit, counter và audit bounded.
-- [ ] Khi cần share, tạo share_links token_hash/capability/expires/revoked/created_by.
-- [ ] Preview share không tự có download; download share kiểm policy riêng.
-- [ ] Revoke/expire share làm preview/download fail ngay tại request.
-- [ ] URL “latest” chỉ dùng để resolve; record/URL cấp ra luôn ghim version.
+- [x] Xác nhận D-01 policy guest/customer, verify email, quota, license, retention.
+- [x] Tạo public DownloadTemplateAction/controller riêng.
+- [x] Resolve package media đúng resource_version_id; kiểm Resource published/public, version ready, clean, template ready.
+- [x] Cấp signed/temporary URL có hạn hoặc stream; không lộ disk path.
+- [x] Ghi downloads atomic, status/error và tránh double-count retry.
+- [x] Bổ sung rate limit, counter và audit bounded.
+- [x] Khi cần share, tạo share_links token_hash/capability/expires/revoked/created_by.
+- [x] Preview share không tự có download; download share kiểm policy riêng.
+- [x] Revoke/expire share làm preview/download fail ngay tại request.
+- [x] URL “latest” chỉ dùng để resolve; record/URL cấp ra luôn ghim version.
 
 **Phụ thuộc:** TPL-09 và D-01.
 
@@ -659,29 +659,29 @@ Component map dự kiến:
 
 ### TPL-11 — Test, QA và fixture report
 
-- [ ] Unit: manifest schema, slug, source root, title fallback, link diagnostics, MIME screenshot.
-- [ ] Feature: migrations, relations, usage field/kind/cardinality, process API, ready gate, promote/rollback.
-- [ ] Security: traversal, absolute path, encoded path, symlink, encrypted/oversized ZIP, executable entry, CSP/path leak.
-- [ ] Queue: scan → process → ready, retry, duplicate job, stale token, missing artifact rebuild.
-- [ ] Frontend: service/store/panel/polling/screen sort/entry/promotion dialog.
-- [ ] Browser: admin upload, raw 9 screen/normalized 18 screen preview, relative asset/link, external CDN warning, fallback screenshot.
-- [ ] Public: catalog visibility, default version, pinned old version, noindex/private media.
-- [ ] Concurrency: two process jobs, two promote requests, attach while process, detach/destroy guard.
-- [ ] Lưu fixture kết quả tại docs/qa/resource-template/; cập nhật PLAN chỉ khi acceptance hoàn tất.
-- [ ] Không đánh dấu Media và version DONE hiện tại thành chưa xong; RT-01 là phần mở rộng mới.
+- [x] Unit: manifest schema, slug, source root, title fallback, link diagnostics, MIME screenshot.
+- [x] Feature: migrations, relations, usage field/kind/cardinality, process API, ready gate, promote/rollback.
+- [x] Security: traversal, absolute path, encoded path, symlink, encrypted/oversized ZIP, executable entry, CSP/path leak.
+- [x] Queue: scan → process → ready, retry, duplicate job, stale token, missing artifact rebuild.
+- [x] Frontend: service/store/panel/polling/screen sort/entry/promotion dialog.
+- [x] Browser: admin upload, raw 9 screen/normalized 18 screen preview, relative asset/link, external CDN warning, fallback screenshot.
+- [x] Public: catalog visibility, default version, pinned old version, noindex/private media.
+- [x] Concurrency: two process jobs, two promote requests, attach while process, detach/destroy guard.
+- [x] Lưu fixture kết quả tại docs/qa/resource-template/; cập nhật PLAN chỉ khi acceptance hoàn tất.
+- [x] Không đánh dấu Media và version DONE hiện tại thành chưa xong; RT-01 là phần mở rộng mới.
 
 **Bộ acceptance tối thiểu:** backend scoped tests, frontend scoped tests, browser smoke fixture đã gom/link và browser smoke ZIP Stitch gốc.
 
 ### TPL-12 — Vận hành và tài liệu
 
-- [ ] Bổ sung queue worker/job name, tries/timeout/backoff và retry procedure vào ENVIRONMENT.md.
-- [ ] Thêm config template preview limits, allowed dependency hosts, artifact disk, grant lifetime và retention.
-- [ ] Có command/endpoint diagnostic cho stuck processing, missing artifact, stale run.
-- [ ] Theo dõi disk usage source ZIP/derived artifact, orphan cleanup, failed jobs và preview 4xx/5xx.
-- [ ] Chốt backup/restore: ZIP gốc, DB manifest/screens/usage, derived preview rebuild.
-- [ ] Cập nhật PROJECT_STRUCTURE.md/PROJECT_INVENTORY.md sau khi code ổn định.
-- [ ] Tạo API contract/QA report và cập nhật PLAN.md trạng thái từng TPL.
-- [ ] Runbook rollback version: promote old ready, invalidate cache, verify public preview/download.
+- [x] Bổ sung queue worker/job name, tries/timeout/backoff và retry procedure vào ENVIRONMENT.md.
+- [x] Thêm config template preview limits, allowed dependency hosts, artifact disk, grant lifetime và retention.
+- [x] Có command/endpoint diagnostic cho stuck processing, missing artifact, stale run.
+- [x] Theo dõi disk usage source ZIP/derived artifact, orphan cleanup, failed jobs và preview 4xx/5xx.
+- [x] Chốt backup/restore: ZIP gốc, DB manifest/screens/usage, derived preview rebuild.
+- [x] Cập nhật PROJECT_STRUCTURE.md/PROJECT_INVENTORY.md sau khi code ổn định.
+- [x] Tạo API contract/QA report và cập nhật PLAN.md trạng thái từng TPL.
+- [x] Runbook rollback version: promote old ready, invalidate cache, verify public preview/download.
 
 ## 11. Thứ tự triển khai
 
@@ -725,19 +725,19 @@ MVP có thể nghiệm thu sau TPL-08 + TPL-11 một phần: admin upload ZIP, x
 - Không làm payment, license, entitlement hoặc marketplace.
 - Không làm share link latest không ghim version.
 - Không sửa hàng loạt các migration/media actions đang chạy ngoài phạm vi RT-01.
-- Không mở public route trước khi W-01/D-01 chốt security, visibility và download policy.
+- Public route đã mở sau khi chốt security, visibility và download policy; phần UI public giữ Blade tối giản trong phạm vi backend.
 
 ## 14. Định nghĩa hoàn thành của RT-01
 
 RT-01 chỉ chuyển DONE khi:
 
-1. TPL-00 đến TPL-08 đạt acceptance và có report QA.
+1. TPL-00 đến TPL-12 đạt acceptance và có report QA.
 2. Có thể upload hoặc chọn package ZIP, process thành công, nhìn thấy screen list và live preview.
 3. Có thể tạo v2 trong khi v1 vẫn default; promote v2 rồi rollback v1.
 4. Ready gate chặn package chưa scan, template chưa process, entry thiếu và artifact lỗi.
 5. Media attach/detach/delete không bypass invariant version.
 6. Tài liệu vận hành/API/structure được cập nhật.
-7. Public catalog/download/share vẫn ghi TODO riêng nếu chưa qua TPL-09/TPL-10.
+7. Public catalog/download/share đã có route, policy, QA và contract; UI public vẫn là Blade tối giản theo phạm vi backend.
 
 ## 15. Tài liệu liên quan
 
@@ -747,5 +747,7 @@ RT-01 chỉ chuyển DONE khi:
 - [Cấu trúc dự án](../architecture/PROJECT_STRUCTURE.md)
 - [Inventory dự án](../architecture/PROJECT_INVENTORY.md)
 - [Hướng dẫn môi trường](../operations/ENVIRONMENT.md)
+- [Resource Template API](../api/RESOURCE_TEMPLATE_API.md)
+- [QA reports TPL-05–TPL-12](../qa/resource-template/TPL-05.md)
 - [Media asset config](../../config/media-assets.php)
 - [Template fixture và expected TPL-00](../../tests/Fixtures/ResourceTemplate/README.md)

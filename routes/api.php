@@ -28,6 +28,8 @@ use App\Http\Controllers\Admin\MediaAssetController;
 use App\Http\Controllers\Admin\PostController;
 use App\Http\Controllers\Admin\ResourceController;
 use App\Http\Controllers\Admin\ResourceVersionController;
+use App\Http\Controllers\Admin\ResourceTemplateController;
+use App\Http\Controllers\Admin\TemplateShareController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SlugPreviewController;
@@ -192,6 +194,27 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
                 ->whereNumber('resourceVersion');
             Route::post('/resource-versions/{resourceVersion}/ready', [ResourceVersionController::class, 'ready'])
                 ->whereNumber('resourceVersion');
+            Route::post('/resource-versions/{resourceVersion}/promote', [ResourceVersionController::class, 'promote'])
+                ->whereNumber('resourceVersion');
+            Route::post('/resource-versions/{resourceVersion}/rollback', [ResourceVersionController::class, 'rollback'])
+                ->whereNumber('resourceVersion');
+            Route::post('/resource-versions/{resourceVersion}/archive', [ResourceVersionController::class, 'archive'])
+                ->whereNumber('resourceVersion');
+            Route::get('/resource-versions/{resourceVersion}/template', [ResourceTemplateController::class, 'show'])
+                ->whereNumber('resourceVersion');
+            Route::post('/resource-versions/{resourceVersion}/template/process', [ResourceTemplateController::class, 'process'])
+                ->whereNumber('resourceVersion');
+            Route::patch('/resource-versions/{resourceVersion}/template', [ResourceTemplateController::class, 'update'])
+                ->whereNumber('resourceVersion');
+            Route::post('/resource-versions/{resourceVersion}/template/preview', [ResourceTemplateController::class, 'preview'])
+                ->whereNumber('resourceVersion')->middleware('throttle:30,1');
+            Route::post('/resource-versions/{resourceVersion}/template/screens/{screen}/preview', [ResourceTemplateController::class, 'screenPreview'])
+                ->whereNumber('resourceVersion')
+                ->whereNumber('screen');
+            Route::post('/resource-versions/{resourceVersion}/template/shares', [TemplateShareController::class, 'store'])
+                ->whereNumber('resourceVersion')->middleware('throttle:30,1');
+            Route::delete('/template-shares/{share}', [TemplateShareController::class, 'revoke'])
+                ->whereUuid('share');
         });
 
         // Quyền tài nguyên được đọc từ config và kiểm tra tại từng AI endpoint.

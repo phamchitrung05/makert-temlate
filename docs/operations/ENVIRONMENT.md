@@ -141,6 +141,39 @@ Admin đăng nhập qua `POST /api/admin/login` và nhận Bearer token. Vue lư
 trong `sessionStorage`; không cấu hình admin session hoặc đặt token vào comment,
 README hay cookie tự tạo. Endpoint kiểm tra phiên là `GET /api/admin/me`.
 
+## Resource Template processing/preview/download
+
+ZIP gốc luôn đi qua `MediaAsset` archive scanner và nằm trên disk private. Worker
+dùng job `ProcessTemplateVersionJob` với `tries=3`, timeout
+`MEDIA_TEMPLATE_JOB_TIMEOUT` (mặc định 180 giây), deadline parser
+`MEDIA_TEMPLATE_PROCESS_DEADLINE` (120 giây) và backoff 30/120/300 giây. Queue
+connection phải có `retry_after` lớn hơn timeout; sau deploy cần restart worker
+để nhận code/config mới:
+
+```powershell
+php artisan queue:work --queue=default --tries=3 --timeout=180
+```
+
+Kiểm tra run bị kẹt hoặc artifact thiếu:
+
+```powershell
+php artisan resource-templates:diagnose --json
+php artisan resource-templates:diagnose --cleanup --json
+```
+
+`config/resource-templates.php` là nguồn policy cho artifact disk, origin, grant/
+download lifetime, customer verification, daily quota, share retention và CSP
+dependency hosts. Các biến tương ứng có trong `.env.example`; không đưa token
+grant, ZIP path hoặc provider secret vào frontend/log. Preview dùng private no-store
+và rebuild từ version package bằng endpoint process khi derived artifact mất.
+
+Backup/restore phải giữ database (resource/version/template/screens/usages,
+downloads, grants/share hashes) và ZIP gốc trên private storage. Derived
+`template-previews/{version}/{processing-token}` có thể dọn/rebuild sau khi restore;
+kiểm tra checksum và chạy promote version ready cũ để rollback public. Sau promote,
+archive, publish hoặc revoke, cache catalog/preview bị invalidated và cần smoke
+`/resources/{slug}`, preview, download trước khi mở traffic.
+
 ## Health check
 
 `GET /api/health` là liveness endpoint công khai, không cần Bearer token:

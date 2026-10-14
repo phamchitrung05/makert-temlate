@@ -5,6 +5,7 @@ namespace App\Actions\Resources;
 use App\Enums\ResourceStatus;
 use App\Models\Resource;
 use App\Models\User;
+use App\Services\Resources\ResourceVersionCacheInvalidator;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -33,6 +34,18 @@ class ArchiveResourceAction
 {
     /**
      * =====================================================================
+     * CHỨC NĂNG: Nhận cache invalidator cho catalog/preview
+     * =====================================================================
+     * INPUT: ResourceVersionCacheInvalidator từ container.
+     * OUTPUT: Action sẵn sàng archive resource.
+     * SIDE EFFECT: Không có.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
+    public function __construct(private readonly ResourceVersionCacheInvalidator $cacheInvalidator) {}
+
+    /**
+     * =====================================================================
      * CHỨC NĂNG: Chuyển resource sang trạng thái archived
      * =====================================================================
      *
@@ -59,7 +72,7 @@ class ArchiveResourceAction
             );
         }
 
-        return DB::transaction(function () use ($resource, $actorId): Resource {
+        $archived = DB::transaction(function () use ($resource, $actorId): Resource {
             $previous = $resource->status;
 
             $resource->status = ResourceStatus::Archived;
@@ -76,5 +89,9 @@ class ArchiveResourceAction
 
             return $resource;
         });
+
+        $this->cacheInvalidator->invalidateForResource((int) $archived->getKey());
+
+        return $archived;
     }
 }

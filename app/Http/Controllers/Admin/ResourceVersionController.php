@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Actions\Resources\CreateResourceVersionAction;
 use App\Actions\Resources\DeleteResourceVersionAction;
+use App\Actions\Resources\ArchiveResourceVersionAction;
 use App\Actions\Resources\MarkResourceVersionReadyAction;
+use App\Actions\Resources\PromoteResourceVersionAction;
 use App\Actions\Resources\UpdateResourceVersionAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Resources\ResourceVersionCreateRequest;
@@ -13,6 +15,7 @@ use App\Http\Resources\Resources\ResourceVersionResource;
 use App\Http\Responses\BaseResponse;
 use App\Models\ResourceVersion;
 use App\Models\User;
+use App\Services\Resources\ResourceVersionReadyGate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,6 +34,9 @@ use Symfony\Component\HttpFoundation\Response;
  * - update(): cập nhật phiên bản.
  * - destroy(): gỡ media và xóa phiên bản trong transaction.
  * - ready(): chuyển phiên bản sang trạng thái sẵn sàng.
+ * - promote(): đặt version ready thành mặc định.
+ * - rollback(): promote version ready cũ thành mặc định.
+ * - archive(): lưu trữ version không còn mặc định.
  * - adminUser(): lấy admin hiện tại hoặc trả 401.
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
@@ -49,7 +55,7 @@ class ResourceVersionController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = ResourceVersion::query()
-            ->with(['resource', 'mediaAssetUsages.mediaAsset.media'])
+            ->with(['resource', 'template.screens.mediaAssetUsages.mediaAsset.media', 'mediaAssetUsages.mediaAsset.media'])
             ->orderByDesc('created_at')
             ->orderByDesc('id');
 
@@ -85,14 +91,24 @@ class ResourceVersionController extends Controller
      * Input: ResourceVersion đã được route model binding.
      * Output: JsonResponse; chỉ đọc database.
      */
-    public function show(ResourceVersion $resourceVersion): JsonResponse
+    public function show(ResourceVersion $resourceVersion, ResourceVersionReadyGate $gate): JsonResponse
     {
-        $resourceVersion->loadMissing(['resource', 'mediaAssetUsages.mediaAsset.media']);
+        $resourceVersion->loadMissing(['resource', 'template.screens.mediaAssetUsages.mediaAsset.media', 'mediaAssetUsages.mediaAsset.media']);
 
-        return BaseResponse::success(
-            ResourceVersionResource::make($resourceVersion),
-            'Chi tiết resource version.',
-        );
+        $payload = ResourceVersionResource::make($resourceVersion)->resolve(request());
+        $canReady = false;
+        try {
+            $canReady = $resourceVersion->status->value === 'draft' && $gate->assert($resourceVersion) !== null;
+        } catch (\Throwable) {
+            // Capability chỉ là gợi ý; MarkResourceVersionReadyAction kiểm tra lại dưới lock.
+        }
+        $payload['capabilities'] = [
+            'can_ready' => $canReady,
+            'can_edit' => $resourceVersion->status->value === 'draft',
+            'can_process' => $resourceVersion->status->value !== 'archived',
+        ];
+
+        return BaseResponse::success($payload, 'Chi tiết resource version.');
     }
 
     /**
@@ -150,6 +166,67 @@ class ResourceVersionController extends Controller
         $version = $action->handle($resourceVersion, $this->adminUser($request)->getKey());
 
         return BaseResponse::success(ResourceVersionResource::make($version), 'Resource version đã sẵn sàng.');
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Đặt version ready thành version mặc định của resource
+     * =====================================================================
+     * INPUT: Request, ResourceVersion và PromoteResourceVersionAction.
+     * OUTPUT: JsonResponse chứa version mặc định mới.
+     * SIDE EFFECT: Khóa resource, demote default cũ, ghi audit/cache.
+     * EXCEPTION/TRANSACTION: ValidationException nếu version chưa đủ gate.
+     * =====================================================================
+     */
+    public function promote(
+        Request $request,
+        ResourceVersion $resourceVersion,
+        PromoteResourceVersionAction $action,
+    ): JsonResponse {
+        $version = $action->handle($resourceVersion, $this->adminUser($request)->getKey());
+
+        return BaseResponse::success(ResourceVersionResource::make($version), 'Resource version đã được đặt mặc định.');
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Rollback bằng cách promote version ready non-default
+     * =====================================================================
+     * INPUT: Request, ResourceVersion cũ và PromoteResourceVersionAction.
+     * OUTPUT: JsonResponse chứa version mặc định sau rollback.
+     * SIDE EFFECT: Khóa resource, đổi default và ghi audit/cache.
+     * EXCEPTION/TRANSACTION: ValidationException nếu rollback stale/không hợp lệ.
+     * =====================================================================
+     */
+    public function rollback(
+        Request $request,
+        ResourceVersion $resourceVersion,
+        PromoteResourceVersionAction $action,
+    ): JsonResponse {
+        $version = $action->handle($resourceVersion, $this->adminUser($request)->getKey(), true);
+
+        return BaseResponse::success(ResourceVersionResource::make($version), 'Resource version đã rollback.');
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Archive version không còn là default
+     * =====================================================================
+     * INPUT: Request, ResourceVersion và ArchiveResourceVersionAction.
+     * OUTPUT: JsonResponse version archived, package/usage vẫn giữ nguyên.
+     * SIDE EFFECT: Ghi status/audit và invalidate catalog/preview cache.
+     * EXCEPTION/TRANSACTION: ValidationException nếu default, download hoặc
+     * processing active còn tồn tại.
+     * =====================================================================
+     */
+    public function archive(
+        Request $request,
+        ResourceVersion $resourceVersion,
+        ArchiveResourceVersionAction $action,
+    ): JsonResponse {
+        $version = $action->handle($resourceVersion, $this->adminUser($request)->getKey());
+
+        return BaseResponse::success(ResourceVersionResource::make($version), 'Resource version đã được archive.');
     }
 
     /**

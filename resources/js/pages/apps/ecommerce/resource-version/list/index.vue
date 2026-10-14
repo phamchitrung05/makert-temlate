@@ -6,7 +6,7 @@ import { useResourceVersionStore } from '@/stores/resourceVersion'
 const route = useRoute()
 const router = useRouter()
 const store = useResourceVersionStore()
-const { items, totalItems, isLoading, error } = storeToRefs(store)
+const { items, totalItems, isLoading, isMutating, error } = storeToRefs(store)
 const page = shallowRef(1)
 const itemsPerPage = shallowRef(15)
 const resourceId = computed(() => Number(route.query.resource) || null)
@@ -17,6 +17,20 @@ const fetchItems = () => store.fetchVersions({
   page: page.value,
   'per_page': itemsPerPage.value,
 })
+
+const performLifecycle = async (item, action) => {
+  const label = action === 'rollback' ? 'rollback version này' : 'đặt version này làm mặc định'
+  if (typeof window !== 'undefined' && !window.confirm(`Xác nhận ${label}?`))
+    return
+  try {
+    if (action === 'rollback')
+      await store.rollbackVersion(item.id)
+    else
+      await store.promoteVersion(item.id)
+    await fetchItems()
+  }
+  catch {}
+}
 
 watch([page, itemsPerPage, resourceId], () => void fetchItems(), { immediate: true })
 </script>
@@ -79,6 +93,24 @@ watch([page, itemsPerPage, resourceId], () => void fetchItems(), { immediate: tr
             variant="text"
             size="small"
             @click="router.push({ name: 'apps-ecommerce-resource-version-add', query: { version: item.id, resource: item.resource_id } })"
+          />
+          <VBtn
+            v-if="item.status === 'ready' && !item.is_default"
+            icon="tabler-star"
+            variant="text"
+            size="small"
+            :loading="isMutating"
+            title="Promote version"
+            @click="performLifecycle(item, 'promote')"
+          />
+          <VBtn
+            v-if="item.status === 'ready' && !item.is_default"
+            icon="tabler-history"
+            variant="text"
+            size="small"
+            :loading="isMutating"
+            title="Rollback to version"
+            @click="performLifecycle(item, 'rollback')"
           />
         </template>
       </VDataTableServer>

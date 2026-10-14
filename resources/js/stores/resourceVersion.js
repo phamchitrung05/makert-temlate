@@ -78,6 +78,8 @@ export const useResourceVersionStore = defineStore('resourceVersion', () => {
   const createVersion = payload => runMutation(() => resourceVersionService.create(payload))
   const updateVersion = (id, payload) => runMutation(() => resourceVersionService.update(id, payload))
   const readyVersion = id => runMutation(() => resourceVersionService.ready(id))
+  const promoteVersion = id => runMutation(() => resourceVersionService.promote(id))
+  const rollbackVersion = id => runMutation(() => resourceVersionService.rollback(id))
   const deleteVersion = id => runMutation(() => resourceVersionService.remove(id))
   const clearCurrent = () => { current.value = null; error.value = null }
 
@@ -95,6 +97,8 @@ export const useResourceVersionStore = defineStore('resourceVersion', () => {
     createVersion,
     updateVersion,
     readyVersion,
+    promoteVersion,
+    rollbackVersion,
     deleteVersion,
     clearCurrent,
   }

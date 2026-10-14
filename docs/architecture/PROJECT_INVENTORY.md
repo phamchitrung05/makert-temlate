@@ -36,6 +36,8 @@ là nguồn tiến độ hiện tại, không dùng snapshot cũ để suy số 
 - Authentication: Laravel Sanctum Bearer token cho admin; customer guard riêng.
 - Permission: `spatie/laravel-permission`.
 - Media: `spatie/laravel-medialibrary` + MediaAsset domain wrapper.
+- Resource Template: ZIP processing queue, ready/promote lifecycle, stateless
+  live preview, public catalog và verified download/share policy.
 - Audit: `spatie/laravel-activitylog`.
 - API envelope: `App\\Http\\Responses\\BaseResponse`.
 - Frontend API boundary: `resources/js/utils/api.js` (`$api`).
@@ -139,6 +141,21 @@ docs/                      Plans, handoff notes and this inventory
 - File page, picker và Asset page đã dùng chung `useMediaAssetStore`; không lưu File/Blob nhị phân trong Pinia. Browser/staging với storage thật còn pending.
 - Picker: `resources/js/views/apps/media/field/MediaLibraryDialog.vue`, `MediaAssetField.vue`
 
+### Resource Template
+
+- Metadata/models: `ResourceVersionTemplate`, `ResourceVersionTemplateScreen`;
+  migrations `2026_10_14_051026/051027` và access migration `2026_10_15_010000`.
+- Queue: `ProcessTemplateVersionJob`, `TemplateVersionProcessingService`,
+  `TemplatePackageExtractor`; artifact ở private disk `template-previews/{version}/{token}`.
+- Lifecycle/API: `ResourceVersionReadyGate`, Promote/Archive actions,
+  `ResourceTemplateController`, FormRequests và `ResourceVersionResource`.
+- Admin Vue: `resourceTemplate.js`, `useResourceTemplate.js`,
+  `components/resource-template/` và `ResourceVersionForm.vue` integration.
+- Preview/public: `TemplatePreviewService`, `TemplateAccessService`,
+  `TemplateDownloadService`, public catalog controllers/views và stateless routes.
+- Operations: `resource-templates:diagnose`, `config/resource-templates.php`,
+  `docs/api/RESOURCE_TEMPLATE_API.md`, `docs/qa/resource-template/TPL-05.md`–`TPL-12.md`.
+
 ### AI import
 
 - Tự đánh giá định kỳ (2026-10-07): `TODO`, mới lập [kế hoạch](../plans/HE_THONG_TU_DANH_GIA_DINH_KY.md) lưu snapshot bài/nguồn độc lập với retention run, chấm theo lịch và tổng hợp báo cáo trong Admin; chưa triển khai hoặc bật lịch gọi AI.
@@ -232,6 +249,9 @@ All admin routes are under `/api/admin`, protected by Sanctum admin middleware a
 
 - Category, Tag, Technology list/show/create/update/delete routes are in `routes/api.php`.
 - Resource and ResourceVersion CRUD/action routes are in the same file.
+- Resource Template admin routes are under `/api/admin/resource-versions/{id}/template*`;
+  public catalog/preview/download/share routes are in `routes/web.php` and
+  `routes/template-preview.php`.
 
 ## 6. Frontend route map
 
@@ -242,11 +262,15 @@ All admin routes are under `/api/admin`, protected by Sanctum admin middleware a
 - `AiTaskQueuePopup` được mount trong `resources/js/layouts/default.vue`, nên giữ trạng thái khi chuyển route.
 - `/apps/media/file` — API-backed file library.
 - `/apps/media/media-asset` — media asset grid/library; must not use demo data in production.
+- `/apps/ecommerce/resource-version/add?version={id}` — Resource Version form with
+  Template processing/screen panel when resource type is `template`.
+- `/resources` and `/resources/{slug}` — server-rendered public template catalog/detail;
+  preview/download/share are short-lived capability routes.
 - `/apps/media/media-asset/folder/:folder` — verify folder contract before enabling as persisted feature.
 
 ## 7. Database schema map
 
-Core migrations include users/admin extension, customers, Sanctum tokens, permissions, activity log, slugable, resources, resource versions, downloads, categories, tags, technologies, taxonomy pivots, media, media assets/usages, posts and SEO metadata.
+Core migrations include users/admin extension, customers, Sanctum tokens, permissions, activity log, slugable, resources, resource versions, template metadata/screens/access grants, downloads, categories, tags, technologies, taxonomy pivots, media, media assets/usages, posts and SEO metadata.
 
 When adding Post options or AI imports, add a new timestamped migration. Never edit an already-applied migration to change production schema.
 
@@ -259,6 +283,10 @@ When adding Post options or AI imports, add a new timestamped migration. Never e
 - Taxonomy: `TaxonomyCrudTest`.
 - Auth/permissions/routes: `AuthenticationTest`, `SanctumFoundationTest`, `RouteBoundaryTest`, `ResourcePermissionTest`, `AccessManagementApiTest`.
 - AI writing profiles/queue: `AiWritingProfilesApiTest` và `tests/frontend/aiTaskQueue.test.js`, `aiPromptApi.test.js`, `aiPromptFlow.test.js`.
+- Resource Template: `ResourceTemplateInvariantTest`, `ResourceTemplateProcessingTest`,
+  `ResourceTemplateLifecycleTest`, `ResourceTemplatePublicAccessTest`,
+  `TemplatePreviewServiceTest`, `ResourceTemplateManifestValidatorTest`,
+  `TemplatePackageExtractorTest`, `tests/frontend/resourceTemplate.test.js`.
 
 ```powershell
 php artisan test
@@ -299,6 +327,9 @@ npm run lint
   `AI_OPENAI_TEMPERATURE`, `AI_GEMINI_KEY`, `AI_GEMINI_ENDPOINT`,
   `AI_GEMINI_MODEL` và `AI_GEMINI_TEMPERATURE`.
 - Media conversion/size/disk policy: `config/media-assets.php`, `config/media-library.php`, `config/filesystems.php`.
+- Resource Template preview/download/CSP/quota: `config/resource-templates.php`;
+  queue worker uses `ProcessTemplateVersionJob` timeout/backoff and
+  `resource-templates:diagnose`.
 
 ## 10. How future AI should use this file
 

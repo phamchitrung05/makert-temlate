@@ -71,4 +71,12 @@ export const resourceVersionService = {
   async ready(id) {
     return normalize(unwrap(await $api(`/admin/resource-versions/${id}/ready`, { method: 'POST' })))
   },
+
+  async promote(id) {
+    return normalize(unwrap(await $api(`/admin/resource-versions/${id}/promote`, { method: 'POST' })))
+  },
+
+  async rollback(id) {
+    return normalize(unwrap(await $api(`/admin/resource-versions/${id}/rollback`, { method: 'POST' })))
+  },
 }

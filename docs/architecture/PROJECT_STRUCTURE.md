@@ -125,6 +125,7 @@ vào Action, Service, Repository hoặc Model phù hợp.
 - `routes/web.php`
   - OAuth customer `/auth/{provider}/...`.
   - Public home `/` dùng `HomeController` và Blade.
+  - Resource template catalog `/resources`, pinned preview/download/share routes.
   - `/admin` trả `resources/views/admin.blade.php`.
   - `/admin/{any?}` là catch-all cho Vue Router; không dùng catch-all root cho
     public website.
@@ -567,6 +568,24 @@ chỉ chuyển `ready` khi có đúng một package archive private với
 Trong list API, `field` là context của picker và được backend ánh xạ về `kind`
 được phép; nó không giới hạn kết quả vào các asset đã có usage ở field đó. Nhờ
 vậy asset mới hoặc chưa attach vẫn xuất hiện để người dùng lựa chọn.
+
+### 4.4. Resource Template lifecycle
+
+Template vẫn dùng `Resource`/`ResourceVersion` và package usage hiện có. Metadata
+1:1 nằm ở `resource_version_templates`, screens ở
+`resource_version_template_screens`; `ProcessTemplateVersionJob` ghi artifact
+private theo `version/token`. `ResourceVersionReadyGate` là authority cho ready,
+`PromoteResourceVersionAction`/`ArchiveResourceVersionAction` giữ lifecycle và
+cache/activity. Admin API ở `ResourceTemplateController`, panel Vue ở
+`resources/js/components/resource-template/`; public catalog/preview/download
+đi qua `app/Services/Catalog`, `TemplatePreviewService`,
+`TemplateAccessService` và `TemplateDownloadService`.
+
+Static preview route là `routes/template-preview.php` và không dùng admin session;
+manifest/path/MIME/CSP đều được kiểm ở mỗi request. Public Blade routes nằm ở
+`routes/web.php`; capability token chỉ lưu hash trong
+`template_access_grants`/`template_share_links`. Command vận hành là
+`resource-templates:diagnose`.
 
 ### 4.5. AI Content Agent dùng chung
 

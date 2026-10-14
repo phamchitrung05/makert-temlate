@@ -4,8 +4,10 @@ namespace App\Actions\Resources;
 
 use App\Enums\ResourceVersionStatus;
 use App\Models\ResourceVersion;
-use App\Services\ResourceVersionPackageGuard;
+use App\Services\Resources\ResourceVersionCacheInvalidator;
+use App\Services\Resources\ResourceVersionReadyGate;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * =====================================================================
@@ -13,12 +15,13 @@ use Illuminate\Support\Facades\DB;
  * =====================================================================
  *
  * Package archive phải private và security scan clean trước khi version được
- * public cho luồng download. Kiểm tra chạy trong transaction và khóa version.
+ * public cho luồng download. Template còn phải qua processing gate và có
+ * artifact/screen/entry hợp lệ. Kiểm tra chạy trong transaction và khóa version.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : dữ liệu theo contract và method chính của file.
  * - OUTPUT: kết quả public của file; side effect/exception theo implementation.
  * CÁC HÀM/METHOD TRONG FILE:
- * - __construct(): nhận guard package dùng chung.
+ * - __construct(): nhận ready gate và cache invalidator dùng chung.
  * - handle(): kiểm tra package archive và chuyển version sang ready.
  */
 class MarkResourceVersionReadyAction
@@ -29,7 +32,8 @@ class MarkResourceVersionReadyAction
      * Output: action sẵn sàng xử lý; chưa mở transaction.
      */
     public function __construct(
-        private readonly ResourceVersionPackageGuard $packageGuard,
+        private readonly ResourceVersionReadyGate $readyGate,
+        private readonly ResourceVersionCacheInvalidator $cacheInvalidator,
     ) {}
 
     /**
@@ -40,23 +44,43 @@ class MarkResourceVersionReadyAction
      */
     public function handle(ResourceVersion $version, int $actorId): ResourceVersion
     {
-        return DB::transaction(function () use ($version, $actorId): ResourceVersion {
+        $ready = DB::transaction(function () use ($version, $actorId): ResourceVersion {
             $version = ResourceVersion::query()
+                ->with('resource')
                 ->whereKey($version->getKey())
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $this->packageGuard->cleanPackageFor($version);
+            if ($version->status === ResourceVersionStatus::Archived) {
+                throw ValidationException::withMessages([
+                    'version' => 'Không thể ready version đã archive.',
+                ]);
+            }
+
+            $this->readyGate->assert($version);
+            $fromStatus = $version->status;
 
             $version->status = ResourceVersionStatus::Ready;
             $version->released_at ??= now();
             $version->created_by ??= $actorId;
             $version->save();
 
+            activity('resources')
+                ->causedBy($actorId ? \App\Models\User::find($actorId) : null)
+                ->performedOn($version)
+                ->event('version.ready')
+                ->withProperties(['from_status' => $fromStatus->value])
+                ->log('Resource version ready.');
+
             return $version->fresh([
                 'resource',
+                'template.screens',
                 'mediaAssetUsages.mediaAsset.media',
             ]);
         });
+
+        $this->cacheInvalidator->invalidateForVersion((int) $ready->resource_id, (int) $ready->getKey());
+
+        return $ready;
     }
 }

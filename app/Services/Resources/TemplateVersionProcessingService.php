@@ -43,6 +43,7 @@ use Throwable;
  * - ensureTemplateVersion(): chặn resource type ngoài template
  * - packageInput(): lấy archive media và checksum hiện tại
  * - tracker(): đăng ký/đọc tracker projection cho template
+ * - hasPublishedArtifact(): kiểm artifact private còn tồn tại cho ready gate
  * - artifactExists(): kiểm artifact private đã publish
  * - processingRoot(): dựng staging directory theo token
  * - artifactRelativePath(): dựng pointer tương đối không lộ absolute path
@@ -355,6 +356,13 @@ final class TemplateVersionProcessingService
                 throw ValidationException::withMessages(['package' => 'Template processing token đã hết hiệu lực.']);
             }
 
+            $oldScreenIds = $template->screens()->pluck('id');
+            if ($oldScreenIds->isNotEmpty()) {
+                DB::table('media_asset_usages')
+                    ->where('linkable_type', 'template_screen')
+                    ->whereIn('linkable_id', $oldScreenIds->all())
+                    ->delete();
+            }
             $template->screens()->delete();
             foreach ($this->screenRows($result) as $row) {
                 $template->screens()->create($row);
@@ -368,6 +376,16 @@ final class TemplateVersionProcessingService
                 'processing_error' => null,
                 'processed_at' => now(),
             ])->save();
+
+            activity('resources')
+                ->performedOn($template)
+                ->event('template.processed')
+                ->withProperties([
+                    'resource_version_id' => $versionId,
+                    'source_media_id' => $sourceMediaId,
+                    'screen_count' => count($result['screens']),
+                ])
+                ->log('Resource template processed.');
         });
     }
 
@@ -510,6 +528,25 @@ final class TemplateVersionProcessingService
 
     /**
      * =====================================================================
+     * CHỨC NĂNG: Kiểm artifact private đã publish cho ready/promote gate
+     * =====================================================================
+     * INPUT: ResourceVersionTemplate có processing token hiện hành.
+     * OUTPUT: true khi directory artifact còn tồn tại trên media_private.
+     * SIDE EFFECT: Chỉ đọc filesystem private.
+     * EXCEPTION/TRANSACTION: Token/disk không hợp lệ trả false an toàn.
+     * =====================================================================
+     */
+    public function hasPublishedArtifact(ResourceVersionTemplate $template): bool
+    {
+        try {
+            return $this->artifactExists($template);
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * =====================================================================
      * CHỨC NĂNG: Dựng staging root theo version/token
      * =====================================================================
      * INPUT: version id và processing token.
@@ -558,7 +595,7 @@ final class TemplateVersionProcessingService
      */
     private function diskPath(string $relativePath): string
     {
-        $disk = Storage::disk('media_private');
+        $disk = Storage::disk((string) config('resource-templates.artifact_disk', 'media_private'));
         if (! method_exists($disk, 'path')) {
             throw new RuntimeException('Template processing cần media_private local disk.');
         }

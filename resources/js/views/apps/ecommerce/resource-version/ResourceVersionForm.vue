@@ -1,5 +1,6 @@
 <script setup>
 import { computed, reactive, shallowRef, watch } from 'vue'
+import TemplateProcessingPanel from '@/components/resource-template/TemplateProcessingPanel.vue'
 
 const props = defineProps({
   version: { type: Object, default: null },
@@ -7,9 +8,10 @@ const props = defineProps({
   loading: { type: Boolean, default: false },
   saving: { type: Boolean, default: false },
   error: { type: String, default: '' },
+  resourceType: { type: String, default: '' },
 })
 
-const emit = defineEmits(['submit', 'ready', 'discard'])
+const emit = defineEmits(['submit', 'ready', 'discard', 'template-updated'])
 const formRef = shallowRef()
 const requirementsError = shallowRef('')
 
@@ -27,10 +29,14 @@ const form = reactive(createFormState(props.version))
 watch(() => props.version, value => Object.assign(form, createFormState(value)))
 
 const packageScanStatus = computed(() => form.package?.file?.scan_status ?? null)
+const isTemplate = computed(() => props.resourceType === 'template' || props.version?.resource_type === 'template')
 
-const canReady = computed(() => form.package?.kind === 'archive'
+const packageCanReady = computed(() => form.package?.kind === 'archive'
   && form.package?.visibility === 'private'
   && packageScanStatus.value === 'clean')
+const canReady = computed(() => isTemplate.value
+  ? props.version?.capabilities?.can_ready === true
+  : packageCanReady.value)
 
 const submit = async () => {
   const validation = await formRef.value?.validate()
@@ -59,7 +65,7 @@ const submit = async () => {
     requirements,
     package: form.package,
     documentation: form.documentation,
-    isDefault: form.isDefault,
+    isDefault: false,
   })
 }
 </script>
@@ -118,7 +124,7 @@ const submit = async () => {
       {{ requirementsError }}
     </VAlert>
     <VAlert
-      v-if="form.package && !canReady"
+      v-if="form.package && !packageCanReady"
       color="warning"
       variant="tonal"
       class="mb-5"
@@ -189,12 +195,15 @@ const submit = async () => {
               />
             </VCardText>
           </VCard>
-          <VCheckbox
-            v-model="form.isDefault"
-            label="Default version"
-          />
         </VCol>
       </VRow>
+      <TemplateProcessingPanel
+        v-if="isTemplate && props.version"
+        :version="props.version"
+        :resource-version-id="props.version.id"
+        :disabled="props.saving"
+        @updated="emit('template-updated', $event)"
+      />
     </VForm>
   </div>
 </template>

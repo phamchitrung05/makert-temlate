@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ResourceVersionStatus;
 use App\Models\Concerns\HasMediaAssets;
 use Database\Factories\ResourceVersionFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,6 +28,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * - templateScreens(): screens của template qua metadata 1:1
  * - scopeDefault(): lọc phiên bản mặc định
  * - scopeReady(): lọc phiên bản sẵn sàng phát hành
+ * - scopeArchived(): lọc phiên bản đã archive
+ * - scopePromotable(): lọc version ready chưa là default
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : dữ liệu phiên bản từ CreateResourceVersionAction
@@ -167,5 +170,36 @@ class ResourceVersion extends Model
     public function scopeReady($query)
     {
         return $query->where('status', ResourceVersionStatus::Ready);
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Lọc version đã archive
+     * =====================================================================
+     * INPUT: Builder ResourceVersion.
+     * OUTPUT: Builder có status archived.
+     * SIDE EFFECT: Không thực thi query.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
+    public function scopeArchived(Builder $query): Builder
+    {
+        return $query->where('status', ResourceVersionStatus::Archived);
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Lọc version ready có thể promote
+     * =====================================================================
+     * INPUT: Builder ResourceVersion.
+     * OUTPUT: Builder status ready và chưa là default.
+     * SIDE EFFECT: Không thực thi query; template gate vẫn phải chạy trước mutate.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
+    public function scopePromotable(Builder $query): Builder
+    {
+        return $query->where('status', ResourceVersionStatus::Ready)
+            ->where('is_default', false);
     }
 }

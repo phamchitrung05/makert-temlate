@@ -5,6 +5,7 @@ namespace App\Actions\Resources;
 use App\Enums\ResourceStatus;
 use App\Models\Resource;
 use App\Models\User;
+use App\Services\Resources\ResourceVersionCacheInvalidator;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -42,6 +43,18 @@ class PublishResourceAction
 
     /**
      * =====================================================================
+     * CHỨC NĂNG: Nhận cache invalidator cho catalog/preview
+     * =====================================================================
+     * INPUT: ResourceVersionCacheInvalidator từ container.
+     * OUTPUT: Action sẵn sàng publish.
+     * SIDE EFFECT: Không có.
+     * EXCEPTION/TRANSACTION: Không mở transaction.
+     * =====================================================================
+     */
+    public function __construct(private readonly ResourceVersionCacheInvalidator $cacheInvalidator) {}
+
+    /**
+     * =====================================================================
      * CHỨC NĂNG: Chuyển resource sang trạng thái published
      * =====================================================================
      *
@@ -70,7 +83,7 @@ class PublishResourceAction
             );
         }
 
-        return DB::transaction(function () use ($resource, $actorId, $status): Resource {
+        $published = DB::transaction(function () use ($resource, $actorId, $status): Resource {
             $resource->status = ResourceStatus::Published;
             $resource->published_at ??= now();
             $resource->updated_by = $actorId;
@@ -86,5 +99,9 @@ class PublishResourceAction
 
             return $resource;
         });
+
+        $this->cacheInvalidator->invalidateForResource((int) $published->getKey());
+
+        return $published;
     }
 }

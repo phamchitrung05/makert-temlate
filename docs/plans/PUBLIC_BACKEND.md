@@ -1,7 +1,7 @@
 # Kế hoạch backend cho public website Blade
 
 **Cập nhật:** 11/10/2026  
-**Trạng thái:** PLANNED — chỉ triển khai backend và contract cho public Blade; giao diện Blade/CSS do chủ dự án bổ sung ở đợt riêng.
+**Trạng thái:** PARTIAL — public Resource Template backend PB-01/PB-02/PB-03/PB-04/PB-05 đã hoàn tất trong RT-01; blog/taxonomy/sitemap đầy đủ và UI public mở rộng vẫn để phase riêng.
 
 ## Mục tiêu
 

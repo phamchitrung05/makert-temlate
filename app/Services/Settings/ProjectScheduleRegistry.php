@@ -32,6 +32,7 @@ final class ProjectScheduleRegistry
         $tasks = [
             ['command' => 'ai-import:cleanup', 'title' => 'Dọn tác vụ AI Content hết hạn', 'frequency' => 'daily', 'overlap' => 30],
             ['command' => 'ai:cleanup-writing-profile-analyses', 'title' => 'Dọn phân tích văn phong hết hạn', 'frequency' => 'daily', 'overlap' => 30],
+            ['command' => 'resource-templates:diagnose', 'title' => 'Chẩn đoán template processing', 'frequency' => 'daily', 'overlap' => 30],
         ];
         if (config('ai.providers.sync_enabled', false)) {
             $tasks[] = ['command' => 'ai-providers:sync-models', 'title' => 'Đồng bộ danh sách model AI', 'frequency' => 'hourly', 'overlap' => 60];

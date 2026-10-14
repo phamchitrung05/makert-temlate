@@ -11,6 +11,8 @@ use App\Models\Post;
 use App\Models\Resource;
 use App\Models\ResourceVersion;
 use App\Models\ResourceVersionTemplateScreen;
+use App\Models\ResourceVersionTemplate;
+use App\Models\TemplateShareLink;
 use App\Models\Tag;
 use App\Models\Technology;
 use App\Models\User;
@@ -159,7 +161,9 @@ class AppServiceProvider extends ServiceProvider
         Relation::enforceMorphMap([
             'resource' => Resource::class,
             'resource_version' => ResourceVersion::class,
+            'resource_template' => ResourceVersionTemplate::class,
             'template_screen' => ResourceVersionTemplateScreen::class,
+            'template_share' => TemplateShareLink::class,
             'media_asset' => MediaAsset::class,
             'media_asset_usage' => MediaAssetUsage::class,
             'post' => Post::class,

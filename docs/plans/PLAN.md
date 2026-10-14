@@ -22,7 +22,7 @@ Các tài liệu API và QA trong `docs/` tiếp tục làm nguồn tham chiếu
 | Foundation | DONE | Dependencies, schema/migrations, môi trường local, health API, boundary public/admin |
 | Authentication và quyền | IN PROGRESS — A-02 backend DONE | Admin Sanctum, customer OAuth, token; backend quản lý role/permission bằng API thật đã xong. Hai page Vue để trống, giao diện mới do chủ dự án bổ sung sau; danh sách customer tạm hoãn |
 | Resource và taxonomy | DONE | Backend, admin CRUD, service/store và kiểm thử |
-| Resource Template | IN PROGRESS — TPL-04 DONE | Manifest/schema/fixture, template metadata, package invariant, extractor/parser ZIP và process job/artifact lifecycle đã xong; tiếp theo ready/promote và live preview. [Kế hoạch chi tiết](RESOURCE_TEMPLATE.md) |
+| Resource Template | DONE — TPL-00–TPL-12 | Admin lifecycle, API/panel, secure live preview, public catalog, verified download/share, QA và runbook đã hoàn tất. [Kế hoạch chi tiết](RESOURCE_TEMPLATE.md) |
 | Media và version | DONE | Media Library task 1–10: upload/security, usage, API/quyền, picker, Resource/Post/Version và QA |
 | Blog Admin/Post | IN PROGRESS | CRUD, taxonomy, SEO metadata, editor, media, P-01 workflow, P-03 HTML sanitization và P-04 bộ lọc tác giả/ngày; post_type/Gallery mở thành plan riêng |
 | AI Content | DONE trong phạm vi kỹ thuật hiện tại | Pipeline C ba bước, nguồn URL/text/HTML/file, profile/brief, duyệt/từ chối, sửa/regenerate, Apply Post nháp, thumbnail, queue dùng chung và form enqueue liên tiếp |
@@ -69,6 +69,9 @@ Ngày 07/10/2026, chủ dự án yêu cầu để tính năng chấm bài và da
 - [x] 14/10: hoàn tất TPL-02: package guard dùng chung, ready/default delete guard, draft invalidation và lifecycle request hardening; ResourceTemplateInvariantTest 6 test/23 assertions. [QA](../qa/resource-template/TPL-02.md)
 - [x] 14/10: hoàn tất TPL-03: extractor/parser ZIP staging private, source-root, manifest/discovery, path/static security và dependency diagnostics; parser kiểm normalized 18 screen và raw Stitch 9 screen. [QA](../qa/resource-template/TPL-03.md)
 - [x] 14/10: hoàn tất TPL-04: `ProcessTemplateVersionJob`, staging/publish artifact private, checksum/token guard, idempotency, retry/deadline, tracker queue dùng chung và cleanup khi hủy. [QA](../qa/resource-template/TPL-04.md)
+- [x] 15/10: hoàn tất TPL-05–TPL-08: ready/promote/rollback/archive gate, admin API/policy, Vue processing panel, secure preview origin/static file server. [QA TPL-05](../qa/resource-template/TPL-05.md) · [QA TPL-08](../qa/resource-template/TPL-08.md)
+- [x] 15/10: hoàn tất TPL-09–TPL-10: public template catalog/SEO/preview, verified customer download quota, pinned version URL và capability share/revoke. [API contract](../api/RESOURCE_TEMPLATE_API.md) · [QA TPL-10](../qa/resource-template/TPL-10.md)
+- [x] 15/10: hoàn tất TPL-11–TPL-12: scoped backend/frontend QA, preview security tests, diagnostic command, artifact/env/runbook documentation. [QA TPL-11](../qa/resource-template/TPL-11.md) · [QA TPL-12](../qa/resource-template/TPL-12.md)
 
 Bằng chứng FIX 1 ở [Acceptance/QA](../qa/FIX1_ACCEPTANCE_2026-10-07/README.md): backend 438 tests/2986 assertions; lượt scoped cuối 31/172; frontend scoped 7 files/51 tests và build đạt. Kiểm backend gần nhất sau bổ sung kho approved xem [QA giai đoạn 1](../qa/AI_ARTICLE_ARCHIVES_2026-10-07.md). Đây là các lượt có phần trùng nhau, không cộng thành tổng mới.
 
@@ -88,7 +91,7 @@ Các ID dưới đây để theo dõi ổn định, không phải yêu cầu tri
 | P-03 | DONE | Sanitization HTML Post server-side, allowlist markup/attribute, giữ media refs hợp lệ và test XSS/URL |
 | P-04 | DONE | Lọc Post theo tác giả/ngày tạo, endpoint option tác giả, validation khoảng ngày, UI panel filter riêng và test. Không bao gồm `post_type`/Gallery; sẽ làm theo plan riêng |
 | P-05 | TODO — tạm hoãn | Chốt các Post options đang minh họa; bổ sung persistence/validation cho option được chọn. Làm sau theo yêu cầu ngày 08/10/2026 |
-| RT-01 | IN PROGRESS — TPL-04 DONE | Resource Template: manifest/schema/fixture, model/template screen, package attach/invariant, extractor/parser ZIP và process job/artifact lifecycle đã hoàn tất; tiếp theo ready/promote, live preview và public/download/share theo phase. [Task chi tiết](RESOURCE_TEMPLATE.md) |
+| RT-01 | DONE — TPL-00–TPL-12 | Resource Template hoàn tất từ manifest/schema/fixture, extractor/process queue đến ready/promote/rollback, secure preview, public catalog, verified download/share và QA/ops. [Task chi tiết](RESOURCE_TEMPLATE.md) |
 | AI-01 | DONE — phạm vi archive approved | Trang `AI Approved` đọc archive bài AI đã duyệt dài hạn, có filter/ngày, datatable phân trang và dialog xem snapshot gốc. Kho dùng identity đa model `target_type` + `target_id`; draft chưa duyệt vẫn tạm thời và phạm vi Resource/Sound Apply thuộc AI-04 |
 | AI-02 | TODO — tạm hoãn | Sinh thumbnail từ nội dung Post đã được người dùng biên tập. Thumbnail tạo trong AI Content và dialog prompt ảnh thủ công đã có |
 | AI-03 | TODO | Ai Prompt: lịch sử phân tích phía server, quyền source preview riêng và mở rộng idempotency khi cần |
@@ -98,8 +101,8 @@ Các ID dưới đây để theo dõi ổn định, không phải yêu cầu tri
 | S-02 | TODO | Scheduler run history, heartbeat worker, GA/GSC, 2FA/CAPTCHA và kiểm SMTP production |
 | H-01 | TODO — tạm hoãn đợt hiện tại | Host/VPS: worker/process manager, scheduler, storage, timeout/lease với DB/queue thật và nhiều worker; Reverb/Echo có fallback. Staging kiểm provider text/image bằng key thật, có quyền tạo ảnh; local/fixture đã kiểm không thay nghiệm thu staging |
 | M-01 | TODO — mở rộng khi chọn phạm vi | MediaFolder, Trash/restore và các filter/option nâng cao chưa được nối đầy đủ; không mở lại Media Library task 1–10 |
-| W-01 | IN PROGRESS — backend plan | Triển khai theo PB-01–PB-07: route/query public, slug/SEO/canonical/OG, sitemap/robots, cache/security và contract Blade. UI public để chủ dự án làm sau. [Kế hoạch](PUBLIC_BACKEND.md) |
-| D-01 | TODO | Free download: auth, URL ký có hạn, lịch sử, rate limit và counter; chốt verify email, license và retention thông tin truy cập |
+| W-01 | DONE — backend | Public template catalog, slug redirect, canonical/OG/JSON-LD, default/pinned preview và visibility policy đã triển khai; UI Blade giữ tối giản theo phạm vi backend. [Kế hoạch](PUBLIC_BACKEND.md) |
+| D-01 | DONE — template policy | Verified customer download, 20/day quota, expiring grant, atomic history/counter và capability-scoped share/revoke đã triển khai; license/paid commerce vẫn thuộc C-01. |
 | C-01 | TODO — sau free download | Commerce/payment: variants/license snapshot, chốt cart hoặc direct checkout, provider test mode, currency/tax/giá, order/invoice, refund/chargeback, entitlement, webhook signature/idempotency và paid download sau xác nhận |
 | O-01 | TODO — trước production | Backup/restore, giám sát/audit, quyền truy cập, accessibility, tải và kiểm SEO phù hợp phạm vi phát hành |
 
