@@ -214,8 +214,8 @@ final class AccessManagementApiTest extends TestCase
      * =====================================================================
      * CHỨC NĂNG: Kiểm CRUD custom role và audit của super-admin
      * =====================================================================
-     * INPUT: Tên role, permission IDs và version trả từ API.
-     * OUTPUT: 201/200/204; role và audit tồn tại đúng.
+     * INPUT: Tên role, icon, permission IDs và version trả từ API.
+     * OUTPUT: 201/200/204; role, icon và audit tồn tại đúng.
      * SIDE EFFECT: Ghi role, pivot và activity_log.
      * EXCEPTION/TRANSACTION: Mutation service chạy transaction/lock.
      * =====================================================================
@@ -226,15 +226,19 @@ final class AccessManagementApiTest extends TestCase
         $permissionIds = $this->permissionIds('posts.manage', 'media.view');
 
         $created = $this->withToken($token)->postJson('/api/admin/roles', [
-            'name' => 'content-editor', 'permission_ids' => $permissionIds,
-        ])->assertCreated()->assertJsonPath('data.name', 'content-editor');
+            'name' => 'content-editor', 'icon' => 'tabler-pencil', 'permission_ids' => $permissionIds,
+        ])->assertCreated()
+            ->assertJsonPath('data.name', 'content-editor')
+            ->assertJsonPath('data.icon', 'tabler-pencil');
 
         $roleId = $created->json('data.id');
         $version = $created->json('data.version');
         $updated = $this->withToken($token)->patchJson('/api/admin/roles/'.$roleId, [
-            'name' => 'content-editor', 'permission_ids' => [$permissionIds[0]], 'expected_version' => $version,
+            'name' => 'content-editor', 'icon' => 'tabler-shield-check', 'permission_ids' => [$permissionIds[0]], 'expected_version' => $version,
         ])->assertOk();
         $this->assertCount(1, $updated->json('data.permissions'));
+        $this->assertSame('tabler-shield-check', $updated->json('data.icon'));
+        $this->assertDatabaseHas('roles', ['id' => $roleId, 'icon' => 'tabler-shield-check']);
         $this->assertDatabaseHas('role_has_permissions', ['role_id' => $roleId, 'permission_id' => $permissionIds[0]]);
 
         $this->withToken($token)->deleteJson('/api/admin/roles/'.$roleId, [
@@ -545,6 +549,9 @@ final class AccessManagementApiTest extends TestCase
         }
         $this->withToken($token)->postJson('/api/admin/roles', ['name' => 'missing-array'])
             ->assertUnprocessable()->assertJsonValidationErrors('permission_ids');
+        $this->withToken($token)->postJson('/api/admin/roles', [
+            'name' => 'invalid-icon', 'icon' => 'mdi-alert', 'permission_ids' => [],
+        ])->assertUnprocessable()->assertJsonValidationErrors('icon');
         $ids = $this->permissionIds('users.view');
         $this->withToken($token)->postJson('/api/admin/roles', [
             'name' => 'duplicate-array', 'permission_ids' => [$ids[0], $ids[0]],
@@ -580,6 +587,7 @@ final class AccessManagementApiTest extends TestCase
             ->assertJsonPath('data.items.0.name', 'Access Alpha')->assertJsonPath('meta.pagination.last_page', 2);
         $this->assertArrayNotHasKey('password', $users->json('data.items.0'));
         $this->assertArrayNotHasKey('remember_token', $users->json('data.items.0'));
+        $this->assertArrayHasKey('icon', $users->json('data.items.0.roles.0'));
         $this->withToken($token)->getJson('/api/admin/roles?search=support')
             ->assertOk()->assertJsonPath('data.itemsLength', 1)->assertJsonPath('data.items.0.users_count', 2);
         $this->withToken($token)->getJson('/api/admin/permissions?group=users&per_page=1')

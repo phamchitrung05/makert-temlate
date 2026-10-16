@@ -77,7 +77,7 @@ final class RoleController extends Controller
     /**
      * =====================================================================
      * CHỨC NĂNG: Tạo role tùy chỉnh
-     * INPUT: RoleCreateRequest đã kiểm roles.create hoặc users.manage.
+     * INPUT: RoleCreateRequest chứa name/icon/permission_ids, đã kiểm roles.create hoặc users.manage.
      * OUTPUT: BaseResponse 201 RoleResource.
      * SIDE EFFECT: Service ghi role/pivot/audit.
      * EXCEPTION/TRANSACTION: Transaction/lock/rollback do service quản lý.
@@ -91,7 +91,7 @@ final class RoleController extends Controller
     /**
      * =====================================================================
      * CHỨC NĂNG: Cập nhật role và permission
-     * INPUT: RoleUpdateRequest đã kiểm roles.update hoặc users.manage và role binding.
+     * INPUT: RoleUpdateRequest chứa name/icon/permission_ids, đã kiểm roles.update hoặc users.manage và role binding.
      * OUTPUT: BaseResponse RoleResource mới.
      * SIDE EFFECT: Service ghi role/pivot/audit.
      * EXCEPTION/TRANSACTION: Service kiểm version, root, system name và quyền trong transaction.

@@ -14,7 +14,7 @@ use Illuminate\Validation\Rule;
  * tạo boundary hẹp, còn users.manage giữ quyền tương thích. Guard/name/system
  * invariants được service kiểm dưới lock.
  * CÁC HÀM/METHOD TRONG FILE: authorize(), prepareForValidation(), rules().
- * INPUT/OUTPUT CỦA CLASS (tổng thể): User/name/permission_ids -> payload tên/catalog đã validate.
+ * INPUT/OUTPUT CỦA CLASS (tổng thể): User/name/icon/permission_ids -> payload tên/icon/catalog đã validate.
  * SIDE EFFECT: Trim name và query validation role/permission; không ghi database.
  * EXCEPTION/TRANSACTION: 403 khi thiếu quyền, 422 khi field sai; không mở transaction.
  * =====================================================================
@@ -62,8 +62,8 @@ abstract class RoleSaveRequest extends AccessVersionRequest
     /**
      * =====================================================================
      * CHỨC NĂNG: Validate payload role create/update
-     * INPUT: name và permission_ids.
-     * OUTPUT: Rules tên slug, unique guard admin và quyền catalog.
+     * INPUT: name, icon và permission_ids.
+     * OUTPUT: Rules tên slug, icon Tabler, unique guard admin và quyền catalog.
      * SIDE EFFECT: Validation query role/permission; không ghi DB.
      * EXCEPTION/TRANSACTION: 422 khi field sai; service kiểm race/conflict trong transaction.
      * =====================================================================
@@ -73,6 +73,7 @@ abstract class RoleSaveRequest extends AccessVersionRequest
         return [
             'name' => ['required', 'string', 'max:80', 'regex:/^[a-z][a-z0-9_-]*$/',
                 Rule::unique('roles', 'name')->where('guard_name', 'admin')->ignore($this->route('role')?->id)],
+            'icon' => ['sometimes', 'nullable', 'string', 'max:80', 'regex:/^tabler-[a-z0-9-]+$/'],
             'permission_ids' => ['present', 'array', 'max:100'],
             'permission_ids.*' => ['integer', 'distinct', Rule::exists('permissions', 'id')
                 ->where(fn ($query) => $query->where('guard_name', 'admin')->whereIn('name', RoleManagementService::permissionNames()))],

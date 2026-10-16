@@ -9,7 +9,7 @@ namespace App\Http\Requests\Admin\Access;
  * Controller update dùng request riêng; service kiểm version và scope quyền
  * trong transaction. Rules tên/catalog và authorization kế thừa RoleSaveRequest.
  * CÁC HÀM/METHOD TRONG FILE: rules(); authorize(), prepareForValidation() kế thừa.
- * INPUT/OUTPUT CỦA CLASS (tổng thể): name/permission_ids/expected_version -> payload hợp lệ.
+ * INPUT/OUTPUT CỦA CLASS (tổng thể): name/icon/permission_ids/expected_version -> payload hợp lệ.
  * SIDE EFFECT: Query validation; không ghi database.
  * EXCEPTION/TRANSACTION: 403 khi thiếu quyền, 422 khi field sai; không transaction.
  * =====================================================================

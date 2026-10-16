@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "name": "saas-project-management",
+  "title": "SaaS Project Management Workspace",
+  "version": "1.0.0",
+  "description": "SaaS Project Management Workspace multi-screen static HTML template.",
+  "entry_screen": "home",
+  "layout_contract": {
+    "name": "fixed-sidebar-v1",
+    "mode": "fixed-sidebar",
+    "sidebar_width": 240,
+    "shell_gap": 20,
+    "shell_padding": 24,
+    "header_min_height": 64,
+    "content_max_width": 1440,
+    "mobile_breakpoint": 900
+  },
+  "responsive_contract": {
+    "version": 1,
+    "navigation": "mobile-variant",
+    "nav_breakpoint": 900,
+    "narrow_breakpoint": 600,
+    "split_breakpoint": 1200,
+    "qa_viewports": [
+      320,
+      375,
+      430,
+      768,
+      900,
+      901,
+      1024,
+      1440
+    ]
+  },
+  "screens": [
+    {
+      "path": "index.html",
+      "slug": "home",
+      "title": "Projects",
+      "screenshot": "screenshots/home.png"
+    },
+    {
+      "path": "pages/tasks.html",
+      "slug": "tasks",
+      "title": "Tasks",
+      "screenshot": "screenshots/tasks.png"
+    },
+    {
+      "path": "pages/calendar.html",
+      "slug": "calendar",
+      "title": "Calendar",
+      "screenshot": "screenshots/calendar.png"
+    },
+    {
+      "path": "pages/files.html",
+      "slug": "files",
+      "title": "Files",
+      "screenshot": "screenshots/files.png"
+    },
+    {
+      "path": "pages/insights.html",
+      "slug": "insights",
+      "title": "Insights",
+      "screenshot": "screenshots/insights.png"
+    },
+    {
+      "path": "pages/team.html",
+      "slug": "team",
+      "title": "Team",
+      "screenshot": "screenshots/team.png"
+    }
+  ]
+}

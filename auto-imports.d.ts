@@ -343,6 +343,7 @@ declare global {
   const useRafFn: typeof import('@vueuse/core')['useRafFn']
   const useRefHistory: typeof import('@vueuse/core')['useRefHistory']
   const useResizeObserver: typeof import('@vueuse/core')['useResizeObserver']
+  const useResourceTemplate: typeof import('./resources/js/composables/useResourceTemplate.js')['useResourceTemplate']
   const useResponsiveLeftSidebar: typeof import('./resources/js/@core/composable/useResponsiveSidebar.js')['useResponsiveLeftSidebar']
   const useRound: typeof import('@vueuse/math')['useRound']
   const useRoute: typeof import('vue-router/auto')['useRoute']
@@ -362,6 +363,7 @@ declare global {
   const useSkins: typeof import('./resources/js/@core/composable/useSkins.js')['useSkins']
   const useSlots: typeof import('vue')['useSlots']
   const useSlug: typeof import('./resources/js/composables/useSlug.js')['useSlug']
+  const useSocialPosts: typeof import('./resources/js/composables/useSocialPosts.js')['useSocialPosts']
   const useSorted: typeof import('@vueuse/core')['useSorted']
   const useSpeechRecognition: typeof import('@vueuse/core')['useSpeechRecognition']
   const useSpeechSynthesis: typeof import('@vueuse/core')['useSpeechSynthesis']
@@ -777,6 +779,7 @@ declare module 'vue' {
     readonly useRafFn: UnwrapRef<typeof import('@vueuse/core')['useRafFn']>
     readonly useRefHistory: UnwrapRef<typeof import('@vueuse/core')['useRefHistory']>
     readonly useResizeObserver: UnwrapRef<typeof import('@vueuse/core')['useResizeObserver']>
+    readonly useResourceTemplate: UnwrapRef<typeof import('./resources/js/composables/useResourceTemplate.js')['useResourceTemplate']>
     readonly useResponsiveLeftSidebar: UnwrapRef<typeof import('./resources/js/@core/composable/useResponsiveSidebar.js')['useResponsiveLeftSidebar']>
     readonly useRound: UnwrapRef<typeof import('@vueuse/math')['useRound']>
     readonly useRoute: UnwrapRef<typeof import('vue-router/auto')['useRoute']>
@@ -796,6 +799,7 @@ declare module 'vue' {
     readonly useSkins: UnwrapRef<typeof import('./resources/js/@core/composable/useSkins.js')['useSkins']>
     readonly useSlots: UnwrapRef<typeof import('vue')['useSlots']>
     readonly useSlug: UnwrapRef<typeof import('./resources/js/composables/useSlug.js')['useSlug']>
+    readonly useSocialPosts: UnwrapRef<typeof import('./resources/js/composables/useSocialPosts.js')['useSocialPosts']>
     readonly useSorted: UnwrapRef<typeof import('@vueuse/core')['useSorted']>
     readonly useSpeechRecognition: UnwrapRef<typeof import('@vueuse/core')['useSpeechRecognition']>
     readonly useSpeechSynthesis: UnwrapRef<typeof import('@vueuse/core')['useSpeechSynthesis']>

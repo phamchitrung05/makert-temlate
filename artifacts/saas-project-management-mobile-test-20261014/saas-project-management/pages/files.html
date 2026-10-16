@@ -1,0 +1,603 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+
+<title>PlanFlow - Files &amp; Shared Deliverables</title>
+<!-- Tailwind CSS v3 with forms and container queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script data-purpose="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              lime: '#D4F768',
+              midnight: '#0F172A',
+              canvas: '#EEF1FA',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Core Styles -->
+<style data-purpose="typography">
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
+<style data-purpose="custom-utilities">
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background-color: #CBD5E1;
+      border-radius: 9999px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  </style>
+<link rel="stylesheet" href="../assets/css/layout-contract.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script defer src="../assets/js/layout-responsive.js"></script>
+<link rel="stylesheet" href="../assets/css/app.css">
+</head>
+<body data-layout-mode="fixed-sidebar" data-layout-contract="v1" class="bg-[#EEF1FA] text-[#0F172A] min-h-screen p-6 antialiased flex justify-center">
+<!-- BEGIN: ApplicationLayoutWrapper -->
+<!-- Main container strictly locked to 1440px desktop width -->
+<div class="w-[1440px] max-w-[1440px] flex gap-6 items-start" data-purpose="app-shell" data-layout-variant="desktop-shell">
+<!-- BEGIN: SidebarNavigation -->
+<aside class="w-[240px] shrink-0 bg-white rounded-2xl border border-[#E2E8F0] p-4 flex flex-col justify-between h-[960px] shadow-sm sticky top-6" data-purpose="main-sidebar">
+<!-- Top Brand & Navigation Block -->
+<div class="flex flex-col gap-3">
+<!-- Brand Header -->
+<div class="flex items-center gap-3 px-2 py-1" data-purpose="brand-logo">
+<div class="w-10 h-10 rounded-xl bg-[#0F172A] flex items-center justify-center shrink-0 shadow-sm">
+<!-- 2x2 White Dot Grid Icon -->
+<div class="grid grid-cols-2 gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+</div>
+</div>
+<span class="text-xl font-bold tracking-tight text-[#0F172A]">PlanFlow</span>
+</div>
+<!-- Vertical Menu Items -->
+<nav class="flex flex-col gap-1" data-purpose="nav-links">
+<!-- Projects -->
+<a class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 font-medium text-sm transition-colors" href="#">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="">Projects</span>
+</a>
+<!-- Tasks -->
+<a class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 font-medium text-sm transition-colors" href="#">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="">Tasks</span>
+</a>
+<!-- Calendar -->
+<a class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 font-medium text-sm transition-colors" href="#">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="">Calendar</span>
+</a>
+<!-- Insights -->
+<a class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 font-medium text-sm transition-colors" href="#">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="">Insights</span>
+</a>
+<!-- Team -->
+<a class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 font-medium text-sm transition-colors" href="#">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="">Team</span>
+</a>
+<!-- Files (ACTIVE STATE: Lime Accent Pill) -->
+<a aria-current="page" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-[#D4F768] text-[#0F172A] font-bold text-sm shadow-sm transition-transform active:scale-95" href="#">
+<svg class="w-4 h-4 text-[#0F172A]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+<path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="">Files</span>
+</a>
+</nav>
+</div>
+<!-- Bottom Navigation Section -->
+<div class="pt-4 border-t border-slate-100 flex flex-col gap-1" data-purpose="secondary-nav">
+<!-- Settings -->
+<a class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 font-medium text-sm transition-colors" href="#">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="">Settings</span>
+</a>
+<!-- Help -->
+<a class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50 font-medium text-sm transition-colors" href="#">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="">Help</span>
+</a>
+</div>
+</aside>
+<!-- END: SidebarNavigation -->
+<!-- BEGIN: MainContentCanvas -->
+<main data-purpose="primary-content" class="flex-1 flex flex-col gap-4 min-w-0" data-purpose="content-area">
+<!-- BEGIN: TopBarHeader -->
+<header data-purpose="top-header" class="flex items-center justify-between pb-2" data-purpose="header-section">
+<!-- Title and Breadcrumb Subtitle -->
+<div>
+<span class="text-[12px] font-semibold tracking-wider uppercase text-[#64748B] block mb-0.5">WORKSPACE / ASSETS</span>
+<h1 class="text-[28px] font-bold text-[#0F172A] tracking-tight leading-tight">Files &amp; Shared Deliverables</h1>
+</div>
+<!-- Right Side Utility Bar -->
+<div class="flex items-center gap-3" data-purpose="header-controls" data-responsive="toolbar">
+<!-- Search Bar -->
+<div class="relative w-80">
+<span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</span>
+<input class="w-full pl-10 pr-4 py-2 bg-white rounded-full text-sm border border-[#E2E8F0] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0F172A] focus:border-transparent transition shadow-xs" placeholder="Search files, folders, docs..." type="text">
+</div>
+<!-- Notification Bell with Lime Badge -->
+<button aria-label="Notifications" class="relative w-10 h-10 rounded-full bg-white border border-[#E2E8F0] flex items-center justify-center text-slate-600 hover:text-slate-900 transition shadow-xs">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<!-- Lime indicator badge -->
+<span class="absolute top-2 right-2 w-2 h-2 bg-[#D4F768] rounded-full ring-2 ring-white"></span>
+</button>
+<!-- User Portrait Avatar -->
+<div class="relative w-10 h-10 shrink-0">
+<img alt="Elena Rostova" class="w-10 h-10 rounded-full object-cover border border-[#E2E8F0] shadow-xs" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD911tqCgP6yoY7q9UXsQi5ZRUfMmwzvoJ22qBePH8ngg7VB0dpiKny1XLRvEyu6Hc4FZO4NuPflsW6RfBGwy_aLDma29c3KNW3qvURHYQfiXwaDsGJ5PWzmNZuziov5DUmY28hUUiscLhYNHQ4_Xof6hsuMHHLhlapDzyjuWg-oLIu07UKU8pJJeTWU4xThSLl0Dz6C-n8j61pH7cne7m9TmkFRgm6ephuKVnMrEHei0Icd3Hry9RYIg">
+<!-- Online status green dot -->
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white"></span>
+</div>
+</div>
+</header>
+<!-- END: TopBarHeader -->
+<!-- BEGIN: Tier1ActionHeader -->
+<section data-purpose="page-content" class="flex items-center justify-between bg-transparent" data-purpose="action-tier" data-responsive="toolbar">
+<div>
+<h2 class="text-[17px] font-bold text-[#0F172A] leading-snug">Centralized assets repository.</h2>
+<p class="text-[13px] text-[#64748B]">Store design deliverables, brand guides, sprint specs, and client exports.</p>
+</div>
+<div class="flex items-center gap-3">
+<!-- Storage Gauge Pill -->
+<div class="bg-white rounded-xl px-4 py-2 border border-[#E2E8F0] flex items-center gap-3 shadow-xs">
+<span class="text-[13px] font-medium text-[#0F172A] whitespace-nowrap">68.4 GB of 100 GB used</span>
+<div class="w-24 h-2 bg-slate-100 rounded-full overflow-hidden flex">
+<div class="bg-[#D4F768] h-full rounded-full" style="width: 68%;"></div>
+</div>
+</div>
+<!-- Primary Upload Action Button -->
+<button class="bg-[#D4F768] hover:brightness-95 text-[#0F172A] font-bold text-sm px-5 py-2.5 rounded-xl shadow-xs transition active:scale-95 flex items-center gap-2">
+<svg class="w-4 h-4 text-[#0F172A]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+<path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="">Upload File</span>
+</button>
+</div>
+</section>
+<!-- END: Tier1ActionHeader -->
+<!-- BEGIN: Tier2QuickFolders -->
+<section class="grid grid-cols-4 gap-4" data-purpose="folder-categories" data-responsive="cards">
+<!-- Folder 1: Design Assets -->
+<article class="bg-white rounded-2xl p-4 border border-[#E2E8F0] shadow-xs hover:border-slate-300 transition group flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-3">
+<div class="w-10 h-10 rounded-xl bg-[#F3E8FF] text-[#9333EA] flex items-center justify-center">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<button aria-label="Folder options" class="text-slate-400 hover:text-slate-600 p-1 rounded-md">
+<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+<path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"></path>
+</svg>
+</button>
+</div>
+<h3 class="font-bold text-[15px] text-[#0F172A] group-hover:text-purple-700 transition-colors truncate">Design Assets &amp; Figma</h3>
+<p class="text-[13px] text-[#64748B] mt-0.5">142 files • 12.4 GB</p>
+</div>
+<div class="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between">
+<div class="flex -space-x-2">
+<img alt="Avatar" class="w-6 h-6 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD0T8KkG7to-LhLsxYIxArMGW4lwPdeGnPxpVaIWbIBEBAOLCYoQ1xIQYY2HTmjfLfBXhe0MKETDfoEzbXMiB9saaMy7VmcrvsWMx78l4EsQvovaiSF6ykps-n8j0QJ6qzwH5mQfA6W6DCdoekq0h74qB00xavP7OAUfMg7EW7rNetQqbP8xucYHChPmi2vvmbCv3A1GDIK6pZ7K8pw76CZPyEepHZKPdw-mFku4itjoGc2v41K9uyIcA">
+<img alt="Avatar" class="w-6 h-6 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDUsNBemN1ehf6cr5bVIrN_Os4yLAPI87TR1WW5b-yQWVQ623vkA7ihaRxUi4mf3ODq6ell7DC6wLvkbNXd4QL_u4kL24b5Gn8YIc98V6m10sNQTkVTtvAMJ4JKMaLGRZTmhBBNQtmxCZgAujVssv_ONMYzlBlXZyre3RBQBkEwJS1H7hyMXZ-pp6w83CSJEWhu34X91yUG2pZWUSK7JXM8tIe-ZOHoWzGY3maoOmHAVDu7lCPK46xHjw">
+<img alt="Avatar" class="w-6 h-6 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCos3pkC8dGeOg1wRU-1IGKNo8g6uc1gPBRK9dAT1_ZYj_VzNcQq6QQPILkt5mVP9xH4qEd7yvWq86N9n0Lpu8fOdD1Eg6Kv88eBE0b5EndZsDIkROTvkvGoyCAjC5w2vNpB5Ihse4jv_gazpmH8un6CB0sd2Tva7BwIUDzBZzwvzW2A_bb1EcsNi7StJY_QWvWvizCn458IXbQfRTj3i1fM9CawDeMEbYb2HcHISUR7JPb3JNOjAC-JQ">
+</div>
+<span class="text-xs text-slate-400 font-medium">Shared</span>
+</div>
+</article>
+<!-- Folder 2: Product Specs -->
+<article class="bg-white rounded-2xl p-4 border border-[#E2E8F0] shadow-xs hover:border-slate-300 transition group flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-3">
+<div class="w-10 h-10 rounded-xl bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<button aria-label="Folder options" class="text-slate-400 hover:text-slate-600 p-1 rounded-md">
+<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+<path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"></path>
+</svg>
+</button>
+</div>
+<h3 class="font-bold text-[15px] text-[#0F172A] group-hover:text-sky-700 transition-colors truncate">Product Specs &amp; PRDs</h3>
+<p class="text-[13px] text-[#64748B] mt-0.5">38 documents • 1.2 GB</p>
+</div>
+<div class="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between">
+<div class="flex -space-x-2">
+<img alt="Avatar" class="w-6 h-6 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPQjuaDOvtp3LrD8ZfMHHCrKCtL1egNYM9_9NmhhCPadsu44IcXR6dWrKxUhGbIvqT9GE8raoV68PlsFZ4f0-pOEpbt9PEKphJwtRtHdFJlplFaJd6V5TaZpZhBvWdQncY56X5QeZRXA4l8fuf8eZ1Y4_xTScAdoitFXMTBMITyKdgWpB6bxu3c7xxxRM-tAhbdcdakqyRl2eHzfIfbdOSuI96spa0aQee7qx7bWMzstW9j4nvU8EdTg">
+<img alt="Avatar" class="w-6 h-6 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDskMUKjCBWyShUcdLgVLsGkMQCgsFHmi8uaeFUMHP3kh668Poiloo809E1ZIkjBUsFkxpXcIprTXGAdpQu8ZU81mZIIo2bVGbuE0wI2biIobxKfGQpGAM3X--sFNsUXIAIuDqruSkQiO3gtIQlMFt8QaVCVWrwLFGY0nMDxwYh18YpF-mJsfHhE-0zsCgD3UnXDbgYjaSGaWZQ2y6-w-9Hgl53PruHFx6CagGyEqYcF__shH3mSTZoQ">
+</div>
+<span class="text-xs text-slate-400 font-medium">Shared</span>
+</div>
+</article>
+<!-- Folder 3: Marketing & Decks -->
+<article class="bg-white rounded-2xl p-4 border border-[#E2E8F0] shadow-xs hover:border-slate-300 transition group flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-3">
+<div class="w-10 h-10 rounded-xl bg-[#FEF9C3] text-[#D97706] flex items-center justify-center">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<button aria-label="Folder options" class="text-slate-400 hover:text-slate-600 p-1 rounded-md">
+<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+<path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"></path>
+</svg>
+</button>
+</div>
+<h3 class="font-bold text-[15px] text-[#0F172A] group-hover:text-amber-700 transition-colors truncate">Marketing &amp; Pitch Decks</h3>
+<p class="text-[13px] text-[#64748B] mt-0.5">64 presentations • 8.6 GB</p>
+</div>
+<div class="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between">
+<div class="flex -space-x-2">
+<img alt="Avatar" class="w-6 h-6 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsFTnsk7fIkpk5NaD6-FVyWg71_DWUOGkfhVZmi1kCPzqDtNwCXYjh4Be5uCnn6Qc5nEK2xfwW4it4kMs2TRGrTnghQ0gwYTHdgnAYdau-7PExzAsDaQoNOOxgZ8dbfQhuZGJZegZfoZMcxQ0jlxQn2TXttG4k2iEfkOYT7GCCWiGtycNq7EsVi3lKx-JBbS20y9RR_ohXvANcMk_KQpJl2VTEOumrkSRQNJivkSMt9KI4xYiqctz95w">
+<img alt="Avatar" class="w-6 h-6 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhdP3z8vUEoMW3nKISG1Aon29lCBvBGz0Ka77fqu7PjINleby85tCHU5EC6_i9p7t81oq4srGa8QBEQe8WVxcud6ibIzUy_9rY7hbDnz-J1EkVROsvZ0W1x6SobWQ8y1Fr0RarkhTkoa2PkMySCyX2VlrgcaBryghfNds5eO1gbskq_4I8V-GWN8bdw9rCxbvu126AS2gF5JcgMGmBDCk2bYub9JiotO8C_drm3UhZ0Jh1JctO-04LRA">
+</div>
+<span class="text-xs text-slate-400 font-medium">Shared</span>
+</div>
+</article>
+<!-- Folder 4: Engineering Docs -->
+<article class="bg-white rounded-2xl p-4 border border-[#E2E8F0] shadow-xs hover:border-slate-300 transition group flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-3">
+<div class="w-10 h-10 rounded-xl bg-[#DCFCE7] text-[#16A34A] flex items-center justify-center">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<button aria-label="Folder options" class="text-slate-400 hover:text-slate-600 p-1 rounded-md">
+<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+<path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"></path>
+</svg>
+</button>
+</div>
+<h3 class="font-bold text-[15px] text-[#0F172A] group-hover:text-emerald-700 transition-colors truncate">Engineering Docs</h3>
+<p class="text-[13px] text-[#64748B] mt-0.5">95 files • 4.1 GB</p>
+</div>
+<div class="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between">
+<div class="flex -space-x-2">
+<img alt="Avatar" class="w-6 h-6 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuByPKI-PD719QoYpOAvxnKqqPpLjeKPA3W7skLTQVPdcV7zX_UwBSk7mFQfEXMGg2GH4JQLtZAlz76zC3zXodDc6l28qt2UJvOZiOXC1Q7nrvSHp1aSFgOFmKLZhsozOuphV1M8UF6Xp-bVyw_SjCXvcPLrY50KLfobyJ2vB8dspTtQZcvJpOBxYN0aAxcuWxLqvfiIxYaF5Jw2f-zpjegw7o-gi2ehvzEnK94cnjrzySEBhppPnK38Ow">
+<img alt="Avatar" class="w-6 h-6 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUMxF12zuM0kd2pA86z6VXbVvmOfQi0abUyz2AbX_iUrJpfveAvwH8Kg3pYrYb4lhhiHOURyHHL8Y-7ivMXBRoEH1Lv2Ph8T7DEMcLnclS01OmEsksCAmZEHS83IRJ7q7tlYLHIUTbYDC_5DknYJhXksyU3VEAaJcgo9QLYTSTq6ic5UDcKOag1xnkORaJ8mNGR12sXLaxFRVvbRMTqfBfLAcA_Ins8Fb_O-E7feMRLF4rgUAIXVqY5Q">
+<img alt="Avatar" class="w-6 h-6 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAiwcLMMzY_K6XWpqAlhGefBKxR1hDP4wl2o0CgXVT3CyOOOXu_O9SCEh0YBA5bjjpysIfhI16zwDMssSLN9xAn4vRmaxqdRTp5ip36UEa3KmO2VgmanXPMQxy6-UMgX3TEfw74cZCOH_TBhYrv3TSV_mEljDWveuMhL211d16ysAPD8BO5XWuHI5w34ws4U_sbXNA2LCd7E1jL_1yRBK2KQlq8CffsESAmAjaepQqoxyIm313HRS3Crg">
+<img alt="Avatar" class="w-6 h-6 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPaq5Q_GgqUSCE6VgEQX_go5KwgJ6XJ9yv_8OQaS45zJ36FipKduuV3CqLIRLhtuPGSric1BbFjKQVdA3mjRyoxopOiJ1ZjfpJZbFIVvxFe5Pef1ckCh_PFc3iaCexfS0cbBj4zwVVNIevggtvEqxAkmv3c8bLbtLoKozXqcDL-B_8dSsQHZeEPG6EbN1hEAiebik1PaYBD1h0ZWfqoPrp751172Tg3DojNwc2uoAfoLern6Hv8OdEXw">
+</div>
+<span class="text-xs text-slate-400 font-medium">Shared</span>
+</div>
+</article>
+</section>
+<!-- END: Tier2QuickFolders -->
+<!-- BEGIN: Tier3UploadZoneAndFilters -->
+<section class="flex flex-col gap-3" data-purpose="upload-and-filter-strip" data-responsive="toolbar">
+<!-- Drag & Drop Upload Zone -->
+<div class="bg-white rounded-2xl p-5 border-2 border-dashed border-[#CBD5E1] text-center hover:border-slate-400 transition cursor-pointer flex flex-col items-center justify-center gap-1.5 shadow-xs group">
+<div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-[#0F172A] group-hover:scale-105 transition-transform">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="font-semibold text-[15px] text-[#0F172A] mt-1">Drag &amp; drop project deliverables here, or browse files</span>
+<span class="text-[13px] text-[#64748B]">Supports PDF, Figma, PNG, JPG, MP4, CSV, and XLSX up to 500MB</span>
+</div>
+<!-- Filter and Sort Bar -->
+<div class="bg-white rounded-xl px-4 py-2.5 border border-[#E2E8F0] flex items-center justify-between shadow-xs">
+<!-- Left: Filter Tabs -->
+<div class="flex items-center gap-1.5 text-xs font-medium">
+<button class="bg-[#0F172A] text-white px-3.5 py-1.5 rounded-full transition shadow-xs">All Files</button>
+<button class="text-[#64748B] hover:text-[#0F172A] px-3 py-1.5 rounded-full hover:bg-slate-100 transition">Documents</button>
+<button class="text-[#64748B] hover:text-[#0F172A] px-3 py-1.5 rounded-full hover:bg-slate-100 transition">Images</button>
+<button class="text-[#64748B] hover:text-[#0F172A] px-3 py-1.5 rounded-full hover:bg-slate-100 transition">Media</button>
+<button class="text-[#64748B] hover:text-[#0F172A] px-3 py-1.5 rounded-full hover:bg-slate-100 transition">Archives</button>
+</div>
+<!-- Right: Sort & Layout Views -->
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1 text-[13px] text-slate-700 bg-slate-50 border border-[#E2E8F0] px-3 py-1.5 rounded-lg cursor-pointer hover:bg-slate-100 transition">
+<span class="">Last Modified</span>
+<svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<!-- View toggle (Grid / List) -->
+<div class="flex items-center bg-slate-100 p-0.5 rounded-lg border border-[#E2E8F0]">
+<button aria-label="Grid view" class="p-1 rounded bg-white text-[#0F172A] shadow-xs">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<button aria-label="List view" class="p-1 rounded text-slate-500 hover:text-slate-800">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- END: Tier3UploadZoneAndFilters -->
+<!-- BEGIN: Tier4RecentFilesGrid -->
+<section class="grid grid-cols-4 gap-4" data-purpose="recent-files-grid" data-responsive="cards">
+<!-- File Card 1: FIG -->
+<article class="bg-white rounded-2xl p-3.5 border border-[#E2E8F0] shadow-xs flex flex-col justify-between hover:border-slate-300 transition">
+<div>
+<!-- Thumbnail Box -->
+<div class="h-[100px] w-full rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-100 relative flex items-center justify-center overflow-hidden mb-3">
+<svg class="w-10 h-10 text-purple-600 opacity-80" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+<path d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="absolute top-2 right-2 text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-purple-600 text-white uppercase shadow-xs">FIG</span>
+</div>
+<h4 class="font-semibold text-[14px] text-[#0F172A] truncate" title="Mobile_Design_Tokens_v2.fig">Mobile_Design_Tokens_v2.fig</h4>
+<p class="text-[12px] text-[#64748B] mt-0.5">14.2 MB • 2 hrs ago</p>
+<div class="mt-2.5">
+<span class="inline-block bg-[#EEF2FF] text-[#4F46E5] text-[11px] font-medium px-2 py-0.5 rounded-md">Design</span>
+</div>
+</div>
+<!-- Card Footer -->
+<div class="pt-2.5 mt-3 border-t border-slate-100 flex items-center justify-between text-slate-400">
+<div class="flex items-center gap-2">
+<button class="hover:text-slate-700" title="Download">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+<button class="hover:text-slate-700" title="Share link">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+</div>
+<button class="hover:text-slate-700"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"></path></svg></button>
+</div>
+</article>
+<!-- File Card 2: PDF -->
+<article class="bg-white rounded-2xl p-3.5 border border-[#E2E8F0] shadow-xs flex flex-col justify-between hover:border-slate-300 transition">
+<div>
+<!-- Thumbnail Box -->
+<div class="h-[100px] w-full rounded-xl bg-gradient-to-br from-red-50 to-orange-50 border border-red-100 relative flex items-center justify-center overflow-hidden mb-3">
+<svg class="w-10 h-10 text-red-500 opacity-80" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+<path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="absolute top-2 right-2 text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-red-500 text-white uppercase shadow-xs">PDF</span>
+</div>
+<h4 class="font-semibold text-[14px] text-[#0F172A] truncate" title="Product_Launch_Q2_PRD.pdf">Product_Launch_Q2_PRD.pdf</h4>
+<p class="text-[12px] text-[#64748B] mt-0.5">3.4 MB • 4 hrs ago</p>
+<div class="mt-2.5">
+<span class="inline-block bg-[#E0F2FE] text-[#0284C7] text-[11px] font-medium px-2 py-0.5 rounded-md">Product</span>
+</div>
+</div>
+<!-- Card Footer -->
+<div class="pt-2.5 mt-3 border-t border-slate-100 flex items-center justify-between text-slate-400">
+<div class="flex items-center gap-2">
+<button class="hover:text-slate-700" title="Download">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+<button class="hover:text-slate-700" title="Share link">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+</div>
+<button class="hover:text-slate-700"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"></path></svg></button>
+</div>
+</article>
+<!-- File Card 3: PNG -->
+<article class="bg-white rounded-2xl p-3.5 border border-[#E2E8F0] shadow-xs flex flex-col justify-between hover:border-slate-300 transition">
+<div>
+<!-- Thumbnail Box -->
+<div class="h-[100px] w-full rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 relative flex items-center justify-center overflow-hidden mb-3">
+<svg class="w-10 h-10 text-emerald-500 opacity-80" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+<path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="absolute top-2 right-2 text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500 text-white uppercase shadow-xs">PNG</span>
+</div>
+<h4 class="font-semibold text-[14px] text-[#0F172A] truncate" title="Landing_Page_Hero_Illustration.png">Landing_Page_Hero_Illustration.png</h4>
+<p class="text-[12px] text-[#64748B] mt-0.5">8.1 MB • Yesterday</p>
+<div class="mt-2.5">
+<span class="inline-block bg-[#EEF2FF] text-[#4F46E5] text-[11px] font-medium px-2 py-0.5 rounded-md">Design</span>
+</div>
+</div>
+<!-- Card Footer -->
+<div class="pt-2.5 mt-3 border-t border-slate-100 flex items-center justify-between text-slate-400">
+<div class="flex items-center gap-2">
+<button class="hover:text-slate-700" title="Download">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+<button class="hover:text-slate-700" title="Share link">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+</div>
+<button class="hover:text-slate-700"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"></path></svg></button>
+</div>
+</article>
+<!-- File Card 4: XLSX -->
+<article class="bg-white rounded-2xl p-3.5 border border-[#E2E8F0] shadow-xs flex flex-col justify-between hover:border-slate-300 transition">
+<div>
+<!-- Thumbnail Box -->
+<div class="h-[100px] w-full rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100 relative flex items-center justify-center overflow-hidden mb-3">
+<svg class="w-10 h-10 text-green-600 opacity-80" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+<path d="M3 10h18M3 14h18m-9-4v8m-7 4h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="absolute top-2 right-2 text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-green-600 text-white uppercase shadow-xs">XLSX</span>
+</div>
+<h4 class="font-semibold text-[14px] text-[#0F172A] truncate" title="Q2_Marketing_Budget_Allocation.xlsx">Q2_Marketing_Budget_Allocation.xlsx</h4>
+<p class="text-[12px] text-[#64748B] mt-0.5">1.8 MB • Yesterday</p>
+<div class="mt-2.5">
+<span class="inline-block bg-[#FEF9C3] text-[#CA8A04] text-[11px] font-medium px-2 py-0.5 rounded-md">Strategy</span>
+</div>
+</div>
+<!-- Card Footer -->
+<div class="pt-2.5 mt-3 border-t border-slate-100 flex items-center justify-between text-slate-400">
+<div class="flex items-center gap-2">
+<button class="hover:text-slate-700" title="Download">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+<button class="hover:text-slate-700" title="Share link">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+</div>
+<button class="hover:text-slate-700"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"></path></svg></button>
+</div>
+</article>
+<!-- File Card 5: MP4 -->
+<article class="bg-white rounded-2xl p-3.5 border border-[#E2E8F0] shadow-xs flex flex-col justify-between hover:border-slate-300 transition">
+<div>
+<!-- Thumbnail Box -->
+<div class="h-[100px] w-full rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 relative flex items-center justify-center overflow-hidden mb-3">
+<svg class="w-10 h-10 text-blue-600 opacity-80" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+<path d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="absolute top-2 right-2 text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-blue-600 text-white uppercase shadow-xs">MP4</span>
+</div>
+<h4 class="font-semibold text-[14px] text-[#0F172A] truncate" title="User_Interview_Recordings_Digest.mp4">User_Interview_Recordings_Digest.mp4</h4>
+<p class="text-[12px] text-[#64748B] mt-0.5">128 MB • 2 days ago</p>
+<div class="mt-2.5">
+<span class="inline-block bg-[#E0F2FE] text-[#0284C7] text-[11px] font-medium px-2 py-0.5 rounded-md">Product</span>
+</div>
+</div>
+<!-- Card Footer -->
+<div class="pt-2.5 mt-3 border-t border-slate-100 flex items-center justify-between text-slate-400">
+<div class="flex items-center gap-2">
+<button class="hover:text-slate-700" title="Download">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+<button class="hover:text-slate-700" title="Share link">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+</div>
+<button class="hover:text-slate-700"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"></path></svg></button>
+</div>
+</article>
+<!-- File Card 6: JSON -->
+<article class="bg-white rounded-2xl p-3.5 border border-[#E2E8F0] shadow-xs flex flex-col justify-between hover:border-slate-300 transition">
+<div>
+<!-- Thumbnail Box -->
+<div class="h-[100px] w-full rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100 relative flex items-center justify-center overflow-hidden mb-3">
+<svg class="w-10 h-10 text-amber-600 opacity-80" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+<path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="absolute top-2 right-2 text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-600 text-white uppercase shadow-xs">JSON</span>
+</div>
+<h4 class="font-semibold text-[14px] text-[#0F172A] truncate" title="API_OpenAPI_Schema_v3.json">API_OpenAPI_Schema_v3.json</h4>
+<p class="text-[12px] text-[#64748B] mt-0.5">420 KB • 3 days ago</p>
+<div class="mt-2.5">
+<span class="inline-block bg-[#DCFCE7] text-[#16A34A] text-[11px] font-medium px-2 py-0.5 rounded-md">Engineering</span>
+</div>
+</div>
+<!-- Card Footer -->
+<div class="pt-2.5 mt-3 border-t border-slate-100 flex items-center justify-between text-slate-400">
+<div class="flex items-center gap-2">
+<button class="hover:text-slate-700" title="Download">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+<button class="hover:text-slate-700" title="Share link">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+</div>
+<button class="hover:text-slate-700"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"></path></svg></button>
+</div>
+</article>
+<!-- File Card 7: PDF Marketing -->
+<article class="bg-white rounded-2xl p-3.5 border border-[#E2E8F0] shadow-xs flex flex-col justify-between hover:border-slate-300 transition">
+<div>
+<!-- Thumbnail Box -->
+<div class="h-[100px] w-full rounded-xl bg-gradient-to-br from-red-50 to-pink-50 border border-red-100 relative flex items-center justify-center overflow-hidden mb-3">
+<svg class="w-10 h-10 text-red-500 opacity-80" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+<path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="absolute top-2 right-2 text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-red-500 text-white uppercase shadow-xs">PDF</span>
+</div>
+<h4 class="font-semibold text-[14px] text-[#0F172A] truncate" title="Brand_Guidelines_Booklet_2024.pdf">Brand_Guidelines_Booklet_2024.pdf</h4>
+<p class="text-[12px] text-[#64748B] mt-0.5">24 MB • 4 days ago</p>
+<div class="mt-2.5">
+<span class="inline-block bg-[#F3E8FF] text-[#9333EA] text-[11px] font-medium px-2 py-0.5 rounded-md">Marketing</span>
+</div>
+</div>
+<!-- Card Footer -->
+<div class="pt-2.5 mt-3 border-t border-slate-100 flex items-center justify-between text-slate-400">
+<div class="flex items-center gap-2">
+<button class="hover:text-slate-700" title="Download">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+<button class="hover:text-slate-700" title="Share link">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+</div>
+<button class="hover:text-slate-700"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"></path></svg></button>
+</div>
+</article>
+<!-- File Card 8: CSV Audit -->
+<article class="bg-white rounded-2xl p-3.5 border border-[#E2E8F0] shadow-xs flex flex-col justify-between hover:border-slate-300 transition">
+<div>
+<!-- Thumbnail Box -->
+<div class="h-[100px] w-full rounded-xl bg-gradient-to-br from-teal-50 to-cyan-50 border border-teal-100 relative flex items-center justify-center overflow-hidden mb-3">
+<svg class="w-10 h-10 text-teal-600 opacity-80" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+<path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="absolute top-2 right-2 text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-teal-600 text-white uppercase shadow-xs">CSV</span>
+</div>
+<h4 class="font-semibold text-[14px] text-[#0F172A] truncate" title="Database_Migration_Audit_Log.csv">Database_Migration_Audit_Log.csv</h4>
+<p class="text-[12px] text-[#64748B] mt-0.5">950 KB • 5 days ago</p>
+<div class="mt-2.5">
+<span class="inline-block bg-[#DCFCE7] text-[#16A34A] text-[11px] font-medium px-2 py-0.5 rounded-md">Engineering</span>
+</div>
+</div>
+<!-- Card Footer -->
+<div class="pt-2.5 mt-3 border-t border-slate-100 flex items-center justify-between text-slate-400">
+<div class="flex items-center gap-2">
+<button class="hover:text-slate-700" title="Download">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+<button class="hover:text-slate-700" title="Share link">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+</div>
+<button class="hover:text-slate-700"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"></path></svg></button>
+</div>
+</article>
+</section>
+<!-- END: Tier4RecentFilesGrid -->
+</main>
+<!-- END: MainContentCanvas -->
+</div>
+<!-- END: ApplicationLayoutWrapper -->
+
+
+<iframe data-layout-variant="mobile-frame" title="Mobile files screen" src="../variants/mobile/files.html" loading="eager"></iframe>
+<script defer src="../assets/js/app.js"></script>
+</body></html>

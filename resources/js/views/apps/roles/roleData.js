@@ -46,6 +46,27 @@ const roleVisuals = {
   },
 }
 
+const roleIconOptions = [
+  { title: 'Khiên', value: 'tabler-shield' },
+  { title: 'Khiên kiểm tra', value: 'tabler-shield-check' },
+  { title: 'Khiên cài đặt', value: 'tabler-shield-cog' },
+  { title: 'Vương miện', value: 'tabler-crown' },
+  { title: 'Bút chỉnh sửa', value: 'tabler-pencil' },
+  { title: 'Tai nghe hỗ trợ', value: 'tabler-headset' },
+  { title: 'Người dùng', value: 'tabler-user' },
+  { title: 'Nhóm người dùng', value: 'tabler-users' },
+  { title: 'Chìa khóa', value: 'tabler-key' },
+  { title: 'Cài đặt', value: 'tabler-settings' },
+  { title: 'Danh mục', value: 'tabler-category' },
+  { title: 'Tài liệu', value: 'tabler-file-text' },
+  { title: 'Ảnh', value: 'tabler-photo' },
+  { title: 'Robot', value: 'tabler-robot' },
+  { title: 'Lấp lánh', value: 'tabler-sparkles' },
+  { title: 'Biểu đồ', value: 'tabler-chart-line' },
+  { title: 'Mã nguồn', value: 'tabler-code' },
+  { title: 'Ngôi sao', value: 'tabler-star' },
+]
+
 const groupVisuals = {
   resources: { title: 'Tài nguyên', description: 'Quản lý tài nguyên và vòng đời xuất bản.', icon: 'tabler-box' },
   'resource_versions': { title: 'Phiên bản tài nguyên', description: 'Quản lý các phiên bản của tài nguyên.', icon: 'tabler-git-branch' },
@@ -192,7 +213,7 @@ const mapRole = role => {
     userCount: Number(role.users_count ?? 0),
     status: isSystem ? 'Hệ thống' : 'Tùy chỉnh',
     active: true,
-    icon: visual.icon,
+    icon: role.icon || visual.icon,
     color: visual.color,
     isSystem,
     canEdit: Boolean(role.can_edit),
@@ -266,4 +287,5 @@ export {
   mapPermissionCatalog,
   mapPermissionGroups,
   mapRole,
+  roleIconOptions,
 }

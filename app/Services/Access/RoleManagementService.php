@@ -144,14 +144,14 @@ final class RoleManagementService
      * =====================================================================
      * CHỨC NĂNG: Băm version role để phát hiện thay đổi đồng thời
      * INPUT: Role với permissions đã load.
-     * OUTPUT: SHA-256 của tên và permission IDs đã sort.
+     * OUTPUT: SHA-256 của tên, icon và permission IDs đã sort.
      * SIDE EFFECT: Hàm thuần trên DTO/relation.
      * EXCEPTION/TRANSACTION: Không mở transaction.
      * =====================================================================
      */
     public static function roleVersion(Role $role): string
     {
-        return hash('sha256', json_encode([$role->name, $role->permissions->pluck('id')->sort()->values()->all()]));
+        return hash('sha256', json_encode([$role->name, $role->icon, $role->permissions->pluck('id')->sort()->values()->all()]));
     }
 
     /**
@@ -289,7 +289,7 @@ final class RoleManagementService
     /**
      * =====================================================================
      * CHỨC NĂNG: Tạo hoặc sửa role và gán permission từ catalog
-     * INPUT: Actor, name/permission_ids/expected_version đã validate, role optional.
+     * INPUT: Actor, name/icon/permission_ids/expected_version đã validate, role optional.
      * OUTPUT: Role đã eager load/count sau mutation.
      * SIDE EFFECT: Ghi role/pivot và audit; không sửa permission catalog.
      * EXCEPTION/TRANSACTION: mutate() mở transaction và lock; root bất biến, tên system role cố định, không tự mất quyền quản lý role; lỗi rollback.
@@ -310,7 +310,7 @@ final class RoleManagementService
                 if (in_array($role->name, self::SYSTEM_ROLES, true) && $role->name !== $data['name']) {
                     throw ValidationException::withMessages(['name' => 'System role names cannot be changed.']);
                 }
-                $before = ['name' => $role->name, 'permission_ids' => $role->permissions->pluck('id')->all()];
+                $before = ['name' => $role->name, 'icon' => $role->icon, 'permission_ids' => $role->permissions->pluck('id')->all()];
                 if ($freshActor->roles->contains('id', $role->id) && self::canUpdateRole($freshActor)) {
                     $otherPermissions = $freshActor->permissions->pluck('name')->merge($freshActor->roles
                         ->where('id', '!=', $role->id)->flatMap(fn ($other) => $other->permissions->pluck('name')));
@@ -329,10 +329,14 @@ final class RoleManagementService
                 throw ValidationException::withMessages(['name' => 'This role name is already in use.']);
             }
             $role ??= new Role;
-            $role->forceFill(['name' => $data['name'], 'guard_name' => 'admin'])->save();
+            $role->forceFill([
+                'name' => $data['name'],
+                'icon' => $data['icon'] ?? $role->icon ?? 'tabler-shield',
+                'guard_name' => 'admin',
+            ])->save();
             $role->syncPermissions($selected);
             $this->audit($freshActor, $role, $before === null ? 'role_created' : 'role_updated', $before,
-                ['name' => $role->name, 'permission_ids' => $selected->pluck('id')->all()]);
+                ['name' => $role->name, 'icon' => $role->icon, 'permission_ids' => $selected->pluck('id')->all()]);
 
             return $this->roleDetails($role);
         }, $requiredPermission);
@@ -355,7 +359,7 @@ final class RoleManagementService
             $this->assertVersion(self::roleVersion($role), $version);
             abort_if(in_array($role->name, self::SYSTEM_ROLES, true), 422, 'System roles cannot be deleted.');
             abort_if($this->userCount($role) > 0, 409, 'Remove this role from its users before deleting it.');
-            $this->audit($freshActor, $role, 'role_deleted', ['name' => $role->name, 'permission_ids' => $role->permissions->pluck('id')->all()], null);
+            $this->audit($freshActor, $role, 'role_deleted', ['name' => $role->name, 'icon' => $role->icon, 'permission_ids' => $role->permissions->pluck('id')->all()], null);
             $role->delete();
         }, 'roles.delete');
     }

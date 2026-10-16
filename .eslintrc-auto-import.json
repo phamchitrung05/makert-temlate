@@ -434,6 +434,8 @@
     "AI_TASK_READY_EVENT": true,
     "announceAiTaskQueued": true,
     "flattenCategoryOptions": true,
-    "useUserList": true
+    "useUserList": true,
+    "useResourceTemplate": true,
+    "useSocialPosts": true
   }
 }

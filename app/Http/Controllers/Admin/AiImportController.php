@@ -253,9 +253,11 @@ class AiImportController extends Controller
         $userId = (int) $request->user()->getKey();
         $data = $request->validated();
         $contentSettings = $settings->all();
-        $generateThumbnail = (bool) ($data['generate_thumbnail'] ?? $contentSettings['auto_thumbnail']);
-        $generateSeo = (bool) ($data['generate_seo'] ?? $contentSettings['auto_seo']);
         $targetType = (string) ($data['target_type'] ?? 'post');
+        $generateThumbnail = (bool) ($data['generate_thumbnail'] ?? $contentSettings['auto_thumbnail']);
+        // SEO tự động chỉ mặc định cho Blog Post; Resource/Sound vẫn có thể
+        // yêu cầu rõ `generate_seo=true` nhưng không phát sinh task ngoài ý muốn.
+        $generateSeo = (bool) ($data['generate_seo'] ?? ($targetType === 'post' ? $contentSettings['auto_seo'] : false));
         $sourceHtml = $request->hasFile('html_file') ? (string) $request->file('html_file')->getContent() : (string) ($data['html'] ?? '');
         $encoding = (string) ($data['source_encoding'] ?? 'UTF-8');
         if ($sourceHtml !== '' && $encoding !== 'UTF-8') {

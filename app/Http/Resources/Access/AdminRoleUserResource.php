@@ -12,7 +12,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * =====================================================================
  * Chỉ field hồ sơ cần hiển thị; không password/token/customer. Eager load roles.permissions và permissions trước serialize.
  * CÁC HÀM/METHOD TRONG FILE: toArray().
- * INPUT/OUTPUT CỦA CLASS (tổng thể): User với roles/permissions và actor -> DTO hồ sơ tối thiểu/version/cờ chỉnh role.
+ * INPUT/OUTPUT CỦA CLASS (tổng thể): User với roles/permissions và actor -> DTO hồ sơ tối thiểu, role/icon, version/cờ chỉnh role.
  * SIDE EFFECT: Đọc quyền actor; không ghi database hoặc gọi dịch vụ ngoài.
  * EXCEPTION/TRANSACTION: Route phải xác thực User; resource không mở transaction.
  * =====================================================================
@@ -23,7 +23,7 @@ final class AdminRoleUserResource extends JsonResource
      * =====================================================================
      * CHỨC NĂNG: Tạo DTO và quyền chỉnh role tài khoản
      * INPUT: Request actor và User eager loaded.
-     * OUTPUT: Hồ sơ tối thiểu, roles, version, can_edit_roles.
+     * OUTPUT: Hồ sơ tối thiểu, roles kèm icon, version, can_edit_roles.
      * SIDE EFFECT: Không ghi dữ liệu.
      * EXCEPTION/TRANSACTION: Không mở transaction.
      * =====================================================================
@@ -36,7 +36,7 @@ final class AdminRoleUserResource extends JsonResource
             'id' => $this->id, 'name' => $this->name, 'email' => $this->email,
             'username' => $this->username, 'status' => $this->status,
             'created_at' => $this->created_at?->toISOString(),
-            'roles' => $this->roles->where('guard_name', 'admin')->map(fn ($role) => $role->only(['id', 'name']))->values()->all(),
+            'roles' => $this->roles->where('guard_name', 'admin')->map(fn ($role) => $role->only(['id', 'name', 'icon']))->values()->all(),
             'version' => RoleManagementService::userVersion($this->resource),
             'can_edit_roles' => $actor->can('users.manage') && $actor->id !== $this->id
                 && RoleManagementService::canGrant($actor, $this->resource->getAllPermissions())

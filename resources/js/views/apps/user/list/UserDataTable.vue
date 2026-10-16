@@ -1,4 +1,6 @@
 <script setup>
+import { mapRole } from '@/views/apps/roles/roleData'
+
 const props = defineProps({
   users: {
     type: Array,
@@ -43,9 +45,7 @@ const statusVariant = status => ({
   pending: 'warning',
 }[String(status ?? '').toLowerCase()] ?? 'default')
 
-const roleTitle = role => String(role ?? '').replace(/[-_]/g, ' ')
-
-const rolesTitle = roles => roles?.map(role => roleTitle(role.name)).join(', ') || '—'
+const displayRoles = roles => (roles ?? []).map(mapRole)
 
 const formatDate = value => {
   if (!value)
@@ -100,7 +100,26 @@ const formatDate = value => {
     </template>
 
     <template #item.roles="{ item }">
-      <span class="text-body-1 text-capitalize">{{ rolesTitle(item.roles) }}</span>
+      <div
+        v-if="displayRoles(item.roles).length"
+        class="d-flex flex-wrap gap-2"
+      >
+        <VChip
+          v-for="role in displayRoles(item.roles)"
+          :key="role.id"
+          :color="role.color"
+          variant="tonal"
+          size="small"
+        >
+          <VIcon
+            :icon="role.icon"
+            size="16"
+            class="me-1"
+          />
+          {{ role.label || role.name }}
+        </VChip>
+      </div>
+      <span v-else>—</span>
     </template>
 
     <template #item.status="{ item }">

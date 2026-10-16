@@ -9,7 +9,7 @@ namespace App\Http\Requests\Admin\Access;
  * Tách boundary tạo khỏi cập nhật; dùng rules tên/catalog và users.manage từ
  * RoleSaveRequest. Tạo mới không cần expected_version vì chưa có bản ghi.
  * CÁC HÀM/METHOD TRONG FILE: rules(), authorize(), prepareForValidation() kế thừa.
- * INPUT/OUTPUT CỦA CLASS (tổng thể): name/permission_ids -> payload đã validate.
+ * INPUT/OUTPUT CỦA CLASS (tổng thể): name/icon/permission_ids -> payload đã validate.
  * SIDE EFFECT: Query validation role/permission; không ghi database.
  * EXCEPTION/TRANSACTION: Thiếu quyền trả 403, validation trả 422; không transaction.
  * =====================================================================

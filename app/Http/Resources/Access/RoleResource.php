@@ -23,7 +23,7 @@ final class RoleResource extends JsonResource
      * =====================================================================
      * CHỨC NĂNG: Chuyển role thành DTO cho card/editor
      * INPUT: Request actor và Role eager loaded.
-     * OUTPUT: ID/name/permissions/users_count/version/is_system/can_edit/can_delete.
+     * OUTPUT: ID/name/icon/permissions/users_count/version/is_system/can_edit/can_delete.
      * SIDE EFFECT: Không ghi dữ liệu; đọc actor permissions.
      * EXCEPTION/TRANSACTION: Không mở transaction.
      * =====================================================================
@@ -35,7 +35,7 @@ final class RoleResource extends JsonResource
         $deletable = RoleManagementService::canDeleteRoleModel($request->user(), $this->resource);
 
         return [
-            'id' => $this->id, 'name' => $this->name,
+            'id' => $this->id, 'name' => $this->name, 'icon' => $this->icon,
             'permissions' => $this->permissions->sortBy('name')->map(fn ($permission) => $permission->only(['id', 'name']))->values()->all(),
             'users_count' => (int) $this->users_count,
             'version' => RoleManagementService::roleVersion($this->resource),

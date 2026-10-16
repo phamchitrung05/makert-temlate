@@ -7,13 +7,13 @@
 
   CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
   - allPermissionIds, allAssignablePermissionIds, allSelected, partiallySelected.
-  - filteredGroups, roleSlug, totalSelectedPermissions: dữ liệu hiển thị dẫn xuất.
+  - filteredGroups, totalSelectedPermissions: dữ liệu hiển thị dẫn xuất.
   - resetForm(), close(), toggleAll(), toggleGroup(), toggleGroupExpansion(), submit(): điều khiển form và dialog.
   - watcher modelValue/searchQuery: reset form và tự mở nhóm khớp tìm kiếm.
 
   INPUT/OUTPUT CỦA COMPONENT (tổng thể):
   - INPUT : modelValue, modules, groups, loading và errorMessage từ page Roles.
-  - OUTPUT: update:modelValue khi đóng; submit với name/permission_ids hợp lệ.
+  - OUTPUT: update:modelValue khi đóng; submit với name/icon/permission_ids hợp lệ.
   - SIDE EFFECT: Không gọi API trực tiếp; không ghi database.
   =====================================================================
 -->
@@ -21,6 +21,7 @@
 import { computed, shallowRef, watch } from 'vue'
 import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 import { VForm } from 'vuetify/components/VForm'
+import { roleIconOptions } from '@/views/apps/roles/roleData'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -33,6 +34,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'submit'])
 const form = shallowRef()
 const roleName = shallowRef('')
+const roleIcon = shallowRef('tabler-shield')
 const permissionIds = shallowRef([])
 const searchQuery = shallowRef('')
 const expandedGroupIds = shallowRef([])
@@ -50,15 +52,6 @@ const nameRules = [
  * Side effect: Không thay đổi state.
  */
 const normalizeRoleName = value => value.trim().toLowerCase()
-
-/**
- * Tính mã kỹ thuật hiển thị cho role từ tên hiện tại.
- *
- * Input: roleName state.
- * Output: slug preview; không gửi thêm field không có trong API.
- * Side effect: Không ghi state.
- */
-const roleSlug = computed(() => normalizeRoleName(roleName.value))
 
 const permissionGroups = computed(() => props.groups.length
   ? props.groups
@@ -162,6 +155,7 @@ const toggleGroupExpansion = groupId => {
  */
 const resetForm = () => {
   roleName.value = ''
+  roleIcon.value = 'tabler-shield'
   permissionIds.value = []
   searchQuery.value = ''
   expandedGroupIds.value = []
@@ -226,6 +220,7 @@ const submit = async () => {
 
   emit('submit', {
     name: normalizeRoleName(roleName.value),
+    icon: roleIcon.value,
     'permission_ids': [...permissionIds.value],
   })
 }
@@ -392,15 +387,41 @@ watch(searchQuery, query => {
                   class="mb-5"
                 />
 
-                <AppTextField
-                  :model-value="roleSlug || '—'"
-                  label="Mã kỹ thuật"
-                  hint="Tự động chuẩn hóa từ tên vai trò."
+                <VSelect
+                  v-model="roleIcon"
+                  :items="roleIconOptions"
+                  item-title="title"
+                  item-value="value"
+                  label="Biểu tượng vai trò"
+                  hint="Chọn biểu tượng hiển thị trên danh sách vai trò."
                   persistent-hint
-                  readonly
                   :disabled="props.loading"
                   class="mb-5"
-                />
+                >
+                  <template #selection="{ item }">
+                    <div class="d-flex align-center gap-2">
+                      <VIcon
+                        :icon="item.raw.value"
+                        size="20"
+                      />
+                      <span>{{ item.raw.title }}</span>
+                    </div>
+                  </template>
+                  <template #item="{ props: itemProps, item }">
+                    <VListItem
+                      v-bind="itemProps"
+                      :title="item.raw.title"
+                      :subtitle="item.raw.value"
+                    >
+                      <template #prepend>
+                        <VIcon
+                          :icon="item.raw.value"
+                          size="20"
+                        />
+                      </template>
+                    </VListItem>
+                  </template>
+                </VSelect>
 
                 <VAlert
                   color="primary"

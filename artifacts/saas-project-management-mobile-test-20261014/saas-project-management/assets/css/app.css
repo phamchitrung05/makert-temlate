@@ -1,0 +1,2 @@
+/* Shared application stylesheet entry point. Page-specific styles may be appended here. */
+@import url("./layout-contract.css");

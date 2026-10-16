@@ -103,7 +103,7 @@ const getUser = userId => $api(`/admin/access/users/${userId}`).then(unwrap)
 /**
  * Tạo role tùy chỉnh từ dialog.
  *
- * Input: name dạng slug và permission_ids là mảng ID permission.
+ * Input: name dạng slug, icon Tabler và permission_ids là mảng ID permission.
  * Output: DTO role vừa tạo.
  * Side effect: Ghi role, pivot và audit qua backend transaction.
  */

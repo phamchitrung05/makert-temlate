@@ -1,6 +1,6 @@
 # Kế hoạch tổng của dự án
 
-**Cập nhật:** 14/10/2026. Đây là nơi theo dõi tiến độ hiện tại; mỗi task chỉ có một checklist đang dùng.
+**Cập nhật:** 15/10/2026. Đây là nơi theo dõi tiến độ hiện tại; mỗi task chỉ có một checklist đang dùng.
 
 ## Tài liệu cần đọc
 
@@ -8,6 +8,7 @@
 | --- | --- |
 | [Mục lục docs](../README.md) | Tìm tài liệu theo nhóm và đường dẫn hiện tại |
 | [PLAN.md](PLAN.md) | Xem phần đã xong, backlog và ưu tiên tiếp theo |
+| [MARKETING_SOCIAL_POST.md](MARKETING_SOCIAL_POST.md) | Scope, thiết kế và tiến độ Marketing Social Post image-first |
 | [HE_THONG_TU_DANH_GIA_DINH_KY.md](HE_THONG_TU_DANH_GIA_DINH_KY.md) | Chấm từng bài AI trước duyệt, vòng tròn điểm và báo cáo tổng hợp định kỳ |
 | [DEVELOPMENT_GUIDELINES.md](../architecture/DEVELOPMENT_GUIDELINES.md) | Quy ước comment, kiến trúc, dialog, Add/Edit và Media viewport |
 | [PROJECT_STRUCTURE.md](../architecture/PROJECT_STRUCTURE.md) · [PROJECT_INVENTORY.md](../architecture/PROJECT_INVENTORY.md) | Tra vị trí code, API và các module hiện có |
@@ -27,6 +28,7 @@ Các tài liệu API và QA trong `docs/` tiếp tục làm nguồn tham chiếu
 | Blog Admin/Post | IN PROGRESS | CRUD, taxonomy, SEO metadata, editor, media, P-01 workflow, P-03 HTML sanitization và P-04 bộ lọc tác giả/ngày; post_type/Gallery mở thành plan riêng |
 | AI Content | DONE trong phạm vi kỹ thuật hiện tại | Pipeline C ba bước, nguồn URL/text/HTML/file, profile/brief, duyệt/từ chối, sửa/regenerate, Apply Post nháp, thumbnail, queue dùng chung và form enqueue liên tiếp |
 | Ai Prompt/Writing Profiles | DONE trong phạm vi hiện tại | CRUD, profile mặc định, chọn profile, phân tích văn phong qua queue dùng chung và quyền/validation |
+| Marketing Social Post | IN PROGRESS — MP-01 DONE | Đã chốt contract/config và triển khai schema/model MP-01; smoke test Facebook Page và các phase AI/UI/publisher còn chờ. [Kế hoạch riêng](MARKETING_SOCIAL_POST.md) |
 | Settings | DONE phần đã triển khai | 10 tab, typed settings/version/quyền, AI defaults, thông tin hệ thống, logo/favicon public/admin và QA upload thật |
 | Đánh giá 19 bài đã lưu | DONE — đánh giá AI | Điểm văn phong trung bình **4,49/5**; hai phiếu người đọc vẫn chờ |
 | Chấm bài AI và báo cáo định kỳ | IN PROGRESS — G1–G3 DONE | Đã có evaluator theo candidate/generation/hash, enqueue sau ready, cổng > 4/đủ nguồn/đạt dữ kiện, vòng tròn điểm và archive score; G4–G6 còn TODO. [Kế hoạch riêng](HE_THONG_TU_DANH_GIA_DINH_KY.md) |
@@ -97,6 +99,9 @@ Các ID dưới đây để theo dõi ổn định, không phải yêu cầu tri
 | AI-03 | TODO | Ai Prompt: lịch sử phân tích phía server, quyền source preview riêng và mở rộng idempotency khi cần |
 | AI-04 | TODO | AI Apply cho Resource/Sound, input/file theo từng domain; ghi usage/cost và phiên bản bảng giá. Thiếu usage/giá giữ trạng thái chưa biết |
 | AI-05 | TODO — chỉ khi chọn SDK | Rà tương thích PHP/Laravel AI SDK trước khi thêm adapter; provider HTTP hiện tại đã có |
+| MP-00 | IN PROGRESS — contract/config DONE, Facebook smoke BLOCKED | Single workspace, shared caption, state/permission contract, env config và product fixture đã có; cần Meta App/Page token để kiểm publish thật. [API](../api/MARKETING_SOCIAL_POST_API.md) · [QA](../qa/MARKETING_SOCIAL_POST_MP00.md) |
+| MP-01 | DONE — schema/model | Product/facts, campaign, social account, Social Post, target/publication/version, daily plan, enum, MediaAsset morph và audit đã triển khai; request/API validation để phase sau. [Kế hoạch](MARKETING_SOCIAL_POST.md) |
+| MP-02 | TODO | Marketing Social Post image-first: Prompt Template cho caption/ảnh, snapshot prompt/profile/context và validator. [Kế hoạch](MARKETING_SOCIAL_POST.md) |
 | S-01 | TODO | Webhook CRUD, delivery, retry và lịch sử. Tab hiện tại đã phản ánh chưa hỗ trợ |
 | S-02 | TODO | Scheduler run history, heartbeat worker, GA/GSC, 2FA/CAPTCHA và kiểm SMTP production |
 | H-01 | TODO — tạm hoãn đợt hiện tại | Host/VPS: worker/process manager, scheduler, storage, timeout/lease với DB/queue thật và nhiều worker; Reverb/Echo có fallback. Staging kiểm provider text/image bằng key thật, có quyền tạo ảnh; local/fixture đã kiểm không thay nghiệm thu staging |
