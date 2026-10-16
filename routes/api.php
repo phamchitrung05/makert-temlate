@@ -25,6 +25,10 @@ use App\Http\Controllers\Admin\AiTaskRunController;
 use App\Http\Controllers\Admin\AiWritingProfileController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\MediaAssetController;
+use App\Http\Controllers\Admin\Marketing\SocialAccountController;
+use App\Http\Controllers\Admin\Marketing\CampaignController;
+use App\Http\Controllers\Admin\Marketing\ProductController;
+use App\Http\Controllers\Admin\Marketing\SocialPostController;
 use App\Http\Controllers\Admin\PostController;
 use App\Http\Controllers\Admin\ResourceController;
 use App\Http\Controllers\Admin\ResourceVersionController;
@@ -339,7 +343,65 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
             Route::post('/generations', [AiImageGenerationController::class, 'store'])
                 ->middleware(['permission:media.upload,admin', 'throttle:12,1']);
         });
+
+        /**
+         * =====================================================================
+         * CHỨC NĂNG: Marketing Social Post/API Page account.
+         * =====================================================================
+         * Caption là canonical dùng chung; generation/publisher chạy queue.
+         * =====================================================================
+         */
+        Route::middleware('permission:social_posts.view,admin')->group(function (): void {
+            Route::get('/marketing/products', [ProductController::class, 'index']);
+            Route::get('/marketing/products/{product}', [ProductController::class, 'show'])->whereNumber('product');
+            Route::get('/marketing/campaigns', [CampaignController::class, 'index']);
+            Route::get('/marketing/campaigns/{campaign}', [CampaignController::class, 'show'])->whereNumber('campaign');
+            Route::get('/social-posts', [SocialPostController::class, 'index']);
+            Route::get('/social-posts/{socialPost}', [SocialPostController::class, 'show'])->whereNumber('socialPost');
+            Route::get('/social-posts/{socialPost}/versions', [SocialPostController::class, 'versions'])->whereNumber('socialPost');
+            Route::get('/social-posts/{socialPost}/publications', [SocialPostController::class, 'publications'])->whereNumber('socialPost');
+            Route::get('/social-accounts', [SocialAccountController::class, 'index']);
+        });
+        Route::post('/marketing/products', [ProductController::class, 'store'])->middleware('permission:social_posts.create,admin');
+        Route::put('/marketing/products/{product}', [ProductController::class, 'update'])->whereNumber('product')->middleware('permission:social_posts.update,admin');
+        Route::delete('/marketing/products/{product}', [ProductController::class, 'destroy'])->whereNumber('product')->middleware('permission:social_posts.delete,admin');
+        Route::post('/marketing/campaigns', [CampaignController::class, 'store'])->middleware('permission:social_posts.create,admin');
+        Route::put('/marketing/campaigns/{campaign}', [CampaignController::class, 'update'])->whereNumber('campaign')->middleware('permission:social_posts.update,admin');
+        Route::delete('/marketing/campaigns/{campaign}', [CampaignController::class, 'destroy'])->whereNumber('campaign')->middleware('permission:social_posts.delete,admin');
+        Route::post('/social-posts', [SocialPostController::class, 'store'])
+            ->middleware('permission:social_posts.create,admin');
+        Route::put('/social-posts/{socialPost}', [SocialPostController::class, 'update'])
+            ->whereNumber('socialPost')->middleware('permission:social_posts.update,admin');
+        Route::delete('/social-posts/{socialPost}', [SocialPostController::class, 'destroy'])
+            ->whereNumber('socialPost')->middleware('permission:social_posts.delete,admin');
+        Route::post('/social-posts/{socialPost}/generate', [SocialPostController::class, 'generate'])
+            ->whereNumber('socialPost')->middleware('permission:social_posts.create|social_posts.update,admin');
+        Route::post('/social-posts/{socialPost}/regenerate-caption', [SocialPostController::class, 'regenerateCaption'])
+            ->whereNumber('socialPost')->middleware('permission:social_posts.update,admin');
+        Route::post('/social-posts/{socialPost}/regenerate-image', [SocialPostController::class, 'regenerateImage'])
+            ->whereNumber('socialPost')->middleware('permission:social_posts.update,admin');
+        Route::post('/social-posts/{socialPost}/submit-review', [SocialPostController::class, 'submitReview'])
+            ->whereNumber('socialPost')->middleware('permission:social_posts.review,admin');
+        Route::post('/social-posts/{socialPost}/approve', [SocialPostController::class, 'approve'])
+            ->whereNumber('socialPost')->middleware('permission:social_posts.review,admin');
+        Route::post('/social-posts/{socialPost}/reject', [SocialPostController::class, 'reject'])
+            ->whereNumber('socialPost')->middleware('permission:social_posts.review,admin');
+        Route::post('/social-posts/{socialPost}/request-revision', [SocialPostController::class, 'requestRevision'])
+            ->whereNumber('socialPost')->middleware('permission:social_posts.review,admin');
+        Route::post('/social-posts/{socialPost}/publish', [SocialPostController::class, 'publish'])
+            ->whereNumber('socialPost')->middleware('permission:social_posts.publish,admin');
+        Route::post('/social-publications/{publication}/retry', [SocialPostController::class, 'retryPublication'])
+            ->whereNumber('publication')->middleware('permission:social_posts.publish,admin');
+        Route::post('/social-accounts/facebook/connect', [SocialAccountController::class, 'connect'])
+            ->middleware('permission:social_accounts.manage,admin');
+        Route::post('/social-accounts/{socialAccount}/reconnect', [SocialAccountController::class, 'reconnect'])
+            ->whereNumber('socialAccount')->middleware('permission:social_accounts.manage,admin');
+        Route::post('/social-accounts/{socialAccount}/disconnect', [SocialAccountController::class, 'disconnect'])
+            ->whereNumber('socialAccount')->middleware('permission:social_accounts.manage,admin');
     });
+
+Route::get('/admin/social-accounts/facebook/callback', [SocialAccountController::class, 'callback'])
+    ->name('admin.social-accounts.facebook.callback');
 
 Route::middleware(['web', 'auth:customer', 'account.active:customer'])
     ->prefix('account')

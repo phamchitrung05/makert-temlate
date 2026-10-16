@@ -1,0 +1,46 @@
+{
+  "fixture_id": "mp00-product-wedding-invitation-001",
+  "product": {
+    "external_key": "wedding-invitation-lotus-001",
+    "name": "Thiệp cưới hoa sen tối giản",
+    "short_description": "Thiệp cưới phong cách tối giản với nét hoa sen mảnh.",
+    "facts": [
+      {
+        "id": "fact-style-001",
+        "key": "style",
+        "value": "hoa sen nét mảnh, bố cục tối giản",
+        "source": "fixture",
+        "verified": true
+      },
+      {
+        "id": "fact-material-001",
+        "key": "material",
+        "value": "giấy mỹ thuật",
+        "source": "fixture",
+        "verified": true
+      },
+      {
+        "id": "fact-exact-date-001",
+        "key": "exact_date_text",
+        "value": "25.12.2099",
+        "source": "fixture",
+        "verified": true
+      }
+    ],
+    "cta": "Nhắn tin để xem mẫu và nhận tư vấn.",
+    "prohibited_claims": [
+      "không tự thêm giá, chiết khấu hoặc chất liệu khác",
+      "không thay đổi ngày tháng đã xác thực"
+    ],
+    "reference_assets": [
+      {
+        "asset_key": "fixture://wedding-invitation-lotus-001/reference-01",
+        "role": "product_reference"
+      }
+    ]
+  },
+  "social_post_context": {
+    "caption_example": "Lướt trúng bản mẫu thiệp cưới ghi ngày 25.12.2099 mà giật mình, chuẩn bị cho ngày trọng đại trước cả mấy chục năm thế này thì quá là chu đáo luôn!",
+    "image_prompt_example": "Ảnh sản phẩm thiệp cưới hoa sen tối giản trên mặt bàn gỗ sáng, ánh sáng tự nhiên mềm, góc chụp dọc, giữ bố cục và chi tiết thật của mẫu tham chiếu, không tự vẽ thêm chữ hoặc ngày tháng."
+  }
+}

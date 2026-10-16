@@ -21,6 +21,43 @@
  */
 export default [
   {
+    title: 'Systerm AI',
+    icon: { icon: 'tabler-sparkles' },
+    children: [
+      { title: 'Ai Content', to: 'ai-content' },
+      { title: 'AI Approved', to: 'ai-approved', action: 'manage', subject: 'posts' },
+      {
+        title: 'Ai Prompt',
+        icon: { icon: 'tabler-file-text' },
+        action: 'manage',
+        subject: 'ai_settings',
+        children: [
+          { title: 'List', to: 'ai-prompt-list', action: 'manage', subject: 'ai_settings' },
+          { title: 'Add', to: 'ai-prompt-add', action: 'manage', subject: 'ai_settings' },
+        ],
+      },
+      {
+        title: 'AI Settings',
+        icon: { icon: 'tabler-brain' },
+        to: 'settings-ai-providers',
+        action: 'manage',
+        subject: 'ai_settings',
+      },
+    ],
+  },
+  {
+    title: 'MARKETING',
+    icon: { icon: 'tabler-speakerphone' },
+    children: [
+      {
+        title: 'Social Post',
+        children: [
+          { title: 'List', to: 'marketing-social-post-list' },
+        ],
+      },
+    ],
+  },
+  {
     title: 'Blog',
     icon: { icon: 'tabler-news' },
     children: [
@@ -49,10 +86,18 @@ export default [
     ],
   },
   {
+    title: 'Media',
+    icon: { icon: 'tabler-photo' },
+    children: [
+      { title: 'File', to: 'apps-media-file' },
+      { title: 'Media Asset', to: 'apps-media-media-asset' },
+    ],
+  },
+  {
     title: 'SYSTERM',
     icon: { icon: 'tabler-settings' },
     children: [
-      { title: 'SETTING', to: 'settings' },
+      { title: 'Seting', to: 'settings' },
       {
         title: 'User',
         children: [
@@ -61,31 +106,6 @@ export default [
         ],
       },
       { title: 'Role & Permissions', to: 'apps-roles' },
-    ],
-  },
-  {
-    title: 'Systerm AI',
-    icon: { icon: 'tabler-sparkles' },
-    children: [
-      { title: 'Ai Content', to: 'ai-content' },
-      { title: 'AI Approved', to: 'ai-approved', action: 'manage', subject: 'posts' },
-      {
-        title: 'Ai Prompt',
-        icon: { icon: 'tabler-file-text' },
-        action: 'manage',
-        subject: 'ai_settings',
-        children: [
-          { title: 'List', to: 'ai-prompt-list', action: 'manage', subject: 'ai_settings' },
-          { title: 'Add', to: 'ai-prompt-add', action: 'manage', subject: 'ai_settings' },
-        ],
-      },
-      {
-        title: 'AI Settings',
-        icon: { icon: 'tabler-brain' },
-        to: 'settings-ai-providers',
-        action: 'manage',
-        subject: 'ai_settings',
-      },
     ],
   },
   {
@@ -142,14 +162,6 @@ export default [
             title: 'Settings',
             to: 'apps-ecommerce-settings',
           },
-        ],
-      },
-      {
-        title: 'Media',
-        icon: { icon: 'tabler-photo' },
-        children: [
-          { title: 'File', to: 'apps-media-file' },
-          { title: 'Media Asset', to: 'apps-media-media-asset' },
         ],
       },
       {

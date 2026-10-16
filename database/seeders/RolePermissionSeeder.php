@@ -61,6 +61,9 @@ class RolePermissionSeeder extends Seeder
                 'media.view', 'media.upload', 'media.attach',
                 'media.delete', 'media.retry',
                 'ai_settings.manage',
+                'social_posts.view', 'social_posts.create', 'social_posts.update',
+                'social_posts.delete', 'social_posts.review', 'social_posts.publish',
+                'social_accounts.view', 'social_accounts.manage',
                 // Admin được phép quản lý role trong phạm vi permission của mình.
                 'users.view', 'users.manage',
                 'roles.view', 'roles.create', 'roles.update', 'roles.delete',
@@ -72,6 +75,8 @@ class RolePermissionSeeder extends Seeder
                 'posts.view', 'posts.create', 'posts.update', 'posts.delete',
                 'posts.review', 'posts.publish', 'posts.archive',
                 'taxonomy.manage', 'media.view', 'media.upload', 'media.attach',
+                'social_posts.view', 'social_posts.create', 'social_posts.update',
+                'social_posts.delete', 'social_accounts.view',
             ]),
             'support' => $permissions->only(['resources.view', 'media.view', 'users.view']),
         ];

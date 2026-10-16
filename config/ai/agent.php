@@ -101,6 +101,28 @@ return [
     ],
 
     'prompts' => [
+        'social_post.caption' => [
+            'label' => 'Social Post caption',
+            'version' => '1.0',
+            'schema' => 'social_post.caption.v1',
+            'type' => 'text',
+            'purpose' => 'caption',
+            'allowed_targets' => ['social_post'],
+            'allowed_operations' => ['generate', 'regenerate_caption'],
+            'variables' => ['product', 'campaign', 'writing_profile', 'language', 'cta', 'facts'],
+            'instructions' => 'Write one natural Vietnamese social caption from the supplied product, campaign and verified facts. Keep the canonical caption useful for every platform. Do not invent price, date, feature, guarantee or personal experience. Return JSON only. Hashtags are optional and must be short.',
+        ],
+        'social_post.product_image' => [
+            'label' => 'Social Post product image prompt',
+            'version' => '1.0',
+            'schema' => 'social_post.product_image.v1',
+            'type' => 'image',
+            'purpose' => 'product_image',
+            'allowed_targets' => ['social_post'],
+            'allowed_operations' => ['generate', 'regenerate_image'],
+            'variables' => ['product', 'campaign', 'writing_profile', 'visual_constraints', 'facts', 'reference_asset_ids'],
+            'instructions' => 'Create a production-ready prompt for an image model to show the supplied product. Describe composition, camera, lighting, material and mood. Never rely on image-model lettering for an exact logo, name, date or other text. Return JSON only.',
+        ],
         'post.create.from_url' => [
             'label' => 'Post từ URL',
             'version' => '1.0',
@@ -136,6 +158,45 @@ return [
                 'seo_description', 'canonical_url', 'robots_index', 'robots_follow',
                 'og_title', 'og_description', 'thumbnail_prompt', 'thumbnail_alt_text',
             ],
+        ],
+        'social_post.caption.v1' => [
+            'version' => '1.0',
+            'json_schema' => [
+                'type' => 'object',
+                'properties' => [
+                    'caption' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 5000],
+                    'cta' => ['type' => 'string', 'maxLength' => 500],
+                    'hashtags' => [
+                        'type' => 'array', 'maxItems' => 12,
+                        'items' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 80],
+                    ],
+                    'used_product_fact_ids' => [
+                        'type' => 'array', 'maxItems' => 100,
+                        'items' => ['type' => 'integer', 'minimum' => 1],
+                    ],
+                ],
+                'required' => ['caption', 'used_product_fact_ids'],
+                'additionalProperties' => false,
+            ],
+            'fields' => ['caption', 'cta', 'hashtags', 'used_product_fact_ids'],
+        ],
+        'social_post.product_image.v1' => [
+            'version' => '1.0',
+            'json_schema' => [
+                'type' => 'object',
+                'properties' => [
+                    'image_prompt' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 4000],
+                    'negative_prompt' => ['type' => 'string', 'maxLength' => 1500],
+                    'aspect_ratio' => ['type' => 'string', 'enum' => ['1:1', '4:5', '9:16']],
+                    'used_product_fact_ids' => [
+                        'type' => 'array', 'maxItems' => 100,
+                        'items' => ['type' => 'integer', 'minimum' => 1],
+                    ],
+                ],
+                'required' => ['image_prompt', 'used_product_fact_ids'],
+                'additionalProperties' => false,
+            ],
+            'fields' => ['image_prompt', 'negative_prompt', 'aspect_ratio', 'used_product_fact_ids'],
         ],
     ],
 ];

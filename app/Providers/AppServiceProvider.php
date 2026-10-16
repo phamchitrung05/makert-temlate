@@ -3,18 +3,27 @@
 namespace App\Providers;
 
 use App\Actions\Media\UploadMediaAssetAction;
+use App\Models\Campaign;
 use App\Models\Category;
 use App\Models\Customer;
+use App\Models\DailyContentPlan;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
 use App\Models\Post;
+use App\Models\Product;
+use App\Models\ProductFact;
 use App\Models\Resource;
 use App\Models\ResourceVersion;
-use App\Models\ResourceVersionTemplateScreen;
 use App\Models\ResourceVersionTemplate;
-use App\Models\TemplateShareLink;
+use App\Models\ResourceVersionTemplateScreen;
+use App\Models\SocialAccount;
+use App\Models\SocialPost;
+use App\Models\SocialPostTarget;
+use App\Models\SocialPostVersion;
+use App\Models\SocialPublication;
 use App\Models\Tag;
 use App\Models\Technology;
+use App\Models\TemplateShareLink;
 use App\Models\User;
 use App\Services\Ai\Content\AiOutputValidator;
 use App\Services\Ai\Content\ArticleImportService;
@@ -173,6 +182,15 @@ class AppServiceProvider extends ServiceProvider
             'user' => User::class,
             'customer' => Customer::class,
             'role' => Role::class,
+            'product' => Product::class,
+            'product_fact' => ProductFact::class,
+            'campaign' => Campaign::class,
+            'social_account' => SocialAccount::class,
+            'social_post' => SocialPost::class,
+            'social_post_target' => SocialPostTarget::class,
+            'social_publication' => SocialPublication::class,
+            'social_post_version' => SocialPostVersion::class,
+            'daily_content_plan' => DailyContentPlan::class,
         ]);
     }
 }

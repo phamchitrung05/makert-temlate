@@ -89,6 +89,13 @@ return [
         ],
         'ai_import_steps' => ['view', 'create', 'update', 'delete'],
 
+        // Social Post: tạo nội dung dùng chung cho nhiều nền tảng và duyệt/publish
+        // theo quyền độc lập với Blog Post.
+        'social_posts' => ['view', 'create', 'update', 'delete', 'review', 'publish'],
+
+        // Social account: xem và quản lý kết nối Page/token ở back-office.
+        'social_accounts' => ['view', 'manage'],
+
         // Catalog provider/model AI và các thao tác kiểm tra, đồng bộ.
         'ai_providers' => [
             'view', 'create', 'update', 'delete', 'disable', 'test', 'sync',

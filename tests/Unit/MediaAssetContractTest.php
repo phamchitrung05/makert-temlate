@@ -6,6 +6,7 @@ use App\Enums\MediaAssetField;
 use App\Enums\MediaAssetKind;
 use App\Enums\MediaAssetVisibility;
 use App\Models\ResourceVersion;
+use App\Models\SocialPost;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Tests\TestCase;
 
@@ -68,6 +69,7 @@ class MediaAssetContractTest extends TestCase
             'resource_version.package',
             'resource_version.documentation',
             'template_screen.preview',
+            'social_post.image',
         ], MediaAssetField::values());
 
         $this->assertSame(MediaAssetKind::Image, MediaAssetField::ResourceCover->kind());
@@ -83,6 +85,9 @@ class MediaAssetContractTest extends TestCase
         $this->assertTrue(MediaAssetField::ResourcePreview->allowsMultiple());
         $this->assertFalse(MediaAssetField::ResourceCover->allowsMultiple());
         $this->assertSame('resource_version', MediaAssetField::ResourceVersionPackage->linkableMorphAlias());
+        $this->assertSame(MediaAssetKind::Image, MediaAssetField::SocialPostImage->kind());
+        $this->assertFalse(MediaAssetField::SocialPostImage->allowsMultiple());
+        $this->assertSame('social_post', MediaAssetField::SocialPostImage->linkableMorphAlias());
     }
 
     /**
@@ -118,5 +123,19 @@ class MediaAssetContractTest extends TestCase
     public function test_resource_version_morph_alias_is_registered(): void
     {
         $this->assertSame(ResourceVersion::class, Relation::getMorphedModel('resource_version'));
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm tra alias Social Post được đăng ký cho Media usage
+     * =====================================================================
+     * Input: morph map đã boot từ AppServiceProvider.
+     * Output: alias social_post resolve đúng model SocialPost.
+     * Side effect: không ghi database.
+     * =====================================================================
+     */
+    public function test_social_post_morph_alias_is_registered(): void
+    {
+        $this->assertSame(SocialPost::class, Relation::getMorphedModel('social_post'));
     }
 }

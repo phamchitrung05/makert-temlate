@@ -60,9 +60,13 @@ final class AiImportTaskAdapter implements AiTaskRunAdapter
     public function project(Model $source): array
     {
         $import = $this->source($source);
-        $image = $import->operation === 'image';
-        $type = $image ? 'image_generation' : 'article_generation';
-        $snapshot = (array) data_get($import->input_json, 'ai_connection', []);
+        $input = (array) $import->input_json;
+        $image = in_array($import->operation, ['image', 'social_image'], true);
+        $social = str_starts_with((string) $import->operation, 'social_');
+        $type = $social
+            ? (string) $import->operation
+            : ($image ? 'image_generation' : 'article_generation');
+        $snapshot = (array) data_get($input, 'ai_connection', []);
         $status = $import->expires_at?->isPast() ? 'expired' : match ($import->status) {
             // Một số run cũ dùng completed/succeeded trước khi lifecycle chuẩn hóa về ready.
             'completed', 'succeeded' => 'ready',
@@ -86,7 +90,9 @@ final class AiImportTaskAdapter implements AiTaskRunAdapter
             'taskable_id' => (string) $import->id,
             'metadata_json' => [
                 'operation' => $import->operation,
-                'target_type' => data_get($import->input_json, 'target_type', 'post'),
+                'target_type' => data_get($input, 'target_type', 'post'),
+                'social_post_id' => data_get($input, 'social_post_id'),
+                'component' => data_get($input, 'component'),
                 'generation_no' => (int) $import->generation_no,
                 'parent_id' => $import->parent_id,
                 'media_asset_id' => data_get($import->result_json, 'image.media_asset_id'),
@@ -149,8 +155,11 @@ final class AiImportTaskAdapter implements AiTaskRunAdapter
                 ->where('task_type', 'article_generation')
                 ->whereIn('metadata_json->target_type', $targets));
         }
+        if ($actor->can('social_posts.view') || $actor->can('social_posts.create')) {
+            $query->orWhere('metadata_json->target_type', 'social_post');
+        }
         if ($actor->can('media.upload')) {
-            $query->orWhere('task_type', 'image_generation');
+            $query->orWhereIn('task_type', ['image_generation', 'social_social_image']);
         }
     }
 
@@ -164,7 +173,7 @@ final class AiImportTaskAdapter implements AiTaskRunAdapter
      */
     public function canUse(User $actor): bool
     {
-        return $actor->can('media.upload') || collect((array) config('ai.agent.targets'))
+        return $actor->can('media.upload') || $actor->can('social_posts.view') || collect((array) config('ai.agent.targets'))
             ->contains(fn ($target) => $actor->can($target['permission'] ?? 'posts.manage'));
     }
 

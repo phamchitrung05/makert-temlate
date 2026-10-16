@@ -20,53 +20,6 @@
  * =====================================================================
  */
 export default [
-  { heading: 'Blog' },
-  {
-    title: 'Post',
-    icon: { icon: 'tabler-news' },
-    children: [
-      { title: 'List', to: 'apps-blog-post-list' },
-      { title: 'Add', to: 'apps-blog-post-add' },
-    ],
-  },
-  {
-    title: 'Page',
-    icon: { icon: 'tabler-file' },
-    children: [
-      { title: 'List', to: null },
-      { title: 'Add', to: null },
-    ],
-  },
-  { heading: 'Taxonomy' },
-  {
-    title: 'Category',
-    icon: { icon: 'tabler-category' },
-    to: 'apps-taxonomy-category',
-  },
-  {
-    title: 'Tag',
-    icon: { icon: 'tabler-tag' },
-    to: null,
-  },
-  { heading: 'SYSTERM' },
-  {
-    title: 'SETTING',
-    icon: { icon: 'tabler-settings' },
-    to: 'settings',
-  },
-  {
-    title: 'User',
-    icon: { icon: 'tabler-users' },
-    children: [
-      { title: 'List', to: 'apps-user-list' },
-      { title: 'View', to: { name: 'apps-user-view-id', params: { id: 21 } } },
-    ],
-  },
-  {
-    title: 'Role & Permissions',
-    icon: { icon: 'tabler-lock' },
-    to: 'apps-roles',
-  },
   { heading: 'Systerm AI' },
   {
     title: 'Ai Content',
@@ -97,6 +50,42 @@ export default [
     action: 'manage',
     subject: 'ai_settings',
   },
+  { heading: 'MARKETING' },
+  {
+    title: 'Social Post',
+    icon: { icon: 'tabler-share' },
+    children: [
+      { title: 'List', to: 'marketing-social-post-list' },
+    ],
+  },
+  { heading: 'Blog' },
+  {
+    title: 'Post',
+    icon: { icon: 'tabler-news' },
+    children: [
+      { title: 'List', to: 'apps-blog-post-list' },
+      { title: 'Add', to: 'apps-blog-post-add' },
+    ],
+  },
+  {
+    title: 'Page',
+    icon: { icon: 'tabler-file' },
+    children: [
+      { title: 'List', to: null },
+      { title: 'Add', to: null },
+    ],
+  },
+  { heading: 'Taxonomy' },
+  {
+    title: 'Category',
+    icon: { icon: 'tabler-category' },
+    to: 'apps-taxonomy-category',
+  },
+  {
+    title: 'Tag',
+    icon: { icon: 'tabler-tag' },
+    to: null,
+  },
   { heading: 'Media' },
   {
     title: 'Media',
@@ -105,6 +94,25 @@ export default [
       { title: 'File', to: 'apps-media-file' },
       { title: 'Media Asset', to: 'apps-media-media-asset' },
     ],
+  },
+  { heading: 'SYSTERM' },
+  {
+    title: 'Seting',
+    icon: { icon: 'tabler-settings' },
+    to: 'settings',
+  },
+  {
+    title: 'User',
+    icon: { icon: 'tabler-users' },
+    children: [
+      { title: 'List', to: 'apps-user-list' },
+      { title: 'View', to: { name: 'apps-user-view-id', params: { id: 21 } } },
+    ],
+  },
+  {
+    title: 'Role & Permissions',
+    icon: { icon: 'tabler-lock' },
+    to: 'apps-roles',
   },
   { heading: 'Apps & Pages' },
   {
