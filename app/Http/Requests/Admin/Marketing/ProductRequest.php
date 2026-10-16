@@ -38,6 +38,8 @@ final class ProductRequest extends FormRequest
             'facts.*.source' => ['required_with:facts', 'string', 'max:255'],
             'facts.*.verified' => ['sometimes', 'boolean'],
             'facts.*.is_allowed_for_ai' => ['sometimes', 'boolean'],
+            'reference_asset_ids' => ['sometimes', 'array', 'max:20'],
+            'reference_asset_ids.*' => ['integer', 'distinct', 'exists:media_assets,id'],
         ];
     }
 }

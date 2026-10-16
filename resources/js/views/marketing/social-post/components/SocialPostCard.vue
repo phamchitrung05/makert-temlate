@@ -65,8 +65,8 @@ function emitAction(event) {
     <VCardText class="pt-0">
       <div class="social-post-card__media rounded-lg overflow-hidden mb-4">
         <VImg
-          v-if="post.image?.file?.preview_url || post.image?.file?.url"
-          :src="post.image.file.preview_url || post.image.file.url"
+          v-if="post.facebook_variant?.images?.[0]?.asset?.file?.preview_url || post.facebook_variant?.images?.[0]?.asset?.file?.url || post.image?.file?.preview_url || post.image?.file?.url"
+          :src="post.facebook_variant?.images?.[0]?.asset?.file?.preview_url || post.facebook_variant?.images?.[0]?.asset?.file?.url || post.image.file.preview_url || post.image.file.url"
           cover
           height="190"
           alt="Social Post image"
@@ -83,7 +83,7 @@ function emitAction(event) {
         </div>
       </div>
       <p class="text-body-2 line-clamp-4 mb-3">
-        {{ post.caption || 'Đang chờ AI tạo caption…' }}
+        {{ post.facebook_variant?.content?.body || post.caption || 'Đang chờ AI tạo content…' }}
       </p>
       <div class="d-flex flex-wrap gap-2 text-caption text-medium-emphasis">
         <span><VIcon

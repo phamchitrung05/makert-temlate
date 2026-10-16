@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Marketing;
 
+use App\Enums\MediaAssetField;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Marketing\ProductRequest;
 use App\Http\Resources\Marketing\ProductResource;
@@ -19,7 +20,7 @@ use Illuminate\Support\Facades\DB;
  * CÁC HÀM/METHOD TRONG FILE: index(), show(), store(), update(), destroy(),
  * syncFacts(), payload(), actor().
  * INPUT/OUTPUT CỦA CLASS (tổng thể): admin request -> product JSON bounded;
- * reference media dùng field product.reference, không chứa token/provider.
+ * reference media dùng field product.reference_images, không chứa token/provider.
  * =====================================================================
  */
 final class ProductController extends Controller
@@ -27,7 +28,7 @@ final class ProductController extends Controller
     /** Input: filter/pagination. Output: product list. Side effect: read DB. */
     public function index(Request $request): JsonResponse
     {
-        $query = Product::query()->with('facts')->orderByDesc('created_at');
+        $query = Product::query()->with(['facts', 'mediaAssetUsages.mediaAsset.media'])->orderByDesc('created_at');
         if (filled($request->string('search')->toString())) {
             $term = addcslashes($request->string('search')->toString(), '%_');
             $query->where('name', 'like', '%'.$term.'%');
@@ -45,9 +46,9 @@ final class ProductController extends Controller
     }
 
     /** Input: ProductRequest. Output: HTTP 201 product. Side effect: DB/media transaction. */
-    public function store(ProductRequest $request): JsonResponse
+    public function store(ProductRequest $request, MediaAssetUsageService $usages): JsonResponse
     {
-        $product = DB::transaction(function () use ($request): Product {
+        $product = DB::transaction(function () use ($request, $usages): Product {
             $data = $request->validated();
             $product = Product::query()->create([
                 'name' => $data['name'], 'short_description' => $data['short_description'] ?? null,
@@ -55,6 +56,9 @@ final class ProductController extends Controller
                 'status' => $data['status'] ?? 'draft', 'created_by' => $this->actor($request)->getKey(), 'updated_by' => $this->actor($request)->getKey(),
             ]);
             $this->syncFacts($product, $data['facts'] ?? [], $this->actor($request)->getKey());
+            if (array_key_exists('reference_asset_ids', $data)) {
+                $usages->replaceByIds($this->actor($request), $product, MediaAssetField::ProductReferenceImages, $data['reference_asset_ids']);
+            }
 
             return $product;
         });
@@ -63,10 +67,10 @@ final class ProductController extends Controller
     }
 
     /** Input: ProductRequest/product. Output: updated product. */
-    public function update(ProductRequest $request, Product $product): JsonResponse
+    public function update(ProductRequest $request, Product $product, MediaAssetUsageService $usages): JsonResponse
     {
         $data = $request->validated();
-        DB::transaction(function () use ($data, $product, $request): void {
+        DB::transaction(function () use ($data, $product, $request, $usages): void {
             $product->update([
                 'name' => $data['name'], 'short_description' => $data['short_description'] ?? null,
                 'default_cta' => $data['default_cta'] ?? null, 'prohibited_claims_json' => $data['prohibited_claims'] ?? [],
@@ -74,6 +78,9 @@ final class ProductController extends Controller
             ]);
             if (array_key_exists('facts', $data)) {
                 $this->syncFacts($product, $data['facts'], $this->actor($request)->getKey());
+            }
+            if (array_key_exists('reference_asset_ids', $data)) {
+                $usages->replaceByIds($this->actor($request), $product, MediaAssetField::ProductReferenceImages, $data['reference_asset_ids']);
             }
         });
 
@@ -116,7 +123,16 @@ final class ProductController extends Controller
                 'id' => (int) $fact->id, 'key' => $fact->fact_key, 'value' => $fact->fact_value,
                 'source' => $fact->source, 'verified' => (bool) $fact->verified, 'is_allowed_for_ai' => (bool) $fact->is_allowed_for_ai,
             ])->values()->all() : [],
-            'reference_asset_ids' => [],
+            'reference_asset_ids' => $product->relationLoaded('mediaAssetUsages')
+                ? $product->mediaAssetUsages
+                    ->filter(fn ($usage): bool => $usage->field === MediaAssetField::ProductReferenceImages
+                        && $usage->mediaAsset !== null)
+                    ->sortBy('sort_order')
+                    ->pluck('media_asset_id')
+                    ->map(fn ($id): int => (int) $id)
+                    ->values()
+                    ->all()
+                : [],
         ];
     }
 

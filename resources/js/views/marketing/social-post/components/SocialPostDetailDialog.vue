@@ -2,12 +2,12 @@
   =====================================================================
   CHỨC NĂNG FILE: Dialog chỉnh caption và xem version Social Post.
   =====================================================================
-  Dialog gọi detail/version API khi mở, cho phép sửa canonical caption; mọi
-  platform vẫn đọc cùng field caption.
+  Dialog gọi detail/version API khi mở, cho phép sửa Facebook content blocks
+  và xem gallery ảnh theo thứ tự.
 
   CÁC HÀM/METHOD TRONG FILE:
   - load(): tải detail và versions.
-  - save(): cập nhật caption qua API.
+  - save(): cập nhật Facebook content qua API.
   - close(): đóng dialog.
 
   INPUT/OUTPUT CỦA COMPONENT:
@@ -19,6 +19,8 @@
 /* eslint-disable camelcase -- Detail fields follow the Laravel API contract. */
 import { reactive, shallowRef, watch } from 'vue'
 import { socialPostService } from '@/services/socialPost'
+import MediaAssetField from '@/views/apps/media/field/MediaAssetField.vue'
+import { useMediaCapabilities } from '@/views/apps/media/field/useMediaCapabilities'
 
 const props = defineProps({ modelValue: Boolean, postId: { type: [Number, String], default: null } })
 const emit = defineEmits(['update:modelValue', 'saved'])
@@ -27,7 +29,28 @@ const versions = shallowRef([])
 const loading = shallowRef(false)
 const saving = shallowRef(false)
 const error = shallowRef('')
-const form = reactive({ caption: '' })
+const galleryAssets = shallowRef([])
+const { canAttach } = useMediaCapabilities()
+
+const form = reactive({
+  title: '', body: '', bullet_points: '', cta: '', address: '', phone: '', website: '', hashtags: '', link_url: '',
+})
+
+function fillContent(content = {}) {
+  form.title = content.title ?? ''
+  form.body = content.body ?? ''
+  form.bullet_points = (content.bullet_points ?? []).join('\n')
+  form.cta = content.cta ?? ''
+  form.address = content.contact?.address ?? ''
+  form.phone = content.contact?.phone ?? ''
+  form.website = content.contact?.website ?? ''
+  form.hashtags = (content.hashtags ?? []).join(' ')
+  form.link_url = content.link_url ?? ''
+}
+
+function fillGallery(images = []) {
+  galleryAssets.value = images.map(image => image.asset).filter(Boolean)
+}
 
 /** Input: dialog/post ID. Output: detail/version state. */
 async function load() {
@@ -36,7 +59,8 @@ async function load() {
   error.value = ''
   try {
     detail.value = await socialPostService.show(props.postId)
-    form.caption = detail.value?.caption ?? ''
+    fillContent(detail.value?.facebook_variant?.content ?? {})
+    fillGallery(detail.value?.facebook_variant?.images ?? [])
     versions.value = await socialPostService.versions(props.postId) ?? []
   } catch (cause) {
     error.value = cause?.data?.message ?? cause?.message ?? 'Không tải được chi tiết Social Post.'
@@ -45,16 +69,29 @@ async function load() {
   }
 }
 
-/** Input: caption form. Output: saved event và reload. */
+/** Input: Facebook content blocks. Output: saved event và reload. */
 async function save() {
   saving.value = true
   error.value = ''
   try {
-    detail.value = await socialPostService.update(props.postId, { caption: form.caption })
+    detail.value = await socialPostService.updateFacebookContent(props.postId, {
+      title: form.title || null,
+      body: form.body,
+      bullet_points: form.bullet_points.split('\n').map(item => item.trim()).filter(Boolean),
+      cta: form.cta || null,
+      contact: { address: form.address || null, phone: form.phone || null, website: form.website || null },
+      hashtags: form.hashtags.split(/\s+/).map(item => item.trim()).filter(Boolean),
+      link_url: form.link_url || null,
+    })
+    if (canAttach.value) {
+      detail.value = await socialPostService.replaceFacebookImages(props.postId, galleryAssets.value.map(asset => asset.id))
+    }
+    fillContent(detail.value?.facebook_variant?.content ?? {})
+    fillGallery(detail.value?.facebook_variant?.images ?? [])
     versions.value = await socialPostService.versions(props.postId) ?? []
     emit('saved', detail.value)
   } catch (cause) {
-    error.value = cause?.data?.message ?? cause?.message ?? 'Không lưu được caption.'
+    error.value = cause?.data?.message ?? cause?.message ?? 'Không lưu được content Facebook.'
   } finally {
     saving.value = false
   }
@@ -99,19 +136,61 @@ watch(() => [props.modelValue, props.postId], load, { immediate: true })
             cols="12"
             md="5"
           >
-            <VImg
-              v-if="detail.image?.file?.preview_url || detail.image?.file?.url"
-              :src="detail.image.file.preview_url || detail.image.file.url"
-              height="280"
-              cover
-              class="rounded-lg"
-            />
-            <div
-              v-else
-              class="detail-empty rounded-lg d-flex align-center justify-center text-medium-emphasis"
+            <VCard
+              variant="outlined"
+              class="facebook-preview"
             >
-              Chưa có ảnh
-            </div>
+              <VCardItem>
+                <template #prepend>
+                  <VAvatar
+                    color="primary"
+                    variant="tonal"
+                  >
+                    <VIcon icon="tabler-brand-facebook" />
+                  </VAvatar>
+                </template>
+                <VCardTitle class="text-body-1">
+                  Facebook preview
+                </VCardTitle>
+                <VCardSubtitle>{{ detail.product?.name || 'Social Post' }}</VCardSubtitle>
+              </VCardItem>
+              <VCardText>
+                <div class="text-subtitle-1 font-weight-bold mb-2">
+                  {{ form.title }}
+                </div>
+                <div class="text-body-2 whitespace-pre-line">
+                  {{ form.body }}
+                </div>
+                <ul
+                  v-if="detail.facebook_variant?.content?.bullet_points?.length"
+                  class="mt-3 ps-5"
+                >
+                  <li
+                    v-for="bullet in detail.facebook_variant.content.bullet_points"
+                    :key="bullet"
+                  >
+                    {{ bullet }}
+                  </li>
+                </ul>
+              </VCardText>
+              <VRow
+                v-if="detail.facebook_variant?.images?.length"
+                no-gutters
+              >
+                <VCol
+                  v-for="image in detail.facebook_variant.images"
+                  :key="image.usage_id"
+                  cols="6"
+                >
+                  <VImg
+                    v-if="image.asset?.file?.preview_url || image.asset?.file?.url"
+                    :src="image.asset.file.preview_url || image.asset.file.url"
+                    height="150"
+                    cover
+                  />
+                </VCol>
+              </VRow>
+            </VCard>
             <div class="d-flex flex-wrap gap-2 mt-3">
               <VChip
                 size="small"
@@ -130,10 +209,83 @@ watch(() => [props.modelValue, props.postId], load, { immediate: true })
             cols="12"
             md="7"
           >
+            <VTextField
+              v-model="form.title"
+              label="Tiêu đề Facebook"
+              class="mb-3"
+            />
             <VTextarea
-              v-model="form.caption"
-              label="Caption dùng chung"
-              rows="8"
+              v-model="form.body"
+              label="Nội dung"
+              rows="7"
+              class="mb-3"
+            />
+            <VTextarea
+              v-model="form.bullet_points"
+              label="Bullet points (mỗi dòng một ý)"
+              rows="4"
+              class="mb-3"
+            />
+            <VTextarea
+              v-model="form.cta"
+              label="CTA"
+              rows="2"
+              class="mb-3"
+            />
+            <VRow>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VTextField
+                  v-model="form.address"
+                  label="Địa chỉ"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VTextField
+                  v-model="form.phone"
+                  label="Hotline"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VTextField
+                  v-model="form.website"
+                  label="Website"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <VTextField
+                  v-model="form.hashtags"
+                  label="Hashtag"
+                />
+              </VCol>
+              <VCol cols="12">
+                <VTextField
+                  v-model="form.link_url"
+                  label="Link"
+                />
+              </VCol>
+            </VRow>
+            <div class="text-caption text-medium-emphasis mb-3">
+              Gallery Facebook: {{ detail.facebook_variant?.images?.length || 0 }}/4 ảnh; cần tối thiểu 3 ảnh để gửi duyệt.
+            </div>
+            <MediaAssetField
+              v-if="canAttach"
+              v-model="galleryAssets"
+              field="social_post_variant.facebook.images"
+              multiple
+              visibility="public"
+              label="Gallery ảnh Facebook"
             />
             <div class="text-subtitle-2 mb-2">
               Version history
@@ -173,7 +325,7 @@ watch(() => [props.modelValue, props.postId], load, { immediate: true })
           :loading="saving"
           @click="save"
         >
-          Lưu caption
+          Lưu content Facebook
         </VBtn>
       </VCardActions>
     </VCard>
@@ -182,4 +334,6 @@ watch(() => [props.modelValue, props.postId], load, { immediate: true })
 
 <style scoped>
 .detail-empty { min-height: 280px; background: rgba(var(--v-theme-on-surface), 0.04); }
+.facebook-preview { min-height: 280px; }
+.whitespace-pre-line { white-space: pre-line; }
 </style>

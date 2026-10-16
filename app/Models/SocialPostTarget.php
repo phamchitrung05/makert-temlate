@@ -15,8 +15,8 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * =====================================================================
  * CHỨC NĂNG FILE: Đại diện một target Page/account của Social Post.
  * =====================================================================
- * Target tách status/error theo từng account; caption vẫn đọc từ SocialPost
- * canonical và không có cột platform_caption.
+ * Target tách status/error theo từng account; content được đọc từ variant
+ * theo nền tảng và vẫn giữ socialPost() cho dữ liệu MVP/backward compatibility.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - casts(): ép platform/status/enabled/date.
@@ -36,7 +36,7 @@ class SocialPostTarget extends Model
     use HasFactory, LogsActivity;
 
     protected $fillable = [
-        'social_post_id', 'social_account_id', 'platform', 'enabled', 'status',
+        'social_post_id', 'social_post_variant_id', 'social_account_id', 'platform', 'enabled', 'status',
         'published_at', 'last_error_code', 'last_error_message',
     ];
 
@@ -65,6 +65,18 @@ class SocialPostTarget extends Model
     public function socialPost(): BelongsTo
     {
         return $this->belongsTo(SocialPost::class);
+    }
+
+    /**
+     * Lấy content variant mà target sử dụng.
+     *
+     * Input: target hiện tại.
+     * Output: BelongsTo<SocialPostVariant|null>; null chỉ xuất hiện ở target
+     * legacy trước khi migration/backfill hoàn tất.
+     */
+    public function socialPostVariant(): BelongsTo
+    {
+        return $this->belongsTo(SocialPostVariant::class);
     }
 
     /**
@@ -99,7 +111,7 @@ class SocialPostTarget extends Model
     {
         return LogOptions::defaults()
             ->useLogName('marketing')
-            ->logOnly(['social_post_id', 'social_account_id', 'platform', 'enabled', 'status', 'published_at', 'last_error_code', 'last_error_message'])
+            ->logOnly(['social_post_id', 'social_post_variant_id', 'social_account_id', 'platform', 'enabled', 'status', 'published_at', 'last_error_code', 'last_error_message'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }

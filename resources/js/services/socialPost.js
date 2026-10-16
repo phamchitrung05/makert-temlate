@@ -1,3 +1,5 @@
+/* eslint-disable camelcase -- Request keys follow the Laravel Social Post contract. */
+
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: API client cho Marketing Social Post.
@@ -48,6 +50,9 @@ export const socialPostService = {
   /** Input: post id. Output: immutable version list. */
   async versions(id) { return unwrap(await $api(`/admin/social-posts/${id}/versions`)) },
 
+  /** Input: post id. Output: platform variants with ordered images. */
+  async variants(id) { return unwrap(await $api(`/admin/social-posts/${id}/variants`)) },
+
   /** Input: create payload. Output: `{ post, generation }`. */
   async create(payload) { return unwrap(await $api('/admin/social-posts', { method: 'POST', body: payload })) },
 
@@ -65,6 +70,21 @@ export const socialPostService = {
 
   /** Input: id/model options. Output: queued image job. */
   async regenerateImage(id, payload = {}) { return unwrap(await $api(`/admin/social-posts/${id}/regenerate-image`, { method: 'POST', body: payload })) },
+
+  /** Input: id/content. Output: normalized Facebook variant parent. */
+  async updateFacebookContent(id, content) { return normalize(unwrap(await $api(`/admin/social-posts/${id}/variants/facebook/content`, { method: 'PUT', body: { content } }))) },
+
+  /** Input: id/model options. Output: queued Facebook content jobs. */
+  async generateFacebookContent(id, payload = {}) { return unwrap(await $api(`/admin/social-posts/${id}/variants/facebook/generate-content`, { method: 'POST', body: payload })) },
+
+  /** Input: id/model options. Output: queued Facebook image slot jobs. */
+  async generateFacebookImages(id, payload = {}) { return unwrap(await $api(`/admin/social-posts/${id}/variants/facebook/generate-images`, { method: 'POST', body: payload })) },
+
+  /** Input: id/asset IDs. Output: normalized post with gallery. */
+  async replaceFacebookImages(id, assetIds) { return normalize(unwrap(await $api(`/admin/social-posts/${id}/variants/facebook/images/replace`, { method: 'POST', body: { asset_ids: assetIds } }))) },
+
+  /** Input: id/usage IDs. Output: normalized post with reordered gallery. */
+  async reorderFacebookImages(id, usageIds) { return normalize(unwrap(await $api(`/admin/social-posts/${id}/variants/facebook/images/reorder`, { method: 'POST', body: { usage_ids: usageIds } }))) },
 
   /** Input: id. Output: pending_review post. */
   async submitReview(id) { return normalize(unwrap(await $api(`/admin/social-posts/${id}/submit-review`, { method: 'POST' }))) },

@@ -91,6 +91,9 @@ return [
 
         // Social Post: tạo nội dung dùng chung cho nhiều nền tảng và duyệt/publish
         // theo quyền độc lập với Blog Post.
+        'marketing' => ['view', 'manage'],
+
+        // Social Post và Social Account là resource chi tiết của module Marketing.
         'social_posts' => ['view', 'create', 'update', 'delete', 'review', 'publish'],
 
         // Social account: xem và quản lý kết nối Page/token ở back-office.

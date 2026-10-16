@@ -51,6 +51,8 @@ export default [
     children: [
       {
         title: 'Social Post',
+        action: 'view',
+        subject: 'marketing',
         children: [
           { title: 'List', to: 'marketing-social-post-list' },
         ],

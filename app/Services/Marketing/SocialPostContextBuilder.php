@@ -2,6 +2,7 @@
 
 namespace App\Services\Marketing;
 
+use App\Enums\MediaAssetField;
 use App\Models\SocialPost;
 use App\Services\Ai\WritingProfiles\WritingProfileSnapshotService;
 use Illuminate\Support\Arr;
@@ -53,6 +54,7 @@ final class SocialPostContextBuilder
                 ->where('is_allowed_for_ai', true)
                 ->orderBy('id'),
             'campaign',
+            'product.mediaAssetUsages.mediaAsset',
         ]);
 
         $product = $post->product;
@@ -66,9 +68,17 @@ final class SocialPostContextBuilder
         ])->values()->all() ?? [];
 
         $profile = $this->profiles->snapshot($writingProfileId);
-        // Product reference media chưa có field riêng trong MP-01; giữ danh
-        // sách rỗng để image prompt không nhận URL/asset ID tùy ý từ client.
-        $referenceAssetIds = [];
+        $referenceAssetIds = $product?->relationLoaded('mediaAssetUsages')
+            ? $product->mediaAssetUsages
+                ->filter(fn ($usage): bool => $usage->field === MediaAssetField::ProductReferenceImages
+                    && $usage->mediaAsset !== null)
+                ->sortBy('sort_order')
+                ->pluck('media_asset_id')
+                ->map(fn ($id): int => (int) $id)
+                ->take(20)
+                ->values()
+                ->all()
+            : [];
         $context = [
             'language' => 'vi',
             'product' => $product ? [

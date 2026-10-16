@@ -8,6 +8,8 @@ use App\Jobs\ProcessSocialPostCaptionJob;
 use App\Jobs\ProcessSocialPostImagePromptJob;
 use App\Models\AiImport;
 use App\Models\SocialPost;
+use App\Models\SocialPostVariant;
+use App\Enums\SocialPlatform;
 use App\Services\Ai\Providers\Catalog\ModelResolver;
 use App\Services\Ai\Registries\PromptRegistry;
 use App\Services\Ai\Registries\SchemaRegistry;
@@ -76,8 +78,10 @@ final class SocialPostGenerationService
             'model_id' => $options['text_model_id'] ?? null,
         ]);
         $imageConnection = $component === 'caption' ? null : $this->resolveImageConnection($options);
-        $captionPrompt = $this->prompts->get('social_post.caption', 'social_post', 'generate');
-        $imagePrompt = $this->prompts->get('social_post.product_image', 'social_post', 'generate');
+        $captionOperation = $component === 'caption' ? 'regenerate_content' : 'generate';
+        $imageOperation = $component === 'image' ? 'regenerate_images' : 'generate';
+        $captionPrompt = $this->prompts->get('social_post.facebook_content', 'social_post', $captionOperation);
+        $imagePrompt = $this->prompts->get('social_post.facebook_image', 'social_post', $imageOperation);
         $captionSchema = $this->schemas->get($captionPrompt['schema']);
         $imageSchema = $this->schemas->get($imagePrompt['schema']);
 
@@ -94,6 +98,18 @@ final class SocialPostGenerationService
             $component,
         ): array {
             $locked = SocialPost::query()->lockForUpdate()->findOrFail($post->getKey());
+            $variant = SocialPostVariant::query()->firstOrCreate(
+                ['social_post_id' => $locked->getKey(), 'platform' => SocialPlatform::Facebook],
+                [
+                    'format' => 'feed',
+                    'content_status' => SocialPostGenerationStatus::Pending,
+                    'generation_status' => SocialPostGenerationStatus::Pending,
+                    'review_status' => 'draft',
+                ],
+            );
+            $locked->targets()->whereNull('social_post_variant_id')->update([
+                'social_post_variant_id' => $variant->getKey(),
+            ]);
             $generationNo = (int) $locked->generation_no + 1;
             $locked->forceFill([
                 'generation_no' => $generationNo,
@@ -104,9 +120,20 @@ final class SocialPostGenerationService
                 'review_reason' => null,
                 'updated_by' => $actorId,
             ])->save();
+            $variant->forceFill([
+                'generation_status' => SocialPostGenerationStatus::Generating,
+                'content_status' => in_array($component, ['all', 'caption'], true)
+                    ? SocialPostGenerationStatus::Generating
+                    : ($variant->content_status ?? SocialPostGenerationStatus::Pending),
+                'review_status' => 'draft',
+                'reviewed_by' => null,
+                'reviewed_at' => null,
+                'review_reason' => null,
+            ])->save();
 
             $common = [
                 'social_post_id' => (int) $locked->getKey(),
+                'social_post_variant_id' => (int) $variant->getKey(),
                 'generation_no' => $generationNo,
                 'context' => $context,
                 'writing_profile_snapshot' => $context['writing_profile'] ?? null,
@@ -122,7 +149,7 @@ final class SocialPostGenerationService
                     $captionSchema,
                     $textConnection,
                     [...$common, 'component' => 'caption'],
-                    $component === 'caption' ? 'regenerate_caption' : 'generate',
+                    $component === 'caption' ? 'regenerate_content' : 'generate',
                     $generationNo,
                 );
                 $this->tasks->registerImport($caption);
@@ -135,7 +162,7 @@ final class SocialPostGenerationService
                     $imageSchema,
                     $textConnection,
                     [...$common, 'component' => 'image_prompt', 'image_connection' => $imageConnection],
-                    $component === 'image' ? 'regenerate_image' : 'generate',
+                    $component === 'image' ? 'regenerate_images' : 'generate',
                     $generationNo,
                 );
                 $this->tasks->registerImport($image);

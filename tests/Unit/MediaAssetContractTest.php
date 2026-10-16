@@ -70,6 +70,8 @@ class MediaAssetContractTest extends TestCase
             'resource_version.documentation',
             'template_screen.preview',
             'social_post.image',
+            'social_post_variant.facebook.images',
+            'product.reference_images',
         ], MediaAssetField::values());
 
         $this->assertSame(MediaAssetKind::Image, MediaAssetField::ResourceCover->kind());
@@ -88,6 +90,12 @@ class MediaAssetContractTest extends TestCase
         $this->assertSame(MediaAssetKind::Image, MediaAssetField::SocialPostImage->kind());
         $this->assertFalse(MediaAssetField::SocialPostImage->allowsMultiple());
         $this->assertSame('social_post', MediaAssetField::SocialPostImage->linkableMorphAlias());
+        $this->assertSame(MediaAssetKind::Image, MediaAssetField::SocialPostFacebookImages->kind());
+        $this->assertTrue(MediaAssetField::SocialPostFacebookImages->allowsMultiple());
+        $this->assertSame('social_post_variant', MediaAssetField::SocialPostFacebookImages->linkableMorphAlias());
+        $this->assertSame(MediaAssetKind::Image, MediaAssetField::ProductReferenceImages->kind());
+        $this->assertTrue(MediaAssetField::ProductReferenceImages->allowsMultiple());
+        $this->assertSame('product', MediaAssetField::ProductReferenceImages->linkableMorphAlias());
     }
 
     /**

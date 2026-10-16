@@ -8,7 +8,10 @@ use App\Http\Requests\Admin\Marketing\SocialPostIndexRequest;
 use App\Http\Requests\Admin\Marketing\SocialPostReviewRequest;
 use App\Http\Requests\Admin\Marketing\SocialPostStoreRequest;
 use App\Http\Requests\Admin\Marketing\SocialPostUpdateRequest;
+use App\Http\Requests\Admin\Marketing\SocialPostVariantContentRequest;
 use App\Http\Resources\Marketing\SocialPostResource;
+use App\Enums\MediaAssetField;
+use App\Models\SocialPostVariant;
 use App\Http\Responses\BaseResponse;
 use App\Models\SocialPost;
 use App\Models\SocialPublication;
@@ -55,7 +58,7 @@ final class SocialPostController extends Controller
     {
         $filters = $request->validated();
         $query = SocialPost::query()
-            ->with(['campaign', 'product', 'targets.socialAccount', 'mediaAssetUsages.mediaAsset.media'])
+            ->with(['campaign', 'product', 'targets.socialAccount', 'targets.socialPostVariant', 'variants.mediaAssetUsages.mediaAsset.media', 'mediaAssetUsages.mediaAsset.media'])
             ->when(filled($filters['search'] ?? null), fn ($q) => $q->where('caption', 'like', '%'.addcslashes((string) $filters['search'], '%_').'%'))
             ->when(isset($filters['campaign_id']), fn ($q) => $q->where('campaign_id', $filters['campaign_id']))
             ->when(isset($filters['product_id']), fn ($q) => $q->where('product_id', $filters['product_id']))
@@ -200,6 +203,26 @@ final class SocialPostController extends Controller
         return BaseResponse::success($result, 'Đã xếp hàng tạo lại ảnh.', 202);
     }
 
+    public function generateFacebookContent(
+        SocialPostGenerationRequest $request,
+        SocialPost $socialPost,
+        SocialPostGenerationService $generation,
+    ): JsonResponse {
+        $result = $generation->queue($socialPost, (int) $this->adminUser($request)->getKey(), [...$request->validated(), 'component' => 'caption']);
+
+        return BaseResponse::success($result, 'Đã xếp hàng tạo content Facebook.', 202);
+    }
+
+    public function generateFacebookImages(
+        SocialPostGenerationRequest $request,
+        SocialPost $socialPost,
+        SocialPostGenerationService $generation,
+    ): JsonResponse {
+        $result = $generation->queue($socialPost, (int) $this->adminUser($request)->getKey(), [...$request->validated(), 'component' => 'image']);
+
+        return BaseResponse::success($result, 'Đã xếp hàng tạo gallery Facebook.', 202);
+    }
+
     /**
      * Gửi draft vào review sau khi caption/ảnh đã ready.
      *
@@ -264,6 +287,8 @@ final class SocialPostController extends Controller
             'id' => (int) $version->id,
             'version_no' => (int) $version->version_no,
             'caption' => $version->caption,
+            'content' => $version->content_json ?? [],
+            'variant_id' => $version->social_post_variant_id ? (int) $version->social_post_variant_id : null,
             'asset_ids' => $version->asset_ids_json ?? [],
             'reason' => $version->reason,
             'version_hash' => $version->version_hash,
@@ -291,6 +316,56 @@ final class SocialPostController extends Controller
             'error_message' => $publication->error_message,
             'completed_at' => $publication->completed_at?->toIso8601String(),
         ])->values(), 'Lịch sử publish Social Post.');
+    }
+
+    /** Trả các variant theo platform, hiện Facebook là variant đầu tiên. */
+    public function variants(SocialPost $socialPost, SocialPostLifecycleService $lifecycle): JsonResponse
+    {
+        $post = $lifecycle->loadForResponse($socialPost);
+
+        return BaseResponse::success(SocialPostResource::make($post)->resolve(request())['variants'] ?? [], 'Các variant Social Post.');
+    }
+
+    /** Cập nhật content blocks Facebook và reset review gate. */
+    public function updateFacebookContent(
+        SocialPostVariantContentRequest $request,
+        SocialPost $socialPost,
+        SocialPostLifecycleService $lifecycle,
+    ): JsonResponse {
+        $post = $lifecycle->update($socialPost, ['facebook_content' => $request->validated('content')], (int) $this->adminUser($request)->getKey());
+
+        return BaseResponse::success(SocialPostResource::make($lifecycle->loadForResponse($post)), 'Đã cập nhật content Facebook.');
+    }
+
+    /** Thay gallery Facebook theo thứ tự asset IDs truyền vào. */
+    public function replaceFacebookImages(
+        Request $request,
+        SocialPost $socialPost,
+        SocialPostLifecycleService $lifecycle,
+    ): JsonResponse {
+        $data = $request->validate([
+            'asset_ids' => ['array', 'max:4'],
+            'asset_ids.*' => ['integer', 'distinct', 'exists:media_assets,id'],
+        ]);
+        $post = $lifecycle->update($socialPost, ['facebook_image_ids' => $data['asset_ids'] ?? []], (int) $this->adminUser($request)->getKey());
+
+        return BaseResponse::success(SocialPostResource::make($lifecycle->loadForResponse($post)), 'Đã cập nhật gallery Facebook.');
+    }
+
+    /** Reorder usage gallery Facebook mà không thay asset. */
+    public function reorderFacebookImages(
+        Request $request,
+        SocialPost $socialPost,
+        MediaAssetUsageService $usages,
+        SocialPostLifecycleService $lifecycle,
+    ): JsonResponse {
+        $data = $request->validate(['usage_ids' => ['required', 'array', 'min:1', 'max:4'], 'usage_ids.*' => ['integer', 'distinct']]);
+        $post = $lifecycle->loadForResponse($socialPost);
+        $variant = $post->variants->first(fn ($item): bool => ($item->platform?->value ?? (string) $item->platform) === 'facebook');
+        abort_unless($variant instanceof SocialPostVariant, 404, 'Facebook variant không tồn tại.');
+        $usages->reorder($this->adminUser($request), $variant, MediaAssetField::SocialPostFacebookImages, $data['usage_ids']);
+
+        return BaseResponse::success(SocialPostResource::make($lifecycle->loadForResponse($post->fresh())), 'Đã sắp xếp gallery Facebook.');
     }
 
     /**

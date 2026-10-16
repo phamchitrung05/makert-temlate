@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Marketing;
 
+use App\Enums\MediaAssetField;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -32,7 +33,16 @@ final class ProductResource extends JsonResource
                 'source' => $fact->source, 'verified' => (bool) $fact->verified,
                 'is_allowed_for_ai' => (bool) $fact->is_allowed_for_ai,
             ])->values()),
-            'reference_asset_ids' => [],
+            'reference_asset_ids' => $this->resource->relationLoaded('mediaAssetUsages')
+                ? $this->mediaAssetUsages
+                    ->filter(fn ($usage): bool => $usage->field === MediaAssetField::ProductReferenceImages
+                        && $usage->mediaAsset !== null)
+                    ->sortBy('sort_order')
+                    ->pluck('media_asset_id')
+                    ->map(fn ($id): int => (int) $id)
+                    ->values()
+                    ->all()
+                : [],
         ];
     }
 }

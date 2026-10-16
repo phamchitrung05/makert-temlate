@@ -351,7 +351,7 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
          * Caption là canonical dùng chung; generation/publisher chạy queue.
          * =====================================================================
          */
-        Route::middleware('permission:social_posts.view,admin')->group(function (): void {
+        Route::middleware('permission:marketing.view|social_posts.view,admin')->group(function (): void {
             Route::get('/marketing/products', [ProductController::class, 'index']);
             Route::get('/marketing/products/{product}', [ProductController::class, 'show'])->whereNumber('product');
             Route::get('/marketing/campaigns', [CampaignController::class, 'index']);
@@ -360,44 +360,55 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
             Route::get('/social-posts/{socialPost}', [SocialPostController::class, 'show'])->whereNumber('socialPost');
             Route::get('/social-posts/{socialPost}/versions', [SocialPostController::class, 'versions'])->whereNumber('socialPost');
             Route::get('/social-posts/{socialPost}/publications', [SocialPostController::class, 'publications'])->whereNumber('socialPost');
+            Route::get('/social-posts/{socialPost}/variants', [SocialPostController::class, 'variants'])->whereNumber('socialPost');
             Route::get('/social-accounts', [SocialAccountController::class, 'index']);
         });
-        Route::post('/marketing/products', [ProductController::class, 'store'])->middleware('permission:social_posts.create,admin');
-        Route::put('/marketing/products/{product}', [ProductController::class, 'update'])->whereNumber('product')->middleware('permission:social_posts.update,admin');
-        Route::delete('/marketing/products/{product}', [ProductController::class, 'destroy'])->whereNumber('product')->middleware('permission:social_posts.delete,admin');
-        Route::post('/marketing/campaigns', [CampaignController::class, 'store'])->middleware('permission:social_posts.create,admin');
-        Route::put('/marketing/campaigns/{campaign}', [CampaignController::class, 'update'])->whereNumber('campaign')->middleware('permission:social_posts.update,admin');
-        Route::delete('/marketing/campaigns/{campaign}', [CampaignController::class, 'destroy'])->whereNumber('campaign')->middleware('permission:social_posts.delete,admin');
+        Route::post('/marketing/products', [ProductController::class, 'store'])->middleware('permission:marketing.manage|social_posts.create,admin');
+        Route::put('/marketing/products/{product}', [ProductController::class, 'update'])->whereNumber('product')->middleware('permission:marketing.manage|social_posts.update,admin');
+        Route::delete('/marketing/products/{product}', [ProductController::class, 'destroy'])->whereNumber('product')->middleware('permission:marketing.manage|social_posts.delete,admin');
+        Route::post('/marketing/campaigns', [CampaignController::class, 'store'])->middleware('permission:marketing.manage|social_posts.create,admin');
+        Route::put('/marketing/campaigns/{campaign}', [CampaignController::class, 'update'])->whereNumber('campaign')->middleware('permission:marketing.manage|social_posts.update,admin');
+        Route::delete('/marketing/campaigns/{campaign}', [CampaignController::class, 'destroy'])->whereNumber('campaign')->middleware('permission:marketing.manage|social_posts.delete,admin');
         Route::post('/social-posts', [SocialPostController::class, 'store'])
-            ->middleware('permission:social_posts.create,admin');
+            ->middleware('permission:marketing.manage|social_posts.create,admin');
         Route::put('/social-posts/{socialPost}', [SocialPostController::class, 'update'])
-            ->whereNumber('socialPost')->middleware('permission:social_posts.update,admin');
+            ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
         Route::delete('/social-posts/{socialPost}', [SocialPostController::class, 'destroy'])
-            ->whereNumber('socialPost')->middleware('permission:social_posts.delete,admin');
+            ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.delete,admin');
         Route::post('/social-posts/{socialPost}/generate', [SocialPostController::class, 'generate'])
-            ->whereNumber('socialPost')->middleware('permission:social_posts.create|social_posts.update,admin');
+            ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.create|social_posts.update,admin');
         Route::post('/social-posts/{socialPost}/regenerate-caption', [SocialPostController::class, 'regenerateCaption'])
-            ->whereNumber('socialPost')->middleware('permission:social_posts.update,admin');
+            ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
         Route::post('/social-posts/{socialPost}/regenerate-image', [SocialPostController::class, 'regenerateImage'])
-            ->whereNumber('socialPost')->middleware('permission:social_posts.update,admin');
+            ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
+        Route::put('/social-posts/{socialPost}/variants/facebook/content', [SocialPostController::class, 'updateFacebookContent'])
+              ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
+        Route::post('/social-posts/{socialPost}/variants/facebook/generate-content', [SocialPostController::class, 'generateFacebookContent'])
+              ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
+        Route::post('/social-posts/{socialPost}/variants/facebook/generate-images', [SocialPostController::class, 'generateFacebookImages'])
+              ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
+        Route::post('/social-posts/{socialPost}/variants/facebook/images/replace', [SocialPostController::class, 'replaceFacebookImages'])
+              ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
+        Route::post('/social-posts/{socialPost}/variants/facebook/images/reorder', [SocialPostController::class, 'reorderFacebookImages'])
+              ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
         Route::post('/social-posts/{socialPost}/submit-review', [SocialPostController::class, 'submitReview'])
-            ->whereNumber('socialPost')->middleware('permission:social_posts.review,admin');
+            ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.review,admin');
         Route::post('/social-posts/{socialPost}/approve', [SocialPostController::class, 'approve'])
-            ->whereNumber('socialPost')->middleware('permission:social_posts.review,admin');
+            ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.review,admin');
         Route::post('/social-posts/{socialPost}/reject', [SocialPostController::class, 'reject'])
-            ->whereNumber('socialPost')->middleware('permission:social_posts.review,admin');
+            ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.review,admin');
         Route::post('/social-posts/{socialPost}/request-revision', [SocialPostController::class, 'requestRevision'])
-            ->whereNumber('socialPost')->middleware('permission:social_posts.review,admin');
+            ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.review,admin');
         Route::post('/social-posts/{socialPost}/publish', [SocialPostController::class, 'publish'])
-            ->whereNumber('socialPost')->middleware('permission:social_posts.publish,admin');
+            ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.publish,admin');
         Route::post('/social-publications/{publication}/retry', [SocialPostController::class, 'retryPublication'])
-            ->whereNumber('publication')->middleware('permission:social_posts.publish,admin');
+            ->whereNumber('publication')->middleware('permission:marketing.manage|social_posts.publish,admin');
         Route::post('/social-accounts/facebook/connect', [SocialAccountController::class, 'connect'])
-            ->middleware('permission:social_accounts.manage,admin');
+            ->middleware('permission:marketing.manage|social_accounts.manage,admin');
         Route::post('/social-accounts/{socialAccount}/reconnect', [SocialAccountController::class, 'reconnect'])
-            ->whereNumber('socialAccount')->middleware('permission:social_accounts.manage,admin');
+            ->whereNumber('socialAccount')->middleware('permission:marketing.manage|social_accounts.manage,admin');
         Route::post('/social-accounts/{socialAccount}/disconnect', [SocialAccountController::class, 'disconnect'])
-            ->whereNumber('socialAccount')->middleware('permission:social_accounts.manage,admin');
+            ->whereNumber('socialAccount')->middleware('permission:marketing.manage|social_accounts.manage,admin');
     });
 
 Route::get('/admin/social-accounts/facebook/callback', [SocialAccountController::class, 'callback'])

@@ -98,6 +98,18 @@ return [
             'inputs' => ['url', 'text'],
             'outputs' => ['title', 'excerpt', 'content', 'seo', 'thumbnail'],
         ],
+        'social_post' => [
+            'enabled' => true,
+            'label' => 'Social',
+            'icon' => 'tabler-brand-facebook',
+            'color' => 'primary',
+            'permission' => 'social_posts.create',
+            'content_instructions' => 'Write a Facebook social post caption in the requested language. Use the supplied source, writing profile and brief; keep the copy concise, useful and ready for a Facebook draft. Do not invent prices, dates, product claims, guarantees, addresses or contact details. Return the caption as content_html and do not generate taxonomy, slug, actor or publishing status.',
+            'adapter' => null,
+            'operations' => ['create'],
+            'inputs' => ['url', 'text'],
+            'outputs' => ['content'],
+        ],
     ],
 
     'prompts' => [
@@ -112,6 +124,17 @@ return [
             'variables' => ['product', 'campaign', 'writing_profile', 'language', 'cta', 'facts'],
             'instructions' => 'Write one natural Vietnamese social caption from the supplied product, campaign and verified facts. Keep the canonical caption useful for every platform. Do not invent price, date, feature, guarantee or personal experience. Return JSON only. Hashtags are optional and must be short.',
         ],
+        'social_post.facebook_content' => [
+            'label' => 'Facebook Social Post content',
+            'version' => '1.0',
+            'schema' => 'social_post.facebook_content.v1',
+            'type' => 'text',
+            'purpose' => 'facebook_content',
+            'allowed_targets' => ['social_post'],
+            'allowed_operations' => ['generate', 'regenerate_content', 'create'],
+            'variables' => ['product', 'campaign', 'writing_profile', 'language', 'cta', 'facts'],
+            'instructions' => 'Write structured Vietnamese Facebook content from the supplied product, campaign, writing profile and verified facts. Keep title/body/bullets/CTA/contact/hashtags factual and ready for a draft. Do not invent price, date, address, phone, guarantee or claims. Return JSON only and include used_product_fact_ids.',
+        ],
         'social_post.product_image' => [
             'label' => 'Social Post product image prompt',
             'version' => '1.0',
@@ -122,6 +145,17 @@ return [
             'allowed_operations' => ['generate', 'regenerate_image'],
             'variables' => ['product', 'campaign', 'writing_profile', 'visual_constraints', 'facts', 'reference_asset_ids'],
             'instructions' => 'Create a production-ready prompt for an image model to show the supplied product. Describe composition, camera, lighting, material and mood. Never rely on image-model lettering for an exact logo, name, date or other text. Return JSON only.',
+        ],
+        'social_post.facebook_image' => [
+            'label' => 'Facebook Social Post image gallery prompt',
+            'version' => '1.0',
+            'schema' => 'social_post.facebook_image.v1',
+            'type' => 'image',
+            'purpose' => 'facebook_image',
+            'allowed_targets' => ['social_post'],
+            'allowed_operations' => ['generate', 'regenerate_images', 'regenerate_image', 'create'],
+            'variables' => ['product', 'campaign', 'writing_profile', 'visual_constraints', 'facts', 'reference_asset_ids'],
+            'instructions' => 'Create one production-ready visual prompt for a Facebook product gallery. Describe composition, camera, lighting, material and mood. Return a slot_count from 3 to 4 and never rely on image-model lettering for exact logos, names, dates or contact details. Return JSON only.',
         ],
         'post.create.from_url' => [
             'label' => 'Post từ URL',
@@ -180,6 +214,43 @@ return [
             ],
             'fields' => ['caption', 'cta', 'hashtags', 'used_product_fact_ids'],
         ],
+        'social_post.facebook_content.v1' => [
+            'version' => '1.0',
+            'json_schema' => [
+                'type' => 'object',
+                'properties' => [
+                    'title' => ['type' => ['string', 'null'], 'maxLength' => 255],
+                    'body' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 5000],
+                    'bullet_points' => [
+                        'type' => 'array', 'maxItems' => 8,
+                        'items' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 300],
+                    ],
+                    'cta' => ['type' => ['string', 'null'], 'maxLength' => 500],
+                    'contact' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'address' => ['type' => ['string', 'null'], 'maxLength' => 500],
+                            'phone' => ['type' => ['string', 'null'], 'maxLength' => 120],
+                            'website' => ['type' => ['string', 'null'], 'maxLength' => 500],
+                        ],
+                        'required' => ['address', 'phone', 'website'],
+                        'additionalProperties' => false,
+                    ],
+                    'hashtags' => [
+                        'type' => 'array', 'maxItems' => 12,
+                        'items' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 80],
+                    ],
+                    'link_url' => ['type' => ['string', 'null'], 'maxLength' => 1000],
+                    'used_product_fact_ids' => [
+                        'type' => 'array', 'maxItems' => 100,
+                        'items' => ['type' => 'integer', 'minimum' => 1],
+                    ],
+                ],
+                'required' => ['title', 'body', 'bullet_points', 'cta', 'contact', 'hashtags', 'link_url', 'used_product_fact_ids'],
+                'additionalProperties' => false,
+            ],
+            'fields' => ['title', 'body', 'bullet_points', 'cta', 'contact', 'hashtags', 'link_url', 'used_product_fact_ids'],
+        ],
         'social_post.product_image.v1' => [
             'version' => '1.0',
             'json_schema' => [
@@ -197,6 +268,25 @@ return [
                 'additionalProperties' => false,
             ],
             'fields' => ['image_prompt', 'negative_prompt', 'aspect_ratio', 'used_product_fact_ids'],
+        ],
+        'social_post.facebook_image.v1' => [
+            'version' => '1.0',
+            'json_schema' => [
+                'type' => 'object',
+                'properties' => [
+                    'image_prompt' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 4000],
+                    'negative_prompt' => ['type' => 'string', 'maxLength' => 1500],
+                    'aspect_ratio' => ['type' => 'string', 'enum' => ['1:1', '4:5', '9:16']],
+                    'slot_count' => ['type' => 'integer', 'minimum' => 3, 'maximum' => 4],
+                    'used_product_fact_ids' => [
+                        'type' => 'array', 'maxItems' => 100,
+                        'items' => ['type' => 'integer', 'minimum' => 1],
+                    ],
+                ],
+                'required' => ['image_prompt', 'negative_prompt', 'aspect_ratio', 'slot_count', 'used_product_fact_ids'],
+                'additionalProperties' => false,
+            ],
+            'fields' => ['image_prompt', 'negative_prompt', 'aspect_ratio', 'slot_count', 'used_product_fact_ids'],
         ],
     ],
 ];

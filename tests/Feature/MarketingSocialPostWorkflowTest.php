@@ -79,6 +79,10 @@ final class MarketingSocialPostWorkflowTest extends TestCase
         $imageImport = AiImport::query()->where('operation', 'social_image')->firstOrFail();
         $this->assertSame('ready', $imagePromptImport->fresh()->status);
         $this->assertSame('queued', $imageImport->fresh()->status);
+        $this->assertSame(3, AiImport::query()->where('operation', 'social_image')->count());
+        $this->assertSame([0, 1, 2], AiImport::query()->where('operation', 'social_image')->orderBy('id')->get()->map(
+            fn (AiImport $run): int => (int) data_get($run->input_json, 'slot_no'),
+        )->all());
         $this->assertSame('partial', $post->fresh()->generation_status->value);
     }
 

@@ -129,6 +129,20 @@ describe('Ai Content creation input', () => {
     })).toContain('được hỗ trợ')
   })
 
+  it('allows a Social caption draft without an article title', () => {
+    const source = {
+      ...validSource(),
+      targetType: 'social_post',
+      outputs: ['content'],
+      title: '',
+    }
+
+    expect(validateAiContentSource(source, {
+      ...catalog(),
+      outputOptions: [{ value: 'content', title: 'Nội dung' }],
+    })).toBe('')
+  })
+
   it('sends HTML bytes unchanged so the backend can preserve structure and extract the article', async () => {
     const html = '<nav>navigation</nav><article><pre><code>if (true) {\n  call();\n}</code></pre><table><tr><td>Value</td></tr></table><p>First paragraph</p><script>bad()</script></article><footer>footer</footer>'
     const file = new File([html], 'source.html', { type: 'text/html' })

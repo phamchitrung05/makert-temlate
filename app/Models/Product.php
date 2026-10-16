@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ProductStatus;
+use App\Models\Concerns\HasMediaAssets;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -38,7 +39,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  */
 class Product extends Model
 {
-    use HasFactory, LogsActivity, SoftDeletes;
+    use HasFactory, HasMediaAssets, LogsActivity, SoftDeletes;
 
     protected $fillable = [
         'name', 'short_description', 'default_cta', 'prohibited_claims_json',

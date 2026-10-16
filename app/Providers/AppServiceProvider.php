@@ -19,6 +19,7 @@ use App\Models\ResourceVersionTemplateScreen;
 use App\Models\SocialAccount;
 use App\Models\SocialPost;
 use App\Models\SocialPostTarget;
+use App\Models\SocialPostVariant;
 use App\Models\SocialPostVersion;
 use App\Models\SocialPublication;
 use App\Models\Tag;
@@ -188,6 +189,7 @@ class AppServiceProvider extends ServiceProvider
             'social_account' => SocialAccount::class,
             'social_post' => SocialPost::class,
             'social_post_target' => SocialPostTarget::class,
+            'social_post_variant' => SocialPostVariant::class,
             'social_publication' => SocialPublication::class,
             'social_post_version' => SocialPostVersion::class,
             'daily_content_plan' => DailyContentPlan::class,

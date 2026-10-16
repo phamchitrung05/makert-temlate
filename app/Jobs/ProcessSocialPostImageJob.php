@@ -7,6 +7,7 @@ use App\Enums\MediaAssetField;
 use App\Models\AiImport;
 use App\Models\MediaAsset;
 use App\Models\SocialPost;
+use App\Models\SocialPostVariant;
 use App\Models\User;
 use App\Services\Ai\Images\AiImageGenerationService;
 use App\Services\Ai\Registries\ProviderRegistry;
@@ -118,7 +119,7 @@ final class ProcessSocialPostImageJob implements ShouldBeUnique, ShouldQueue
             $asset = $images->generate($connection, $prompt, (int) $import->created_by, $productName, $productName);
             $actor = User::query()->findOrFail((int) $import->created_by);
 
-            $attached = DB::transaction(function () use ($post, $import, $asset, $actor, $usages): bool {
+            $attached = DB::transaction(function () use ($post, $import, $asset, $actor, $usages, $input): bool {
                 $locked = SocialPost::query()->lockForUpdate()->findOrFail($post->getKey());
                 if ((int) $locked->generation_no !== $this->generationNo) {
                     $this->cleanupOrphan($asset);
@@ -129,10 +130,27 @@ final class ProcessSocialPostImageJob implements ShouldBeUnique, ShouldQueue
 
                     return false;
                 }
-                $usages->replace($actor, $locked, MediaAssetField::SocialPostImage, [$asset]);
+                $variant = SocialPostVariant::query()->lockForUpdate()->find(
+                    (int) ($input['social_post_variant_id'] ?? 0),
+                ) ?? $locked->variants()->where('platform', 'facebook')->lockForUpdate()->first();
+                if (! $variant) {
+                    $this->cleanupOrphan($asset);
+
+                    return false;
+                }
+                $slotNo = max(0, (int) ($input['slot_no'] ?? 0));
+                $variant->mediaAssetUsagesForField(MediaAssetField::SocialPostFacebookImages)
+                    ->where('sort_order', $slotNo)
+                    ->delete();
+                $usages->attach($actor, $variant, $asset, MediaAssetField::SocialPostFacebookImages, $slotNo);
+                $readyCount = $variant->mediaAssetUsagesForField(MediaAssetField::SocialPostFacebookImages)->count();
+                $variant->forceFill([
+                    'content_status' => $variant->content_status?->value === 'ready' ? 'ready' : 'partial',
+                    'generation_status' => $readyCount >= 3 ? 'ready' : 'partial',
+                ])->save();
                 $import->forceFill([
                     'status' => 'ready', 'current_step' => 'ready', 'progress' => 100,
-                    'result_json' => ['image' => ['media_asset_id' => $asset->getKey()]],
+                    'result_json' => ['image' => ['media_asset_id' => $asset->getKey(), 'slot_no' => $slotNo]],
                     'provider' => data_get($import->input_json, 'ai_connection.provider'),
                     'completed_at' => now(), 'error_code' => null, 'error_message' => null,
                 ])->save();
@@ -156,6 +174,7 @@ final class ProcessSocialPostImageJob implements ShouldBeUnique, ShouldQueue
                 'version' => $input['prompt_version'] ?? null,
                 'schema' => $input['schema_version'] ?? null,
                 'component' => 'image',
+                'slot_no' => (int) ($input['slot_no'] ?? 0),
                 'image_prompt_hash' => hash('sha256', $prompt),
             ], (array) ($input['writing_profile_snapshot'] ?? []), [
                 'provider' => data_get($input, 'ai_connection.provider'),

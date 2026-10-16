@@ -29,7 +29,7 @@ class SocialPostVersion extends Model
     use HasFactory;
 
     protected $fillable = [
-        'social_post_id', 'version_no', 'caption', 'context_json', 'asset_ids_json',
+        'social_post_id', 'social_post_variant_id', 'version_no', 'caption', 'content_json', 'context_json', 'asset_ids_json',
         'prompt_snapshot_json', 'writing_profile_snapshot_json', 'provider_snapshot_json',
         'version_hash', 'reason', 'created_by',
     ];
@@ -44,6 +44,7 @@ class SocialPostVersion extends Model
     {
         return [
             'version_no' => 'integer',
+            'content_json' => 'array',
             'context_json' => 'array',
             'asset_ids_json' => 'array',
             'prompt_snapshot_json' => 'array',
@@ -61,6 +62,11 @@ class SocialPostVersion extends Model
     public function socialPost(): BelongsTo
     {
         return $this->belongsTo(SocialPost::class);
+    }
+
+    public function socialPostVariant(): BelongsTo
+    {
+        return $this->belongsTo(SocialPostVariant::class);
     }
 
     /**

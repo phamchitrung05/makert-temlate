@@ -76,7 +76,7 @@ final class PublishSocialPostJob implements ShouldBeUnique, ShouldQueue
     public function handle(FacebookPublisher $facebook): void
     {
         $publication = SocialPublication::query()
-            ->with(['socialPostTarget.socialPost', 'socialPostTarget.socialAccount'])
+            ->with(['socialPostTarget.socialPost.variants.mediaAssetUsages.mediaAsset.media', 'socialPostTarget.socialPostVariant', 'socialPostTarget.socialPost', 'socialPostTarget.socialAccount'])
             ->find($this->publicationId);
         if (! $publication || $publication->status === SocialPublicationStatus::Published) {
             return;
@@ -88,10 +88,19 @@ final class PublishSocialPostJob implements ShouldBeUnique, ShouldQueue
 
             return;
         }
-        $assetId = $post->mediaAssetUsagesForField(MediaAssetField::SocialPostImage)->value('media_asset_id');
-        $asset = $assetId ? MediaAsset::query()->find($assetId) : null;
-        if (! $asset) {
-            $this->fail($publication, 'SOCIAL_IMAGE_MISSING', 'Social Post không có ảnh canonical.', false);
+        $variant = $target->socialPostVariant
+            ?? $post->variants()->where('platform', 'facebook')->first();
+        $images = $variant
+            ? $variant->mediaAssetUsagesForField(MediaAssetField::SocialPostFacebookImages)
+                ->with('mediaAsset.media')->orderBy('sort_order')->get()->map(fn ($usage) => $usage->mediaAsset)->filter()->values()->all()
+            : [];
+        if ($images === []) {
+            $assetId = $post->mediaAssetUsagesForField(MediaAssetField::SocialPostImage)->value('media_asset_id');
+            $legacy = $assetId ? MediaAsset::query()->find($assetId) : null;
+            $images = $legacy ? [$legacy] : [];
+        }
+        if ($images === []) {
+            $this->fail($publication, 'SOCIAL_IMAGE_MISSING', 'Social Post không có gallery ảnh sẵn sàng.', false);
 
             return;
         }
@@ -106,7 +115,7 @@ final class PublishSocialPostJob implements ShouldBeUnique, ShouldQueue
         $post->forceFill(['publication_status' => SocialPostPublicationStatus::Publishing])->save();
 
         try {
-            $result = $this->publisher($target)->publish($post, $target, $asset);
+            $result = $this->publisher($target)->publish($post, $target, $variant, $images);
             DB::transaction(function () use ($publication, $target, $result): void {
                 $publication->forceFill([
                     'status' => SocialPublicationStatus::Published,

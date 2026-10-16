@@ -38,6 +38,8 @@ enum MediaAssetField: string
     case ResourceVersionDocumentation = 'resource_version.documentation';
     case TemplateScreenPreview = 'template_screen.preview';
     case SocialPostImage = 'social_post.image';
+    case SocialPostFacebookImages = 'social_post_variant.facebook.images';
+    case ProductReferenceImages = 'product.reference_images';
 
     /**
      * =====================================================================
@@ -76,6 +78,8 @@ enum MediaAssetField: string
             'resource_version.documentation' => 'Resource documentation',
             'template_screen.preview' => 'Template screen preview',
             'social_post.image' => 'Social Post image',
+            'social_post_variant.facebook.images' => 'Social Post Facebook image gallery',
+            'product.reference_images' => 'Product reference image gallery',
         ];
     }
 
@@ -102,6 +106,8 @@ enum MediaAssetField: string
             self::ResourceVersionDocumentation => MediaAssetKind::Document,
             self::TemplateScreenPreview => MediaAssetKind::Image,
             self::SocialPostImage => MediaAssetKind::Image,
+            self::SocialPostFacebookImages => MediaAssetKind::Image,
+            self::ProductReferenceImages => MediaAssetKind::Image,
         };
     }
 
@@ -128,6 +134,8 @@ enum MediaAssetField: string
             self::ResourceCover,
             self::ResourceVersionPackage => false,
             self::SocialPostImage => false,
+            self::SocialPostFacebookImages => true,
+            self::ProductReferenceImages => true,
         };
     }
 

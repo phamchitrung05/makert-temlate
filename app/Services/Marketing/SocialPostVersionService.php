@@ -3,6 +3,7 @@
 namespace App\Services\Marketing;
 
 use App\Models\SocialPost;
+use App\Models\SocialPostVariant;
 use App\Models\SocialPostVersion;
 use Illuminate\Support\Facades\DB;
 
@@ -49,14 +50,19 @@ final class SocialPostVersionService
     ): SocialPostVersion {
         return DB::transaction(function () use ($post, $context, $promptSnapshot, $profileSnapshot, $providerSnapshot, $reason, $actorId): SocialPostVersion {
             $locked = SocialPost::query()->lockForUpdate()->findOrFail($post->getKey());
-            $assetIds = $this->assetIds($locked);
+            $variant = $locked->variants()->where('platform', 'facebook')->lockForUpdate()->first();
+            $assetIds = $this->assetIds($locked, $variant);
+            $content = (array) ($variant?->content_json ?? []);
             $caption = (string) ($locked->caption ?? '');
-            $versionNo = ((int) $locked->versions()->max('version_no')) + 1;
+            $versionNo = $variant
+                ? ((int) $variant->versions()->max('version_no')) + 1
+                : ((int) $locked->versions()->whereNull('social_post_variant_id')->max('version_no')) + 1;
             $provider = $this->boundedProvider($providerSnapshot);
             $hash = hash('sha256', json_encode([
                 'post_id' => (int) $locked->getKey(),
                 'version_no' => $versionNo,
                 'caption' => $caption,
+                'content' => $content,
                 'asset_ids' => $assetIds,
                 'context_hash' => $context['context_hash'] ?? null,
                 'prompt' => $promptSnapshot,
@@ -65,8 +71,10 @@ final class SocialPostVersionService
 
             return SocialPostVersion::query()->create([
                 'social_post_id' => $locked->getKey(),
+                'social_post_variant_id' => $variant?->getKey(),
                 'version_no' => $versionNo,
                 'caption' => $caption !== '' ? $caption : null,
+                'content_json' => $content !== [] ? $content : null,
                 'context_json' => $this->boundedContext($context),
                 'asset_ids_json' => $assetIds,
                 'prompt_snapshot_json' => $promptSnapshot,
@@ -76,6 +84,9 @@ final class SocialPostVersionService
                 'reason' => substr($reason, 0, 80),
                 'created_by' => $actorId,
             ]);
+            if ($variant) {
+                $variant->forceFill(['current_version_no' => $versionNo])->save();
+            }
         });
     }
 
@@ -85,9 +96,13 @@ final class SocialPostVersionService
      * Input: SocialPost đã khóa.
      * Output: list<int> asset IDs; không sửa usage.
      */
-    public function assetIds(SocialPost $post): array
+    public function assetIds(SocialPost $post, ?SocialPostVariant $variant = null): array
     {
-        return $post->mediaAssetUsagesForField(\App\Enums\MediaAssetField::SocialPostImage)
+        $usages = $variant
+            ? $variant->mediaAssetUsagesForField(\App\Enums\MediaAssetField::SocialPostFacebookImages)
+            : $post->mediaAssetUsagesForField(\App\Enums\MediaAssetField::SocialPostImage);
+
+        return $usages
             ->orderBy('sort_order')
             ->pluck('media_asset_id')
             ->map(fn ($id): int => (int) $id)

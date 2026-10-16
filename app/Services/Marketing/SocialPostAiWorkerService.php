@@ -6,6 +6,7 @@ use App\Exceptions\AiImportException;
 use App\Jobs\ProcessSocialPostImageJob;
 use App\Models\AiImport;
 use App\Models\SocialPost;
+use App\Models\SocialPostVariant;
 use App\Services\Ai\Data\AiTaskRequest;
 use App\Services\Ai\Registries\PromptRegistry;
 use App\Services\Ai\Registries\SchemaRegistry;
@@ -75,12 +76,26 @@ final class SocialPostAiWorkerService
             $output = $this->execute($import, 'caption');
             $factIds = $this->contexts->validateFactIds((array) ($output['used_product_fact_ids'] ?? []), (array) ($input['context'] ?? []));
             $output['used_product_fact_ids'] = $factIds;
-            $caption = $this->canonicalCaption($output);
-            $updated = DB::transaction(function () use ($import, $post, $input, $output, $caption): bool {
+            $content = $this->normalizeFacebookContent($output);
+            $caption = $this->canonicalCaption($content);
+            $updated = DB::transaction(function () use ($import, $post, $input, $content, $caption): bool {
                 $locked = SocialPost::query()->lockForUpdate()->findOrFail($post->getKey());
                 if (! $this->isCurrent($locked, (int) ($input['generation_no'] ?? 0))) {
                     return false;
                 }
+                $variant = SocialPostVariant::query()->lockForUpdate()->firstOrCreate(
+                    ['social_post_id' => $locked->getKey(), 'platform' => 'facebook'],
+                    ['format' => 'feed', 'review_status' => 'draft'],
+                );
+                $variant->forceFill([
+                    'content_json' => $content,
+                    'content_status' => 'ready',
+                    'generation_status' => 'ready',
+                    'review_status' => 'draft',
+                    'reviewed_by' => null,
+                    'reviewed_at' => null,
+                    'review_reason' => null,
+                ])->save();
                 $locked->forceFill([
                     'caption' => $caption,
                     'review_status' => 'draft',
@@ -89,7 +104,7 @@ final class SocialPostAiWorkerService
                     'review_reason' => null,
                     'updated_by' => $import->created_by,
                 ])->save();
-                $this->complete($import, $output, [
+                $this->complete($import, $content, [
                     'provider' => $import->provider,
                     'model' => data_get($input, 'ai_connection.model', 'deterministic'),
                     'prompt_key' => $input['prompt_key'] ?? null,
@@ -148,7 +163,7 @@ final class SocialPostAiWorkerService
         try {
             $output = $this->execute($import, 'image_prompt');
             $output['used_product_fact_ids'] = $this->contexts->validateFactIds((array) ($output['used_product_fact_ids'] ?? []), (array) ($input['context'] ?? []));
-            $imageImport = DB::transaction(function () use ($import, $input, $output): AiImport {
+            $imageImports = DB::transaction(function () use ($import, $input, $output): array {
                 $this->complete($import, $output, [
                     'provider' => $import->provider,
                     'model' => data_get($input, 'ai_connection.model', 'deterministic'),
@@ -164,39 +179,46 @@ final class SocialPostAiWorkerService
                     'prompt' => $output['image_prompt'], 'connection' => $input['image_connection'] ?? null,
                 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
 
-                $imageImport = AiImport::query()->create([
-                    'created_by' => $import->created_by,
-                    'source_url' => '',
-                    'source_hash' => $hash,
-                    'status' => 'queued',
-                    'current_step' => 'queued',
-                    'progress' => 0,
-                    'input_json' => [
-                        'target_type' => 'social_post',
-                        'component' => 'image',
-                        'social_post_id' => $input['social_post_id'],
-                        'generation_no' => $input['generation_no'],
-                        'context' => $input['context'],
-                        'writing_profile_snapshot' => $input['writing_profile_snapshot'] ?? null,
-                        'prompt_key' => $input['prompt_key'],
-                        'prompt_version' => $input['prompt_version'],
-                        'schema_version' => $input['schema_version'],
-                        'image_prompt' => $output['image_prompt'],
-                        'negative_prompt' => $output['negative_prompt'] ?? null,
-                        'aspect_ratio' => $output['aspect_ratio'] ?? '4:5',
-                        'ai_connection' => $input['image_connection'] ?? null,
-                    ],
-                    'source_meta_json' => [],
-                    'provider' => data_get($input, 'image_connection.provider', 'none'),
-                    'prompt_version' => (string) ($input['prompt_version'] ?? '1.0'),
-                    'operation' => 'social_image',
-                    'generation_no' => (int) $input['generation_no'],
-                    'parent_id' => $import->getKey(),
-                    'expires_at' => now()->addDays((int) config('ai.import.retention_days', 2)),
-                ]);
-                $this->tasks->registerImport($imageImport);
+                $slotCount = max(3, min(4, (int) ($output['slot_count'] ?? 3)));
+                $imageImports = [];
+                for ($slotNo = 0; $slotNo < $slotCount; $slotNo++) {
+                    $imageImport = AiImport::query()->create([
+                        'created_by' => $import->created_by,
+                        'source_url' => '',
+                        'source_hash' => $hash.'|slot:'.$slotNo,
+                        'status' => 'queued',
+                        'current_step' => 'queued',
+                        'progress' => 0,
+                        'input_json' => [
+                            'target_type' => 'social_post',
+                            'component' => 'image',
+                            'social_post_id' => $input['social_post_id'],
+                            'social_post_variant_id' => $input['social_post_variant_id'] ?? null,
+                            'generation_no' => $input['generation_no'],
+                            'slot_no' => $slotNo,
+                            'context' => $input['context'],
+                            'writing_profile_snapshot' => $input['writing_profile_snapshot'] ?? null,
+                            'prompt_key' => $input['prompt_key'],
+                            'prompt_version' => $input['prompt_version'],
+                            'schema_version' => $input['schema_version'],
+                            'image_prompt' => $output['image_prompt'].'\nVariation slot '.($slotNo + 1).'.',
+                            'negative_prompt' => $output['negative_prompt'] ?? null,
+                            'aspect_ratio' => $output['aspect_ratio'] ?? '4:5',
+                            'ai_connection' => $input['image_connection'] ?? null,
+                        ],
+                        'source_meta_json' => [],
+                        'provider' => data_get($input, 'image_connection.provider', 'none'),
+                        'prompt_version' => (string) ($input['prompt_version'] ?? '1.0'),
+                        'operation' => 'social_image',
+                        'generation_no' => (int) $input['generation_no'],
+                        'parent_id' => $import->getKey(),
+                        'expires_at' => now()->addDays((int) config('ai.import.retention_days', 2)),
+                    ]);
+                    $this->tasks->registerImport($imageImport);
+                    $imageImports[] = $imageImport;
+                }
 
-                return $imageImport;
+                return $imageImports;
             });
             $this->tasks->syncFromImport($import->fresh());
 
@@ -212,7 +234,9 @@ final class SocialPostAiWorkerService
                 'component' => 'image_prompt',
                 'generation_no' => $input['generation_no'] ?? null,
             ], 'image_prompt_ready', (int) $import->created_by);
-            ProcessSocialPostImageJob::dispatch((string) $imageImport->getKey(), (int) $imageImport->generation_no);
+            foreach ($imageImports as $imageImport) {
+                ProcessSocialPostImageJob::dispatch((string) $imageImport->getKey(), (int) $imageImport->generation_no);
+            }
             $this->states->refresh($post->fresh(), (int) $input['generation_no']);
         } catch (\Throwable $exception) {
             if ($exception instanceof AiImportException && $exception->retryable) {
@@ -313,9 +337,24 @@ final class SocialPostAiWorkerService
      */
     private function canonicalCaption(array $output): string
     {
-        $parts = [trim((string) ($output['caption'] ?? ''))];
+        $parts = [trim((string) ($output['body'] ?? $output['caption'] ?? ''))];
+        $bullets = collect((array) ($output['bullet_points'] ?? []))
+            ->map(fn ($bullet): string => '✅ '.trim((string) $bullet))
+            ->filter()
+            ->take(8)
+            ->implode("\n");
+        if ($bullets !== '') {
+            $parts[] = $bullets;
+        }
         if (filled($output['cta'] ?? null)) {
             $parts[] = trim((string) $output['cta']);
+        }
+        $contact = collect((array) ($output['contact'] ?? []))
+            ->map(fn ($value, $key): string => filled($value) ? ucfirst((string) $key).': '.trim((string) $value) : '')
+            ->filter()
+            ->implode("\n");
+        if ($contact !== '') {
+            $parts[] = $contact;
         }
         $hashtags = collect((array) ($output['hashtags'] ?? []))
             ->map(fn ($tag): string => str_starts_with(trim((string) $tag), '#') ? trim((string) $tag) : '#'.trim((string) $tag))
@@ -343,9 +382,13 @@ final class SocialPostAiWorkerService
         $caption = 'Khám phá '.$name.'. '.($message !== '' ? $message : $description);
 
         return [
-            'caption' => Str::limit(trim($caption), 5000, ''),
+            'title' => null,
+            'body' => Str::limit(trim($caption), 5000, ''),
+            'bullet_points' => [],
             'cta' => (string) data_get($context, 'product.default_cta', 'Inbox để được tư vấn thêm.'),
+            'contact' => ['address' => null, 'phone' => null, 'website' => null],
             'hashtags' => ['#sanpham', '#marketing'],
+            'link_url' => null,
             'used_product_fact_ids' => [],
         ];
     }
@@ -365,7 +408,32 @@ final class SocialPostAiWorkerService
             'image_prompt' => 'Ảnh sản phẩm '.$name.' đặt trong bối cảnh tối giản, ánh sáng tự nhiên mềm, góc chụp dọc 4:5, chất liệu rõ nét, nền sạch và sang trọng. '.$description,
             'negative_prompt' => 'watermark, fake logo, unreadable text, extra products, distorted hands',
             'aspect_ratio' => '4:5',
+            'slot_count' => 3,
             'used_product_fact_ids' => [],
+        ];
+    }
+
+    /**
+     * Chuẩn hóa output Facebook structured và giữ tương thích output caption cũ.
+     *
+     * @param  array<string, mixed>  $output
+     * @return array<string, mixed>
+     */
+    private function normalizeFacebookContent(array $output): array
+    {
+        return [
+            'title' => array_key_exists('title', $output) ? $output['title'] : null,
+            'body' => (string) ($output['body'] ?? $output['caption'] ?? ''),
+            'bullet_points' => array_values(array_slice(array_map('strval', (array) ($output['bullet_points'] ?? [])), 0, 8)),
+            'cta' => array_key_exists('cta', $output) ? $output['cta'] : null,
+            'contact' => [
+                'address' => data_get($output, 'contact.address'),
+                'phone' => data_get($output, 'contact.phone'),
+                'website' => data_get($output, 'contact.website'),
+            ],
+            'hashtags' => array_values(array_slice(array_map('strval', (array) ($output['hashtags'] ?? [])), 0, 12)),
+            'link_url' => array_key_exists('link_url', $output) ? $output['link_url'] : null,
+            'used_product_fact_ids' => array_values(array_map('intval', (array) ($output['used_product_fact_ids'] ?? []))),
         ];
     }
 

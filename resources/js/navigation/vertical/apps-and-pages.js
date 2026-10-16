@@ -54,6 +54,8 @@ export default [
   {
     title: 'Social Post',
     icon: { icon: 'tabler-share' },
+    action: 'view',
+    subject: 'marketing',
     children: [
       { title: 'List', to: 'marketing-social-post-list' },
     ],

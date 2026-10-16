@@ -2,15 +2,15 @@
 
 namespace App\Services\Marketing\Publishing;
 
-use App\Models\MediaAsset;
 use App\Models\SocialPost;
 use App\Models\SocialPostTarget;
+use App\Models\SocialPostVariant;
 
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Hợp đồng publisher cho mọi nền tảng Social Post.
  * =====================================================================
- * Adapter nhận canonical caption và một image asset; không biết review UI hay
+ * Adapter nhận một variant và ordered image gallery; không biết review UI hay
  * cách xếp queue. Facebook là adapter đầu tiên, platform khác mở rộng sau.
  *
  * CÁC HÀM/METHOD TRONG FILE:
@@ -34,13 +34,13 @@ interface SocialPublisherContract
     public function platform(): string;
 
     /**
-     * Đăng canonical caption và ảnh lên target.
+     * Đăng content variant và gallery ảnh lên target.
      *
-     * Input: SocialPost/target/image đã xác thực.
+     * Input: SocialPost/target/variant/gallery đã xác thực.
      * Output: external_id/url/request_id/metadata bounded.
      * Side effect: gọi API platform; không ghi database.
      *
      * @return array<string, mixed>
      */
-    public function publish(SocialPost $post, SocialPostTarget $target, MediaAsset $image): array;
+    public function publish(SocialPost $post, SocialPostTarget $target, ?SocialPostVariant $variant, array $images): array;
 }

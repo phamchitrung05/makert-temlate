@@ -33,6 +33,16 @@ export const mediaAssetFieldConfig = Object.freeze({
     kind: 'image',
     multiple: true,
   }),
+  'social_post_variant.facebook.images': Object.freeze({
+    title: 'Facebook Social Post image gallery',
+    kind: 'image',
+    multiple: true,
+  }),
+  'product.reference_images': Object.freeze({
+    title: 'Product reference image gallery',
+    kind: 'image',
+    multiple: true,
+  }),
   'post.og_image': Object.freeze({
     title: 'Post Open Graph image',
     kind: 'image',

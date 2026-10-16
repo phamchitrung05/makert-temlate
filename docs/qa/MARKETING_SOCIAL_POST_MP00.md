@@ -9,7 +9,10 @@ Facebook Page thật chờ Meta App và Page token của môi trường chạy.
 - [x] Chốt caption canonical dùng chung; không có `platform_caption`.
 - [x] Chốt product facts tối thiểu và quy tắc không bịa.
 - [x] Chốt ba nhóm trạng thái generation/review/publication.
-- [x] Thêm permission `social_posts.*` và `social_accounts.*` vào catalog/role seed.
+- [x] Thêm permission module `marketing.view/manage` và resource
+  `social_posts.*`/`social_accounts.*` vào catalog/role seed.
+- [x] Ghi quy ước mỗi resource Marketing mới phải có permission riêng, route
+  middleware, role seed và tài liệu API.
 - [x] Chuẩn bị cấu hình `.env.example` và `config/social.php`.
 - [x] Tạo fixture context tại `docs/qa/marketing-social-post/mp00-product-fixture.json`.
 

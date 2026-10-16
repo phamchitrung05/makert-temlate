@@ -202,6 +202,28 @@ class AiContentWorkspaceApiTest extends TestCase
     }
 
     /**
+     * Social là target riêng của AI Content và dùng permission Social Post.
+     * Candidate được xếp hàng ở workspace; apply/review sẽ được nối vào
+     * workflow Social Post riêng ở bước sau.
+     */
+    public function test_social_target_is_available_to_social_post_creators(): void
+    {
+        $token = $this->token(['social_posts.create']);
+
+        $this->withToken($token)->getJson('/api/admin/ai-agent/targets')
+            ->assertOk()
+            ->assertJsonPath('data.0.key', 'social_post')
+            ->assertJsonPath('data.0.label', 'Social')
+            ->assertJsonPath('data.0.outputs', ['content'])
+            ->assertJsonPath('data.0.output_options.0.value', 'content');
+
+        $run = $this->createRun($token, 'social_post');
+        $this->assertSame('social_post', $run->input_json['target_type']);
+        $this->assertSame('social_post.create.from_text', $run->input_json['prompt_key']);
+        Queue::assertPushed(ProcessAiImportJob::class, 1);
+    }
+
+    /**
      * =====================================================================
      * CHỨC NĂNG: Kiểm thử actor chỉ có quyền Resource
      * =====================================================================

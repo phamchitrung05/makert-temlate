@@ -71,7 +71,10 @@ export function validateAiContentSource(source, catalog) {
     && !(catalog.imageModelOptions ?? []).some(option => option.value === source.imageModelId))
     return 'Chọn model ảnh đã bật và khả dụng để tạo thumbnail AI.'
   if ((source.thumbnailPrompt ?? '').length > 4000) return 'Yêu cầu tạo ảnh tối đa 4.000 ký tự.'
-  if (!outputs.includes('title') && !source.title.trim()) return 'Nhập tiêu đề hoặc chọn hạng mục Tiêu đề để AI tạo.'
+
+  // Social drafts are caption-first and do not need an article title. Other
+  // targets keep the existing title guard when the title output is omitted.
+  if (source.targetType !== 'social_post' && !outputs.includes('title') && !source.title.trim()) return 'Nhập tiêu đề hoặc chọn hạng mục Tiêu đề để AI tạo.'
   if (source.title.length > 255) return 'Tiêu đề không được dài quá 255 ký tự.'
   if (source.type === 'url') {
     try {

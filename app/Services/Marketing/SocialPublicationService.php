@@ -69,7 +69,7 @@ final class SocialPublicationService
                         'error_message' => null,
                     ])->save();
                     $target->forceFill(['status' => SocialPublicationStatus::Queued, 'last_error_code' => null, 'last_error_message' => null])->save();
-                    PublishSocialPostJob::dispatch((int) $publication->getKey());
+                    DB::afterCommit(fn () => PublishSocialPostJob::dispatch((int) $publication->getKey()));
                 }
                 $items[] = ['publication_id' => (int) $publication->getKey(), 'target_id' => (int) $target->getKey(), 'status' => $publication->status->value];
             }
@@ -99,7 +99,7 @@ final class SocialPublicationService
             $this->ensurePublishable($post);
             $locked->forceFill(['status' => SocialPublicationStatus::Queued, 'queued_at' => now(), 'error_code' => null, 'error_message' => null])->save();
             $locked->socialPostTarget?->forceFill(['status' => SocialPublicationStatus::Queued, 'last_error_code' => null, 'last_error_message' => null])->save();
-            PublishSocialPostJob::dispatch((int) $locked->getKey());
+            DB::afterCommit(fn () => PublishSocialPostJob::dispatch((int) $locked->getKey()));
 
             return $locked->refresh();
         });
@@ -115,6 +115,10 @@ final class SocialPublicationService
     {
         if (! $post || $post->review_status !== SocialPostReviewStatus::Approved) {
             throw ValidationException::withMessages(['review_status' => 'Chỉ Social Post đã approved mới được publish.']);
+        }
+        $variant = $post->variants()->where('platform', 'facebook')->first();
+        if ($variant && $variant->review_status !== SocialPostReviewStatus::Approved) {
+            throw ValidationException::withMessages(['review_status' => 'Facebook variant chưa được approve.']);
         }
         if ($post->generation_status !== SocialPostGenerationStatus::Ready || blank($post->caption)) {
             throw ValidationException::withMessages(['generation' => 'Caption và ảnh phải ready trước khi publish.']);

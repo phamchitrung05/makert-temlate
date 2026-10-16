@@ -11,8 +11,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * =====================================================================
  * CHỨC NĂNG FILE: Serialize Social Post, image usage và target lifecycle.
  * =====================================================================
- * Resource chỉ trả caption canonical, không có platform_caption/token/raw
- * provider response.
+ * Resource trả legacy caption để tương thích và Facebook variant structured
+ * content/gallery; không có platform_caption/token/raw provider response.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - toArray(): ánh xạ Social Post và relation đã eager load.
@@ -45,6 +45,8 @@ final class SocialPostResource extends JsonResource
                 'id' => (int) $this->product->id, 'name' => $this->product->name,
             ] : null),
             'caption' => $this->caption,
+            'facebook_variant' => $this->when($this->relationLoaded('variants'), fn () => $this->facebookVariant()),
+            'variants' => $this->whenLoaded('variants', fn () => $this->variants->map(fn ($variant): array => $this->variant($variant))->values()),
             'generation_no' => (int) $this->generation_no,
             'generation_status' => $this->generation_status?->value,
             'review_status' => $this->review_status?->value,
@@ -76,6 +78,8 @@ final class SocialPostResource extends JsonResource
                 'id' => (int) $version->id,
                 'version_no' => (int) $version->version_no,
                 'caption' => $version->caption,
+                'content' => $version->content_json ?? [],
+                'variant_id' => $version->social_post_variant_id ? (int) $version->social_post_variant_id : null,
                 'asset_ids' => $version->asset_ids_json ?? [],
                 'reason' => $version->reason,
                 'version_hash' => $version->version_hash,
@@ -105,5 +109,45 @@ final class SocialPostResource extends JsonResource
             ?->mediaAsset;
 
         return $asset ? MediaAssetResource::make($asset) : null;
+    }
+
+    private function facebookVariant(): ?array
+    {
+        $variant = $this->variants->first(fn ($variant): bool => ($variant->platform?->value ?? (string) $variant->platform) === 'facebook');
+
+        return $variant ? $this->variant($variant) : null;
+    }
+
+    private function variant($variant): array
+    {
+        $images = $variant->relationLoaded('mediaAssetUsages')
+            ? $variant->mediaAssetUsages
+                ->where('field', \App\Enums\MediaAssetField::SocialPostFacebookImages)
+                ->sortBy(fn ($usage): int => (int) ($usage->sort_order ?? 0))
+                ->map(fn ($usage): array => [
+                    'usage_id' => (int) $usage->id,
+                    'sort_order' => (int) ($usage->sort_order ?? 0),
+                    'asset' => $usage->relationLoaded('mediaAsset') && $usage->mediaAsset
+                        ? MediaAssetResource::make($usage->mediaAsset)->resolve()
+                        : null,
+                ])->values()->all()
+            : [];
+
+        return [
+            'id' => (int) $variant->id,
+            'platform' => $variant->platform?->value ?? (string) $variant->platform,
+            'format' => $variant->format,
+            'content' => $variant->content_json ?? [],
+            'content_status' => $variant->content_status?->value,
+            'generation_status' => $variant->generation_status?->value,
+            'review_status' => $variant->review_status?->value,
+            'current_version_no' => (int) $variant->current_version_no,
+            'review' => [
+                'reviewed_by' => $variant->reviewed_by,
+                'reviewed_at' => $variant->reviewed_at?->toIso8601String(),
+                'reason' => $variant->review_reason,
+            ],
+            'images' => $images,
+        ];
     }
 }

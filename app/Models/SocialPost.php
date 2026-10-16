@@ -19,14 +19,15 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * =====================================================================
  * CHỨC NĂNG FILE: Đại diện Social Post canonical dùng cho nhiều target.
  * =====================================================================
- * Model giữ một caption chung, ba nhóm trạng thái và quan hệ product/campaign,
- * image usage, target, publication, version. Không có platform_caption.
+ * Model giữ identity/lifecycle aggregate và caption legacy để tương thích; content
+ * Facebook mới nằm trong SocialPostVariant. Không có platform_caption.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - casts(): ép trạng thái và mốc review/schedule.
  * - campaign(): campaign context tùy chọn.
  * - product(): product context tùy chọn.
  * - targets(): các Page/account đích.
+ * - variants(): nội dung theo từng nền tảng.
  * - publications(): publication qua target.
  * - versions(): snapshot bất biến theo version_no.
  * - dailyContentPlans(): các slot đã gắn vào post.
@@ -100,6 +101,17 @@ class SocialPost extends Model
     public function targets(): HasMany
     {
         return $this->hasMany(SocialPostTarget::class)->orderBy('id');
+    }
+
+    /**
+     * Lấy các content variant theo nền tảng.
+     *
+     * Input: post hiện tại.
+     * Output: HasMany<SocialPostVariant> theo thứ tự tạo.
+     */
+    public function variants(): HasMany
+    {
+        return $this->hasMany(SocialPostVariant::class)->orderBy('id');
     }
 
     /**
