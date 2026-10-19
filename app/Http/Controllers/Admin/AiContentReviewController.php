@@ -61,7 +61,21 @@ class AiContentReviewController extends Controller
     public function rescore(Request $request, AiImport $aiImport, ArticleQualityEvaluationService $quality): JsonResponse
     {
         $quality->show($request->user(), $aiImport);
-        abort_unless($quality->supports($aiImport), 422, 'Candidate chưa có nội dung AI cần chấm.');
+        $aiImport->refresh();
+        if (! $quality->supports($aiImport)) {
+            $generated = (array) data_get($aiImport->result_json, 'generation_meta.generated_fields', []);
+            $blocks = (array) data_get($aiImport->source_meta_json, 'article_source.blocks', []);
+            if ($aiImport->operation === 'image' || data_get($aiImport->input_json, 'target_type', 'post') !== 'post') {
+                abort(422, 'Evaluator chỉ hỗ trợ candidate Post; Social Post không qua chấm article.');
+            }
+            if (! in_array('content_html', $generated, true)) {
+                abort(422, 'Candidate không có generated field content_html do AI. Hãy tạo candidate mới.');
+            }
+            if ($blocks === []) {
+                abort(422, 'Candidate thiếu article source blocks nên evaluator không thể chấm. Hãy tạo candidate mới.');
+            }
+            abort(422, 'Candidate chưa có nội dung AI cần chấm.');
+        }
         abort_unless(AiContentReviewService::state($aiImport)['status'] === 'pending_review', 409, 'Chỉ có thể chấm lại candidate đang chờ duyệt.');
         $quality->schedule($aiImport, true);
 

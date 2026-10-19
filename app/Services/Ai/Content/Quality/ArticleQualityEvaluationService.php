@@ -68,40 +68,59 @@ final class ArticleQualityEvaluationService
         }
 
         $snapshot = $this->snapshot($run);
-        $query = AiArticleEvaluation::query()
-            ->where('run_id', $run->id)
-            ->where('generation_no', $snapshot['generation_no'])
-            ->where('candidate_hash', $snapshot['candidate_hash']);
-        $existing = $query->latest('created_at')->first();
-        if ($existing && (! $force || in_array($existing->status, ['queued', 'running'], true))) {
-            return $existing;
+        $shouldDispatch = false;
+        try {
+            $evaluation = DB::transaction(function () use ($run, $snapshot, $force, &$shouldDispatch): AiArticleEvaluation {
+                AiImport::query()->lockForUpdate()->findOrFail($run->id);
+                $existing = AiArticleEvaluation::query()
+                    ->where('run_id', $run->id)
+                    ->where('generation_no', $snapshot['generation_no'])
+                    ->where('candidate_hash', $snapshot['candidate_hash'])
+                    ->latest('created_at')
+                    ->lockForUpdate()
+                    ->first();
+                if ($existing && (in_array($existing->status, self::ACTIVE, true) || ! $force)) {
+                    return $existing;
+                }
+                if ($existing) {
+                    $existing->forceFill([
+                        'status' => 'queued', 'error_code' => null, 'error_message' => null,
+                        'score_total' => null, 'scores_json' => null, 'evidence_json' => null,
+                        'source_references_json' => null, 'eligibility_json' => null,
+                        'diagnostics_json' => null, 'usage_json' => null,
+                        'completed_at' => null, 'started_at' => null, 'attempt' => (int) $existing->attempt + 1,
+                        'expires_at' => now()->addDays((int) config('ai.quality.retention_days', 2)),
+                    ])->save();
+                    $shouldDispatch = true;
+
+                    return $existing->fresh();
+                }
+
+                $shouldDispatch = true;
+
+                return AiArticleEvaluation::query()->create([
+                    'run_id' => $run->id, 'session_id' => $run->session_id ?: $run->id,
+                    'generation_no' => $snapshot['generation_no'], 'candidate_hash' => $snapshot['candidate_hash'],
+                    'source_hash' => $snapshot['source_hash'], 'rubric_version' => config('ai.scoring.rubric_version'),
+                    'prompt_version' => config('ai.quality.prompt_version'), 'schema_version' => config('ai.quality.schema_version'),
+                    'status' => 'queued', 'connection_snapshot_json' => $snapshot['connection'],
+                    'expires_at' => now()->addDays((int) config('ai.quality.retention_days', 2)),
+                ]);
+            });
+        } catch (\Illuminate\Database\QueryException $exception) {
+            if ((int) ($exception->errorInfo[0] ?? 0) !== 23000 && ! str_contains($exception->getMessage(), 'ai_article_eval_identity')) {
+                throw $exception;
+            }
+            $evaluation = AiArticleEvaluation::query()
+                ->where('run_id', $run->id)
+                ->where('generation_no', $snapshot['generation_no'])
+                ->where('candidate_hash', $snapshot['candidate_hash'])
+                ->latest('created_at')->firstOrFail();
         }
 
-        $evaluation = DB::transaction(function () use ($run, $snapshot, $existing): AiArticleEvaluation {
-            if ($existing) {
-                $existing->forceFill([
-                    'status' => 'queued', 'error_code' => null, 'error_message' => null,
-                    'score_total' => null, 'scores_json' => null, 'evidence_json' => null,
-                    'source_references_json' => null, 'eligibility_json' => null,
-                    'diagnostics_json' => null, 'usage_json' => null,
-                    'completed_at' => null, 'started_at' => null, 'attempt' => (int) $existing->attempt + 1,
-                    'expires_at' => now()->addDays((int) config('ai.quality.retention_days', 2)),
-                ])->save();
-
-                return $existing->fresh();
-            }
-
-            return AiArticleEvaluation::query()->create([
-                'run_id' => $run->id, 'session_id' => $run->session_id ?: $run->id,
-                'generation_no' => $snapshot['generation_no'], 'candidate_hash' => $snapshot['candidate_hash'],
-                'source_hash' => $snapshot['source_hash'], 'rubric_version' => config('ai.scoring.rubric_version'),
-                'prompt_version' => config('ai.quality.prompt_version'), 'schema_version' => config('ai.quality.schema_version'),
-                'status' => 'queued', 'connection_snapshot_json' => $snapshot['connection'],
-                'expires_at' => now()->addDays((int) config('ai.quality.retention_days', 2)),
-            ]);
-        });
-
-        EvaluateAiArticleJob::dispatch($evaluation->id)->afterCommit();
+        if ($shouldDispatch) {
+            EvaluateAiArticleJob::dispatch($evaluation->id)->afterCommit();
+        }
 
         return $evaluation;
     }
@@ -260,28 +279,75 @@ final class ArticleQualityEvaluationService
      */
     public function summary(AiImport $run): array
     {
-        $evaluation = $this->latestFor($run);
+        $evaluation = $this->latestIdentity($run);
+        if (! $evaluation) {
+            return [
+                'status' => 'pending',
+                'evaluation_id' => null,
+                'generation_no' => (int) $run->generation_no,
+                'candidate_hash' => null,
+                'rubric_version' => config('ai.scoring.rubric_version'),
+                'score_total' => null,
+                'scores' => [],
+                'evidence' => [],
+                'source_references' => [],
+                'eligibility' => [
+                    'score' => false, 'source' => false, 'facts' => false, 'eligible' => false,
+                    'reasons' => ['Đang chờ kết quả chấm.'],
+                ],
+                'error_code' => null,
+                'error' => null,
+                'started_at' => null,
+                'completed_at' => null,
+                'expires_at' => null,
+                'expired' => false,
+            ];
+        }
+        $expired = $evaluation->status === 'ready'
+            && $evaluation->expires_at
+            && $evaluation->expires_at->isPast();
 
         return [
-            'status' => $evaluation?->status ?? 'pending',
+            'status' => $expired ? 'expired' : $evaluation->status,
             'evaluation_id' => $evaluation?->id,
             'generation_no' => $evaluation?->generation_no ?? (int) $run->generation_no,
             'candidate_hash' => $evaluation?->candidate_hash,
             'rubric_version' => $evaluation?->rubric_version ?? config('ai.scoring.rubric_version'),
-            'score_total' => $evaluation?->score_total,
-            'scores' => $evaluation?->scores_json ?? [],
-            'evidence' => $evaluation?->evidence_json ?? [],
-            'source_references' => $evaluation?->source_references_json ?? [],
-            'eligibility' => $evaluation?->eligibility_json ?? [
+            'score_total' => $expired ? null : $evaluation?->score_total,
+            'scores' => $expired ? [] : ($evaluation?->scores_json ?? []),
+            'evidence' => $expired ? [] : ($evaluation?->evidence_json ?? []),
+            'source_references' => $expired ? [] : ($evaluation?->source_references_json ?? []),
+            'eligibility' => $expired ? [
+                'score' => false, 'source' => false, 'facts' => false, 'eligible' => false,
+                'reasons' => ['Kết quả chấm đã hết hạn. Hãy chấm lại candidate.'],
+            ] : ($evaluation?->eligibility_json ?? [
                 'score' => false, 'source' => false, 'facts' => false, 'eligible' => false,
                 'reasons' => ['Đang chờ kết quả chấm.'],
-            ],
+            ]),
             'error_code' => $evaluation?->error_code,
             'error' => $evaluation?->error_message,
             'started_at' => $evaluation?->started_at?->toIso8601String(),
             'completed_at' => $evaluation?->completed_at?->toIso8601String(),
             'expires_at' => $evaluation?->expires_at?->toIso8601String(),
+            'expired' => $expired,
         ];
+    }
+
+    /**
+     * Lấy evaluation mới nhất đúng identity, không lọc trạng thái/hạn.
+     *
+     * Input: AiImport candidate.
+     * Output: evaluation mới nhất hoặc null.
+     * Side effect: chỉ đọc database.
+     */
+    private function latestIdentity(AiImport $run): ?AiArticleEvaluation
+    {
+        $snapshot = $this->snapshot($run);
+
+        return AiArticleEvaluation::query()->where('run_id', $run->id)
+            ->where('generation_no', $snapshot['generation_no'])
+            ->where('candidate_hash', $snapshot['candidate_hash'])
+            ->latest('created_at')->first();
     }
 
     /**
@@ -298,6 +364,8 @@ final class ArticleQualityEvaluationService
         return AiArticleEvaluation::query()->where('run_id', $run->id)
             ->where('generation_no', $snapshot['generation_no'])
             ->where('candidate_hash', $snapshot['candidate_hash'])
+            ->where('status', 'ready')
+            ->where('expires_at', '>', now())
             ->latest('created_at')->first();
     }
 
@@ -311,7 +379,7 @@ final class ArticleQualityEvaluationService
     public function assertEligible(AiImport $run): void
     {
         $evaluation = $this->latestFor($run);
-        abort_unless($evaluation && $evaluation->status === 'ready', 409, 'Bài chưa có kết quả chấm hợp lệ. Hãy chờ evaluator hoàn tất.');
+        abort_unless($evaluation && $evaluation->status === 'ready' && $evaluation->expires_at?->isFuture(), 409, 'Bài chưa có kết quả chấm hợp lệ hoặc kết quả đã hết hạn. Hãy chấm lại candidate.');
         $eligibility = (array) $evaluation->eligibility_json;
         abort_unless(($eligibility['eligible'] ?? false) === true, 409, implode(' ', (array) ($eligibility['reasons'] ?? ['Bài chưa đạt điều kiện duyệt.'])));
     }
@@ -495,7 +563,7 @@ final class ArticleQualityEvaluationService
         $scorePass = $output['score_total'] > (float) config('ai.scoring.threshold', 4);
         $factsPass = $output['factual_status'] === 'pass';
         $reasons = [];
-        if (! $scorePass) $reasons[] = 'Điểm tổng phải lớn hơn 4/5.';
+        if (! $scorePass) $reasons[] = 'Điểm tổng phải lớn hơn 4.00/5.00 (4.00 chưa đạt).';
         if (! $sourceAvailable || $output['source_references'] === []) $reasons[] = 'Chưa có đủ nguồn để đối chiếu.';
         if (! $factsPass) $reasons[] = 'Kiểm tra dữ kiện chưa đạt.';
 

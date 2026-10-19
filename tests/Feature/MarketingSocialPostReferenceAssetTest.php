@@ -17,10 +17,11 @@ use Tests\UsesIsolatedDatabase;
 
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Kiểm thử reference image của Product trong Social context.
+ * CHỨC NĂNG FILE: Kiểm thử reference image của Product và ranh giới Social.
  * =====================================================================
- * Product reference images đi qua MediaAssetUsageService, được trả theo thứ
- * tự chọn và được đưa vào context AI dưới dạng allowlist asset ID.
+ * Product reference images đi qua MediaAssetUsageService và được trả theo thứ
+ * tự chọn. Social Post không còn phụ thuộc Product nên context AI của post
+ * không chứa asset tham chiếu của Product.
  * =====================================================================
  */
 final class MarketingSocialPostReferenceAssetTest extends TestCase
@@ -40,8 +41,8 @@ final class MarketingSocialPostReferenceAssetTest extends TestCase
         parent::tearDown();
     }
 
-    /** Product giữ đúng thứ tự gallery và Social context chỉ nhận các ID đã attach. */
-    public function test_product_reference_images_are_serialized_and_ground_social_context(): void
+    /** Product giữ đúng thứ tự gallery và Social context không kéo asset của Product. */
+    public function test_product_reference_images_are_serialized_without_leaking_into_social_context(): void
     {
         $actor = User::factory()->create(['status' => 'active']);
         $actor->givePermissionTo('media.attach');
@@ -76,13 +77,13 @@ final class MarketingSocialPostReferenceAssetTest extends TestCase
         $campaign->products()->attach($product->id);
         $post = SocialPost::query()->create([
             'campaign_id' => $campaign->id,
-            'product_id' => $product->id,
             'created_by' => $actor->id,
         ]);
 
         $context = app(SocialPostContextBuilder::class)->build($post);
 
-        $this->assertSame([$assets[2]->id, $assets[0]->id, $assets[1]->id], $context['reference_asset_ids']);
+        $this->assertArrayNotHasKey('reference_asset_ids', $context);
+        $this->assertSame((int) $campaign->getKey(), $context['campaign']['id']);
         $this->assertNotEmpty($context['context_hash']);
     }
 

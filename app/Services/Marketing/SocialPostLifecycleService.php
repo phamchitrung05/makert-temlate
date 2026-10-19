@@ -263,9 +263,23 @@ final class SocialPostLifecycleService
      */
     private function ensureGenerationReady(SocialPost $post): void
     {
-        if (! app(SocialPostGenerationStateService::class)->isReady($post)) {
-            throw ValidationException::withMessages(['generation' => 'Social Post phải có caption và ảnh sẵn sàng trước khi review.']);
+        $state = app(SocialPostGenerationStateService::class);
+        if ($state->isReady($post)) {
+            return;
         }
+        $variant = $post->relationLoaded('variants')
+            ? $post->variants->firstWhere('platform', 'facebook')
+            : $post->variants()->where('platform', SocialPlatform::Facebook)->first();
+        $caption = $variant ? (string) data_get($variant->content_json, 'body') : (string) $post->caption;
+        if (! filled($caption)) {
+            throw ValidationException::withMessages(['generation' => 'Social Post chưa có caption. Hãy bổ sung caption trước khi review.']);
+        }
+        $readyImages = $variant
+            ? $variant->mediaAssetUsagesForField(MediaAssetField::SocialPostFacebookImages)->count()
+            : $post->mediaAssetUsagesForField(MediaAssetField::SocialPostImage)->count();
+        $missing = max(0, SocialPostGenerationStateService::MIN_GALLERY_IMAGES - $readyImages);
+
+        throw ValidationException::withMessages(['generation' => "Social Post cần thêm {$missing} ảnh (tối thiểu ".SocialPostGenerationStateService::MIN_GALLERY_IMAGES.' ảnh) trước khi review.']);
     }
 
     /** Input: post draft/cần sửa. Output: pending review hoặc lỗi validation. */

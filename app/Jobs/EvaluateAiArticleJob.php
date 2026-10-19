@@ -43,7 +43,7 @@ final class EvaluateAiArticleJob implements ShouldQueue
      */
     public function __construct(public readonly string $evaluationId)
     {
-        $this->tries = max(1, (int) config('ai.quality.max_attempts', 2));
+        $this->tries = 1;
         $this->timeout = max(60, (int) config('ai.quality.request_timeout', 45) + 30);
     }
 

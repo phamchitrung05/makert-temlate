@@ -61,6 +61,23 @@ final class AiOutputValidator
                     continue;
                 }
                 $value = $payload[$field];
+                if (($rules['type'] ?? '') === 'string_list') {
+                    if (is_string($value)) {
+                        $trimmed = trim($value);
+                        if ($trimmed === '') {
+                            $value = [];
+                        } elseif (str_contains($trimmed, ',')) {
+                            $value = array_values(array_filter(array_map('trim', explode(',', $trimmed)), static fn (string $item): bool => $item !== ''));
+                        } else {
+                            $value = array_values(array_filter(preg_split('/\s+/u', $trimmed) ?: [], static fn (string $item): bool => $item !== ''));
+                        }
+                    } elseif (is_array($value) && ! array_is_list($value)) {
+                        $value = array_values($value);
+                    }
+                }
+                if (($rules['type'] ?? '') === 'integer' && is_string($value) && ctype_digit(trim($value))) {
+                    $value = (int) trim($value);
+                }
                 $typeValid = match ($rules['type'] ?? '') {
                     'string' => is_string($value),
                     'boolean' => is_bool($value),
@@ -84,8 +101,10 @@ final class AiOutputValidator
                     }
                     if (($rules['type'] ?? '') === 'string_list') {
                         $value = array_values(array_unique(array_map('trim', $value)));
-                        if (count($value) > (int) ($rules['max_items'] ?? PHP_INT_MAX)
-                            || array_filter($value, static fn (string $item): bool => $item === '' || mb_strlen($item) > (int) ($rules['item_max'] ?? PHP_INT_MAX)) !== []) {
+                        if (isset($rules['max_items']) && count($value) > (int) $rules['max_items']) {
+                            $value = array_slice($value, 0, (int) $rules['max_items']);
+                        }
+                        if (array_filter($value, static fn (string $item): bool => $item === '' || mb_strlen($item) > (int) ($rules['item_max'] ?? PHP_INT_MAX)) !== []) {
                             $errors[] = ['group' => $group, 'field' => $field, 'reason' => 'invalid_value'];
 
                             continue;

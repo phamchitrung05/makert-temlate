@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\DB;
  */
 final class SocialPostGenerationStateService
 {
+    public const MIN_GALLERY_IMAGES = 3;
     /**
      * Đồng bộ trạng thái aggregate từ hai branch AI hiện tại.
      *
@@ -63,7 +64,7 @@ final class SocialPostGenerationStateService
                 ?? ($current->caption ? 'ready' : null);
             $readyImages = $variant?->mediaAssetUsagesForField(\App\Enums\MediaAssetField::SocialPostFacebookImages)->count() ?? 0;
             $imageStatus = $variant
-                ? ($readyImages >= 3
+                ? ($readyImages >= self::MIN_GALLERY_IMAGES
                     ? 'ready'
                     : ($image?->status && in_array($image?->status, ['failed', 'cancelled', 'expired'], true)
                         ? $image->status
@@ -71,7 +72,7 @@ final class SocialPostGenerationStateService
                 : ($image?->status
                     ?? ($imagePrompt
                         ? (in_array($imagePrompt->status, ['failed', 'cancelled', 'expired'], true) ? $imagePrompt->status : 'processing')
-                        : ($current->mediaAssetUsagesForField(\App\Enums\MediaAssetField::SocialPostImage)->exists() ? 'ready' : null)));
+                        : ($current->mediaAssetUsagesForField(\App\Enums\MediaAssetField::SocialPostImage)->count() >= self::MIN_GALLERY_IMAGES ? 'ready' : null)));
             $status = $this->statusFor($captionStatus, $imageStatus);
             $current->forceFill(['generation_status' => $status])->save();
 
@@ -120,11 +121,11 @@ final class SocialPostGenerationStateService
         if ($variant) {
             return $post->generation_status === SocialPostGenerationStatus::Ready
                 && filled(data_get($variant->content_json, 'body'))
-                && $variant->mediaAssetUsagesForField(\App\Enums\MediaAssetField::SocialPostFacebookImages)->count() >= 3;
+                && $variant->mediaAssetUsagesForField(\App\Enums\MediaAssetField::SocialPostFacebookImages)->count() >= self::MIN_GALLERY_IMAGES;
         }
 
         return $post->generation_status === SocialPostGenerationStatus::Ready
             && filled($post->caption)
-            && $post->mediaAssetUsagesForField(\App\Enums\MediaAssetField::SocialPostImage)->exists();
+            && $post->mediaAssetUsagesForField(\App\Enums\MediaAssetField::SocialPostImage)->count() >= self::MIN_GALLERY_IMAGES;
     }
 }

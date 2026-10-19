@@ -13,6 +13,11 @@ use Illuminate\Validation\Rule;
  * permission posts.manage. Request chỉ kiểm tra dữ liệu điều khiển apply;
  * candidate/provider/model vẫn do backend lấy từ database.
  *
+ * LEGACY: endpoint apply cho phép `target_id` để cập nhật Post đã tồn tại và
+ * được giữ lại chỉ để tương thích dữ liệu cũ. Luồng chuẩn hiện tại là approve
+ * (AiCandidateApproveRequest), tạo draft mới và cấm `target_id`. Không thêm
+ * hành vi mới vào apply; dùng `ai-social:purge` để dọn dữ liệu AI cũ.
+ *
  * CÁC HÀM/METHOD TRONG FILE:
  * - authorize(): giữ boundary permission ở route/controller.
  * - rules(): giới hạn field, target và optimistic-lock timestamp.

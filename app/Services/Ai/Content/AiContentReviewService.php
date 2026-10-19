@@ -14,6 +14,7 @@ use App\Services\Ai\Content\Quality\ArticleQualityEvaluationService;
 use App\Services\Ai\Images\AiThumbnailService;
 use App\Services\Ai\Provenance\AiProvenanceService;
 use App\Services\Ai\Registries\TargetRegistry;
+use App\Services\Marketing\SocialPostGenerationStateService;
 use App\Services\Marketing\SocialPostLifecycleService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -338,8 +339,11 @@ final class AiContentReviewService
             $run = AiImport::query()->lockForUpdate()->findOrFail($candidate->id);
             $this->authorize($actor, $run);
             $this->assertPending($run, $data);
-            if ($this->quality->requiresGate($run)) {
+            $requiresGate = $this->quality->requiresGate($run);
+            if ($requiresGate && $this->quality->supports($run)) {
                 $this->quality->assertEligible($run);
+            } elseif ($requiresGate) {
+                abort(409, 'Candidate không đủ source blocks hoặc generated_fields để chấm quality. Hãy tạo candidate mới trước khi duyệt.');
             }
             abort_if(AiThumbnailService::pending($run), 409, 'Thumbnail đang được tạo. Hãy chờ ảnh hoặc hủy tác vụ ảnh trước khi duyệt.');
             $outputs = (array) data_get($run->result_json, 'draft', []);
@@ -412,8 +416,24 @@ final class AiContentReviewService
             $run->forceFill(['applied_target_id' => $post->getKey(), 'applied_fields' => $appliedFields])->save();
             $run->refresh();
             $this->recordDecision($run, $actor, 'approved', $data['reason'] ?? null, false);
+            $post->refresh();
+            $generation = app(SocialPostGenerationStateService::class);
+            $generation->refresh($post, (int) $post->generation_no);
+            $post->refresh();
+            $variant = $post->variants()->where('platform', 'facebook')->first();
+            $readyImages = $variant
+                ? $variant->mediaAssetUsagesForField(\App\Enums\MediaAssetField::SocialPostFacebookImages)->count()
+                : 0;
+            $missingImages = max(0, SocialPostGenerationStateService::MIN_GALLERY_IMAGES - $readyImages);
 
-            return ['social_post_id' => $post->getKey(), 'fields' => $appliedFields, 'review' => self::state($run)];
+            return [
+                'social_post_id' => $post->getKey(),
+                'fields' => $appliedFields,
+                'generation_status' => $post->generation_status?->value ?? (string) $post->generation_status,
+                'gallery_ready' => $missingImages === 0,
+                'missing' => $missingImages > 0 ? "Cần thêm {$missingImages} ảnh trước khi submit review." : null,
+                'review' => self::state($run),
+            ];
         });
     }
 

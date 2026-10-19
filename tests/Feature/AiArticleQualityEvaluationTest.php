@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AiArticleEvaluation;
 use App\Models\AiImport;
 use App\Models\User;
+use App\Services\Marketing\SocialPostLifecycleService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Queue;
@@ -40,7 +41,7 @@ class AiArticleQualityEvaluationTest extends TestCase
     private function credentials(): array
     {
         $user = User::factory()->create(['status' => 'active']);
-        $user->givePermissionTo(['posts.manage', 'media.attach']);
+        $user->givePermissionTo(['posts.manage', 'media.attach', 'social_posts.create']);
         app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
         Auth::forgetGuards();
 
@@ -124,5 +125,126 @@ class AiArticleQualityEvaluationTest extends TestCase
         $this->assertDatabaseHas('ai_article_archives', ['run_id' => $run->id]);
         $archive = \App\Models\AiArticleArchive::query()->where('run_id', $run->id)->firstOrFail();
         $this->assertSame(4.4, (float) data_get($archive->lifecycle_json, 'quality_evaluation.score_total'));
+    }
+
+    /** Kết quả ready quá hạn không được dùng lại để duyệt và phải báo expired. */
+    public function test_expired_evaluation_is_not_eligible_and_is_reported_as_expired(): void
+    {
+        [$actor, $token] = $this->credentials();
+        $run = $this->candidate($actor);
+        $evaluation = app(\App\Services\Ai\Content\Quality\ArticleQualityEvaluationService::class)->schedule($run);
+        $evaluation->forceFill([
+            'status' => 'ready',
+            'score_total' => 4.8,
+            'scores_json' => ['accuracy' => 4.8],
+            'source_references_json' => ['S001'],
+            'eligibility_json' => ['score' => true, 'source' => true, 'facts' => true, 'eligible' => true, 'reasons' => []],
+            'expires_at' => now()->subMinute(),
+            'completed_at' => now()->subMinutes(2),
+        ])->save();
+
+        $this->withToken($token)->getJson('/api/admin/ai-agent/candidates/'.$run->id.'/quality')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'expired')
+            ->assertJsonPath('data.score_total', null)
+            ->assertJsonPath('data.expired', true)
+            ->assertJsonPath('data.eligibility.eligible', false)
+            ->assertJsonPath('data.eligibility.reasons.0', 'Kết quả chấm đã hết hạn. Hãy chấm lại candidate.');
+        $this->withToken($token)->postJson('/api/admin/ai-agent/candidates/'.$run->id.'/approve', [
+            ...$this->versions($run), 'fields' => ['title'],
+        ])->assertConflict();
+    }
+
+    /** Approve chỉ tạo draft mới và từ chối target_id legacy. */
+    public function test_approve_rejects_target_id(): void
+    {
+        [$actor, $token] = $this->credentials();
+        $run = $this->candidate($actor);
+
+        $this->withToken($token)->postJson('/api/admin/ai-agent/candidates/'.$run->id.'/approve', [
+            ...$this->versions($run), 'fields' => ['title'], 'target_id' => 1,
+        ])->assertStatus(422)->assertJsonValidationErrors(['target_id']);
+    }
+
+    /** Rescore legacy candidate thiếu metadata AI phải trả lỗi hướng dẫn rõ ràng. */
+    public function test_rescore_rejects_missing_ai_content_field(): void
+    {
+        [$actor, $token] = $this->credentials();
+        $run = $this->candidate($actor);
+        $run->forceFill(['result_json' => [
+            'generation_meta' => ['mode' => 'ai', 'generated_fields' => ['title']],
+            'draft' => ['title' => 'Bài kiểm thử', 'content_html' => '<p>Nội dung.</p>'],
+        ]])->save();
+
+        $this->withToken($token)->postJson('/api/admin/ai-agent/candidates/'.$run->id.'/quality/rescore')
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Candidate không có generated field content_html do AI. Hãy tạo candidate mới.');
+    }
+
+    /** Rescore candidate không có source blocks phải bị từ chối trước khi xếp evaluator. */
+    public function test_rescore_rejects_missing_source_blocks(): void
+    {
+        [$actor, $token] = $this->credentials();
+        $run = $this->candidate($actor);
+        $run->forceFill([
+            'source_meta_json' => ['article_source' => ['content_html' => '<p>Nguồn.</p>', 'blocks' => []]],
+        ])->save();
+
+        $this->withToken($token)->postJson('/api/admin/ai-agent/candidates/'.$run->id.'/quality/rescore')
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Candidate thiếu article source blocks nên evaluator không thể chấm. Hãy tạo candidate mới.');
+    }
+
+    /** Service retry không vượt max_attempts và job không tự cộng retry lần hai. */
+    public function test_retry_cap_and_job_attempt_policy(): void
+    {
+        [$actor] = $this->credentials();
+        $run = $this->candidate($actor);
+        $evaluation = app(\App\Services\Ai\Content\Quality\ArticleQualityEvaluationService::class)->schedule($run);
+        $evaluation->forceFill(['status' => 'running', 'attempt' => 2])->save();
+        config(['ai.quality.max_attempts' => 2]);
+
+        $service = app(\App\Services\Ai\Content\Quality\ArticleQualityEvaluationService::class);
+        $method = new \ReflectionMethod($service, 'requeue');
+        $method->setAccessible(true);
+        $method->invoke($service, $evaluation->id, new \RuntimeException('temporary'));
+
+        $this->assertSame('failed', $evaluation->fresh()->status);
+        $this->assertSame(2, (int) $evaluation->fresh()->attempt);
+        $this->assertSame(1, (new \App\Jobs\EvaluateAiArticleJob($evaluation->id))->tries);
+    }
+
+    /** Social caption-only được duyệt ở bước AI, không qua article scoring; thiếu 3 ảnh thì submit review bị chặn. */
+    public function test_social_caption_only_approve_reports_missing_gallery(): void
+    {
+        [$actor, $token] = $this->credentials();
+        $run = AiImport::query()->create([
+            'created_by' => $actor->id, 'status' => 'ready', 'operation' => 'social_caption',
+            'provider' => 'deterministic', 'source_url' => '', 'source_text' => '',
+            'input_json' => ['target_type' => 'social_post', 'generation_no' => 0],
+            'result_json' => ['draft' => ['content_html' => '<p>Caption Facebook.</p>']],
+            'expires_at' => now()->addDays(2), 'completed_at' => now(),
+        ]);
+
+        $response = $this->withToken($token)->postJson('/api/admin/ai-agent/candidates/'.$run->id.'/approve', [
+            ...$this->versions($run), 'fields' => ['social_content'],
+        ]);
+        $response->assertOk()
+            ->assertJsonPath('data.gallery_ready', false)
+            ->assertJsonPath('data.missing', 'Cần thêm 3 ảnh trước khi submit review.');
+
+        $postId = $response->json('data.social_post_id');
+        $this->assertNotNull($postId);
+        $this->assertDatabaseCount('ai_article_evaluations', 0);
+
+        try {
+            app(SocialPostLifecycleService::class)->transition(\App\Models\SocialPost::query()->findOrFail($postId), 'submit', $actor);
+            $this->fail('Submit phải bị chặn khi thiếu gallery.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->assertSame(
+                'Social Post cần thêm 3 ảnh (tối thiểu 3 ảnh) trước khi review.',
+                $e->errors()['generation'][0] ?? ''
+            );
+        }
     }
 }

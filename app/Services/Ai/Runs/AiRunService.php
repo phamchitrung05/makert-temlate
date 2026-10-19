@@ -108,7 +108,9 @@ final class AiRunService
             );
         }
         $input['pipeline_snapshot'] ??= (array) config('ai.content', []);
-        $input['pipeline_snapshot']['pipeline'] = 'three_step';
+        if (($input['target_type'] ?? 'post') === 'post') {
+            $input['pipeline_snapshot']['pipeline'] = 'three_step';
+        }
         $input['pipeline_snapshot']['output_definitions'] ??= (array) config('ai.agent.output_definitions', []);
         $input['pipeline_snapshot']['requirements'] = (array) config('ai.requirements', []);
         $input['pipeline_snapshot']['seo'] = (array) config('ai.seo', []);

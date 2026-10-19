@@ -641,7 +641,8 @@ class AiImportController extends Controller
             return $run;
         });
 
-        if ($quality->supports($run)) {
+        $run = $run->fresh();
+        if ($run && $quality->supports($run)) {
             $quality->schedule($run, true);
         }
 

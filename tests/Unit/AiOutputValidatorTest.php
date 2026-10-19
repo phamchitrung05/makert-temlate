@@ -178,6 +178,46 @@ final class AiOutputValidatorTest extends TestCase
 
     /**
      * =====================================================================
+     * CHỨC NĂNG: Kiểm thử chuẩn hóa string_list (hashtags) và integer chuỗi số
+     * =====================================================================
+     *
+     * INPUT:
+     * - Payload chứa hashtags dạng chuỗi phân tách bởi khoảng trắng hoặc dấu phẩy,
+     *   và integer dạng numeric string.
+     *
+     * OUTPUT:
+     * - Mảng danh sách string hợp lệ và integer đúng kiểu.
+     *
+     * =====================================================================
+     */
+    public function test_string_list_and_numeric_values_are_normalized(): void
+    {
+        $validator = new AiOutputValidator;
+
+        // Space-separated hashtags string
+        $result = $validator->validate([
+            'content_html' => '<p>Post text</p>',
+            'hashtags' => '#marketing #social #growth',
+        ], ['social_content']);
+        $this->assertSame(['#marketing', '#social', '#growth'], $result['hashtags']);
+
+        // Comma-separated hashtags string
+        $result = $validator->validate([
+            'content_html' => '<p>Post text</p>',
+            'hashtags' => '#trend1, #trend2, #trend3',
+        ], ['social_content']);
+        $this->assertSame(['#trend1', '#trend2', '#trend3'], $result['hashtags']);
+
+        // Integer numeric string in social_gallery
+        $result = $validator->validate([
+            'gallery_prompt' => 'A photo of a desk',
+            'slot_count' => '3',
+        ], ['social_gallery']);
+        $this->assertSame(3, $result['slot_count']);
+    }
+
+    /**
+     * =====================================================================
      * INPUT: Tham số fixture hoặc dữ liệu test được caller chuẩn bị.
      * OUTPUT: Kết quả/exception giả lập để kiểm contract; HTTP/queue dùng fake trong ca test.
      * SIDE EFFECT: chỉ xử lý fixtures hoặc database test đã cô lập.
