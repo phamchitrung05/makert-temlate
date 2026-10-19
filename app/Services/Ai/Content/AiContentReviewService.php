@@ -391,7 +391,7 @@ final class AiContentReviewService
 
         $data['expected_version'] ??= hash('sha256', json_encode(data_get($candidate->result_json, 'draft', [])));
 
-        return DB::transaction(function () use ($actor, $candidate, $data): array {
+        return DB::transaction(function () use ($actor, $candidate, $data, $fields): array {
             $run = AiImport::query()->lockForUpdate()->findOrFail($candidate->id);
             $this->authorize($actor, $run);
             $this->assertPending($run, $data);
