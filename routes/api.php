@@ -14,31 +14,31 @@
 
 use App\Http\Controllers\Admin\AccessPermissionController;
 use App\Http\Controllers\Admin\AdminUserRoleController;
-use App\Http\Controllers\Admin\AiContentReviewController;
 use App\Http\Controllers\Admin\AiArticleArchiveController;
+use App\Http\Controllers\Admin\AiContentReviewController;
 use App\Http\Controllers\Admin\AiImageGenerationController;
 use App\Http\Controllers\Admin\AiImportController;
 use App\Http\Controllers\Admin\AiProviderController;
 use App\Http\Controllers\Admin\AiSourcePreviewController;
-use App\Http\Controllers\Admin\AiWritingProfileAnalysisController;
 use App\Http\Controllers\Admin\AiTaskRunController;
+use App\Http\Controllers\Admin\AiWritingProfileAnalysisController;
 use App\Http\Controllers\Admin\AiWritingProfileController;
 use App\Http\Controllers\Admin\CategoryController;
-use App\Http\Controllers\Admin\MediaAssetController;
-use App\Http\Controllers\Admin\Marketing\SocialAccountController;
 use App\Http\Controllers\Admin\Marketing\CampaignController;
 use App\Http\Controllers\Admin\Marketing\ProductController;
+use App\Http\Controllers\Admin\Marketing\SocialAccountController;
 use App\Http\Controllers\Admin\Marketing\SocialPostController;
+use App\Http\Controllers\Admin\MediaAssetController;
 use App\Http\Controllers\Admin\PostController;
 use App\Http\Controllers\Admin\ResourceController;
-use App\Http\Controllers\Admin\ResourceVersionController;
 use App\Http\Controllers\Admin\ResourceTemplateController;
-use App\Http\Controllers\Admin\TemplateShareController;
+use App\Http\Controllers\Admin\ResourceVersionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SlugPreviewController;
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\TechnologyController;
+use App\Http\Controllers\Admin\TemplateShareController;
 use App\Http\Controllers\Auth\AdminTokenController;
 use App\Http\Controllers\Auth\SanctumTokenController;
 use App\Http\Controllers\HealthController;
@@ -51,7 +51,7 @@ Route::get('/health', HealthController::class)->name('api.health');
 Route::post('/admin/login', [AdminTokenController::class, 'login'])
     ->middleware('throttle:admin-login');
 
-Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
+Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum,admin'])
     ->prefix('admin')
     ->group(function (): void {
         Route::get('/me', [AdminTokenController::class, 'me']);
@@ -74,6 +74,9 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
             ->whereNumber('role')
             ->middleware('permission:users.manage|roles.delete,admin');
         Route::middleware('permission:users.manage,admin')->group(function (): void {
+            Route::post('/access/users', [AdminUserRoleController::class, 'store']);
+            Route::patch('/access/users/{user}', [AdminUserRoleController::class, 'updateAccount'])->whereNumber('user');
+            Route::delete('/access/users/{user}', [AdminUserRoleController::class, 'destroy'])->whereNumber('user');
             Route::patch('/access/users/{user}/roles', [AdminUserRoleController::class, 'update'])->whereNumber('user');
         });
 
@@ -107,7 +110,7 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
         });
 
         Route::post('/media-assets', [MediaAssetController::class, 'store'])
-            ->middleware('permission:media.upload,admin')
+            ->middleware(['permission:media.upload,admin', 'throttle:30,1'])
             ->name('admin.media-assets.store');
         Route::patch('/media-assets/{mediaAsset}', [MediaAssetController::class, 'update'])
             ->whereNumber('mediaAsset')
@@ -221,8 +224,8 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
                 ->whereUuid('share');
         });
 
-        // Quyền tài nguyên được đọc từ config và kiểm tra tại từng AI endpoint.
-        Route::group([], function (): void {
+        // Gate registry kiểm quyền module; từng endpoint tiếp tục kiểm target và owner.
+        Route::middleware('can:use-ai')->group(function (): void {
             Route::get('/ai/tasks', [AiTaskRunController::class, 'index']);
             Route::get('/ai/tasks/{taskRun}', [AiTaskRunController::class, 'show'])->whereUuid('taskRun');
             Route::post('/ai/tasks/{taskRun}/cancel', [AiTaskRunController::class, 'cancel'])->whereUuid('taskRun');
@@ -240,16 +243,16 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
             Route::delete('/ai-agent/sessions/{aiImport}', [AiImportController::class, 'destroy'])->whereUuid('aiImport');
             Route::patch('/ai-agent/candidates/{aiImport}', [AiImportController::class, 'updateCandidate'])->whereUuid('aiImport');
             Route::post('/ai-agent/candidates/{aiImport}/apply', [AiImportController::class, 'apply'])->whereUuid('aiImport');
+            Route::get('/ai-agent/candidates/{aiImport}/review', [AiContentReviewController::class, 'show'])->whereUuid('aiImport');
+            Route::get('/ai-agent/candidates/{aiImport}/review/history', [AiContentReviewController::class, 'history'])->whereUuid('aiImport');
+            Route::post('/ai-agent/candidates/{aiImport}/approve', [AiContentReviewController::class, 'approve'])->whereUuid('aiImport');
+            Route::post('/ai-agent/candidates/{aiImport}/reject', [AiContentReviewController::class, 'reject'])->whereUuid('aiImport');
             Route::middleware('permission:posts.manage,admin')->group(function (): void {
                 Route::get('/ai-agent/approved-archives', [AiArticleArchiveController::class, 'index']);
                 Route::get('/ai-agent/approved-archives/{aiArticleArchive}', [AiArticleArchiveController::class, 'show'])
                     ->whereNumber('aiArticleArchive');
-                 Route::get('/ai-agent/candidates/{aiImport}/review', [AiContentReviewController::class, 'show'])->whereUuid('aiImport');
-                 Route::get('/ai-agent/candidates/{aiImport}/quality', [AiContentReviewController::class, 'quality'])->whereUuid('aiImport');
-                 Route::post('/ai-agent/candidates/{aiImport}/quality/rescore', [AiContentReviewController::class, 'rescore'])->whereUuid('aiImport');
-                 Route::get('/ai-agent/candidates/{aiImport}/review/history', [AiContentReviewController::class, 'history'])->whereUuid('aiImport');
-                Route::post('/ai-agent/candidates/{aiImport}/approve', [AiContentReviewController::class, 'approve'])->whereUuid('aiImport');
-                Route::post('/ai-agent/candidates/{aiImport}/reject', [AiContentReviewController::class, 'reject'])->whereUuid('aiImport');
+                Route::get('/ai-agent/candidates/{aiImport}/quality', [AiContentReviewController::class, 'quality'])->whereUuid('aiImport');
+                Route::post('/ai-agent/candidates/{aiImport}/quality/rescore', [AiContentReviewController::class, 'rescore'])->whereUuid('aiImport');
             });
         });
 
@@ -382,15 +385,15 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
         Route::post('/social-posts/{socialPost}/regenerate-image', [SocialPostController::class, 'regenerateImage'])
             ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
         Route::put('/social-posts/{socialPost}/variants/facebook/content', [SocialPostController::class, 'updateFacebookContent'])
-              ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
+            ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
         Route::post('/social-posts/{socialPost}/variants/facebook/generate-content', [SocialPostController::class, 'generateFacebookContent'])
-              ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
+            ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
         Route::post('/social-posts/{socialPost}/variants/facebook/generate-images', [SocialPostController::class, 'generateFacebookImages'])
-              ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
+            ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
         Route::post('/social-posts/{socialPost}/variants/facebook/images/replace', [SocialPostController::class, 'replaceFacebookImages'])
-              ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
+            ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
         Route::post('/social-posts/{socialPost}/variants/facebook/images/reorder', [SocialPostController::class, 'reorderFacebookImages'])
-              ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
+            ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
         Route::post('/social-posts/{socialPost}/submit-review', [SocialPostController::class, 'submitReview'])
             ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.review,admin');
         Route::post('/social-posts/{socialPost}/approve', [SocialPostController::class, 'approve'])
@@ -412,6 +415,7 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum'])
     });
 
 Route::get('/admin/social-accounts/facebook/callback', [SocialAccountController::class, 'callback'])
+    ->middleware('throttle:20,1')
     ->name('admin.social-accounts.facebook.callback');
 
 Route::middleware(['web', 'auth:customer', 'account.active:customer'])

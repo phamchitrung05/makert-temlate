@@ -41,8 +41,9 @@ return new class extends Migration
     {
         Schema::create('resource_version_template_screens', function (Blueprint $table): void {
             $table->id();
+            // Đặt tên FK ngắn vì tên tự sinh vượt giới hạn 64 ký tự của MySQL.
             $table->foreignId('resource_version_template_id')
-                ->constrained('resource_version_templates')
+                ->constrained('resource_version_templates', indexName: 'rv_template_screens_template_fk')
                 ->cascadeOnDelete();
             $table->string('slug', 120);
             $table->string('title', 160);

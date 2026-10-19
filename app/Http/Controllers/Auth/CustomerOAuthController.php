@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\CustomerIdentity;
+use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\InvalidStateException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * =====================================================================
@@ -65,7 +67,8 @@ class CustomerOAuthController extends Controller
      *
      * OUTPUT:
      * - RedirectResponse về /account sau khi login thành công
-     * - HttpException 403/404/409 khi provider, identity hoặc customer không hợp lệ
+     * - Redirect /login kèm thông báo khi state/provider/email collision hoặc tài khoản bị khóa.
+     * - HttpException 404 khi provider không được hỗ trợ.
      *
      * SIDE EFFECT:
      * - Có thể tạo customer và customer_identity trong transaction
@@ -76,16 +79,35 @@ class CustomerOAuthController extends Controller
     {
         abort_unless(in_array($provider, $this->supportedProviders(), true), 404);
 
-        $providerUser = Socialite::driver($provider)->user();
-        $customer = $this->resolveCustomer($provider, (string) $providerUser->id, [
-            'email' => $providerUser->email,
-            'name' => $providerUser->name ?: $providerUser->nickname ?: 'Customer',
-            'provider_email' => $providerUser->email,
-            'provider_name' => $providerUser->name ?: $providerUser->nickname,
-            'provider_avatar_url' => $providerUser->avatar,
-        ]);
+        if ($request->filled('error')) {
+            return redirect('/login')->with('error', 'Bạn chưa cấp quyền đăng nhập. Hãy chọn lại phương thức đăng nhập.');
+        }
+        try {
+            $providerUser = Socialite::driver($provider)->user();
+        } catch (InvalidStateException) {
+            return redirect('/login')->with('error', 'Phiên đăng nhập đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.');
+        } catch (GuzzleException) {
+            return redirect('/login')->with('error', 'Không thể xác thực với nhà cung cấp. Vui lòng thử đăng nhập lại.');
+        }
+        try {
+            $customer = $this->resolveCustomer($provider, (string) $providerUser->id, [
+                'email' => $providerUser->email,
+                'name' => $providerUser->name ?: $providerUser->nickname ?: 'Customer',
+                'provider_email' => $providerUser->email,
+                'provider_name' => $providerUser->name ?: $providerUser->nickname,
+                'provider_avatar_url' => $providerUser->avatar,
+            ]);
+        } catch (HttpException $exception) {
+            if ($exception->getStatusCode() !== 409) {
+                throw $exception;
+            }
 
-        abort_unless($customer->isActive(), 403, 'Customer account is suspended.');
+            return redirect('/login')->with('error', 'Email này đã có tài khoản. Hãy đăng nhập bằng phương thức ban đầu rồi liên kết phương thức mới.');
+        }
+
+        if (! $customer->isActive()) {
+            return redirect('/login')->with('error', 'Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.');
+        }
 
         Auth::guard('customer')->login($customer, true);
         $request->session()->regenerate();

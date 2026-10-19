@@ -60,7 +60,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
         ]);
         $middleware->redirectGuestsTo(
-            fn (Request $request): ?string => $request->is('api/*') ? null : '/admin/login',
+            fn (Request $request): ?string => $request->is('api/*') ? null
+                : ($request->is('admin', 'admin/*') ? '/admin/login' : '/login'),
         );
     })
     ->withExceptions(function (Exceptions $exceptions): void {

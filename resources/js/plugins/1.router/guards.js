@@ -1,32 +1,28 @@
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Kiểm phiên admin trước khi điều hướng route cần đăng nhập.
+ * CÁC HÀM/METHOD TRONG FILE: setupGuards() và callback beforeEach().
+ * INPUT/OUTPUT CỦA FILE (tổng thể): router/phiên admin -> cho phép hoặc chuyển route.
+ * =====================================================================
+ */
 import { useAdminAuthStore } from '@/stores/adminAuth'
 import { store } from '@/plugins/2.pinia'
 
+/** Input: Vue Router. Output: đăng ký guard phiên admin; có thể tải profile từ API. */
 export const setupGuards = router => {
-  // 👉 router.beforeEach
-  // Docs: https://router.vuejs.org/guide/advanced/navigation-guards.html#global-before-guards
+  // Input: route đích. Output: cho phép route public hoặc chuyển guest đến đăng nhập.
   router.beforeEach(async to => {
     const adminAuth = useAdminAuthStore(store)
 
     await adminAuth.initialize()
 
-    /*
-         * If it's a public route, continue navigation. This kind of pages are allowed to visited by login & non-login users. Basically, without any restrictions.
-         * Examples of public routes are, 404, under maintenance, etc.
-         */
+    // Route public dùng được cho cả guest và admin.
     if (to.meta.public)
       return
 
-    /**
-         * Check if user is logged in by checking if token & user data exists in local storage
-         * Feel free to update this logic to suit your needs
-         */
     const isLoggedIn = adminAuth.isAuthenticated
 
-    /*
-          If user is logged in and is trying to access login like page, redirect to home
-          else allow visiting the page
-          (WARN: Don't allow executing further by return statement because next code will check for permissions)
-         */
+    // Admin đã đăng nhập không quay lại trang dành riêng cho guest.
     if (to.meta.unauthenticatedOnly) {
       if (isLoggedIn)
         return '/'

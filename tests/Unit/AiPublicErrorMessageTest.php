@@ -12,6 +12,7 @@ use Tests\TestCase;
  * CÁC HÀM/METHOD TRONG FILE:
  * - test_quality_reason_has_priority_over_generic_code(): ưu tiên lý do cụ thể.
  * - test_known_code_returns_vietnamese_guidance(): diễn giải mã lỗi kỹ thuật.
+ * - test_quota_code_without_message_keeps_actionable_guidance(): kiểm quota trên list DTO.
  * - test_safe_bounded_message_is_preserved(): giữ message domain đã bounded.
  * - test_unknown_code_uses_task_fallback(): fallback theo loại task.
  * INPUT/OUTPUT CỦA CLASS (tổng thể): mã/lý do lỗi -> câu tiếng Việt an toàn.
@@ -55,6 +56,15 @@ final class AiPublicErrorMessageTest extends TestCase
         $message = AiPublicErrorMessage::message('AI_PROVIDER_TIMEOUT');
 
         $this->assertStringContainsString('phản hồi quá lâu', $message);
+    }
+
+    /** Input: list DTO chỉ có mã 429, không có provider message. Output: hướng xử lý quota vẫn cụ thể. */
+    public function test_quota_code_without_message_keeps_actionable_guidance(): void
+    {
+        $this->assertSame(
+            'Dịch vụ AI đã hết quota hoặc đạt giới hạn yêu cầu. Hãy kiểm tra hạn mức và thử lại sau.',
+            AiPublicErrorMessage::message('AI_PROVIDER_HTTP_429'),
+        );
     }
 
     /**

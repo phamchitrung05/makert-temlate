@@ -39,14 +39,13 @@ final class AiTaskSchemaValidator
 
     /**
      * =====================================================================
-     * Input: giá trị, schema, path và danh sách lỗi truyền tham chiếu.
-     * Output: thêm lỗi type/required/enum/pattern/length/extra; không lưu nội dung nguồn.
+     * Input: giá trị và tên kiểu dữ liệu.
+     * Output: boolean kiểu hợp lệ; không có side effect.
      * =====================================================================
      */
-    private function check(mixed $value, array $schema, string $path, array &$errors): void
+    private function matchesType(mixed $value, string $type): bool
     {
-        $type = $schema['type'] ?? null;
-        $valid = match ($type) {
+        return match ($type) {
             'object' => is_array($value) && ($value === [] || ! array_is_list($value)),
             'array' => is_array($value) && array_is_list($value),
             'string' => is_string($value) && mb_check_encoding($value, 'UTF-8'),
@@ -56,24 +55,60 @@ final class AiTaskSchemaValidator
             'null' => $value === null,
             default => false,
         };
+    }
+
+    /**
+     * =====================================================================
+     * Input: giá trị, schema, path và danh sách lỗi truyền tham chiếu.
+     * Output: thêm lỗi type/required/enum/pattern/length/extra; không lưu nội dung nguồn.
+     * =====================================================================
+     */
+    private function check(mixed $value, array $schema, string $path, array &$errors): void
+    {
+        $rawType = $schema['type'] ?? null;
+        $types = is_array($rawType) ? $rawType : (is_string($rawType) ? [$rawType] : []);
+        if (! empty($schema['nullable']) && ! in_array('null', $types, true)) {
+            $types[] = 'null';
+        }
+
+        $valid = false;
+        foreach ($types as $expectedType) {
+            if ($this->matchesType($value, $expectedType)) {
+                $valid = true;
+                break;
+            }
+        }
+
         if (! $valid) {
             $errors[] = ['field' => $path, 'reason' => 'invalid_type'];
 
             return;
         }
+
+        if ($value === null) {
+            return;
+        }
+
         if (isset($schema['enum']) && ! in_array($value, $schema['enum'], true)) {
             $errors[] = ['field' => $path, 'reason' => 'invalid_value'];
         }
-        if ($type === 'string' && (mb_strlen($value) < ($schema['minLength'] ?? 0) || mb_strlen($value) > ($schema['maxLength'] ?? 200000))) {
-            $errors[] = ['field' => $path, 'reason' => 'invalid_length'];
+
+        if (is_string($value)) {
+            if (mb_strlen($value) < ($schema['minLength'] ?? 0) || mb_strlen($value) > ($schema['maxLength'] ?? 200000)) {
+                $errors[] = ['field' => $path, 'reason' => 'invalid_length'];
+            }
+            if (isset($schema['pattern']) && preg_match('~'.str_replace('~', '\\~', $schema['pattern']).'~u', $value) !== 1) {
+                $errors[] = ['field' => $path, 'reason' => 'invalid_value'];
+            }
         }
-        if ($type === 'string' && isset($schema['pattern']) && preg_match('~'.str_replace('~', '\\~', $schema['pattern']).'~u', $value) !== 1) {
-            $errors[] = ['field' => $path, 'reason' => 'invalid_value'];
+
+        if (is_int($value) || is_float($value)) {
+            if ($value < ($schema['minimum'] ?? -INF) || $value > ($schema['maximum'] ?? INF)) {
+                $errors[] = ['field' => $path, 'reason' => 'invalid_value'];
+            }
         }
-        if (in_array($type, ['number', 'integer'], true) && ($value < ($schema['minimum'] ?? -INF) || $value > ($schema['maximum'] ?? INF))) {
-            $errors[] = ['field' => $path, 'reason' => 'invalid_value'];
-        }
-        if ($type === 'object') {
+
+        if (in_array('object', $types, true) && is_array($value) && ($value === [] || ! array_is_list($value))) {
             foreach ($schema['required'] ?? [] as $field) {
                 if (! array_key_exists($field, $value)) {
                     $errors[] = ['field' => $path.'.'.$field, 'reason' => 'missing'];
@@ -87,7 +122,8 @@ final class AiTaskSchemaValidator
                 }
             }
         }
-        if ($type === 'array') {
+
+        if (in_array('array', $types, true) && is_array($value) && array_is_list($value)) {
             if (count($value) < ($schema['minItems'] ?? 0) || count($value) > ($schema['maxItems'] ?? 1000)) {
                 $errors[] = ['field' => $path, 'reason' => 'invalid_length'];
             }

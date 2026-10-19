@@ -152,7 +152,7 @@ watch(() => [props.modelValue, props.postId], load, { immediate: true })
                 <VCardTitle class="text-body-1">
                   Facebook preview
                 </VCardTitle>
-                <VCardSubtitle>{{ detail.product?.name || 'Social Post' }}</VCardSubtitle>
+                <VCardSubtitle>{{ detail.campaign?.name || 'Social Post' }}</VCardSubtitle>
               </VCardItem>
               <VCardText>
                 <div class="text-subtitle-1 font-weight-bold mb-2">

@@ -3,32 +3,28 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\AiCapability;
-use App\Enums\MediaAssetKind;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Ai\AiCandidateApplyRequest;
 use App\Http\Requests\Admin\Ai\AiCandidateUpdateRequest;
 use App\Http\Requests\Admin\Ai\AiImportRequest;
 use App\Http\Requests\Admin\Ai\AiSessionIndexRequest;
+use App\Http\Resources\Ai\AiImportResource;
 use App\Http\Resources\Ai\AiSessionSummaryResource;
-use App\Http\Resources\Media\MediaAssetResource;
 use App\Http\Responses\BaseResponse;
 use App\Models\AiArticleEvaluation;
 use App\Models\AiImport;
-use App\Models\AiTaskRun;
-use App\Models\MediaAsset;
 use App\Services\Ai\Content\AiContentReviewService;
 use App\Services\Ai\Content\AiContentSanitizer;
 use App\Services\Ai\Content\Archives\AiArticleArchiveService;
 use App\Services\Ai\Content\ArticleSourceFetcher;
 use App\Services\Ai\Content\Quality\ArticleQualityEvaluationService;
-use App\Services\Ai\Errors\AiPublicErrorMessage;
 use App\Services\Ai\Images\AiThumbnailService;
 use App\Services\Ai\Providers\Catalog\ModelResolver;
-use App\Services\Ai\Providers\Diagnostics\AiResponseDiagnostics;
 use App\Services\Ai\Registries\PromptRegistry;
 use App\Services\Ai\Registries\ProviderRegistry;
 use App\Services\Ai\Registries\SchemaRegistry;
 use App\Services\Ai\Registries\TargetRegistry;
+use App\Services\Ai\Runs\AiImportQueryService;
 use App\Services\Ai\Runs\AiRunAssetCleaner;
 use App\Services\Ai\Runs\AiRunService;
 use App\Services\Ai\Runs\AiTaskRunService;
@@ -36,7 +32,6 @@ use App\Services\Ai\Settings\AiSettingsService;
 use App\Services\Media\ContentMediaReferenceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -60,7 +55,7 @@ use Illuminate\Validation\ValidationException;
  * - destroy(): xóa mềm run theo rule terminal.
  * - payload(): serialize run/thumbnail bounded cho API.
  * - ensureOwner(): kiểm actor sở hữu run trước mutation/detail.
- * - loadThumbnails(), cleanupThumbnail(): hydrate và dọn media thumbnail domain.
+ * - cleanupThumbnail(): dọn media thumbnail qua domain service.
  * INPUT: admin request URL/options hoặc UUID job; OUTPUT: envelope JSON.
  * SIDE EFFECT: tạo/dispatch queue job, cập nhật vòng đời và dọn thumbnail tạm.
  * INPUT/OUTPUT CỦA CLASS (tổng thể): request admin -> tác vụ/candidate an toàn.
@@ -90,28 +85,9 @@ class AiImportController extends Controller
      *
      * =====================================================================
      */
-    public function index(AiSessionIndexRequest $request): JsonResponse
+    public function index(AiSessionIndexRequest $request, AiImportQueryService $imports): JsonResponse
     {
-        $filters = $request->validated();
-        $allowedTargets = collect(app(TargetRegistry::class)->all())
-            ->filter(fn (array $target): bool => $request->user()->can($target['permission'] ?? 'posts.manage'))
-            ->keys()->all();
-        abort_if($allowedTargets === [], 403);
-        $paginator = AiImport::query()
-            ->where('created_by', $request->user()->getKey())
-            ->where(function ($query) use ($allowedTargets): void {
-                $query->whereIn('input_json->target_type', $allowedTargets);
-                if (in_array('post', $allowedTargets, true)) {
-                    $query->orWhereNull('input_json->target_type');
-                }
-            })
-            ->where(fn ($query) => $query->whereNull('operation')->orWhereIn('operation', ['create', 'regenerate']))
-            ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
-            ->where('status', '!=', 'expired')
-            ->orderByDesc('created_at')->orderByDesc('id')
-            ->paginate((int) ($filters['per_page'] ?? 100), ['*'], 'page', (int) ($filters['page'] ?? 1));
-
-        $this->loadThumbnails($paginator->getCollection());
+        $paginator = $imports->paginateFor($request->user(), $request->validated());
 
         return BaseResponse::paginated(AiSessionSummaryResource::collection($paginator), 'Danh sách tác vụ viết bài AI.');
     }
@@ -139,12 +115,24 @@ class AiImportController extends Controller
     {
         $items = collect($targets->all())
             ->filter(fn (array $target): bool => $request->user()->can($target['permission'] ?? 'posts.manage'))
-            ->map(fn (array $target): array => [
-                'key' => $target['key'], 'label' => $target['label'] ?? $target['key'],
-                'icon' => $target['icon'] ?? 'tabler-file-text', 'color' => $target['color'] ?? 'primary',
-                'outputs' => array_values($target['outputs'] ?? []),
-                'output_options' => $targets->outputOptions($target['key']),
-            ])->values()->all();
+            ->map(function (array $target) use ($targets): array {
+                $platform = $target['default_platform'] ?? ($target['platforms'][0] ?? null);
+                $resolved = $targets->resolve($target['key'], $platform);
+                $platformProfiles = collect($targets->platforms($target['key']));
+
+                return [
+                    'key' => $target['key'], 'label' => $target['label'] ?? $target['key'],
+                    'icon' => $target['icon'] ?? 'tabler-file-text', 'color' => $target['color'] ?? 'primary',
+                    'inputs' => array_values($target['inputs'] ?? []),
+                    'outputs' => array_values($resolved['outputs'] ?? []),
+                    'platforms' => array_values(array_filter($target['platforms'] ?? [], fn (string $key): bool => (bool) ($platformProfiles->firstWhere('key', $key)['enabled'] ?? true))),
+                    'platform_profiles' => $platformProfiles->values()->all(),
+                    'editor_fields' => array_values($resolved['editor_fields'] ?? []),
+                    'pipeline' => $resolved['pipeline'] ?? [],
+                    'manual_taxonomy' => (bool) ($resolved['manual_taxonomy'] ?? false),
+                    'output_options' => $targets->outputOptions($target['key'], $platform),
+                ];
+            })->values()->all();
         abort_if($items === [], 403);
 
         return BaseResponse::success($items, 'Tài nguyên AI được phép tạo.');
@@ -170,9 +158,10 @@ class AiImportController extends Controller
         AiSettingsService $settings,
     ): JsonResponse {
         try {
-            $targetConfig = $targets->get($target);
+            $requestedPlatform = $request->query('platform');
+            $targetConfig = $targets->resolve($target, is_string($requestedPlatform) ? $requestedPlatform : null);
         } catch (\InvalidArgumentException) {
-            return BaseResponse::error('AI target chưa được bật.', 404);
+            return BaseResponse::error('AI target hoặc platform chưa được bật.', 404);
         }
         abort_unless($request->user()->can($targetConfig['permission'] ?? 'posts.manage'), 403);
 
@@ -208,24 +197,29 @@ class AiImportController extends Controller
 
         return BaseResponse::success([
             'target_type' => $target,
+            'platform' => $targetConfig['platform'] ?? null,
             'operations' => array_values($targetConfig['operations'] ?? []),
             'input_types' => array_values($targetConfig['inputs'] ?? []),
             'outputs' => array_values($targetConfig['outputs'] ?? []),
-            'output_options' => $targets->outputOptions($target),
+            'platforms' => array_values(array_filter($targetConfig['platforms'] ?? [], fn (string $key): bool => (bool) (collect($targets->platforms($target))->firstWhere('key', $key)['enabled'] ?? true))),
+            'platform_profiles' => $targets->platforms($target),
+            'editor_fields' => array_values($targetConfig['editor_fields'] ?? []),
+            'pipeline' => $targetConfig['pipeline'] ?? [],
+            'output_options' => $targets->outputOptions($target, $targetConfig['platform'] ?? null),
             'prompts' => $promptItems,
             'schemas' => $schemaItems,
             'providers' => $providers->publicOptions(AiCapability::Text),
             'image_providers' => $providers->publicOptions(AiCapability::Image),
             'content_defaults' => [
                 'model_id' => $contentSettings['default_text_model_id'],
-                'generate_thumbnail' => $contentSettings['auto_thumbnail'],
-                'generate_seo' => $contentSettings['auto_seo'],
+                'generate_thumbnail' => $target === 'post' ? $contentSettings['auto_thumbnail'] : false,
+                'generate_seo' => $target === 'post' ? $contentSettings['auto_seo'] : false,
                 'min_word_count' => $contentSettings['min_word_count'],
                 'default_writing_profile_id' => $contentSettings['default_writing_profile_id'] ?? null,
             ],
             'writing_profile_options_endpoint' => '/api/admin/ai/writing-profiles/options',
             'writing_brief_fields' => ['audience', 'article_type', 'purpose', 'angle', 'length'],
-            'manual_taxonomy' => true,
+            'manual_taxonomy' => (bool) ($targetConfig['manual_taxonomy'] ?? false),
         ], 'Capability AI của target.');
     }
 
@@ -246,6 +240,7 @@ class AiImportController extends Controller
         PromptRegistry $prompts,
         AiRunService $runs,
         AiSettingsService $settings,
+        TargetRegistry $targets,
     ): JsonResponse {
         if (! config('ai.import.enabled', true)) {
             return BaseResponse::error('AI import đang tắt.', 503);
@@ -254,10 +249,20 @@ class AiImportController extends Controller
         $data = $request->validated();
         $contentSettings = $settings->all();
         $targetType = (string) ($data['target_type'] ?? 'post');
-        $generateThumbnail = (bool) ($data['generate_thumbnail'] ?? $contentSettings['auto_thumbnail']);
-        // SEO tự động chỉ mặc định cho Blog Post; Resource/Sound vẫn có thể
-        // yêu cầu rõ `generate_seo=true` nhưng không phát sinh task ngoài ý muốn.
+        $platform = $targetType === 'social_post' ? (string) ($data['platform'] ?? 'facebook') : null;
+        $targetConfig = $targets->resolve($targetType, $platform);
+        $outputGroups = array_values($data['requested_outputs'] ?? $targetConfig['outputs'] ?? []);
+        $pipeline = collect((array) ($targetConfig['pipeline'] ?? []))
+            ->filter(fn (array $step): bool => in_array($step['output'] ?? null, $outputGroups, true))
+            ->all();
+        $generateThumbnail = $targetType === 'social_post'
+            ? false
+            : (bool) ($data['generate_thumbnail'] ?? $contentSettings['auto_thumbnail']);
+        // SEO chỉ thuộc capability Post; Social luôn dừng sau content.
         $generateSeo = (bool) ($data['generate_seo'] ?? ($targetType === 'post' ? $contentSettings['auto_seo'] : false));
+        if ($targetType === 'social_post') {
+            $generateSeo = false;
+        }
         $sourceHtml = $request->hasFile('html_file') ? (string) $request->file('html_file')->getContent() : (string) ($data['html'] ?? '');
         $encoding = (string) ($data['source_encoding'] ?? 'UTF-8');
         if ($sourceHtml !== '' && $encoding !== 'UTF-8') {
@@ -293,7 +298,7 @@ class AiImportController extends Controller
                 isset($data['prompt_key']) ? (string) $data['prompt_key'] : null,
                 $targetType,
                 'create',
-                ['source_type' => $sourceType, 'language' => (string) ($data['language'] ?? 'vi')],
+                ['source_type' => $sourceType, 'platform' => $platform, 'language' => (string) ($data['language'] ?? 'vi')],
             );
         } catch (\InvalidArgumentException) {
             throw ValidationException::withMessages([
@@ -303,6 +308,14 @@ class AiImportController extends Controller
         $promptKey = (string) $prompt['key'];
         $input = [
             'target_type' => $targetType,
+            'platform' => $platform,
+            'output_profile' => $targetConfig['profile_key'] ?? null,
+            'pipeline_snapshot' => [
+                'outputs' => $outputGroups,
+                'editor_fields' => array_values($targetConfig['editor_fields'] ?? []),
+                'manual_taxonomy' => (bool) ($targetConfig['manual_taxonomy'] ?? false),
+                'pipeline' => $pipeline,
+            ],
             'source_type' => $sourceType,
             'source_format' => $sourceHtml !== '' ? 'html' : 'text',
             'language' => $data['language'] ?? 'vi',
@@ -571,7 +584,7 @@ class AiImportController extends Controller
         })->where('created_by', $request->user()->getKey())
             ->where(fn ($query) => $query->whereNull('operation')->orWhere('operation', '!=', 'image'))->latest()->get();
 
-        $this->loadThumbnails($items);
+        app(AiImportQueryService::class)->loadThumbnails($items);
 
         return BaseResponse::success($items->map(fn (AiImport $item): array => $this->payload($item))->values()->all(), 'Danh sách candidate.');
     }
@@ -650,7 +663,9 @@ class AiImportController extends Controller
     {
         $this->ensureOwner($request, $aiImport);
 
-        return BaseResponse::success($review->approve($request->user(), $aiImport, $request->validated()), $request->filled('target_id') ? 'Đã duyệt và cập nhật Post nháp.' : 'Đã duyệt và tạo Post nháp.');
+        $isSocial = data_get($aiImport->input_json, 'target_type', 'post') === 'social_post';
+
+        return BaseResponse::success($review->approve($request->user(), $aiImport, $request->validated()), $isSocial ? 'Đã duyệt và tạo Social Post Facebook nháp.' : ($request->filled('target_id') ? 'Đã duyệt và cập nhật Post nháp.' : 'Đã duyệt và tạo Post nháp.'));
     }
 
     /**
@@ -719,110 +734,7 @@ class AiImportController extends Controller
      */
     private function payload(AiImport $import): array
     {
-        if (! $import->relationLoaded('thumbnail')) {
-            $this->loadThumbnails(collect([$import]));
-        }
-        $thumbnail = $import->getRelation('thumbnail');
-        $result = array_intersect_key((array) $import->result_json, array_flip([
-            'source', 'draft', 'provider', 'model', 'prompt_key', 'prompt_version',
-            'schema_version', 'requested_fields', 'image', 'image_job_id',
-        ]));
-        if (! in_array($import->status, ['ready', 'completed', 'succeeded'], true)) {
-            unset($result['draft']);
-        }
-        $diagnostics = AiResponseDiagnostics::sanitize((array) data_get($import->source_meta_json, 'ai_response', []));
-        $pipeline = (array) data_get($import->source_meta_json, 'article_pipeline', []);
-        $taskRunId = AiTaskRun::query()
-            ->where('taskable_type', AiImport::class)
-            ->where('taskable_id', $import->id)
-            ->where('dedupe_key', ($import->operation === 'image' ? 'image_generation' : 'article_generation').':'.$import->id.':'.(int) $import->generation_no)
-            ->value('id');
-        $steps = $import->steps->map(fn ($step): array => [
-            'key' => $step->step_key, 'status' => $step->status, 'attempt' => $step->attempt,
-            'diagnostics' => AiResponseDiagnostics::sanitize((array) $step->diagnostics_json),
-            'started_at' => $step->started_at?->toIso8601String(), 'completed_at' => $step->completed_at?->toIso8601String(),
-        ])->values()->all();
-
-        return [
-            ...$result,
-            'job_id' => $import->id, 'status' => $import->status, 'current_step' => $import->current_step,
-            'task_run_id' => $taskRunId,
-            'generation_no' => (int) $import->generation_no,
-            'steps' => $steps,
-            // Allowlist dùng cả cho nhánh một lượt; không expose source/intermediate/raw response.
-            'response_diagnostics' => $diagnostics,
-            'quality_checks' => array_map(fn (array $check): array => array_intersect_key($check, array_flip(['check', 'status', 'reason', 'metric', 'detected', 'count'])), array_slice((array) ($pipeline['quality'] ?? []), 0, 20)),
-            'image_warnings' => array_values(array_intersect((array) ($pipeline['image_warnings'] ?? []), ['restored_unplaced_images'])),
-            'editor_warning_count' => max(0, min(100, (int) ($pipeline['editor_warning_count'] ?? 0))),
-            'writing_profile' => array_intersect_key((array) data_get($import->input_json, 'writing_profile_snapshot', []), array_flip(['id', 'name', 'version'])),
-            'source_format' => data_get($import->input_json, 'source_format', 'text'),
-            'progress' => (int) $import->progress, 'error_code' => $import->error_code,
-            'source_type' => data_get($import->input_json, 'source_type', filled($import->source_url) ? 'url' : 'text'),
-            'source_url' => data_get($import->input_json, 'source_type') === 'text' ? null : $import->source_url,
-            'error' => in_array($import->status, ['failed', 'cancelled', 'expired'], true)
-                ? AiPublicErrorMessage::message($import->error_code, $import->error_message,
-                    data_get($import->input_json, 'target_type', 'post'), (array) ($diagnostics['validation_errors'] ?? []))
-                : null,
-            'session_id' => $import->session_id ?: $import->id,
-            'validation_errors' => $import->status === 'failed' ? ($diagnostics['validation_errors'] ?? []) : [],
-            'parent_id' => $import->parent_id, 'operation' => $import->operation,
-            'target_type' => data_get($import->input_json, 'target_type', 'post'),
-            'created_at' => $import->created_at?->toIso8601String(),
-            'draft_version' => hash('sha256', json_encode(data_get($import->result_json, 'draft', []))),
-            'review' => AiContentReviewService::state($import),
-            'quality_evaluation' => app(ArticleQualityEvaluationService::class)->summary($import),
-            'review_version' => AiContentReviewService::version($import),
-            'expires_at' => $import->expires_at?->toIso8601String(),
-            'applied_target_id' => $import->applied_target_id, 'applied_fields' => $import->applied_fields,
-            'thumbnail' => $thumbnail ? MediaAssetResource::make($thumbnail) : null,
-            'thumbnail_generation' => AiThumbnailService::state($import),
-            'thumbnail_options' => ['mode' => data_get($import->input_json, 'thumbnail_mode', 'source'),
-                'model_id' => data_get($import->input_json, 'image_connection.model_id'),
-                'prompt' => data_get($import->input_json, 'thumbnail_prompt', '')],
-        ];
-    }
-
-    /**
-     * =====================================================================
-     * CHỨC NĂNG: Tải thumbnail và media theo lô cho public payload
-     * =====================================================================
-     *
-     * INPUT:
-     * - collection AiImport.
-     *
-     * OUTPUT:
-     * - relation thumbnail hoặc null.
-     *
-     * SIDE EFFECT:
-     * - query asset/media; không tạo ảnh hoặc ghi DB.
-     *
-     * EXCEPTION/TRANSACTION:
-     * - Không mở transaction/lock; middleware/controller xác thực actor và quyền trước khi gọi.
-     *
-     * =====================================================================
-     */
-    private function loadThumbnails(Collection $imports): void
-    {
-        $unloaded = $imports->reject(fn (AiImport $import): bool => $import->relationLoaded('thumbnail'));
-        $assetIds = $unloaded
-            ->map(fn (AiImport $import): int => (int) data_get($import->result_json, 'draft.thumbnail.media_asset_id', 0))
-            ->filter(fn (int $id): bool => $id > 0)->unique()->values();
-        $assets = $assetIds->isEmpty()
-            ? collect()
-            : MediaAsset::query()->ofKind(MediaAssetKind::Image)->whereKey($assetIds)
-                ->with('media')->get()->keyBy('id');
-
-        // Spatie reads the parent model when resolving conversion URLs.
-        foreach ($assets as $asset) {
-            foreach ($asset->media as $media) {
-                $media->setRelation('model', $asset);
-            }
-        }
-
-        foreach ($unloaded as $import) {
-            $assetId = (int) data_get($import->result_json, 'draft.thumbnail.media_asset_id', 0);
-            $import->setRelation('thumbnail', $assets->get($assetId));
-        }
+        return AiImportResource::make($import)->resolve(request());
     }
 
     /**

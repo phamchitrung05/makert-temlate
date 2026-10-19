@@ -40,17 +40,28 @@ class AiCandidateUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
+        $candidate = $this->route('aiImport');
+        $isSocial = data_get($candidate?->input_json, 'target_type', 'post') === 'social_post';
+
         return [
             'expected_version' => ['required', 'string', 'size:64'],
-            'title' => ['required', 'string', 'max:255'],
+            'title' => $isSocial ? ['sometimes', 'nullable', 'string', 'max:255'] : ['required', 'string', 'max:255'],
             'content_html' => ['required', 'string', 'max:200000'],
-            'excerpt' => ['sometimes', 'nullable', 'string', 'max:5000'],
-            'seo_title' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'seo_description' => ['sometimes', 'nullable', 'string', 'max:5000'],
-            'focus_keyword' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'category_ids' => ['sometimes', 'array', 'max:100'],
+            'excerpt' => $isSocial ? ['sometimes', 'nullable', 'string', 'max:1000'] : ['sometimes', 'nullable', 'string', 'max:5000'],
+            'cta' => ['sometimes', 'nullable', 'string', 'max:500'],
+            'hashtags' => ['sometimes', 'array', 'max:12'],
+            'hashtags.*' => ['string', 'max:80'],
+            'link_url' => ['sometimes', 'nullable', 'url', 'max:1000'],
+            'gallery_prompt' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'negative_prompt' => ['sometimes', 'nullable', 'string', 'max:1500'],
+            'aspect_ratio' => ['sometimes', 'nullable', 'string', 'max:10'],
+            'slot_count' => ['sometimes', 'integer', 'min:1', 'max:10'],
+            'seo_title' => $isSocial ? ['prohibited'] : ['sometimes', 'nullable', 'string', 'max:255'],
+            'seo_description' => $isSocial ? ['prohibited'] : ['sometimes', 'nullable', 'string', 'max:5000'],
+            'focus_keyword' => $isSocial ? ['prohibited'] : ['sometimes', 'nullable', 'string', 'max:255'],
+            'category_ids' => $isSocial ? ['prohibited'] : ['sometimes', 'array', 'max:100'],
             'category_ids.*' => ['integer', 'distinct', Rule::exists('categories', 'id')->where('status', 'active')->whereNull('deleted_at')],
-            'tag_ids' => ['sometimes', 'array', 'max:100'],
+            'tag_ids' => $isSocial ? ['prohibited'] : ['sometimes', 'array', 'max:100'],
             'tag_ids.*' => ['integer', 'distinct', Rule::exists('tags', 'id')->where('status', 'active')->whereNull('deleted_at')],
         ];
     }

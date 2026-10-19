@@ -170,7 +170,7 @@ final class ProcessSocialPostImageJob implements ShouldBeUnique, ShouldQueue
 
             app(\App\Services\Ai\Runs\AiTaskRunService::class)->syncFromImport($import->fresh());
             $versions->create($post->fresh(), (array) $input['context'], [
-                'key' => $input['prompt_key'] ?? 'social_post.product_image',
+                'key' => $input['prompt_key'] ?? 'social_post.facebook_image',
                 'version' => $input['prompt_version'] ?? null,
                 'schema' => $input['schema_version'] ?? null,
                 'component' => 'image',

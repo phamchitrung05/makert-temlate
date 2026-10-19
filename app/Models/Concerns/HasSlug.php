@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * - handleSlugWasCreated(): sinh slug khi model vừa được insert
  * - handleSlugSourceChanged(): sinh lại slug khi cột nguồn đổi
  * - regenerateSlug(): ép sinh lại slug dù cột nguồn có đổi hay không
+ * - primarySlug(): lấy slug hiện hành, dùng relation đã nạp khi có
  * - shouldGenerateSlug(): cho phép model tắt cơ chế sinh slug
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
@@ -131,6 +132,21 @@ trait HasSlug
     public function regenerateSlug(): Slug
     {
         return app(SlugService::class)->syncForModel($this, $this->slugSource());
+    }
+
+    /**
+     * Lấy slug hiện hành theo locale mà không query lại relation đã nạp.
+     * Input: model hiện tại và locale ứng dụng.
+     * Output: Slug|null; chỉ truy vấn database nếu chưa nạp slugs.
+     */
+    public function primarySlug(): ?Slug
+    {
+        if ($this->relationLoaded('slugs')) {
+            return $this->slugs->first(fn (Slug $slug): bool => $slug->is_primary
+                && $slug->locale === config('app.locale'));
+        }
+
+        return $this->slugs()->primary()->first();
     }
 
     /**

@@ -94,7 +94,9 @@ class AiContentReviewController extends Controller
      */
     public function approve(AiCandidateApproveRequest $request, AiImport $aiImport, AiContentReviewService $review): JsonResponse
     {
-        return BaseResponse::success($review->approve($request->user(), $aiImport, $request->validated()), 'Đã duyệt và tạo Post nháp.');
+        $isSocial = data_get($aiImport->input_json, 'target_type', 'post') === 'social_post';
+
+        return BaseResponse::success($review->approve($request->user(), $aiImport, $request->validated()), $isSocial ? 'Đã duyệt và tạo Social Post Facebook nháp.' : 'Đã duyệt và tạo Post nháp.');
     }
 
     /**

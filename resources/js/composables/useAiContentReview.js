@@ -164,7 +164,7 @@ export function useAiContentReview(updateSession, sharedNotice) {
    * =====================================================================
    */
   function openReview(item) {
-    if (busy.value || item.targetType !== 'post') return
+    if (busy.value || !['post', 'social_post'].includes(item.targetType)) return
     const runId = item.runId ?? item.id
     open.value = true
     detail.value = { job_id: runId, draft: { title: item.title } }
@@ -233,7 +233,9 @@ export function useAiContentReview(updateSession, sharedNotice) {
       detail.value = { ...current, review: result.review, applied_target_id: result.post_id ?? current.applied_target_id, can_review: false, can_edit: false }
       updateSession(detail.value)
       decision.value = null
-      notice.value = { type: 'success', message: kind === 'approve' ? `Đã duyệt và tạo Post nháp #${result.post_id}.` : 'Đã từ chối nội dung AI.' }
+      notice.value = { type: 'success', message: kind === 'approve'
+        ? (current.target_type === 'social_post' ? `Đã duyệt và tạo Social Post nháp #${result.social_post_id}.` : `Đã duyệt và tạo Post nháp #${result.post_id}.`)
+        : 'Đã từ chối nội dung AI.' }
       void loadHistory()
     }
     catch (failure) {

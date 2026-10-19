@@ -55,7 +55,7 @@ class AiCandidateApplyRequest extends FormRequest
     {
         return [
             'fields' => ['required', 'array', 'min:1'],
-            'fields.*' => ['string', 'distinct', 'in:title,excerpt,content,seo,taxonomy,thumbnail'],
+            'fields.*' => ['string', 'distinct', 'in:title,excerpt,content,seo,taxonomy,thumbnail,social_content,social_gallery,social_excerpt,social_video'],
             'category_ids' => ['sometimes', 'array', 'max:100'],
             'category_ids.*' => ['integer', 'distinct', Rule::exists('categories', 'id')->where('status', 'active')->whereNull('deleted_at')],
             'tag_ids' => ['sometimes', 'array', 'max:100'],

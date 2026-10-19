@@ -45,6 +45,25 @@ describe('AI run error feedback', () => {
     expect(formatAiError({ data: run }, undefined, outputs)).toBe(state.snackbar.value.message)
   })
 
+  it.each([
+    ['AI_PROVIDER_HTTP_429', 'Dịch vụ AI đã hết quota hoặc đạt giới hạn yêu cầu. Hãy kiểm tra hạn mức và thử lại sau.'],
+    ['AI_PROVIDER_INCOMPLETE', 'AI trả nội dung chưa đầy đủ. Hãy rút ngắn yêu cầu hoặc chọn model có giới hạn lớn hơn.'],
+    ['AI_INPUT_BUDGET', 'Nguồn và yêu cầu vượt giới hạn của model. Hãy rút ngắn nguồn hoặc chọn model có giới hạn lớn hơn.'],
+  ])('shows the public backend explanation for %s without exposing diagnostics', (code, message) => {
+    const run = {
+      job_id: code, status: 'failed', error_code: code, error: message,
+      response_diagnostics: { raw: 'private-provider-response' },
+    }
+
+    const state = useAiRunFeedback()
+
+    state.observeRun(run, undefined, outputs)
+    expect(state.snackbar.value.message).toBe(message)
+    expect(formatAiError({ data: run })).toBe(message)
+    expect(formatAiError({ error_code: code })).toBe(message)
+    expect(state.snackbar.value.message).not.toContain('private-provider-response')
+  })
+
   it('notifies once per failed transition and can notify again after a manual retry', () => {
     const state = useAiRunFeedback()
 

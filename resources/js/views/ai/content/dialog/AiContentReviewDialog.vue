@@ -26,6 +26,8 @@ const displayLoading = computed(() => props.state.loading || (props.state.open &
 const reviewLabel = computed(() => ({ pending_review: 'Chờ duyệt', approved: 'Đã duyệt', rejected: 'Từ chối', not_ready: 'Chưa sẵn sàng' }[props.state.detail?.review?.status] ?? 'Đang tải'))
 const reviewColor = computed(() => ({ pending_review: 'warning', approved: 'success', rejected: 'error' }[props.state.detail?.review?.status] ?? 'secondary'))
 const postId = computed(() => props.state.detail?.review?.post_id || props.state.detail?.applied_target_id)
+const isSocial = computed(() => props.state.detail?.target_type === 'social_post')
+const showThumbnail = computed(() => props.state.detail?.output_groups?.includes('thumbnail') ?? !isSocial.value)
 const locked = computed(() => displayLoading.value || props.state.busy || Boolean(props.state.error))
 const quality = computed(() => props.state.detail?.quality_evaluation ?? null)
 const qualityScore = computed(() => Number.isFinite(Number(quality.value?.score_total)) ? Number(quality.value.score_total) : null)
@@ -128,8 +130,8 @@ const dateLabel = value => value && !Number.isNaN(new Date(value).getTime()) ? n
   >
     <AppDialogLayout
       id="view-moi"
-      title="Duyệt content AI"
-      :subtitle="props.state.detail?.draft?.title"
+      :title="isSocial ? 'Duyệt Social content AI' : 'Duyệt content AI'"
+      :subtitle="isSocial ? props.state.detail?.platform : props.state.detail?.draft?.title"
       :close-disabled="props.state.busy"
       close-label="Đóng duyệt content AI"
       @close="emit('close')"
@@ -268,14 +270,16 @@ const dateLabel = value => value && !Number.isNaN(new Date(value).getTime()) ? n
           :draft="props.state.detail?.draft ?? {}"
           :loading="displayLoading"
           :active="contentActive"
+          :show-seo="!isSocial && (props.state.detail?.output_groups?.includes('seo') ?? true)"
         />
         <VDivider class="my-4" />
         <AiThumbnailStatus
+          v-if="showThumbnail"
           :asset="props.state.detail?.thumbnail"
           :generation="props.state.detail?.thumbnail_generation"
         />
         <p
-          v-if="props.state.detail?.can_approve === false && props.state.detail?.can_review"
+          v-if="showThumbnail && props.state.detail?.can_approve === false && props.state.detail?.can_review"
           class="text-body-2 text-medium-emphasis mt-2"
         >
           Chờ thumbnail hoàn tất rồi tải lại trạng thái để duyệt. Có thể hủy tạo ảnh ở danh sách bài.
@@ -319,7 +323,7 @@ const dateLabel = value => value && !Number.isNaN(new Date(value).getTime()) ? n
             Chấm lại
           </VBtn>
           <VBtn
-            v-if="postId"
+            v-if="postId && !isSocial"
             :to="{ name: 'apps-blog-post-add', query: { post: postId } }"
             :disabled="locked"
             variant="tonal"
@@ -355,7 +359,7 @@ const dateLabel = value => value && !Number.isNaN(new Date(value).getTime()) ? n
               :disabled="locked || props.state.decisionBlocked || props.state.detail?.can_approve === false"
               @click="emit('approve')"
             >
-              Duyệt tạo Post nháp
+              {{ isSocial ? 'Duyệt tạo Social Post nháp' : 'Duyệt tạo Post nháp' }}
             </VBtn>
           </template>
         </VCardActions>

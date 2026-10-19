@@ -12,7 +12,8 @@
  * - list()/show()/create()/update()/remove(): CRUD.
  * - generate()/regenerateCaption()/regenerateImage(): queue AI.
  * - submitReview()/approve()/reject()/requestRevision()/publish(): lifecycle.
- * - products()/campaigns()/accounts(): context/options.
+ * - products()/campaigns()/accounts(): legacy options loading; Product is never
+ *   included in Social Post create/update payloads.
  *
  * INPUT/OUTPUT CỦA FILE (tổng thể):
  * - INPUT : query/id/payload từ Vue.
@@ -101,7 +102,7 @@ export const socialPostService = {
   /** Input: id. Output: queued publications. */
   async publish(id) { return unwrap(await $api(`/admin/social-posts/${id}/publish`, { method: 'POST' })) },
 
-  /** Input: options. Output: product list. */
+  /** Input: options. Output: legacy product options for callers being migrated. */
   async products(query = {}) { return unwrap(await $api('/admin/marketing/products', { query })) },
 
   /** Input: options. Output: campaign list. */

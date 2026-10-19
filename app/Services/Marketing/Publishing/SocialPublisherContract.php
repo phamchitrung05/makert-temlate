@@ -5,6 +5,7 @@ namespace App\Services\Marketing\Publishing;
 use App\Models\SocialPost;
 use App\Models\SocialPostTarget;
 use App\Models\SocialPostVariant;
+use App\Models\SocialPublication;
 
 /**
  * =====================================================================
@@ -20,7 +21,7 @@ use App\Models\SocialPostVariant;
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : SocialPost canonical, target/account và MediaAsset image.
  * - OUTPUT: external ID/URL/provider metadata; exception khi publish lỗi.
- * - SIDE EFFECT: gọi API nền tảng bên ngoài; không ghi DB.
+ * - SIDE EFFECT: gọi API nền tảng bên ngoài và lưu journal của publication.
  * =====================================================================
  */
 interface SocialPublisherContract
@@ -36,11 +37,11 @@ interface SocialPublisherContract
     /**
      * Đăng content variant và gallery ảnh lên target.
      *
-     * Input: SocialPost/target/variant/gallery đã xác thực.
+     * Input: SocialPost/target/variant/gallery đã xác thực và publication đã claim.
      * Output: external_id/url/request_id/metadata bounded.
-     * Side effect: gọi API platform; không ghi database.
+     * Side effect: gọi API platform và lưu checkpoint trước khi tạo bài bên ngoài.
      *
      * @return array<string, mixed>
      */
-    public function publish(SocialPost $post, SocialPostTarget $target, ?SocialPostVariant $variant, array $images): array;
+    public function publish(SocialPost $post, SocialPostTarget $target, ?SocialPostVariant $variant, array $images, SocialPublication $publication): array;
 }

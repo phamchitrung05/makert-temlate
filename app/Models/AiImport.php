@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - casts().
+ * - replicate(): sao chép run, để DB tự tính lại các cột virtual từ JSON.
  * - createdBy().
  * - candidates().
  * - steps().
@@ -54,6 +55,14 @@ class AiImport extends Model
         'session_id', 'parent_id', 'operation', 'applied_target_id', 'applied_fields',
         'archive_version', 'generation_no',
     ];
+
+    /** Input: các thuộc tính cần loại trừ. Output: run chưa lưu, không ghi vào cột virtual; giữ quy tắc clone của Eloquent. */
+    public function replicate(?array $except = null): static
+    {
+        return parent::replicate(array_merge($except ?? [], [
+            'input_target_type', 'input_social_post_id', 'input_generation_no',
+        ]));
+    }
 
     /**
      * =====================================================================

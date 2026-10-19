@@ -137,7 +137,17 @@ final class ArticlePromptBuilder
         foreach (array_diff($groups, ['thumbnail', 'taxonomy']) as $group) {
             $definition = $definitions[$group] ?? [];
             foreach ($definition['rules'] ?? [] as $name => $rule) {
-                $properties[$name] = ['type' => $rule['type'] === 'boolean' ? 'boolean' : 'string'];
+                $type = $rule['type'] ?? 'string';
+                $properties[$name] = match ($type) {
+                    'boolean' => ['type' => 'boolean'],
+                    'integer' => ['type' => 'integer'],
+                    'string_list' => [
+                        'type' => 'array',
+                        'maxItems' => $rule['max_items'] ?? 250,
+                        'items' => ['type' => 'string', 'minLength' => 1, 'maxLength' => $rule['item_max'] ?? 2000],
+                    ],
+                    default => ['type' => 'string'],
+                };
                 if ($properties[$name]['type'] === 'string') {
                     $properties[$name] += ['minLength' => 1, 'maxLength' => $rule['max'] ?? 200000];
                 }

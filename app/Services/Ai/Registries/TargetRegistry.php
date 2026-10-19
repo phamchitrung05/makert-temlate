@@ -15,7 +15,7 @@ use InvalidArgumentException;
  * được resolve sau khi target đã được bật trong config, tránh gọi tùy ý class.
  *
  * CÁC HÀM/METHOD TRONG FILE:
- * - __construct(), get(), adapter(), all(), outputOptions().
+     * - __construct(), get(), resolve(), adapter(), all(), platforms(), outputOptions().
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : target key và service container.
@@ -57,6 +57,80 @@ final class TargetRegistry
         }
 
         return $target + ['key' => $key];
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Resolve capability theo platform và output profile.
+     * =====================================================================
+     * INPUT: target key, platform tùy chọn.
+     * OUTPUT: capability đã hợp nhất với profile platform; không trả config
+     * nội bộ không cần cho frontend.
+     * SIDE EFFECT: chỉ đọc config; không gọi provider hoặc ghi database.
+     * EXCEPTION/TRANSACTION: InvalidArgumentException khi platform chưa bật.
+     * =====================================================================
+     */
+    public function resolve(string $key, ?string $platform = null): array
+    {
+        $target = $this->get($key);
+        $profiles = (array) ($target['platform_profiles'] ?? []);
+        if ($profiles === []) {
+            return $target + ['platform' => $platform];
+        }
+
+        $platform ??= (string) ($target['default_platform'] ?? array_key_first($profiles));
+        $profile = $profiles[$platform] ?? null;
+        if (! is_array($profile) || ($profile['enabled'] ?? false) !== true) {
+            throw new InvalidArgumentException("AI platform [{$platform}] của target [{$key}] chưa được bật.");
+        }
+
+        return array_replace($target, $profile, [
+            'key' => $key,
+            'platform' => $platform,
+            'profile_key' => $platform,
+            'base_outputs' => $target['outputs'] ?? [],
+            'base_editor_fields' => $target['editor_fields'] ?? [],
+        ]);
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Trả danh sách platform profile public của target.
+     * =====================================================================
+     * INPUT: target key.
+     * OUTPUT: key/label/enabled của từng profile; không lộ prompt/schema nội bộ.
+     * SIDE EFFECT: chỉ đọc config; không gọi provider hoặc ghi database.
+     * EXCEPTION/TRANSACTION: InvalidArgumentException khi target không hợp lệ.
+     * =====================================================================
+     */
+    public function platforms(string $key): array
+    {
+        $target = $this->get($key);
+        $profiles = (array) ($target['platform_profiles'] ?? []);
+
+        if ($profiles === []) {
+            return collect((array) ($target['platforms'] ?? []))
+                ->map(fn (string $platform): array => [
+                    'key' => $platform,
+                    'label' => ucfirst($platform),
+                    'enabled' => true,
+                    'outputs' => array_values($target['outputs'] ?? []),
+                    'editor_fields' => array_values($target['editor_fields'] ?? []),
+                ])->values()->all();
+        }
+
+        return collect($profiles)
+            ->map(fn (array $profile, string $platform): array => [
+                'key' => $platform,
+                'label' => $profile['label'] ?? ucfirst($platform),
+                'enabled' => ($profile['enabled'] ?? false) === true,
+                'outputs' => array_values($profile['outputs'] ?? []),
+                'editor_fields' => array_values($profile['editor_fields'] ?? []),
+                'pipeline' => $profile['pipeline'] ?? [],
+                'output_options' => ($profile['enabled'] ?? false) === true
+                    ? $this->outputOptions($key, $platform)
+                    : [],
+            ])->values()->all();
     }
 
     /**
@@ -108,16 +182,19 @@ final class TargetRegistry
      * EXCEPTION/TRANSACTION: InvalidArgumentException khi target không hợp lệ.
      * =====================================================================
      */
-    public function outputOptions(string $key): array
+    public function outputOptions(string $key, ?string $platform = null): array
     {
-        $target = $this->get($key);
+        $target = $this->resolve($key, $platform);
         $definitions = (array) config('ai.agent.output_definitions', []);
 
         return collect($target['outputs'] ?? [])
-            ->filter(fn (string $output): bool => isset($definitions[$output]))
+            ->filter(fn (string $output): bool => isset($definitions[$output])
+                && (($definitions[$output]['target_types'] ?? []) === []
+                    || in_array($key, (array) $definitions[$output]['target_types'], true)))
             ->map(fn (string $output): array => [
                 'value' => $output, 'title' => $definitions[$output]['label'] ?? $output,
                 'source_types' => array_values($definitions[$output]['source_types'] ?? []),
+                'fields' => array_values($definitions[$output]['fields'] ?? []),
             ])->values()->all();
     }
 }

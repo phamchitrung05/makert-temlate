@@ -18,7 +18,7 @@ use Spatie\Permission\PermissionRegistrar;
  * CHỨC NĂNG FILE: Quản lý role admin, catalog quyền và gán role có bảo vệ quyền hệ thống
  * =====================================================================
  * Controller dùng service cho query/mutation. Catalog lấy từ config; super-admin bất biến, role mặc định giữ tên. Mọi mutation khóa role super-admin để serialize thay đổi quyền và kiểm lại actor; audit cùng transaction, cache xóa sau commit.
- * CÁC HÀM/METHOD TRONG FILE: permissionNames(), canCreateRole(), canUpdateRole(), canDeleteRole(), canManageRoles(), canGrant(), canEditRole(), canDeleteRoleModel(), roleVersion(), userVersion(), roles(), roleDetails(), users(), permissions(), catalog(), save(), remove(), assign(), mutate(), selectedPermissions(), userCount(), assertVersion(), audit().
+ * CÁC HÀM/METHOD TRONG FILE: permissionNames(), canCreateRole(), canUpdateRole(), canDeleteRole(), canManageRoles(), canGrant(), canManageUser(), canEditRole(), canDeleteRoleModel(), roleVersion(), userVersion(), accountVersion(), roles(), roleDetails(), users(), permissions(), catalog(), save(), remove(), assign(), saveUser(), removeUser(), mutate(), selectedPermissions(), userCount(), assertVersion(), audit().
  * INPUT/OUTPUT CỦA CLASS (tổng thể): dữ liệu đã validate/admin -> DTO hoặc mutation quyền.
  * SIDE EFFECT: Theo boundary từng method; không gọi dịch vụ bên ngoài.
  * EXCEPTION/TRANSACTION: Quyền/validation/conflict trả 403/422/409; mutation dùng transaction.
@@ -111,6 +111,13 @@ final class RoleManagementService
             || $permissions->pluck('name')->diff($actor->getAllPermissions()->pluck('name'))->isEmpty();
     }
 
+    /** Input: actor và tài khoản đã nạp quyền. Output: có quyền quản lý target trong phạm vi, chỉ root quản lý root; không ghi DB. */
+    public static function canManageUser(User $actor, User $user): bool
+    {
+        return $actor->can('users.manage') && self::canGrant($actor, $user->getAllPermissions())
+            && (! $user->hasRole('super-admin', 'admin') || $actor->hasRole('super-admin', 'admin'));
+    }
+
     /**
      * =====================================================================
      * CHỨC NĂNG: Xác định role được phép chỉnh sửa
@@ -168,6 +175,15 @@ final class RoleManagementService
         return hash('sha256', json_encode($user->roles->pluck('id')->sort()->values()->all()));
     }
 
+    /** Input: User đã nạp roles/permissions. Output: SHA-256 phát hiện thay đổi hồ sơ, credential hoặc quyền, không trả hash mật khẩu ra API. */
+    public static function accountVersion(User $user): string
+    {
+        return hash('sha256', json_encode([
+            $user->only(['name', 'email', 'username', 'status']), $user->password,
+            self::userVersion($user), $user->permissions->pluck('id')->sort()->values()->all(),
+        ]));
+    }
+
     /**
      * =====================================================================
      * CHỨC NĂNG: Phân trang role admin
@@ -185,7 +201,8 @@ final class RoleManagementService
         $userMorph = (new User)->getMorphClass();
         $userCount = DB::table($pivotTable)->selectRaw('count(*)')
             ->whereColumn($pivotRole, $roleTable.'.id')
-            ->where('model_type', $userMorph);
+            ->where('model_type', $userMorph)
+            ->whereIn('model_id', User::query()->select('id'));
 
         return Role::query()->where('guard_name', 'admin')->with('permissions')
             ->addSelect(['users_count' => $userCount])
@@ -221,7 +238,7 @@ final class RoleManagementService
         $sort = $filters['sort'] ?? 'name';
         $direction = $filters['direction'] ?? 'asc';
 
-        return User::query()->select(['id', 'name', 'email', 'username', 'status', 'created_at'])
+        return User::query()->select(['id', 'name', 'email', 'username', 'status', 'password', 'created_at'])
             ->with(['roles.permissions', 'permissions'])
             ->when($filters['search'] ?? null, fn ($query, $search) => $query->where(fn ($nested) => $nested
                 ->where('name', 'like', '%'.$search.'%')
@@ -291,7 +308,7 @@ final class RoleManagementService
      * CHỨC NĂNG: Tạo hoặc sửa role và gán permission từ catalog
      * INPUT: Actor, name/icon/permission_ids/expected_version đã validate, role optional.
      * OUTPUT: Role đã eager load/count sau mutation.
-     * SIDE EFFECT: Ghi role/pivot và audit; không sửa permission catalog.
+     * SIDE EFFECT: Ghi role/pivot, thu hồi token thành viên nếu đổi quyền và audit; không sửa catalog.
      * EXCEPTION/TRANSACTION: mutate() mở transaction và lock; root bất biến, tên system role cố định, không tự mất quyền quản lý role; lỗi rollback.
      * =====================================================================
      */
@@ -335,6 +352,10 @@ final class RoleManagementService
                 'guard_name' => 'admin',
             ])->save();
             $role->syncPermissions($selected);
+            if ($before !== null && collect($before['permission_ids'])->sort()->values()->all() !== $selected->pluck('id')->sort()->values()->all()) {
+                User::query()->whereHas('roles', fn ($query) => $query->whereKey($role->id))
+                    ->lockForUpdate()->eachById(fn (User $user) => $user->tokens()->delete());
+            }
             $this->audit($freshActor, $role, $before === null ? 'role_created' : 'role_updated', $before,
                 ['name' => $role->name, 'icon' => $role->icon, 'permission_ids' => $selected->pluck('id')->all()]);
 
@@ -369,7 +390,7 @@ final class RoleManagementService
      * CHỨC NĂNG: Thay danh sách role của một tài khoản admin
      * INPUT: Actor, target User, role_ids và expected_version.
      * OUTPUT: User với roles/permissions mới; direct permissions giữ riêng.
-     * SIDE EFFECT: Sync model_has_roles và ghi audit, không sửa customer/password/trạng thái.
+     * SIDE EFFECT: Sync model_has_roles, thu hồi token khi đổi role và ghi audit; không sửa customer/password/trạng thái.
      * EXCEPTION/TRANSACTION: Transaction/lock qua mutate(); chặn tự đổi role, quyền cao hơn và version cũ; chỉ root gán hoặc gỡ root.
      * =====================================================================
      */
@@ -379,8 +400,7 @@ final class RoleManagementService
             $user = User::query()->with(['roles.permissions', 'permissions'])->lockForUpdate()->findOrFail($user->id);
             abort_if($freshActor->id === $user->id, 422, 'You cannot change your own roles.');
             $this->assertVersion(self::userVersion($user), $data['expected_version']);
-            abort_unless(self::canGrant($freshActor, $user->getAllPermissions())
-                && (! $user->hasRole('super-admin', 'admin') || $freshActor->hasRole('super-admin', 'admin')), 403);
+            abort_unless(self::canManageUser($freshActor, $user), 403);
             $roles = Role::query()->where('guard_name', 'admin')->whereIn('id', $data['role_ids'])->with('permissions')->lockForUpdate()->get();
             if ($roles->count() !== count($data['role_ids'])) {
                 throw ValidationException::withMessages(['role_ids' => 'Choose existing admin roles.']);
@@ -391,9 +411,62 @@ final class RoleManagementService
             }
             $before = ['role_ids' => $user->roles->pluck('id')->all()];
             $user->syncRoles($roles);
+            if (collect($before['role_ids'])->sort()->values()->all() !== $roles->pluck('id')->sort()->values()->all()) {
+                $user->tokens()->delete();
+            }
             $this->audit($freshActor, $user, 'admin_roles_updated', $before, ['role_ids' => $roles->pluck('id')->all()]);
 
             return $user->load(['roles.permissions', 'permissions']);
+        }, 'users.manage');
+    }
+
+    /**
+     * Tạo hoặc cập nhật hồ sơ/credential admin trong phạm vi quyền người quản lý.
+     * Input: actor, payload đã validate và target tùy chọn; update cần account_version.
+     * Output: User đã nạp quyền; mật khẩu được model băm, audit không chứa credential.
+     * Side effect: transaction/lock, đổi credential/status thu hồi token; chặn tự vô hiệu hóa.
+     */
+    public function saveUser(User $actor, array $data, ?User $user = null): User
+    {
+        return $this->mutate($actor, function (User $freshActor) use ($data, $user): User {
+            $before = null;
+            if ($user) {
+                $user = User::query()->with(['roles.permissions', 'permissions'])->lockForUpdate()->findOrFail($user->id);
+                abort_unless(self::canManageUser($freshActor, $user), 403);
+                $this->assertVersion(self::accountVersion($user), $data['expected_version']);
+                abort_if($freshActor->is($user) && isset($data['status']) && $data['status'] !== 'active', 422, 'You cannot deactivate your own account.');
+                $before = $user->only(['name', 'email', 'username', 'status']);
+            }
+            $user ??= new User;
+            foreach (['email', 'username'] as $field) {
+                if (filled($data[$field] ?? null) && User::withTrashed()->where($field, $data[$field])
+                    ->when($user->exists, fn ($query) => $query->whereKeyNot($user->getKey()))->exists()) {
+                    throw ValidationException::withMessages([$field => 'This '.$field.' is already in use.']);
+                }
+            }
+            $user->fill(collect($data)->only(['name', 'email', 'username', 'password', 'status'])->all())->save();
+            $this->audit($freshActor, $user, $before === null ? 'admin_created' : 'admin_updated', $before,
+                [...$user->only(['name', 'email', 'username', 'status']), 'password_changed' => array_key_exists('password', $data)]);
+
+            return $user->load(['roles.permissions', 'permissions']);
+        }, 'users.manage');
+    }
+
+    /**
+     * Xóa mềm tài khoản admin và thu hồi token, giữ lịch sử/tác giả nghiệp vụ.
+     * Input: actor, target và account_version đã đọc.
+     * Output: void hoặc 403/409/422; chặn tự xóa và target ngoài phạm vi.
+     * Side effect: audit và xóa mềm trong cùng transaction/lock với việc đổi quyền.
+     */
+    public function removeUser(User $actor, User $user, string $version): void
+    {
+        $this->mutate($actor, function (User $freshActor) use ($user, $version): void {
+            $user = User::query()->with(['roles.permissions', 'permissions'])->lockForUpdate()->findOrFail($user->id);
+            abort_unless(self::canManageUser($freshActor, $user), 403);
+            abort_if($freshActor->is($user), 422, 'You cannot delete your own account.');
+            $this->assertVersion(self::accountVersion($user), $version);
+            $this->audit($freshActor, $user, 'admin_deleted', $user->only(['name', 'email', 'username', 'status']), null);
+            $user->delete();
         }, 'users.manage');
     }
 
@@ -454,7 +527,8 @@ final class RoleManagementService
         $pivotRole = app(PermissionRegistrar::class)->pivotRole;
 
         return DB::table($pivotTable)->where($pivotRole, $role->getKey())
-            ->where('model_type', (new User)->getMorphClass())->count();
+            ->where('model_type', (new User)->getMorphClass())
+            ->whereIn('model_id', User::query()->select('id'))->count();
     }
 
     /**
@@ -476,7 +550,7 @@ final class RoleManagementService
      * CHỨC NĂNG: Ghi audit mutation role hoặc tài khoản admin
      * INPUT: Actor, model subject, event và snapshot IDs trước/sau.
      * OUTPUT: void.
-     * SIDE EFFECT: Ghi activity_log, không ghi credential/email thật vào properties.
+     * SIDE EFFECT: Ghi activity_log với hồ sơ/IDs, không ghi password/hash/token vào properties.
      * EXCEPTION/TRANSACTION: Phải nằm trong transaction mutation; audit lỗi rollback.
      * =====================================================================
      */

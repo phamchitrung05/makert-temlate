@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Access\AccessIndexRequest;
+use App\Http\Requests\Admin\Access\AccessVersionRequest;
 use App\Http\Requests\Admin\Access\AdminUserRolesRequest;
+use App\Http\Requests\Admin\Access\AdminUserSaveRequest;
 use App\Http\Resources\Access\AdminRoleUserResource;
 use App\Http\Responses\BaseResponse;
 use App\Models\User;
@@ -13,10 +15,10 @@ use Illuminate\Http\JsonResponse;
 
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Xem tài khoản admin và thay danh sách role
+ * CHỨC NĂNG FILE: Quản lý hồ sơ/credential và danh sách role tài khoản admin.
  * =====================================================================
- * Phạm vi chỉ tài khoản quản trị, không làm danh sách Customer đang tạm hoãn hoặc CRUD credential.
- * CÁC HÀM/METHOD TRONG FILE: __construct(), index(), show(), update().
+ * Phạm vi chỉ tài khoản quản trị; không trả credential, giữ lịch sử khi xóa mềm.
+ * CÁC HÀM/METHOD TRONG FILE: __construct(), index(), show(), update(), store(), updateAccount(), destroy().
  * INPUT/OUTPUT CỦA CLASS (tổng thể): dữ liệu đã validate/admin -> DTO hoặc mutation quyền.
  * SIDE EFFECT: Theo boundary từng method; không gọi dịch vụ bên ngoài.
  * EXCEPTION/TRANSACTION: Quyền/validation/conflict trả 403/422/409; mutation dùng transaction.
@@ -75,5 +77,25 @@ final class AdminUserRoleController extends Controller
     public function update(AdminUserRolesRequest $request, User $user): JsonResponse
     {
         return BaseResponse::success(new AdminRoleUserResource($this->access->assign($request->user(), $user, $request->validated())), 'Admin roles updated.');
+    }
+
+    /** Input: hồ sơ/password đã validate và users.manage. Output: DTO 201 không secret; service ghi tài khoản và audit trong transaction. */
+    public function store(AdminUserSaveRequest $request): JsonResponse
+    {
+        return BaseResponse::success(new AdminRoleUserResource($this->access->saveUser($request->user(), $request->validated())), 'Admin created.', 201);
+    }
+
+    /** Input: User binding, hồ sơ/password optional và account_version. Output: DTO mới; service khóa, kiểm phạm vi và thu hồi token khi đổi credential/status. */
+    public function updateAccount(AdminUserSaveRequest $request, User $user): JsonResponse
+    {
+        return BaseResponse::success(new AdminRoleUserResource($this->access->saveUser($request->user(), $request->validated(), $user)), 'Admin updated.');
+    }
+
+    /** Input: User binding và account_version. Output: success hoặc lỗi scope/version; service xóa mềm và thu hồi token trong transaction. */
+    public function destroy(AccessVersionRequest $request, User $user): JsonResponse
+    {
+        $this->access->removeUser($request->user(), $user, $request->validated('expected_version'));
+
+        return BaseResponse::success(null, 'Admin deleted.');
     }
 }

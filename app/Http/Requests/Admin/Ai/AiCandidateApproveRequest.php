@@ -37,9 +37,14 @@ class AiCandidateApproveRequest extends AiCandidateApplyRequest
      */
     public function rules(): array
     {
+        $candidate = $this->route('aiImport');
+        $isSocial = data_get($candidate?->input_json, 'target_type', 'post') === 'social_post';
+
         return [
             ...parent::rules(),
-            'fields' => ['required', 'array', 'min:1', 'contains:title'],
+            'fields' => $isSocial
+                ? ['required', 'array', 'min:1']
+                : ['required', 'array', 'min:1', 'contains:title'],
             'expected_version' => ['required', 'string', 'size:64'],
             'expected_review_version' => ['required', 'string', 'size:64'],
             'reason' => ['sometimes', 'nullable', 'string', 'max:2000'],

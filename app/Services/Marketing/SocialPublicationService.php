@@ -25,6 +25,7 @@ use Illuminate\Validation\ValidationException;
  * - retry(): retry publication failed/retryable.
  * - ensurePublishable(): kiểm review/generation/image/target.
  * - idempotencyKey(): tạo key ổn định theo post/account/generation.
+ * - ensureConfirmed(): chặn gửi lại request có kết quả chưa rõ.
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : approved SocialPost, actor và target rows.
@@ -51,8 +52,11 @@ final class SocialPublicationService
             $targets = $locked->targets()->where('enabled', true)->get();
             $items = [];
             foreach ($targets as $target) {
+                foreach ($target->publications()->get() as $previous) {
+                    $this->ensureConfirmed($previous);
+                }
                 $key = $this->idempotencyKey($locked, (int) $target->social_account_id);
-                $publication = SocialPublication::query()->firstOrCreate(
+                $publication = SocialPublication::query()->lockForUpdate()->firstOrCreate(
                     ['idempotency_key' => $key],
                     [
                         'social_post_target_id' => $target->getKey(),
@@ -61,7 +65,7 @@ final class SocialPublicationService
                         'queued_at' => now(),
                     ],
                 );
-                if ($publication->status !== SocialPublicationStatus::Published) {
+                if ($publication->wasRecentlyCreated || in_array($publication->status, [SocialPublicationStatus::Failed, SocialPublicationStatus::Retryable], true)) {
                     $publication->forceFill([
                         'status' => SocialPublicationStatus::Queued,
                         'queued_at' => $publication->queued_at ?? now(),
@@ -73,7 +77,8 @@ final class SocialPublicationService
                 }
                 $items[] = ['publication_id' => (int) $publication->getKey(), 'target_id' => (int) $target->getKey(), 'status' => $publication->status->value];
             }
-            $locked->forceFill(['publication_status' => SocialPostPublicationStatus::Publishing])->save();
+            $allPublished = $items !== [] && collect($items)->every(fn (array $item): bool => $item['status'] === SocialPublicationStatus::Published->value);
+            $locked->forceFill(['publication_status' => $allPublished ? SocialPostPublicationStatus::Published : SocialPostPublicationStatus::Publishing])->save();
 
             return $items;
         });
@@ -95,6 +100,7 @@ final class SocialPublicationService
             if (! in_array($locked->status, [SocialPublicationStatus::Failed, SocialPublicationStatus::Retryable], true)) {
                 throw ValidationException::withMessages(['publication' => 'Publication hiện tại không thể retry.']);
             }
+            $this->ensureConfirmed($locked);
             $post = $locked->socialPostTarget?->socialPost;
             $this->ensurePublishable($post);
             $locked->forceFill(['status' => SocialPublicationStatus::Queued, 'queued_at' => now(), 'error_code' => null, 'error_message' => null])->save();
@@ -103,6 +109,20 @@ final class SocialPublicationService
 
             return $locked->refresh();
         });
+    }
+
+    /**
+     * Chặn retry hoặc tạo publication khác khi request trước chưa rõ kết quả.
+     * Input: publication có journal provider.
+     * Output: void hoặc ValidationException yêu cầu kiểm tra Page; không gọi API.
+     */
+    private function ensureConfirmed(SocialPublication $publication): void
+    {
+        if ($publication->requiresConfirmation()) {
+            throw ValidationException::withMessages([
+                'publication' => 'Chưa xác định kết quả tạo bài Facebook. Hãy kiểm tra Page; không thể đăng lại tự động để tránh trùng bài.',
+            ]);
+        }
     }
 
     /**

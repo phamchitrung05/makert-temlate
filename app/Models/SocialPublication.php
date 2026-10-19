@@ -19,6 +19,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * CÁC HÀM/METHOD TRONG FILE:
  * - casts(): ép status/attempts/metadata/date.
  * - socialPostTarget(): target sở hữu publication.
+ * - requiresConfirmation(): nhận biết request tạo bài chưa có kết quả xác nhận.
  * - getActivitylogOptions(): audit status/external ID/error bounded.
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
@@ -64,6 +65,18 @@ class SocialPublication extends Model
     public function socialPostTarget(): BelongsTo
     {
         return $this->belongsTo(SocialPostTarget::class);
+    }
+
+    /**
+     * Giữ request đã gửi khỏi bị đăng lại khi chưa xác định kết quả bên Facebook.
+     * Input: metadata journal và external ID của publication.
+     * Output: bool; chỉ đọc state hiện tại, không gọi API hoặc ghi database.
+     */
+    public function requiresConfirmation(): bool
+    {
+        return blank($this->external_post_id)
+            && ($this->error_code === 'SOCIAL_PUBLISH_UNCERTAIN'
+                || filled(data_get($this->response_metadata_json, 'feed_request_started_at')));
     }
 
     /**

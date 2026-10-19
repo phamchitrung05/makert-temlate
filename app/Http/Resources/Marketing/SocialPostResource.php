@@ -37,12 +37,8 @@ final class SocialPostResource extends JsonResource
         return [
             'id' => (int) $this->id,
             'campaign_id' => $this->campaign_id,
-            'product_id' => $this->product_id,
             'campaign' => $this->whenLoaded('campaign', fn () => $this->campaign ? [
                 'id' => (int) $this->campaign->id, 'name' => $this->campaign->name,
-            ] : null),
-            'product' => $this->whenLoaded('product', fn () => $this->product ? [
-                'id' => (int) $this->product->id, 'name' => $this->product->name,
             ] : null),
             'caption' => $this->caption,
             'facebook_variant' => $this->when($this->relationLoaded('variants'), fn () => $this->facebookVariant()),

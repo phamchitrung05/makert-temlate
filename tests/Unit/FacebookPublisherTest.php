@@ -9,6 +9,7 @@ use App\Models\SocialAccount;
 use App\Models\SocialPost;
 use App\Models\SocialPostTarget;
 use App\Models\SocialPostVariant;
+use App\Models\SocialPublication;
 use App\Services\Marketing\Publishing\FacebookPublisher;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -16,8 +17,18 @@ use Mockery;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Tests\TestCase;
 
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Kiểm payload gallery và message gửi Facebook bằng HTTP fake.
+ * =====================================================================
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - test_publisher_uploads_gallery_then_creates_feed_post(): kiểm thứ tự upload/feed.
+ * INPUT/OUTPUT CỦA CLASS (tổng thể): model giả lập -> assertion payload, không gọi API thật.
+ * =====================================================================
+ */
 final class FacebookPublisherTest extends TestCase
 {
+    /** Input: ba ảnh public và publication giả lập. Output: đúng attached media và caption variant. */
     public function test_publisher_uploads_gallery_then_creates_feed_post(): void
     {
         Http::fakeSequence()
@@ -36,7 +47,7 @@ final class FacebookPublisherTest extends TestCase
         $target->setRelation('socialAccount', $account);
         $variant = new SocialPostVariant([
             'platform' => SocialPlatform::Facebook,
-            'content_json' => ['body' => 'Nội dung Facebook', 'bullet_points' => ['Một ý'], 'hashtags' => ['#demo']],
+            'content_json' => ['body' => 'Nội dung Facebook', 'bullet_points' => ['Một ý'], 'hashtags' => ['#demo'], 'contact' => ['phone' => '0901234']],
         ]);
 
         $images = array_map(function (): MediaAsset {
@@ -49,14 +60,16 @@ final class FacebookPublisherTest extends TestCase
             return $image;
         }, range(1, 3));
 
-        $result = app(FacebookPublisher::class)->publish(new SocialPost(['caption' => 'legacy']), $target, $variant, $images);
+        $publication = Mockery::mock(SocialPublication::class)->makePartial();
+        $publication->shouldReceive('save')->andReturn(true);
+        $result = app(FacebookPublisher::class)->publish(new SocialPost(['caption' => 'legacy']), $target, $variant, $images, $publication);
 
         $this->assertSame('post-1', $result['external_id']);
         $this->assertSame(['media-1', 'media-2', 'media-3'], $result['metadata']['media_ids']);
         Http::assertSentCount(4);
         Http::assertSent(function (Request $request): bool {
             return str_ends_with($request->url(), '/feed')
-                && $request['message'] === "Nội dung Facebook\n\n✅ Một ý\n\n#demo";
+                && $request['message'] === "Nội dung Facebook\n\n✅ Một ý\n\nPhone: 0901234\n\n#demo";
         });
     }
 }

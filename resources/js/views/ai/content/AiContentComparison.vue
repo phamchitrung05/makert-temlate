@@ -19,6 +19,7 @@ const props = defineProps({
   loading: { type: Boolean, default: false },
   active: { type: Boolean, default: true },
   original: Boolean,
+  showSeo: { type: Boolean, default: true },
 })
 
 const syncScroll = shallowRef(true)
@@ -230,7 +231,10 @@ function syncPanels(event, side) {
               </template>
             </div>
 
-            <dl class="ai-content-comparison__metadata">
+            <dl
+              v-if="props.showSeo"
+              class="ai-content-comparison__metadata"
+            >
               <div
                 v-for="item in sourceMetadata"
                 :key="`source-${item.label}`"
@@ -318,7 +322,10 @@ function syncPanels(event, side) {
               </template>
             </div>
 
-            <dl class="ai-content-comparison__metadata">
+            <dl
+              v-if="props.showSeo"
+              class="ai-content-comparison__metadata"
+            >
               <div
                 v-for="item in draftMetadata"
                 :key="`draft-${item.label}`"

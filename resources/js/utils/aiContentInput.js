@@ -38,7 +38,7 @@ export const withoutAiTaxonomyOutputs = (outputs = []) => outputs.filter(output 
  * =====================================================================
  */
 export const createAiContentSource = (defaults = {}) => ({
-  targetType: 'post', type: 'url', url: '', text: '', html: '', prompt: '', file: null,
+  targetType: 'post', platform: 'facebook', type: 'url', url: '', text: '', html: '', prompt: '', file: null,
   provider: '', model: '', language: 'vi', length: 'medium',
   thumbnailMode: 'source', imageModelId: null, thumbnailPrompt: '',
   outputs: Array.isArray(defaults.outputs) ? withoutAiTaxonomyOutputs(defaults.outputs) : null,
@@ -59,6 +59,7 @@ export function validateAiContentSource(source, catalog) {
   if (catalog.error) return 'Không tải được model. Hãy tải lại catalog.'
   if (catalog.targetOptions && !catalog.targetOptions.some(target => target.value === source.targetType))
     return 'Chọn tài nguyên được phép tạo nội dung AI.'
+  if (source.targetType === 'social_post' && source.platform !== 'facebook') return 'Social hiện chỉ hỗ trợ Facebook.'
   if (!source.provider || !catalog.selectedModel) return 'Chọn provider và model để viết bài.'
   if (!catalog.selectedModel.capabilities?.includes('text_generation'))
     return 'Model này không hỗ trợ viết nội dung. Chọn model có khả năng Text generation trong AI Settings.'
@@ -155,7 +156,9 @@ export async function buildAiContentRequest(source, model) {
   const instructions = [
     `Viết bài bằng ${source.language === 'en' ? 'tiếng Anh' : 'tiếng Việt'}, độ dài tham khảo ${lengths[source.length] ?? lengths.medium} nếu nguồn đủ thông tin. Ưu tiên brief riêng, không lặp ý để kéo dài bài.`,
     source.type === 'prompt' ? 'Đầu vào là đề bài và yêu cầu viết, hãy phát triển thành một bài viết mới hoàn chỉnh.' : 'Bám sát nguồn, không bịa thông tin.',
-    outputs.includes('title') ? 'Tạo tiêu đề phù hợp với bài viết.' : `Dùng chính xác tiêu đề: ${source.title.trim()}`,
+    source.targetType === 'social_post'
+      ? 'Đây là Social Post; chỉ tạo các output đã chọn của platform, không tạo title, excerpt bài viết hoặc SEO.'
+      : (outputs.includes('title') ? 'Tạo tiêu đề phù hợp với bài viết.' : `Dùng chính xác tiêu đề: ${source.title.trim()}`),
     outputs.includes('seo') ? 'Tối ưu tiêu đề, mô tả SEO và cấu trúc heading tự nhiên.' : '',
     source.instructions?.trim(),
   ].filter(Boolean).join('\n')
@@ -166,7 +169,7 @@ export async function buildAiContentRequest(source, model) {
   }
 
   return articleRequestBody({
-    target_type: source.targetType || 'post', operation: 'create', ...(input ? { input } : rawSource), output_language: source.language,
+    target_type: source.targetType || 'post', platform: source.targetType === 'social_post' ? (source.platform || 'facebook') : undefined, operation: 'create', ...(input ? { input } : rawSource), output_language: source.language,
     provider: source.provider, model: source.model, model_id: model.id, instructions,
     ...writingOptions(source.writing),
     ...(source.targetType === 'post' || !source.targetType ? { category_ids: source.category_ids ?? [], tag_ids: source.tag_ids ?? [] } : {}),
@@ -189,7 +192,7 @@ export async function buildAiContentRequest(source, model) {
  * =====================================================================
  */
 export function buildAiContentRegenerateRequest(options = {}) {
-  const allowed = ['title', 'excerpt', 'content', 'seo', 'thumbnail']
+  const allowed = ['title', 'excerpt', 'content', 'seo', 'thumbnail', 'social_content', 'social_gallery', 'social_excerpt', 'social_video']
 
   /**
    * =====================================================================
@@ -201,7 +204,10 @@ export function buildAiContentRegenerateRequest(options = {}) {
    * =====================================================================
    */
   const groupFor = field => {
-    if (['content_html', 'description', 'documentation', 'lyrics'].includes(field)) return 'content'
+    if (['content_html', 'description', 'documentation', 'lyrics'].includes(field)) return options.targetType === 'social_post' ? 'social_content' : 'content'
+    if (['cta', 'hashtags', 'link_url'].includes(field)) return 'social_content'
+    if (['gallery_prompt', 'negative_prompt', 'aspect_ratio', 'slot_count'].includes(field)) return 'social_gallery'
+    if (['video_prompt', 'duration_seconds', 'scenes'].includes(field)) return 'social_video'
     if (['focus_keyword', 'seo_title', 'seo_description', 'canonical_url', 'robots_index', 'robots_follow', 'og_title', 'og_description'].includes(field)) return 'seo'
     if (['thumbnail_prompt', 'thumbnail_alt_text', 'cover'].includes(field)) return 'thumbnail'
 

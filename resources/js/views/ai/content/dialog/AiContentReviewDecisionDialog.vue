@@ -31,19 +31,41 @@ const categoryIds = ref([])
 const tagIds = ref([])
 const taxonomyConfirmed = ref(false)
 
-const fieldOptions = [
-  { title: 'Tiêu đề', value: 'title' },
-  { title: 'Tóm tắt', value: 'excerpt' },
-  { title: 'Nội dung', value: 'content' },
-  { title: 'SEO', value: 'seo' },
-  { title: 'Danh mục và tag thủ công', value: 'taxonomy' },
-]
-
 const locked = computed(() => props.busy || props.loading || props.blocked)
+const isSocial = computed(() => props.detail?.target_type === 'social_post')
+const outputOptions = computed(() => props.detail?.output_options ?? [])
+const manualTaxonomy = computed(() => props.detail?.manual_taxonomy !== false)
+
+const outputGroups = computed(() => props.detail?.output_groups?.length
+  ? props.detail.output_groups
+  : (isSocial.value ? ['social_content', 'social_gallery'] : ['title', 'excerpt', 'content', 'seo', 'taxonomy']))
+
+const outputLabel = (group, fallback) => outputOptions.value.find(option => option.value === group)?.title ?? fallback
+
+const fieldOptions = computed(() => {
+  const labels = {
+    title: 'Tiêu đề', excerpt: 'Tóm tắt', content: 'Nội dung', seo: 'SEO',
+    social_content: 'Social content', social_gallery: 'Gallery image',
+    social_excerpt: 'Social excerpt', social_video: 'Social video',
+  }
+
+  const groups = outputGroups.value.filter(group => group !== 'taxonomy' && group !== 'thumbnail')
+    .map(group => ({ title: outputLabel(group, labels[group] ?? group), value: group }))
+
+  if (isSocial.value || !manualTaxonomy.value) return groups
+
+  const requiredPostTitle = groups.some(option => option.value === 'title')
+    ? groups
+    : [{ title: outputLabel('title', labels.title), value: 'title' }, ...groups]
+
+  return [...requiredPostTitle, { title: 'Danh mục và tag thủ công', value: 'taxonomy' }]
+})
+
 const legacyTaxonomy = computed(() => props.detail?.draft?.taxonomy_origin !== 'manual')
+const requiredField = computed(() => isSocial.value ? 'social_content' : 'title')
 
 const canSubmit = computed(() => ['approve', 'reject'].includes(props.kind) && !locked.value && reason.value.trim().length <= 2000
-  && (props.kind === 'reject' ? Boolean(reason.value.trim()) : props.detail?.can_approve !== false && fields.value.includes('title')
+  && (props.kind === 'reject' ? Boolean(reason.value.trim()) : props.detail?.can_approve !== false && fields.value.includes(requiredField.value)
     && (!fields.value.includes('taxonomy') || !legacyTaxonomy.value || taxonomyConfirmed.value)))
 
 // Input: mở quyết định mới. Output: khởi tạo form một lần; GET lại cùng bài giữ bản nhập.
@@ -52,7 +74,8 @@ watch(() => [props.kind, props.detail?.job_id], ([kind], [previousKind] = []) =>
   displayKind.value = kind
   if (kind === previousKind) return
   reason.value = ''
-  fields.value = ['title', 'excerpt', 'content', 'seo', 'taxonomy', ...(props.detail?.has_thumbnail ? ['thumbnail'] : [])]
+  fields.value = [...fieldOptions.value.map(option => option.value)]
+  if (!isSocial.value && props.detail?.has_thumbnail && outputGroups.value.includes('thumbnail')) fields.value.push('thumbnail')
   categoryIds.value = props.detail?.draft?.taxonomy_origin === 'manual' ? [...(props.detail.draft.category_ids ?? [])] : []
   tagIds.value = props.detail?.draft?.taxonomy_origin === 'manual' ? [...(props.detail.draft.tag_ids ?? [])] : []
   taxonomyConfirmed.value = false
@@ -89,7 +112,7 @@ function finishClose() {
     @after-leave="finishClose"
   >
     <AppDialogLayout
-      :title="displayKind === 'reject' ? 'Từ chối content AI' : 'Duyệt tạo Post nháp'"
+      :title="displayKind === 'reject' ? 'Từ chối content AI' : (isSocial ? 'Duyệt tạo Social Post nháp' : 'Duyệt tạo Post nháp')"
       :subtitle="props.detail?.draft?.title"
       :close-disabled="props.busy"
       close-label="Đóng xác nhận duyệt content AI"
@@ -120,14 +143,14 @@ function finishClose() {
             color="info"
             class="mb-4"
           >
-            {{ displayKind === 'reject' ? 'Nội dung bị từ chối sẽ không tạo Post. Có thể tạo một bản AI mới từ tác vụ này.' : 'Duyệt sẽ tạo Post ở trạng thái nháp. Editor kiểm tra bài và chọn Publish trong mục Post.' }}
+            {{ displayKind === 'reject' ? 'Nội dung bị từ chối sẽ không tạo tài nguyên.' : (isSocial ? 'Duyệt sẽ tạo Social Post Facebook ở trạng thái nháp.' : 'Duyệt sẽ tạo Post ở trạng thái nháp. Editor kiểm tra bài và chọn Publish trong mục Post.') }}
           </VAlert>
           <template v-if="displayKind === 'approve'">
             <AppSelect
               v-model="fields"
-              :items="[...fieldOptions, ...(props.detail?.has_thumbnail ? [{ title: 'Ảnh đại diện', value: 'thumbnail' }] : [])]"
-              label="Nội dung đưa vào Post nháp"
-              hint="Tiêu đề bắt buộc để tạo Post mới."
+              :items="[...fieldOptions, ...(props.detail?.has_thumbnail && !isSocial ? [{ title: 'Ảnh đại diện', value: 'thumbnail' }] : [])]"
+              :label="isSocial ? 'Output đưa vào Social Post nháp' : 'Nội dung đưa vào Post nháp'"
+              :hint="isSocial ? 'Social content bắt buộc để tạo bản nháp.' : 'Tiêu đề bắt buộc để tạo Post mới.'"
               persistent-hint
               multiple
               chips

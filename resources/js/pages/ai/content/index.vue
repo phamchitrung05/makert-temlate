@@ -131,7 +131,7 @@ function openVersion(version) {
   }
 
   versionHistory.value = null
-  if (targetType === 'post') {
+  if (['post', 'social_post'].includes(targetType)) {
     void openReview({ id: versionId, runId: versionId, targetType, status: version?.status })
   } else {
     void openEditor({ id: versionId, runId: versionId, targetType, status: version?.status })
@@ -166,7 +166,7 @@ function editReviewedContent() {
   const detail = reviewState.value.detail
   if (!detail?.can_edit || reviewState.value.busy || reviewState.value.loading) return
   closeReview()
-  void openEditor({ id: detail.job_id, targetType: 'post', status: 'review' })
+  void openEditor({ id: detail.job_id, targetType: detail.target_type ?? 'post', status: 'review' })
 }
 
 /**

@@ -14,6 +14,7 @@ use App\Services\Ai\Content\Quality\ArticleQualityEvaluationService;
 use App\Services\Ai\Images\AiThumbnailService;
 use App\Services\Ai\Provenance\AiProvenanceService;
 use App\Services\Ai\Registries\TargetRegistry;
+use App\Services\Marketing\SocialPostLifecycleService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Spatie\Activitylog\Models\Activity;
@@ -72,6 +73,7 @@ final class AiContentReviewService
         private readonly AiProvenanceService $provenance,
         private readonly AiContentSanitizer $sanitizer,
         private readonly ArticleQualityEvaluationService $quality,
+        private readonly SocialPostLifecycleService $socialPosts,
     ) {}
 
     /**
@@ -100,6 +102,8 @@ final class AiContentReviewService
             : (($saved['status'] ?? null) === 'rejected' ? 'rejected'
                 : ($run->status === 'ready' ? 'pending_review' : 'not_ready'));
 
+        $target = data_get($run->input_json, 'target_type', 'post');
+
         return [
             'status' => $status,
             'revision' => (int) ($saved['revision'] ?? 0),
@@ -107,6 +111,7 @@ final class AiContentReviewService
             'reviewed_at' => $saved['reviewed_at'] ?? null,
             'reason' => $saved['reason'] ?? null,
             'post_id' => $run->applied_target_id,
+            'social_post_id' => $target === 'social_post' ? $run->applied_target_id : null,
         ];
     }
 
@@ -158,8 +163,15 @@ final class AiContentReviewService
     public function authorize(User $actor, AiImport $run): void
     {
         abort_unless((int) $run->created_by === (int) $actor->getKey(), 404);
+        $target = (string) data_get($run->input_json, 'target_type', 'post');
+        if ($target === 'social_post') {
+            abort_unless($actor->can('social_posts.create') || $actor->can('social_posts.update'), 403);
+            abort_unless($run->operation !== 'image', 422, 'Duyệt image không thuộc AI Content Social.');
+
+            return;
+        }
         abort_unless($actor->can('posts.manage'), 403);
-        abort_unless(data_get($run->input_json, 'target_type', 'post') === 'post' && $run->operation !== 'image', 422, 'Duyệt nội dung chỉ hỗ trợ bài Post.');
+        abort_unless($target === 'post' && $run->operation !== 'image', 422, 'Duyệt nội dung chỉ hỗ trợ bài Post.');
     }
 
     /**
@@ -190,9 +202,25 @@ final class AiContentReviewService
             $html = '<pre>'.htmlspecialchars($run->source_text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'</pre>';
         }
         $review = self::state($run);
+        $targetType = (string) data_get($run->input_json, 'target_type', 'post');
+        $platform = data_get($run->input_json, 'platform');
+        $isSocial = $targetType === 'social_post';
+        $targetConfig = $this->targets->resolve($targetType, is_string($platform) ? $platform : null);
+        $pipelineSnapshot = (array) data_get($run->input_json, 'pipeline_snapshot', []);
+        $outputGroups = array_values($pipelineSnapshot['outputs'] ?? $targetConfig['outputs'] ?? []);
+        $editorFields = array_values($pipelineSnapshot['editor_fields'] ?? $targetConfig['editor_fields'] ?? []);
+        $draftFields = $isSocial
+            ? array_values(array_unique(array_merge(
+                ['content', 'content_html', 'cta', 'hashtags', 'link_url', 'gallery_prompt', 'negative_prompt', 'aspect_ratio', 'slot_count'],
+                array_merge(...array_map(
+                    fn (string $group): array => (array) config('ai.agent.output_definitions.'.$group.'.fields', []),
+                    $outputGroups,
+                )),
+            )))
+            : ['title', 'content', 'content_html', 'excerpt', 'seo_title', 'seo_description', 'focus_keyword', 'category_ids', 'tag_ids', 'taxonomy_origin', 'thumbnail'];
         $canReview = $review['status'] === 'pending_review' && ! $run->expires_at?->isPast();
-        $quality = $this->quality->summary($run);
-        $qualityReady = ! $this->quality->requiresGate($run) || (($quality['eligibility']['eligible'] ?? false) === true);
+        $quality = $isSocial ? ['eligibility' => ['eligible' => true], 'rules' => []] : $this->quality->summary($run);
+        $qualityReady = $isSocial || ! $this->quality->requiresGate($run) || (($quality['eligibility']['eligible'] ?? false) === true);
         $thumbnail = MediaAsset::query()->with('media')->find(data_get($run->result_json, 'draft.thumbnail.media_asset_id'));
         $sourceTitle = trim((string) ($source['title'] ?? ''));
         $sourceDescription = trim((string) ($source['description'] ?? ''));
@@ -206,10 +234,13 @@ final class AiContentReviewService
         return [
             'job_id' => $run->id,
             'status' => $run->status,
-            'target_type' => 'post',
-            'draft' => $run->status === 'ready' ? array_intersect_key((array) data_get($run->result_json, 'draft', []), array_flip([
-                'title', 'content', 'content_html', 'excerpt', 'seo_title', 'seo_description', 'focus_keyword', 'category_ids', 'tag_ids', 'taxonomy_origin', 'thumbnail',
-            ])) : null,
+            'target_type' => $targetType,
+            'platform' => $platform,
+            'output_groups' => $outputGroups,
+            'output_options' => $this->targets->outputOptions($targetType, is_string($platform) ? $platform : null),
+            'editor_fields' => $editorFields,
+            'pipeline' => (array) ($pipelineSnapshot['pipeline'] ?? $targetConfig['pipeline'] ?? []),
+            'draft' => $run->status === 'ready' ? array_intersect_key((array) data_get($run->result_json, 'draft', []), array_flip($draftFields)) : null,
             'draft_version' => hash('sha256', json_encode(data_get($run->result_json, 'draft', []))),
             'review' => $review,
             'review_version' => self::version($run),
@@ -298,6 +329,9 @@ final class AiContentReviewService
     public function approve(User $actor, AiImport $candidate, array $data): array
     {
         $this->authorize($actor, $candidate);
+        if (data_get($candidate->input_json, 'target_type', 'post') === 'social_post') {
+            return $this->approveSocial($actor, $candidate, $data);
+        }
         $data['expected_version'] ??= hash('sha256', json_encode(data_get($candidate->result_json, 'draft', [])));
 
         return DB::transaction(function () use ($actor, $candidate, $data): array {
@@ -344,6 +378,42 @@ final class AiContentReviewService
             $this->recordDecision($run, $actor, 'approved', $data['reason'] ?? null);
 
             return ['post_id' => $post->id, 'fields' => $data['fields'], 'provenance' => data_get($run->result_json, 'provider'), 'review' => self::state($run)];
+        });
+    }
+
+    /** Input: Social candidate ready và fields content. Output: SocialPost draft đã tạo. */
+    private function approveSocial(User $actor, AiImport $candidate, array $data): array
+    {
+        $fields = array_values(array_unique(array_map('strval', (array) ($data['fields'] ?? []))));
+        if (array_diff($fields, ['content', 'social_content', 'social_gallery'])) {
+            throw ValidationException::withMessages(['fields' => 'Social Post chỉ áp dụng output của platform, không có title/SEO/taxonomy.']);
+        }
+
+        $data['expected_version'] ??= hash('sha256', json_encode(data_get($candidate->result_json, 'draft', [])));
+
+        return DB::transaction(function () use ($actor, $candidate, $data): array {
+            $run = AiImport::query()->lockForUpdate()->findOrFail($candidate->id);
+            $this->authorize($actor, $run);
+            $this->assertPending($run, $data);
+            $draft = (array) data_get($run->result_json, 'draft', []);
+            $caption = trim(strip_tags((string) ($draft['content_html'] ?? $draft['content'] ?? '')));
+            if ($caption === '') {
+                throw ValidationException::withMessages(['content' => 'Social Post cần nội dung Facebook.']);
+            }
+            $facebookContent = [
+                'body' => $caption,
+                'cta' => $draft['cta'] ?? null,
+                'hashtags' => $draft['hashtags'] ?? [],
+                'link_url' => $draft['link_url'] ?? null,
+            ];
+            $post = $this->socialPosts->create(['facebook_content' => $facebookContent], (int) $actor->getKey());
+            $appliedFields = array_values(array_intersect($fields, ['content', 'social_content', 'social_gallery']));
+            $appliedFields = $appliedFields === [] ? ['social_content'] : $appliedFields;
+            $run->forceFill(['applied_target_id' => $post->getKey(), 'applied_fields' => $appliedFields])->save();
+            $run->refresh();
+            $this->recordDecision($run, $actor, 'approved', $data['reason'] ?? null, false);
+
+            return ['social_post_id' => $post->getKey(), 'fields' => $appliedFields, 'review' => self::state($run)];
         });
     }
 
@@ -430,7 +500,7 @@ final class AiContentReviewService
      *
      * =====================================================================
      */
-    private function recordDecision(AiImport $run, User $actor, string $status, ?string $reason): void
+    private function recordDecision(AiImport $run, User $actor, string $status, ?string $reason, bool $archive = true): void
     {
         $review = [
             'status' => $status, 'revision' => self::state($run)['revision'] + 1,
@@ -438,7 +508,7 @@ final class AiContentReviewService
             'reviewed_at' => now()->toIso8601String(), 'reason' => filled($reason) ? trim($reason) : null,
         ];
         $run->forceFill(['source_meta_json' => array_replace((array) $run->source_meta_json, ['editorial' => $review])])->save();
-        if ($status === 'approved') {
+        if ($status === 'approved' && $archive) {
             app(AiArticleArchiveService::class)->archiveApproved($run->id, (int) $run->generation_no, legacy: true);
         }
         activity('ai-content')->causedBy($actor)->withProperties([

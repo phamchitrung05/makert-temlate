@@ -22,8 +22,8 @@ use Illuminate\Http\Request;
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : filter task_type/status, UUID task và actor xác thực.
  * - OUTPUT: summary phân trang hoặc status sau hủy; không trả payload nghiệp vụ.
- * - SIDE EFFECT: đọc tracker hoặc hủy đúng task owner qua service.
- * - AUTHORIZATION: mọi action đều scope user_id, owner khác nhận 404.
+ * - SIDE EFFECT: đọc tracker/hủy nguồn qua service; super-admin hủy task nhân viên có audit.
+ * - AUTHORIZATION: scope owner và quyền module; super-admin được xem metadata/hủy có audit.
  * =====================================================================
  */
 final class AiTaskRunController extends Controller
@@ -64,7 +64,7 @@ final class AiTaskRunController extends Controller
      */
     public function show(Request $request, AiTaskRun $taskRun, AiTaskRunService $service): JsonResponse
     {
-        abort_unless((int) $taskRun->user_id === (int) $request->user()->getKey(), 404);
+        abort_unless($service->canAccess($request->user(), $taskRun), 404);
         abort_unless($service->visibleTo($request->user())->whereKey($taskRun->id)->exists(), 403);
         $taskRun = $service->reconcile($taskRun);
 
@@ -83,7 +83,7 @@ final class AiTaskRunController extends Controller
      */
     public function cancel(Request $request, AiTaskRun $taskRun, AiTaskRunService $service): JsonResponse
     {
-        abort_unless((int) $taskRun->user_id === (int) $request->user()->getKey(), 404);
+        abort_unless($service->canAccess($request->user(), $taskRun), 404);
 
         return BaseResponse::success((new AiTaskRunResource($service->cancel($taskRun, $request->user())))->resolve($request));
     }

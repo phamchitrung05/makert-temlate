@@ -25,7 +25,6 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * CÁC HÀM/METHOD TRONG FILE:
  * - casts(): ép trạng thái và mốc review/schedule.
  * - campaign(): campaign context tùy chọn.
- * - product(): product context tùy chọn.
  * - targets(): các Page/account đích.
  * - variants(): nội dung theo từng nền tảng.
  * - publications(): publication qua target.
@@ -47,7 +46,7 @@ class SocialPost extends Model
     use HasFactory, HasMediaAssets, LogsActivity, SoftDeletes;
 
     protected $fillable = [
-        'campaign_id', 'product_id', 'caption', 'generation_status', 'review_status',
+        'campaign_id', 'caption', 'generation_status', 'review_status',
         'publication_status', 'generation_no', 'created_by', 'updated_by', 'reviewed_by',
         'reviewed_at', 'review_reason', 'scheduled_at',
     ];
@@ -79,17 +78,6 @@ class SocialPost extends Model
     public function campaign(): BelongsTo
     {
         return $this->belongsTo(Campaign::class);
-    }
-
-    /**
-     * Lấy product context của Social Post.
-     *
-     * Input: post hiện tại.
-     * Output: BelongsTo<Product|null>; fact snapshot nằm ở version.
-     */
-    public function product(): BelongsTo
-    {
-        return $this->belongsTo(Product::class);
     }
 
     /**
@@ -198,7 +186,7 @@ class SocialPost extends Model
         return LogOptions::defaults()
             ->useLogName('marketing')
             ->logOnly([
-                'campaign_id', 'product_id', 'caption', 'generation_status',
+                'campaign_id', 'caption', 'generation_status',
                 'review_status', 'publication_status', 'generation_no', 'created_by', 'updated_by',
                 'reviewed_by', 'reviewed_at', 'review_reason', 'scheduled_at',
             ])

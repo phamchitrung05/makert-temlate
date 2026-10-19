@@ -78,6 +78,7 @@ final class AiPublicErrorMessage
             'AI_PROVIDER_MISSING_FIELDS' => 'AI trả về thiếu trường nội dung bắt buộc. Hãy kiểm tra model hoặc tạo lại.',
             'AI_PROVIDER_INVALID_OUTPUT' => 'AI trả về dữ liệu không đúng cấu trúc. Hãy chọn model khác hoặc tạo lại.',
             'AI_PROVIDER_TIMEOUT' => 'AI phản hồi quá lâu. Hãy thử lại sau hoặc chọn model khác.',
+            'AI_PROVIDER_HTTP_429' => 'Dịch vụ AI đã hết quota hoặc đạt giới hạn yêu cầu. Hãy kiểm tra hạn mức và thử lại sau.',
             'AI_PROVIDER_NOT_CONFIGURED' => 'Dịch vụ hoặc model AI chưa được cấu hình hợp lệ. Hãy kiểm tra AI Settings và chọn lại model.',
             'AI_PROVIDER_NOT_ALLOWED' => 'Bạn chưa được phép dùng dịch vụ AI đã chọn. Hãy chọn dịch vụ khác hoặc kiểm tra quyền.',
             'AI_PROVIDER_REFUSAL' => 'Dịch vụ AI từ chối xử lý nguồn này. Hãy kiểm tra nội dung và điều chỉnh yêu cầu.',

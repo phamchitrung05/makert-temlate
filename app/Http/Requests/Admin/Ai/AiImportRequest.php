@@ -51,6 +51,8 @@ class AiImportRequest extends FormRequest
             'text' => $this->input('text', $input['text'] ?? null),
             'title' => $this->input('title', $input['title'] ?? null),
             'html' => $this->input('html', $input['html'] ?? null),
+            'platform' => $this->input('platform', $input['platform']
+                ?? (($this->input('target_type') ?: 'post') === 'social_post' ? 'facebook' : null)),
             'language' => $this->input('language', $this->input('output_language')),
         ];
         if ($this->has('requested_outputs')) {
@@ -99,8 +101,23 @@ class AiImportRequest extends FormRequest
      */
     public function rules(): array
     {
+        $targetKey = (string) ($this->input('target_type') ?: 'post');
+        $registry = app(TargetRegistry::class);
+        $platform = $this->input('platform');
+        try {
+            $target = $registry->resolve($targetKey, is_string($platform) ? $platform : null);
+            $platforms = collect($registry->platforms($targetKey))
+                ->filter(fn (array $item): bool => ($item['enabled'] ?? false) === true)
+                ->pluck('key')->values()->all();
+            $outputs = (array) ($target['outputs'] ?? []);
+        } catch (\InvalidArgumentException) {
+            $platforms = [];
+            $outputs = [];
+        }
+
         return [
-            'target_type' => ['nullable', Rule::in(array_keys(app(TargetRegistry::class)->all()))],
+            'target_type' => ['nullable', Rule::in(array_keys($registry->all()))],
+            'platform' => ['nullable', Rule::in($platforms)],
             'operation' => ['nullable', 'in:create'],
             'url' => ['nullable', 'url', 'max:2048', 'required_without_all:text,html,html_file'],
             'text' => ['nullable', 'string', 'max:200000', 'required_without_all:url,html,html_file'],
@@ -134,7 +151,7 @@ class AiImportRequest extends FormRequest
             'image_model' => ['nullable', 'string', 'max:190'],
             'image_model_id' => ['nullable', 'integer', 'min:1'],
             'requested_outputs' => ['sometimes', 'array', 'min:1'],
-            'requested_outputs.*' => ['string', 'distinct', Rule::in((array) config('ai.agent.targets.'.($this->input('target_type') ?: 'post').'.outputs', []))],
+            'requested_outputs.*' => ['string', 'distinct', Rule::in($outputs)],
         ];
     }
 
@@ -154,6 +171,24 @@ class AiImportRequest extends FormRequest
                 + (int) filled($this->input('html')) + (int) $this->hasFile('html_file');
             if ($sourceCount > 1) {
                 $validator->errors()->add('source', 'Chỉ gửi một nguồn: URL, text, HTML hoặc file HTML.');
+            }
+            $target = (string) ($this->input('target_type') ?: 'post');
+            $targetConfig = app(TargetRegistry::class)->all()[$target] ?? [];
+            $allowedInputs = array_values($targetConfig['inputs'] ?? ['url', 'file', 'html', 'text', 'prompt']);
+            $submittedInput = $this->hasFile('html_file') ? 'file'
+                : (filled($this->input('html')) ? 'html' : (filled($this->input('url')) ? 'url' : 'text'));
+            if (! in_array($submittedInput, $allowedInputs, true)) {
+                $validator->errors()->add('source', 'Loại nguồn này chưa được bật cho tài nguyên AI đã chọn.');
+            }
+            if ($target === 'social_post' && ($this->input('platform') ?? 'facebook') !== 'facebook') {
+                $validator->errors()->add('platform', 'Social hiện chỉ hỗ trợ Facebook.');
+            }
+            if ($target === 'social_post' && ($this->boolean('generate_seo') || in_array('seo', (array) $this->input('requested_outputs', []), true))) {
+                $validator->errors()->add('generate_seo', 'Social Post không hỗ trợ SEO.');
+            }
+            if ($target === 'social_post'
+                && (filled($this->input('category_ids')) || filled($this->input('tag_ids')))) {
+                $validator->errors()->add('category_ids', 'Social Post không dùng Category/Tag của Post.');
             }
             $html = $this->hasFile('html_file') && $this->file('html_file')->isValid()
                 ? (string) $this->file('html_file')->getContent() : (string) $this->input('html', '');

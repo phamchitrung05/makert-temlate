@@ -39,8 +39,20 @@ export function useAiContentCatalog(source) {
   const selectedProvider = computed(() => activeProviders.value.find(provider => provider.key === source.value.provider))
   const selectedTarget = computed(() => targets.value.find(target => target.key === source.value.targetType))
 
-  const outputDefinitions = computed(() => (selectedTarget.value?.output_options ?? [])
-    .filter(option => selectedTarget.value.outputs?.includes(option.value)))
+  const selectedProfile = computed(() => selectedTarget.value?.platform_profiles?.find(profile => profile.key === source.value.platform)
+    ?? selectedTarget.value?.platform_profiles?.find(profile => profile.enabled)
+    ?? null)
+
+  const outputDefinitions = computed(() => {
+    const outputs = selectedProfile.value?.outputs ?? selectedTarget.value?.outputs ?? []
+    const configuredOptions = selectedProfile.value?.output_options ?? selectedTarget.value?.output_options
+
+    const options = configuredOptions?.length
+      ? configuredOptions
+      : outputs.map(value => ({ value, title: value }))
+
+    return options.filter(option => outputs.includes(option.value))
+  })
 
   const supportsSource = option => option.value === 'thumbnail'
     ? source.value.thumbnailMode === 'generate' || source.value.type === 'url'
@@ -105,7 +117,15 @@ export function useAiContentCatalog(source) {
     reconcileOutputs()
   }
 
-  watch([selectedTarget, () => source.value.type, () => source.value.thumbnailMode, settings, loading, targetsLoading], reconcileOutputs, { flush: 'sync' })
+  watch([selectedTarget, selectedProfile, () => source.value.type, () => source.value.thumbnailMode, settings, loading, targetsLoading], reconcileOutputs, { flush: 'sync' })
+
+  watch(selectedTarget, target => {
+    const defaultPlatform = target?.platform_profiles?.find(profile => profile.enabled)?.key ?? target?.platforms?.[0] ?? null
+    const inputTypes = target?.inputs ?? target?.input_types ?? ['url', 'text']
+    const nextType = inputTypes.includes(source.value.type) ? source.value.type : inputTypes[0]
+    if ((defaultPlatform && source.value.platform !== defaultPlatform) || source.value.type !== nextType)
+      source.value = { ...source.value, ...(defaultPlatform ? { platform: defaultPlatform } : {}), type: nextType, outputs: null }
+  }, { flush: 'sync' })
 
   const catalog = computed(() => ({
     loading: loading.value || targetsLoading.value,
@@ -113,6 +133,12 @@ export function useAiContentCatalog(source) {
     contentDefaults: contentDefaults.value,
     outputOptions: outputOptions.value,
     targetOptions: targets.value.map(target => ({ title: target.label, value: target.key, icon: target.icon, color: target.color })),
+    inputTypes: selectedTarget.value?.inputs ?? selectedTarget.value?.input_types ?? ['url', 'text'],
+    manualTaxonomy: selectedTarget.value?.manual_taxonomy !== false,
+    platformOptions: (selectedTarget.value?.platform_profiles ?? [])
+      .filter(profile => profile.enabled)
+      .map(profile => ({ title: profile.label, value: profile.key })),
+    selectedPlatform: selectedProfile.value?.key ?? source.value.platform ?? null,
     providerOptions: activeProviders.value.map(provider => ({ title: provider.name, value: provider.key })),
     modelOptions: availableModels(selectedProvider.value).map(model => ({
       title: model.label || model.remote_model_id,

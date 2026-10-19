@@ -6,6 +6,8 @@ use App\Models\MediaAsset;
 use App\Models\SocialPost;
 use App\Models\SocialPostTarget;
 use App\Models\SocialPostVariant;
+use App\Models\SocialPublication;
+use App\Services\Marketing\FacebookContent;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -25,7 +27,7 @@ use RuntimeException;
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : SocialPost, Facebook Page target, public MediaAsset.
  * - OUTPUT: external post ID/url và request metadata bounded.
- * - SIDE EFFECT: gọi Meta Graph API; không ghi database.
+ * - SIDE EFFECT: gọi Meta Graph API; lưu journal upload/feed trước khi publish.
  * =====================================================================
  */
 final class FacebookPublisher implements SocialPublisherContract
@@ -44,12 +46,15 @@ final class FacebookPublisher implements SocialPublisherContract
     /**
      * Đăng ảnh và canonical caption lên Facebook Page.
      *
-     * Input: SocialPost, target có Page token và public image.
+     * Input: SocialPost, target có Page token, public image và publication đã claim.
      * Output: external_id/external_url/request_id/metadata bounded.
      * Side effect: HTTP POST Graph API; RuntimeException khi token/API/image lỗi.
      */
-    public function publish(SocialPost $post, SocialPostTarget $target, ?SocialPostVariant $variant, array $images): array
+    public function publish(SocialPost $post, SocialPostTarget $target, ?SocialPostVariant $variant, array $images, SocialPublication $publication): array
     {
+        if ($publication->requiresConfirmation()) {
+            throw new RuntimeException('Chưa xác định kết quả tạo bài Facebook. Hãy kiểm tra Page trước khi xử lý lại.');
+        }
         $account = $target->socialAccount;
         if (! $account || $account->provider?->value !== 'facebook' || blank($account->access_token)) {
             throw new RuntimeException('Facebook Page chưa có access token hợp lệ.');
@@ -60,8 +65,14 @@ final class FacebookPublisher implements SocialPublisherContract
         if ($images === []) {
             throw new RuntimeException('Facebook variant chưa có ảnh để publish.');
         }
-        $mediaIds = [];
-        foreach (array_slice($images, 0, 4) as $image) {
+        $images = array_slice($images, 0, 4);
+        $metadata = (array) $publication->response_metadata_json;
+        $gallery = array_map(fn (MediaAsset $image): int => (int) $image->getKey(), $images);
+        $mediaIds = ($metadata['gallery_asset_ids'] ?? []) === $gallery ? ($metadata['media_ids'] ?? []) : [];
+        foreach ($images as $index => $image) {
+            if (isset($mediaIds[$index])) {
+                continue;
+            }
             $url = $this->imageUrl($image);
             if ($url === null) {
                 throw new RuntimeException('Ảnh Social Post chưa có public URL để publish Facebook.');
@@ -76,50 +87,51 @@ final class FacebookPublisher implements SocialPublisherContract
             $body = $response->json();
             if (! $response->successful() || ! is_array($body) || blank($body['id'] ?? null)) {
                 $message = is_array($body) ? data_get($body, 'error.message') : null;
-                throw new RuntimeException('Facebook Graph API lỗi: '.($message ?: 'request không thành công').'.');
+                throw new RuntimeException('Facebook Graph API lỗi '.$response->status().': '.($message ?: 'request không thành công').'.');
             }
             $mediaIds[] = (string) $body['id'];
+            $metadata['gallery_asset_ids'] = $gallery;
+            $metadata['media_ids'] = $mediaIds;
+            $publication->forceFill(['response_metadata_json' => $metadata])->save();
         }
+        $content = (array) ($variant?->content_json ?? []);
+        $message = $content === [] ? (string) $post->caption : FacebookContent::caption($content);
+        $attachedMedia = json_encode(array_map(fn (string $id): array => ['media_fbid' => $id], $mediaIds), JSON_THROW_ON_ERROR);
+        // Ghi trước HTTP: timeout hoặc worker bị dừng không được tạo feed lần hai.
+        $metadata['feed_request_started_at'] = now()->toIso8601String();
+        $publication->forceFill(['response_metadata_json' => $metadata])->save();
         $response = Http::asForm()
             ->timeout((int) config('ai.import.timeout', 30))
             ->post($this->graphUrl('/'.rawurlencode($account->external_id).'/feed'), [
-                'message' => $this->caption($post, $variant),
-                'attached_media' => json_encode(array_map(fn (string $id): array => ['media_fbid' => $id], $mediaIds), JSON_THROW_ON_ERROR),
+                'message' => $message,
+                'attached_media' => $attachedMedia,
                 'access_token' => $account->access_token,
             ]);
         $body = $response->json();
         if (! $response->successful() || ! is_array($body) || blank($body['id'] ?? null)) {
+            // Phản hồi 4xx xác nhận yêu cầu bị từ chối; 5xx/mất phản hồi vẫn chưa rõ kết quả.
+            if ($response->clientError()) {
+                unset($metadata['feed_request_started_at']);
+                $publication->forceFill(['response_metadata_json' => $metadata])->save();
+            }
             $message = is_array($body) ? data_get($body, 'error.message') : null;
-            throw new RuntimeException('Facebook Graph API lỗi: '.($message ?: 'request không thành công').'.');
+            throw new RuntimeException('Facebook Graph API lỗi '.$response->status().': '.($message ?: 'request không thành công').'.');
         }
         $externalId = (string) $body['id'];
+        $metadata = array_merge($metadata, array_intersect_key($body, array_flip(['id', 'post_id'])));
+        $publication->forceFill([
+            'external_post_id' => $externalId,
+            'external_post_url' => 'https://www.facebook.com/'.rawurlencode($externalId),
+            'provider_request_id' => $response->header('x-fb-trace-id'),
+            'response_metadata_json' => $metadata,
+        ])->save();
 
         return [
             'external_id' => $externalId,
             'external_url' => 'https://www.facebook.com/'.rawurlencode($externalId),
             'request_id' => $response->header('x-fb-trace-id'),
-            'metadata' => array_merge(array_intersect_key($body, array_flip(['id', 'post_id'])), ['media_ids' => $mediaIds]),
+            'metadata' => $metadata,
         ];
-    }
-
-    private function caption(SocialPost $post, ?SocialPostVariant $variant): string
-    {
-        $content = (array) ($variant?->content_json ?? []);
-        if ($content === []) {
-            return (string) $post->caption;
-        }
-        $parts = [trim((string) ($content['body'] ?? ''))];
-        if (($bullets = collect((array) ($content['bullet_points'] ?? []))->map(fn ($item): string => '✅ '.trim((string) $item))->filter()->implode("\n")) !== '') {
-            $parts[] = $bullets;
-        }
-        if (filled($content['cta'] ?? null)) {
-            $parts[] = trim((string) $content['cta']);
-        }
-        if (($hashtags = collect((array) ($content['hashtags'] ?? []))->map(fn ($item): string => str_starts_with(trim((string) $item), '#') ? trim((string) $item) : '#'.trim((string) $item))->filter()->implode(' ')) !== '') {
-            $parts[] = $hashtags;
-        }
-
-        return implode("\n\n", array_filter($parts));
     }
 
     /**

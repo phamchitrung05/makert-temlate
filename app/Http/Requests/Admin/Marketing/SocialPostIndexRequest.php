@@ -41,7 +41,6 @@ final class SocialPostIndexRequest extends FormRequest
         return [
             'search' => ['nullable', 'string', 'max:160'],
             'campaign_id' => ['nullable', 'integer', 'min:1'],
-            'product_id' => ['nullable', 'integer', 'min:1'],
             'platform' => ['nullable', Rule::in(SocialPlatform::values())],
             'generation_status' => ['nullable', Rule::in(SocialPostGenerationStatus::values())],
             'review_status' => ['nullable', Rule::in(SocialPostReviewStatus::values())],

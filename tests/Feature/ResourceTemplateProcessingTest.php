@@ -35,6 +35,8 @@ use Tests\UsesIsolatedDatabase;
  * - setUp()/tearDown(): database, queue và storage cô lập.
  * - test_enqueue_registers_tracker_and_dispatches_after_commit(): kiểm queue.
  * - test_job_processes_fixture_and_is_idempotent(): kiểm ready/artifact/retry.
+ * - test_job_copies_artifact_when_directory_rename_fails(): kiểm fallback Windows.
+ * - test_failed_artifact_copy_is_cleaned_without_marking_template_ready(): kiểm copy dở không cấp preview.
  * - test_stale_token_cannot_overwrite_new_processing_run(): kiểm worker cũ.
  * - test_template_task_is_visible_in_shared_queue_and_can_cancel(): kiểm popup API contract.
  * - actor()/actorToken(): tạo admin permission.
@@ -134,6 +136,56 @@ final class ResourceTemplateProcessingTest extends TestCase
         $this->assertSame($ready->preview_path, $ready->fresh()->preview_path);
         $this->assertDatabaseCount('resource_version_template_screens', 18);
         $this->assertDatabaseCount('ai_task_runs', 1);
+    }
+
+    /** Input: rename directory bị Windows từ chối. Output: copy đủ screen và template/tracker ready. */
+    public function test_job_copies_artifact_when_directory_rename_fails(): void
+    {
+        [$version, $package] = $this->versionWithPackage();
+        $service = app(TemplateVersionProcessingService::class);
+        $task = $service->enqueue($version);
+        $template = $version->fresh()->template;
+        File::partialMock()->shouldReceive('moveDirectory')->once()->andReturn(false);
+
+        $service->process($version->id, $package->id, $template->package_sha256, $template->processing_token);
+
+        $ready = $template->fresh(['screens']);
+        $this->assertSame(ResourceVersionTemplateProcessingStatus::Ready, $ready->processing_status);
+        $this->assertSame('ready', $task->fresh()->status);
+        $this->assertCount(18, $ready->screens);
+        foreach ($ready->screens as $screen) {
+            $this->assertFileExists(Storage::disk('media_private')->path($ready->preview_path.'/'.$screen->source_path));
+        }
+    }
+
+    /** Input: rename lỗi, copy chỉ tạo file dở rồi trả false. Output: xóa artifact dở, không đánh ready hoặc cấp pointer. */
+    public function test_failed_artifact_copy_is_cleaned_without_marking_template_ready(): void
+    {
+        [$version, $package] = $this->versionWithPackage();
+        $service = app(TemplateVersionProcessingService::class);
+        $service->enqueue($version);
+        $template = $version->fresh()->template;
+        $partialPath = null;
+        File::partialMock()->shouldReceive('moveDirectory')->once()->andReturn(false);
+        File::shouldReceive('copyDirectory')->once()->andReturnUsing(function (string $source, string $destination) use (&$partialPath): bool {
+            $partialPath = $destination;
+            File::ensureDirectoryExists($destination);
+            File::put($destination.'/partial.html', 'Incomplete artifact');
+
+            return false;
+        });
+
+        try {
+            $service->process($version->id, $package->id, $template->package_sha256, $template->processing_token);
+            $this->fail('Copy thất bại phải được queue retry, không được cấp preview.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('Không thể publish template artifact private.', $exception->getMessage());
+        }
+
+        $this->assertNotNull($partialPath);
+        $this->assertDirectoryDoesNotExist($partialPath);
+        $this->assertNotSame(ResourceVersionTemplateProcessingStatus::Ready, $template->fresh()->processing_status);
+        $this->assertNull($template->fresh()->preview_path);
     }
 
     /**

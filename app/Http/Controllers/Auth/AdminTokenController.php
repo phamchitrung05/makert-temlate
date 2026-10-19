@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\Settings\ProjectSettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -48,7 +49,7 @@ class AdminTokenController extends Controller
      * - Không tạo admin session, không ghi password hoặc plain text token vào log
      *
      * EXCEPTION/TRANSACTION:
-     * - Không mở transaction; caller nhận HTTP response hoặc validation exception
+     * - Khóa User khi cấp token để không cấp token với credential vừa bị thay đổi.
      * =====================================================================
      */
     public function login(AdminLoginRequest $request): JsonResponse
@@ -56,24 +57,36 @@ class AdminTokenController extends Controller
         $credentials = $request->validated();
         $user = User::query()
             ->where('email', $credentials['email'])
-            ->where('status', 'active')
             ->first();
 
-        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
+        // Email không tồn tại vẫn chịu chi phí băm của driver hiện tại.
+        $passwordValid = false;
+        if ($user) {
+            $passwordValid = Hash::check($credentials['password'], $user->password);
+        } else {
+            Hash::make($credentials['password']);
+        }
+
+        if (! $passwordValid || ! $user?->isActive()) {
             throw ValidationException::withMessages([
                 'email' => config('messages.auth.admin.login.invalid_credentials'),
             ]);
         }
 
-        $user->forceFill(['last_login_at' => now()])->saveQuietly();
-
         // Thời hạn mới chỉ áp dụng token được cấp sau khi đổi Settings.
         $expiresAt = now()->addDays((int) app(ProjectSettingsService::class)->effective('security')['token_expiration_days']);
-        $token = $user->createToken(
-            $credentials['device_name'] ?? 'admin-web',
-            ['admin'],
-            $expiresAt,
-        );
+        $token = DB::transaction(function () use (&$user, $credentials, $expiresAt) {
+            $fresh = User::query()->lockForUpdate()->find($user->getKey());
+            if (! $fresh?->isActive() || ! hash_equals($user->password, $fresh->password)) {
+                throw ValidationException::withMessages([
+                    'email' => config('messages.auth.admin.login.invalid_credentials'),
+                ]);
+            }
+            $user = $fresh;
+            $user->forceFill(['last_login_at' => now()])->saveQuietly();
+
+            return $user->createToken($credentials['device_name'] ?? 'admin-web', ['admin'], $expiresAt);
+        });
 
         activity()
             ->causedBy($user)

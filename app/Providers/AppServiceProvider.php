@@ -26,6 +26,7 @@ use App\Models\Tag;
 use App\Models\Technology;
 use App\Models\TemplateShareLink;
 use App\Models\User;
+use App\Services\Access\RoleManagementService;
 use App\Services\Ai\Content\AiOutputValidator;
 use App\Services\Ai\Content\ArticleImportService;
 use App\Services\Ai\Content\ArticleSourceFetcher;
@@ -38,13 +39,16 @@ use App\Services\Ai\Registries\ProviderRegistry;
 use App\Services\Ai\Registries\SchemaRegistry;
 use App\Services\Ai\Registries\TargetRegistry;
 use App\Services\Ai\Runs\AiTaskRunRegistry;
+use App\Services\Ai\Runs\AiTaskRunService;
 use App\Services\Settings\ProjectSettingsService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -58,7 +62,7 @@ use Spatie\Permission\Models\Role;
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - register(): bind provider contract và các registry singleton.
- * - boot(): kích hoạt morph map.
+ * - boot(): đăng ký giới hạn login, quyền super-admin và morph map.
  * - registerBrandingViews(): cấp branding đã lưu khi render public/admin.
  * - enforceMorphMap(): khai báo alias/model cho quan hệ polymorphic.
  *
@@ -118,7 +122,7 @@ class AppServiceProvider extends ServiceProvider
      * INPUT:
      * - Không nhận tham số; sử dụng danh sách alias khai báo trong provider.
      * OUTPUT:
-     * - Không trả giá trị; runtime có morph map ổn định.
+     * - Đăng ký limiter đăng nhập, Gate super-admin/use-ai và morph map ổn định.
      * SIDE EFFECT:
      * - Đăng ký morph map cho các cột polymorphic dùng chung.
      * EXCEPTION/TRANSACTION:
@@ -130,10 +134,24 @@ class AppServiceProvider extends ServiceProvider
         // Chỉ query khi xử lý đăng nhập, không đọc DB tại thời điểm provider boot.
         RateLimiter::for('admin-login', function (Request $request) {
             $security = app(ProjectSettingsService::class)->effective('security');
+            $email = $request->input('email');
+            $emailKey = hash('sha256', Str::transliterate(Str::lower(trim(is_string($email) ? $email : ''))));
+            $attempts = (int) $security['login_max_attempts'];
+            $minutes = (int) $security['login_decay_minutes'];
 
-            return Limit::perMinutes($security['login_decay_minutes'], $security['login_max_attempts'])
-                ->by($request->ip());
+            return [
+                Limit::perMinutes($minutes, $attempts)->by('pair:'.$emailKey.'|'.$request->ip()),
+                Limit::perMinutes($minutes, $attempts * 10)->by('account:'.$emailKey),
+                Limit::perMinutes($minutes, $attempts * 20)->by('ip:'.$request->ip()),
+            ];
         });
+        // Chỉ bỏ qua kiểm tra permission trong catalog, vẫn chạy policy và ràng buộc owner.
+        Gate::before(function ($user, string $ability): ?bool {
+            return $user instanceof User && $user->isActive()
+                && in_array($ability, RoleManagementService::permissionNames(), true)
+                && $user->hasRole('super-admin', 'admin') ? true : null;
+        });
+        Gate::define('use-ai', fn (User $user): bool => app(AiTaskRunService::class)->canUse($user));
         $this->enforceMorphMap();
         $this->registerBrandingViews();
     }

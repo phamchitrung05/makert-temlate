@@ -486,7 +486,7 @@ final class AccessManagementApiTest extends TestCase
      * =====================================================================
      * CHỨC NĂNG: Đổi role permissions có hiệu lực với token đã cấp
      * INPUT: Token reader hiện có và root sửa quyền role của reader.
-     * OUTPUT: GET từ 200 chuyển 403 mà không cấp token mới.
+     * OUTPUT: GET từ 200 chuyển 401 vì token cũ bị thu hồi sau khi đổi quyền.
      * SIDE EFFECT: Sửa pivot qua API và invalidation permission cache.
      * EXCEPTION/TRANSACTION: Mutation commit trước khi request reader mới chạy.
      * =====================================================================
@@ -504,7 +504,7 @@ final class AccessManagementApiTest extends TestCase
             'name' => 'temporary-reader', 'permission_ids' => [], 'expected_version' => $created->json('data.version'),
         ])->assertOk();
         Auth::forgetGuards();
-        $this->withToken($readerToken)->getJson('/api/admin/roles')->assertForbidden();
+        $this->withToken($readerToken)->getJson('/api/admin/roles')->assertUnauthorized();
     }
 
     /**
@@ -659,7 +659,7 @@ final class AccessManagementApiTest extends TestCase
      * =====================================================================
      * CHỨC NĂNG: Chặn customer và admin đã suspended khỏi access API
      * INPUT: Customer token có cả ability admin và root token của admin suspended.
-     * OUTPUT: HTTP 403; không gọi mutation hoặc trả dữ liệu access.
+     * OUTPUT: Customer nhận 403, token admin suspended bị thu hồi nhận 401; không trả dữ liệu access.
      * SIDE EFFECT: Fixture token/status ở database test cô lập.
      * EXCEPTION/TRANSACTION: Middleware/FormRequest chặn trước service.
      * =====================================================================
@@ -677,8 +677,8 @@ final class AccessManagementApiTest extends TestCase
         $token = $admin->createToken('suspended-access', ['admin'])->plainTextToken;
         $admin->update(['status' => 'suspended']);
         Auth::forgetGuards();
-        $this->withToken($token)->getJson('/api/admin/roles')->assertForbidden();
-        $this->withToken($token)->postJson('/api/admin/roles', ['name' => 'suspended-role', 'permission_ids' => []])->assertForbidden();
+        $this->withToken($token)->getJson('/api/admin/roles')->assertUnauthorized();
+        $this->withToken($token)->postJson('/api/admin/roles', ['name' => 'suspended-role', 'permission_ids' => []])->assertUnauthorized();
         $this->assertDatabaseMissing('roles', ['name' => 'customer-role']);
         $this->assertDatabaseMissing('roles', ['name' => 'suspended-role']);
     }

@@ -1,6 +1,6 @@
 <!--
   =====================================================================
-  CHỨC NĂNG FILE: Form tạo Social Post draft từ product/campaign.
+  CHỨC NĂNG FILE: Form tạo Social Post draft độc lập với Product.
   =====================================================================
   Form cho phép caption thủ công hoặc để AI tạo, chọn nhiều Page nhưng không
   tạo caption riêng theo platform.
@@ -10,7 +10,7 @@
   - submit(): validate local và emit payload.
 
   INPUT/OUTPUT CỦA COMPONENT:
-  - INPUT : v-model open, products/campaigns/accounts options.
+  - INPUT : v-model open, campaigns/accounts options.
   - OUTPUT: emits update:modelValue, submit(payload).
   =====================================================================
 -->
@@ -20,16 +20,18 @@ import { reactive, watch } from 'vue'
 
 const props = defineProps({
   modelValue: Boolean,
+
+  // Kept as a compatibility prop while existing callers migrate; never rendered or submitted.
   products: { type: Array, default: () => [] },
   campaigns: { type: Array, default: () => [] },
   accounts: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits(['update:modelValue', 'submit'])
-const form = reactive({ campaign_id: null, product_id: null, caption: '', target_account_ids: [], generate: true })
+const form = reactive({ campaign_id: null, caption: '', target_account_ids: [], generate: true })
 
 function reset() {
-  Object.assign(form, { campaign_id: null, product_id: null, caption: '', target_account_ids: [], generate: true })
+  Object.assign(form, { campaign_id: null, caption: '', target_account_ids: [], generate: true })
 }
 
 function submit() {
@@ -63,19 +65,6 @@ watch(() => props.modelValue, open => { if (open) reset() })
           Caption và ảnh sẽ được tạo bất đồng bộ. Bài chỉ nằm ở draft cho đến khi bạn duyệt.
         </VAlert>
         <VRow>
-          <VCol
-            cols="12"
-            md="6"
-          >
-            <VSelect
-              v-model="form.product_id"
-              :items="products"
-              item-title="name"
-              item-value="id"
-              label="Sản phẩm"
-              clearable
-            />
-          </VCol>
           <VCol
             cols="12"
             md="6"

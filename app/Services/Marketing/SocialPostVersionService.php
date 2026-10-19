@@ -121,11 +121,7 @@ final class SocialPostVersionService
         return [
             'context_hash' => $context['context_hash'] ?? null,
             'language' => $context['language'] ?? 'vi',
-            'product' => $context['product'] ?? null,
             'campaign' => $context['campaign'] ?? null,
-            'facts' => array_slice((array) ($context['facts'] ?? []), 0, 100),
-            'allowed_fact_ids' => array_slice((array) ($context['allowed_fact_ids'] ?? []), 0, 100),
-            'reference_asset_ids' => array_slice((array) ($context['reference_asset_ids'] ?? []), 0, 20),
             'visual_constraints' => $context['visual_constraints'] ?? [],
         ];
     }

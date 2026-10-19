@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Marketing;
 
+use App\Enums\MediaAssetField;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Marketing\SocialPostGenerationRequest;
 use App\Http\Requests\Admin\Marketing\SocialPostIndexRequest;
@@ -10,10 +11,9 @@ use App\Http\Requests\Admin\Marketing\SocialPostStoreRequest;
 use App\Http\Requests\Admin\Marketing\SocialPostUpdateRequest;
 use App\Http\Requests\Admin\Marketing\SocialPostVariantContentRequest;
 use App\Http\Resources\Marketing\SocialPostResource;
-use App\Enums\MediaAssetField;
-use App\Models\SocialPostVariant;
 use App\Http\Responses\BaseResponse;
 use App\Models\SocialPost;
+use App\Models\SocialPostVariant;
 use App\Models\SocialPublication;
 use App\Services\Marketing\SocialPostGenerationService;
 use App\Services\Marketing\SocialPostLifecycleService;
@@ -38,6 +38,9 @@ use Symfony\Component\HttpFoundation\Response;
  * - versions()/publications(): đọc audit/publication history.
  * - publish()/retryPublication(): tạo hoặc retry publication jobs.
  * - adminUser(): lấy actor đã authenticated.
+ * - variants()/updateFacebookContent(): đọc variant và cập nhật content Facebook.
+ * - replaceFacebookImages()/reorderFacebookImages(): thay và sắp xếp gallery.
+ * - generateFacebookContent()/generateFacebookImages(): tạo nội dung/ảnh Facebook.
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : admin request và SocialPost route binding.
@@ -58,25 +61,29 @@ final class SocialPostController extends Controller
     {
         $filters = $request->validated();
         $query = SocialPost::query()
-            ->with(['campaign', 'product', 'targets.socialAccount', 'targets.socialPostVariant', 'variants.mediaAssetUsages.mediaAsset.media', 'mediaAssetUsages.mediaAsset.media'])
+            ->with(['campaign', 'targets.socialAccount', 'targets.socialPostVariant', 'variants.mediaAssetUsages.mediaAsset.media', 'mediaAssetUsages.mediaAsset.media'])
             ->when(filled($filters['search'] ?? null), fn ($q) => $q->where('caption', 'like', '%'.addcslashes((string) $filters['search'], '%_').'%'))
             ->when(isset($filters['campaign_id']), fn ($q) => $q->where('campaign_id', $filters['campaign_id']))
-            ->when(isset($filters['product_id']), fn ($q) => $q->where('product_id', $filters['product_id']))
             ->when(isset($filters['generation_status']), fn ($q) => $q->where('generation_status', $filters['generation_status']))
             ->when(isset($filters['review_status']), fn ($q) => $q->where('review_status', $filters['review_status']))
             ->when(isset($filters['publication_status']), fn ($q) => $q->where('publication_status', $filters['publication_status']))
-            ->when(isset($filters['platform']), fn ($q) => $q->whereHas('targets', fn ($targets) => $targets->where('platform', $filters['platform'])))
+            // Draft chưa chọn Page vẫn thuộc platform của variant; nhóm OR giữ nguyên các filter khác.
+            ->when(filled($filters['platform'] ?? null), fn ($q) => $q->where(fn ($platformQuery) => $platformQuery
+                ->whereHas('variants', fn ($variants) => $variants->where('platform', $filters['platform']))
+                ->orWhereHas('targets', fn ($targets) => $targets->where('platform', $filters['platform']))))
             ->when(filled($filters['created_from'] ?? null), fn ($q) => $q->whereDate('created_at', '>=', $filters['created_from']))
             ->when(filled($filters['created_to'] ?? null), fn ($q) => $q->whereDate('created_at', '<=', $filters['created_to']))
             ->orderByDesc('created_at')->orderByDesc('id');
         $paginator = $query->paginate($this->resolvePerPage($request), ['*'], 'page', (int) ($filters['page'] ?? 1));
-        $stats = [
-            'draft' => SocialPost::query()->where('review_status', 'draft')->count(),
-            'pending_review' => SocialPost::query()->where('review_status', 'pending_review')->count(),
-            'approved' => SocialPost::query()->where('review_status', 'approved')->count(),
-            'published' => SocialPost::query()->where('publication_status', 'published')->count(),
-            'failed' => SocialPost::query()->where('review_status', 'rejected')->count(),
-        ];
+        $totals = SocialPost::query()->selectRaw(
+            'COUNT(CASE WHEN review_status = ? THEN 1 END) AS draft, '
+            .'COUNT(CASE WHEN review_status = ? THEN 1 END) AS pending_review, '
+            .'COUNT(CASE WHEN review_status = ? THEN 1 END) AS approved, '
+            .'COUNT(CASE WHEN publication_status = ? THEN 1 END) AS published, '
+            .'COUNT(CASE WHEN review_status = ? THEN 1 END) AS failed',
+            ['draft', 'pending_review', 'approved', 'published', 'rejected'],
+        )->toBase()->first();
+        $stats = array_map(intval(...), (array) $totals);
 
         return BaseResponse::paginated(SocialPostResource::collection($paginator), 'Danh sách Social Post.', ['stats' => $stats]);
     }

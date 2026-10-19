@@ -4,7 +4,6 @@ namespace App\Http\Resources\Posts;
 
 use App\Enums\MediaAssetField;
 use App\Http\Resources\Media\MediaAssetResource;
-use App\Models\Slug;
 use App\Services\SeoMetadataService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -14,7 +13,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * CHỨC NĂNG FILE: Serialize Post, metadata SEO và media đã tải.
  * CÁC HÀM/METHOD TRONG FILE:
  * - toArray(): serialize Post, SEO và media.
- * - primarySlugFromLoadedRelation(): lấy slug primary từ relation đã load.
  * INPUT/OUTPUT CỦA CLASS (tổng thể): Post/request -> mảng JSON API.
  * =====================================================================
  */
@@ -44,7 +42,7 @@ class PostResource extends JsonResource
             ->map(fn ($usage) => $usage->mediaAsset)
             ->filter();
 
-        $slug = $this->primarySlugFromLoadedRelation()?->slug;
+        $slug = $this->primarySlug()?->slug;
         $service = app(SeoMetadataService::class);
         $seo = $service->raw($this->resource);
         $ogImage = $this->resource->seoMetadata?->relationLoaded('ogImage')
@@ -91,21 +89,5 @@ class PostResource extends JsonResource
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];
-    }
-
-    /**
-     * Trả slug primary từ relation đã eager load để list Post không tạo N+1;
-     * fallback về model helper cho các caller chỉ hydrate một Post.
-     * Input: relation slugs. Output: slug primary của locale hoặc null.
-     */
-    private function primarySlugFromLoadedRelation(): ?Slug
-    {
-        if (! $this->resource->relationLoaded('slugs')) {
-            return $this->primarySlug();
-        }
-
-        return $this->slugs
-            ->first(fn ($slug): bool => $slug->is_primary
-                && $slug->locale === config('app.locale'));
     }
 }

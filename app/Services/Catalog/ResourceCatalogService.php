@@ -2,6 +2,7 @@
 
 namespace App\Services\Catalog;
 
+use App\Enums\MediaAssetField;
 use App\Enums\ResourceType;
 use App\Enums\ResourceVersionStatus;
 use App\Models\Resource;
@@ -21,6 +22,7 @@ use Illuminate\Support\Str;
  * - card(): DTO card allowlist có default version/template state.
  * - detail(): DTO detail có SEO/screens bounded.
  * - visibleVersion(): chọn default ready/template/package clean.
+ * - versionRelations(): quan hệ version/package để eager load theo lô.
  * INPUT/OUTPUT CỦA CLASS (tổng thể): filters/slug -> paginator/DTO public.
  * =====================================================================
  */
@@ -45,6 +47,7 @@ final class ResourceCatalogService
                 'seoMetadata',
                 'mediaAssetUsages.mediaAsset.media',
             ])
+            ->with($this->versionRelations())
             ->orderByDesc('published_at')->orderByDesc('id');
         if (filled($filters['q'] ?? null)) {
             $query->where(fn ($q) => $q->where('title', 'like', '%'.$filters['q'].'%')->orWhere('short_description', 'like', '%'.$filters['q'].'%'));
@@ -66,7 +69,7 @@ final class ResourceCatalogService
             return null;
         }
 
-        return [$resource->load(['slugs', 'seoMetadata', 'categories']), ! $record->is_primary];
+        return [$resource->load(['slugs', 'seoMetadata', 'categories.slugs', 'mediaAssetUsages.mediaAsset.media']), ! $record->is_primary];
     }
 
     /** Input: public Resource. Output: bounded catalog card. */
@@ -104,17 +107,15 @@ final class ResourceCatalogService
     /** Input: Resource. Output: default ready/template/package-clean version or null. */
     public function visibleVersion(Resource $resource): ?ResourceVersion
     {
-        $versions = $resource->versions()
-            ->where('status', ResourceVersionStatus::Ready)
-            ->where('is_default', true)
-            ->with(['template.screens', 'mediaAssetUsages.mediaAsset.media'])
-            ->get();
-        foreach ($versions as $version) {
-            if ($resource->type !== ResourceType::Template || ! $version->template || $version->template->processing_status->value !== 'ready') {
+        $resource->loadMissing($this->versionRelations());
+        foreach ($resource->versions as $version) {
+            if ($resource->type !== ResourceType::Template || $version->status !== ResourceVersionStatus::Ready
+                || ! $version->is_default || ! $version->template || $version->template->processing_status->value !== 'ready') {
                 continue;
             }
             try {
-                $this->packages->cleanPackageFor($version);
+                $this->packages->cleanLoadedPackageFor($version);
+
                 return $version;
             } catch (\Throwable) {
                 continue;
@@ -122,5 +123,16 @@ final class ResourceCatalogService
         }
 
         return null;
+    }
+
+    /** Input: không có. Output: quan hệ ready/default và package/template để đọc catalog theo lô. */
+    private function versionRelations(): array
+    {
+        return [
+            'versions' => fn ($query) => $query->where('status', ResourceVersionStatus::Ready)->where('is_default', true),
+            'versions.template.screens',
+            'versions.mediaAssetUsages' => fn ($query) => $query->where('field', MediaAssetField::ResourceVersionPackage),
+            'versions.mediaAssetUsages.mediaAsset.media',
+        ];
     }
 }

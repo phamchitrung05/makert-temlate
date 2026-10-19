@@ -23,7 +23,7 @@ final class AdminRoleUserResource extends JsonResource
      * =====================================================================
      * CHỨC NĂNG: Tạo DTO và quyền chỉnh role tài khoản
      * INPUT: Request actor và User eager loaded.
-     * OUTPUT: Hồ sơ tối thiểu, roles kèm icon, version, can_edit_roles.
+     * OUTPUT: Hồ sơ, roles, version gán role/account_version và các cờ quản lý; không credential.
      * SIDE EFFECT: Không ghi dữ liệu.
      * EXCEPTION/TRANSACTION: Không mở transaction.
      * =====================================================================
@@ -38,6 +38,9 @@ final class AdminRoleUserResource extends JsonResource
             'created_at' => $this->created_at?->toISOString(),
             'roles' => $this->roles->where('guard_name', 'admin')->map(fn ($role) => $role->only(['id', 'name', 'icon']))->values()->all(),
             'version' => RoleManagementService::userVersion($this->resource),
+            'account_version' => RoleManagementService::accountVersion($this->resource),
+            'can_edit_account' => RoleManagementService::canManageUser($actor, $this->resource),
+            'can_delete_account' => $actor->id !== $this->id && RoleManagementService::canManageUser($actor, $this->resource),
             'can_edit_roles' => $actor->can('users.manage') && $actor->id !== $this->id
                 && RoleManagementService::canGrant($actor, $this->resource->getAllPermissions())
                 && (! $this->resource->hasRole('super-admin', 'admin') || $actor->hasRole('super-admin', 'admin')),

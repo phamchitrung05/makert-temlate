@@ -49,7 +49,7 @@ function emitAction(event) {
         </VAvatar>
       </template>
       <VCardTitle class="text-body-1 text-truncate">
-        {{ post.product?.name || 'Social Post' }}
+        {{ post.campaign?.name || 'Social Post' }}
       </VCardTitle>
       <template #append>
         <VChip

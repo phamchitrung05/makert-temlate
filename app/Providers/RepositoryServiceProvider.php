@@ -23,7 +23,6 @@ use Illuminate\Support\ServiceProvider;
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - register(): khai báo binding interface sang lớp Eloquent
- * - boot(): không dùng, để trống theo chuẩn service provider
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : các interface trong App\Repositories\Contracts
@@ -49,20 +48,5 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(CategoryRepositoryInterface::class, CategoryRepositoryEloquent::class);
         $this->app->bind(TagRepositoryInterface::class, TagRepositoryEloquent::class);
         $this->app->bind(TechnologyRepositoryInterface::class, TechnologyRepositoryEloquent::class);
-    }
-
-    /**
-     * =====================================================================
-     * CHỨC NĂNG: Khởi động cấu hình runtime của repository
-     * =====================================================================
-     *
-     * SIDE EFFECT:
-     * - Không có; giữ lại để tuân thủ chữ ký của ServiceProvider
-     * Input: tham số theo chữ ký `boot()` và state đã hydrate của class.
-     * Output: giá trị theo kiểu trả về của `boot()`; side effect/exception giữ theo implementation.
-     */
-    public function boot(): void
-    {
-        //
     }
 }

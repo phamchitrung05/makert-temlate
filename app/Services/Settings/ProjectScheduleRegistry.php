@@ -31,6 +31,7 @@ final class ProjectScheduleRegistry
     {
         $tasks = [
             ['command' => 'ai-import:cleanup', 'title' => 'Dọn tác vụ AI Content hết hạn', 'frequency' => 'daily', 'overlap' => 30],
+            ['command' => 'media:prune-deleted', 'title' => 'Dọn file media đã xóa mềm quá 30 ngày', 'frequency' => 'weekly', 'overlap' => 60],
             ['command' => 'ai:cleanup-writing-profile-analyses', 'title' => 'Dọn phân tích văn phong hết hạn', 'frequency' => 'daily', 'overlap' => 30],
             ['command' => 'resource-templates:diagnose', 'title' => 'Chẩn đoán template processing', 'frequency' => 'daily', 'overlap' => 30],
             ['command' => 'marketing:social-post-drafts', 'title' => 'Tạo Social Post draft hằng ngày', 'frequency' => 'daily', 'overlap' => 30],

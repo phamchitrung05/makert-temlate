@@ -18,7 +18,7 @@ use Spatie\LaravelSettings\Exceptions\MissingSettings;
  * =====================================================================
  * CHỨC NĂNG FILE: Đọc/lưu Settings ngoài AI, quản lý version và file branding.
  * CÁC HÀM/METHOD TRONG FILE:
- * - defaults()/stored()/effective()/section(): đọc cấu hình và DTO an toàn.
+ * - defaults()/stored()/effective()/section(): đọc cấu hình, cache trong request và DTO an toàn.
  * - update(): khóa/version, lưu partial payload và audit trong transaction.
  * - mediaPolicy()/imageProfile()/locales(): cấu hình runtime và options.
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
@@ -97,17 +97,29 @@ final class ProjectSettingsService
         };
     }
 
-    /** Input: group. Output: typed payload; chỉ fallback khi schema chưa migrate. */
+    /** Input: group. Output: typed payload cache trong request; console luôn đọc mới, fallback khi chưa migrate. */
     private function stored(string $group): array
     {
+        $request = request();
+        $cacheKey = 'project-settings.'.$group;
+        if ($request->attributes->has($cacheKey)) {
+            return $request->attributes->get($cacheKey);
+        }
         if (! Schema::hasTable('settings')) {
             return ['version' => 0];
         }
         try {
-            return app(self::CLASSES[$group])->refresh()->toArray();
+            $values = app(self::CLASSES[$group])->refresh()->toArray();
         } catch (MissingSettings) {
-            return ['version' => 0];
+            $values = ['version' => 0];
         }
+
+        // Request mới tự hết cache; queue/command không giữ snapshot giữa các job.
+        if ($request->route() !== null) {
+            $request->attributes->set($cacheKey, $values);
+        }
+
+        return $values;
     }
 
     /** Input: group. Output: cấu hình hiệu lực; mail password chỉ dùng nội bộ. */
@@ -182,6 +194,8 @@ final class ProjectSettingsService
             $branding->deleteFiles($created);
             throw $exception;
         }
+
+        request()->attributes->remove('project-settings.'.$group);
 
         return $this->section($group);
     }

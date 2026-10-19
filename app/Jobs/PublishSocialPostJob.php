@@ -7,6 +7,7 @@ use App\Enums\SocialPostPublicationStatus;
 use App\Enums\SocialPublicationStatus;
 use App\Models\MediaAsset;
 use App\Models\SocialPost;
+use App\Models\SocialPostTarget;
 use App\Models\SocialPublication;
 use App\Services\Marketing\Publishing\FacebookPublisher;
 use App\Services\Marketing\Publishing\SocialPublisherContract;
@@ -14,6 +15,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +32,8 @@ use Throwable;
  * - uniqueId(): tạo khóa publisher per publication.
  * - handle(): gọi adapter và cập nhật publication/target/post.
  * - fail(): ghi lỗi bounded/retryable.
+ * - complete(): ghi kết quả đã xác nhận mà không tạo bài bên ngoài lần nữa.
+ * - isRetryable(): nhận biết lỗi an toàn để thử lại trước khi gửi feed.
  * - recomputePostStatus(): tính aggregate publication status.
  * - publisher(): resolve adapter theo platform.
  *
@@ -81,6 +85,11 @@ final class PublishSocialPostJob implements ShouldBeUnique, ShouldQueue
         if (! $publication || $publication->status === SocialPublicationStatus::Published) {
             return;
         }
+        if ($publication->requiresConfirmation()) {
+            $this->fail($publication, 'SOCIAL_PUBLISH_UNCERTAIN', 'Chưa xác định kết quả tạo bài Facebook. Hãy kiểm tra Page; hệ thống đã chặn đăng lại để tránh trùng bài.', false);
+
+            return;
+        }
         $target = $publication->socialPostTarget;
         $post = $target?->socialPost;
         if (! $target || ! $post || $post->review_status?->value !== 'approved') {
@@ -88,6 +97,33 @@ final class PublishSocialPostJob implements ShouldBeUnique, ShouldQueue
 
             return;
         }
+        if (filled($publication->external_post_id)) {
+            $this->complete($publication, $target, [
+                'external_id' => $publication->external_post_id,
+                'external_url' => $publication->external_post_url,
+                'request_id' => $publication->provider_request_id,
+                'metadata' => $publication->response_metadata_json,
+            ]);
+
+            return;
+        }
+        // Chỉ một worker được claim publication; job giao lại không chạy song song.
+        $claimed = SocialPublication::query()->whereKey($publication->getKey())
+            ->whereIn('status', [SocialPublicationStatus::Queued, SocialPublicationStatus::Retryable])
+            ->update([
+                'status' => SocialPublicationStatus::Publishing->value,
+                'attempts' => DB::raw('attempts + 1'),
+                'started_at' => now(), 'completed_at' => null,
+                'error_code' => null, 'error_message' => null,
+            ]);
+        if ($claimed !== 1) {
+            if ($publication->status === SocialPublicationStatus::Publishing) {
+                $this->fail($publication, 'SOCIAL_PUBLISH_UNCERTAIN', 'Worker đăng bài đã bị gián đoạn hoặc còn đang chạy. Hãy kiểm tra Page trước khi xử lý lại.', false);
+            }
+
+            return;
+        }
+        $publication->refresh();
         $variant = $target->socialPostVariant
             ?? $post->variants()->where('platform', 'facebook')->first();
         $images = $variant
@@ -104,37 +140,45 @@ final class PublishSocialPostJob implements ShouldBeUnique, ShouldQueue
 
             return;
         }
-        $publication->forceFill([
-            'status' => SocialPublicationStatus::Publishing,
-            'attempts' => (int) $publication->attempts + 1,
-            'started_at' => now(),
-            'error_code' => null,
-            'error_message' => null,
-        ])->save();
         $target->forceFill(['status' => SocialPublicationStatus::Publishing])->save();
         $post->forceFill(['publication_status' => SocialPostPublicationStatus::Publishing])->save();
 
         try {
-            $result = $this->publisher($target)->publish($post, $target, $variant, $images);
-            DB::transaction(function () use ($publication, $target, $result): void {
-                $publication->forceFill([
-                    'status' => SocialPublicationStatus::Published,
-                    'provider_request_id' => $result['request_id'] ?? null,
-                    'external_post_id' => $result['external_id'] ?? null,
-                    'external_post_url' => $result['external_url'] ?? null,
-                    'response_metadata_json' => $result['metadata'] ?? [],
-                    'completed_at' => now(), 'error_code' => null, 'error_message' => null,
-                ])->save();
-                $target->forceFill(['status' => SocialPublicationStatus::Published, 'published_at' => now(), 'last_error_code' => null, 'last_error_message' => null])->save();
-                $this->recomputePostStatus($target->socialPost()->firstOrFail());
-            });
+            $result = $this->publisher($target)->publish($post, $target, $variant, $images, $publication);
+            $this->complete($publication, $target, $result);
         } catch (Throwable $exception) {
+            if ($publication->refresh()->requiresConfirmation()) {
+                $this->fail($publication, 'SOCIAL_PUBLISH_UNCERTAIN', 'Chưa xác định kết quả tạo bài Facebook. Hãy kiểm tra Page; hệ thống đã chặn đăng lại để tránh trùng bài.', false);
+
+                return;
+            }
             $retryable = $this->isRetryable($exception);
             $this->fail($publication, 'SOCIAL_PUBLISH_FAILED', $exception->getMessage(), $retryable);
             if ($retryable && $this->attempts() < $this->tries) {
                 throw $exception;
             }
         }
+    }
+
+    /**
+     * Ghi kết quả đã được provider xác nhận và cập nhật aggregate status.
+     * Input: publication, target và external reference đã xác nhận.
+     * Output: publication/target/post published trong một transaction, không gọi API.
+     */
+    private function complete(SocialPublication $publication, SocialPostTarget $target, array $result): void
+    {
+        DB::transaction(function () use ($publication, $target, $result): void {
+            $publication->forceFill([
+                'status' => SocialPublicationStatus::Published,
+                'provider_request_id' => $result['request_id'] ?? null,
+                'external_post_id' => $result['external_id'] ?? null,
+                'external_post_url' => $result['external_url'] ?? null,
+                'response_metadata_json' => $result['metadata'] ?? [],
+                'completed_at' => now(), 'error_code' => null, 'error_message' => null,
+            ])->save();
+            $target->forceFill(['status' => SocialPublicationStatus::Published, 'published_at' => now(), 'last_error_code' => null, 'last_error_message' => null])->save();
+            $this->recomputePostStatus($target->socialPost()->firstOrFail());
+        });
     }
 
     /**
@@ -209,7 +253,8 @@ final class PublishSocialPostJob implements ShouldBeUnique, ShouldQueue
     {
         $message = strtolower($exception->getMessage());
 
-        return str_contains($message, 'timeout') || str_contains($message, 'tempor')
-            || str_contains($message, '429') || str_contains($message, '500');
+        return $exception instanceof ConnectionException
+            || str_contains($message, 'timeout') || str_contains($message, 'timed out') || str_contains($message, 'tempor')
+            || str_contains($message, '429') || preg_match('/\b5\d{2}\b/', $message) === 1;
     }
 }

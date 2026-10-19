@@ -5,10 +5,11 @@ namespace App\Services\Marketing;
 use App\Enums\SocialAccountStatus;
 use App\Models\SocialAccount;
 use App\Models\User;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
-use RuntimeException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * =====================================================================
@@ -58,34 +59,45 @@ final class FacebookOAuthService
     /**
      * Đổi OAuth code lấy Page accounts và lưu token encrypted.
      *
-     * Input: code/state callback.
-     * Output: list Page metadata không có token.
+     * Input: code/state callback gắn với actor khởi tạo.
+     * Output: list Page metadata; state sai/hết hạn trả 400, mất quyền trả 403, provider lỗi trả 422/502.
      * Side effect: 2 Graph calls/cache pull/upsert SocialAccount.
      */
     public function handleCallback(string $code, string $state): array
     {
-        $this->assertConfigured();
-        $stateData = Cache::pull('facebook-oauth:'.$state);
+        $stateData = Cache::lock('facebook-oauth-consume:'.$state, 10)
+            ->get(fn () => Cache::pull('facebook-oauth:'.$state));
         if (! is_array($stateData) || empty($stateData['user_id'])) {
-            throw new RuntimeException('OAuth state không hợp lệ hoặc đã hết hạn.');
+            abort(400, 'Phiên kết nối Facebook không hợp lệ hoặc đã hết hạn. Hãy mở lại Kết nối Facebook Page.');
         }
-        $tokenResponse = Http::timeout(30)->get($this->graphUrl('/oauth/access_token'), [
-            'client_id' => config('social.facebook.app_id'),
-            'client_secret' => config('social.facebook.app_secret'),
-            'redirect_uri' => config('social.facebook.redirect_uri'),
-            'code' => $code,
-        ]);
+        $actor = User::query()->find($stateData['user_id']);
+        abort_unless($actor?->isActive() && ($actor->can('marketing.manage') || $actor->can('social_accounts.manage')), 403, 'Tài khoản không còn quyền kết nối Facebook Page.');
+        $this->assertConfigured();
+        try {
+            $tokenResponse = Http::timeout(30)->get($this->graphUrl('/oauth/access_token'), [
+                'client_id' => config('social.facebook.app_id'),
+                'client_secret' => config('social.facebook.app_secret'),
+                'redirect_uri' => config('social.facebook.redirect_uri'),
+                'code' => $code,
+            ]);
+        } catch (ConnectionException $exception) {
+            throw new HttpException(502, 'Không thể kết nối Facebook. Hãy bắt đầu kết nối lại.', $exception);
+        }
         $tokenBody = $tokenResponse->json();
         if (! $tokenResponse->successful() || blank($tokenBody['access_token'] ?? null)) {
-            throw new RuntimeException('Facebook không cấp được user access token.');
+            abort($tokenResponse->serverError() ? 502 : 422, 'Facebook chưa cấp quyền kết nối. Hãy bắt đầu kết nối lại.');
         }
-        $pagesResponse = Http::timeout(30)->get($this->graphUrl('/me/accounts'), [
-            'fields' => 'id,name,access_token,perms',
-            'access_token' => $tokenBody['access_token'],
-        ]);
+        try {
+            $pagesResponse = Http::timeout(30)->get($this->graphUrl('/me/accounts'), [
+                'fields' => 'id,name,access_token,perms',
+                'access_token' => $tokenBody['access_token'],
+            ]);
+        } catch (ConnectionException $exception) {
+            throw new HttpException(502, 'Không thể tải danh sách Facebook Page. Hãy kết nối lại.', $exception);
+        }
         $pages = $pagesResponse->json('data');
         if (! $pagesResponse->successful() || ! is_array($pages)) {
-            throw new RuntimeException('Facebook không trả danh sách Page.');
+            abort($pagesResponse->serverError() ? 502 : 422, 'Facebook chưa trả danh sách Page. Hãy kiểm tra quyền Page và kết nối lại.');
         }
         $result = [];
         foreach ($pages as $page) {
@@ -150,12 +162,12 @@ final class FacebookOAuthService
      * Kiểm tra đủ app ID/secret/redirect trước khi bắt đầu OAuth.
      *
      * Input: config server-side.
-     * Output: void hoặc RuntimeException; không side effect.
+     * Output: void hoặc HTTP 503 khi thiếu cấu hình; không side effect.
      */
     private function assertConfigured(): void
     {
         if (blank(config('social.facebook.app_id')) || blank(config('social.facebook.app_secret')) || blank(config('social.facebook.redirect_uri'))) {
-            throw new RuntimeException('Facebook OAuth chưa được cấu hình APP_ID/APP_SECRET/REDIRECT_URI.');
+            abort(503, 'Facebook OAuth chưa được cấu hình APP_ID/APP_SECRET/REDIRECT_URI.');
         }
     }
 }

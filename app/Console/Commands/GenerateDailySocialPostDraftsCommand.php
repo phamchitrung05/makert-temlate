@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use App\Enums\DailyContentPlanStatus;
-use App\Enums\ProductStatus;
 use App\Models\Campaign;
 use App\Models\DailyContentPlan;
 use App\Models\SocialAccount;
@@ -27,7 +26,7 @@ use Throwable;
  * - activeTargets(): lấy Page accounts active.
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
- * - INPUT : date/count options và campaign/product active.
+ * - INPUT : date/count options và campaign active.
  * - OUTPUT: exit code; daily_content_plans liên kết Social Post draft.
  * - SIDE EFFECT: DB/queue/AI quota; không publish.
  * =====================================================================
@@ -55,40 +54,36 @@ final class GenerateDailySocialPostDraftsCommand extends Command
         }
         $date = $this->option('date') ?: now('Asia/Ho_Chi_Minh')->toDateString();
         $count = max(2, min(3, (int) $this->option('count')));
-        $campaigns = Campaign::query()->active()->with(['products' => fn ($q) => $q->where('products.status', ProductStatus::Active->value)->orderBy('products.id')])->get();
-        $products = $campaigns->flatMap(fn (Campaign $campaign) => $campaign->products->map(fn ($product) => [$campaign, $product]))->values();
-        if ($products->isEmpty()) {
-            $this->warn('Không có campaign/product active để tạo daily draft.');
+        $campaigns = Campaign::query()->active()->orderBy('id')->get();
+        if ($campaigns->isEmpty()) {
+            $this->warn('Không có campaign active để tạo daily draft.');
 
             return self::SUCCESS;
         }
         $targetIds = $this->activeTargets();
-        $usedProductIds = [];
+        $usedCampaignIds = [];
         foreach (range(1, $count) as $slot) {
-            $pair = $products->first(function (array $candidate) use (&$usedProductIds): bool {
-                $productId = (int) $candidate[1]->getKey();
-
-                return ! in_array($productId, $usedProductIds, true)
-                    && ! SocialPost::query()->where('product_id', $productId)->where('created_at', '>=', now()->subDays(7))->exists();
+            $campaign = $campaigns->first(function (Campaign $candidate) use (&$usedCampaignIds): bool {
+                return ! in_array((int) $candidate->getKey(), $usedCampaignIds, true)
+                    && ! SocialPost::query()->where('campaign_id', $candidate->getKey())->where('created_at', '>=', now()->subDays(7))->exists();
             });
             // Khi catalog nhỏ hơn số slot, vẫn tạo đủ draft nhưng không lặp
-            // product trong cùng lần chạy nếu còn lựa chọn khác.
-            $pair ??= $products[($slot - 1) % $products->count()];
-            [$campaign, $product] = $pair;
-            $usedProductIds[] = (int) $product->getKey();
+            // campaign trong cùng lần chạy nếu còn lựa chọn khác.
+            $campaign ??= $campaigns[($slot - 1) % $campaigns->count()];
+            $usedCampaignIds[] = (int) $campaign->getKey();
             $plan = DailyContentPlan::query()->firstOrCreate(
                 ['planned_date' => $date, 'slot' => $slot],
-                ['timezone' => 'Asia/Ho_Chi_Minh', 'campaign_id' => $campaign->getKey(), 'product_id' => $product->getKey(), 'target_draft_count' => 1, 'status' => DailyContentPlanStatus::Pending],
+                ['timezone' => 'Asia/Ho_Chi_Minh', 'campaign_id' => $campaign->getKey(), 'target_draft_count' => 1, 'status' => DailyContentPlanStatus::Pending],
             );
             if ($plan->social_post_id || $plan->status === DailyContentPlanStatus::Completed) {
                 continue;
             }
             try {
-                $post = DB::transaction(function () use ($plan, $campaign, $product, $targetIds, $actor, $lifecycle): SocialPost {
+                $post = DB::transaction(function () use ($plan, $campaign, $targetIds, $actor, $lifecycle): SocialPost {
                     $plan->forceFill(['status' => DailyContentPlanStatus::Running, 'started_at' => now(), 'error_code' => null, 'error_message' => null])->save();
 
                     return $lifecycle->create([
-                        'campaign_id' => $campaign->getKey(), 'product_id' => $product->getKey(),
+                        'campaign_id' => $campaign->getKey(),
                         'target_account_ids' => $targetIds, 'caption' => null,
                     ], (int) $actor->getKey());
                 });

@@ -19,6 +19,13 @@
  * - OUTPUT: mảng navigation dùng cho horizontal layout.
  * =====================================================================
  */
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Cấu hình menu ứng dụng cho layout ngang.
+ * CÁC HÀM/METHOD TRONG FILE: không có; mảng cấu hình tĩnh.
+ * INPUT/OUTPUT CỦA FILE (tổng thể): route name -> menu; chi tiết mở từ bản ghi ở list.
+ * =====================================================================
+ */
 export default [
   {
     title: 'Systerm AI',
@@ -104,7 +111,6 @@ export default [
         title: 'User',
         children: [
           { title: 'List', to: 'apps-user-list' },
-          { title: 'View', to: { name: 'apps-user-view-id', params: { id: 21 } } },
         ],
       },
       { title: 'Role & Permissions', to: 'apps-roles' },
@@ -142,14 +148,12 @@ export default [
             title: 'Order',
             children: [
               { title: 'List', to: 'apps-ecommerce-order-list' },
-              { title: 'Details', to: { name: 'apps-ecommerce-order-details-id', params: { id: '9042' } } },
             ],
           },
           {
             title: 'Customer',
             children: [
               { title: 'List', to: 'apps-ecommerce-customer-list' },
-              { title: 'Details', to: { name: 'apps-ecommerce-customer-details-id', params: { id: 478426 } } },
             ],
           },
           {
@@ -208,8 +212,6 @@ export default [
         icon: { icon: 'tabler-file-dollar' },
         children: [
           { title: 'List', to: 'apps-invoice-list' },
-          { title: 'Preview', to: { name: 'apps-invoice-preview-id', params: { id: '5036' } } },
-          { title: 'Edit', to: { name: 'apps-invoice-edit-id', params: { id: '5036' } } },
           { title: 'Add', to: 'apps-invoice-add' },
         ],
       },

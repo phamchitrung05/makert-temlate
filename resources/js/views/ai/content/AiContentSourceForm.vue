@@ -33,7 +33,7 @@ const source = defineModel({ type: Object, required: true })
 const openOptions = shallowRef(0)
 const preview = useAiSourcePreview(source)
 
-const inputTabs = [
+const allInputTabs = [
   { value: 'url', title: 'Link nguồn', icon: 'tabler-link' },
   { value: 'file', title: 'File HTML', icon: 'tabler-file-code' },
   { value: 'html', title: 'HTML', icon: 'tabler-code' },
@@ -41,7 +41,10 @@ const inputTabs = [
   { value: 'prompt', title: 'Viết tự do', icon: 'tabler-pencil' },
 ]
 
+const inputTabs = computed(() => allInputTabs.filter(tab => (props.catalog.inputTypes ?? ['url', 'text']).includes(tab.value)))
+
 const generatesTitle = computed(() => source.value.outputs?.includes('title') ?? false)
+const isSocial = computed(() => source.value.targetType === 'social_post')
 
 /** Input: key/value của field. Output: state mới; không mutate object của parent. */
 const update = (key, value) => { source.value = { ...source.value, [key]: value } }
@@ -123,6 +126,15 @@ const updateProvider = provider => {
       </VWindowItem>
     </VWindow>
     <AppSelect
+      v-if="isSocial && props.catalog.platformOptions?.length"
+      :model-value="source.platform"
+      :items="props.catalog.platformOptions"
+      label="Nền tảng social"
+      class="mb-4"
+      :disabled="props.disabled || props.catalog.loading"
+      @update:model-value="update('platform', $event)"
+    />
+    <AppSelect
       v-if="['file', 'html'].includes(source.type)"
       :model-value="source.sourceEncoding"
       :items="['UTF-8', 'Windows-1252', 'ISO-8859-1']"
@@ -157,7 +169,7 @@ const updateProvider = provider => {
       @update:model-value="update('instructions', $event)"
     />
     <AiManualTaxonomyFields
-      v-if="source.targetType === 'post'"
+      v-if="props.catalog.manualTaxonomy"
       :categories="source.category_ids"
       :tags="source.tag_ids"
       :disabled="props.disabled"
@@ -300,7 +312,7 @@ const updateProvider = provider => {
               />
             </VCol>
             <VCol
-              v-if="!generatesTitle && !props.catalog.loading"
+              v-if="!isSocial && !generatesTitle && !props.catalog.loading"
               cols="12"
             >
               <AppTextField

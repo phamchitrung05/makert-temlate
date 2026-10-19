@@ -13,7 +13,7 @@
   - watcher filteredItems.length: giữ page trong giới hạn sau khi list đổi.
   - props items/targets/loading/error/busyId/outputOptions: nhận dữ liệu page.
   - emit reload/edit/review/history/remove/regenerate/refreshStatus/apply/cancel:
-    chuyển thao tác về page; retryThumbnail/cancelThumbnail: action riêng ảnh.
+  chuyển thao tác về page; retryThumbnail/cancelThumbnail: action riêng ảnh.
 
   INPUT/OUTPUT CỦA CLASS (tổng thể):
   - INPUT : items, loading và lỗi đọc danh sách từ page.
@@ -72,6 +72,7 @@ const targetOptions = computed(() => Object.fromEntries(props.targets.map(target
  * =====================================================================
  */
 const failureMessage = item => formatAiError({ error: item.error, validation_errors: item.validationErrors, error_code: item.errorCode }, undefined, props.outputOptions)
+
 /**
  * =====================================================================
  * CHỨC NĂNG: Lấy score quality hợp lệ để render vòng điểm.
@@ -83,6 +84,8 @@ const failureMessage = item => formatAiError({ error: item.error, validation_err
  * =====================================================================
  */
 const qualityScore = evaluation => Number.isFinite(Number(evaluation?.score_total)) ? Number(evaluation.score_total) : null
+
+
 /**
  * =====================================================================
  * CHỨC NĂNG: Chọn màu allowlist theo quality status/eligibility.
@@ -96,8 +99,11 @@ const qualityScore = evaluation => Number.isFinite(Number(evaluation?.score_tota
 const qualityColor = evaluation => {
   if (evaluation?.status === 'ready') return evaluation?.eligibility?.eligible ? 'success' : 'error'
   if (evaluation?.status === 'failed' || evaluation?.status === 'expired') return 'error'
+
   return 'warning'
 }
+
+
 /**
  * =====================================================================
  * CHỨC NĂNG: Chọn nhãn điểm hoặc trạng thái quality tiếng Việt.
@@ -111,6 +117,7 @@ const qualityColor = evaluation => {
 const qualityLabel = evaluation => {
   const score = qualityScore(evaluation)
   if (score !== null) return `Điểm chất lượng ${score.toFixed(2)}/5`
+
   return ({ pending: 'Đang chờ chấm', queued: 'Đang xếp hàng chấm', running: 'Đang chấm', failed: 'Chấm lỗi', expired: 'Điểm đã hết hạn' }[evaluation?.status] ?? 'Chưa có điểm')
 }
 
@@ -298,18 +305,18 @@ watch(() => filteredItems.value.length, total => {
                 @click="emit('cancel', item)"
               />
               <VBtn
-                v-if="item.status === 'review' && item.targetType === 'post'"
+                v-if="item.status === 'review' && ['post', 'social_post'].includes(item.targetType)"
                 icon="tabler-file-check"
                 size="small"
                 variant="text"
                 color="success"
                 :disabled="props.busyId === item.id"
                 :aria-label="`Duyệt ${item.title}`"
-                title="Duyệt bài viết"
+                title="Duyệt content AI"
                 @click="emit('apply', item)"
               />
               <VBtn
-                v-if="item.targetType === 'post' && ['review', 'applied', 'rejected'].includes(item.status)"
+                v-if="['post', 'social_post'].includes(item.targetType) && ['review', 'applied', 'rejected'].includes(item.status)"
                 icon="tabler-eye"
                 size="small"
                 variant="text"

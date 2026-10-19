@@ -69,6 +69,7 @@ export function useAiContentActions({ updateSession, removeItem, onFeedback = ()
   let actionVersion = 0
   let disposed = false
   const busyId = computed(() => thumbnailActionId.value ?? (editorSaving.value ? editor.value?.job_id : actionBusy.value ? action.value?.item.id : null))
+
   /** INPUT: run DTO. OUTPUT: lỗi lifecycle tiếng Việt; SIDE EFFECT: không có; EXCEPTION: không có. */
   const runError = value => formatAiError(value, undefined, getOutputOptions())
 
@@ -274,6 +275,7 @@ export function useAiContentActions({ updateSession, removeItem, onFeedback = ()
    */
   function resumeRun(item) {
     const runId = item.activeRunId ?? item.runId ?? item.id
+
     clearTimeout(monitoring.get(runId))
 
     return checkRun({ job_id: runId, target_type: item.targetType }, 0)
@@ -347,6 +349,7 @@ export function useAiContentActions({ updateSession, removeItem, onFeedback = ()
     try {
       if (current.kind === 'remove') {
         const runId = current.item.runId ?? current.item.id
+
         await aiAgentService.removeSession(runId)
         if (disposed) return
         removeItem(runId)
@@ -362,8 +365,12 @@ export function useAiContentActions({ updateSession, removeItem, onFeedback = ()
       else if (current.kind === 'apply') {
         const result = await aiAgentService.applyCandidate(current.item.runId ?? current.item.id, { ...options, expected_version: current.session.draft_version })
         if (disposed) return
-        updateSession({ ...current.session, applied_target_id: result.post_id ?? result.target_id, applied_fields: result.fields })
-        notice.value = { type: 'success', message: `Đã tạo Post nháp #${result.post_id ?? result.target_id}. Mở danh sách Post để kiểm tra và duyệt.` }
+        updateSession({ ...current.session, applied_target_id: result.social_post_id ?? result.post_id ?? result.target_id, applied_fields: result.fields })
+
+        const targetLabel = current.item.targetType === 'social_post' ? 'Social Post' : 'Post'
+        const targetId = result.social_post_id ?? result.post_id ?? result.target_id
+
+        notice.value = { type: 'success', message: `Đã tạo ${targetLabel} nháp #${targetId}. Mở danh sách ${targetLabel} để kiểm tra.` }
       }
       else {
         const child = await aiAgentService.regenerate(current.item.runId ?? current.item.id, buildAiContentRegenerateRequest(options))

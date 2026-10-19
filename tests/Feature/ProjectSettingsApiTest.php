@@ -178,6 +178,7 @@ final class ProjectSettingsApiTest extends TestCase
         $expiry = DB::table('personal_access_tokens')->orderByDesc('id')->value('expires_at');
         $this->assertEqualsWithDelta(now()->addDays(2)->timestamp, Carbon::parse($expiry)->timestamp, 3);
         $this->postJson('/api/admin/login', ['email' => 'bad@example.test', 'password' => 'Bad123!'])->assertUnprocessable();
+        $this->postJson('/api/admin/login', ['email' => 'bad@example.test', 'password' => 'Bad123!'])->assertUnprocessable();
         $this->postJson('/api/admin/login', ['email' => 'bad@example.test', 'password' => 'Bad123!'])->assertTooManyRequests();
     }
 

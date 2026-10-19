@@ -67,7 +67,7 @@ class SlugService
             try {
                 // Savepoint rollback cả demote khi INSERT bị trùng; locking read
                 // nhìn thấy slug vừa được commit bởi request cạnh tranh.
-                return $model->getConnection()->transaction(function () use ($model, $source, $locale): Slug {
+                $slug = $model->getConnection()->transaction(function () use ($model, $source, $locale): Slug {
                     $model->newQuery()->whereKey($model->getKey())->lockForUpdate()->firstOrFail();
                     $base = $this->makeUniqueSlug($model, $source, $locale, true);
                     $relation = $this->slugRelation($model);
@@ -83,6 +83,9 @@ class SlugService
                         'slug' => $base, 'locale' => $locale, 'is_primary' => true,
                     ]);
                 });
+                $model->unsetRelation('slugs');
+
+                return $slug;
             } catch (UniqueConstraintViolationException $exception) {
                 if ($attempt === 4) {
                     throw $exception;

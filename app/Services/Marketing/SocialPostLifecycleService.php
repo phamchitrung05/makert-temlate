@@ -2,12 +2,11 @@
 
 namespace App\Services\Marketing;
 
-use App\Enums\SocialPlatform;
 use App\Enums\MediaAssetField;
+use App\Enums\SocialPlatform;
 use App\Enums\SocialPostGenerationStatus;
 use App\Enums\SocialPostPublicationStatus;
 use App\Enums\SocialPostReviewStatus;
-use App\Enums\SocialPublicationStatus;
 use App\Models\SocialAccount;
 use App\Models\SocialPost;
 use App\Models\SocialPostTarget;
@@ -25,12 +24,14 @@ use Illuminate\Validation\ValidationException;
  * khi nội dung/ảnh thay đổi. Publication vẫn do publisher worker xử lý.
  *
  * CÁC HÀM/METHOD TRONG FILE:
+ * - __construct(): nhận service liên kết media.
  * - create(): tạo SocialPost draft và target accounts.
  * - update(): cập nhật payload, reset review nếu nội dung đổi.
  * - transition(): submit/approve/reject/request revision có guard.
  * - syncTargets(): đồng bộ target account IDs không có caption riêng.
  * - ensureGenerationReady(): chặn review/publish khi AI chưa đủ.
  * - loadForResponse(): eager load relation cho resource.
+ * - submitStatus()/approveStatus()/rejectStatus()/revisionStatus(): kiểm transition.
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : payload đã validate, actor và SocialPost.
@@ -40,7 +41,9 @@ use Illuminate\Validation\ValidationException;
  */
 final class SocialPostLifecycleService
 {
+    /** Input: service liên kết media. Output: lifecycle service; không ghi dữ liệu. */
     public function __construct(private readonly MediaAssetUsageService $usages) {}
+
     /**
      * Tạo SocialPost draft và target Page/account đã chọn.
      *
@@ -52,14 +55,13 @@ final class SocialPostLifecycleService
     {
         return DB::transaction(function () use ($data, $actorId): SocialPost {
             $content = array_key_exists('facebook_content', $data)
-                ? $this->normalizeContent((array) $data['facebook_content'])
-                : $this->contentFromCaption($data['caption'] ?? null);
+                ? FacebookContent::normalize((array) $data['facebook_content'])
+                : FacebookContent::normalize(['body' => $data['caption'] ?? null]);
             $caption = array_key_exists('facebook_content', $data)
-                ? $this->captionFromContent($content)
+                ? FacebookContent::caption($content)
                 : ($data['caption'] ?? null);
             $post = SocialPost::query()->create([
                 'campaign_id' => $data['campaign_id'] ?? null,
-                'product_id' => $data['product_id'] ?? null,
                 'caption' => $caption,
                 'generation_status' => filled($caption) ? SocialPostGenerationStatus::Partial : SocialPostGenerationStatus::Pending,
                 'review_status' => SocialPostReviewStatus::Draft,
@@ -105,9 +107,8 @@ final class SocialPostLifecycleService
             $contentChanged = array_key_exists('caption', $data)
                 || array_key_exists('facebook_content', $data)
                 || array_key_exists('facebook_image_ids', $data)
-                || array_key_exists('campaign_id', $data)
-                || array_key_exists('product_id', $data);
-            $locked->fill(array_intersect_key($data, array_flip(['campaign_id', 'product_id', 'caption'])));
+                || array_key_exists('campaign_id', $data);
+            $locked->fill(array_intersect_key($data, array_flip(['campaign_id', 'caption'])));
             $locked->updated_by = $actorId;
             if ($contentChanged) {
                 $locked->review_status = SocialPostReviewStatus::Draft;
@@ -125,8 +126,8 @@ final class SocialPostLifecycleService
                 ]);
             if (array_key_exists('facebook_content', $data) || array_key_exists('caption', $data)) {
                 $content = array_key_exists('facebook_content', $data)
-                    ? $this->normalizeContent((array) $data['facebook_content'])
-                    : $this->contentFromCaption($data['caption'] ?? null);
+                    ? FacebookContent::normalize((array) $data['facebook_content'])
+                    : FacebookContent::normalize(['body' => $data['caption'] ?? null]);
                 $variant->forceFill([
                     'content_json' => $content,
                     'content_status' => 'ready',
@@ -137,7 +138,7 @@ final class SocialPostLifecycleService
                     'review_reason' => null,
                 ])->save();
                 if (! array_key_exists('caption', $data)) {
-                    $locked->forceFill(['caption' => $this->captionFromContent($content)])->save();
+                    $locked->forceFill(['caption' => FacebookContent::caption($content)])->save();
                 }
             }
             if (array_key_exists('facebook_image_ids', $data)) {
@@ -202,44 +203,53 @@ final class SocialPostLifecycleService
     /**
      * Đồng bộ target accounts, mỗi account chỉ xuất hiện một lần.
      *
-     * Input: SocialPost đã lock và list account IDs.
+     * Input: SocialPost, list account IDs và variant thuộc post nếu đã có.
      * Output: void; target rows phản ánh selection hiện tại.
-     * Side effect: delete/create targets trong transaction caller.
+     * Side effect: khóa post, đồng bộ theo khóa variant/account; bỏ chọn chỉ tắt target để giữ lịch sử publish.
      */
     public function syncTargets(SocialPost $post, array $accountIds, ?SocialPostVariant $variant = null): void
     {
-        $ids = collect($accountIds)->map(fn ($id): int => (int) $id)->filter()->unique()->values();
-        $accounts = SocialAccount::query()->whereIn('id', $ids)->get()->keyBy('id');
-        if ($accounts->count() !== $ids->count()) {
-            throw ValidationException::withMessages(['target_account_ids' => 'Một hoặc nhiều Page/account không tồn tại.']);
-        }
-        $variant ??= $post->variants()->where('platform', SocialPlatform::Facebook)->first();
-        $post->targets()->whereNotIn('social_account_id', $ids->all())->delete();
-        foreach ($ids as $id) {
-            $account = $accounts->get($id);
-            SocialPostTarget::query()->updateOrCreate(
-                ['social_post_id' => $post->getKey(), 'social_account_id' => $id],
-                [
-                    'social_post_variant_id' => $variant?->getKey(),
-                    'platform' => $account->provider ?? SocialPlatform::Facebook,
-                    'enabled' => true,
-                    'status' => SocialPublicationStatus::Pending,
-                ],
+        DB::transaction(function () use ($post, $accountIds, $variant): void {
+            $post = SocialPost::query()->lockForUpdate()->findOrFail($post->getKey());
+            $variant ??= $post->variants()->firstOrCreate(
+                ['platform' => SocialPlatform::Facebook],
+                ['format' => 'feed', 'content_json' => FacebookContent::normalize(['body' => $post->caption])],
             );
-        }
+            if ((int) $variant->social_post_id !== (int) $post->getKey()) {
+                throw ValidationException::withMessages(['variant' => 'Variant không thuộc Social Post này.']);
+            }
+            $ids = collect($accountIds)->map(fn ($id): int => (int) $id)->filter()->unique()->values();
+            $accounts = SocialAccount::query()->whereIn('id', $ids)->where('provider', $variant->platform)->get()->keyBy('id');
+            if ($accounts->count() !== $ids->count()) {
+                throw ValidationException::withMessages(['target_account_ids' => 'Một hoặc nhiều Page/account không tồn tại.']);
+            }
+            $post->targets()->where('social_post_variant_id', $variant->getKey())
+                ->whereNotIn('social_account_id', $ids->all())->update(['enabled' => false]);
+            foreach ($ids as $id) {
+                $account = $accounts->get($id);
+                SocialPostTarget::query()->updateOrCreate(
+                    ['social_post_variant_id' => $variant->getKey(), 'social_account_id' => $id],
+                    [
+                        'social_post_id' => $post->getKey(),
+                        'platform' => $account->provider ?? SocialPlatform::Facebook,
+                        'enabled' => true,
+                    ],
+                );
+            }
+        });
     }
 
     /**
      * Eager load relation mà resource/list cần dùng.
      *
      * Input: SocialPost.
-     * Output: model cùng campaign/product/target/account/version/media.
+     * Output: model cùng campaign/target/account/version/media.
      * Side effect: query DB; không ghi.
      */
     public function loadForResponse(SocialPost $post): SocialPost
     {
         return $post->load([
-            'campaign', 'product', 'targets.socialAccount', 'targets.socialPostVariant', 'versions',
+            'campaign', 'targets.socialAccount', 'targets.socialPostVariant', 'versions',
             'variants.targets', 'variants.versions', 'variants.mediaAssetUsages.mediaAsset.media',
             'mediaAssetUsages.mediaAsset.media',
         ]);
@@ -258,6 +268,7 @@ final class SocialPostLifecycleService
         }
     }
 
+    /** Input: post draft/cần sửa. Output: pending review hoặc lỗi validation. */
     private function submitStatus(SocialPost $post): SocialPostReviewStatus
     {
         if (! in_array($post->review_status, [SocialPostReviewStatus::Draft, SocialPostReviewStatus::RevisionRequested, SocialPostReviewStatus::Rejected], true)) {
@@ -267,6 +278,7 @@ final class SocialPostLifecycleService
         return SocialPostReviewStatus::PendingReview;
     }
 
+    /** Input: post chờ duyệt. Output: approved hoặc lỗi validation. */
     private function approveStatus(SocialPost $post): SocialPostReviewStatus
     {
         if ($post->review_status !== SocialPostReviewStatus::PendingReview) {
@@ -276,6 +288,7 @@ final class SocialPostLifecycleService
         return SocialPostReviewStatus::Approved;
     }
 
+    /** Input: post chờ duyệt. Output: rejected hoặc lỗi validation. */
     private function rejectStatus(SocialPost $post): SocialPostReviewStatus
     {
         if ($post->review_status !== SocialPostReviewStatus::PendingReview) {
@@ -285,6 +298,7 @@ final class SocialPostLifecycleService
         return SocialPostReviewStatus::Rejected;
     }
 
+    /** Input: post đã/chờ duyệt. Output: cần sửa hoặc lỗi validation. */
     private function revisionStatus(SocialPost $post): SocialPostReviewStatus
     {
         if (! in_array($post->review_status, [SocialPostReviewStatus::PendingReview, SocialPostReviewStatus::Approved], true)) {
@@ -292,44 +306,5 @@ final class SocialPostLifecycleService
         }
 
         return SocialPostReviewStatus::RevisionRequested;
-    }
-
-    private function contentFromCaption(?string $caption): array
-    {
-        return $this->normalizeContent(['body' => $caption]);
-    }
-
-    private function normalizeContent(array $content): array
-    {
-        return [
-            'title' => array_key_exists('title', $content) ? $content['title'] : null,
-            'body' => trim((string) ($content['body'] ?? $content['caption'] ?? '')),
-            'bullet_points' => array_values(array_slice(array_map('strval', (array) ($content['bullet_points'] ?? [])), 0, 8)),
-            'cta' => array_key_exists('cta', $content) ? $content['cta'] : null,
-            'contact' => [
-                'address' => data_get($content, 'contact.address'),
-                'phone' => data_get($content, 'contact.phone'),
-                'website' => data_get($content, 'contact.website'),
-            ],
-            'hashtags' => array_values(array_slice(array_map('strval', (array) ($content['hashtags'] ?? [])), 0, 12)),
-            'link_url' => array_key_exists('link_url', $content) ? $content['link_url'] : null,
-            'used_product_fact_ids' => array_values(array_map('intval', (array) ($content['used_product_fact_ids'] ?? []))),
-        ];
-    }
-
-    private function captionFromContent(array $content): string
-    {
-        $parts = [trim((string) ($content['body'] ?? ''))];
-        if (($bullets = collect((array) ($content['bullet_points'] ?? []))->map(fn ($item): string => '✅ '.trim((string) $item))->filter()->implode("\n")) !== '') {
-            $parts[] = $bullets;
-        }
-        if (filled($content['cta'] ?? null)) {
-            $parts[] = trim((string) $content['cta']);
-        }
-        if (($hashtags = collect((array) ($content['hashtags'] ?? []))->map(fn ($item): string => str_starts_with(trim((string) $item), '#') ? trim((string) $item) : '#'.trim((string) $item))->filter()->implode(' ')) !== '') {
-            $parts[] = $hashtags;
-        }
-
-        return implode("\n\n", array_filter($parts));
     }
 }

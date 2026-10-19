@@ -28,12 +28,25 @@ use Tests\UsesIsolatedDatabase;
  * Test khóa contract Task 8 ở HTTP boundary: mỗi domain dùng đúng field
  * riêng, replace/delete detach usage và version chỉ ready sau khi package
  * archive private đã scan clean. Mọi test dùng database SQLite cô lập.
+ *
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - setUp()/tearDown(): chuẩn bị và dọn môi trường test.
+ * - test_resource_media_fields_replace_and_delete_atomically(): kiểm replace/detach.
+ * - test_resource_media_sync_rolls_back_when_one_asset_is_invalid(): kiểm rollback.
+ * - test_resource_version_package_scan_gate_and_documentation_field(): kiểm package document.
+ * - test_post_media_fields_are_independent_and_detach_on_delete(): kiểm media bài viết.
+ * - token()/inlineHtml()/mediaFor(): dựng token, HTML và media giả lập.
+ *
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : request HTTP và media giả lập trên SQLite/storage test.
+ * - OUTPUT: assertion trạng thái, usage và file; không dùng dữ liệu thật.
  * =====================================================================
  */
 class MediaTask8IntegrationTest extends TestCase
 {
     use UsesIsolatedDatabase;
 
+    /** Input: không có. Output: database, quyền và storage test cô lập. */
     protected function setUp(): void
     {
         parent::setUp();
@@ -47,6 +60,7 @@ class MediaTask8IntegrationTest extends TestCase
         config()->set('media-assets.temporary_disk', 'media_private');
     }
 
+    /** Input: schema test. Output: giải phóng connection và ứng dụng test. */
     protected function tearDown(): void
     {
         $this->tearDownIsolatedDatabase();
@@ -57,6 +71,7 @@ class MediaTask8IntegrationTest extends TestCase
     /**
      * Resource cover/preview được tạo, replace theo thứ tự mới và detach khi
      * resource bị xoá mềm; MediaAsset vẫn còn nguyên.
+     * Input: request tạo/sửa/xóa resource với media giả lập. Output: usage đúng và asset được giữ.
      */
     public function test_resource_media_fields_replace_and_delete_atomically(): void
     {
@@ -123,6 +138,7 @@ class MediaTask8IntegrationTest extends TestCase
     /**
      * Nếu một media id sai, transaction Resource create rollback cả bản ghi
      * domain lẫn usage cover đã được ghi trước đó.
+     * Input: một media ID không hợp lệ. Output: validation 422 và không còn bản ghi dang dở.
      */
     public function test_resource_media_sync_rolls_back_when_one_asset_is_invalid(): void
     {
@@ -147,11 +163,12 @@ class MediaTask8IntegrationTest extends TestCase
     /**
      * Resource Version documentation chỉ nhận document; package pending bị
      * chặn ở ready và package archive/private/clean mới được chuyển trạng thái.
+     * Input: resource Ebook và package/document giả lập. Output: scan gate đúng, không phụ thuộc random type.
      */
     public function test_resource_version_package_scan_gate_and_documentation_field(): void
     {
         $token = $this->token(['resource_versions.manage', 'media.attach']);
-        $resource = Resource::factory()->create();
+        $resource = Resource::factory()->create(['type' => ResourceType::Ebook]);
         $package = MediaAsset::factory()->archive()->create();
         $packageMedia = $this->mediaFor($package, 'package.zip', MediaScanStatus::Pending->value);
         $documentation = MediaAsset::factory()->document()->create();
@@ -205,6 +222,7 @@ class MediaTask8IntegrationTest extends TestCase
     /**
      * Post dùng thumbnail/gallery riêng; content lưu link, update thay usage và delete
      * không xoá asset dùng chung.
+     * Input: request Post với thumbnail/gallery/nội dung. Output: các field độc lập và detach đúng.
      */
     public function test_post_media_fields_are_independent_and_detach_on_delete(): void
     {
@@ -253,6 +271,7 @@ class MediaTask8IntegrationTest extends TestCase
 
     /**
      * Tạo token admin có permission đúng với route và usage policy.
+     * Input: danh sách permission. Output: token của admin trong database test.
      */
     private function token(array $permissions): string
     {
@@ -286,6 +305,7 @@ class MediaTask8IntegrationTest extends TestCase
 
     /**
      * Tạo file Spatie tối thiểu để ready gate đọc scan_status.
+     * Input: asset, tên file và scan status. Output: Media/file giả lập trên storage test.
      */
     private function mediaFor(MediaAsset $asset, string $fileName, string $scanStatus): Media
     {

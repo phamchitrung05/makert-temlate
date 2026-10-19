@@ -1,14 +1,34 @@
 <?php
 
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Đăng ký đăng nhập customer, public catalog/template và admin SPA.
+ * =====================================================================
+ * CÁC HÀM/METHOD TRONG FILE:
+ * - route login/OAuth/logout: khôi phục lỗi OAuth và quản lý customer session.
+ * - route public: robots/sitemap, tài nguyên và preview/download được bảo vệ.
+ * - route admin: render SPA theo prefix quản trị.
+ * INPUT/OUTPUT CỦA CLASS (tổng thể): URL và middleware -> controller/view/redirect HTTP.
+ * Side effect: callback robots đọc settings; các controller giữ logic nghiệp vụ.
+ * =====================================================================
+ */
+
 use App\Http\Controllers\Auth\CustomerOAuthController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\ResourceCatalogController;
+use App\Http\Controllers\Public\SitemapController;
 use App\Http\Controllers\Public\TemplateDownloadController;
 use App\Http\Controllers\Public\TemplatePublicPreviewController;
 use App\Http\Controllers\Public\TemplateShareController;
-use App\Http\Controllers\Public\SitemapController;
 use App\Services\Settings\ProjectSettingsService;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/login', function (ProjectSettingsService $settings) {
+    return view('auth.customer-login', [
+        'site' => $settings->effective('site'),
+        'seo' => $settings->effective('seo'),
+    ]);
+})->name('login');
 
 Route::get('/auth/{provider}/redirect', [CustomerOAuthController::class, 'redirect'])
     ->whereIn('provider', ['google', 'facebook'])

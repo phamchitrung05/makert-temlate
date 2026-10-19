@@ -65,6 +65,9 @@ final class AiOutputValidator
                     'string' => is_string($value),
                     'boolean' => is_bool($value),
                     'integer_ids' => is_array($value) && array_is_list($value),
+                    'string_list' => is_array($value) && array_is_list($value)
+                        && array_filter($value, static fn (mixed $item): bool => ! is_string($item)) === [],
+                    'integer' => is_int($value),
                     default => false,
                 };
                 if (! $typeValid) {
@@ -73,12 +76,35 @@ final class AiOutputValidator
                     continue;
                 }
                 if (is_array($value)) {
-                    if (array_filter($value, static fn (mixed $id): bool => ! is_int($id) || $id <= 0) !== []) {
+                    if (($rules['type'] ?? '') === 'integer_ids'
+                        && array_filter($value, static fn (mixed $id): bool => ! is_int($id) || $id <= 0) !== []) {
                         $errors[] = ['group' => $group, 'field' => $field, 'reason' => 'invalid_value'];
 
                         continue;
                     }
-                    $value = array_values(array_unique($value));
+                    if (($rules['type'] ?? '') === 'string_list') {
+                        $value = array_values(array_unique(array_map('trim', $value)));
+                        if (count($value) > (int) ($rules['max_items'] ?? PHP_INT_MAX)
+                            || array_filter($value, static fn (string $item): bool => $item === '' || mb_strlen($item) > (int) ($rules['item_max'] ?? PHP_INT_MAX)) !== []) {
+                            $errors[] = ['group' => $group, 'field' => $field, 'reason' => 'invalid_value'];
+
+                            continue;
+                        }
+                    } else {
+                        $value = array_values(array_unique($value));
+                    }
+                }
+                if (is_int($value)) {
+                    if (isset($rules['min']) && $value < (int) $rules['min']) {
+                        $errors[] = ['group' => $group, 'field' => $field, 'reason' => 'invalid_value'];
+
+                        continue;
+                    }
+                    if (isset($rules['max']) && $value > (int) $rules['max']) {
+                        $errors[] = ['group' => $group, 'field' => $field, 'reason' => 'invalid_value'];
+
+                        continue;
+                    }
                 }
                 if (is_string($value)) {
                     if (! mb_check_encoding($value, 'UTF-8')) {

@@ -1,62 +1,20 @@
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Đăng ký các MSW handler dùng cho dữ liệu giả frontend
+ * CHỨC NĂNG FILE: Bật fake API theo cấu hình mà không nạp MSW khi bị tắt.
  * =====================================================================
- *
- * File tập hợp handler theo từng feature và bật worker khi biến môi trường
- * `VITE_ENABLE_MSW` được đặt thành `true`. Handler resource và media admin được
- * đăng ký tại đây để các màn hình nghiệp vụ có thể dùng fake data trước API thật.
- *
  * CÁC HÀM/METHOD TRONG FILE:
- * - default(): khởi động MSW worker khi fake API được bật
- *
- * INPUT/OUTPUT CỦA FILE (tổng thể):
- * - INPUT : biến môi trường VITE_ENABLE_MSW và BASE_URL của ứng dụng.
- * - OUTPUT: MSW worker với toàn bộ handler của các module frontend.
+ * - default(): chỉ import handler và khởi động worker khi bật dữ liệu mẫu.
+ * INPUT/OUTPUT CỦA FILE (tổng thể): VITE_ENABLE_MSW/BASE_URL -> Promise hoặc bỏ qua.
  * =====================================================================
  */
-import { setupWorker } from 'msw/browser'
 
-// Handlers
-import { handlerAppBarSearch } from '@db/app-bar-search/index'
-import { handlerAppsAcademy } from '@db/apps/academy/index'
-import { handlerAppsCalendar } from '@db/apps/calendar/index'
-import { handlerAppsChat } from '@db/apps/chat/index'
-import { handlerAppsEcommerce } from '@db/apps/ecommerce/index'
-import { handlerAppsEmail } from '@db/apps/email/index'
-import { handlerAppsInvoice } from '@db/apps/invoice/index'
-import { handlerAppsKanban } from '@db/apps/kanban/index'
-import { handlerAppsMedia } from '@db/apps/media/index'
-import { handlerAppLogistics } from '@db/apps/logistics/index'
-import { handlerAppsResources } from '@db/apps/resources/index'
-import { handlerAppsResourceVersions } from '@db/apps/resourceVersions/index'
-import { handlerAppsPosts } from '@db/apps/posts/index'
-import { handlerAppsUsers } from '@db/apps/users/index'
-import { handlerDashboard } from '@db/dashboard/index'
-import { handlerPagesDatatable } from '@db/pages/datatable/index'
-import { handlerPagesFaq } from '@db/pages/faq/index'
-import { handlerPagesHelpCenter } from '@db/pages/help-center/index'
-import { handlerPagesProfile } from '@db/pages/profile/index'
-
-const worker = setupWorker(...handlerAppsEcommerce, ...handlerAppsAcademy, ...handlerAppsInvoice, ...handlerAppsUsers, ...handlerAppsEmail, ...handlerAppsCalendar, ...handlerAppsChat, ...handlerAppsResources, ...handlerAppsResourceVersions, ...handlerAppsPosts, ...handlerAppsMedia, ...handlerPagesHelpCenter, ...handlerPagesProfile, ...handlerPagesFaq, ...handlerPagesDatatable, ...handlerAppBarSearch, ...handlerAppLogistics, ...handlerAppsKanban, ...handlerDashboard)
-
-/**
- * Khởi động MSW worker khi ứng dụng được cấu hình dùng fake API.
- *
- * Input: không có tham số; đọc VITE_ENABLE_MSW và BASE_URL từ Vite.
- * Output: Promise khởi động worker hoặc undefined khi fake API bị tắt.
- * Side effect: đăng ký service worker trong trình duyệt.
- */
-export default function () {
+/** Input: cấu hình Vite. Output: worker đã khởi động nếu MSW được bật. */
+export default async function () {
   if (import.meta.env.VITE_ENABLE_MSW !== 'true')
     return
 
-  const workerUrl = `${import.meta.env.BASE_URL.replace(/build\/$/g, '') ?? '/'}mockServiceWorker.js`
+  const { startFakeApi } = await import('./runtime')
+  const workerUrl = `${(import.meta.env.BASE_URL || '/').replace(/build\/$/g, '')}mockServiceWorker.js`
 
-  worker.start({
-    serviceWorker: {
-      url: workerUrl,
-    },
-    onUnhandledRequest: 'bypass',
-  })
+  return startFakeApi(workerUrl)
 }

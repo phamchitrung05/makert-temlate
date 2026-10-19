@@ -78,6 +78,12 @@ const selectedSource = computed(() => {
 })
 
 const selectedDraft = computed(() => objectValue(selectedDetailForVersion.value?.draft ?? selectedVersion.value?.draft))
+const selectedTargetType = computed(() => selectedDetailForVersion.value?.target_type ?? selectedVersion.value?.target_type ?? displayItem.value?.targetType ?? 'post')
+
+const selectedOutputGroups = computed(() => selectedDetailForVersion.value?.output_groups
+  ?? selectedVersion.value?.output_groups
+  ?? [])
+
 const selectedTitle = computed(() => selectedDraft.value?.title || selectedVersion.value?.title || pageTitle.value || 'Chưa có tiêu đề')
 
 const resultText = computed(() => textValue(selectedDraft.value?.content ?? selectedDraft.value?.content_html))
@@ -216,7 +222,9 @@ async function loadVersionDetail(version) {
   detailError.value = ''
 
   try {
-    const requests = [targetType === 'post'
+    const reviewableTarget = ['post', 'social_post'].includes(targetType)
+
+    const requests = [reviewableTarget
       ? aiAgentService.review(version.id, { signal: controller.signal })
       : aiAgentService.status(version.id, targetType)]
 
@@ -861,6 +869,7 @@ onBeforeUnmount(cancelVersionDetail)
             :draft="selectedDraft"
             :loading="detailLoading"
             :active="Boolean(selectedVersion)"
+            :show-seo="selectedTargetType !== 'social_post' && (!selectedOutputGroups.length || selectedOutputGroups.includes('seo'))"
           />
         </VCardText>
 

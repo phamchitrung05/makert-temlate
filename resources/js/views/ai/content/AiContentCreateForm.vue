@@ -12,6 +12,7 @@
   =====================================================================
 -->
 <script setup>
+import { computed } from 'vue'
 import AiContentSourceForm from './AiContentSourceForm.vue'
 import AiPipelineReport from '@/views/ai/shared/AiPipelineReport.vue'
 
@@ -22,13 +23,14 @@ const props = defineProps({
 
 const emit = defineEmits(['generate', 'retryRun', 'reloadCatalog'])
 const source = defineModel({ type: Object, required: true })
+const isSocial = computed(() => source.value.targetType === 'social_post')
 </script>
 
 <template>
   <VCard>
     <VCardItem
-      title="Tạo bài viết AI mới"
-      subtitle="Nhập nguồn và chọn model để AI viết bài. Kết quả được lưu trong danh sách chờ duyệt."
+      :title="isSocial ? 'Tạo Social content AI mới' : 'Tạo bài viết AI mới'"
+      :subtitle="isSocial ? 'Nhập nguồn, chọn nền tảng và output để tạo Social Post Facebook nháp.' : 'Nhập nguồn và chọn model để AI viết bài. Kết quả được lưu trong danh sách chờ duyệt.'"
     >
       <template #prepend>
         <VAvatar

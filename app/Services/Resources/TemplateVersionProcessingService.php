@@ -39,7 +39,7 @@ use Throwable;
  * - markFailed(): ghi lỗi public-safe và kết thúc tracker
  * - markProcessing(): lock/recheck input trước khi bắt đầu file work
  * - persistSuccess(): ghi manifest/screens/pointer sau khi artifact ready
- * - publishArtifact(): chuyển site root từ staging sang private artifact
+ * - publishArtifact(): chuyển site root sang artifact, fallback copy khi Windows giữ handle
  * - ensureTemplateVersion(): chặn resource type ngoài template
  * - packageInput(): lấy archive media và checksum hiện tại
  * - tracker(): đăng ký/đọc tracker projection cho template
@@ -391,12 +391,12 @@ final class TemplateVersionProcessingService
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Move site root từ staging sang private artifact directory
+     * CHỨC NĂNG: Publish site root từ staging sang private artifact directory
      * =====================================================================
      * INPUT: extractor result có staging_path/source_root và version/token.
      * OUTPUT: absolute artifact path.
-     * SIDE EFFECT: move directory trên media_private; xóa wrapper staging.
-     * EXCEPTION/TRANSACTION: RuntimeException nếu source/target không move được.
+     * SIDE EFFECT: move hoặc copy hoàn chỉnh trên media_private; xóa wrapper staging.
+     * EXCEPTION/TRANSACTION: RuntimeException nếu cả move/copy thất bại; caller dọn artifact chưa hoàn chỉnh.
      * =====================================================================
      */
     private function publishArtifact(array $result, int $versionId, string $processingToken): string
@@ -413,7 +413,8 @@ final class TemplateVersionProcessingService
         }
         File::deleteDirectory($artifactPath);
         File::ensureDirectoryExists(dirname($artifactPath), 0700);
-        if (! File::moveDirectory($siteRoot, $artifactPath)) {
+        // Windows có thể giữ handle khiến rename thất bại; chỉ cấp pointer sau khi copy hoàn tất.
+        if (! File::moveDirectory($siteRoot, $artifactPath) && ! File::copyDirectory($siteRoot, $artifactPath)) {
             throw new RuntimeException('Không thể publish template artifact private.');
         }
         File::deleteDirectory(dirname($stagingRun));

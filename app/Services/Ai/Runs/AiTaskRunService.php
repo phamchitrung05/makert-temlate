@@ -33,7 +33,8 @@ use Illuminate\Support\Facades\DB;
  * - persist(): createOrFirst theo dedupe key rồi update tracker.
  * - start(): chuyển tracker active sang processing/analyzing.
  * - sync(): cập nhật lifecycle với terminal guard atomic.
- * - visibleTo(): scope owner và quyền module qua registry.
+ * - canAccess(): cho owner hoặc super-admin active quản lý metadata/hủy tracker.
+ * - visibleTo(): scope owner/quyền module; super-admin thấy tracker toàn hệ thống.
  * - canUse(): kiểm actor có ít nhất một module queue.
  * - reconcile(): đối chiếu một tracker với source authoritative.
  * - reconcileActive(): reconcile toàn bộ tracker active visible.
@@ -59,9 +60,7 @@ final class AiTaskRunService
      * SIDE EFFECT: chỉ giữ dependency trong memory. EXCEPTION/TRANSACTION: không mở transaction.
      * =====================================================================
      */
-    public function __construct(private readonly AiTaskRunRegistry $registry)
-    {
-    }
+    public function __construct(private readonly AiTaskRunRegistry $registry) {}
 
     /**
      * =====================================================================
@@ -73,7 +72,6 @@ final class AiTaskRunService
      * EXCEPTION/TRANSACTION: Transaction ngắn; nguồn thiếu trả ModelNotFoundException.
      * =====================================================================
      */
-
     public function registerAnalysis(AiWritingProfileAnalysis $analysis): AiTaskRun
     {
         return $this->register($analysis);
@@ -89,7 +87,6 @@ final class AiTaskRunService
      * EXCEPTION/TRANSACTION: Transaction ngắn; stale generation không tạo tracker mới.
      * =====================================================================
      */
-
     public function registerImport(AiImport $import): AiTaskRun
     {
         return $this->register($import);
@@ -118,7 +115,6 @@ final class AiTaskRunService
      * EXCEPTION/TRANSACTION: Khóa analysis trước tracker; không dùng snapshot lifecycle cũ.
      * =====================================================================
      */
-
     public function syncFromAnalysis(AiWritingProfileAnalysis $analysis, ?string $jobId = null): ?AiTaskRun
     {
         return $this->syncSource($analysis, $jobId);
@@ -134,7 +130,6 @@ final class AiTaskRunService
      * EXCEPTION/TRANSACTION: Khóa nguồn; worker generation cũ không ghi vào lượt mới.
      * =====================================================================
      */
-
     public function syncFromImport(AiImport $import, ?string $jobId = null): ?AiTaskRun
     {
         return $this->syncFrom($import, $jobId);
@@ -163,7 +158,6 @@ final class AiTaskRunService
      * EXCEPTION/TRANSACTION: Không khóa qua HTTP; gọi lồng trong transaction nghiệp vụ được hỗ trợ.
      * =====================================================================
      */
-
     private function syncSource(Model $source, ?string $jobId): ?AiTaskRun
     {
         return DB::transaction(function () use ($source, $jobId): ?AiTaskRun {
@@ -200,7 +194,6 @@ final class AiTaskRunService
      * EXCEPTION/TRANSACTION: Không mở transaction; caller đang giữ source lock.
      * =====================================================================
      */
-
     private function attributes(AiTaskRunAdapter $adapter, Model $source): array
     {
         $attributes = $adapter->project($source);
@@ -222,7 +215,6 @@ final class AiTaskRunService
      * EXCEPTION/TRANSACTION: Caller giữ transaction và source lock; không reset trạng thái từ default.
      * =====================================================================
      */
-
     private function persist(array $attributes): AiTaskRun
     {
         $key = ['dedupe_key' => $attributes['dedupe_key']];
@@ -243,7 +235,6 @@ final class AiTaskRunService
      * EXCEPTION/TRANSACTION: Điều kiện trên DB chặn stale writer; không đổi nguồn nghiệp vụ.
      * =====================================================================
      */
-
     public function start(AiTaskRun $task, int $progress = 1, string $status = 'processing'): AiTaskRun
     {
         abort_unless(in_array($status, self::ACTIVE_STATUSES, true), 422);
@@ -261,7 +252,6 @@ final class AiTaskRunService
      * EXCEPTION/TRANSACTION: Không mở transaction; SQL điều kiện bảo vệ cạnh tranh atomic.
      * =====================================================================
      */
-
     public function sync(AiTaskRun $task, string $status, int $progress, ?string $errorCode = null, ?string $errorMessage = null): AiTaskRun
     {
         abort_unless(in_array($status, [...self::ACTIVE_STATUSES, ...self::TERMINAL_STATUSES], true), 422);
@@ -281,7 +271,7 @@ final class AiTaskRunService
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Scope tracker theo owner và quyền module hiện tại.
+     * CHỨC NĂNG: Scope tracker theo quyền module và owner, cho super-admin xem metadata toàn hệ thống.
      * =====================================================================
      * INPUT: User admin đã xác thực.
      * OUTPUT: Builder lọc analysis/manage, content/target permission và image/media.upload.
@@ -289,16 +279,23 @@ final class AiTaskRunService
      * EXCEPTION/TRANSACTION: Permission hiện tại quyết định cả list/detail/cancel; không chỉ dựa token.
      * =====================================================================
      */
-
     public function visibleTo(User $actor): Builder
     {
-        return AiTaskRun::query()->where('user_id', $actor->getKey())
+        return AiTaskRun::query()
+            ->when(! ($actor->isActive() && $actor->hasRole('super-admin', 'admin')), fn ($query) => $query->where('user_id', $actor->getKey()))
             ->where(function (Builder $query) use ($actor): void {
                 $query->whereRaw('1 = 0');
                 foreach ($this->registry->all() as $adapter) {
                     $adapter->applyVisibility($query, $actor);
                 }
             });
+    }
+
+    /** Input: actor và tracker. Output: true cho owner hoặc super-admin active; không cấp quyền sửa/apply nội dung nguồn. */
+    public function canAccess(User $actor, AiTaskRun $task): bool
+    {
+        return (int) $task->user_id === (int) $actor->getKey()
+            || ($actor->isActive() && $actor->hasRole('super-admin', 'admin'));
     }
 
     /**
@@ -311,7 +308,6 @@ final class AiTaskRunService
      * EXCEPTION/TRANSACTION: Không mở transaction hoặc truy cập dữ liệu task.
      * =====================================================================
      */
-
     public function canUse(User $actor): bool
     {
         return collect($this->registry->all())->contains(fn (AiTaskRunAdapter $adapter) => $adapter->canUse($actor));
@@ -327,7 +323,6 @@ final class AiTaskRunService
      * EXCEPTION/TRANSACTION: Khóa nguồn trước tracker; old generation không đồng bộ từ generation mới.
      * =====================================================================
      */
-
     public function reconcile(AiTaskRun $task): AiTaskRun
     {
         return DB::transaction(function () use ($task): AiTaskRun {
@@ -362,7 +357,6 @@ final class AiTaskRunService
      * EXCEPTION/TRANSACTION: Mỗi nguồn một transaction ngắn; scope permission trước khi ghi.
      * =====================================================================
      */
-
     public function reconcileActive(User $actor): void
     {
         $this->visibleTo($actor)->whereIn('status', self::ACTIVE_STATUSES)
@@ -379,16 +373,15 @@ final class AiTaskRunService
      * =====================================================================
      * INPUT: Tracker identity và actor đã xác thực.
      * OUTPUT: Tracker cancelled hoặc trạng thái terminal thực của nguồn.
-     * SIDE EFFECT: Transaction ghi source/tracker; ảnh thumbnail được sync sau commit.
+     * SIDE EFFECT: Transaction ghi source/tracker và audit khi super-admin hủy task nhân viên; ảnh sync sau commit.
      * EXCEPTION/TRANSACTION: 404 sai owner, 403 mất quyền, 409 stale generation; completion thắng trả ready.
      * =====================================================================
      */
-
     public function cancel(AiTaskRun $task, User $actor): AiTaskRun
     {
-        abort_unless((int) $task->user_id === (int) $actor->getKey(), 404);
+        abort_unless($this->canAccess($actor, $task), 404);
         abort_unless($this->visibleTo($actor)->whereKey($task->id)->exists(), 403);
-        [$cancelled, $source] = DB::transaction(function () use ($task): array {
+        [$cancelled, $source] = DB::transaction(function () use ($task, $actor): array {
             try {
                 $adapter = $this->registry->forTaskableType($task->taskable_type);
             } catch (\LogicException) {
@@ -398,6 +391,11 @@ final class AiTaskRunService
             abort_unless($source, 410, 'Nguồn của tác vụ không còn tồn tại.');
             abort_unless($adapter->isCurrent($source, $task), 409, 'Tác vụ đã có lượt chạy mới.');
             $adapter->cancel($source);
+            if ((int) $task->user_id !== (int) $actor->getKey()) {
+                activity('ai')->causedBy($actor)->event('ai_task_cancelled_by_super_admin')
+                    ->withProperties(['task_id' => $task->id, 'owner_id' => $task->user_id])
+                    ->log('Super-admin cancelled an AI task.');
+            }
 
             return [$this->persist($this->attributes($adapter, $source)), $source];
         });

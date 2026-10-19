@@ -46,8 +46,8 @@ final class SocialPostGenerationStateService
             }
 
             $runs = AiImport::query()
-                ->where('input_json->social_post_id', $postId)
-                ->where('input_json->generation_no', $generationNo)
+                ->where('input_social_post_id', $postId)
+                ->where('input_generation_no', $generationNo)
                 ->whereIn('operation', ['social_caption', 'social_image_prompt', 'social_image'])
                 ->get(['operation', 'status']);
 

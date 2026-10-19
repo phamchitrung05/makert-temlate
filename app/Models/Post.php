@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * =====================================================================
  * CHỨC NĂNG FILE: Post với slug, media và metadata SEO độc lập.
  * CÁC HÀM/METHOD TRONG FILE: casts(), createdBy(), updatedBy(), categories(),
- * tags(), seoFallbacks(), slugs(), slugSource(), primarySlug(), scopePublished():
+ * tags(), seoFallbacks(), slugs(), slugSource(), scopePublished():
  * cast dữ liệu, quan hệ, nguồn slug và truy vấn Post công khai.
  * INPUT/OUTPUT CỦA CLASS (tổng thể): thuộc tính Post -> model/quan hệ Eloquent.
  * =====================================================================
@@ -97,9 +97,7 @@ class Post extends Model
     /** Input: Post hiện tại. Output: fallback canonical theo permalink Post. */
     public function seoFallbacks(): array
     {
-        $slug = $this->relationLoaded('slugs')
-            ? $this->slugs->first(fn (Slug $item): bool => $item->is_primary && $item->locale === config('app.locale'))?->slug
-            : $this->primarySlug()?->slug;
+        $slug = $this->primarySlug()?->slug;
 
         return [
             'title' => $this->title,
@@ -119,14 +117,5 @@ class Post extends Model
     public function slugSource(): string
     {
         return (string) $this->title;
-    }
-
-    /** Input: locale ứng dụng. Output: slug primary hoặc null, đọc DB. */
-    public function primarySlug(): ?Slug
-    {
-        return $this->slugs()
-            ->where('is_primary', true)
-            ->where('locale', config('app.locale'))
-            ->first();
     }
 }

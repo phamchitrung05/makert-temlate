@@ -38,7 +38,7 @@ final class SocialPostStoreRequest extends FormRequest
     {
         return [
             'campaign_id' => ['nullable', 'integer', 'exists:campaigns,id'],
-            'product_id' => ['nullable', 'integer', 'exists:products,id'],
+            'product_id' => ['prohibited'],
             'caption' => ['nullable', 'string', 'max:5000'],
             'facebook_content' => ['sometimes', 'array'],
             'facebook_content.body' => ['required_with:facebook_content', 'string', 'max:5000'],

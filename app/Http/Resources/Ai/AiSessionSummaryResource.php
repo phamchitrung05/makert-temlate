@@ -8,6 +8,7 @@ use App\Services\Ai\Content\Quality\ArticleQualityEvaluationService;
 use App\Services\Ai\Errors\AiPublicErrorMessage;
 use App\Services\Ai\Images\AiThumbnailService;
 use App\Services\Ai\Providers\Diagnostics\AiResponseDiagnostics;
+use App\Services\Ai\Registries\TargetRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -37,15 +38,33 @@ class AiSessionSummaryResource extends JsonResource
     public function toArray(Request $request): array
     {
         $diagnostics = AiResponseDiagnostics::sanitize((array) data_get($this->source_meta_json, 'ai_response', []));
+        $targetType = (string) data_get($this->input_json, 'target_type', 'post');
+        $platform = data_get($this->input_json, 'platform');
+        try {
+            $outputOptions = app(TargetRegistry::class)->outputOptions($targetType, is_string($platform) ? $platform : null);
+        } catch (\InvalidArgumentException) {
+            // Các run cũ của target đã gỡ khỏi catalog vẫn phải hiện được summary.
+            $outputOptions = [];
+        }
+        $title = trim((string) data_get($this->result_json, 'draft.title', ''));
+        if ($title === '' && $targetType === 'social_post') {
+            $title = mb_substr(trim(strip_tags((string) data_get($this->result_json, 'draft.content_html', ''))), 0, 255)
+                ?: 'Social Post'.($platform ? ' · '.ucfirst((string) $platform) : '');
+        }
 
         return [
             'id' => $this->id,
             'session_id' => $this->session_id ?: $this->id,
             'generation_no' => (int) $this->generation_no,
             'operation' => $this->operation,
-            'target_type' => data_get($this->input_json, 'target_type', 'post'),
+            'target_type' => $targetType,
+            'platform' => $platform,
+            'output_groups' => array_values((array) data_get($this->input_json, 'pipeline_snapshot.outputs', [])),
+            'output_options' => $outputOptions,
+            'editor_fields' => array_values((array) data_get($this->input_json, 'pipeline_snapshot.editor_fields', [])),
+            'manual_taxonomy' => (bool) data_get($this->input_json, 'pipeline_snapshot.manual_taxonomy', false),
             'parent_id' => $this->parent_id,
-            'title' => mb_substr((string) data_get($this->result_json, 'draft.title', ''), 0, 255),
+            'title' => mb_substr($title, 0, 255),
             'thumbnail' => $this->whenLoaded('thumbnail', fn () => MediaAssetResource::make($this->thumbnail), null),
             'thumbnail_generation' => AiThumbnailService::state($this->resource),
             'status' => $this->status,

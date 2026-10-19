@@ -9,7 +9,7 @@
  * Systerm AI tập trung Ai Content, Ai Prompt và AI Settings cho nội dung/mẫu/provider.
  * AI Approved hiển thị các snapshot bài AI đã duyệt được lưu dài hạn.
  * Ai Prompt có List đọc mẫu đã lưu và Add phân tích bài tham khảo để tạo mẫu.
- * Các mục Page/Category/Tag hiện là placeholder vì giao diện sẽ bổ sung sau.
+ * Chỉ gắn liên kết nghiệp vụ đã có route; chi tiết bản ghi được mở từ trang list.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - Không có; file export một mảng cấu hình menu.
@@ -69,24 +69,11 @@ export default [
       { title: 'Add', to: 'apps-blog-post-add' },
     ],
   },
-  {
-    title: 'Page',
-    icon: { icon: 'tabler-file' },
-    children: [
-      { title: 'List', to: null },
-      { title: 'Add', to: null },
-    ],
-  },
   { heading: 'Taxonomy' },
   {
     title: 'Category',
     icon: { icon: 'tabler-category' },
     to: 'apps-taxonomy-category',
-  },
-  {
-    title: 'Tag',
-    icon: { icon: 'tabler-tag' },
-    to: null,
   },
   { heading: 'Media' },
   {
@@ -99,7 +86,7 @@ export default [
   },
   { heading: 'SYSTERM' },
   {
-    title: 'Seting',
+    title: 'Settings',
     icon: { icon: 'tabler-settings' },
     to: 'settings',
   },
@@ -108,7 +95,6 @@ export default [
     icon: { icon: 'tabler-users' },
     children: [
       { title: 'List', to: 'apps-user-list' },
-      { title: 'View', to: { name: 'apps-user-view-id', params: { id: 21 } } },
     ],
   },
   {
@@ -145,14 +131,12 @@ export default [
         title: 'Order',
         children: [
           { title: 'List', to: 'apps-ecommerce-order-list' },
-          { title: 'Details', to: { name: 'apps-ecommerce-order-details-id', params: { id: '9042' } } },
         ],
       },
       {
         title: 'Customer',
         children: [
           { title: 'List', to: 'apps-ecommerce-customer-list' },
-          { title: 'Details', to: { name: 'apps-ecommerce-customer-details-id', params: { id: 478426 } } },
         ],
       },
       {
@@ -211,8 +195,6 @@ export default [
     icon: { icon: 'tabler-file-invoice' },
     children: [
       { title: 'List', to: 'apps-invoice-list' },
-      { title: 'Preview', to: { name: 'apps-invoice-preview-id', params: { id: '5036' } } },
-      { title: 'Edit', to: { name: 'apps-invoice-edit-id', params: { id: '5036' } } },
       { title: 'Add', to: 'apps-invoice-add' },
     ],
   },

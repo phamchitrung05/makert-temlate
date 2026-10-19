@@ -134,7 +134,7 @@ class ArticleImportService
             isset($input['prompt_key']) ? (string) $input['prompt_key'] : null,
             (string) ($input['target_type'] ?? 'post'),
             'create',
-            ['source_type' => $sourceType, 'language' => (string) ($input['language'] ?? 'vi')],
+            ['source_type' => $sourceType, 'platform' => $input['platform'] ?? null, 'language' => (string) ($input['language'] ?? 'vi')],
         );
         $promptKey = (string) $prompt['key'];
         $rawRequestedFields = (array) ($input['fields'] ?? []);
@@ -147,13 +147,18 @@ class ArticleImportService
         if (in_array('taxonomy', $requestedFields, true)) {
             throw new AiImportException('Run cũ còn yêu cầu taxonomy từ AI. Hãy tạo run mới và chọn danh mục/tag thủ công.', 'AI_LEGACY_TAXONOMY');
         }
+        $isSocialTarget = (string) ($input['target_type'] ?? 'post') === 'social_post';
         $hasFieldSelection = $requestedFields !== [] || (array_key_exists('requested_outputs', $input) && ! $import->parent_id);
+        $configuredContentFields = array_values(array_diff(
+            (array) data_get($input, 'pipeline_snapshot.outputs', []),
+            ['seo', 'thumbnail', 'taxonomy'],
+        ));
         $contentFields = $hasFieldSelection
             ? array_values(array_diff($requestedFields, ['seo', 'thumbnail', 'taxonomy']))
-            : ['title', 'content'];
+            : ($isSocialTarget && $configuredContentFields !== [] ? $configuredContentFields : ['title', 'content']);
         // SEO luôn chạy ở task riêng; không để writer/editor hoặc generate() tự sinh SEO lần nữa.
-        $seoRequested = in_array('seo', $requestedFields, true)
-            || (! $hasFieldSelection && ($input['generate_seo'] ?? false) === true);
+        $seoRequested = ! $isSocialTarget && (in_array('seo', $requestedFields, true)
+            || (! $hasFieldSelection && ($input['generate_seo'] ?? false) === true));
         $contentProvider = $provider;
         if ($hasFieldSelection && method_exists($contentProvider, 'withOutputFields')) {
             $contentProvider = $contentProvider->withOutputFields($contentFields);
@@ -175,8 +180,10 @@ class ArticleImportService
         $generationTitle = (string) ($draft['title'] ?? $draftTitle);
         $generationContent = (string) ($draft['content_html'] ?? $draft['content'] ?? $content);
         $validator = $this->validator ?? new AiOutputValidator;
-        $validationGroups = $hasFieldSelection ? $contentFields : null;
-        $finalValidationGroups = $hasFieldSelection ? $requestedFields : null;
+        $validationGroups = $hasFieldSelection || $isSocialTarget ? $contentFields : null;
+        $finalValidationGroups = $hasFieldSelection
+            ? $requestedFields
+            : ($isSocialTarget ? $contentFields : null);
         $needsContentGeneration = ! $hasFieldSelection || $contentFields !== [];
         $needsTextGeneration = $needsContentGeneration || $seoRequested;
         $requestedGroups = $hasFieldSelection
@@ -196,22 +203,41 @@ class ArticleImportService
                 $diagnostics['stage'] = 'transport';
                 $diagnostics['returned_fields'] = [];
                 if ($needsContentGeneration) {
-                    $generationCalled = true;
-                    $activeProvider = $contentProvider;
                     $fullPostContent = ($input['target_type'] ?? 'post') === 'post'
                         && (! $hasFieldSelection || in_array('content', $contentFields, true));
                     if ($fullPostContent) {
+                        $generationCalled = true;
+                        $activeProvider = $contentProvider;
                         $generated = (new ArticleGenerationPipeline)->run($import, $contentProvider, $snapshot, $contentFields);
                     } else {
+                        $generated = [];
                         $this->progress($import, 'rewriting', 55);
                         $profileInstructions = (string) data_get($input, 'writing_profile_snapshot.style_instructions', '');
                         $instructions = trim((string) ($input['instructions'] ?? '').($profileInstructions === '' ? '' : "\nStyle guidance (explicit article requirements take precedence): ".$profileInstructions));
                         if (! empty($input['writing_brief'])) {
                             $instructions .= "\nArticle brief: ".json_encode($input['writing_brief'], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
                         }
-                        $generated = $contentProvider->generate($generationTitle, $generationContent, (string) ($input['language'] ?? 'vi'), (string) ($input['rewrite_style'] ?? 'informative'), $promptKey, $instructions);
+                        foreach ($this->generationBranches($input, $contentFields) as $branchFields) {
+                            $generationCalled = true;
+                            $activeProvider = method_exists($contentProvider, 'withOutputFields')
+                                ? $contentProvider->withOutputFields($branchFields)
+                                : $contentProvider;
+                            $branchGenerated = $activeProvider->generate(
+                                $generationTitle,
+                                $generationContent,
+                                (string) ($input['language'] ?? 'vi'),
+                                (string) ($input['rewrite_style'] ?? 'informative'),
+                                $promptKey,
+                                $instructions,
+                            );
+                            if ($activeProvider instanceof AiResponseMetadataProvider) {
+                                $diagnostics = array_replace($diagnostics, $activeProvider->responseMetadata());
+                            }
+                            $branchGenerated = $validator->validate($branchGenerated, $branchFields, sanitizeContent: true);
+                            $generated = array_replace($generated, $branchGenerated);
+                        }
                     }
-                    if ($contentProvider instanceof AiResponseMetadataProvider) {
+                    if ($fullPostContent && $contentProvider instanceof AiResponseMetadataProvider) {
                         $diagnostics = array_replace($diagnostics, $contentProvider->responseMetadata());
                     }
                     // Source URLs and uploaded media are pipeline results, never model output.
@@ -354,6 +380,60 @@ class ArticleImportService
      *
      * =====================================================================
      */
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Tách output content thành các nhánh theo pipeline snapshot.
+     * =====================================================================
+     * INPUT: snapshot pipeline và nhóm output được chọn.
+     * OUTPUT: các nhóm được gọi độc lập; nhóm có phụ thuộc được gộp cùng nhánh.
+     * SIDE EFFECT: không gọi provider hoặc ghi database.
+     * EXCEPTION/TRANSACTION: không có.
+     * =====================================================================
+     *
+     * @return list<list<string>>
+     */
+    private function generationBranches(array $input, array $contentFields): array
+    {
+        $selected = array_values(array_unique(array_map('strval', $contentFields)));
+        if ($selected === []) {
+            return [];
+        }
+
+        $steps = (array) data_get($input, 'pipeline_snapshot.pipeline', []);
+        $branches = [];
+        $branchByOutput = [];
+        foreach ($steps as $step) {
+            $output = (string) ($step['output'] ?? '');
+            if ($output === '' || ! in_array($output, $selected, true)) {
+                continue;
+            }
+            $dependencyBranches = collect((array) ($step['depends_on'] ?? []))
+                ->filter(fn (mixed $dependency): bool => isset($branchByOutput[(string) $dependency]))
+                ->map(fn (mixed $dependency): int => $branchByOutput[(string) $dependency])
+                ->unique()->values()->all();
+            $branchIndex = $dependencyBranches[0] ?? count($branches);
+            $branches[$branchIndex] ??= [];
+            $branches[$branchIndex][] = $output;
+            $branchByOutput[$output] = $branchIndex;
+        }
+
+        // Outputs không có step riêng (ví dụ title/excerpt trong nhánh content)
+        // phải đi cùng nhánh content hoặc nhánh đầu tiên của target.
+        $fallbackBranch = $branchByOutput['content'] ?? 0;
+        $branches[$fallbackBranch] ??= [];
+        foreach ($selected as $group) {
+            if (! isset($branchByOutput[$group])) {
+                $branches[$fallbackBranch][] = $group;
+                $branchByOutput[$group] = $fallbackBranch;
+            }
+        }
+
+        return array_values(array_map(
+            fn (array $branch): array => array_values(array_unique($branch)),
+            array_filter($branches, static fn (mixed $branch): bool => is_array($branch) && $branch !== []),
+        ));
+    }
+
     private function persistResponseMetadata(AiImport $import, array $diagnostics): void
     {
         if (! $import->exists) {
@@ -390,6 +470,8 @@ class ArticleImportService
             'robots_index' => true, 'robots_follow' => true, 'og_title' => $seoTitle, 'og_description' => $seoDescription,
             'thumbnail_prompt' => $title,
             'thumbnail' => ['media_asset_id' => null, 'source_url' => $this->meta($html, 'og:image'), 'alt_text' => $title],
+            'cta' => '', 'hashtags' => [], 'link_url' => null,
+            'gallery_prompt' => $title, 'negative_prompt' => '', 'aspect_ratio' => '4:5', 'slot_count' => 3,
         ];
     }
 

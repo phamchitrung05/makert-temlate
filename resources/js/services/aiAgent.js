@@ -54,6 +54,14 @@ const generationCapabilities = capability => ({
   ...(Array.isArray(capability?.outputs) ? { outputs: withoutAiTaxonomyOutputs(capability.outputs) } : {}),
   ...(Array.isArray(capability?.output_options) ? { output_options: capability.output_options
     .filter(option => withoutAiTaxonomyOutputs([option.value]).length) } : {}),
+  ...(Array.isArray(capability?.platform_profiles) ? {
+    platform_profiles: capability.platform_profiles.map(profile => ({
+      ...profile,
+      ...(Array.isArray(profile.outputs) ? { outputs: withoutAiTaxonomyOutputs(profile.outputs) } : {}),
+      ...(Array.isArray(profile.output_options) ? { output_options: profile.output_options
+        .filter(option => withoutAiTaxonomyOutputs([option.value]).length) } : {}),
+    })),
+  } : {}),
 })
 
 /**
@@ -70,9 +78,16 @@ const fallbackCapabilities = targetType => ({
   target_type: targetType,
   operations: ['create', 'rewrite', 'translate', 'regenerate'],
   input_types: ['url', 'text', 'existing_record'],
+  inputs: ['url', 'file', 'html', 'text', 'prompt'],
   outputs: targetType === 'post'
     ? ['title', 'excerpt', 'content', 'seo', 'thumbnail']
-    : ['title', 'description', 'content', 'metadata'],
+    : ['social_content', 'social_gallery'],
+  platforms: targetType === 'social_post' ? ['facebook'] : [],
+  platform_profiles: targetType === 'social_post' ? [{
+    key: 'facebook', label: 'Facebook', enabled: true,
+    outputs: ['social_content', 'social_gallery'],
+    editor_fields: ['content', 'cta', 'hashtags', 'link_url', 'gallery'],
+  }] : [],
   prompts: [
     { key: `${targetType}.create.from_url`, label: 'Tạo nội dung từ nguồn', operation: 'create' },
     { key: `${targetType}.rewrite.technical`, label: 'Viết lại theo hướng kỹ thuật', operation: 'rewrite' },
@@ -148,9 +163,13 @@ export const aiAgentService = {
    * EXCEPTION/TRANSACTION: Lỗi khác 404/405 được truyền lên caller.
    * =====================================================================
    */
-  async capabilities(targetType) {
+  async capabilities(targetType, platform = null) {
     try {
-      return generationCapabilities(unwrap(await $api(`/admin/ai-agent/capabilities/${targetType}`)))
+      const response = platform
+        ? await $api(`/admin/ai-agent/capabilities/${targetType}`, { query: { platform } })
+        : await $api(`/admin/ai-agent/capabilities/${targetType}`)
+
+      return generationCapabilities(unwrap(response))
     }
     catch (error) {
       if (!isMissingRoute(error))

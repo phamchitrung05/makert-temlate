@@ -37,7 +37,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * - versions(): các phiên bản đã phát hành
  * - scopePublished(): lọc resource đã xuất bản
  * - scopePubliclyVisible(): lọc resource công khai cho guest
- * - primarySlug(): slug hiện hành của locale đang chạy
+ * - HasSlug::primarySlug(): slug hiện hành dùng chung theo locale
  * - getActivitylogOptions(): cấu hình audit log cho model
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
@@ -258,25 +258,6 @@ class Resource extends Model
     public function slugSource(): string
     {
         return (string) $this->title;
-    }
-
-    /**
-     * =====================================================================
-     * CHỨC NĂNG: Lấy slug hiện hành của resource theo locale đang chạy
-     * =====================================================================
-     *
-     * INPUT:
-     * - Không có; locale lấy từ config app
-     *
-     * OUTPUT:
-     * - Slug|null: bản ghi slug primary hoặc null nếu chưa tạo slug
-     */
-    public function primarySlug(): ?Slug
-    {
-        return $this->slugs()
-            ->where('is_primary', true)
-            ->where('locale', config('app.locale'))
-            ->first();
     }
 
     /**

@@ -8,6 +8,7 @@ use App\Enums\MediaAssetVisibility;
 use App\Enums\MediaScanStatus;
 use App\Models\MediaAsset;
 use App\Models\ResourceVersion;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -15,12 +16,13 @@ use Illuminate\Validation\ValidationException;
  * CHỨC NĂNG FILE: Kiểm tra package archive trước các pipeline version
  * =====================================================================
  *
- * Guard dùng chung cho ready, process và preview. Nó luôn đọc lại usage,
- * loại asset, visibility và custom property scan hiện tại thay vì tin vào
- * trạng thái đã nhận ở bước upload.
+ * Gate ready/process/preview luôn đọc lại usage và scan hiện tại. Catalog
+ * chỉ hiển thị metadata nên có đường riêng để kiểm snapshot đã eager load.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - cleanPackageFor(): trả package duy nhất đã scan clean.
+ * - cleanLoadedPackageFor(): kiểm snapshot eager load dành riêng cho catalog.
+ * - validatePackage(): kiểm số lượng, loại, visibility và scan của package.
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : ResourceVersion có usage resource_version.package.
@@ -48,6 +50,31 @@ class ResourceVersionPackageGuard
                 'mediaAsset' => fn ($query) => $query->withTrashed()->with('media'),
             ])
             ->get();
+
+        return $this->validatePackage($usages);
+    }
+
+    /** Input: version có usages/asset/media đã eager load. Output: package hợp lệ cho DTO catalog, không query lại. */
+    public function cleanLoadedPackageFor(ResourceVersion $version): MediaAsset
+    {
+        if (! $version->relationLoaded('mediaAssetUsages')) {
+            throw new \LogicException('Catalog package usages must be eager loaded.');
+        }
+
+        $usages = $version->mediaAssetUsages
+            ->filter(fn ($usage): bool => $usage->field === MediaAssetField::ResourceVersionPackage);
+        foreach ($usages as $usage) {
+            if (! $usage->relationLoaded('mediaAsset') || ($usage->mediaAsset && ! $usage->mediaAsset->relationLoaded('media'))) {
+                throw new \LogicException('Catalog package assets and media must be eager loaded.');
+            }
+        }
+
+        return $this->validatePackage($usages);
+    }
+
+    /** Input: usages package đã nạp. Output: archive private/clean duy nhất; ValidationException nếu không hợp lệ. */
+    private function validatePackage(Collection $usages): MediaAsset
+    {
 
         if ($usages->count() !== 1) {
             throw ValidationException::withMessages([

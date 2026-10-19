@@ -22,6 +22,7 @@ use Illuminate\Http\Request;
  * - callback(): nhận code/state và upsert Pages.
  * - reconnect(): tạo OAuth URL lại.
  * - disconnect(): ngắt một Page.
+ * - payload(): serialize metadata không có token.
  * - actor(): lấy admin User.
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
@@ -64,6 +65,7 @@ final class SocialAccountController extends Controller
      */
     public function callback(Request $request, FacebookOAuthService $oauth): JsonResponse
     {
+        abort_if($request->filled('error'), 400, 'Kết nối Facebook đã bị hủy hoặc chưa được cấp quyền. Hãy bắt đầu kết nối lại.');
         $request->validate(['code' => ['required', 'string'], 'state' => ['required', 'string', 'max:100']]);
 
         return BaseResponse::success($oauth->handleCallback((string) $request->string('code'), (string) $request->string('state')), 'Đã kết nối Facebook Page.');

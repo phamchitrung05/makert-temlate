@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * - parent(), children(): các cấp của cây danh mục
  * - casts(): cast trạng thái, tùy chọn menu và thứ tự
  * - slugs(): tập slug của danh mục
+ * - HasSlug::primarySlug(): slug hiện hành dùng chung theo locale
  * - slugSource(), slugSourceColumn(): nguồn sinh slug
  * - resources(): resource đã gắn vào danh mục này
  * - posts(): bài viết đã gắn vào danh mục này

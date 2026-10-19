@@ -774,6 +774,8 @@ final class AiProviderSettingsApiTest extends TestCase
         });
         $id = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
             'target_type' => 'post', 'operation' => 'create', 'provider' => $provider->key, 'model' => 'text-a',
+            // Input: chỉ pipeline nội dung. Output: số request phản ánh retry/timeout của ba task.
+            'generate_seo' => false,
             'input' => ['type' => 'text', 'text' => 'Nội dung nguồn để kiểm tra timeout và kết nối lại thủ công.'],
         ])->assertStatus(202)->json('data.job_id');
         (new ProcessAiImportJob($id, 120))->handle(app(ArticleImportService::class));

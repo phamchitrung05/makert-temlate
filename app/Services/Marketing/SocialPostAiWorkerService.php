@@ -28,7 +28,7 @@ use Illuminate\Support\Str;
  * - execute(): gọi provider structured hoặc deterministic fallback.
  * - complete(): ghi output ready và version snapshot.
  * - fail(): ghi lỗi bounded và cập nhật aggregate status.
- * - canonicalCaption(): ghép caption/CTA/hashtag thành một bản dùng chung.
+ * - deterministicCaption()/deterministicImagePrompt(): output dự phòng khi chưa có provider.
  * - isCurrent(): kiểm tra post/generation còn hiện hành.
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
@@ -74,10 +74,8 @@ final class SocialPostAiWorkerService
 
         try {
             $output = $this->execute($import, 'caption');
-            $factIds = $this->contexts->validateFactIds((array) ($output['used_product_fact_ids'] ?? []), (array) ($input['context'] ?? []));
-            $output['used_product_fact_ids'] = $factIds;
-            $content = $this->normalizeFacebookContent($output);
-            $caption = $this->canonicalCaption($content);
+            $content = FacebookContent::normalize($output);
+            $caption = FacebookContent::caption($content);
             $updated = DB::transaction(function () use ($import, $post, $input, $content, $caption): bool {
                 $locked = SocialPost::query()->lockForUpdate()->findOrFail($post->getKey());
                 if (! $this->isCurrent($locked, (int) ($input['generation_no'] ?? 0))) {
@@ -127,7 +125,6 @@ final class SocialPostAiWorkerService
                 'version' => $input['prompt_version'] ?? null,
                 'schema' => $input['schema_version'] ?? null,
                 'component' => 'caption',
-                'output_fact_ids' => $output['used_product_fact_ids'],
             ], (array) ($input['writing_profile_snapshot'] ?? []), [
                 'provider' => $import->provider,
                 'model' => data_get($input, 'ai_connection.model', 'deterministic'),
@@ -162,7 +159,6 @@ final class SocialPostAiWorkerService
 
         try {
             $output = $this->execute($import, 'image_prompt');
-            $output['used_product_fact_ids'] = $this->contexts->validateFactIds((array) ($output['used_product_fact_ids'] ?? []), (array) ($input['context'] ?? []));
             $imageImports = DB::transaction(function () use ($import, $input, $output): array {
                 $this->complete($import, $output, [
                     'provider' => $import->provider,
@@ -185,7 +181,7 @@ final class SocialPostAiWorkerService
                     $imageImport = AiImport::query()->create([
                         'created_by' => $import->created_by,
                         'source_url' => '',
-                        'source_hash' => $hash.'|slot:'.$slotNo,
+                        'source_hash' => hash('sha256', $hash.'|slot:'.$slotNo),
                         'status' => 'queued',
                         'current_step' => 'queued',
                         'progress' => 0,
@@ -223,11 +219,10 @@ final class SocialPostAiWorkerService
             $this->tasks->syncFromImport($import->fresh());
 
             $this->versions->create($post->fresh(), (array) $input['context'], [
-                'key' => $input['prompt_key'] ?? 'social_post.product_image',
+                'key' => $input['prompt_key'] ?? 'social_post.facebook_image',
                 'version' => $input['prompt_version'] ?? null,
                 'schema' => $input['schema_version'] ?? null,
                 'component' => 'image_prompt',
-                'output_fact_ids' => $output['used_product_fact_ids'],
             ], (array) ($input['writing_profile_snapshot'] ?? []), [
                 'provider' => $import->provider,
                 'model' => data_get($input, 'ai_connection.model', 'deterministic'),
@@ -330,110 +325,42 @@ final class SocialPostAiWorkerService
     }
 
     /**
-     * Ghép caption, CTA và hashtag thành canonical text dùng cho mọi platform.
-     *
-     * Input: output caption đã schema validate.
-     * Output: caption string bounded; không gọi AI hoặc ghi DB.
-     */
-    private function canonicalCaption(array $output): string
-    {
-        $parts = [trim((string) ($output['body'] ?? $output['caption'] ?? ''))];
-        $bullets = collect((array) ($output['bullet_points'] ?? []))
-            ->map(fn ($bullet): string => '✅ '.trim((string) $bullet))
-            ->filter()
-            ->take(8)
-            ->implode("\n");
-        if ($bullets !== '') {
-            $parts[] = $bullets;
-        }
-        if (filled($output['cta'] ?? null)) {
-            $parts[] = trim((string) $output['cta']);
-        }
-        $contact = collect((array) ($output['contact'] ?? []))
-            ->map(fn ($value, $key): string => filled($value) ? ucfirst((string) $key).': '.trim((string) $value) : '')
-            ->filter()
-            ->implode("\n");
-        if ($contact !== '') {
-            $parts[] = $contact;
-        }
-        $hashtags = collect((array) ($output['hashtags'] ?? []))
-            ->map(fn ($tag): string => str_starts_with(trim((string) $tag), '#') ? trim((string) $tag) : '#'.trim((string) $tag))
-            ->filter()
-            ->take(12)
-            ->implode(' ');
-        if ($hashtags !== '') {
-            $parts[] = $hashtags;
-        }
-
-        return Str::limit(implode("\n\n", array_filter($parts)), 5000, '');
-    }
-
-    /**
      * Fallback deterministic để môi trường chưa cấu hình text provider vẫn có draft.
      *
-     * Input: context product/campaign/facts.
+     * Input: context campaign/profile.
      * Output: caption JSON hợp lệ; không gọi network.
      */
     private function deterministicCaption(array $context): array
     {
-        $name = (string) data_get($context, 'product.name', 'sản phẩm mới');
         $message = trim((string) data_get($context, 'campaign.message', ''));
-        $description = trim((string) data_get($context, 'product.short_description', ''));
-        $caption = 'Khám phá '.$name.'. '.($message !== '' ? $message : $description);
+        $caption = $message !== '' ? $message : 'Chia sẻ nội dung hữu ích và phù hợp với cộng đồng của bạn.';
 
         return [
             'title' => null,
             'body' => Str::limit(trim($caption), 5000, ''),
             'bullet_points' => [],
-            'cta' => (string) data_get($context, 'product.default_cta', 'Inbox để được tư vấn thêm.'),
+            'cta' => 'Theo dõi để xem thêm nội dung hữu ích.',
             'contact' => ['address' => null, 'phone' => null, 'website' => null],
             'hashtags' => ['#sanpham', '#marketing'],
             'link_url' => null,
-            'used_product_fact_ids' => [],
         ];
     }
 
     /**
      * Fallback deterministic tạo prompt ảnh để test/schema không phụ thuộc provider.
      *
-     * Input: context product/campaign/visual constraints.
+     * Input: context campaign/profile/visual constraints.
      * Output: image prompt JSON; binary image vẫn cần image provider.
      */
     private function deterministicImagePrompt(array $context): array
     {
-        $name = (string) data_get($context, 'product.name', 'sản phẩm');
-        $description = (string) data_get($context, 'product.short_description', '');
+        $message = (string) data_get($context, 'campaign.message', '');
 
         return [
-            'image_prompt' => 'Ảnh sản phẩm '.$name.' đặt trong bối cảnh tối giản, ánh sáng tự nhiên mềm, góc chụp dọc 4:5, chất liệu rõ nét, nền sạch và sang trọng. '.$description,
-            'negative_prompt' => 'watermark, fake logo, unreadable text, extra products, distorted hands',
+            'image_prompt' => 'Ảnh minh họa Facebook có bố cục rõ ràng, ánh sáng tự nhiên mềm, góc chụp dọc 4:5, nền sạch và phù hợp với chủ đề nội dung. '.$message,
+            'negative_prompt' => 'watermark, fake logo, unreadable text, extra subjects, distorted hands',
             'aspect_ratio' => '4:5',
             'slot_count' => 3,
-            'used_product_fact_ids' => [],
-        ];
-    }
-
-    /**
-     * Chuẩn hóa output Facebook structured và giữ tương thích output caption cũ.
-     *
-     * @param  array<string, mixed>  $output
-     * @return array<string, mixed>
-     */
-    private function normalizeFacebookContent(array $output): array
-    {
-        return [
-            'title' => array_key_exists('title', $output) ? $output['title'] : null,
-            'body' => (string) ($output['body'] ?? $output['caption'] ?? ''),
-            'bullet_points' => array_values(array_slice(array_map('strval', (array) ($output['bullet_points'] ?? [])), 0, 8)),
-            'cta' => array_key_exists('cta', $output) ? $output['cta'] : null,
-            'contact' => [
-                'address' => data_get($output, 'contact.address'),
-                'phone' => data_get($output, 'contact.phone'),
-                'website' => data_get($output, 'contact.website'),
-            ],
-            'hashtags' => array_values(array_slice(array_map('strval', (array) ($output['hashtags'] ?? [])), 0, 12)),
-            'link_url' => array_key_exists('link_url', $output) ? $output['link_url'] : null,
-            'used_product_fact_ids' => array_values(array_map('intval', (array) ($output['used_product_fact_ids'] ?? []))),
         ];
     }
 

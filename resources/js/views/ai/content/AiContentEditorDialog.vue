@@ -49,14 +49,70 @@ watch(() => [props.session, props.loading, props.error], ([session, loading, err
   if (session === previous) return
   const draft = session.draft ?? {}
 
-  form.value = Object.fromEntries(['title', 'excerpt', 'content_html', 'seo_title', 'seo_description', 'focus_keyword']
-    .map(key => [key, draft[key] ?? (key === 'content_html' ? draft.content ?? '' : '')]))
+  form.value = Object.fromEntries([
+    'title',
+    'excerpt',
+    'content_html',
+    'seo_title',
+    'seo_description',
+    'focus_keyword',
+    'cta',
+    'link_url',
+    'gallery_prompt',
+    'negative_prompt',
+    'aspect_ratio',
+    'slot_count',
+  ].map(key => [key, draft[key] ?? (key === 'content_html' ? draft.content ?? '' : '')]))
+  form.value.hashtags = Array.isArray(draft.hashtags) ? [...draft.hashtags] : []
   form.value.category_ids = draft.taxonomy_origin === 'manual' ? [...(draft.category_ids ?? [])] : []
   form.value.tag_ids = draft.taxonomy_origin === 'manual' ? [...(draft.tag_ids ?? [])] : []
 }, { immediate: true })
 
+const isPost = computed(() => display.value.session?.target_type === 'post')
+const isSocial = computed(() => display.value.session?.target_type === 'social_post')
+const outputOptions = computed(() => display.value.session?.output_options ?? [])
+
+const outputGroups = computed(() => display.value.session?.output_groups?.length
+  ? display.value.session.output_groups
+  : (outputOptions.value.length
+    ? outputOptions.value.map(option => option.value)
+    : (isSocial.value ? ['social_content', 'social_gallery'] : ['title', 'excerpt', 'content', 'seo', 'thumbnail'])))
+
+const editorFields = computed(() => display.value.session?.editor_fields ?? [])
+const hasOutput = group => outputGroups.value.includes(group)
+const hasEditorField = field => editorFields.value.length === 0 || editorFields.value.includes(field)
+const outputLabel = (group, fallback) => outputOptions.value.find(option => option.value === group)?.title ?? fallback
+const isArticleLike = computed(() => !isSocial.value)
+const showTitle = computed(() => isArticleLike.value && hasOutput('title'))
+const showExcerpt = computed(() => isArticleLike.value && hasOutput('excerpt'))
+const showContent = computed(() => isArticleLike.value ? hasOutput('content') : hasOutput('social_content'))
+const showSeo = computed(() => isArticleLike.value && hasOutput('seo'))
+const showTaxonomy = computed(() => isPost.value && (display.value.session?.manual_taxonomy ?? true))
+const showGallery = computed(() => isSocial.value && hasOutput('social_gallery'))
+const showCta = computed(() => isSocial.value && hasOutput('social_content') && hasEditorField('cta'))
+const showHashtags = computed(() => isSocial.value && hasOutput('social_content') && hasEditorField('hashtags'))
+const showLink = computed(() => isSocial.value && hasOutput('social_content') && hasEditorField('link_url'))
+
+const hashtagsText = computed({
+  get: () => (form.value.hashtags ?? []).join(' '),
+  set: value => { form.value.hashtags = String(value).split(/\s+/).map(item => item.trim()).filter(Boolean).slice(0, 12) },
+})
+
 const canSave = computed(() => !readOnly.value && !mediaBusy.value
-  && Boolean(form.value.title?.trim()) && Boolean(form.value.content_html?.trim()))
+  && (!isArticleLike.value || (showTitle.value ? Boolean(form.value.title?.trim()) : true))
+  && Boolean(form.value.content_html?.trim()))
+
+const savePayload = computed(() => {
+  if (!isSocial.value) return { ...form.value }
+
+  const keys = ['content_html']
+  if (showCta.value) keys.push('cta')
+  if (showHashtags.value) keys.push('hashtags')
+  if (showLink.value) keys.push('link_url')
+  if (showGallery.value) keys.push('gallery_prompt', 'negative_prompt', 'aspect_ratio', 'slot_count')
+
+  return Object.fromEntries(keys.map(key => [key, form.value[key]]))
+})
 
 /**
  * =====================================================================
@@ -112,6 +168,7 @@ function finishClose() {
           :session="display.session"
         />
         <AppTextField
+          v-if="showTitle"
           v-model="form.title"
           label="Tiêu đề"
           placeholder="Nhập tiêu đề nội dung"
@@ -120,6 +177,7 @@ function finishClose() {
           class="mb-4"
         />
         <AppTextarea
+          v-if="showExcerpt"
           v-model="form.excerpt"
           label="Tóm tắt"
           placeholder="Nhập phần tóm tắt nội dung"
@@ -127,10 +185,14 @@ function finishClose() {
           :disabled="readOnly"
           class="mb-4"
         />
-        <div class="text-body-2 mb-2">
-          Nội dung
+        <div
+          v-if="showContent"
+          class="text-body-2 mb-2"
+        >
+          {{ outputLabel(isSocial ? 'social_content' : 'content', isSocial ? 'Nội dung Facebook' : 'Nội dung') }}
         </div>
         <PostEditor
+          v-if="showContent"
           v-model="form.content_html"
           media-references
           :disabled="readOnly"
@@ -138,15 +200,104 @@ function finishClose() {
           @media-busy="mediaBusy = $event"
           @editor-dialog="editorDialogOpen = $event"
         />
+        <VRow
+          v-if="isSocial && hasOutput('social_content')"
+          class="mt-4"
+        >
+          <VCol
+            v-if="showCta"
+            cols="12"
+            md="6"
+          >
+            <AppTextField
+              v-model="form.cta"
+              label="CTA"
+              maxlength="500"
+              :disabled="readOnly"
+            />
+          </VCol>
+          <VCol
+            v-if="showHashtags"
+            cols="12"
+            md="6"
+          >
+            <AppTextField
+              v-model="hashtagsText"
+              label="Hashtag"
+              hint="Cách nhau bằng khoảng trắng"
+              persistent-hint
+              :disabled="readOnly"
+            />
+          </VCol>
+          <VCol
+            v-if="showLink"
+            cols="12"
+          >
+            <AppTextField
+              v-model="form.link_url"
+              label="Link đính kèm"
+              :disabled="readOnly"
+            />
+          </VCol>
+        </VRow>
+        <VCard
+          v-if="showGallery"
+          variant="tonal"
+          class="mt-4"
+        >
+          <VCardItem :title="outputLabel('social_gallery', 'Gallery image')" />
+          <VCardText>
+            <AppTextarea
+              v-model="form.gallery_prompt"
+              label="Mô tả gallery"
+              rows="3"
+              :disabled="readOnly"
+            />
+            <VRow class="mt-2">
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppTextField
+                  v-model="form.aspect_ratio"
+                  label="Tỷ lệ"
+                  :disabled="readOnly"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="6"
+              >
+                <AppTextField
+                  v-model.number="form.slot_count"
+                  type="number"
+                  label="Số ảnh"
+                  :disabled="readOnly"
+                />
+              </VCol>
+              <VCol cols="12">
+                <AppTextarea
+                  v-model="form.negative_prompt"
+                  label="Negative prompt"
+                  rows="2"
+                  :disabled="readOnly"
+                />
+              </VCol>
+            </VRow>
+          </VCardText>
+        </VCard>
         <AiManualTaxonomyFields
-          v-if="display.session?.target_type === 'post'"
+          v-if="showTaxonomy"
           v-model:categories="form.category_ids"
           v-model:tags="form.tag_ids"
           :disabled="readOnly"
           :active="Boolean(props.session?.draft_version) && !props.loading"
           class="mt-4"
         />
-        <VRow class="mt-4">
+        <VRow
+          v-if="showSeo"
+          class="mt-4"
+        >
           <VCol
             cols="12"
             md="6"
@@ -195,7 +346,7 @@ function finishClose() {
             prepend-icon="tabler-device-floppy"
             :disabled="!canSave"
             :loading="props.saving"
-            @click="canSave && emit('save', { ...form })"
+            @click="canSave && emit('save', savePayload)"
           >
             Lưu nội dung
           </VBtn>
