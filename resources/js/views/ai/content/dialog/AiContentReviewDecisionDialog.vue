@@ -2,7 +2,7 @@
   =====================================================================
   CHỨC NĂNG FILE: Xác nhận duyệt hoặc từ chối, giữ lý do/field khi API lỗi.
   =====================================================================
-  CÁC HÀM/METHOD TRONG FILE: watcher identity, locked/legacyTaxonomy/canSubmit
+  CÁC HÀM/METHOD TRONG FILE: watcher identity, locked/needsTaxonomyConfirmation/canSubmit
   (computed), confirm(), finishClose().
   INPUT/OUTPUT CỦA CLASS (tổng thể): kind/detail/busy/error -> options allowlist.
   SIDE EFFECT: emit confirm/reload/close, không tự POST; reset sau after-leave.
@@ -61,12 +61,12 @@ const fieldOptions = computed(() => {
   return [...requiredPostTitle, { title: 'Danh mục và tag thủ công', value: 'taxonomy' }]
 })
 
-const legacyTaxonomy = computed(() => props.detail?.draft?.taxonomy_origin !== 'manual')
+const needsTaxonomyConfirmation = computed(() => props.detail?.draft?.taxonomy_origin !== 'manual')
 const requiredField = computed(() => isSocial.value ? 'social_content' : 'title')
 
 const canSubmit = computed(() => ['approve', 'reject'].includes(props.kind) && !locked.value && reason.value.trim().length <= 2000
   && (props.kind === 'reject' ? Boolean(reason.value.trim()) : props.detail?.can_approve !== false && fields.value.includes(requiredField.value)
-    && (!fields.value.includes('taxonomy') || !legacyTaxonomy.value || taxonomyConfirmed.value)))
+    && (!fields.value.includes('taxonomy') || !needsTaxonomyConfirmation.value || taxonomyConfirmed.value)))
 
 // Input: mở quyết định mới. Output: khởi tạo form một lần; GET lại cùng bài giữ bản nhập.
 watch(() => [props.kind, props.detail?.job_id], ([kind], [previousKind] = []) => {
@@ -165,7 +165,7 @@ function finishClose() {
               :disabled="locked"
             />
             <VCheckbox
-              v-if="fields.includes('taxonomy') && legacyTaxonomy"
+              v-if="fields.includes('taxonomy') && needsTaxonomyConfirmation"
               v-model="taxonomyConfirmed"
               label="Tôi xác nhận danh mục và tag đã chọn thủ công, kể cả khi để trống."
               :disabled="locked"

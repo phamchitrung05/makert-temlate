@@ -30,7 +30,7 @@ use Illuminate\Validation\ValidationException;
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : actor ID, Post đã lưu, run UUID, field đã chọn và giá trị Post.
  * - OUTPUT: bản ghi AiProvenance, AiImport applied metadata và archive của bản Post
- *   được chọn; checkpoint giữ bản AI gốc trước edit, legacy chưa rõ original giữ null.
+ *   được chọn; checkpoint giữ bản AI gốc trước edit.
  * - SIDE EFFECT: ghi database trong transaction của Action/Controller.
  * - EXCEPTION/TRANSACTION: ValidationException nếu run/field không hợp lệ;
  *   lỗi archive rollback cùng Post trong transaction caller; service archive dùng row lock/savepoint.
@@ -147,7 +147,7 @@ final class AiProvenanceService
             if ($textFields !== $fields) {
                 $import->forceFill(['applied_fields' => $fields])->save();
             }
-            app(AiArticleArchiveService::class)->archiveApproved($import->id, (int) $import->generation_no, legacy: true);
+            app(AiArticleArchiveService::class)->archiveApproved($import->id, (int) $import->generation_no);
         }
     }
 

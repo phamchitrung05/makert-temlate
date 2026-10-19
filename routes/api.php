@@ -242,7 +242,6 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum,ad
             Route::post('/ai-agent/sessions/{aiImport}/cancel', [AiImportController::class, 'cancel'])->whereUuid('aiImport');
             Route::delete('/ai-agent/sessions/{aiImport}', [AiImportController::class, 'destroy'])->whereUuid('aiImport');
             Route::patch('/ai-agent/candidates/{aiImport}', [AiImportController::class, 'updateCandidate'])->whereUuid('aiImport');
-            Route::post('/ai-agent/candidates/{aiImport}/apply', [AiImportController::class, 'apply'])->whereUuid('aiImport');
             Route::get('/ai-agent/candidates/{aiImport}/review', [AiContentReviewController::class, 'show'])->whereUuid('aiImport');
             Route::get('/ai-agent/candidates/{aiImport}/review/history', [AiContentReviewController::class, 'history'])->whereUuid('aiImport');
             Route::post('/ai-agent/candidates/{aiImport}/approve', [AiContentReviewController::class, 'approve'])->whereUuid('aiImport');
@@ -254,17 +253,6 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum,ad
                 Route::get('/ai-agent/candidates/{aiImport}/quality', [AiContentReviewController::class, 'quality'])->whereUuid('aiImport');
                 Route::post('/ai-agent/candidates/{aiImport}/quality/rescore', [AiContentReviewController::class, 'rescore'])->whereUuid('aiImport');
             });
-        });
-
-        Route::middleware('permission:posts.manage,admin')->group(function (): void {
-            Route::post('/posts/ai/import', [AiImportController::class, 'store']);
-            Route::get('/posts/ai/import/{aiImport}', [AiImportController::class, 'show'])->whereUuid('aiImport');
-            Route::post('/posts/ai/import/{aiImport}/regenerate', [AiImportController::class, 'regenerate'])->whereUuid('aiImport');
-            Route::post('/posts/ai/import/{aiImport}/retry', [AiImportController::class, 'retry'])->whereUuid('aiImport');
-            Route::get('/posts/ai/import/{aiImport}/candidates', [AiImportController::class, 'candidates'])->whereUuid('aiImport');
-            Route::post('/posts/ai/import/{aiImport}/apply', [AiImportController::class, 'apply'])->whereUuid('aiImport');
-            Route::post('/posts/ai/import/{aiImport}/cancel', [AiImportController::class, 'cancel'])->whereUuid('aiImport');
-            Route::delete('/posts/ai/import/{aiImport}', [AiImportController::class, 'destroy'])->whereUuid('aiImport');
         });
 
         // Post CRUD và lifecycle dùng permission chi tiết; posts.manage là alias toàn quyền.

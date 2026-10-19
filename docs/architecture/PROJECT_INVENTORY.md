@@ -210,13 +210,9 @@ All admin routes are under `/api/admin`, protected by Sanctum admin middleware a
 - `POST|GET /api/admin/ai-agent/sessions`, `/api/admin/ai-agent/sessions/{id}`
 - `POST /api/admin/ai-agent/sessions/{id}/regenerate|retry|cancel`
 - `GET /api/admin/ai-agent/sessions/{id}/candidates`
-- `POST /api/admin/ai-agent/candidates/{id}/apply`
-- `POST|GET /api/admin/posts/ai/import`, `/api/admin/posts/ai/import/{id}`
-- `POST /api/admin/posts/ai/import/{id}/regenerate`
-- `POST /api/admin/posts/ai/import/{id}/retry`
-- `GET /api/admin/posts/ai/import/{id}/candidates`
-- `POST /api/admin/posts/ai/import/{id}/apply`
-- `POST /api/admin/posts/ai/import/{id}/cancel`, `DELETE /api/admin/posts/ai/import/{id}`
+- `PATCH /api/admin/ai-agent/candidates/{id}`
+- `GET /api/admin/ai-agent/candidates/{id}/review`, `GET /api/admin/ai-agent/candidates/{id}/review/history`
+- `POST /api/admin/ai-agent/candidates/{id}/approve|reject`
 
 ### Roles and permissions
 

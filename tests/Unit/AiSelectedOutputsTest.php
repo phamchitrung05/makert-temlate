@@ -209,7 +209,7 @@ final class AiSelectedOutputsTest extends TestCase
      */
     public function test_complete_generation_runs_seo_after_editor_for_create_and_full_regeneration(): void
     {
-        $parent = AiImport::query()->create(['result_json' => ['draft' => ['title' => 'Bản trước']]]);
+        $parent = AiImport::query()->create(['result_json' => ['draft' => ['title' => 'Bản trước'], 'generation_meta' => ['content_origin' => 'ai']]]);
         foreach ([null, $parent->getKey()] as $parentId) {
             $provider = new SelectedOutputsRawProvider([
                 'title' => 'Lễ khất thực tại Luang Prabang: Ý nghĩa và lưu ý',
@@ -232,6 +232,7 @@ final class AiSelectedOutputsTest extends TestCase
             $this->assertStringContainsString('Người tham gia cần giữ thái độ tôn trọng.', $provider->requests[3]->input['draft']['content_text']);
             $this->assertSame('lễ khất thực tại Luang Prabang', $result['draft']['focus_keyword']);
             $this->assertSame('Lễ khất thực Luang Prabang: Ý nghĩa và lưu ý', $result['draft']['seo_title']);
+            $this->assertSame('ai', $result['generation_meta']['content_origin']);
             $this->assertContains('seo', $result['generation_meta']['requested_groups']);
             foreach (['focus_keyword', 'seo_title', 'seo_description'] as $field) {
                 $this->assertContains($field, $result['generation_meta']['generated_fields']);
@@ -464,7 +465,10 @@ final class AiSelectedOutputsTest extends TestCase
             'content_html' => '<p>Nội dung đã sửa.</p>', 'content' => '<p>Nội dung đã sửa.</p>',
             'seo_title' => 'SEO cũ', 'thumbnail' => ['media_asset_id' => 42, 'source_url' => 'https://example.test/old.png', 'alt_text' => 'Ảnh cũ'],
         ];
-        $parent = AiImport::query()->create(['result_json' => ['draft' => $parentDraft]]);
+        $parent = AiImport::query()->create(['result_json' => [
+            'draft' => $parentDraft,
+            'generation_meta' => ['content_origin' => 'ai'],
+        ]]);
         $import = $this->inlineImport(['fields' => ['seo']]);
         $import->parent_id = $parent->getKey();
         $result = (new ArticleImportService(new SelectedOutputsRawProvider([
@@ -476,6 +480,24 @@ final class AiSelectedOutputsTest extends TestCase
             $this->assertSame($parentDraft[$field], $result['draft'][$field]);
         }
         $this->assertSame('SEO mới', $result['draft']['seo_title']);
+        $this->assertSame('ai', $result['generation_meta']['content_origin']);
+    }
+
+    /** Parent thiếu content_origin bị chặn thay vì suy đoán khi kế thừa body. */
+    public function test_parent_without_content_origin_is_rejected(): void
+    {
+        $parent = AiImport::query()->create(['result_json' => [
+            'draft' => ['title' => 'Tiêu đề cũ', 'content_html' => '<p>Body cũ.</p>'],
+        ]]);
+        $import = $this->inlineImport(['fields' => ['title']]);
+        $import->parent_id = $parent->getKey();
+
+        try {
+            (new ArticleImportService(new \App\Services\Ai\Providers\Adapters\DeterministicAiProvider))->run($import);
+            $this->fail('Parent thiếu content_origin phải bị chặn.');
+        } catch (\App\Exceptions\AiImportException $exception) {
+            $this->assertSame('AI_PARENT_ORIGIN_MISSING', $exception->errorCode);
+        }
     }
 
     /**
@@ -497,17 +519,19 @@ final class AiSelectedOutputsTest extends TestCase
      *
      * =====================================================================
      */
-    public function test_empty_regenerate_selection_preserves_legacy_complete_generation(): void
+    public function test_empty_regenerate_selection_inherits_pipeline_snapshot_outputs(): void
     {
-        $parent = AiImport::query()->create(['result_json' => ['draft' => ['title' => 'Tiêu đề cũ']]]);
+        $parent = AiImport::query()->create(['result_json' => ['draft' => ['title' => 'Tiêu đề cũ'], 'generation_meta' => ['content_origin' => 'ai']]]);
         $provider = new SelectedOutputsStructuredProvider(['title' => 'Tiêu đề mới', 'content_html' => '<p>Nội dung mới.</p>']);
-        $import = $this->inlineImport(['fields' => [], 'requested_outputs' => ['excerpt']]);
+        $import = $this->inlineImport([
+            'fields' => [], 'pipeline_snapshot' => ['outputs' => ['title', 'content']],
+        ]);
         $import->parent_id = $parent->getKey();
         $result = (new ArticleImportService($provider))->run($import);
 
         $this->assertSame('Tiêu đề mới', $result['draft']['title']);
         $this->assertStringContainsString('Nội dung mới.', $result['draft']['content_html']);
-        $this->assertSame([], $result['requested_fields']);
+        $this->assertSame(['title', 'content'], $result['requested_fields']);
     }
 
     /**
@@ -532,7 +556,7 @@ final class AiSelectedOutputsTest extends TestCase
     public function test_regeneration_merges_into_queued_parent_snapshot_even_if_live_parent_was_edited(): void
     {
         $queuedDraft = ['title' => 'Title lúc enqueue', 'content_html' => '<p>Content lúc enqueue.</p>', 'content' => '<p>Content lúc enqueue.</p>', 'excerpt' => 'Excerpt lúc enqueue', 'seo_title' => 'SEO cũ'];
-        $parent = AiImport::query()->create(['result_json' => ['draft' => ['title' => 'Live title sau enqueue', 'content_html' => '<p>Live content sau enqueue.</p>']]]);
+        $parent = AiImport::query()->create(['result_json' => ['draft' => ['title' => 'Live title sau enqueue', 'content_html' => '<p>Live content sau enqueue.</p>'], 'generation_meta' => ['content_origin' => 'ai']]]);
         $import = $this->inlineImport(['fields' => ['seo'], 'parent_draft_snapshot' => $queuedDraft]);
         $import->parent_id = $parent->getKey();
         $result = (new ArticleImportService(new SelectedOutputsRawProvider([
@@ -568,7 +592,7 @@ final class AiSelectedOutputsTest extends TestCase
     public function test_three_step_regeneration_preserves_approved_parent_inline_images(): void
     {
         $draft = ['title' => 'Parent', 'content_html' => '<p>Parent content.</p><img src="/storage/media/7.webp" data-media-asset-id="7" alt="Ảnh">'];
-        $parent = AiImport::query()->create(['result_json' => ['draft' => $draft]]);
+        $parent = AiImport::query()->create(['result_json' => ['draft' => $draft, 'generation_meta' => ['content_origin' => 'ai']]]);
         $import = $this->inlineImport(['fields' => ['content'], 'parent_draft_snapshot' => $draft]);
         $import->parent_id = $parent->getKey();
         $result = (new ArticleImportService(new SelectedOutputsRawProvider(['content_html' => '<p>Nội dung mới.</p>'])))->run($import);

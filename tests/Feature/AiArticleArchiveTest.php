@@ -74,8 +74,6 @@ use Tests\UsesIsolatedDatabase;
  * - test_cleanup_retains_approved_run_when_original_is_missing().
  * - test_cleanup_detects_corrupted_approved_archive_before_removing_run().
  * - test_approved_archive_survives_run_and_post_deletion().
- * - test_legacy_approval_keeps_original_unknown_instead_of_copying_edited_candidate().
- * - test_legacy_command_requires_opt_in_and_only_archives_approved_metadata().
  * - test_archive_command_recovers_approved_checkpoint_and_validates_options().
  * - test_cancel_and_expiry_after_checkpoint_do_not_create_archives().
  * - test_retry_blocks_approved_runs_and_busy_workers().
@@ -179,6 +177,7 @@ class AiArticleArchiveTest extends TestCase
             'input_json' => array_replace([
                 'target_type' => 'post', 'source_type' => 'text', 'source_format' => 'html',
                 'provider' => 'deterministic', 'language' => 'vi', 'generate_thumbnail' => false,
+                'requested_outputs' => ['title', 'content'],
                 'writing_brief' => ['audience' => 'Người mới', 'purpose' => 'Hướng dẫn'],
                 'writing_profile_snapshot' => ['id' => 12, 'version' => 3, 'name' => 'Mẫu thử', 'style_instructions' => 'Viết rõ ràng'],
             ], $input),
@@ -219,7 +218,7 @@ class AiArticleArchiveTest extends TestCase
                 'content' => '<p>Bản AI đầu tiên, chạy lúc 8 giờ.</p>', 'excerpt' => 'Mô tả ban đầu'],
             'provider' => 'fixture', 'model' => 'writer-fixture', 'prompt_key' => 'post.create.from_text',
             'prompt_version' => '1.0', 'schema_version' => 'post.content.v1', 'requested_fields' => ['title', 'content'],
-            'generation_meta' => ['mode' => 'ai', 'generated_fields' => ['title', 'content_html', 'content', 'excerpt']],
+            'generation_meta' => ['mode' => 'ai', 'generated_fields' => ['title', 'content_html', 'content', 'excerpt'], 'content_origin' => 'ai'],
         ];
     }
 
@@ -296,9 +295,10 @@ class AiArticleArchiveTest extends TestCase
             ])->save();
         }
         $token = $this->token($run);
-        $response = $this->withToken($token)->postJson('/api/admin/ai-agent/candidates/'.$run->id.'/apply', [
+        $response = $this->withToken($token)->postJson('/api/admin/ai-agent/candidates/'.$run->id.'/approve', [
             'fields' => $fields,
             'expected_version' => hash('sha256', json_encode(data_get($run->fresh()->result_json, 'draft'))),
+            'expected_review_version' => AiContentReviewService::version($run->fresh()),
         ])->assertOk();
 
         return (int) $response->json('data.post_id');
@@ -712,9 +712,10 @@ class AiArticleArchiveTest extends TestCase
         $this->complete($run);
         $event = 'eloquent.creating: '.AiArticleArchive::class;
         Event::listen($event, fn () => throw new RuntimeException('Storage unavailable'));
-        $this->withToken($this->token($run))->postJson('/api/admin/ai-agent/candidates/'.$run->id.'/apply', [
+        $this->withToken($this->token($run))->postJson('/api/admin/ai-agent/candidates/'.$run->id.'/approve', [
             'fields' => ['title', 'content'],
             'expected_version' => hash('sha256', json_encode(data_get($run->fresh()->result_json, 'draft'))),
+            'expected_review_version' => AiContentReviewService::version($run->fresh()),
         ])->assertStatus(500);
         Event::forget($event);
 
@@ -982,8 +983,8 @@ class AiArticleArchiveTest extends TestCase
         $image = $this->makeRun(['operation' => 'image', 'status' => 'failed']);
         $resource = $this->makeRun(['status' => 'failed'], ['target_type' => 'resource']);
         $archives = app(AiArticleArchiveService::class);
-        $this->assertNull($archives->preserve($image, legacy: true));
-        $this->assertNull($archives->preserve($resource, legacy: true));
+        $this->assertNull($archives->preserve($image));
+        $this->assertNull($archives->preserve($resource));
         $this->assertDatabaseCount('ai_article_archives', 0);
     }
 
@@ -1162,8 +1163,10 @@ class AiArticleArchiveTest extends TestCase
             }
         });
         try {
-            $this->withToken($this->token($run))->postJson('/api/admin/ai-agent/candidates/'.$run->id.'/apply', [
+            $this->withToken($this->token($run))->postJson('/api/admin/ai-agent/candidates/'.$run->id.'/approve', [
                 'fields' => ['title', 'content'],
+                'expected_version' => hash('sha256', json_encode(data_get($run->fresh()->result_json, 'draft'))),
+                'expected_review_version' => AiContentReviewService::version($run->fresh()),
             ])->assertStatus(500);
         } finally {
             Event::forget($event);
@@ -1208,8 +1211,10 @@ class AiArticleArchiveTest extends TestCase
                 'eligibility_json' => ['score' => true, 'source' => true, 'facts' => true, 'eligible' => true, 'reasons' => []],
                 'completed_at' => now(),
             ])->save();
-            $this->withToken($this->token($run))->postJson('/api/admin/ai-agent/candidates/'.$run->id.'/apply', [
+            $this->withToken($this->token($run))->postJson('/api/admin/ai-agent/candidates/'.$run->id.'/approve', [
                 'fields' => ['title', 'content'],
+                'expected_version' => hash('sha256', json_encode(data_get($run->fresh()->result_json, 'draft'))),
+                'expected_review_version' => AiContentReviewService::version($run->fresh()),
             ])->assertStatus(500);
             $this->assertSame('pending_review', AiContentReviewService::state($run->fresh())['status']);
             $run->update(['expires_at' => now()->subMinute()]);
@@ -1313,76 +1318,6 @@ class AiArticleArchiveTest extends TestCase
         $this->assertSame($hash, $archive->payload_hash);
         $this->assertSame('Bài AI gốc', $archive->draft_snapshot_json['title']);
         $this->assertSame('user_deleted', $archive->lifecycle_json['removed_reason']);
-    }
-
-    /**
-     * =====================================================================
-     * CHỨC NĂNG: Kiểm thử duyệt candidate cũ không có checkpoint
-     * =====================================================================
-     *
-     * INPUT:
-     * - duyệt candidate cũ không có checkpoint.
-     *
-     * OUTPUT:
-     * - Post vẫn tạo, kho đánh dấu thiếu original.
-     *
-     * SIDE EFFECT:
-     * - Chỉ xử lý fixture hoặc dữ liệu trong database test; không gọi AI thật hay sửa dữ liệu ứng dụng.
-     *
-     * EXCEPTION/TRANSACTION:
-     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
-     *
-     * =====================================================================
-     */
-    public function test_legacy_approval_keeps_original_unknown_instead_of_copying_edited_candidate(): void
-    {
-        $run = $this->makeRun(['archive_version' => null, 'status' => 'ready', 'result_json' => $this->fixtureResult()]);
-        $postId = $this->approve($run);
-        $archive = $this->archive($run);
-        $this->assertSame($postId, $archive->applied_target_id);
-        $this->assertSame('legacy_unverified', $archive->content_origin);
-        $this->assertNull($archive->draft_snapshot_json);
-        $this->assertNull($archive->content_hash);
-        $this->assertFalse($archive->has_generated_content);
-        $this->assertSame('legacy_candidate_may_have_been_edited', $archive->context_snapshot_json['missing_original_reason']);
-        $this->assertSame('Bài AI gốc', Post::findOrFail($postId)->title);
-    }
-
-    /**
-     * =====================================================================
-     * CHỨC NĂNG: Kiểm thử legacy approved/chưa chọn, dry-run và opt-in
-     * =====================================================================
-     *
-     * INPUT:
-     * - legacy approved/chưa chọn, dry-run và opt-in.
-     *
-     * OUTPUT:
-     * - chỉ approved được ghi metadata, không fake bài.
-     *
-     * SIDE EFFECT:
-     * - Chỉ xử lý fixture hoặc dữ liệu trong database test; không gọi AI thật hay sửa dữ liệu ứng dụng.
-     *
-     * EXCEPTION/TRANSACTION:
-     * - Lỗi assertion hoặc dependency truyền ra PHPUnit; transaction nghiệp vụ chạy trên DB test, setup/teardown quản lý schema riêng.
-     *
-     * =====================================================================
-     */
-    public function test_legacy_command_requires_opt_in_and_only_archives_approved_metadata(): void
-    {
-        $approved = $this->makeRun(['archive_version' => null, 'status' => 'ready', 'applied_target_id' => 321, 'result_json' => $this->fixtureResult()]);
-        $pending = $this->makeRun(['archive_version' => null, 'status' => 'ready', 'result_json' => $this->fixtureResult()]);
-        $this->artisan('ai-articles:archive')->expectsOutputToContain('Đã kiểm tra 0 run')->assertSuccessful();
-        $this->artisan('ai-articles:archive', ['--include-legacy' => true, '--dry-run' => true])
-            ->expectsOutputToContain('legacy_approved_unverified: 1')->assertSuccessful();
-        $this->assertDatabaseCount('ai_article_archives', 0);
-        $this->artisan('ai-articles:archive', ['--include-legacy' => true, '--limit' => 1])
-            ->expectsOutputToContain('legacy_unverified: 1')->assertSuccessful();
-        $hash = $this->archive($approved)->payload_hash;
-        $this->artisan('ai-articles:archive', ['--include-legacy' => true])->assertSuccessful();
-        $this->assertDatabaseCount('ai_article_archives', 1);
-        $this->assertSame($hash, $this->archive($approved)->payload_hash);
-        $this->assertNull($this->archive($approved)->draft_snapshot_json);
-        $this->assertDatabaseMissing('ai_article_archives', ['run_id' => $pending->id]);
     }
 
     /**
@@ -1524,6 +1459,7 @@ class AiArticleArchiveTest extends TestCase
         ]);
         $result = $this->fixtureResult();
         $result['generation_meta']['generated_fields'] = ['title'];
+        $result['generation_meta']['content_origin'] = 'source';
         $this->complete($run, $result);
         $this->approve($run);
         $archive = $this->archive($run);

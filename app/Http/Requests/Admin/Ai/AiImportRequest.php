@@ -36,7 +36,7 @@ class AiImportRequest extends FormRequest
      * CHỨC NĂNG: Chuẩn hóa contract AI Agent generic về field import Post.
      * =====================================================================
      * INPUT: payload có thể dùng input.type/url/text và output_language.
-     * OUTPUT: request có url/text/language/generate_thumbnail top-level.
+     * OUTPUT: request có url/text/language top-level; generate_seo/generate_thumbnail suy từ requested_outputs.
      * SIDE EFFECT: merge dữ liệu vào request bag trước validation; không ghi DB.
      * EXCEPTION/TRANSACTION: không ném lỗi nghiệp vụ; FormRequest rules xử lý validation.
      * =====================================================================
@@ -55,12 +55,9 @@ class AiImportRequest extends FormRequest
                 ?? (($this->input('target_type') ?: 'post') === 'social_post' ? 'facebook' : null)),
             'language' => $this->input('language', $this->input('output_language')),
         ];
-        if ($this->has('requested_outputs')) {
-            $normalized['generate_thumbnail'] = in_array('thumbnail', $outputs, true);
-            $normalized['generate_seo'] = in_array('seo', $outputs, true);
-        } elseif ($this->has('generate_thumbnail')) {
-            $normalized['generate_thumbnail'] = $this->boolean('generate_thumbnail');
-        }
+        // Cờ SEO/thumbnail luôn suy từ requested_outputs; client không gửi riêng.
+        $normalized['generate_thumbnail'] = in_array('thumbnail', $outputs, true);
+        $normalized['generate_seo'] = in_array('seo', $outputs, true);
 
         $this->merge($normalized);
     }
@@ -115,6 +112,9 @@ class AiImportRequest extends FormRequest
             $outputs = [];
         }
 
+        // Preview nguồn chỉ extract, không sinh nội dung nên không cần chọn output.
+        $requiresOutputs = (bool) preg_match('#/ai-agent/sessions$#', (string) $this->path());
+
         return [
             'target_type' => ['nullable', Rule::in(array_keys($registry->all()))],
             'platform' => ['nullable', Rule::in($platforms)],
@@ -150,7 +150,9 @@ class AiImportRequest extends FormRequest
             'image_provider' => ['nullable', 'string', 'max:80'],
             'image_model' => ['nullable', 'string', 'max:190'],
             'image_model_id' => ['nullable', 'integer', 'min:1'],
-            'requested_outputs' => ['sometimes', 'array', 'min:1'],
+            'requested_outputs' => $requiresOutputs
+                ? ['required', 'array', 'min:1']
+                : ['sometimes', 'array', 'min:1'],
             'requested_outputs.*' => ['string', 'distinct', Rule::in($outputs)],
         ];
     }

@@ -82,9 +82,10 @@ final class SocialPostProductDecouplingTest extends TestCase
             'expires_at' => now()->addHour(),
         ]);
         $expected = hash('sha256', json_encode($draft));
+        $reviewVersion = \App\Services\Ai\Content\AiContentReviewService::version($run);
 
-        $response = $this->withToken($token)->postJson('/api/admin/ai-agent/candidates/'.$run->id.'/apply', [
-            'fields' => ['content'], 'expected_version' => $expected,
+        $response = $this->withToken($token)->postJson('/api/admin/ai-agent/candidates/'.$run->id.'/approve', [
+            'fields' => ['content'], 'expected_version' => $expected, 'expected_review_version' => $reviewVersion,
         ]);
 
         $response->assertOk()->assertJsonPath('data.fields.0', 'content');

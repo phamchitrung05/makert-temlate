@@ -105,7 +105,6 @@ const load = async () => {
  */
 const buildRequest = () => ({
   target_type: props.targetType, operation: form.operation,
-  ...(props.targetId ? { target_id: props.targetId } : {}),
   input: { type: form.inputType, ...(form.inputType === 'url' ? { url: form.inputValue } : { text: form.inputValue }) },
   output_language: form.language, selection_mode: form.selectionMode,
   ...(form.instructions ? { instructions: form.instructions } : {}),
@@ -225,7 +224,7 @@ const apply = async () => {
   const output = currentCandidate.value.outputs ?? currentCandidate.value.draft ?? {}
   const payload = Object.fromEntries(selectedFields.value.filter(key => key in output).map(key => [key, output[key]?.value ?? output[key]]))
   try {
-    if (props.persistOnApply) emit('applied', await store.apply(currentCandidate.value.id, { fields: selectedFields.value, target_type: props.targetType, target_id: props.targetId }))
+    if (props.persistOnApply) emit('applied', await store.apply(currentCandidate.value.id, { fields: selectedFields.value, expected_version: currentCandidate.value.draft_version ?? currentCandidate.value.version, expected_review_version: currentCandidate.value.review_version }))
     else emit('apply', payload)
     visible.value = false
   }

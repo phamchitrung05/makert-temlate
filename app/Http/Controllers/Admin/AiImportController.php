@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\AiCapability;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\Ai\AiCandidateApplyRequest;
 use App\Http\Requests\Admin\Ai\AiCandidateUpdateRequest;
 use App\Http\Requests\Admin\Ai\AiImportRequest;
 use App\Http\Requests\Admin\Ai\AiSessionIndexRequest;
@@ -239,7 +238,6 @@ class AiImportController extends Controller
         ModelResolver $resolver,
         PromptRegistry $prompts,
         AiRunService $runs,
-        AiSettingsService $settings,
         TargetRegistry $targets,
     ): JsonResponse {
         if (! config('ai.import.enabled', true)) {
@@ -247,22 +245,16 @@ class AiImportController extends Controller
         }
         $userId = (int) $request->user()->getKey();
         $data = $request->validated();
-        $contentSettings = $settings->all();
         $targetType = (string) ($data['target_type'] ?? 'post');
         $platform = $targetType === 'social_post' ? (string) ($data['platform'] ?? 'facebook') : null;
         $targetConfig = $targets->resolve($targetType, $platform);
-        $outputGroups = array_values($data['requested_outputs'] ?? $targetConfig['outputs'] ?? []);
+        $outputGroups = array_values($data['requested_outputs']);
         $pipeline = collect((array) ($targetConfig['pipeline'] ?? []))
             ->filter(fn (array $step): bool => in_array($step['output'] ?? null, $outputGroups, true))
             ->all();
-        $generateThumbnail = $targetType === 'social_post'
-            ? false
-            : (bool) ($data['generate_thumbnail'] ?? $contentSettings['auto_thumbnail']);
-        // SEO chỉ thuộc capability Post; Social luôn dừng sau content.
-        $generateSeo = (bool) ($data['generate_seo'] ?? ($targetType === 'post' ? $contentSettings['auto_seo'] : false));
-        if ($targetType === 'social_post') {
-            $generateSeo = false;
-        }
+        // SEO/thumbnail chỉ thuộc capability Post; Social luôn dừng sau content.
+        $generateThumbnail = $targetType !== 'social_post' && (bool) $data['generate_thumbnail'];
+        $generateSeo = $targetType !== 'social_post' && (bool) $data['generate_seo'];
         $sourceHtml = $request->hasFile('html_file') ? (string) $request->file('html_file')->getContent() : (string) ($data['html'] ?? '');
         $encoding = (string) ($data['source_encoding'] ?? 'UTF-8');
         if ($sourceHtml !== '' && $encoding !== 'UTF-8') {
@@ -343,10 +335,8 @@ class AiImportController extends Controller
             'ai_connection' => $connection,
             'image_connection' => $imageConnection,
         ];
-        if (array_key_exists('requested_outputs', $data)) {
-            $input['requested_outputs'] = array_values($data['requested_outputs']);
-            $input['fields'] = $input['requested_outputs'];
-        }
+        $input['requested_outputs'] = $outputGroups;
+        $input['fields'] = $outputGroups;
         if (filled($data['title'] ?? null)) {
             $input['title'] = $data['title'];
         }
@@ -449,6 +439,13 @@ class AiImportController extends Controller
         $childInput = array_replace((array) $aiImport->input_json, array_filter($options, fn ($value) => $value !== null));
         $parentDraft = (array) data_get($aiImport->result_json, 'draft', []);
         $childInput['parent_draft_snapshot'] = $parentDraft;
+        // Origin phải lấy từ run cha trên server; không nhận giá trị do client gửi.
+        unset($childInput['parent_content_origin']);
+        $parentContentOrigin = data_get($aiImport->result_json, 'generation_meta.content_origin');
+        if (! in_array($parentContentOrigin, ['ai', 'source', 'deterministic'], true)) {
+            throw ValidationException::withMessages(['session' => 'Bản này được tạo từ phiên bản cũ, không còn tạo lại được. Hãy tạo session mới.']);
+        }
+        $childInput['parent_content_origin'] = $parentContentOrigin;
         $manualTaxonomy = ($parentDraft['taxonomy_origin'] ?? null) === 'manual'
             || ($currentInput['taxonomy_origin'] ?? null) === 'manual';
         foreach (['category_ids', 'tag_ids'] as $taxonomyField) {
@@ -530,7 +527,6 @@ class AiImportController extends Controller
             $run = AiImport::query()->lockForUpdate()->findOrFail($aiImport->id);
             abort_unless(in_array($run->status, ['failed', 'cancelled', 'expired'], true), 409, 'Chỉ có thể retry run đã kết thúc lỗi.');
             abort_if($run->applied_target_id !== null || data_get($run->source_meta_json, 'editorial.status') === 'approved', 409, 'Bản đã duyệt không được retry. Hãy tạo bản mới.');
-            $archives = app(AiArticleArchiveService::class);
             $input = (array) $run->input_json;
             foreach (['ai_connection', 'image_connection'] as $key) {
                 $snapshot = (array) ($input[$key] ?? []);
@@ -548,7 +544,6 @@ class AiImportController extends Controller
                 'status' => 'queued', 'current_step' => 'queued', 'progress' => 0,
                 'input_json' => $input, 'error_code' => null, 'error_message' => null, 'completed_at' => null,
                 'generation_no' => (int) $run->generation_no + 1,
-                'archive_version' => $archives->supports($run) ? 1 : null,
                 'archive_pending_json' => null, 'result_json' => null, 'started_at' => null,
                 'expires_at' => now()->addDays((int) config('ai.import.retention_days', 2)),
             ])->save();
@@ -646,26 +641,6 @@ class AiImportController extends Controller
         }
 
         return BaseResponse::success($this->payload($run), 'Đã lưu nội dung AI. Đã xếp lại đánh giá chất lượng.');
-    }
-
-    /**
-     * =====================================================================
-     * CHỨC NĂNG: API Apply cũ dùng service duyệt để tạo/cập nhật Post draft và ghi audit
-     * =====================================================================
-     * INPUT: Run ready, fields whitelist, target_id, expected_version và expected_updated_at tùy chọn.
-     * OUTPUT: Post ID, các field đã áp dụng, provenance và quyết định biên tập.
-     * SIDE EFFECT: service ghi Post/media/SEO, provenance, JSON quyết định và Spatie Activitylog.
-     * EXCEPTION/TRANSACTION: service khóa run/target trong DB transaction;
-     * 409 khi stale/đã quyết định/hết hạn, không Publish hoặc gọi model.
-     * =====================================================================
-     */
-    public function apply(AiCandidateApplyRequest $request, AiImport $aiImport, AiContentReviewService $review): JsonResponse
-    {
-        $this->ensureOwner($request, $aiImport);
-
-        $isSocial = data_get($aiImport->input_json, 'target_type', 'post') === 'social_post';
-
-        return BaseResponse::success($review->approve($request->user(), $aiImport, $request->validated()), $isSocial ? 'Đã duyệt và tạo Social Post Facebook nháp.' : ($request->filled('target_id') ? 'Đã duyệt và cập nhật Post nháp.' : 'Đã duyệt và tạo Post nháp.'));
     }
 
     /**

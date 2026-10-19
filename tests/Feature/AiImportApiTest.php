@@ -194,7 +194,7 @@ class AiImportApiTest extends TestCase
         $token = $this->token();
         $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
             'target_type' => 'post', 'operation' => 'create', 'input' => ['type' => 'text', 'text' => 'Private source content'],
-            'provider' => 'deterministic',
+            'provider' => 'deterministic', 'requested_outputs' => ['title'],
         ])->assertAccepted();
         $root = AiImport::query()->firstOrFail();
         $root->forceFill([
@@ -253,7 +253,7 @@ class AiImportApiTest extends TestCase
         Storage::fake('media_public');
         $token = $this->token();
         $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
-            'text' => 'Article source', 'provider' => 'deterministic', 'generate_thumbnail' => false,
+            'text' => 'Article source', 'provider' => 'deterministic', 'requested_outputs' => ['title'],
         ])->assertAccepted();
         $root = AiImport::query()->sole();
         $expected = [];
@@ -325,7 +325,7 @@ class AiImportApiTest extends TestCase
         Storage::fake('media_private');
         $token = $this->token();
         $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
-            'text' => 'Article source', 'provider' => 'deterministic', 'generate_thumbnail' => false,
+            'text' => 'Article source', 'provider' => 'deterministic', 'requested_outputs' => ['title'],
         ])->assertAccepted();
         $run = AiImport::query()->sole();
         $deleted = $this->thumbnailAsset($run->created_by);
@@ -399,8 +399,8 @@ class AiImportApiTest extends TestCase
     public function test_store_queues_import_and_persists_options(): void
     {
         Queue::fake();
-        $response = $this->withToken($this->token())->postJson('/api/admin/posts/ai/import', [
-            'url' => 'https://example.test/article', 'language' => 'vi', 'generate_thumbnail' => true,
+        $response = $this->withToken($this->token())->postJson('/api/admin/ai-agent/sessions', [
+            'url' => 'https://example.test/article', 'language' => 'vi', 'requested_outputs' => ['title'],
             'provider' => 'deterministic',
         ]);
 
@@ -424,7 +424,7 @@ class AiImportApiTest extends TestCase
     public function test_import_status_is_private_to_creator(): void
     {
         Queue::fake();
-        $this->withToken($this->token())->postJson('/api/admin/posts/ai/import', ['url' => 'https://example.test/article', 'provider' => 'deterministic'])->assertStatus(202);
+        $this->withToken($this->token())->postJson('/api/admin/ai-agent/sessions', ['url' => 'https://example.test/article', 'provider' => 'deterministic', 'requested_outputs' => ['title']])->assertStatus(202);
         $import = AiImport::query()->firstOrFail();
         $other = User::factory()->create(['status' => 'active']);
         $other->givePermissionTo('posts.manage');
@@ -432,7 +432,7 @@ class AiImportApiTest extends TestCase
         $otherToken = $other->createToken('other', ['admin'])->plainTextToken;
         Auth::forgetGuards();
 
-        $this->withToken($otherToken)->getJson('/api/admin/posts/ai/import/'.$import->id)->assertNotFound();
+        $this->withToken($otherToken)->getJson('/api/admin/ai-agent/sessions/'.$import->id)->assertNotFound();
     }
 
     /**
@@ -479,17 +479,17 @@ class AiImportApiTest extends TestCase
         Queue::fake();
         $token = $this->token();
 
-        $this->withToken($token)->postJson('/api/admin/posts/ai/import', [
-            'url' => 'https://example.test/article', 'provider' => 'openai',
+        $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
+            'url' => 'https://example.test/article', 'provider' => 'openai', 'requested_outputs' => ['title'],
         ])->assertStatus(422)->assertJsonValidationErrors('provider');
 
-        $this->withToken($token)->postJson('/api/admin/posts/ai/import', [
-            'url' => 'https://example.test/article', 'provider' => 'deterministic', 'model' => 'unknown',
+        $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
+            'url' => 'https://example.test/article', 'provider' => 'deterministic', 'model' => 'unknown', 'requested_outputs' => ['title'],
         ])->assertStatus(422)->assertJsonValidationErrors('model');
 
-        $this->withToken($token)->postJson('/api/admin/posts/ai/import', [
+        $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
             'url' => 'https://example.test/article', 'prompt_key' => 'post.unknown',
-            'provider' => 'deterministic',
+            'provider' => 'deterministic', 'requested_outputs' => ['title'],
         ])->assertStatus(422)->assertJsonValidationErrors('prompt_key');
 
         Queue::assertNothingPushed();
@@ -510,9 +510,9 @@ class AiImportApiTest extends TestCase
     public function test_store_accepts_inline_text_source(): void
     {
         Queue::fake();
-        $response = $this->withToken($this->token())->postJson('/api/admin/posts/ai/import', [
+        $response = $this->withToken($this->token())->postJson('/api/admin/ai-agent/sessions', [
             'text' => "Tiêu đề inline\n\nNội dung do quản trị viên nhập.",
-            'provider' => 'deterministic',
+            'provider' => 'deterministic', 'requested_outputs' => ['title'],
         ]);
 
         $response->assertStatus(202)
@@ -577,15 +577,15 @@ class AiImportApiTest extends TestCase
     {
         Queue::fake();
         $token = $this->token();
-        $this->withToken($token)->postJson('/api/admin/posts/ai/import', [
+        $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
             'url' => 'https://example.test/cancel',
-            'provider' => 'deterministic',
+            'provider' => 'deterministic', 'requested_outputs' => ['title'],
         ])->assertStatus(202);
         $import = AiImport::query()->firstOrFail();
         $import->update(['status' => 'fetching', 'current_step' => 'fetching', 'progress' => 15]);
 
         $this->withToken($token)
-            ->postJson('/api/admin/posts/ai/import/'.$import->id.'/cancel')
+            ->postJson('/api/admin/ai-agent/sessions/'.$import->id.'/cancel')
             ->assertOk()
             ->assertJsonPath('data.status', 'cancelled')
             ->assertJsonPath('data.error_code', 'CANCELLED');
@@ -612,13 +612,12 @@ class AiImportApiTest extends TestCase
     public function test_cleanup_command_removes_expired_import(): void
     {
         Queue::fake();
-        $this->withToken($this->token())->postJson('/api/admin/posts/ai/import', [
+        $this->withToken($this->token())->postJson('/api/admin/ai-agent/sessions', [
             'url' => 'https://example.test/expired',
-            'provider' => 'deterministic',
+            'provider' => 'deterministic', 'requested_outputs' => ['title'],
         ])->assertStatus(202);
         $import = AiImport::query()->firstOrFail();
-        // Fixture legacy dựng trực tiếp, chưa chạy worker/contract archive v1.
-        $import->update(['archive_version' => null, 'status' => 'ready', 'expires_at' => now()->subMinute()]);
+        $import->update(['status' => 'ready', 'expires_at' => now()->subMinute()]);
 
         $this->artisan('ai-import:cleanup')
             ->expectsOutput('Đã dọn 1 AI import.')

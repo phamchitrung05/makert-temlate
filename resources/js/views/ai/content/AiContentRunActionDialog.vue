@@ -1,9 +1,9 @@
 <!--
   =====================================================================
   Header/footer cố định qua AppDialogLayout; chỉ content ở giữa được cuộn.
-  CHỨC NĂNG FILE: Xác nhận regenerate/Apply draft/xóa/hủy một run riêng biệt.
+  CHỨC NĂNG FILE: Xác nhận regenerate/xóa/hủy một run riêng biệt; duyệt dùng AiContentReviewDialog.
   CÁC HÀM/METHOD TRONG FILE: watcher action/displayAction/session/capability, finishLeave(),
-  removing/applying/cancelling/regenerating/fieldOptions/blocked (computed), confirm().
+  removing/cancelling/regenerating/fieldOptions/blocked (computed), confirm().
   INPUT/OUTPUT CỦA CLASS (tổng thể): action/detail/version/busy/error -> confirm
   options whitelist; GET capability qua service, không tự mutation hay publish.
   =====================================================================
@@ -28,7 +28,6 @@ const writing = ref(emptyWritingPreferences(true))
 const categoryIds = ref([])
 const tagIds = ref([])
 const manualOverride = ref(false)
-const taxonomyConfirmed = ref(false)
 const refreshSource = ref(false)
 const thumbnail = ref({ thumbnailMode: 'source', imageModelId: null, thumbnailPrompt: '' })
 const capability = shallowRef({})
@@ -38,28 +37,19 @@ const displayAction = shallowRef(null)
 const dialogOpen = shallowRef(false)
 const actionView = computed(() => displayAction.value ?? props.action)
 const removing = computed(() => actionView.value?.kind === 'remove')
-const applying = computed(() => actionView.value?.kind === 'apply')
 const cancelling = computed(() => actionView.value?.kind === 'cancel')
 const regenerating = computed(() => actionView.value?.kind === 'regenerate')
 const isSocial = computed(() => (actionView.value?.session?.target_type ?? actionView.value?.item?.targetType) === 'social_post')
 
-const outputGroups = computed(() => actionView.value?.session?.output_groups?.length
-  ? actionView.value.session.output_groups
-  : (isSocial.value ? ['social_content', 'social_gallery'] : ['title', 'excerpt', 'content', 'seo', 'thumbnail']))
-
 const manualTaxonomy = computed(() => !isSocial.value && (actionView.value?.session?.manual_taxonomy ?? true))
-const legacyTaxonomy = computed(() => applying.value && manualTaxonomy.value && actionView.value?.session?.draft?.taxonomy_origin !== 'manual')
 const thumbnailRequested = computed(() => regenerating.value && capability.value.outputs?.includes('thumbnail') && (!fields.value.length || fields.value.includes('thumbnail')))
 
-const fieldOptions = computed(() => applying.value
-  ? [...outputGroups.value, ...(manualTaxonomy.value ? ['taxonomy'] : []), ...(actionView.value?.session?.thumbnail && !isSocial.value ? ['thumbnail'] : [])]
-    .map(value => ({ title: { title: 'Tiêu đề', excerpt: 'Tóm tắt', content: 'Nội dung', seo: 'SEO', taxonomy: 'Danh mục và tag thủ công', thumbnail: 'Ảnh đại diện', social_content: 'Social content', social_gallery: 'Gallery image', social_excerpt: 'Social excerpt', social_video: 'Social video' }[value] ?? value, value }))
-  : withoutAiTaxonomyOutputs(capability.value.outputs ?? []).map(value => ({ title: capability.value.output_options?.find(item => item.value === value)?.title ?? value, value })))
+const fieldOptions = computed(() => withoutAiTaxonomyOutputs(capability.value.outputs ?? [])
+  .map(value => ({ title: capability.value.output_options?.find(item => item.value === value)?.title ?? value, value })))
 
 const blocked = computed(() => props.busy || actionView.value?.loading || actionView.value?.loadFailed
   || (regenerating.value && (loadingCapabilities.value || Boolean(capabilityError.value)))
-  || (thumbnailRequested.value && thumbnail.value.thumbnailMode === 'generate' && !(props.catalog.imageModelOptions ?? []).some(option => option.value === thumbnail.value.imageModelId))
-  || (applying.value && (!fields.value.length || actionView.value?.session?.status !== 'ready' || actionView.value?.session?.applied_target_id || actionView.value?.session?.review?.status === 'rejected' || (legacyTaxonomy.value && fields.value.includes('taxonomy') && !taxonomyConfirmed.value))))
+  || (thumbnailRequested.value && thumbnail.value.thumbnailMode === 'generate' && !(props.catalog.imageModelOptions ?? []).some(option => option.value === thumbnail.value.imageModelId)))
 
 /**
  * =====================================================================
@@ -101,7 +91,6 @@ function finishLeave() {
   categoryIds.value = []
   tagIds.value = []
   manualOverride.value = false
-  taxonomyConfirmed.value = false
   refreshSource.value = false
   capability.value = {}
   capabilityError.value = ''
@@ -122,13 +111,12 @@ watch(() => `${props.action?.kind || ''}:${props.action?.item?.id || ''}:${props
   if (!props.action) return
   let active = true
   onCleanup(() => { active = false })
-  fields.value = applying.value ? [...outputGroups.value, ...(manualTaxonomy.value ? ['taxonomy'] : [])] : []
+  fields.value = []
   instructions.value = ''
   writing.value = emptyWritingPreferences(true)
   categoryIds.value = []
   tagIds.value = []
   manualOverride.value = false
-  taxonomyConfirmed.value = false
   refreshSource.value = false
   capability.value = {}
   capabilityError.value = ''
@@ -156,7 +144,6 @@ watch(() => `${props.action?.kind || ''}:${props.action?.item?.id || ''}:${props
  */
 watch(() => props.action?.session, session => {
   if (!session) return
-  if (applying.value) fields.value = [...outputGroups.value, ...(manualTaxonomy.value ? ['taxonomy'] : [])]
   categoryIds.value = session.draft?.taxonomy_origin === 'manual' ? [...(session.draft.category_ids ?? [])] : []
   tagIds.value = session.draft?.taxonomy_origin === 'manual' ? [...(session.draft.tag_ids ?? [])] : []
   thumbnail.value = { thumbnailMode: session.thumbnail_options?.mode || 'source', imageModelId: session.thumbnail_options?.model_id ?? props.catalog.defaultImageModelId ?? null,
@@ -166,7 +153,7 @@ watch(() => props.action?.session, session => {
 /**
  * =====================================================================
  * Input: các field/override người dùng duyệt. Output: confirm whitelist;
- * regen thiếu profile/brief/taxonomy nghĩa là kế thừa, Apply gửi IDs thủ công.
+ * regen thiếu profile/brief/taxonomy nghĩa là kế thừa; taxonomy chỉ gửi khi override.
  * =====================================================================
  */
 function confirm() {
@@ -176,7 +163,7 @@ function confirm() {
     ...(regenerating.value ? { instructions: instructions.value, ...writingOptions(writing.value, true), ...(refreshSource.value ? { refresh_source: true } : {}) } : {}),
     ...(thumbnailRequested.value ? { thumbnail_mode: thumbnail.value.thumbnailMode,
       ...(thumbnail.value.thumbnailMode === 'generate' ? { image_model_id: thumbnail.value.imageModelId, thumbnail_prompt: thumbnail.value.thumbnailPrompt } : {}) } : {}),
-    ...(manualTaxonomy.value && (applying.value || manualOverride.value) ? { category_ids: categoryIds.value ?? [], tag_ids: tagIds.value ?? [] } : {}),
+    ...(manualTaxonomy.value && manualOverride.value ? { category_ids: categoryIds.value ?? [], tag_ids: tagIds.value ?? [] } : {}),
   })
 }
 </script>
@@ -191,7 +178,7 @@ function confirm() {
     @after-leave="finishLeave"
   >
     <AppDialogLayout
-      :title="removing ? 'Xóa content AI' : cancelling ? 'Hủy tác vụ AI' : applying ? (isSocial ? 'Tạo Social Post nháp' : 'Tạo Post nháp') : 'Tạo lại content AI'"
+      :title="removing ? 'Xóa content AI' : cancelling ? 'Hủy tác vụ AI' : 'Tạo lại content AI'"
       :close-disabled="props.busy"
       close-label="Đóng hộp thoại content AI"
       @close="emit('close')"
@@ -212,12 +199,12 @@ function confirm() {
           Yêu cầu worker dừng tác vụ. Request đã gửi tới model có thể vẫn hoàn thành và phát sinh usage.
         </p>
         <template v-else>
-          <p>{{ applying ? (isSocial ? 'Chuyển các output platform đã chọn thành Social Post Facebook nháp.' : 'Chuyển các phần đã chọn thành Post nháp để tiếp tục duyệt.') : 'Bản mới dùng nguồn của bản đã chọn. Bản cũ được giữ để đối chiếu.' }}</p>
+          <p>Bản mới dùng nguồn của bản đã chọn. Bản cũ được giữ để đối chiếu.</p>
           <AppSelect
             v-model="fields"
             :items="fieldOptions"
-            :label="applying ? (isSocial ? 'Output đưa vào Social Post nháp' : 'Phần đưa vào Post nháp') : 'Phần cần tạo lại'"
-            :placeholder="applying ? 'Chọn ít nhất một phần' : 'Toàn bộ bài'"
+            label="Phần cần tạo lại"
+            placeholder="Toàn bộ bài"
             multiple
             chips
             clearable
@@ -258,26 +245,12 @@ function confirm() {
               :disabled="props.busy || actionView?.loading"
             />
           </template>
-          <template v-if="(applying && manualTaxonomy) || manualOverride">
-            <AiManualTaxonomyFields
-              v-model:categories="categoryIds"
-              v-model:tags="tagIds"
-              :disabled="props.busy || actionView?.loading"
-            />
-            <VCheckbox
-              v-if="legacyTaxonomy && fields.includes('taxonomy')"
-              v-model="taxonomyConfirmed"
-              label="Tôi đã kiểm tra danh mục/tag và xác nhận các lựa chọn trên"
-              :disabled="props.busy || actionView?.loading"
-            />
-          </template>
-          <VAlert
-            v-if="applying && actionView?.session?.applied_target_id"
-            type="info"
-            variant="tonal"
-          >
-            Bản này đã được áp dụng vào {{ isSocial ? 'Social Post' : 'Post' }} #{{ actionView.session.applied_target_id }}.
-          </VAlert>
+          <AiManualTaxonomyFields
+            v-if="manualOverride"
+            v-model:categories="categoryIds"
+            v-model:tags="tagIds"
+            :disabled="props.busy || actionView?.loading"
+          />
           <AiPipelineReport :session="actionView?.session" />
         </template>
         <VAlert
@@ -306,7 +279,7 @@ function confirm() {
             :disabled="blocked"
             @click="confirm"
           >
-            {{ removing ? 'Xóa' : cancelling ? 'Hủy tác vụ' : applying ? 'Tạo Post nháp' : 'Tạo lại' }}
+            {{ removing ? 'Xóa' : cancelling ? 'Hủy tác vụ' : 'Tạo lại' }}
           </VBtn>
         </VCardActions>
       </template>

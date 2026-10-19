@@ -7,7 +7,7 @@
  * - openEditor(): đọc và mở đúng run hiện tại trong session.
  * - closeEditor(): đóng editor và vô hiệu GET đến trễ.
  * - saveEditor(): lưu draft theo optimistic version và cập nhật list.
- * - requestAction(): đọc detail và mở dialog remove/cancel/apply/regenerate.
+ * - requestAction(): đọc detail và mở dialog remove/cancel/regenerate.
  * - closeAction(): đóng dialog nếu chưa submit.
  * - announceRegenerate(): phát task tạo lại vào queue popup ngay sau accepted.
  * - confirmAction(): gửi mutation một lần và cập nhật projection phiên hiện tại.
@@ -19,7 +19,7 @@
  * - messageOf()/runError(): chuẩn hóa lỗi HTTP/lifecycle thành tiếng Việt.
  * - busyId: computed identity đang bận; scope dispose: hủy timer/response cũ.
  * INPUT/OUTPUT CỦA CLASS (tổng thể): item/action -> dialog, API và cập nhật list.
- * SIDE EFFECT: API candidate/Apply Post draft theo xác nhận; dọn timer khi unmount.
+ * SIDE EFFECT: API candidate theo xác nhận; dọn timer khi unmount.
  * =====================================================================
  */
 import { computed, onScopeDispose, shallowRef } from 'vue'
@@ -174,7 +174,7 @@ export function useAiContentActions({ updateSession, removeItem, onFeedback = ()
   async function requestAction(kind, item) {
     if ((item.status === 'generating' && kind !== 'cancel') || actionBusy.value) return
     const version = ++actionVersion
-    const readDetail = ['apply', 'regenerate'].includes(kind)
+    const readDetail = kind === 'regenerate'
     const runId = item.runId ?? item.id
 
     action.value = { kind, item, loading: readDetail }
@@ -332,7 +332,7 @@ export function useAiContentActions({ updateSession, removeItem, onFeedback = ()
 
   /**
    * =====================================================================
-   * CHỨC NĂNG: Thực hiện remove/cancel/apply/regenerate sau xác nhận.
+   * CHỨC NĂNG: Thực hiện remove/cancel/regenerate sau xác nhận; duyệt đi qua useAiContentReview.
    * =====================================================================
    * INPUT: options fields/instructions và action detail đã đọc.
    * OUTPUT: cập nhật session/list/notice; regenerate giữ một dòng và thêm history.
@@ -361,16 +361,6 @@ export function useAiContentActions({ updateSession, removeItem, onFeedback = ()
         updateSession(value)
         monitor(value)
         notice.value = { type: 'success', message: 'Đã gửi yêu cầu hủy tác vụ.' }
-      }
-      else if (current.kind === 'apply') {
-        const result = await aiAgentService.applyCandidate(current.item.runId ?? current.item.id, { ...options, expected_version: current.session.draft_version })
-        if (disposed) return
-        updateSession({ ...current.session, applied_target_id: result.social_post_id ?? result.post_id ?? result.target_id, applied_fields: result.fields })
-
-        const targetLabel = current.item.targetType === 'social_post' ? 'Social Post' : 'Post'
-        const targetId = result.social_post_id ?? result.post_id ?? result.target_id
-
-        notice.value = { type: 'success', message: `Đã tạo ${targetLabel} nháp #${targetId}. Mở danh sách ${targetLabel} để kiểm tra.` }
       }
       else {
         const child = await aiAgentService.regenerate(current.item.runId ?? current.item.id, buildAiContentRegenerateRequest(options))

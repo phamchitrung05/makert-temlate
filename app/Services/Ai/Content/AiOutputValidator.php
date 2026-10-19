@@ -42,7 +42,7 @@ final class AiOutputValidator
                 $payload[$canonical] = $payload[$alias];
             }
         }
-        $requiredGroups = $groups === null ? (array) config('ai.agent.legacy_required_outputs', ['title', 'content']) : $selected;
+        $requiredGroups = $groups === null ? (array) config('ai.agent.default_required_outputs', ['title', 'content']) : $selected;
         $result = [];
         $errors = [];
         foreach ($selected as $group) {
@@ -171,14 +171,14 @@ final class AiOutputValidator
 
     /**
      * =====================================================================
-     * Input: selected groups hoặc nhóm bắt buộc legacy.
+     * Input: selected groups hoặc nhóm bắt buộc mặc định.
      * Output: hướng dẫn field lấy cùng contract với validate(); không side effect.
      * =====================================================================
      */
     public function instructions(?array $groups = null): string
     {
         $definitions = (array) config('ai.agent.output_definitions', []);
-        $requiredGroups = $groups ?? (array) config('ai.agent.legacy_required_outputs', ['title', 'content']);
+        $requiredGroups = $groups ?? (array) config('ai.agent.default_required_outputs', ['title', 'content']);
         $instructions = [];
         foreach ($requiredGroups as $group) {
             $definition = $definitions[$group] ?? [];

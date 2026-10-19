@@ -254,7 +254,7 @@ final class ProcessAiImageGenerationJob implements ShouldBeUnique, ShouldQueue
      * CHỨC NĂNG: Merge metadata ảnh vào parent đã đọc lại dưới row lock
      * =====================================================================
      * INPUT: Image run đã ready và result chứa image ref.
-     * OUTPUT: Thumbnail được gắn canonical qua service, image legacy chỉ merge metadata;
+     * OUTPUT: Thumbnail được gắn canonical qua service, ảnh độc lập chỉ merge metadata;
      * giữ title/content/taxonomy hiện tại của parent.
      * SIDE EFFECT: Transaction riêng khóa parent; không giữ đồng thời child lock
      * hoặc gọi provider, bỏ qua parent đã hủy/hết hạn/không còn tồn tại.

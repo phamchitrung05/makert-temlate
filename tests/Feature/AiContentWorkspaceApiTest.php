@@ -16,10 +16,10 @@ use Tests\UsesIsolatedDatabase;
 
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Kiểm workspace nhiều target và optimistic version của candidate.
+ * CHỨC NĂNG FILE: Kiểm workspace target AI hiện có và optimistic version của candidate.
  * =====================================================================
  *
- * PHPUnit kiểm workspace nhiều target, quyền theo target/owner và optimistic version.
+ * PHPUnit kiểm workspace Post/Social, quyền theo target/owner và optimistic version.
  * Các ca bao gồm tạo/sửa/regenerate/xóa candidate qua API và sanitize output.
  * Queue/provider và database được cô lập; không gọi AI hoặc sửa dữ liệu ứng dụng.
  *
@@ -29,6 +29,7 @@ use Tests\UsesIsolatedDatabase;
  * - token().
  * - createRun().
  * - test_targets_and_creation_are_driven_by_config().
+ * - test_social_target_is_available_to_social_post_creators().
  * - test_permissions_follow_target_and_owner().
  * - test_pipeline_uses_target_prompt_and_sanitizes_result().
  * - test_edit_validates_version_status_and_html_without_applying().
@@ -118,7 +119,7 @@ class AiContentWorkspaceApiTest extends TestCase
      *
      * =====================================================================
      */
-    private function token(array $permissions = ['posts.manage', 'resources.create']): string
+    private function token(array $permissions = ['posts.manage', 'social_posts.create']): string
     {
         $user = User::factory()->create(['status' => 'active']);
         $user->givePermissionTo($permissions);
@@ -134,7 +135,7 @@ class AiContentWorkspaceApiTest extends TestCase
      * =====================================================================
      *
      * INPUT:
-     * - token và target.
+     * - token, target và requested_outputs tùy chọn.
      *
      * OUTPUT:
      * - run queued, không thực thi worker.
@@ -147,11 +148,11 @@ class AiContentWorkspaceApiTest extends TestCase
      *
      * =====================================================================
      */
-    private function createRun(string $token, string $target = 'post'): AiImport
+    private function createRun(string $token, string $target = 'post', array $outputs = ['title']): AiImport
     {
         $response = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
-            'target_type' => $target, 'input' => ['type' => 'text', 'text' => 'Nguồn tài nguyên đã xác thực.'],
-            'provider' => 'deterministic', 'model' => 'deterministic', 'generate_thumbnail' => false,
+            'target_type' => $target, 'input' => ['type' => 'text', 'text' => 'Nguồn đã xác thực.'],
+            'provider' => 'deterministic', 'model' => 'deterministic', 'requested_outputs' => $outputs,
         ])->assertAccepted()->assertJsonPath('data.task_run_id', fn ($value): bool => is_string($value) && $value !== '');
 
         return AiImport::findOrFail($response->json('data.job_id'));
@@ -159,14 +160,14 @@ class AiContentWorkspaceApiTest extends TestCase
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Kiểm thử ba target cùng nguồn
+     * CHỨC NĂNG: Kiểm thử target catalog và create theo config
      * =====================================================================
      *
      * INPUT:
-     * - ba target cùng nguồn.
+     * - target được bật trong config backend.
      *
      * OUTPUT:
-     * - identity/hash riêng và labels theo config.
+     * - identity/hash riêng và prompt key theo config.
      *
      * SIDE EFFECT:
      * - Chỉ xử lý fixture hoặc dữ liệu trong database test; không gọi AI thật hay sửa dữ liệu ứng dụng.
@@ -180,21 +181,19 @@ class AiContentWorkspaceApiTest extends TestCase
     {
         $token = $this->token();
         $this->withToken($token)->getJson('/api/admin/ai-agent/targets')->assertOk()
-            ->assertJsonPath('data.0.key', 'post')->assertJsonPath('data.1.key', 'resource')->assertJsonPath('data.2.key', 'sound');
-        foreach (['post', 'resource', 'sound'] as $target) {
-            $run = $this->createRun($token, $target);
-            $this->assertSame($target, $run->input_json['target_type']);
-            $this->assertSame($target.'.create.from_text', $run->input_json['prompt_key']);
-        }
-        $this->assertSame(3, AiImport::distinct()->count('source_hash'));
-        Queue::assertPushed(ProcessAiImportJob::class, 3);
-        $this->withToken($token)->getJson('/api/admin/ai-agent/sessions')->assertJsonCount(3, 'data');
+            ->assertJsonPath('data.0.key', 'post')->assertJsonPath('data.1.key', 'social_post');
+        $run = $this->createRun($token, 'post');
+        $this->assertSame('post', $run->input_json['target_type']);
+        $this->assertSame('post.create.from_text', $run->input_json['prompt_key']);
+        Queue::assertPushed(ProcessAiImportJob::class, 1);
+
+        $this->withToken($token)->getJson('/api/admin/ai-agent/sessions')->assertJsonCount(1, 'data');
         config(['ai.agent.targets.lesson' => [
             'enabled' => true, 'label' => 'Lesson', 'permission' => 'posts.manage',
             'content_instructions' => 'Write a lesson.', 'inputs' => ['text'], 'outputs' => ['title', 'content'],
         ]]);
-        $this->withToken($token)->getJson('/api/admin/ai-agent/targets')->assertJsonPath('data.3.label', 'Lesson');
-        $this->createRun($token, 'lesson');
+        $this->withToken($token)->getJson('/api/admin/ai-agent/targets')->assertJsonPath('data.2.label', 'Lesson');
+        $this->createRun($token, 'lesson', ['title', 'content']);
         config(['ai.agent.targets.lesson.enabled' => false]);
         $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
             'target_type' => 'lesson', 'text' => 'A lesson',
@@ -203,8 +202,6 @@ class AiContentWorkspaceApiTest extends TestCase
 
     /**
      * Social là target riêng của AI Content và dùng permission Social Post.
-     * Candidate được xếp hàng ở workspace; apply/review sẽ được nối vào
-     * workflow Social Post riêng ở bước sau.
      */
     public function test_social_target_is_available_to_social_post_creators(): void
     {
@@ -214,25 +211,25 @@ class AiContentWorkspaceApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.key', 'social_post')
             ->assertJsonPath('data.0.label', 'Social')
-            ->assertJsonPath('data.0.outputs', ['content'])
-            ->assertJsonPath('data.0.output_options.0.value', 'content');
+            ->assertJsonPath('data.0.outputs', ['social_content', 'social_gallery'])
+            ->assertJsonPath('data.0.output_options.0.value', 'social_content');
 
-        $run = $this->createRun($token, 'social_post');
+        $run = $this->createRun($token, 'social_post', ['social_content']);
         $this->assertSame('social_post', $run->input_json['target_type']);
-        $this->assertSame('social_post.create.from_text', $run->input_json['prompt_key']);
+        $this->assertSame('social_post.facebook.create.from_text', $run->input_json['prompt_key']);
         Queue::assertPushed(ProcessAiImportJob::class, 1);
     }
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Kiểm thử actor chỉ có quyền Resource
+     * CHỨC NĂNG: Kiểm thử actor chỉ có quyền Social Post
      * =====================================================================
      *
      * INPUT:
-     * - actor chỉ có quyền Resource.
+     * - actor chỉ có quyền Social.
      *
      * OUTPUT:
-     * - không thấy/không tạo/sửa Post.
+     * - không thấy/tạo/sửa run Post của người khác.
      *
      * SIDE EFFECT:
      * - Chỉ xử lý fixture hoặc dữ liệu trong database test; không gọi AI thật hay sửa dữ liệu ứng dụng.
@@ -244,15 +241,14 @@ class AiContentWorkspaceApiTest extends TestCase
      */
     public function test_permissions_follow_target_and_owner(): void
     {
-        $token = $this->token(['resources.create']);
-        $this->withToken($token)->getJson('/api/admin/ai-agent/targets')->assertOk()->assertJsonCount(2, 'data');
-        $run = $this->createRun($token, 'resource');
+        $token = $this->token(['social_posts.create']);
+        $this->withToken($token)->getJson('/api/admin/ai-agent/targets')->assertOk()->assertJsonCount(1, 'data');
+        $run = $this->createRun($token, 'social_post', ['social_content']);
         $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
-            'target_type' => 'post', 'text' => 'Not allowed',
+            'target_type' => 'post', 'requested_outputs' => ['title'], 'text' => 'Not allowed',
         ])->assertForbidden();
         $this->withToken($token)->getJson('/api/admin/ai-agent/capabilities/post')->assertForbidden();
         $this->withToken($token)->getJson('/api/admin/posts')->assertForbidden();
-        $this->withToken($token)->postJson('/api/admin/posts/ai/import', ['text' => 'Not allowed'])->assertForbidden();
         $other = $this->token();
         $this->withToken($other)->getJson('/api/admin/ai-agent/sessions/'.$run->id)->assertNotFound();
         $this->withToken($other)->deleteJson('/api/admin/ai-agent/sessions/'.$run->id)->assertNotFound();
@@ -260,14 +256,14 @@ class AiContentWorkspaceApiTest extends TestCase
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Kiểm thử resource/Sound run
+     * CHỨC NĂNG: Kiểm thử Post run dùng prompt target và sanitize output
      * =====================================================================
      *
      * INPUT:
-     * - Resource/Sound run.
+     * - Post run với provider giả trả HTML không an toàn.
      *
      * OUTPUT:
-     * - pipeline dùng đúng prompt target và chỉ tạo candidate văn bản.
+     * - pipeline dùng đúng prompt target và chỉ giữ markup an toàn.
      *
      * SIDE EFFECT:
      * - Chỉ xử lý fixture hoặc dữ liệu trong database test; không gọi AI thật hay sửa dữ liệu ứng dụng.
@@ -280,21 +276,18 @@ class AiContentWorkspaceApiTest extends TestCase
     public function test_pipeline_uses_target_prompt_and_sanitizes_result(): void
     {
         $token = $this->token();
-        foreach (['resource', 'sound'] as $target) {
-            $run = $this->createRun($token, $target);
-            $provider = Mockery::mock(AiProviderContract::class);
-            $provider->shouldReceive('configured')->andReturnTrue();
-            $provider->shouldReceive('generate')->once()->withArgs(fn ($title, $content, $language, $style, $prompt) => $prompt === $target.'.create.from_text')
-                ->andReturn(['title' => 'Nội dung '.$target, 'content_html' => '<p onclick="bad()">Nội dung <strong>an toàn</strong></p><script>bad()</script>']);
-            $provider->shouldReceive('providerName')->andReturn('fake');
-            $provider->shouldReceive('modelName')->andReturn('fake');
-            $result = (new ArticleImportService($provider))->run($run);
-            $this->assertSame($target.'.create.from_text', $result['prompt_key']);
-            $this->assertStringNotContainsString('script', $result['draft']['content_html']);
-            $this->assertStringNotContainsString('onclick', $result['draft']['content_html']);
-        }
+        $run = $this->createRun($token, 'post');
+        $provider = Mockery::mock(AiProviderContract::class);
+        $provider->shouldReceive('configured')->andReturnTrue();
+        $provider->shouldReceive('generate')->once()
+            ->andReturn(['title' => 'Nội dung bài viết', 'content_html' => '<p onclick="bad()">Nội dung <strong>an toàn</strong></p><script>bad()</script>']);
+        $provider->shouldReceive('providerName')->andReturn('fake');
+        $provider->shouldReceive('modelName')->andReturn('fake');
+        $result = (new ArticleImportService($provider))->run($run);
+        $this->assertSame('post.create.from_text', $result['prompt_key']);
+        $this->assertStringNotContainsString('script', $result['draft']['content_html']);
+        $this->assertStringNotContainsString('onclick', $result['draft']['content_html']);
         $this->assertDatabaseCount('posts', 0);
-        $this->assertDatabaseCount('resources', 0);
     }
 
     /**
@@ -306,7 +299,7 @@ class AiContentWorkspaceApiTest extends TestCase
      * - sửa title/content và phiên bản cũ.
      *
      * OUTPUT:
-     * - HTML sạch; stale/applied/busy không sửa được.
+     * - HTML sạch; stale/applied không sửa được.
      *
      * SIDE EFFECT:
      * - Chỉ xử lý fixture hoặc dữ liệu trong database test; không gọi AI thật hay sửa dữ liệu ứng dụng.
@@ -319,7 +312,7 @@ class AiContentWorkspaceApiTest extends TestCase
     public function test_edit_validates_version_status_and_html_without_applying(): void
     {
         $token = $this->token();
-        $run = $this->createRun($token, 'resource');
+        $run = $this->createRun($token, 'post');
         $run->update(['status' => 'ready', 'result_json' => ['draft' => ['title' => 'Old', 'content_html' => '<p>Old</p>', 'thumbnail' => ['media_asset_id' => null]]]]);
         $version = $this->withToken($token)->getJson('/api/admin/ai-agent/sessions/'.$run->id)->json('data.draft_version');
         $payload = ['expected_version' => $version, 'title' => 'Edited', 'content_html' => '<p onclick="bad()">Safe</p><script>bad()</script>'];
@@ -333,16 +326,15 @@ class AiContentWorkspaceApiTest extends TestCase
         $run->update(['applied_target_id' => 99]);
         $this->withToken($token)->patchJson('/api/admin/ai-agent/candidates/'.$run->id, $payload)->assertConflict();
         $this->assertDatabaseCount('posts', 0);
-        $this->assertDatabaseCount('resources', 0);
     }
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Kiểm thử tạo lại Sound với optional trống
+     * CHỨC NĂNG: Kiểm thử regenerate với override rỗng
      * =====================================================================
      *
      * INPUT:
-     * - tạo lại Sound với optional trống.
+     * - regenerate với override rỗng và prompt không thuộc target.
      *
      * OUTPUT:
      * - child/list tồn tại, parent giữ nguyên, không đổi model.
@@ -358,18 +350,17 @@ class AiContentWorkspaceApiTest extends TestCase
     public function test_regenerate_ignores_empty_overrides_and_lists_child(): void
     {
         $token = $this->token();
-        $run = $this->createRun($token, 'sound');
-        $run->update(['status' => 'ready', 'result_json' => ['draft' => ['title' => 'Parent', 'content_html' => '<p>Parent</p>']]]);
+        $run = $this->createRun($token, 'post');
+        $run->update(['status' => 'ready', 'result_json' => ['draft' => ['title' => 'Parent', 'content_html' => '<p>Parent</p>'], 'generation_meta' => ['content_origin' => 'ai']]]);
         $response = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions/'.$run->id.'/regenerate', [
-            'prompt_key' => null, 'provider' => null, 'model' => '', 'model_id' => null, 'fields' => ['title', 'content'],
+            'prompt_key' => null, 'provider' => null, 'model' => '', 'model_id' => null,
             'refresh_source' => true,
-        ])->assertAccepted()->assertJsonPath('data.target_type', 'sound')->assertJsonPath('data.parent_id', $run->id);
+        ])->assertAccepted()->assertJsonPath('data.target_type', 'post')->assertJsonPath('data.parent_id', $run->id);
         $child = AiImport::findOrFail($response->json('data.job_id'));
         $this->assertSame($run->input_json['ai_connection'], $child->input_json['ai_connection']);
         $this->assertSame('Parent', data_get($run->fresh()->result_json, 'draft.title'));
         $this->withToken($token)->getJson('/api/admin/ai-agent/sessions')->assertJsonCount(2, 'data');
-        $this->withToken($token)->postJson('/api/admin/ai-agent/candidates/'.$run->id.'/apply', ['fields' => ['title', 'content']])->assertUnprocessable();
-        $this->withToken($token)->postJson('/api/admin/ai-agent/sessions/'.$run->id.'/regenerate', ['prompt_key' => 'post.create.from_text'])->assertUnprocessable();
+        $this->withToken($token)->postJson('/api/admin/ai-agent/sessions/'.$run->id.'/regenerate', ['prompt_key' => 'social_post.facebook.create.from_text'])->assertUnprocessable();
     }
 
     /**
@@ -394,10 +385,9 @@ class AiContentWorkspaceApiTest extends TestCase
     public function test_remove_rejects_running_and_preserves_other_candidates(): void
     {
         $token = $this->token();
-        $run = $this->createRun($token);
+        $run = $this->createRun($token, 'post');
         $this->withToken($token)->deleteJson('/api/admin/ai-agent/sessions/'.$run->id)->assertConflict();
-        // Candidate legacy dựng trực tiếp; chưa hoàn tất qua worker archive v1.
-        $run->update(['archive_version' => null, 'status' => 'ready']);
+        $run->update(['status' => 'ready', 'result_json' => ['draft' => ['title' => 'Parent'], 'generation_meta' => ['content_origin' => 'ai']]]);
         $child = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions/'.$run->id.'/regenerate', ['refresh_source' => true])->assertAccepted()->json('data.job_id');
         $this->withToken($token)->deleteJson('/api/admin/ai-agent/sessions/'.$run->id)->assertOk();
         $this->withToken($token)->getJson('/api/admin/ai-agent/sessions/'.$run->id)->assertNotFound();

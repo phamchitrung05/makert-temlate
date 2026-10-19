@@ -3,11 +3,9 @@
 namespace App\Services\Ai\Content;
 
 use App\Actions\Posts\CreatePostAction;
-use App\Actions\Posts\UpdatePostAction;
 use App\Http\Resources\Media\MediaAssetResource;
 use App\Models\AiImport;
 use App\Models\MediaAsset;
-use App\Models\Post;
 use App\Models\User;
 use App\Services\Ai\Content\Archives\AiArticleArchiveService;
 use App\Services\Ai\Content\Quality\ArticleQualityEvaluationService;
@@ -53,7 +51,7 @@ final class AiContentReviewService
      * =====================================================================
      *
      * INPUT:
-     * - CreatePostAction, UpdatePostAction, TargetRegistry, AiProvenanceService và AiContentSanitizer.
+     * - CreatePostAction, TargetRegistry, AiProvenanceService và AiContentSanitizer.
      *
      * OUTPUT:
      * - Service sẵn sàng xử lý quyết định biên tập.
@@ -68,7 +66,6 @@ final class AiContentReviewService
      */
     public function __construct(
         private readonly CreatePostAction $create,
-        private readonly UpdatePostAction $update,
         private readonly TargetRegistry $targets,
         private readonly AiProvenanceService $provenance,
         private readonly AiContentSanitizer $sanitizer,
@@ -313,16 +310,16 @@ final class AiContentReviewService
      * =====================================================================
      *
      * INPUT:
-     * - Authenticated actor posts.manage, candidate, fields/hash/lý do đã validate; target_id chỉ cho Apply cũ.
+     * - Authenticated actor posts.manage, candidate, fields/hai version/lý do đã validate.
      *
      * OUTPUT:
      * - Post draft ID/provenance/review/version; không Publish.
      *
      * SIDE EFFECT:
-     * - Ghi Post/provenance/quyết định/Activitylog/archive cùng nhau; Post dùng bản biên tập, kho dùng checkpoint AI trước edit. API Apply cũ dùng cùng method.
+     * - Ghi Post/provenance/quyết định/Activitylog/archive cùng nhau; Post dùng bản biên tập, kho dùng checkpoint AI trước edit.
      *
      * EXCEPTION/TRANSACTION:
-     * - Transaction khóa run/target; 404/403/422 do authorization/validation, 409 khi stale/đã quyết định/hết hạn/thumbnail pending. Lỗi action/media/archive/audit rollback toàn bộ; không HTTP/AI trong transaction.
+     * - Transaction khóa run; 404/403/422 do authorization/validation, 409 khi stale/đã quyết định/hết hạn/thumbnail pending. Lỗi action/media/archive/audit rollback toàn bộ; không HTTP/AI trong transaction.
      *
      * =====================================================================
      */
@@ -332,7 +329,6 @@ final class AiContentReviewService
         if (data_get($candidate->input_json, 'target_type', 'post') === 'social_post') {
             return $this->approveSocial($actor, $candidate, $data);
         }
-        $data['expected_version'] ??= hash('sha256', json_encode(data_get($candidate->result_json, 'draft', [])));
 
         return DB::transaction(function () use ($actor, $candidate, $data): array {
             $run = AiImport::query()->lockForUpdate()->findOrFail($candidate->id);
@@ -358,21 +354,12 @@ final class AiContentReviewService
                 $outputs['content'] = $outputs['content_html'];
             }
             $payload = $this->targets->adapter('post')->toApplyPayload($outputs, $data['fields']);
-            $target = ! empty($data['target_id']) ? Post::query()->lockForUpdate()->findOrFail($data['target_id']) : null;
-            if ($target && ! empty($data['expected_updated_at']) && (string) $target->updated_at !== (string) $data['expected_updated_at']) {
-                abort(409, 'Post đã thay đổi, hãy tải lại trước khi áp dụng candidate.');
-            }
-            if (! $target && blank($payload['title'] ?? null)) {
+            if (blank($payload['title'] ?? null)) {
                 throw ValidationException::withMessages(['title' => 'Post nháp mới cần tiêu đề hợp lệ từ candidate.']);
             }
-            // Create luôn bắt đầu draft; Apply vào Post hiện hữu không được
-            // dùng update để đổi lifecycle ngoài workflow Post.
-            if ($target) {
-                unset($payload['status']);
-            } else {
-                $payload['status'] = 'draft';
-            }
-            $post = $target ? $this->update->handle($target, $payload, $actor->id) : $this->create->handle($payload, $actor->id);
+            // Duyệt luôn tạo Post mới ở draft; publish đi qua workflow Post riêng.
+            $payload['status'] = 'draft';
+            $post = $this->create->handle($payload, $actor->id);
             $this->provenance->recordPost($actor->id, $post, $run->id, $data['fields'], $payload);
             $run->refresh();
             $this->recordDecision($run, $actor, 'approved', $data['reason'] ?? null);
@@ -389,7 +376,6 @@ final class AiContentReviewService
             throw ValidationException::withMessages(['fields' => 'Social Post chỉ áp dụng output của platform, không có title/SEO/taxonomy.']);
         }
 
-        $data['expected_version'] ??= hash('sha256', json_encode(data_get($candidate->result_json, 'draft', [])));
 
         return DB::transaction(function () use ($actor, $candidate, $data, $fields): array {
             $run = AiImport::query()->lockForUpdate()->findOrFail($candidate->id);
@@ -509,7 +495,7 @@ final class AiContentReviewService
         ];
         $run->forceFill(['source_meta_json' => array_replace((array) $run->source_meta_json, ['editorial' => $review])])->save();
         if ($status === 'approved' && $archive) {
-            app(AiArticleArchiveService::class)->archiveApproved($run->id, (int) $run->generation_no, legacy: true);
+            app(AiArticleArchiveService::class)->archiveApproved($run->id, (int) $run->generation_no);
         }
         activity('ai-content')->causedBy($actor)->withProperties([
             'candidate_id' => $run->id, ...$review, 'post_id' => $run->applied_target_id,

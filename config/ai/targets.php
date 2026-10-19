@@ -24,7 +24,7 @@ return [
         'content_instructions' => 'Write useful, natural prose appropriate to the source and article brief. Choose structure and length to fit the material; headings, introduction and conclusion are optional. Preserve facts, conditions, code, tables, links and quotes. Never generate taxonomy, slug, actor or publishing status.',
         'adapter' => PostAiAdapter::class,
         'operations' => ['create'],
-        'inputs' => ['url', 'file', 'html', 'text', 'prompt'],
+        'inputs' => ['url', 'file', 'html', 'text'],
         'outputs' => ['title', 'excerpt', 'content', 'seo', 'thumbnail'],
         'pipeline' => [
             'content' => ['output' => 'content', 'depends_on' => []],
@@ -43,7 +43,7 @@ return [
         'permission' => 'social_posts.create',
         'adapter' => null,
         'operations' => ['create'],
-        'inputs' => ['text', 'prompt'],
+        'inputs' => ['text'],
         'outputs' => ['social_content', 'social_gallery'],
         'platforms' => ['facebook'],
         'default_platform' => 'facebook',

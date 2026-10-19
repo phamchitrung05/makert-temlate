@@ -90,6 +90,8 @@ final class AiPublicErrorMessage
             'AI_SEO_INVALID_OUTPUT' => 'AI trả metadata SEO chưa đầy đủ hoặc tiêu đề bị cắt. Hãy tạo lại SEO hoặc chọn model khác.',
             'AI_SOURCE_REFERENCE' => 'AI sử dụng dẫn chứng không khớp nguồn. Hãy kiểm tra dữ kiện và tạo lại.',
             'AI_INPUT_BUDGET' => 'Nguồn và yêu cầu vượt giới hạn của model. Hãy rút ngắn nguồn hoặc chọn model có giới hạn lớn hơn.',
+            'AI_PARENT_ORIGIN_MISSING' => 'Bản gốc được tạo từ phiên bản cũ nên không thể tạo lại. Hãy tạo session mới.',
+            'AI_OUTPUTS_MISSING' => 'Tác vụ chưa chọn hạng mục AI cần tạo. Hãy tạo session mới và chọn hạng mục.',
             'AI_ARCHIVE_WRITE_FAILED' => 'Nội dung đã tạo nhưng chưa lưu được kết quả. Hãy thử lại để phục hồi kết quả.',
             'SOURCE_EMPTY' => 'Không đọc được nội dung bài từ nguồn. Hãy kiểm tra liên kết hoặc dán nội dung trực tiếp.',
             'SOURCE_TOO_LARGE' => 'Nội dung nguồn quá dài. Hãy chia nhỏ hoặc rút ngắn nguồn rồi thử lại.',

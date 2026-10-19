@@ -97,7 +97,7 @@ class AiArticleArchiveService
      * - AiImport đã load archive_version và thông tin target.
      *
      * OUTPUT:
-     * - bool: true khi supports() và archive_version bằng 1.
+     * - bool: true khi supports(); mọi run Post đều theo contract checkpoint v1.
      *
      * SIDE EFFECT:
      * - Chỉ đọc model; không I/O.
@@ -109,7 +109,7 @@ class AiArticleArchiveService
      */
     public function tracked(AiImport $run): bool
     {
-        return $this->supports($run) && (int) $run->archive_version === 1;
+        return $this->supports($run);
     }
 
     /**
@@ -230,22 +230,22 @@ class AiArticleArchiveService
      * =====================================================================
      *
      * INPUT:
-     * - UUID/generation đã Apply hoặc editorial approved; cờ legacy opt-in và lý do dọn tùy chọn.
+     * - UUID/generation đã editorial approved và lý do dọn tùy chọn.
      *
      * OUTPUT:
-     * - AiArticleArchive hợp lệ hoặc null khi run mất, stale, ngoài phạm vi, chưa duyệt hoặc legacy chưa opt-in.
+     * - AiArticleArchive hợp lệ hoặc null khi run mất, stale, ngoài phạm vi hoặc chưa duyệt.
      *
      * SIDE EFFECT:
-     * - Ghi snapshot bất biến, cập nhật lifecycle/liên kết Post và xóa checkpoint sau khi lưu thành công. Legacy chỉ giữ metadata/content null.
+     * - Ghi snapshot bất biến, cập nhật lifecycle/liên kết Post và xóa checkpoint sau khi lưu thành công.
      *
      * EXCEPTION/TRANSACTION:
      * - Khóa run/archive trong transaction; caller duyệt giữ transaction chung với Post/provenance/quyết định. Thiếu original, hash sai hoặc conflict ném AiArticleArchiveException để rollback.
      *
      * =====================================================================
      */
-    public function archiveApproved(string $runId, int $generationNo, bool $legacy = false, ?string $removalReason = null): ?AiArticleArchive
+    public function archiveApproved(string $runId, int $generationNo, ?string $removalReason = null): ?AiArticleArchive
     {
-        return $this->transaction(function () use ($runId, $generationNo, $legacy, $removalReason): ?AiArticleArchive {
+        return $this->transaction(function () use ($runId, $generationNo, $removalReason): ?AiArticleArchive {
             $run = AiImport::query()->lockForUpdate()->find($runId);
             if (! $run || (int) $run->generation_no !== $generationNo || ! $this->supports($run) || ! $this->isApproved($run)) {
                 return null;
@@ -263,17 +263,11 @@ class AiArticleArchiveService
                 }
             }
             if (! $archive) {
-                if ($this->tracked($run)) {
-                    if ($pending === []) {
-                        throw new AiArticleArchiveException('AI_ARCHIVE_ORIGINAL_MISSING');
-                    }
-                    $this->assertPending($run, $pending);
-                    $archive = $this->store($run, $pending['snapshot']);
-                } elseif ($legacy) {
-                    $archive = $this->store($run, $this->snapshots->make($run, legacy: true));
-                } else {
-                    return null;
+                if ($pending === []) {
+                    throw new AiArticleArchiveException('AI_ARCHIVE_ORIGINAL_MISSING');
                 }
+                $this->assertPending($run, $pending);
+                $archive = $this->store($run, $pending['snapshot']);
             }
             $this->syncLifecycle($archive, $run, $removalReason);
             if ($run->archive_pending_json !== null) {
@@ -290,7 +284,7 @@ class AiArticleArchiveService
      * =====================================================================
      *
      * INPUT:
-     * - AiImport, cờ legacy và removalReason tùy chọn từ cleanup/delete/command.
+     * - AiImport và removalReason tùy chọn từ cleanup/delete/command.
      *
      * OUTPUT:
      * - Archive của generation đã duyệt hoặc null ngoài phạm vi.
@@ -303,9 +297,9 @@ class AiArticleArchiveService
      *
      * =====================================================================
      */
-    public function preserve(AiImport $run, bool $legacy = false, ?string $removalReason = null): ?AiArticleArchive
+    public function preserve(AiImport $run, ?string $removalReason = null): ?AiArticleArchive
     {
-        return $this->archiveApproved($run->id, (int) $run->generation_no, $legacy, $removalReason);
+        return $this->archiveApproved($run->id, (int) $run->generation_no, $removalReason);
     }
 
     /**

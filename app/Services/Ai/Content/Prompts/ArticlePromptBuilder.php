@@ -125,7 +125,7 @@ final class ArticlePromptBuilder
 
     /**
      * =====================================================================
-     * Input: nhóm field và snapshot contract; không dùng taxonomy legacy.
+     * Input: nhóm field và snapshot contract; AI không sinh taxonomy.
      * Output: object final đúng loại/canonical field đã chọn.
      * =====================================================================
      */

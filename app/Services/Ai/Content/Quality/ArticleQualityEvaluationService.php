@@ -317,31 +317,29 @@ final class ArticleQualityEvaluationService
     }
 
     /**
-     * Kiểm run Post ready có nội dung AI mới cần evaluator hay không.
+     * Kiểm run Post ready có body mang content_origin=ai cần evaluator hay không.
      *
      * Input: AiImport bất kỳ.
-     * Output: true khi draft có content_html sinh bởi AI và run còn hạn.
+     * Output: true khi draft có body được đánh dấu nguồn AI và run còn hạn.
      * Side effect: chỉ đọc model/input/result.
      */
     public function supports(AiImport $run): bool
     {
-        $generated = (array) data_get($run->result_json, 'generation_meta.generated_fields', []);
-
         return $run->status === 'ready'
             && ! $run->expires_at?->isPast()
             && $run->operation !== 'image'
             && data_get($run->input_json, 'target_type', 'post') === 'post'
-            && in_array('content_html', $generated, true)
+            && $this->needsEvaluation($run)
             && is_array(data_get($run->source_meta_json, 'article_source.blocks'))
             && count((array) data_get($run->source_meta_json, 'article_source.blocks')) > 0
             && trim(strip_tags((string) data_get($run->result_json, 'draft.content_html', ''))) !== '';
     }
 
     /**
-     * Xác định candidate phải qua quality gate, kể cả legacy AI thiếu snapshot.
+     * Xác định candidate phải qua quality gate trước khi duyệt.
      *
      * Input: run Post ready.
-     * Output: true với bài có body cần duyệt; deterministic/source-only explicit được miễn.
+     * Output: true với bài có body mang nguồn AI; source/deterministic được miễn.
      * Side effect: chỉ đọc lifecycle/result/input.
      */
     public function requiresGate(AiImport $run): bool
@@ -352,13 +350,22 @@ final class ArticleQualityEvaluationService
         if (trim(strip_tags((string) data_get($run->result_json, 'draft.content_html', ''))) === '') {
             return false;
         }
-        $mode = data_get($run->result_json, 'generation_meta.mode');
-        $generated = (array) data_get($run->result_json, 'generation_meta.generated_fields', []);
-        if ($mode === 'ai' && ! in_array('content_html', $generated, true)) {
-            return false;
-        }
 
-        return ! ($mode === 'deterministic' || ($mode === null && $run->provider === 'deterministic'));
+        return $this->needsEvaluation($run);
+    }
+
+    /**
+     * Quyết định body có cần chấm hay không; supports() và requiresGate() dùng chung để không lệch nhau.
+     *
+     * Input: run Post có generation_meta.content_origin do pipeline ghi.
+     * Output: true khi content_origin=ai; thiếu hoặc sai giá trị thì fail-closed, vẫn bắt chấm.
+     * Side effect: chỉ đọc result_json.
+     */
+    private function needsEvaluation(AiImport $run): bool
+    {
+        $contentOrigin = data_get($run->result_json, 'generation_meta.content_origin');
+
+        return ! in_array($contentOrigin, ['source', 'deterministic'], true);
     }
 
     /**

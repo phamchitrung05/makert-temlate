@@ -54,7 +54,7 @@ final class AiGenerationPolicyTest extends TestCase
         $actor = User::factory()->create(['status' => 'active']);
         $actor->givePermissionTo('posts.manage');
         $this->withToken($actor->createToken('policy', ['admin'])->plainTextToken)
-            ->postJson('/api/admin/posts/ai/import', ['text' => 'Nguồn đủ rõ để tạo một bài viết.'])
+            ->postJson('/api/admin/ai-agent/sessions', ['text' => 'Nguồn đủ rõ để tạo một bài viết.', 'requested_outputs' => ['title']])
             ->assertUnprocessable()->assertJsonValidationErrors('model_id');
         $this->assertDatabaseCount('ai_imports', 0);
         Queue::assertNothingPushed();
@@ -96,7 +96,7 @@ final class AiGenerationPolicyTest extends TestCase
         $actor = User::factory()->create(['status' => 'active']);
         $actor->givePermissionTo('posts.manage');
         $this->withToken($actor->createToken('policy', ['admin'])->plainTextToken)
-            ->post('/api/admin/posts/ai/import', ['html_file' => UploadedFile::fake()->createWithContent('source.mhtml', '<html><body><p>Valid source text.</p></body></html>'), 'provider' => 'deterministic'], ['Accept' => 'application/json'])
+            ->post('/api/admin/ai-agent/sessions', ['html_file' => UploadedFile::fake()->createWithContent('source.mhtml', '<html><body><p>Valid source text.</p></body></html>'), 'provider' => 'deterministic', 'requested_outputs' => ['title']], ['Accept' => 'application/json'])
             ->assertUnprocessable()->assertJsonValidationErrors('html_file');
         Queue::assertNothingPushed();
     }
