@@ -291,6 +291,9 @@ class ArticleImportService
             $this->persistResponseMetadata($import, array_replace($diagnostics, $providerMetadata, $exception->diagnostics, ['error_code' => $exception->errorCode]));
             throw $exception;
         }
+        if ($isSocialTarget && in_array('social_gallery', $requestedFields, true) && isset($input['image_count'])) {
+            $draft['slot_count'] = (int) $input['image_count'];
+        }
         $draft['content_html'] = $draft['content_html'] ?? $draft['content'];
         $draft['content'] = $draft['content_html'];
         $this->validateMediaReferences((string) $draft['content_html'], $import);

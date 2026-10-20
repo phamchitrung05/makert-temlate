@@ -40,8 +40,8 @@ final class MarketingSocialPostReferenceAssetTest extends TestCase
         parent::tearDown();
     }
 
-    /** Product giữ đúng thứ tự gallery và Social context chỉ nhận các ID đã attach. */
-    public function test_product_reference_images_are_serialized_and_ground_social_context(): void
+    /** Product keeps its gallery, but the independent Social context never inherits Product assets. */
+    public function test_product_reference_images_are_not_inherited_by_social_context(): void
     {
         $actor = User::factory()->create(['status' => 'active']);
         $actor->givePermissionTo('media.attach');
@@ -82,7 +82,9 @@ final class MarketingSocialPostReferenceAssetTest extends TestCase
 
         $context = app(SocialPostContextBuilder::class)->build($post);
 
-        $this->assertSame([$assets[2]->id, $assets[0]->id, $assets[1]->id], $context['reference_asset_ids']);
+        $this->assertArrayNotHasKey('reference_asset_ids', $context);
+        $this->assertArrayNotHasKey('product', $context);
+        $this->assertArrayNotHasKey('facts', $context);
         $this->assertNotEmpty($context['context_hash']);
     }
 

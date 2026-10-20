@@ -53,7 +53,7 @@ final class SocialPostUpdateRequest extends FormRequest
             'facebook_content.hashtags' => ['nullable', 'array', 'max:12'],
             'facebook_content.hashtags.*' => ['string', 'max:80'],
             'facebook_content.link_url' => ['nullable', 'url', 'max:1000'],
-            'facebook_image_ids' => ['sometimes', 'array', 'max:4'],
+            'facebook_image_ids' => ['sometimes', 'array', 'max:10'],
             'facebook_image_ids.*' => ['integer', 'distinct', 'exists:media_assets,id'],
             'target_account_ids' => ['sometimes', 'array', 'max:20'],
             'target_account_ids.*' => ['integer', 'distinct', Rule::exists('social_accounts', 'id')->whereNull('deleted_at')],

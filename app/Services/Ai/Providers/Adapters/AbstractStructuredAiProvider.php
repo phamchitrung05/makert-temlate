@@ -228,6 +228,7 @@ abstract class AbstractStructuredAiProvider implements AiProviderContract, AiRes
                 'prompt_version' => $request->options['prompt_version'] ?? '1.0',
                 'schema_version' => $request->options['schema_version'] ?? $request->task.'.v1',
                 'json_schema' => $request->schema,
+                'images' => $request->options['images'] ?? [],
                 'title' => '', 'content_html' => '', 'language' => '', 'rewrite_style' => '', 'user_instructions' => '',
             ]);
             $output = $this->normalizePayload($payload);

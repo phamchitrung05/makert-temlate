@@ -34,7 +34,7 @@ const isMinimized = shallowRef(false)
 const errorTask = shallowRef(null)
 const { tasks, filteredTasks, filters, currentFilter, activeCount, loading, cancellingId, error } = queue
 
-const canUseQueue = computed(() => auth.isAuthenticated && auth.permissions.some(permission => ['ai_settings.manage', 'media.upload', 'posts.manage', 'resources.create', 'resource_versions.manage'].includes(permission)))
+const canUseQueue = computed(() => auth.isAuthenticated && auth.permissions.some(permission => ['ai_settings.manage', 'media.upload', 'posts.manage', 'resources.create', 'resource_versions.manage', 'social_posts.create', 'social_posts.view'].includes(permission)))
 const terminalTaskCount = computed(() => tasks.value.filter(task => ['ready', 'failed', 'cancelled', 'expired'].includes(task.status)).length)
 const queuedTaskCount = computed(() => tasks.value.filter(task => task.status === 'queued').length)
 
@@ -61,6 +61,12 @@ const errorDialogVisible = computed({
  */
 function openTask(task) {
   if (task.status !== 'ready') return
+
+  if (task.social_post_id) {
+    router.push({ name: 'marketing-social-post-list', query: { post: task.social_post_id } })
+
+    return
+  }
 
   if (task.task_type === 'writing_profile_analysis') {
     router.push({ path: '/ai/prompt/edit', query: { analysis: task.taskable_id || task.id, profile: task.draft_profile_id || undefined } })

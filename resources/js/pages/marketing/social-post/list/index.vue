@@ -27,6 +27,7 @@
 <script setup>
 /* eslint-disable camelcase -- Filter/payload theo contract Laravel Social Post. */
 import { ref, computed, shallowRef, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useSocialPosts } from '@/composables/useSocialPosts'
 import SocialPostCreateDialog from '@/views/marketing/social-post/components/SocialPostCreateDialog.vue'
 import SocialPostDetailDialog from '@/views/marketing/social-post/components/SocialPostDetailDialog.vue'
@@ -48,6 +49,14 @@ itemsPerPage.value = 8
 const createOpen = shallowRef(false)
 const detailOpen = shallowRef(false)
 const selectedPostId = shallowRef(null)
+const route = useRoute()
+
+watch(() => route.query.post, value => {
+  if (!/^\d+$/.test(String(value ?? ''))) return
+  selectedPostId.value = Number(value)
+  detailOpen.value = true
+}, { immediate: true })
+
 const actionLoading = shallowRef(false)
 const activePostId = shallowRef(null)
 const snackbar = ref({ visible: false, message: '', color: 'success' })

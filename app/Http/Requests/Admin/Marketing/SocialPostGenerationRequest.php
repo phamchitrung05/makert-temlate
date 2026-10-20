@@ -34,6 +34,8 @@ final class SocialPostGenerationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'image_count' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'image_profile_id' => ['nullable', 'integer', 'min:1'],
             'writing_profile_id' => ['nullable', 'integer', 'min:1'],
             'text_provider' => ['nullable', 'string', 'max:80'],
             'text_model' => ['nullable', 'string', 'max:190'],

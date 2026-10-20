@@ -13,7 +13,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import SocialPostList from '@/pages/marketing/social-post/list/index.vue'
 
-const { api } = vi.hoisted(() => ({ api: vi.fn() }))
+const { api, route } = vi.hoisted(() => ({ api: vi.fn(), route: { query: {} } }))
+
+vi.mock('vue-router', () => ({ useRoute: () => route }))
 
 vi.mock('@/utils/api', () => ({ $api: api }))
 vi.mock('@/views/marketing/social-post/components/SocialPostDetailDialog.vue', () => ({
@@ -72,6 +74,7 @@ function page() {
 
 describe('Social Post list with the updated layout', () => {
   beforeEach(() => {
+    route.query = {}
     vi.stubGlobal('definePage', vi.fn())
     api.mockReset()
     api.mockImplementation(async (url, options = {}) => {
@@ -85,6 +88,19 @@ describe('Social Post list with the updated layout', () => {
   })
 
   afterEach(() => wrapper?.unmount())
+
+  it('opens the newly queued Social draft from the AI Content link', async () => {
+    route.query = { post: '42' }
+
+    const view = page()
+
+    await flushPromises()
+
+    const dialog = view.findComponent({ name: 'SocialPostDetailDialog' })
+
+    expect(dialog.props('postId')).toBe(42)
+    expect(dialog.props('modelValue')).toBe(true)
+  })
 
   it('maps Facebook content/gallery and KPI values into the existing cards, keeping static trends', async () => {
     const view = page()

@@ -88,13 +88,21 @@ final class AiThumbnailService
             return;
         }
         $draft = (array) data_get($parent->result_json, 'draft', []);
+        $prompt = trim((string) data_get($parent->input_json, 'thumbnail_prompt')) ?: (trim((string) ($draft['thumbnail_prompt'] ?? '')) ?: (string) ($draft['title'] ?? 'Tạo ảnh đại diện'));
+        $style = data_get($parent->input_json, 'image_profile_snapshot');
+        if ($style) {
+            $prompt .= "\nVisual style: ".str_replace('{subject}', $prompt, $style['prompt']);
+            if (! empty($style['negative_prompt'])) {
+                $prompt .= "\nAvoid: ".$style['negative_prompt'];
+            }
+        }
         $child = AiImport::query()->create([
             'id' => (string) Str::uuid(), 'created_by' => $parent->created_by, 'source_url' => '',
             'source_hash' => hash('sha256', 'thumbnail|'.$parent->id), 'status' => 'queued', 'current_step' => 'queued', 'progress' => 0,
             'session_id' => $parent->session_id ?: $parent->id, 'parent_id' => $parent->id, 'operation' => 'image',
             'provider' => $snapshot['provider'] ?? null, 'prompt_version' => 'image-v1', 'expires_at' => $parent->expires_at,
             'input_json' => ['purpose' => 'thumbnail', 'target_type' => data_get($parent->input_json, 'target_type', 'post'),
-                'prompt' => trim((string) data_get($parent->input_json, 'thumbnail_prompt')) ?: (trim((string) ($draft['thumbnail_prompt'] ?? '')) ?: (string) ($draft['title'] ?? 'Tạo ảnh đại diện')),
+                'prompt' => $prompt,
                 'title' => (string) ($draft['title'] ?? 'AI thumbnail'), 'alt_text' => (string) data_get($draft, 'thumbnail.alt_text', $draft['title'] ?? ''),
                 'ai_connection' => $snapshot],
         ]);

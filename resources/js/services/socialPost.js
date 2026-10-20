@@ -81,6 +81,8 @@ export const socialPostService = {
   /** Input: id/model options. Output: queued Facebook image slot jobs. */
   async generateFacebookImages(id, payload = {}) { return unwrap(await $api(`/admin/social-posts/${id}/variants/facebook/generate-images`, { method: 'POST', body: payload })) },
 
+  async regenerateImageSlot(id, slot, payload = {}) { return unwrap(await $api(`/admin/social-posts/${id}/variants/facebook/images/${slot}/regenerate`, { method: 'POST', body: payload })) },
+
   /** Input: id/asset IDs. Output: normalized post with gallery. */
   async replaceFacebookImages(id, assetIds) { return normalize(unwrap(await $api(`/admin/social-posts/${id}/variants/facebook/images/replace`, { method: 'POST', body: { asset_ids: assetIds } }))) },
 

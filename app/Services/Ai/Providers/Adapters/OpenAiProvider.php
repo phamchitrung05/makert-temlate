@@ -98,12 +98,19 @@ final class OpenAiProvider extends AbstractStructuredAiProvider
      */
     protected function requestPayload(array $input): mixed
     {
+        $content = $this->canonicalInput($input);
+        if (! empty($input['images'])) {
+            $content = [['type' => 'text', 'text' => $content]];
+            foreach ($input['images'] as $image) {
+                $content[] = ['type' => 'image_url', 'image_url' => ['url' => 'data:'.$image['mime_type'].';base64,'.$image['data']]];
+            }
+        }
         $payload = [
             'model' => $input['model'],
             'temperature' => (float) ($this->runSettings()['temperature'] ?? config('ai.providers.connections.openai.temperature', 0.2)),
             'messages' => [
                 ['role' => 'system', 'content' => $input['instructions']],
-                ['role' => 'user', 'content' => $this->canonicalInput($input)],
+                ['role' => 'user', 'content' => $content],
             ],
         ];
         if (($this->connection()?->snapshot['driver'] ?? 'openai') === 'openai') {

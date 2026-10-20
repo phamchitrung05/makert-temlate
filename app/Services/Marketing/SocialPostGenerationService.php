@@ -3,13 +3,15 @@
 namespace App\Services\Marketing;
 
 use App\Enums\AiCapability;
+use App\Enums\SocialPlatform;
 use App\Enums\SocialPostGenerationStatus;
 use App\Jobs\ProcessSocialPostCaptionJob;
+use App\Jobs\ProcessSocialPostImageJob;
 use App\Jobs\ProcessSocialPostImagePromptJob;
 use App\Models\AiImport;
 use App\Models\SocialPost;
 use App\Models\SocialPostVariant;
-use App\Enums\SocialPlatform;
+use App\Services\Ai\Images\ImageProfileService;
 use App\Services\Ai\Providers\Catalog\ModelResolver;
 use App\Services\Ai\Registries\PromptRegistry;
 use App\Services\Ai\Registries\SchemaRegistry;
@@ -40,6 +42,37 @@ use Illuminate\Validation\ValidationException;
  */
 final class SocialPostGenerationService
 {
+    /** Retry/regenerate one terminal slot in the current generation, retaining the other images. */
+    public function regenerateSlot(SocialPost $post, int $slot, int $actorId, array $options = []): array
+    {
+        return DB::transaction(function () use ($post, $slot, $actorId, $options): array {
+            $locked = SocialPost::query()->lockForUpdate()->findOrFail($post->id);
+            $run = AiImport::query()->where('input_social_post_id', $locked->id)
+                ->where('input_generation_no', $locked->generation_no)->where('operation', 'social_image')
+                ->where('input_json->slot_no', $slot)->lockForUpdate()->firstOrFail();
+            abort_unless(in_array($run->status, AiImport::TERMINAL_STATUSES, true) || $run->expires_at?->isPast(), 409, 'Ảnh này đang được tạo.');
+            $input = $run->input_json;
+            if (filled($options['image_model_id'] ?? null) || filled($options['image_provider'] ?? null) || filled($options['image_model'] ?? null)) {
+                $input['ai_connection'] = $this->resolveImageConnection($options);
+            }
+            $run->forceFill([
+                'status' => 'queued', 'current_step' => 'queued', 'progress' => 0,
+                'input_json' => $input, 'result_json' => null, 'error_code' => null, 'error_message' => null,
+                'completed_at' => null, 'started_at' => null,
+                'generation_no' => (int) $run->generation_no + 1,
+                'expires_at' => now()->addDays((int) config('ai.import.retention_days', 2)),
+            ])->save();
+            $locked->forceFill(['generation_status' => 'generating', 'review_status' => 'draft',
+                'reviewed_by' => null, 'reviewed_at' => null, 'review_reason' => null, 'updated_by' => $actorId])->save();
+            $locked->variants()->where('platform', 'facebook')->update(['generation_status' => 'generating', 'review_status' => 'draft',
+                'reviewed_by' => null, 'reviewed_at' => null, 'review_reason' => null]);
+            $this->tasks->registerImport($run->fresh());
+            DB::afterCommit(fn () => ProcessSocialPostImageJob::dispatch((string) $run->id, (int) $run->generation_no));
+
+            return ['job_id' => (string) $run->id, 'generation_no' => (int) $run->generation_no, 'slot_no' => $slot];
+        });
+    }
+
     /**
      * Nhận các registry/service phục vụ snapshot và queue.
      *
@@ -67,11 +100,33 @@ final class SocialPostGenerationService
      */
     public function queue(SocialPost $post, int $actorId, array $options = []): array
     {
+        // Regeneration keeps the selected models unless the caller explicitly replaces them.
+        foreach (['text' => ['social_caption', 'social_image_prompt'], 'image' => ['social_image_prompt']] as $kind => $operations) {
+            if (filled($options[$kind.'_model_id'] ?? null) || filled($options[$kind.'_provider'] ?? null) || filled($options[$kind.'_model'] ?? null)) {
+                continue;
+            }
+            $previous = AiImport::query()->where('input_social_post_id', $post->id)->whereIn('operation', $operations)
+                ->latest('created_at')->latest('id')->first();
+            $snapshot = (array) data_get($previous?->input_json, $kind === 'text' ? 'ai_connection' : 'image_connection', []);
+            foreach (['provider', 'model', 'model_id'] as $key) {
+                if (filled($snapshot[$key] ?? null)) {
+                    $options[$kind.'_'.$key] = $snapshot[$key];
+                }
+            }
+        }
         $component = (string) ($options['component'] ?? 'all');
         if (! in_array($component, ['all', 'caption', 'image'], true)) {
             throw ValidationException::withMessages(['component' => 'Component AI Social Post không hợp lệ.']);
         }
-        $context = $this->contexts->build($post, isset($options['writing_profile_id']) ? (int) $options['writing_profile_id'] : null);
+        $context = $this->contexts->build($post, isset($options['writing_profile_id']) ? (int) $options['writing_profile_id'] : null, $options);
+        $context['image_count'] = (int) ($options['image_count'] ?? $post->variants()->where('platform', 'facebook')->value('image_count') ?? config('ai.content.social_images.default', 3));
+        if (array_key_exists('image_profile_id', $options)) {
+            $context['image_profile'] = app(ImageProfileService::class)->snapshot($options['image_profile_id'], $actorId);
+        }
+        if ($context['image_count'] < 1 || $context['image_count'] > 10) {
+            throw ValidationException::withMessages(['image_count' => 'Số lượng ảnh phải từ 1 đến 10.']);
+        }
+        $context['context_hash'] = hash('sha256', json_encode($context, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
         $textConnection = $this->resolveConnection(AiCapability::Text, [
             'provider' => $options['text_provider'] ?? null,
             'model' => $options['text_model'] ?? null,
@@ -96,6 +151,7 @@ final class SocialPostGenerationService
             $captionSchema,
             $imageSchema,
             $component,
+            $options,
         ): array {
             $locked = SocialPost::query()->lockForUpdate()->findOrFail($post->getKey());
             $variant = SocialPostVariant::query()->firstOrCreate(
@@ -121,6 +177,7 @@ final class SocialPostGenerationService
                 'updated_by' => $actorId,
             ])->save();
             $variant->forceFill([
+                'image_count' => $component === 'caption' ? $variant->image_count : $context['image_count'],
                 'generation_status' => SocialPostGenerationStatus::Generating,
                 'content_status' => in_array($component, ['all', 'caption'], true)
                     ? SocialPostGenerationStatus::Generating
@@ -138,6 +195,7 @@ final class SocialPostGenerationService
                 'context' => $context,
                 'writing_profile_snapshot' => $context['writing_profile'] ?? null,
                 'requested_at' => now()->toIso8601String(),
+                'manual_request_hash' => $options['manual_request_hash'] ?? null,
             ];
             $caption = null;
             $image = null;
@@ -205,6 +263,7 @@ final class SocialPostGenerationService
         $input['target_type'] = 'social_post';
         $input['prompt_key'] = $prompt['key'];
         $input['prompt_version'] = $prompt['version'];
+        $input['prompt_instructions'] = $prompt['instructions'];
         $input['schema_version'] = $prompt['schema'];
         $input['schema'] = $schema['json_schema'] ?? [];
         $input['ai_connection'] = $connection;

@@ -2,6 +2,7 @@
 
 namespace App\Services\Marketing;
 
+use App\Enums\MediaAssetField;
 use App\Enums\SocialPostGenerationStatus;
 use App\Models\AiImport;
 use App\Models\SocialPost;
@@ -61,17 +62,22 @@ final class SocialPostGenerationStateService
             $imagePrompt = $runs->firstWhere('operation', 'social_image_prompt');
             $captionStatus = $caption?->status
                 ?? ($current->caption ? 'ready' : null);
-            $readyImages = $variant?->mediaAssetUsagesForField(\App\Enums\MediaAssetField::SocialPostFacebookImages)->count() ?? 0;
+            $readyImages = $variant?->mediaAssetUsagesForField(MediaAssetField::SocialPostFacebookImages)->count() ?? 0;
+            $requiredImages = (int) ($variant?->image_count ?? 3);
+            $imageRuns = $runs->where('operation', 'social_image');
+            $failedImage = $imageRuns->first(fn ($run) => in_array($run->status, ['failed', 'cancelled', 'expired'], true));
+            $generationComplete = $imageRuns->isEmpty() ? ! $imagePrompt
+                : $imageRuns->count() === $requiredImages && $imageRuns->every(fn ($run) => $run->status === 'ready');
             $imageStatus = $variant
-                ? ($readyImages >= 3
+                ? ($readyImages >= $requiredImages && $generationComplete
                     ? 'ready'
-                    : ($image?->status && in_array($image?->status, ['failed', 'cancelled', 'expired'], true)
-                        ? $image->status
+                    : ($failedImage || in_array($imagePrompt?->status, ['failed', 'cancelled', 'expired'], true)
+                        ? ($failedImage?->status ?? $imagePrompt->status)
                         : ($readyImages > 0 || $imagePrompt?->status ? 'processing' : null)))
                 : ($image?->status
                     ?? ($imagePrompt
                         ? (in_array($imagePrompt->status, ['failed', 'cancelled', 'expired'], true) ? $imagePrompt->status : 'processing')
-                        : ($current->mediaAssetUsagesForField(\App\Enums\MediaAssetField::SocialPostImage)->exists() ? 'ready' : null)));
+                        : ($current->mediaAssetUsagesForField(MediaAssetField::SocialPostImage)->exists() ? 'ready' : null)));
             $status = $this->statusFor($captionStatus, $imageStatus);
             $current->forceFill(['generation_status' => $status])->save();
 
@@ -120,11 +126,11 @@ final class SocialPostGenerationStateService
         if ($variant) {
             return $post->generation_status === SocialPostGenerationStatus::Ready
                 && filled(data_get($variant->content_json, 'body'))
-                && $variant->mediaAssetUsagesForField(\App\Enums\MediaAssetField::SocialPostFacebookImages)->count() >= 3;
+                && $variant->mediaAssetUsagesForField(MediaAssetField::SocialPostFacebookImages)->count() >= (int) ($variant->image_count ?? 3);
         }
 
         return $post->generation_status === SocialPostGenerationStatus::Ready
             && filled($post->caption)
-            && $post->mediaAssetUsagesForField(\App\Enums\MediaAssetField::SocialPostImage)->exists();
+            && $post->mediaAssetUsagesForField(MediaAssetField::SocialPostImage)->exists();
     }
 }

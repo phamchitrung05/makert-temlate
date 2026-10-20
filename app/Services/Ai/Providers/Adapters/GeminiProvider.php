@@ -98,8 +98,12 @@ final class GeminiProvider extends AbstractStructuredAiProvider
      */
     protected function requestPayload(array $input): mixed
     {
+        $parts = [['text' => $input['instructions']."\n".$this->canonicalInput($input)]];
+        foreach ($input['images'] ?? [] as $image) {
+            $parts[] = ['inlineData' => ['mimeType' => $image['mime_type'], 'data' => $image['data']]];
+        }
         $payload = [
-            'contents' => [['role' => 'user', 'parts' => [['text' => $input['instructions']."\n".$this->canonicalInput($input)]]]],
+            'contents' => [['role' => 'user', 'parts' => $parts]],
             'generationConfig' => [
                 'temperature' => (float) ($this->runSettings()['temperature'] ?? config('ai.providers.connections.gemini.temperature', 0.2)),
             ],

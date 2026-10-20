@@ -7,8 +7,10 @@ use App\Jobs\ProcessSocialPostImageJob;
 use App\Models\AiImport;
 use App\Models\SocialPost;
 use App\Models\SocialPostVariant;
+use App\Services\Ai\Content\AiTaskSchemaValidator;
 use App\Services\Ai\Data\AiTaskRequest;
 use App\Services\Ai\Registries\PromptRegistry;
+use App\Services\Ai\Registries\ProviderRegistry;
 use App\Services\Ai\Registries\SchemaRegistry;
 use App\Services\Ai\Runs\AiTaskRunService;
 use Illuminate\Support\Facades\DB;
@@ -46,7 +48,7 @@ final class SocialPostAiWorkerService
      * Output: worker service; không gọi provider lúc khởi tạo.
      */
     public function __construct(
-        private readonly \App\Services\Ai\Registries\ProviderRegistry $providers,
+        private readonly ProviderRegistry $providers,
         private readonly PromptRegistry $prompts,
         private readonly SchemaRegistry $schemas,
         private readonly AiTaskRunService $tasks,
@@ -64,6 +66,9 @@ final class SocialPostAiWorkerService
      */
     public function processCaption(AiImport $import): void
     {
+        if (in_array($import->refresh()->status, AiImport::TERMINAL_STATUSES, true)) {
+            return;
+        }
         $input = (array) $import->input_json;
         $post = SocialPost::query()->find((int) ($input['social_post_id'] ?? 0));
         if (! $post || ! $this->isCurrent($post, (int) ($input['generation_no'] ?? 0))) {
@@ -78,7 +83,9 @@ final class SocialPostAiWorkerService
             $caption = FacebookContent::caption($content);
             $updated = DB::transaction(function () use ($import, $post, $input, $content, $caption): bool {
                 $locked = SocialPost::query()->lockForUpdate()->findOrFail($post->getKey());
-                if (! $this->isCurrent($locked, (int) ($input['generation_no'] ?? 0))) {
+                $currentRun = AiImport::query()->lockForUpdate()->findOrFail($import->id);
+                if (in_array($currentRun->status, AiImport::TERMINAL_STATUSES, true)
+                    || ! $this->isCurrent($locked, (int) ($input['generation_no'] ?? 0))) {
                     return false;
                 }
                 $variant = SocialPostVariant::query()->lockForUpdate()->firstOrCreate(
@@ -149,6 +156,9 @@ final class SocialPostAiWorkerService
      */
     public function processImagePrompt(AiImport $import): void
     {
+        if (in_array($import->refresh()->status, AiImport::TERMINAL_STATUSES, true)) {
+            return;
+        }
         $input = (array) $import->input_json;
         $post = SocialPost::query()->find((int) ($input['social_post_id'] ?? 0));
         if (! $post || ! $this->isCurrent($post, (int) ($input['generation_no'] ?? 0))) {
@@ -159,7 +169,14 @@ final class SocialPostAiWorkerService
 
         try {
             $output = $this->execute($import, 'image_prompt');
-            $imageImports = DB::transaction(function () use ($import, $input, $output): array {
+            $output['slot_count'] = (int) data_get($input, 'context.image_count', $output['slot_count'] ?? 3);
+            $imageImports = DB::transaction(function () use ($import, $input, $output, $post): ?array {
+                $locked = SocialPost::query()->lockForUpdate()->findOrFail($post->id);
+                $currentRun = AiImport::query()->lockForUpdate()->findOrFail($import->id);
+                if (in_array($currentRun->status, AiImport::TERMINAL_STATUSES, true)
+                    || ! $this->isCurrent($locked, (int) $input['generation_no'])) {
+                    return null;
+                }
                 $this->complete($import, $output, [
                     'provider' => $import->provider,
                     'model' => data_get($input, 'ai_connection.model', 'deterministic'),
@@ -175,7 +192,7 @@ final class SocialPostAiWorkerService
                     'prompt' => $output['image_prompt'], 'connection' => $input['image_connection'] ?? null,
                 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
 
-                $slotCount = max(3, min(4, (int) ($output['slot_count'] ?? 3)));
+                $slotCount = max(1, min(10, (int) ($output['slot_count'] ?? 3)));
                 $imageImports = [];
                 for ($slotNo = 0; $slotNo < $slotCount; $slotNo++) {
                     $imageImport = AiImport::query()->create([
@@ -216,6 +233,11 @@ final class SocialPostAiWorkerService
 
                 return $imageImports;
             });
+            if ($imageImports === null) {
+                $this->fail($import, 'AI_STALE_GENERATION', 'Lượt tạo đã cũ hoặc đã bị hủy.', false);
+
+                return;
+            }
             $this->tasks->syncFromImport($import->fresh());
 
             $this->versions->create($post->fresh(), (array) $input['context'], [
@@ -256,16 +278,18 @@ final class SocialPostAiWorkerService
         $context = (array) ($input['context'] ?? []);
         $schema = (array) ($input['schema'] ?? []);
         if (($input['ai_connection']['driver'] ?? null) === 'deterministic' || $import->provider === 'deterministic') {
-            return $component === 'caption'
+            $output = $component === 'caption'
                 ? $this->deterministicCaption($context)
                 : $this->deterministicImagePrompt($context);
+
+            return app(AiTaskSchemaValidator::class)->validate($output, $schema);
         }
 
         $prompt = $this->prompts->get((string) $input['prompt_key'], 'social_post', $input['operation_name'] ?? 'generate');
         $connection = $this->providers->resolveForRun((array) ($input['ai_connection'] ?? []));
         $request = new AiTaskRequest(
             task: (string) $input['prompt_key'],
-            systemInstructions: (string) $prompt['instructions'],
+            systemInstructions: (string) ($input['prompt_instructions'] ?? $prompt['instructions']),
             input: $context,
             schema: $schema,
             options: [
@@ -276,7 +300,7 @@ final class SocialPostAiWorkerService
             ],
         );
 
-        return $connection->execute($request)->output;
+        return app(AiTaskSchemaValidator::class)->validate($connection->execute($request)->output, $schema);
     }
 
     /**
@@ -309,6 +333,10 @@ final class SocialPostAiWorkerService
      */
     public function fail(AiImport $import, string $code, string $message, bool $failed = true): void
     {
+        $attempt = (int) $import->generation_no;
+        if (in_array($import->refresh()->status, AiImport::TERMINAL_STATUSES, true) || (int) $import->generation_no !== $attempt) {
+            return;
+        }
         $input = (array) $import->input_json;
         $import->forceFill([
             'status' => $failed ? 'failed' : 'cancelled',
@@ -332,7 +360,7 @@ final class SocialPostAiWorkerService
      */
     private function deterministicCaption(array $context): array
     {
-        $message = trim((string) data_get($context, 'campaign.message', ''));
+        $message = trim((string) ($context['source_text'] ?? '')) ?: trim((string) data_get($context, 'campaign.message', ''));
         $caption = $message !== '' ? $message : 'Chia sẻ nội dung hữu ích và phù hợp với cộng đồng của bạn.';
 
         return [
@@ -354,7 +382,7 @@ final class SocialPostAiWorkerService
      */
     private function deterministicImagePrompt(array $context): array
     {
-        $message = (string) data_get($context, 'campaign.message', '');
+        $message = trim((string) ($context['source_text'] ?? '')) ?: (string) data_get($context, 'campaign.message', '');
 
         return [
             'image_prompt' => 'Ảnh minh họa Facebook có bố cục rõ ràng, ánh sáng tự nhiên mềm, góc chụp dọc 4:5, nền sạch và phù hợp với chủ đề nội dung. '.$message,

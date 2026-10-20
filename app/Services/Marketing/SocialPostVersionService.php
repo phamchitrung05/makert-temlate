@@ -2,6 +2,7 @@
 
 namespace App\Services\Marketing;
 
+use App\Enums\MediaAssetField;
 use App\Models\SocialPost;
 use App\Models\SocialPostVariant;
 use App\Models\SocialPostVersion;
@@ -69,7 +70,7 @@ final class SocialPostVersionService
                 'provider' => $provider,
             ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
 
-            return SocialPostVersion::query()->create([
+            $version = SocialPostVersion::query()->create([
                 'social_post_id' => $locked->getKey(),
                 'social_post_variant_id' => $variant?->getKey(),
                 'version_no' => $versionNo,
@@ -87,6 +88,8 @@ final class SocialPostVersionService
             if ($variant) {
                 $variant->forceFill(['current_version_no' => $versionNo])->save();
             }
+
+            return $version;
         });
     }
 
@@ -99,8 +102,8 @@ final class SocialPostVersionService
     public function assetIds(SocialPost $post, ?SocialPostVariant $variant = null): array
     {
         $usages = $variant
-            ? $variant->mediaAssetUsagesForField(\App\Enums\MediaAssetField::SocialPostFacebookImages)
-            : $post->mediaAssetUsagesForField(\App\Enums\MediaAssetField::SocialPostImage);
+            ? $variant->mediaAssetUsagesForField(MediaAssetField::SocialPostFacebookImages)
+            : $post->mediaAssetUsagesForField(MediaAssetField::SocialPostImage);
 
         return $usages
             ->orderBy('sort_order')
@@ -123,6 +126,12 @@ final class SocialPostVersionService
             'language' => $context['language'] ?? 'vi',
             'campaign' => $context['campaign'] ?? null,
             'visual_constraints' => $context['visual_constraints'] ?? [],
+            'source_text' => $context['source_text'] ?? '',
+            'instructions' => $context['instructions'] ?? '',
+            'writing_brief' => $context['writing_brief'] ?? [],
+            'length' => $context['length'] ?? null,
+            'image_count' => $context['image_count'] ?? null,
+            'image_profile' => $context['image_profile'] ?? null,
         ];
     }
 

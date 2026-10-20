@@ -18,6 +18,7 @@ use App\Services\Ai\Content\Archives\AiArticleArchiveService;
 use App\Services\Ai\Content\ArticleSourceFetcher;
 use App\Services\Ai\Content\Quality\ArticleQualityEvaluationService;
 use App\Services\Ai\Images\AiThumbnailService;
+use App\Services\Ai\Images\ImageProfileService;
 use App\Services\Ai\Providers\Catalog\ModelResolver;
 use App\Services\Ai\Registries\PromptRegistry;
 use App\Services\Ai\Registries\ProviderRegistry;
@@ -130,6 +131,10 @@ class AiImportController extends Controller
                     'pipeline' => $resolved['pipeline'] ?? [],
                     'manual_taxonomy' => (bool) ($resolved['manual_taxonomy'] ?? false),
                     'output_options' => $targets->outputOptions($target['key'], $platform),
+                    'length_options' => collect(config('ai.content.length_options', []))
+                        ->map(fn (array $option, string $key): array => ['value' => $key, 'title' => $option['label']] + $option)->values()->all(),
+                    'default_length' => config('ai.content.default_length'),
+                    'image_count' => config('ai.content.social_images'),
                 ];
             })->values()->all();
         abort_if($items === [], 403);
@@ -246,6 +251,20 @@ class AiImportController extends Controller
         $userId = (int) $request->user()->getKey();
         $data = $request->validated();
         $targetType = (string) ($data['target_type'] ?? 'post');
+        if ($adapter = $targets->sessionAdapter($targetType)) {
+            return BaseResponse::success($adapter->start($request->user(), $data), 'Đã tạo Social draft và xếp hàng các thành phần đã chọn.', 202);
+        }
+        $lengthKey = $data['length'] ?? config('ai.content.default_length');
+        $lengthOption = config('ai.content.length_options', [])[$lengthKey] ?? null;
+        $imageProfile = app(ImageProfileService::class)->snapshot($data['image_profile_id'] ?? null, $userId);
+        $data['instructions'] = trim(($data['instructions'] ?? '')."\n".($lengthOption['prompt'] ?? ''));
+        if ($targetType === 'social_post') {
+            $data['image_count'] = (int) ($data['image_count'] ?? config('ai.content.social_images.default', 3));
+            $data['instructions'] .= "\nGallery must contain exactly {$data['image_count']} images; return slot_count = {$data['image_count']}.";
+            if ($imageProfile) {
+                $data['instructions'] .= "\nFor gallery visuals only, adapt this image style to the source subject: ".json_encode($imageProfile, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+            }
+        }
         $platform = $targetType === 'social_post' ? (string) ($data['platform'] ?? 'facebook') : null;
         $targetConfig = $targets->resolve($targetType, $platform);
         $outputGroups = array_values($data['requested_outputs']);
@@ -319,6 +338,10 @@ class AiImportController extends Controller
             'prompt_key' => $promptKey,
             'instructions' => $data['instructions'] ?? '',
             'writing_brief' => $data['writing_brief'] ?? [],
+            'length' => $lengthKey,
+            'length_snapshot' => $lengthOption,
+            'image_profile_snapshot' => $imageProfile,
+            'image_count' => $targetType === 'social_post' ? $data['image_count'] : null,
             'writing_profile_id' => $data['writing_profile_id'] ?? null,
             'category_ids' => $data['category_ids'] ?? [],
             'tag_ids' => $data['tag_ids'] ?? [],
@@ -385,6 +408,7 @@ class AiImportController extends Controller
     {
         $aiImport = DB::transaction(fn (): AiImport => AiImport::query()->lockForUpdate()->findOrFail($aiImport->id));
         $this->ensureOwner($request, $aiImport);
+        abort_if(str_starts_with((string) $aiImport->operation, 'social_'), 422, 'Tạo lại thành phần tại Social Post.');
         abort_if($aiImport->operation === 'image', 422, 'Tạo candidate ảnh mới qua tác vụ tạo ảnh.');
         if (in_array($aiImport->status, AiImport::RUNNING_STATUSES, true)) {
             return BaseResponse::error('Import đang được xử lý.', 409);
@@ -519,6 +543,7 @@ class AiImportController extends Controller
     public function retry(Request $request, AiImport $aiImport, AiRunService $runs, ProviderRegistry $providers): JsonResponse
     {
         $this->ensureOwner($request, $aiImport);
+        abort_if(str_starts_with((string) $aiImport->operation, 'social_'), 422, 'Tạo lại thành phần tại Social Post.');
         if ($aiImport->operation === 'image') {
             abort_unless($request->user()->can('media.upload'), 403);
         }
@@ -608,6 +633,7 @@ class AiImportController extends Controller
     public function updateCandidate(AiCandidateUpdateRequest $request, AiImport $aiImport, AiContentSanitizer $sanitizer, ArticleQualityEvaluationService $quality): JsonResponse
     {
         $this->ensureOwner($request, $aiImport);
+        abort_if(str_starts_with((string) $aiImport->operation, 'social_'), 422, 'Biên tập nội dung tại Social Post.');
         $data = $request->validated();
         $run = DB::transaction(function () use ($aiImport, $data, $sanitizer, $request): AiImport {
             $run = AiImport::query()->lockForUpdate()->findOrFail($aiImport->id);
@@ -685,6 +711,7 @@ class AiImportController extends Controller
     public function destroy(Request $request, AiImport $aiImport): JsonResponse
     {
         $this->ensureOwner($request, $aiImport);
+        abort_if(str_starts_with((string) $aiImport->operation, 'social_'), 422, 'Quản lý tác vụ tại Social Post.');
         DB::transaction(function () use ($aiImport): void {
             $run = AiImport::query()->lockForUpdate()->findOrFail($aiImport->id);
             abort_if(in_array($run->status, AiImport::RUNNING_STATUSES, true), 409, 'Hãy đợi tác vụ kết thúc trước khi xóa.');

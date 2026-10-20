@@ -39,8 +39,8 @@ export const withoutAiTaxonomyOutputs = (outputs = []) => outputs.filter(output 
  */
 export const createAiContentSource = (defaults = {}) => ({
   targetType: 'post', platform: 'facebook', type: 'url', url: '', text: '', html: '', prompt: '', file: null,
-  provider: '', model: '', language: 'vi', length: 'medium',
-  thumbnailMode: 'source', imageModelId: null, thumbnailPrompt: '',
+  provider: '', model: '', language: 'vi', length: null, imageCount: null,
+  thumbnailMode: 'source', imageModelId: null, thumbnailPrompt: '', imageProfileId: null,
   outputs: Array.isArray(defaults.outputs) ? withoutAiTaxonomyOutputs(defaults.outputs) : null,
   title: '', instructions: '', sourceEncoding: 'UTF-8', writing: emptyWritingPreferences(), category_ids: [], tag_ids: [],
 })
@@ -57,6 +57,11 @@ export const createAiContentSource = (defaults = {}) => ({
 export function validateAiContentSource(source, catalog) {
   if (catalog.loading) return 'Đang tải provider và model…'
   if (catalog.error) return 'Không tải được model. Hãy tải lại catalog.'
+  if (catalog.lengthOptions?.length && !catalog.lengthOptions.some(option => option.value === source.length))
+    return 'Chọn độ dài bài viết từ cấu hình.'
+  if (source.targetType === 'social_post' && source.outputs?.includes('social_gallery') && catalog.imageCount
+    && (!Number.isInteger(source.imageCount) || source.imageCount < catalog.imageCount.min || source.imageCount > catalog.imageCount.max))
+    return `Số lượng ảnh phải từ ${catalog.imageCount.min} đến ${catalog.imageCount.max}.`
   if (catalog.targetOptions && !catalog.targetOptions.some(target => target.value === source.targetType))
     return 'Chọn tài nguyên được phép tạo nội dung AI.'
   if (source.targetType === 'social_post' && source.platform !== 'facebook') return 'Social hiện chỉ hỗ trợ Facebook.'
@@ -71,6 +76,9 @@ export function validateAiContentSource(source, catalog) {
   if (outputs.includes('thumbnail') && source.thumbnailMode === 'generate'
     && !(catalog.imageModelOptions ?? []).some(option => option.value === source.imageModelId))
     return 'Chọn model ảnh đã bật và khả dụng để tạo thumbnail AI.'
+  if (outputs.includes('social_gallery')
+    && !(catalog.imageModelOptions ?? []).some(option => option.value === source.imageModelId))
+    return 'Chọn model ảnh đã bật và khả dụng để tạo ảnh Social.'
   if ((source.thumbnailPrompt ?? '').length > 4000) return 'Yêu cầu tạo ảnh tối đa 4.000 ký tự.'
 
   // Social drafts are caption-first and do not need an article title. Other
@@ -151,10 +159,9 @@ export async function buildAiContentRequest(source, model) {
     if (text.length > maxTextLength) throw new Error('Nội dung nguồn không được dài quá 200.000 ký tự.')
     input = { type: 'text', text }
   }
-  const lengths = { short: '300–500 từ', medium: '700–1.000 từ', long: '1.500–2.000 từ' }
 
   const instructions = [
-    `Viết bài bằng ${source.language === 'en' ? 'tiếng Anh' : 'tiếng Việt'}, độ dài tham khảo ${lengths[source.length] ?? lengths.medium} nếu nguồn đủ thông tin. Ưu tiên brief riêng, không lặp ý để kéo dài bài.`,
+    `Viết bài bằng ${source.language === 'en' ? 'tiếng Anh' : 'tiếng Việt'}. Ưu tiên brief riêng, không lặp ý để kéo dài bài.`,
     source.type === 'prompt' ? 'Đầu vào là đề bài và yêu cầu viết, hãy phát triển thành một bài viết mới hoàn chỉnh.' : 'Bám sát nguồn, không bịa thông tin.',
     source.targetType === 'social_post'
       ? 'Đây là Social Post; chỉ tạo các output đã chọn của platform, không tạo title, excerpt bài viết hoặc SEO.'
@@ -171,13 +178,16 @@ export async function buildAiContentRequest(source, model) {
   return articleRequestBody({
     target_type: source.targetType || 'post', platform: source.targetType === 'social_post' ? (source.platform || 'facebook') : undefined, operation: 'create', ...(input ? { input } : rawSource), output_language: source.language,
     provider: source.provider, model: source.model, model_id: model.id, instructions,
+    length: source.length,
+    ...((outputs.includes('social_gallery') || (outputs.includes('thumbnail') && source.thumbnailMode === 'generate')) ? { image_profile_id: source.imageProfileId } : {}),
+    ...(source.targetType === 'social_post' ? { image_count: source.imageCount } : {}),
     ...writingOptions(source.writing),
     ...(source.targetType === 'post' || !source.targetType ? { category_ids: source.category_ids ?? [], tag_ids: source.tag_ids ?? [] } : {}),
     ...(source.type === 'html' ? { source_encoding: source.sourceEncoding || 'UTF-8' } : {}),
     requested_outputs: outputs,
     generate_seo: outputs.includes('seo'),
     generate_thumbnail: outputs.includes('thumbnail'), thumbnail_mode: source.thumbnailMode || 'source',
-    ...(outputs.includes('thumbnail') && source.thumbnailMode === 'generate' ? { image_model_id: source.imageModelId, thumbnail_prompt: source.thumbnailPrompt?.trim() || '' } : {}),
+    ...(outputs.includes('social_gallery') || (outputs.includes('thumbnail') && source.thumbnailMode === 'generate') ? { image_model_id: source.imageModelId, thumbnail_prompt: source.thumbnailPrompt?.trim() || '' } : {}),
   })
 }
 

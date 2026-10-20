@@ -4,6 +4,8 @@
   SIDE EFFECT: emit lựa chọn, không gọi provider hoặc thay model nội dung.
 -->
 <script setup>
+import AiImageProfileSelect from './AiImageProfileSelect.vue'
+
 const props = defineProps({ catalog: { type: Object, default: () => ({}) }, disabled: Boolean })
 const source = defineModel({ type: Object, required: true })
 
@@ -22,6 +24,12 @@ const update = (key, value) => { source.value = { ...source.value, [key]: value 
       @update:model-value="update('thumbnailMode', $event)"
     />
     <template v-if="source.thumbnailMode === 'generate'">
+      <AiImageProfileSelect
+        :model-value="source.imageProfileId"
+        :disabled="props.disabled"
+        class="mt-4"
+        @update:model-value="update('imageProfileId', $event)"
+      />
       <AppSelect
         :model-value="source.imageModelId"
         :items="props.catalog.imageModelOptions ?? []"

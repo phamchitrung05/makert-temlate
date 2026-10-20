@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Jobs\ProcessAiImportJob;
+use App\Jobs\ProcessSocialPostCaptionJob;
 use App\Models\AiImport;
 use App\Models\User;
 use App\Services\Ai\Content\ArticleImportService;
@@ -200,6 +201,26 @@ class AiContentWorkspaceApiTest extends TestCase
         ])->assertUnprocessable()->assertJsonValidationErrors('target_type');
     }
 
+    public function test_configured_lengths_and_image_count_are_validated_and_snapshotted(): void
+    {
+        $token = $this->token();
+        $option = ['label' => 'Siêu ngắn', 'min_words' => 10, 'max_words' => 20, 'prompt' => 'Viết từ 10 đến 20 từ.'];
+        config(['ai.content.length_options.tiny' => $option, 'ai.content.default_length' => 'tiny']);
+        $response = $this->withToken($token)->getJson('/api/admin/ai-agent/targets')->assertOk();
+        $this->assertContains(['value' => 'tiny', 'title' => 'Siêu ngắn'] + $option, $response->json('data.0.length_options'));
+        $payload = ['target_type' => 'social_post', 'text' => 'Nguồn đã kiểm chứng.', 'provider' => 'deterministic', 'model' => 'deterministic',
+            'requested_outputs' => ['social_content', 'social_gallery'], 'length' => 'tiny', 'image_count' => 7];
+        $id = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', $payload)->assertAccepted()->json('data.job_id');
+        $run = AiImport::findOrFail($id);
+        $this->assertSame($option, data_get($run->input_json, 'context.length'));
+        $this->assertSame(7, data_get($run->input_json, 'context.image_count'));
+        $this->assertSame($option['prompt'], data_get($run->input_json, 'context.length.prompt'));
+        $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', array_replace($payload, ['length' => 'missing']))->assertUnprocessable()->assertJsonValidationErrors('length');
+        foreach ([0, 11, 1.5] as $count) {
+            $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', array_replace($payload, ['image_count' => $count]))->assertUnprocessable()->assertJsonValidationErrors('image_count');
+        }
+    }
+
     /**
      * Social là target riêng của AI Content và dùng permission Social Post.
      */
@@ -216,8 +237,9 @@ class AiContentWorkspaceApiTest extends TestCase
 
         $run = $this->createRun($token, 'social_post', ['social_content']);
         $this->assertSame('social_post', $run->input_json['target_type']);
-        $this->assertSame('social_post.facebook.create.from_text', $run->input_json['prompt_key']);
-        Queue::assertPushed(ProcessAiImportJob::class, 1);
+        $this->assertSame('social_post.facebook_content', $run->input_json['prompt_key']);
+        Queue::assertPushed(ProcessSocialPostCaptionJob::class, 1);
+        Queue::assertNotPushed(ProcessAiImportJob::class);
     }
 
     /**
