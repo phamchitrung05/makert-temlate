@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AiArticleEvaluation;
 use App\Models\AiImport;
 use App\Models\User;
+use App\Services\Ai\Content\Archives\AiArticleArchiveService;
 use App\Services\Marketing\SocialPostLifecycleService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Facades\Auth;
@@ -51,18 +52,22 @@ class AiArticleQualityEvaluationTest extends TestCase
     /** Input: actor. Output: ready Post AI có source block và generated_fields. */
     private function candidate(User $actor): AiImport
     {
-        return AiImport::query()->create([
-            'created_by' => $actor->id, 'status' => 'ready', 'operation' => 'create',
+        $run = AiImport::query()->create([
+            'created_by' => $actor->id, 'status' => 'running', 'operation' => 'create',
             'provider' => 'deterministic', 'source_url' => '', 'source_text' => 'Nguồn kiểm thử.',
-            'input_json' => ['target_type' => 'post', 'model' => 'test-model', 'ai_connection' => ['provider' => 'deterministic', 'model' => 'deterministic']],
+            'input_json' => ['target_type' => 'post', 'fields' => ['title', 'content'], 'model' => 'test-model', 'ai_connection' => ['provider' => 'deterministic', 'model' => 'deterministic'], 'pipeline_snapshot' => ['outputs' => ['title', 'content']]],
             'source_meta_json' => ['article_source' => ['title' => 'Nguồn', 'content_html' => '<p>Nguồn kiểm thử.</p>', 'blocks' => [['id' => 'S001', 'text' => 'Nguồn kiểm thử.']]]],
             'result_json' => [
                 'provider' => 'deterministic',
-                'generation_meta' => ['mode' => 'ai', 'generated_fields' => ['title', 'content_html']],
+                'generation_meta' => ['mode' => 'ai', 'generated_fields' => ['title', 'content_html'], 'content_origin' => 'ai'],
                 'draft' => ['title' => 'Bài kiểm thử', 'content_html' => '<p>Nguồn kiểm thử.</p>', 'excerpt' => 'Tóm tắt'],
             ],
             'expires_at' => now()->addDays(2), 'completed_at' => now(),
         ]);
+        app(AiArticleArchiveService::class)->stageCompletion($run->id, (int) $run->generation_no, $run->result_json);
+        $run->forceFill(['status' => 'ready'])->save();
+
+        return $run->fresh();
     }
 
     /** Input: candidate. Output: draft/review versions cho approve request. */
@@ -160,6 +165,14 @@ class AiArticleQualityEvaluationTest extends TestCase
     {
         [$actor, $token] = $this->credentials();
         $run = $this->candidate($actor);
+        $evaluation = app(\App\Services\Ai\Content\Quality\ArticleQualityEvaluationService::class)->schedule($run);
+        $evaluation->forceFill([
+            'status' => 'ready', 'score_total' => 4.4,
+            'scores_json' => ['accuracy' => 4.5, 'source_grounding' => 4.5, 'clarity' => 4.3, 'structure' => 4.3, 'style' => 4.4],
+            'source_references_json' => ['S001'],
+            'eligibility_json' => ['score' => true, 'source' => true, 'facts' => true, 'eligible' => true, 'reasons' => []],
+            'completed_at' => now(),
+        ])->save();
 
         $this->withToken($token)->postJson('/api/admin/ai-agent/candidates/'.$run->id.'/approve', [
             ...$this->versions($run), 'fields' => ['title'], 'target_id' => 1,
@@ -172,7 +185,7 @@ class AiArticleQualityEvaluationTest extends TestCase
         [$actor, $token] = $this->credentials();
         $run = $this->candidate($actor);
         $run->forceFill(['result_json' => [
-            'generation_meta' => ['mode' => 'ai', 'generated_fields' => ['title']],
+            'generation_meta' => ['mode' => 'source_only', 'generated_fields' => ['title'], 'content_origin' => 'source'],
             'draft' => ['title' => 'Bài kiểm thử', 'content_html' => '<p>Nội dung.</p>'],
         ]])->save();
 
@@ -248,12 +261,12 @@ class AiArticleQualityEvaluationTest extends TestCase
         }
     }
 
-/** Candidate source-only dùng provider AI nhưng không tạo text mới thì không qua quality gate. */
+    /** Candidate source-only dùng provider AI nhưng không tạo text mới thì không qua quality gate. */
     public function test_source_only_candidate_without_ai_content_can_be_approved_without_evaluation(): void
     {
         [$actor, $token] = $this->credentials();
         $run = AiImport::query()->create([
-            'created_by' => $actor->id, 'status' => 'ready', 'operation' => 'regenerate',
+            'created_by' => $actor->id, 'status' => 'running', 'operation' => 'regenerate',
             'provider' => 'openai', 'source_url' => '', 'source_text' => 'Nguồn kế thừa.',
             'input_json' => ['target_type' => 'post', 'fields' => ['thumbnail'], 'ai_connection' => ['provider' => 'openai', 'model' => 'gpt-test']],
             'source_meta_json' => ['article_source' => ['title' => 'Nguồn', 'content_html' => '<p>Nguồn kế thừa.</p>', 'blocks' => [['id' => 'S001', 'text' => 'Nguồn kế thừa.']]]],
@@ -264,6 +277,9 @@ class AiArticleQualityEvaluationTest extends TestCase
             ],
             'expires_at' => now()->addDays(2), 'completed_at' => now(),
         ]);
+        app(AiArticleArchiveService::class)->stageCompletion($run->id, (int) $run->generation_no, $run->result_json);
+        $run->forceFill(['status' => 'ready'])->save();
+        $run = $run->fresh();
 
         $service = app(\App\Services\Ai\Content\Quality\ArticleQualityEvaluationService::class);
         $this->assertFalse($service->supports($run));

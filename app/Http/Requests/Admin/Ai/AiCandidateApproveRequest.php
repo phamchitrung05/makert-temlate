@@ -67,6 +67,8 @@ class AiCandidateApproveRequest extends FormRequest
             'expected_version' => ['required', 'string', 'size:64'],
             'expected_review_version' => ['required', 'string', 'size:64'],
             'reason' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'target_id' => ['prohibited'],
+            'expected_updated_at' => ['prohibited'],
         ];
     }
 }
