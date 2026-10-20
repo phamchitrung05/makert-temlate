@@ -2,6 +2,7 @@
 
 namespace App\Services\Marketing;
 
+use App\Models\AiImport;
 use App\Models\SocialPost;
 use App\Services\Ai\WritingProfiles\WritingProfileSnapshotService;
 use Illuminate\Support\Str;
@@ -41,13 +42,33 @@ final class SocialPostContextBuilder
      * Output: context bounded gồm source/campaign/profile và context_hash.
      * Side effect: chỉ đọc campaign/profile; ValidationException nếu profile sai.
      */
-    public function build(SocialPost $post, ?int $writingProfileId = null): array
+    public function build(SocialPost $post, ?int $writingProfileId = null, array $options = []): array
     {
         $post->loadMissing('campaign');
         $campaign = $post->campaign;
-        $profile = $this->profiles->snapshot($writingProfileId);
+        $previous = AiImport::query()->where('input_json->social_post_id', $post->getKey())
+            ->whereIn('operation', ['social_caption', 'social_image_prompt'])->latest('created_at')->latest('id')->first();
+        $saved = (array) data_get($previous?->input_json, 'context', []);
+        if ($saved === []) {
+            $version = $post->versions()->latest('id')->first();
+            $saved = (array) ($version?->context_json ?? []);
+            if ($version) {
+                $saved['writing_profile'] = $version->writing_profile_snapshot_json;
+            }
+        }
+        $profile = array_key_exists('writing_profile_id', $options) || ! array_key_exists('writing_profile', $saved)
+            ? $this->profiles->snapshot($writingProfileId) : $saved['writing_profile'];
+        $lengthKey = $options['length'] ?? null;
+        $length = $lengthKey !== null ? config('ai.content.length_options', [])[$lengthKey] ?? null : ($saved['length'] ?? null);
         $context = [
-            'language' => 'vi',
+            'language' => $this->boundText((string) ($options['language'] ?? $saved['language'] ?? 'vi'), 12),
+            'source_text' => $this->boundText((string) ($options['source_text'] ?? $saved['source_text'] ?? ''), 200000),
+            'instructions' => $this->boundText((string) ($options['instructions'] ?? $saved['instructions'] ?? ''), 4000),
+            'writing_brief' => collect((array) ($options['writing_brief'] ?? $saved['writing_brief'] ?? []))
+                ->only(['audience', 'article_type', 'purpose', 'angle', 'length'])
+                ->map(fn ($value): string => $this->boundText((string) $value, 1000))->all(),
+            'length' => $length,
+            'image_profile' => $saved['image_profile'] ?? null,
             'campaign' => $campaign ? [
                 'id' => (int) $campaign->getKey(),
                 'name' => $this->boundText((string) $campaign->name, 160),

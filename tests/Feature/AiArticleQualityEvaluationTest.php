@@ -247,4 +247,126 @@ class AiArticleQualityEvaluationTest extends TestCase
             );
         }
     }
+
+/** Candidate source-only dùng provider AI nhưng không tạo text mới thì không qua quality gate. */
+    public function test_source_only_candidate_without_ai_content_can_be_approved_without_evaluation(): void
+    {
+        [$actor, $token] = $this->credentials();
+        $run = AiImport::query()->create([
+            'created_by' => $actor->id, 'status' => 'ready', 'operation' => 'regenerate',
+            'provider' => 'openai', 'source_url' => '', 'source_text' => 'Nguồn kế thừa.',
+            'input_json' => ['target_type' => 'post', 'fields' => ['thumbnail'], 'ai_connection' => ['provider' => 'openai', 'model' => 'gpt-test']],
+            'source_meta_json' => ['article_source' => ['title' => 'Nguồn', 'content_html' => '<p>Nguồn kế thừa.</p>', 'blocks' => [['id' => 'S001', 'text' => 'Nguồn kế thừa.']]]],
+            'result_json' => [
+                'provider' => 'openai',
+                'generation_meta' => ['mode' => 'source_only', 'generated_fields' => [], 'inherited_fields' => ['content_html'], 'content_origin' => 'source'],
+                'draft' => ['title' => 'Tiêu đề kế thừa', 'content_html' => '<p>Nguồn kế thừa.</p>'],
+            ],
+            'expires_at' => now()->addDays(2), 'completed_at' => now(),
+        ]);
+
+        $service = app(\App\Services\Ai\Content\Quality\ArticleQualityEvaluationService::class);
+        $this->assertFalse($service->supports($run));
+        $this->assertFalse($service->requiresGate($run));
+
+        $this->withToken($token)->getJson('/api/admin/ai-agent/candidates/'.$run->id.'/review')
+            ->assertOk()->assertJsonPath('data.can_approve', true);
+        $this->withToken($token)->postJson('/api/admin/ai-agent/candidates/'.$run->id.'/approve', [
+            ...$this->versions($run), 'fields' => ['title'],
+        ])->assertOk();
+    }
+
+    /** Regenerate chỉ đổi field phụ vẫn phải chấm nếu body AI được kế thừa từ parent. */
+    public function test_inherited_ai_content_still_requires_quality_gate(): void
+    {
+        [$actor, $token] = $this->credentials();
+        $run = AiImport::query()->create([
+            'created_by' => $actor->id, 'status' => 'ready', 'operation' => 'regenerate',
+            'provider' => 'openai', 'source_url' => '', 'source_text' => 'Nguồn kế thừa.',
+            'input_json' => ['target_type' => 'post', 'fields' => ['title'], 'ai_connection' => ['provider' => 'openai', 'model' => 'gpt-test']],
+            'source_meta_json' => ['article_source' => ['title' => 'Nguồn', 'content_html' => '<p>Nguồn kế thừa.</p>', 'blocks' => [['id' => 'S001', 'text' => 'Nguồn kế thừa.']]]],
+            'result_json' => [
+                'provider' => 'openai',
+                'generation_meta' => ['mode' => 'ai', 'generated_fields' => ['title'], 'inherited_fields' => ['content_html'], 'content_origin' => 'ai'],
+                'draft' => ['title' => 'Tiêu đề mới', 'content_html' => '<p>Nội dung AI của parent.</p>'],
+            ],
+            'expires_at' => now()->addDays(2), 'completed_at' => now(),
+        ]);
+
+        $service = app(\App\Services\Ai\Content\Quality\ArticleQualityEvaluationService::class);
+        $this->assertTrue($service->supports($run));
+        $this->assertTrue($service->requiresGate($run));
+        $this->withToken($token)->getJson('/api/admin/ai-agent/candidates/'.$run->id.'/review')
+            ->assertOk()->assertJsonPath('data.can_approve', false);
+    }
+
+    /** Thiếu content_origin được coi là cần chấm (fail-closed), không bỏ qua gate. */
+    public function test_candidate_without_content_origin_fails_closed(): void
+    {
+        [$actor] = $this->credentials();
+        $run = AiImport::query()->create([
+            'created_by' => $actor->id, 'status' => 'ready', 'operation' => 'regenerate',
+            'provider' => 'openai', 'source_url' => '', 'source_text' => 'Nguồn.',
+            'input_json' => ['target_type' => 'post', 'fields' => ['thumbnail']],
+            'source_meta_json' => ['article_source' => ['title' => 'Nguồn', 'content_html' => '<p>Nguồn.</p>', 'blocks' => [['id' => 'S001', 'text' => 'Nguồn.']]]],
+            'result_json' => [
+                'generation_meta' => ['mode' => 'source_only', 'generated_fields' => [], 'inherited_fields' => ['content_html']],
+                'draft' => ['title' => 'Thiếu origin', 'content_html' => '<p>Nội dung.</p>'],
+            ],
+            'expires_at' => now()->addDays(2), 'completed_at' => now(),
+        ]);
+
+        $service = app(\App\Services\Ai\Content\Quality\ArticleQualityEvaluationService::class);
+        $this->assertTrue($service->supports($run));
+        $this->assertTrue($service->requiresGate($run));
+        $this->assertNotNull($service->schedule($run));
+    }
+
+    /** content_origin=source/deterministic được miễn chấm. */
+    public function test_source_and_deterministic_origin_skip_evaluation(): void
+    {
+        [$actor] = $this->credentials();
+        $service = app(\App\Services\Ai\Content\Quality\ArticleQualityEvaluationService::class);
+        foreach (['source', 'deterministic'] as $origin) {
+            $run = AiImport::query()->create([
+                'created_by' => $actor->id, 'status' => 'ready', 'operation' => 'regenerate',
+                'provider' => 'openai', 'source_url' => '', 'source_text' => 'Nguồn '.$origin,
+                'input_json' => ['target_type' => 'post', 'fields' => ['thumbnail']],
+                'source_meta_json' => ['article_source' => ['title' => 'Nguồn', 'content_html' => '<p>Nguồn.</p>', 'blocks' => [['id' => 'S001', 'text' => 'Nguồn.']]]],
+                'result_json' => [
+                    'generation_meta' => ['mode' => 'source_only', 'generated_fields' => [], 'content_origin' => $origin],
+                    'draft' => ['title' => 'Bản '.$origin, 'content_html' => '<p>Nội dung '.$origin.'.</p>'],
+                ],
+                'expires_at' => now()->addDays(2), 'completed_at' => now(),
+            ]);
+            $this->assertFalse($service->supports($run), $origin);
+            $this->assertFalse($service->requiresGate($run), $origin);
+            $this->assertNull($service->schedule($run), $origin);
+        }
+    }
+
+    /** Regenerate từ parent thiếu content_origin bị chặn trước khi gọi pipeline. */
+    public function test_regeneration_rejects_parent_without_content_origin(): void
+    {
+        [$actor] = $this->credentials();
+        $parent = AiImport::query()->create([
+            'created_by' => $actor->id, 'status' => 'ready', 'operation' => 'create',
+            'provider' => 'openai', 'source_url' => '', 'source_text' => 'Nguồn parent.',
+            'result_json' => ['draft' => ['title' => 'Parent', 'content_html' => '<p>Body AI cũ.</p>']],
+        ]);
+        $child = AiImport::query()->create([
+            'created_by' => $actor->id, 'parent_id' => $parent->id, 'status' => 'queued', 'operation' => 'regenerate',
+            'provider' => 'deterministic', 'source_url' => '', 'source_text' => 'Nguồn child.',
+            'input_json' => ['source_type' => 'text', 'target_type' => 'post', 'fields' => ['title']],
+        ]);
+
+        try {
+            (new \App\Services\Ai\Content\ArticleImportService(
+                new \App\Services\Ai\Providers\Adapters\DeterministicAiProvider
+            ))->run($child);
+            $this->fail('Regenerate từ parent thiếu content_origin phải bị chặn.');
+        } catch (\App\Exceptions\AiImportException $exception) {
+            $this->assertSame('AI_PARENT_ORIGIN_MISSING', $exception->errorCode);
+        }
+    }
 }

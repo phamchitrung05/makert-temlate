@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Enums\AiCapability;
 use App\Enums\MediaAssetField;
+use App\Exceptions\AiImportException;
 use App\Models\AiImport;
 use App\Models\MediaAsset;
 use App\Models\SocialPost;
@@ -11,6 +12,7 @@ use App\Models\SocialPostVariant;
 use App\Models\User;
 use App\Services\Ai\Images\AiImageGenerationService;
 use App\Services\Ai\Registries\ProviderRegistry;
+use App\Services\Ai\Runs\AiTaskRunService;
 use App\Services\Marketing\SocialPostAiWorkerService;
 use App\Services\Marketing\SocialPostGenerationStateService;
 use App\Services\Marketing\SocialPostVersionService;
@@ -89,27 +91,29 @@ final class ProcessSocialPostImageJob implements ShouldBeUnique, ShouldQueue
         SocialPostAiWorkerService $worker,
     ): void {
         $import = AiImport::query()->find($this->importId);
-        if (! $import || (int) $import->generation_no !== $this->generationNo) {
+        if (! $import || (int) $import->generation_no !== $this->generationNo
+            || in_array($import->status, AiImport::TERMINAL_STATUSES, true)) {
             return;
         }
         $input = (array) $import->input_json;
         $post = SocialPost::query()->find((int) ($input['social_post_id'] ?? 0));
-        if (! $post || (int) $post->generation_no !== $this->generationNo) {
+        if (! $post || (int) $post->generation_no !== (int) ($input['generation_no'] ?? 0)) {
             $worker->fail($import, 'AI_STALE_GENERATION', 'Lượt tạo đã cũ.', false);
 
             return;
         }
 
+        $asset = null;
         try {
             $connectionSnapshot = (array) ($input['ai_connection'] ?? []);
             if ($connectionSnapshot === []) {
-                throw new \App\Exceptions\AiImportException('Chưa cấu hình image model cho Social Post.', 'AI_IMAGE_MODEL_MISSING');
+                throw new AiImportException('Chưa cấu hình image model cho Social Post.', 'AI_IMAGE_MODEL_MISSING');
             }
             $connection = $providers->connectionForRun($connectionSnapshot, AiCapability::Image);
             $import->advance('generating', 10);
-            $task = app(\App\Services\Ai\Runs\AiTaskRunService::class)->syncFromImport($import->fresh());
+            $task = app(AiTaskRunService::class)->syncFromImport($import->fresh());
             if ($task) {
-                app(\App\Services\Ai\Runs\AiTaskRunService::class)->start($task, 10, 'processing');
+                app(AiTaskRunService::class)->start($task, 10, 'processing');
             }
             $productName = (string) data_get($input, 'context.product.name', 'Social Post image');
             $prompt = trim((string) ($input['image_prompt'] ?? ''));
@@ -121,12 +125,17 @@ final class ProcessSocialPostImageJob implements ShouldBeUnique, ShouldQueue
 
             $attached = DB::transaction(function () use ($post, $import, $asset, $actor, $usages, $input): bool {
                 $locked = SocialPost::query()->lockForUpdate()->findOrFail($post->getKey());
-                if ((int) $locked->generation_no !== $this->generationNo) {
+                $currentRun = AiImport::query()->lockForUpdate()->findOrFail($import->id);
+                if ((int) $locked->generation_no !== (int) $input['generation_no']
+                    || (int) $currentRun->generation_no !== $this->generationNo
+                    || in_array($currentRun->status, AiImport::TERMINAL_STATUSES, true)) {
                     $this->cleanupOrphan($asset);
-                    $import->forceFill([
-                        'status' => 'cancelled', 'current_step' => 'cancelled', 'progress' => 100,
-                        'error_code' => 'AI_STALE_GENERATION', 'error_message' => 'Lượt tạo đã cũ.', 'completed_at' => now(),
-                    ])->save();
+                    if ((int) $currentRun->generation_no === $this->generationNo && ! in_array($currentRun->status, AiImport::TERMINAL_STATUSES, true)) {
+                        $import->forceFill([
+                            'status' => 'cancelled', 'current_step' => 'cancelled', 'progress' => 100,
+                            'error_code' => 'AI_STALE_GENERATION', 'error_message' => 'Lượt tạo đã cũ.', 'completed_at' => now(),
+                        ])->save();
+                    }
 
                     return false;
                 }
@@ -143,10 +152,12 @@ final class ProcessSocialPostImageJob implements ShouldBeUnique, ShouldQueue
                     ->where('sort_order', $slotNo)
                     ->delete();
                 $usages->attach($actor, $variant, $asset, MediaAssetField::SocialPostFacebookImages, $slotNo);
+                $variant->mediaAssetUsagesForField(MediaAssetField::SocialPostFacebookImages)
+                    ->where('sort_order', '>=', (int) ($variant->image_count ?? 3))->delete();
                 $readyCount = $variant->mediaAssetUsagesForField(MediaAssetField::SocialPostFacebookImages)->count();
                 $variant->forceFill([
                     'content_status' => $variant->content_status?->value === 'ready' ? 'ready' : 'partial',
-                    'generation_status' => $readyCount >= 3 ? 'ready' : 'partial',
+                    'generation_status' => $readyCount >= (int) ($variant->image_count ?? 3) ? 'ready' : 'partial',
                 ])->save();
                 $import->forceFill([
                     'status' => 'ready', 'current_step' => 'ready', 'progress' => 100,
@@ -163,12 +174,12 @@ final class ProcessSocialPostImageJob implements ShouldBeUnique, ShouldQueue
             });
 
             if (! $attached) {
-                app(\App\Services\Ai\Runs\AiTaskRunService::class)->syncFromImport($import->fresh());
+                app(AiTaskRunService::class)->syncFromImport($import->fresh());
 
                 return;
             }
 
-            app(\App\Services\Ai\Runs\AiTaskRunService::class)->syncFromImport($import->fresh());
+            app(AiTaskRunService::class)->syncFromImport($import->fresh());
             $versions->create($post->fresh(), (array) $input['context'], [
                 'key' => $input['prompt_key'] ?? 'social_post.facebook_image',
                 'version' => $input['prompt_version'] ?? null,
@@ -180,14 +191,17 @@ final class ProcessSocialPostImageJob implements ShouldBeUnique, ShouldQueue
                 'provider' => data_get($input, 'ai_connection.provider'),
                 'model' => data_get($input, 'ai_connection.model'),
                 'component' => 'image',
-                'generation_no' => $this->generationNo,
+                'generation_no' => $input['generation_no'],
             ], 'image_ready', (int) $import->created_by);
-            $states->refresh($post->fresh(), $this->generationNo);
-        } catch (\Throwable $exception) {
-            if ($exception instanceof \App\Exceptions\AiImportException && $exception->retryable) {
+            $states->refresh($post->fresh(), (int) $input['generation_no']);
+        } catch (Throwable $exception) {
+            if ($asset instanceof MediaAsset) {
+                $this->cleanupOrphan($asset);
+            }
+            if ($exception instanceof AiImportException && $exception->retryable) {
                 throw $exception;
             }
-            $worker->fail($import, $exception instanceof \App\Exceptions\AiImportException ? $exception->errorCode : 'AI_SOCIAL_IMAGE_FAILED', $exception->getMessage());
+            $worker->fail($import, $exception instanceof AiImportException ? $exception->errorCode : 'AI_SOCIAL_IMAGE_FAILED', $exception->getMessage());
         }
     }
 
@@ -200,7 +214,7 @@ final class ProcessSocialPostImageJob implements ShouldBeUnique, ShouldQueue
     public function failed(Throwable $exception): void
     {
         $import = AiImport::query()->find($this->importId);
-        if ($import) {
+        if ($import && (int) $import->generation_no === $this->generationNo) {
             app(SocialPostAiWorkerService::class)->fail($import, 'AI_SOCIAL_IMAGE_FAILED', $exception->getMessage());
         }
     }

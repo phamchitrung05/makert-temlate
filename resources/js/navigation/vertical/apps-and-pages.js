@@ -41,6 +41,7 @@ export default [
     children: [
       { title: 'List', to: 'ai-prompt-list', action: 'manage', subject: 'ai_settings' },
       { title: 'Add', to: 'ai-prompt-add', action: 'manage', subject: 'ai_settings' },
+      { title: 'Prompt tạo ảnh', to: 'ai-image-prompt', action: 'manage', subject: 'ai_settings' },
     ],
   },
   {

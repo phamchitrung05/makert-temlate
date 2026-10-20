@@ -21,6 +21,7 @@ import AiWritingPreferences from '@/views/ai/shared/AiWritingPreferences.vue'
 import AiManualTaxonomyFields from '@/views/ai/shared/AiManualTaxonomyFields.vue'
 import AiSourcePreview from '@/views/ai/shared/AiSourcePreview.vue'
 import AiThumbnailOptions from '@/views/ai/shared/AiThumbnailOptions.vue'
+import AiImageProfileSelect from '@/views/ai/shared/AiImageProfileSelect.vue'
 import { useAiSourcePreview } from '@/composables/ai/useAiSourcePreview'
 
 const props = defineProps({
@@ -282,8 +283,43 @@ const updateProvider = provider => {
                 :disabled="props.disabled"
                 label="Độ dài bài viết"
                 aria-label="Độ dài bài viết"
-                :items="[{ title: 'Ngắn', value: 'short' }, { title: 'Trung bình', value: 'medium' }, { title: 'Dài', value: 'long' }]"
+                :items="props.catalog.lengthOptions ?? []"
+                :hint="props.catalog.lengthOptions?.find(option => option.value === source.length)?.prompt ?? ''"
+                persistent-hint
                 @update:model-value="update('length', $event)"
+              />
+            </VCol>
+            <VCol
+              v-if="isSocial && source.outputs?.includes('social_gallery')"
+              cols="12"
+              sm="6"
+            >
+              <AppTextField
+                :model-value="source.imageCount"
+                type="number"
+                label="Số lượng ảnh cần tạo"
+                :min="props.catalog.imageCount?.min"
+                :max="props.catalog.imageCount?.max"
+                :disabled="props.disabled || props.catalog.loading"
+                @update:model-value="update('imageCount', $event === '' ? null : Number($event))"
+              />
+            </VCol>
+            <VCol
+              v-if="isSocial && source.outputs?.includes('social_gallery')"
+              cols="12"
+            >
+              <AiImageProfileSelect
+                :model-value="source.imageProfileId"
+                :disabled="props.disabled"
+                @update:model-value="update('imageProfileId', $event)"
+              />
+              <AppSelect
+                :model-value="source.imageModelId"
+                :items="props.catalog.imageModelOptions ?? []"
+                label="Model tạo ảnh Social"
+                class="mt-4"
+                :disabled="props.disabled || props.catalog.loading"
+                @update:model-value="update('imageModelId', $event)"
               />
             </VCol>
             <VCol cols="12">

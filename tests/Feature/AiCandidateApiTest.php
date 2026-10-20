@@ -17,11 +17,11 @@ use Tests\UsesIsolatedDatabase;
 
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Kiểm regenerate/retry/Apply giữ candidate và provenance.
+ * CHỨC NĂNG FILE: Kiểm regenerate/retry và provenance của Post.
  * =====================================================================
  *
- * PHPUnit kiểm regenerate/retry/Apply, nhóm field được chọn và provenance của Post.
- * Candidate ready dựng bằng tay là fixture legacy, chưa qua checkpoint worker v1.
+ * PHPUnit kiểm regenerate/retry, nhóm field được chọn và provenance của Post.
+ * Duyệt candidate ra Post draft được kiểm ở AiContentReviewApiTest.
  * HTTP/queue và database được cô lập; không gọi AI hoặc sửa dữ liệu ứng dụng.
  *
  * CÁC HÀM/METHOD TRONG FILE:
@@ -30,9 +30,8 @@ use Tests\UsesIsolatedDatabase;
  * - token().
  * - test_regenerate_preserves_original_candidate().
  * - test_regenerate_selected_field_preserves_unselected_parent_fields().
+ * - test_regenerate_rejects_parent_without_content_origin().
  * - test_retry_reuses_failed_run().
- * - test_apply_candidate_creates_draft_and_provenance().
- * - test_apply_selected_fields_does_not_overwrite_unselected_fields().
  * - test_regular_post_create_records_ai_provenance_from_form_metadata().
  * - test_post_create_accepts_multiple_non_overlapping_ai_runs().
  *
@@ -123,16 +122,16 @@ class AiCandidateApiTest extends TestCase
     {
         Queue::fake();
         $token = $this->token();
-        $this->withToken($token)->postJson('/api/admin/posts/ai/import', ['url' => 'https://example.test/article', 'provider' => 'deterministic'])->assertStatus(202);
+        $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', ['url' => 'https://example.test/article', 'provider' => 'deterministic', 'requested_outputs' => ['title']])->assertStatus(202);
         $original = AiImport::query()->firstOrFail();
-        $original->update(['archive_version' => null, 'status' => 'ready', 'result_json' => ['draft' => ['title' => 'A']]]);
+        $original->update(['status' => 'ready', 'result_json' => ['draft' => ['title' => 'A'], 'generation_meta' => ['content_origin' => 'ai']]]);
 
-        $response = $this->withToken($token)->postJson('/api/admin/posts/ai/import/'.$original->id.'/regenerate', ['instructions' => 'Giữ nguyên code.', 'refresh_source' => true]);
+        $response = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions/'.$original->id.'/regenerate', ['instructions' => 'Giữ nguyên code.', 'refresh_source' => true]);
         $response->assertStatus(202)->assertJsonPath('data.operation', 'regenerate');
         $child = AiImport::query()->whereKey($response->json('data.job_id'))->firstOrFail();
         $this->assertSame($original->id, $child->parent_id);
         $this->assertSame($original->id, $child->session_id);
-        $this->assertSame(['draft' => ['title' => 'A']], $original->fresh()->result_json);
+        $this->assertSame(['draft' => ['title' => 'A'], 'generation_meta' => ['content_origin' => 'ai']], $original->fresh()->result_json);
         $this->assertDatabaseCount('posts', 0);
         Queue::assertPushed(ProcessAiImportJob::class, 2);
     }
@@ -161,23 +160,24 @@ class AiCandidateApiTest extends TestCase
         ]);
 
         $token = $this->token();
-        $this->withToken($token)->postJson('/api/admin/posts/ai/import', [
+        $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
             'url' => 'https://example.test/partial-regenerate',
-            'provider' => 'deterministic',
+            'provider' => 'deterministic', 'requested_outputs' => ['title', 'content'],
         ])->assertStatus(202);
         $parent = AiImport::query()->firstOrFail();
         $parent->update([
-            'archive_version' => null, 'status' => 'ready',
+            'status' => 'ready',
             'result_json' => [
                 'draft' => [
                     'title' => 'Tiêu đề cũ',
                     'content' => '<p>Nội dung do người dùng giữ.</p>',
                     'content_html' => '<p>Nội dung do người dùng giữ.</p>',
                 ],
+                'generation_meta' => ['content_origin' => 'ai'],
             ],
         ]);
 
-        $response = $this->withToken($token)->postJson('/api/admin/posts/ai/import/'.$parent->id.'/regenerate', [
+        $response = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions/'.$parent->id.'/regenerate', [
             'fields' => ['title'],
             'refresh_source' => true,
         ])->assertStatus(202);
@@ -185,9 +185,33 @@ class AiCandidateApiTest extends TestCase
         $result = (new ArticleImportService(new StructuredAiProvider))->run($child);
 
         $this->assertSame(['title'], $child->input_json['fields']);
+        $this->assertSame('ai', $child->input_json['parent_content_origin']);
         $this->assertSame('Tiêu đề mới', $result['draft']['title']);
         $this->assertSame('<p>Nội dung do người dùng giữ.</p>', $result['draft']['content']);
+        $this->assertSame('ai', $result['generation_meta']['content_origin']);
         $this->assertSame('Tiêu đề cũ', data_get($parent->fresh()->result_json, 'draft.title'));
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Chặn regenerate từ parent cũ chưa có content_origin
+     * =====================================================================
+     * INPUT: Parent ready thuộc actor, thiếu generation_meta.content_origin.
+     * OUTPUT: 422 và không tạo child run.
+     * SIDE EFFECT: Không ghi run mới; chỉ validate trước khi dispatch.
+     * =====================================================================
+     */
+    public function test_regenerate_rejects_parent_without_content_origin(): void
+    {
+        Queue::fake();
+        $token = $this->token();
+        $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', ['url' => 'https://example.test/legacy-parent', 'provider' => 'deterministic', 'requested_outputs' => ['title']])->assertStatus(202);
+        $parent = AiImport::query()->firstOrFail();
+        $parent->update(['status' => 'ready', 'result_json' => ['draft' => ['title' => 'Bản cũ']]]);
+
+        $this->withToken($token)->postJson('/api/admin/ai-agent/sessions/'.$parent->id.'/regenerate', ['refresh_source' => true])
+            ->assertUnprocessable();
+        $this->assertSame(1, AiImport::query()->count());
     }
 
     /**
@@ -206,121 +230,23 @@ class AiCandidateApiTest extends TestCase
     {
         Queue::fake();
         $token = $this->token();
-        $this->withToken($token)->postJson('/api/admin/posts/ai/import', ['url' => 'https://example.test/retry', 'provider' => 'deterministic'])->assertStatus(202);
+        $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', ['url' => 'https://example.test/retry', 'provider' => 'deterministic', 'requested_outputs' => ['title']])->assertStatus(202);
         $import = AiImport::query()->firstOrFail();
         $import->update(['status' => 'failed', 'error_code' => 'TEMP']);
 
-        $this->withToken($token)->postJson('/api/admin/posts/ai/import/'.$import->id.'/retry')->assertStatus(200)->assertJsonPath('data.job_id', $import->id);
+        $this->withToken($token)->postJson('/api/admin/ai-agent/sessions/'.$import->id.'/retry')->assertStatus(200)->assertJsonPath('data.job_id', $import->id);
         $this->assertSame(1, AiImport::query()->count());
         $this->assertSame('queued', $import->fresh()->status);
     }
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Áp dụng candidate vào Post draft và ghi provenance
-
-     * =====================================================================
-     * INPUT: candidate ready có title/content và field selection.
-     * OUTPUT: Post draft mới cùng provenance theo field.
-     * SIDE EFFECT: transaction tạo Post, SEO/taxonomy và audit provenance.
-     * EXCEPTION/TRANSACTION: rollback toàn bộ khi payload hoặc candidate không hợp lệ.
-
-     * =====================================================================
-     */
-    public function test_apply_candidate_creates_draft_and_provenance(): void
-    {
-        Queue::fake();
-        $token = $this->token();
-        $this->withToken($token)->postJson('/api/admin/posts/ai/import', [
-            'url' => 'https://example.test/apply',
-            'provider' => 'deterministic',
-        ])->assertStatus(202);
-
-        $import = AiImport::query()->firstOrFail();
-        $import->update([
-            'archive_version' => null, 'status' => 'ready',
-            'result_json' => [
-                'provider' => 'deterministic',
-                'model' => 'deterministic',
-                'prompt_key' => 'post.create.from_url',
-                'prompt_version' => '1.0',
-                'draft' => [
-                    'title' => 'AI Draft',
-                    'content_html' => '<p>Generated content</p>',
-                ],
-            ],
-        ]);
-
-        $response = $this->withToken($token)->postJson('/api/admin/posts/ai/import/'.$import->id.'/apply', [
-            'fields' => ['title', 'content'],
-        ]);
-
-        $response->assertOk()->assertJsonPath('data.fields.0', 'title');
-        $this->assertDatabaseHas('posts', ['title' => 'AI Draft', 'status' => 'draft']);
-        $this->assertDatabaseHas('ai_provenances', ['run_id' => $import->id, 'field' => 'title']);
-        $this->assertDatabaseHas('ai_provenances', ['run_id' => $import->id, 'field' => 'content']);
-    }
-
-    /**
-     * =====================================================================
-     * CHỨC NĂNG: Áp dụng field title mà không ghi đè content hiện có
-
-     * =====================================================================
-     * INPUT: Post hiện có, candidate ready và chỉ chọn field title.
-     * OUTPUT: title đổi, content cũ giữ nguyên; provenance chỉ ghi field đã chọn.
-     * SIDE EFFECT: update Post trong transaction và không tạo slug từ client.
-     * EXCEPTION/TRANSACTION: rollback nếu candidate/field không hợp lệ.
-
-     * =====================================================================
-     */
-    public function test_apply_selected_fields_does_not_overwrite_unselected_fields(): void
-    {
-        Queue::fake();
-        $token = $this->token();
-        $actor = User::query()->where('email', '!=', '')->latest('id')->firstOrFail();
-        $post = Post::factory()->create([
-            'created_by' => $actor->id,
-            'updated_by' => $actor->id,
-            'title' => 'Tiêu đề cũ',
-            'content' => '<p>Nội dung cũ</p>',
-        ]);
-
-        $this->withToken($token)->postJson('/api/admin/posts/ai/import', [
-            'url' => 'https://example.test/partial',
-            'provider' => 'deterministic',
-        ])->assertStatus(202);
-        $import = AiImport::query()->firstOrFail();
-        $import->update([
-            'archive_version' => null, 'status' => 'ready',
-            'result_json' => [
-                'provider' => 'deterministic',
-                'model' => 'deterministic',
-                'draft' => [
-                    'title' => 'Tiêu đề mới',
-                    'content_html' => '<p>Nội dung AI không được chọn</p>',
-                ],
-            ],
-        ]);
-
-        $this->withToken($token)->postJson('/api/admin/posts/ai/import/'.$import->id.'/apply', [
-            'target_id' => $post->id,
-            'fields' => ['title'],
-        ])->assertOk();
-
-        $post->refresh();
-        $this->assertSame('Tiêu đề mới', $post->title);
-        $this->assertSame('<p>Nội dung cũ</p>', $post->content);
-        $this->assertDatabaseHas('ai_provenances', ['run_id' => $import->id, 'field' => 'title']);
-        $this->assertDatabaseMissing('ai_provenances', ['run_id' => $import->id, 'field' => 'content']);
-    }
-
-    /**
-     * =====================================================================
      * CHỨC NĂNG: Giữ provenance khi candidate được merge vào PostForm
-
      * =====================================================================
      * INPUT: Post create payload có ai_run_id/ai_fields từ form frontend.
      * OUTPUT: Post được lưu và audit lineage lấy metadata server-side.
+     * SIDE EFFECT: tạo Post, provenance và cập nhật applied metadata của run.
+     * EXCEPTION/TRANSACTION: candidate sai ownership/status phải rollback create.
      * SIDE EFFECT: tạo Post, provenance và cập nhật applied metadata của run.
      * EXCEPTION/TRANSACTION: candidate sai ownership/status phải rollback create.
 
@@ -330,14 +256,14 @@ class AiCandidateApiTest extends TestCase
     {
         Queue::fake();
         $token = $this->token();
-        $this->withToken($token)->postJson('/api/admin/posts/ai/import', [
+        $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', [
             'url' => 'https://example.test/form-provenance',
-            'provider' => 'deterministic',
+            'provider' => 'deterministic', 'requested_outputs' => ['title', 'content'],
         ])->assertStatus(202);
 
         $import = AiImport::query()->firstOrFail();
         $import->update([
-            'archive_version' => null, 'status' => 'ready',
+            'status' => 'ready',
             'result_json' => [
                 'provider' => 'deterministic',
                 'model' => 'deterministic',
@@ -392,11 +318,11 @@ class AiCandidateApiTest extends TestCase
         $token = $this->token();
         $runIds = [];
         foreach (['content-run', 'seo-run'] as $slug) {
-            $this->withToken($token)->postJson('/api/admin/posts/ai/import', ['url' => 'https://example.test/'.$slug, 'provider' => 'deterministic'])->assertStatus(202);
+            $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', ['url' => 'https://example.test/'.$slug, 'provider' => 'deterministic', 'requested_outputs' => ['title']])->assertStatus(202);
             $run = AiImport::query()->latest('created_at')->firstOrFail();
             $runIds[] = $run->id;
             $run->update([
-                'archive_version' => null, 'status' => 'ready', 'result_json' => ['provider' => 'deterministic', 'model' => 'deterministic', 'draft' => []],
+                'status' => 'ready', 'result_json' => ['provider' => 'deterministic', 'model' => 'deterministic', 'draft' => []],
             ]);
         }
 

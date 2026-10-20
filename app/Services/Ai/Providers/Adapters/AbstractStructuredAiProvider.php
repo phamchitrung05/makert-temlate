@@ -48,7 +48,7 @@ abstract class AbstractStructuredAiProvider implements AiProviderContract, AiRes
 
     private array $runSettings = [];
 
-    /** Null keeps the legacy complete response; an empty selection requests no AI fields. */
+    /** Null = gọi trực tiếp không chọn nhóm (dùng default_required_outputs); mảng rỗng = không yêu cầu field AI. */
     private ?array $outputFields = null;
 
     private array $responseMetadata = [];
@@ -228,6 +228,7 @@ abstract class AbstractStructuredAiProvider implements AiProviderContract, AiRes
                 'prompt_version' => $request->options['prompt_version'] ?? '1.0',
                 'schema_version' => $request->options['schema_version'] ?? $request->task.'.v1',
                 'json_schema' => $request->schema,
+                'images' => $request->options['images'] ?? [],
                 'title' => '', 'content_html' => '', 'language' => '', 'rewrite_style' => '', 'user_instructions' => '',
             ]);
             $output = $this->normalizePayload($payload);
@@ -263,7 +264,7 @@ abstract class AbstractStructuredAiProvider implements AiProviderContract, AiRes
         string $promptKey = 'post.create.from_url',
         string $instructions = '',
     ): array {
-        $this->responseMetadata = ['stage' => 'request', 'requested_groups' => $this->outputFields ?? (array) config('ai.agent.legacy_required_outputs', ['title', 'content'])];
+        $this->responseMetadata = ['stage' => 'request', 'requested_groups' => $this->outputFields ?? (array) config('ai.agent.default_required_outputs', ['title', 'content'])];
         if (! $this->configured()) {
             $this->responseMetadata['stage'] = 'skipped';
 

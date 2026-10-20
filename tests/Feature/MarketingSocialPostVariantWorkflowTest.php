@@ -107,4 +107,21 @@ final class MarketingSocialPostVariantWorkflowTest extends TestCase
         $this->expectException(ValidationException::class);
         app(SocialPostLifecycleService::class)->transition($post->fresh(), 'submit', $actor);
     }
+
+    public function test_one_image_can_be_reviewed_when_one_was_requested(): void
+    {
+        $actor = User::factory()->create();
+        $post = app(SocialPostLifecycleService::class)->create(['caption' => 'Caption'], $actor->id);
+        $variant = $post->variants()->firstOrFail();
+        $variant->update(['image_count' => 1, 'content_json' => ['body' => 'Caption', 'bullet_points' => [], 'hashtags' => []], 'content_status' => 'ready']);
+        $asset = MediaAsset::factory()->image()->create(['created_by' => $actor->id]);
+        MediaAssetUsage::create([
+            'media_asset_id' => $asset->id, 'linkable_type' => 'social_post_variant', 'linkable_id' => $variant->id,
+            'field' => MediaAssetField::SocialPostFacebookImages, 'sort_order' => 0,
+        ]);
+        $ready = app(SocialPostGenerationStateService::class)->refresh($post->fresh(), 0);
+        $this->assertTrue(app(SocialPostGenerationStateService::class)->isReady($ready));
+        $reviewed = app(SocialPostLifecycleService::class)->transition($ready, 'submit', $actor);
+        $this->assertSame(SocialPostReviewStatus::PendingReview, $reviewed->review_status);
+    }
 }

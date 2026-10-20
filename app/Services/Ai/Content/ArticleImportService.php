@@ -113,6 +113,13 @@ class ArticleImportService
         $parentDraft = array_key_exists('parent_draft_snapshot', $input)
             ? (array) $input['parent_draft_snapshot']
             : (array) data_get($parent?->result_json, 'draft', []);
+        $parentContentOrigin = null;
+        if ($import->parent_id) {
+            $parentContentOrigin = $input['parent_content_origin'] ?? data_get($parent?->result_json, 'generation_meta.content_origin');
+            if (! in_array($parentContentOrigin, ['ai', 'source', 'deterministic'], true)) {
+                throw new AiImportException('Bản gốc không có thông tin nguồn nội dung. Hãy tạo session mới.', 'AI_PARENT_ORIGIN_MISSING');
+            }
+        }
         if (! is_array($ownSnapshot) || ! array_key_exists('inline_image_refs', $snapshot)
             || ($snapshot['snapshot_run_id'] ?? null) !== (string) $import->getKey()) {
             $parentContent = (string) ($parentDraft['content_html'] ?? '');
@@ -137,30 +144,22 @@ class ArticleImportService
             ['source_type' => $sourceType, 'platform' => $input['platform'] ?? null, 'language' => (string) ($input['language'] ?? 'vi')],
         );
         $promptKey = (string) $prompt['key'];
+        $isSocialTarget = (string) ($input['target_type'] ?? 'post') === 'social_post';
+        // Run luôn có danh sách output tường minh: create dùng requested_outputs đã validate,
+        // regenerate với fields=[] nghĩa là tạo lại toàn bộ output đã chụp trong pipeline_snapshot.
         $rawRequestedFields = (array) ($input['fields'] ?? []);
-        // Create mới có thể gửi fields=[] kèm requested_outputs mặc định; chỉ dùng
-        // requested_outputs ở create, còn regenerate fields=[] nghĩa là chạy đủ luồng.
-        if ($rawRequestedFields === [] && ! $import->parent_id) {
-            $rawRequestedFields = (array) ($input['requested_outputs'] ?? []);
+        if ($rawRequestedFields === []) {
+            $rawRequestedFields = (array) ($input['requested_outputs'] ?? data_get($input, 'pipeline_snapshot.outputs', []));
         }
         $requestedFields = array_values(array_unique(array_map('strval', $rawRequestedFields)));
-        if (in_array('taxonomy', $requestedFields, true)) {
-            throw new AiImportException('Run cũ còn yêu cầu taxonomy từ AI. Hãy tạo run mới và chọn danh mục/tag thủ công.', 'AI_LEGACY_TAXONOMY');
+        if ($requestedFields === []) {
+            throw new AiImportException('Run không có output được yêu cầu.', 'AI_OUTPUTS_MISSING');
         }
-        $isSocialTarget = (string) ($input['target_type'] ?? 'post') === 'social_post';
-        $hasFieldSelection = $requestedFields !== [] || (array_key_exists('requested_outputs', $input) && ! $import->parent_id);
-        $configuredContentFields = array_values(array_diff(
-            (array) data_get($input, 'pipeline_snapshot.outputs', []),
-            ['seo', 'thumbnail', 'taxonomy'],
-        ));
-        $contentFields = $hasFieldSelection
-            ? array_values(array_diff($requestedFields, ['seo', 'thumbnail', 'taxonomy']))
-            : ($isSocialTarget && $configuredContentFields !== [] ? $configuredContentFields : ['title', 'content']);
+        $contentFields = array_values(array_diff($requestedFields, ['seo', 'thumbnail', 'taxonomy']));
         // SEO luôn chạy ở task riêng; không để writer/editor hoặc generate() tự sinh SEO lần nữa.
-        $seoRequested = ! $isSocialTarget && (in_array('seo', $requestedFields, true)
-            || (! $hasFieldSelection && ($input['generate_seo'] ?? false) === true));
+        $seoRequested = ! $isSocialTarget && in_array('seo', $requestedFields, true);
         $contentProvider = $provider;
-        if ($hasFieldSelection && method_exists($contentProvider, 'withOutputFields')) {
+        if (method_exists($contentProvider, 'withOutputFields')) {
             $contentProvider = $contentProvider->withOutputFields($contentFields);
         }
         $this->progress($import, 'extracting', 40);
@@ -168,8 +167,8 @@ class ArticleImportService
         $draft = $this->fallbackDraft($url, $draftTitle, $description, $content, $html);
         $draft['thumbnail']['source_url'] = $snapshot['thumbnail_source_url'] ?? $draft['thumbnail']['source_url'];
         $sourceDraft = $draft;
-        $inheritedFields = $hasFieldSelection && $import->parent_id ? array_keys($parentDraft) : [];
-        if ($hasFieldSelection && $import->parent_id) {
+        $inheritedFields = $import->parent_id ? array_keys($parentDraft) : [];
+        if ($import->parent_id) {
             $sourceThumbnail = $draft['thumbnail'];
             $draft = array_replace($draft, $parentDraft);
             if (in_array('thumbnail', $requestedFields, true)) {
@@ -180,15 +179,9 @@ class ArticleImportService
         $generationTitle = (string) ($draft['title'] ?? $draftTitle);
         $generationContent = (string) ($draft['content_html'] ?? $draft['content'] ?? $content);
         $validator = $this->validator ?? new AiOutputValidator;
-        $validationGroups = $hasFieldSelection || $isSocialTarget ? $contentFields : null;
-        $finalValidationGroups = $hasFieldSelection
-            ? $requestedFields
-            : ($isSocialTarget ? $contentFields : null);
-        $needsContentGeneration = ! $hasFieldSelection || $contentFields !== [];
+        $needsContentGeneration = $contentFields !== [];
         $needsTextGeneration = $needsContentGeneration || $seoRequested;
-        $requestedGroups = $hasFieldSelection
-            ? $requestedFields
-            : array_values(array_unique(array_merge($contentFields, $seoRequested ? ['seo'] : [])));
+        $requestedGroups = $requestedFields;
         $diagnostics = [
             'requested_groups' => $requestedGroups,
             'schema_version' => (string) $prompt['schema'],
@@ -204,7 +197,7 @@ class ArticleImportService
                 $diagnostics['returned_fields'] = [];
                 if ($needsContentGeneration) {
                     $fullPostContent = ($input['target_type'] ?? 'post') === 'post'
-                        && (! $hasFieldSelection || in_array('content', $contentFields, true));
+                        && in_array('content', $contentFields, true);
                     if ($fullPostContent) {
                         $generationCalled = true;
                         $activeProvider = $contentProvider;
@@ -243,10 +236,8 @@ class ArticleImportService
                     // Source URLs and uploaded media are pipeline results, never model output.
                     unset($generated['thumbnail']);
                     $diagnostics['returned_fields'] = array_values(array_unique(array_merge($diagnostics['returned_fields'], array_keys($generated))));
-                    $generated = $validator->validate($generated, $validationGroups, sanitizeContent: true);
-                    $allowedGeneratedFields = $hasFieldSelection
-                        ? array_merge(...array_map(fn (string $group): array => (array) config('ai.agent.output_definitions.'.$group.'.fields', []), $contentFields))
-                        : array_keys($generated);
+                    $generated = $validator->validate($generated, $contentFields, sanitizeContent: true);
+                    $allowedGeneratedFields = array_merge(...array_map(fn (string $group): array => (array) config('ai.agent.output_definitions.'.$group.'.fields', []), $contentFields));
                     $generated = array_intersect_key($generated, array_flip($allowedGeneratedFields));
                     $generatedFields = array_values(array_intersect(array_keys($generated), $allowedGeneratedFields));
                     if (in_array('content', $generatedFields, true) && ! in_array('content_html', $generatedFields, true)) {
@@ -254,9 +245,7 @@ class ArticleImportService
                     }
                     $generationMode = 'ai';
                     $inheritedFields = array_values(array_diff($inheritedFields, $generatedFields));
-                    $draft = $hasFieldSelection
-                        ? $this->mergeRequestedFields($draft, $generated, $contentFields)
-                        : array_replace($draft, $generated);
+                    $draft = $this->mergeRequestedFields($draft, $generated, $contentFields);
                 }
                 if ($seoRequested) {
                     $this->progress($import, 'seo', 82);
@@ -274,9 +263,7 @@ class ArticleImportService
                     $diagnostics['returned_fields'] = array_values(array_unique(array_merge($diagnostics['returned_fields'], array_keys($seoFields))));
                     $generatedFields = array_values(array_unique(array_merge($generatedFields, array_keys($seoFields))));
                     $inheritedFields = array_values(array_diff($inheritedFields, array_keys($seoFields)));
-                    $draft = $hasFieldSelection
-                        ? $this->mergeRequestedFields($draft, $seoFields, ['seo'])
-                        : array_replace($draft, $seoFields);
+                    $draft = $this->mergeRequestedFields($draft, $seoFields, ['seo']);
                     $generationMode = 'ai';
                     if ($provider instanceof AiResponseMetadataProvider) {
                         $diagnostics = array_replace($diagnostics, $provider->responseMetadata());
@@ -290,12 +277,12 @@ class ArticleImportService
                 if ($needsTextGeneration && ($selectedProvider !== 'deterministic' || $provider->providerName() !== 'deterministic')) {
                     throw new AiImportException('Provider AI đã chọn chưa có cấu hình hợp lệ.', 'AI_PROVIDER_NOT_CONFIGURED');
                 }
-                if ($needsTextGeneration && $hasFieldSelection) {
+                if ($needsTextGeneration) {
                     $draft = $this->mergeRequestedFields($draft, $sourceDraft, $requestedFields);
                     $replacedFields = array_merge(...array_map(fn (string $group): array => (array) config('ai.agent.output_definitions.'.$group.'.fields', []), $requestedFields));
                     $inheritedFields = array_values(array_diff($inheritedFields, $replacedFields));
                 }
-                $validator->validate($draft, $finalValidationGroups, sanitizeContent: true);
+                $validator->validate($draft, $requestedFields, sanitizeContent: true);
                 $diagnostics['stage'] = $needsTextGeneration ? 'deterministic' : 'skipped';
                 $generationMode = $needsTextGeneration ? 'deterministic' : 'source_only';
             }
@@ -304,29 +291,25 @@ class ArticleImportService
             $this->persistResponseMetadata($import, array_replace($diagnostics, $providerMetadata, $exception->diagnostics, ['error_code' => $exception->errorCode]));
             throw $exception;
         }
+        if ($isSocialTarget && in_array('social_gallery', $requestedFields, true) && isset($input['image_count'])) {
+            $draft['slot_count'] = (int) $input['image_count'];
+        }
         $draft['content_html'] = $draft['content_html'] ?? $draft['content'];
         $draft['content'] = $draft['content_html'];
         $this->validateMediaReferences((string) $draft['content_html'], $import);
         $this->persistResponseMetadata($import, $diagnostics);
-        // Taxonomy chỉ lấy lựa chọn thủ công của request; không dùng output hoặc gợi ý legacy AI.
+        // Taxonomy chỉ lấy lựa chọn thủ công của request; AI không sinh taxonomy.
         unset($draft['suggested_category_ids'], $draft['suggested_tag_ids']);
         $draft['category_ids'] = $this->existingIds($input['category_ids'] ?? $parentDraft['category_ids'] ?? [], Category::class);
         $draft['tag_ids'] = $this->existingIds($input['tag_ids'] ?? $parentDraft['tag_ids'] ?? [], Tag::class);
-        // Nhãn public đi cùng IDs để editor không nhầm lựa chọn thủ công với gợi ý legacy.
         $draft['taxonomy_origin'] = 'manual';
-
-        if (! $hasFieldSelection && ! ($input['generate_seo'] ?? true) && ! in_array('seo', $requestedFields, true)) {
-            foreach (['focus_keyword', 'seo_title', 'seo_description', 'og_title', 'og_description'] as $field) {
-                unset($draft[$field]);
-            }
-        }
 
         $this->progress($import, 'seo', 82);
         $thumbnail = $draft['thumbnail'];
         if (! empty($draft['thumbnail_alt_text'])) {
             $thumbnail['alt_text'] = (string) $draft['thumbnail_alt_text'];
         }
-        $thumbnailRequested = ! $hasFieldSelection || in_array('thumbnail', $requestedFields, true);
+        $thumbnailRequested = in_array('thumbnail', $requestedFields, true);
         if ($thumbnailRequested && ($input['generate_thumbnail'] ?? true) && ($input['thumbnail_mode'] ?? 'auto') !== 'generate'
             && ($thumbnail['source_url'] ?? null) && $this->uploader && $import->exists) {
             $this->progress($import, 'thumbnail', 86);
@@ -345,6 +328,18 @@ class ArticleImportService
             ])->save();
         }
 
+        // content_origin luôn có: body AI sinh lần này, kế thừa nguyên từ parent, hoặc lấy từ nguồn.
+        $contentOrigin = match (true) {
+            in_array('content_html', $generatedFields, true) => $generationMode === 'ai' ? 'ai' : 'deterministic',
+            $parentContentOrigin !== null && in_array('content_html', $inheritedFields, true) => $parentContentOrigin,
+            $generationMode === 'deterministic' => 'deterministic',
+            default => 'source',
+        };
+        $generationMeta = [
+            'mode' => $generationMode, 'generated_fields' => $generatedFields, 'inherited_fields' => $inheritedFields,
+            'requested_groups' => $requestedGroups, 'content_origin' => $contentOrigin,
+        ];
+
         return [
             'source' => ['url' => $source['url'], 'title' => $title, 'canonical_url' => $snapshot['canonical_url'] ?? $source['url']],
             'draft' => $draft,
@@ -354,10 +349,7 @@ class ArticleImportService
             'prompt_version' => (string) $prompt['version'],
             'schema_version' => (string) $prompt['schema'],
             'requested_fields' => $requestedFields,
-            'generation_meta' => [
-                'mode' => $generationMode, 'generated_fields' => $generatedFields, 'inherited_fields' => $inheritedFields,
-                'requested_groups' => $requestedGroups,
-            ],
+            'generation_meta' => $generationMeta,
         ];
     }
 
@@ -685,7 +677,7 @@ class ArticleImportService
      * CHỨC NĂNG: Chọn provider từ registry bằng input đã được allowlist.
      * =====================================================================
      * INPUT: input_json provider/model.
-     * OUTPUT: provider contract; fallback về provider mặc định khi test legacy.
+     * OUTPUT: provider contract; dùng provider inject trực tiếp khi service không có registry (unit test).
      * SIDE EFFECT: không gọi provider trong bước resolve.
      * EXCEPTION/TRANSACTION: AiImportException nếu key provider bị giả mạo hoặc adapter lỗi; không mở transaction.
      * =====================================================================

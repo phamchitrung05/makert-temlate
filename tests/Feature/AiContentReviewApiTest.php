@@ -33,7 +33,7 @@ use Tests\UsesIsolatedDatabase;
  * - test_review_guards_expiry_readiness_target_and_required_versions().
  * - test_approval_rolls_back_post_and_audit_when_action_fails_after_writing().
  * - test_approval_preserves_media_usage_and_cleanup_keeps_post_and_activity().
- * - test_legacy_applied_review_has_no_fabricated_history_and_missing_title_is_validation().
+ * - test_applied_review_has_no_fabricated_history_and_missing_title_is_validation().
  * INPUT/OUTPUT CỦA CLASS (tổng thể): HTTP/fixtures -> assertions nghiệp vụ.
  * SIDE EFFECT: SQLite in-memory/storage fake; không gọi AI hoặc database thật.
  * =====================================================================
@@ -290,8 +290,8 @@ class AiContentReviewApiTest extends TestCase
         $this->assertSame(1, $this->events($run)->count());
     }
 
-    /** INPUT: candidate Apply cũ không audit và draft thiếu title. OUTPUT: không dựng lịch sử giả, lỗi create trả 422. */
-    public function test_legacy_applied_review_has_no_fabricated_history_and_missing_title_is_validation(): void
+    /** INPUT: candidate đã Apply không có audit và draft thiếu title. OUTPUT: không dựng lịch sử giả, lỗi create trả 422. */
+    public function test_applied_review_has_no_fabricated_history_and_missing_title_is_validation(): void
     {
         [$actor, $token] = $this->credentials();
         $post = Post::factory()->create(['created_by' => $actor->id, 'updated_by' => $actor->id, 'status' => 'draft']);

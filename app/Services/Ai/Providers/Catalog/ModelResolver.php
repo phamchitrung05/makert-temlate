@@ -12,7 +12,7 @@ use Illuminate\Validation\ValidationException;
  * =====================================================================
  * CHỨC NĂNG FILE: Một nguồn resolve model cho session, regenerate, image và defaults.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: __construct(), resolve(), fromModel(), usable(), legacy().
+ * CÁC HÀM/METHOD TRONG FILE: __construct(), resolve(), fromModel(), usable(), fromProviderSelection().
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * INPUT: override/default + capability.
  * OUTPUT: snapshot public không có API key.
@@ -61,7 +61,7 @@ final class ModelResolver
             return $this->fromModel($model, $settings, $capability);
         }
         if (filled($selection['provider'] ?? null) || filled($selection['model'] ?? null)) {
-            return $this->legacy($capability, $selection, $settings);
+            return $this->fromProviderSelection($capability, $selection, $settings);
         }
 
         $suffix = $capability === AiCapability::Image ? 'image' : 'text';
@@ -81,7 +81,7 @@ final class ModelResolver
             throw ValidationException::withMessages(['model_id' => 'Chưa có model AI mặc định. Chọn model hoặc cấu hình model mặc định/fallback trong AI & Content.']);
         }
 
-        $resolved = $this->legacy($capability, ['provider' => $provider], $settings);
+        $resolved = $this->fromProviderSelection($capability, ['provider' => $provider], $settings);
         if (! $this->providers->resolveForRun($resolved)->configured()) {
             throw ValidationException::withMessages(['model_id' => 'Model AI mặc định chưa có kết nối hợp lệ. Hãy kiểm tra cấu hình provider.']);
         }
@@ -133,7 +133,7 @@ final class ModelResolver
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Resolve cặp provider/model từ client cũ qua catalog hoặc config allowlist
+     * CHỨC NĂNG: Resolve cặp provider/model chọn theo tên qua catalog hoặc config allowlist
      * =====================================================================
      * INPUT: Capability, provider/model strings và settings.
      * OUTPUT: Snapshot của model đã xác minh; giữ nguyên remote ID.
@@ -141,7 +141,7 @@ final class ModelResolver
      * EXCEPTION/TRANSACTION: ValidationException nếu provider/model sai; không fallback sang model khác khi override không hợp lệ.
      * =====================================================================
      */
-    private function legacy(AiCapability $capability, array $selection, array $settings): array
+    private function fromProviderSelection(AiCapability $capability, array $selection, array $settings): array
     {
         if (empty($selection['provider'])) {
             throw ValidationException::withMessages(['provider' => 'Chọn provider trước khi chọn model.']);

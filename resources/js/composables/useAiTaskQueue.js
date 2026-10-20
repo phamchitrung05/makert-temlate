@@ -86,6 +86,7 @@ export function announceAiTaskQueued(value, overrides = {}) {
     provider: value?.provider ?? null,
     parent_id: value?.parent_id ?? null,
     draft_profile_id: value?.draft_profile_id ?? null,
+    social_post_id: value?.social_post_id ?? null,
     created_at: value?.created_at ?? new Date().toISOString(),
   }
 
@@ -138,6 +139,7 @@ export function normalizeTask(value) {
     media_asset_id: value?.media_asset_id ?? null,
     resource_version_id: value?.resource_version_id ?? null,
     resource_id: value?.resource_id ?? null,
+    social_post_id: value?.social_post_id ?? null,
     created_at: value?.created_at ?? null,
     started_at: value?.started_at ?? null,
     completed_at: value?.completed_at ?? null,

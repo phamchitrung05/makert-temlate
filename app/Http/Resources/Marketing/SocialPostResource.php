@@ -118,7 +118,7 @@ final class SocialPostResource extends JsonResource
     {
         $images = $variant->relationLoaded('mediaAssetUsages')
             ? $variant->mediaAssetUsages
-                ->where('field', \App\Enums\MediaAssetField::SocialPostFacebookImages)
+                ->where('field', MediaAssetField::SocialPostFacebookImages)
                 ->sortBy(fn ($usage): int => (int) ($usage->sort_order ?? 0))
                 ->map(fn ($usage): array => [
                     'usage_id' => (int) $usage->id,
@@ -138,6 +138,7 @@ final class SocialPostResource extends JsonResource
             'generation_status' => $variant->generation_status?->value,
             'review_status' => $variant->review_status?->value,
             'current_version_no' => (int) $variant->current_version_no,
+            'image_count' => (int) $variant->image_count,
             'review' => [
                 'reviewed_by' => $variant->reviewed_by,
                 'reviewed_at' => $variant->reviewed_at?->toIso8601String(),

@@ -5,8 +5,8 @@
  * list(), authors(), show(), create(), update(), submitReview(), publish(),
  * reject(), archive(), remove().
  * INPUT/OUTPUT CỦA CLASS (tổng thể): state form/ID/query -> payload API hoặc Post.
- * AI lineage nhiều run được gửi dưới dạng ai_runs; khóa legacy vẫn được giữ cho
- * client cũ. Provider/model chỉ do backend resolve.
+ * AI lineage nhiều run được gửi dưới dạng ai_runs, một run dùng ai_run_id/ai_fields.
+ * Provider/model chỉ do backend resolve.
  * =====================================================================
  */
 import { $api } from '@/utils/api'
@@ -90,34 +90,6 @@ const toPayload = (payload, includeStatus = true) => ({
 })
 
 export const postService = {
-  /**
-   * =====================================================================
-   * CHỨC NĂNG: Xếp hàng tạo nội dung bằng AI
-   * =====================================================================
-   * INPUT: URL/text và options provider/model/prompt.
-   * OUTPUT: Job queued hoặc run trùng idempotent để tiếp tục polling.
-   * SIDE EFFECT: Gọi POST Admin API; backend ghi run và dispatch job.
-   * EXCEPTION/TRANSACTION: Lỗi API truyền lên caller; không gọi provider từ browser.
-   * =====================================================================
-   */
-  async aiImport(payload) {
-    return unwrap(await $api('/admin/posts/ai/import', { method: 'POST', body: payload }))
-  },
-
-  /**
-   * =====================================================================
-   * CHỨC NĂNG: Đọc tiến trình của AI import
-   * =====================================================================
-   * INPUT: Job UUID thuộc admin hiện tại.
-   * OUTPUT: Status, progress và result khi ready.
-   * SIDE EFFECT: Gọi GET Admin API; không ghi Post.
-   * EXCEPTION/TRANSACTION: Lỗi API truyền lên caller.
-   * =====================================================================
-   */
-  async aiImportStatus(jobId) {
-    return unwrap(await $api(`/admin/posts/ai/import/${jobId}`))
-  },
-
   /**
    * =====================================================================
    * CHỨC NĂNG: Tải danh sách Post có phân trang

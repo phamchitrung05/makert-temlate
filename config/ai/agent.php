@@ -14,7 +14,7 @@
  * =====================================================================
  */
 return [
-    'legacy_required_outputs' => ['title', 'content'],
+    'default_required_outputs' => ['title', 'content'],
     'output_aliases' => ['content' => 'content_html'],
     'output_definitions' => require __DIR__.'/outputs.php',
     'targets' => require __DIR__.'/targets.php',

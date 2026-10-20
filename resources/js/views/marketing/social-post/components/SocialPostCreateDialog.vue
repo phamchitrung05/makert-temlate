@@ -17,6 +17,7 @@
 <script setup>
 /* eslint-disable camelcase -- Form payload follows the Laravel Social Post contract. */
 import { reactive, watch } from 'vue'
+import AiImageProfileSelect from '@/views/ai/shared/AiImageProfileSelect.vue'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -28,10 +29,10 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue', 'submit'])
-const form = reactive({ campaign_id: null, caption: '', target_account_ids: [], generate: true })
+const form = reactive({ campaign_id: null, caption: '', target_account_ids: [], generate: true, image_count: 3, image_profile_id: null })
 
 function reset() {
-  Object.assign(form, { campaign_id: null, caption: '', target_account_ids: [], generate: true })
+  Object.assign(form, { campaign_id: null, caption: '', target_account_ids: [], generate: true, image_count: 3, image_profile_id: null })
 }
 
 function submit() {
@@ -103,6 +104,22 @@ watch(() => props.modelValue, open => { if (open) reset() })
             <VSwitch
               v-model="form.generate"
               label="Xếp hàng tạo caption và ảnh bằng AI"
+            />
+          </VCol>
+          <VCol
+            v-if="form.generate"
+            cols="12"
+          >
+            <AppTextField
+              v-model.number="form.image_count"
+              type="number"
+              min="1"
+              max="10"
+              label="Số lượng ảnh cần tạo"
+            />
+            <AiImageProfileSelect
+              v-model="form.image_profile_id"
+              class="mt-4"
             />
           </VCol>
         </VRow>

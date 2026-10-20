@@ -633,10 +633,9 @@ resources/js/components/ai/              dialog/preview dùng chung
 resources/js/views/ai/content/           tạo/review/regenerate/apply nội dung Post
 ```
 
-Capability được đọc từ `GET /api/admin/ai-agent/capabilities/{target}`. Generic
-session dùng `/api/admin/ai-agent/sessions/*`, còn các route dưới
-`/api/admin/posts/ai/import` được giữ để tương thích. Candidate chưa tạo slug hoặc
-Post thật, chỉ thao tác Apply mới gọi Post Action/SlugService. API key luôn ở
+Capability được đọc từ `GET /api/admin/ai-agent/capabilities/{target}`. Toàn bộ
+luồng AI Content dùng bộ route `/api/admin/ai-agent/*`. Candidate chưa tạo slug hoặc
+Post thật, chỉ thao tác Duyệt mới gọi Post Action/SlugService. API key luôn ở
 backend; deterministic chỉ chạy khi được chọn rõ ràng, provider cấu hình lỗi không tự fallback che lỗi.
 
 Tạo toàn bộ bài Post chỉ dùng C: Analyze + Plan → Write → Edit. Luồng B và
@@ -794,11 +793,11 @@ giữ nguyên. Với Post text v1, child ảnh được tạo sau khi parent rea
 `GET /sessions` phân trang summary root còn hạn của chính actor. Page đọc mọi trang,
 merge lifecycle mới vào list và không tự apply/publish Post. Các session vẫn theo
 retention của backend hiện tại (mặc định 2 ngày), chưa phải kho lưu bản nháp dài hạn.
-Từ 07/10/2026, kho `ai_article_archives` lưu output AI được duyệt/Apply theo identity
-đa model `target_type` + `applied_target_id`, kèm nguồn/brief/profile/model và trace phiên bản/usage. Post là target đầu tiên có workflow hoàn chỉnh; Resource/Sound sẽ dùng chung kho sau AI-04. Checkpoint tạm giữ original
+Từ 07/10/2026, kho `ai_article_archives` lưu output AI được Duyệt theo identity
+đa model `target_type` + `applied_target_id`, kèm nguồn/brief/profile/model và trace phiên bản/usage. Post là target duy nhất có workflow hoàn chỉnh. Checkpoint tạm giữ original
 trước edit; Post nhận bản biên tập khi được chọn. Retry thủ công tăng `generation_no`
 và bỏ checkpoint chưa duyệt của lần trước; retry queue giữ số cũ, unique key chặn
-bản trùng. Payload/hash bất biến, metadata quyết định/Apply riêng; không FK/cascade
+bản trùng. Payload/hash bất biến, metadata quyết định/Duyệt riêng; không FK/cascade
 theo run hoặc Post. Cleanup/xóa candidate chưa duyệt không tạo archive; với bản
 approved v1 phải đối chiếu archive hợp lệ trước khi dọn, lỗi giữ run để phục hồi.
 Command chỉ phục hồi kho của bản đã chọn, không gọi lại AI. UI candidate hiện tại

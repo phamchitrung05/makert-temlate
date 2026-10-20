@@ -17,7 +17,7 @@
 -->
 <script setup>
 /* eslint-disable camelcase -- Detail fields follow the Laravel API contract. */
-import { reactive, shallowRef, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, shallowRef, watch } from 'vue'
 import { socialPostService } from '@/services/socialPost'
 import MediaAssetField from '@/views/apps/media/field/MediaAssetField.vue'
 import { useMediaCapabilities } from '@/views/apps/media/field/useMediaCapabilities'
@@ -31,6 +31,11 @@ const saving = shallowRef(false)
 const error = shallowRef('')
 const galleryAssets = shallowRef([])
 const { canAttach } = useMediaCapabilities()
+let pollTimer
+let loadVersion = 0
+const activeStatuses = ['queued', 'running', 'processing', 'generating']
+const generating = computed(() => (detail.value?.generation_jobs ?? []).some(job => activeStatuses.includes(job.status)))
+const imageJobs = computed(() => (detail.value?.generation_jobs ?? []).filter(job => job.component === 'image'))
 
 const form = reactive({
   title: '', body: '', bullet_points: '', cta: '', address: '', phone: '', website: '', hashtags: '', link_url: '',
@@ -53,19 +58,41 @@ function fillGallery(images = []) {
 }
 
 /** Input: dialog/post ID. Output: detail/version state. */
-async function load() {
+async function load(poll = false) {
+  clearTimeout(pollTimer)
+
+  const token = ++loadVersion
   if (!props.modelValue || !props.postId) return
-  loading.value = true
+  loading.value = !poll
   error.value = ''
   try {
-    detail.value = await socialPostService.show(props.postId)
+    const value = await socialPostService.show(props.postId)
+    if (token !== loadVersion) return
+    detail.value = value
     fillContent(detail.value?.facebook_variant?.content ?? {})
     fillGallery(detail.value?.facebook_variant?.images ?? [])
-    versions.value = await socialPostService.versions(props.postId) ?? []
+
+    const history = await socialPostService.versions(props.postId)
+    if (token !== loadVersion) return
+    versions.value = history ?? []
+    if (token === loadVersion && generating.value) pollTimer = setTimeout(() => load(true), 2000)
   } catch (cause) {
-    error.value = cause?.data?.message ?? cause?.message ?? 'Không tải được chi tiết Social Post.'
+    if (token === loadVersion) error.value = cause?.data?.message ?? cause?.message ?? 'Không tải được chi tiết Social Post.'
   } finally {
-    loading.value = false
+    if (token === loadVersion) loading.value = false
+  }
+}
+
+async function regenerateSlot(slot) {
+  saving.value = true
+  error.value = ''
+  try {
+    await socialPostService.regenerateImageSlot(props.postId, slot)
+    await load()
+  } catch (cause) {
+    error.value = cause?.data?.message ?? cause?.message ?? 'Không tạo lại được ảnh.'
+  } finally {
+    saving.value = false
   }
 }
 
@@ -100,7 +127,8 @@ async function save() {
 /** Input: dialog close. Output: update:modelValue false. */
 function close() { emit('update:modelValue', false) }
 
-watch(() => [props.modelValue, props.postId], load, { immediate: true })
+watch(() => [props.modelValue, props.postId], () => load(), { immediate: true })
+onBeforeUnmount(() => { loadVersion += 1; clearTimeout(pollTimer) })
 </script>
 
 <template>
@@ -131,188 +159,216 @@ watch(() => [props.modelValue, props.postId], load, { immediate: true })
         >
           {{ error }}
         </VAlert>
-        <VRow v-if="detail">
-          <VCol
-            cols="12"
-            md="5"
-          >
-            <VCard
-              variant="outlined"
-              class="facebook-preview"
+        <VAlert
+          v-if="generating"
+          type="info"
+          variant="tonal"
+          class="mb-4"
+        >
+          AI đang tạo nội dung và ảnh. Kết quả sẽ tự cập nhật tại đây.
+        </VAlert>
+        <fieldset
+          :disabled="generating || loading || saving"
+          class="social-editor-fields"
+        >
+          <VRow v-if="detail">
+            <VCol
+              cols="12"
+              md="5"
             >
-              <VCardItem>
-                <template #prepend>
-                  <VAvatar
-                    color="primary"
-                    variant="tonal"
-                  >
-                    <VIcon icon="tabler-brand-facebook" />
-                  </VAvatar>
-                </template>
-                <VCardTitle class="text-body-1">
-                  Facebook preview
-                </VCardTitle>
-                <VCardSubtitle>{{ detail.campaign?.name || 'Social Post' }}</VCardSubtitle>
-              </VCardItem>
-              <VCardText>
-                <div class="text-subtitle-1 font-weight-bold mb-2">
-                  {{ form.title }}
-                </div>
-                <div class="text-body-2 whitespace-pre-line">
-                  {{ form.body }}
-                </div>
-                <ul
-                  v-if="detail.facebook_variant?.content?.bullet_points?.length"
-                  class="mt-3 ps-5"
-                >
-                  <li
-                    v-for="bullet in detail.facebook_variant.content.bullet_points"
-                    :key="bullet"
-                  >
-                    {{ bullet }}
-                  </li>
-                </ul>
-              </VCardText>
-              <VRow
-                v-if="detail.facebook_variant?.images?.length"
-                no-gutters
+              <VCard
+                variant="outlined"
+                class="facebook-preview"
               >
-                <VCol
-                  v-for="image in detail.facebook_variant.images"
-                  :key="image.usage_id"
-                  cols="6"
+                <VCardItem>
+                  <template #prepend>
+                    <VAvatar
+                      color="primary"
+                      variant="tonal"
+                    >
+                      <VIcon icon="tabler-brand-facebook" />
+                    </VAvatar>
+                  </template>
+                  <VCardTitle class="text-body-1">
+                    Facebook preview
+                  </VCardTitle>
+                  <VCardSubtitle>{{ detail.campaign?.name || 'Social Post' }}</VCardSubtitle>
+                </VCardItem>
+                <VCardText>
+                  <div class="text-subtitle-1 font-weight-bold mb-2">
+                    {{ form.title }}
+                  </div>
+                  <div class="text-body-2 whitespace-pre-line">
+                    {{ form.body }}
+                  </div>
+                  <ul
+                    v-if="detail.facebook_variant?.content?.bullet_points?.length"
+                    class="mt-3 ps-5"
+                  >
+                    <li
+                      v-for="bullet in detail.facebook_variant.content.bullet_points"
+                      :key="bullet"
+                    >
+                      {{ bullet }}
+                    </li>
+                  </ul>
+                </VCardText>
+                <VRow
+                  v-if="detail.facebook_variant?.images?.length"
+                  no-gutters
                 >
-                  <VImg
-                    v-if="image.asset?.file?.preview_url || image.asset?.file?.url"
-                    :src="image.asset.file.preview_url || image.asset.file.url"
-                    height="150"
-                    cover
+                  <VCol
+                    v-for="image in detail.facebook_variant.images"
+                    :key="image.usage_id"
+                    cols="6"
+                  >
+                    <VImg
+                      v-if="image.asset?.file?.preview_url || image.asset?.file?.url"
+                      :src="image.asset.file.preview_url || image.asset.file.url"
+                      height="150"
+                      cover
+                    />
+                  </VCol>
+                </VRow>
+              </VCard>
+              <div class="d-flex flex-wrap gap-2 mt-3">
+                <VChip
+                  size="small"
+                  variant="tonal"
+                >
+                  {{ detail.generationStatus }}
+                </VChip><VChip
+                  size="small"
+                  variant="tonal"
+                >
+                  {{ detail.reviewStatus }}
+                </VChip>
+              </div>
+            </VCol>
+            <VCol
+              cols="12"
+              md="7"
+            >
+              <VTextField
+                v-model="form.title"
+                label="Tiêu đề Facebook"
+                class="mb-3"
+              />
+              <VTextarea
+                v-model="form.body"
+                label="Nội dung"
+                rows="7"
+                class="mb-3"
+              />
+              <VTextarea
+                v-model="form.bullet_points"
+                label="Bullet points (mỗi dòng một ý)"
+                rows="4"
+                class="mb-3"
+              />
+              <VTextarea
+                v-model="form.cta"
+                label="CTA"
+                rows="2"
+                class="mb-3"
+              />
+              <VRow>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <VTextField
+                    v-model="form.address"
+                    label="Địa chỉ"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <VTextField
+                    v-model="form.phone"
+                    label="Hotline"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <VTextField
+                    v-model="form.website"
+                    label="Website"
+                  />
+                </VCol>
+                <VCol
+                  cols="12"
+                  md="6"
+                >
+                  <VTextField
+                    v-model="form.hashtags"
+                    label="Hashtag"
+                  />
+                </VCol>
+                <VCol cols="12">
+                  <VTextField
+                    v-model="form.link_url"
+                    label="Link"
                   />
                 </VCol>
               </VRow>
-            </VCard>
-            <div class="d-flex flex-wrap gap-2 mt-3">
-              <VChip
-                size="small"
-                variant="tonal"
+              <div class="text-caption text-medium-emphasis mb-3">
+                Gallery Facebook: {{ detail.facebook_variant?.images?.length || 0 }}/{{ detail.facebook_variant?.image_count ?? 3 }} ảnh.
+              </div>
+              <div
+                v-if="imageJobs.length"
+                class="d-flex flex-wrap gap-2 mb-3"
               >
-                {{ detail.generationStatus }}
-              </VChip><VChip
-                size="small"
-                variant="tonal"
-              >
-                {{ detail.reviewStatus }}
-              </VChip>
-            </div>
-          </VCol>
-          <VCol
-            cols="12"
-            md="7"
-          >
-            <VTextField
-              v-model="form.title"
-              label="Tiêu đề Facebook"
-              class="mb-3"
-            />
-            <VTextarea
-              v-model="form.body"
-              label="Nội dung"
-              rows="7"
-              class="mb-3"
-            />
-            <VTextarea
-              v-model="form.bullet_points"
-              label="Bullet points (mỗi dòng một ý)"
-              rows="4"
-              class="mb-3"
-            />
-            <VTextarea
-              v-model="form.cta"
-              label="CTA"
-              rows="2"
-              class="mb-3"
-            />
-            <VRow>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VTextField
-                  v-model="form.address"
-                  label="Địa chỉ"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VTextField
-                  v-model="form.phone"
-                  label="Hotline"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VTextField
-                  v-model="form.website"
-                  label="Website"
-                />
-              </VCol>
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VTextField
-                  v-model="form.hashtags"
-                  label="Hashtag"
-                />
-              </VCol>
-              <VCol cols="12">
-                <VTextField
-                  v-model="form.link_url"
-                  label="Link"
-                />
-              </VCol>
-            </VRow>
-            <div class="text-caption text-medium-emphasis mb-3">
-              Gallery Facebook: {{ detail.facebook_variant?.images?.length || 0 }}/4 ảnh; cần tối thiểu 3 ảnh để gửi duyệt.
-            </div>
-            <MediaAssetField
-              v-if="canAttach"
-              v-model="galleryAssets"
-              field="social_post_variant.facebook.images"
-              multiple
-              visibility="public"
-              label="Gallery ảnh Facebook"
-            />
-            <div class="text-subtitle-2 mb-2">
-              Version history
-            </div>
-            <VList
-              density="compact"
-              border
-              rounded="lg"
-              max-height="190"
-            >
-              <VListItem
-                v-for="version in versions"
-                :key="version.id"
-                :title="`Version ${version.version_no}`"
-                :subtitle="version.reason || 'AI/manual'"
-              >
-                <template #append>
-                  <span class="text-caption text-medium-emphasis">{{ version.created_at }}</span>
-                </template>
-              </VListItem>
-              <VListItem
-                v-if="!versions.length"
-                title="Chưa có version snapshot"
+                <VBtn
+                  v-for="job in imageJobs"
+                  :key="job.id"
+                  size="small"
+                  variant="tonal"
+                  :disabled="generating || saving"
+                  @click="regenerateSlot(job.slot_no)"
+                >
+                  {{ job.status === 'ready' ? 'Tạo lại' : 'Thử lại' }} ảnh {{ job.slot_no + 1 }}
+                </VBtn>
+              </div>
+              <MediaAssetField
+                v-if="canAttach"
+                v-model="galleryAssets"
+                field="social_post_variant.facebook.images"
+                multiple
+                visibility="public"
+                label="Gallery ảnh Facebook"
               />
-            </VList>
-          </VCol>
-        </VRow>
+              <div class="text-subtitle-2 mb-2">
+                Version history
+              </div>
+              <VList
+                density="compact"
+                border
+                rounded="lg"
+                max-height="190"
+              >
+                <VListItem
+                  v-for="version in versions"
+                  :key="version.id"
+                  :title="`Version ${version.version_no}`"
+                  :subtitle="version.reason || 'AI/manual'"
+                >
+                  <template #append>
+                    <span class="text-caption text-medium-emphasis">{{ version.created_at }}</span>
+                  </template>
+                </VListItem>
+                <VListItem
+                  v-if="!versions.length"
+                  title="Chưa có version snapshot"
+                />
+              </VList>
+            </VCol>
+          </VRow>
+        </fieldset>
       </VCardText>
       <VCardActions class="justify-end">
         <VBtn
@@ -323,6 +379,7 @@ watch(() => [props.modelValue, props.postId], load, { immediate: true })
         </VBtn><VBtn
           color="primary"
           :loading="saving"
+          :disabled="generating || loading || !detail"
           @click="save"
         >
           Lưu content Facebook
@@ -333,6 +390,7 @@ watch(() => [props.modelValue, props.postId], load, { immediate: true })
 </template>
 
 <style scoped>
+.social-editor-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
 .detail-empty { min-height: 280px; background: rgba(var(--v-theme-on-surface), 0.04); }
 .facebook-preview { min-height: 280px; }
 .whitespace-pre-line { white-space: pre-line; }

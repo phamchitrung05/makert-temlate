@@ -68,8 +68,6 @@ final class AiRunService
                     $import = AiImport::query()->create(array_merge($attributes, [
                         'created_by' => $actorId, 'status' => 'queued', 'current_step' => 'queued', 'progress' => 0,
                         'generation_no' => 1,
-                        'archive_version' => ($attributes['operation'] ?? 'create') !== 'image'
-                            && data_get($attributes, 'input_json.target_type', 'post') === 'post' ? 1 : null,
                         'expires_at' => now()->addDays((int) config('ai.import.retention_days', 2)),
                     ]));
                     $import->forceFill(['session_id' => $attributes['session_id'] ?? $import->id])->save();

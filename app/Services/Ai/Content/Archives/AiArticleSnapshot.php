@@ -12,7 +12,7 @@ use Illuminate\Support\Arr;
  * CHỨC NĂNG FILE: Chốt contract snapshot v1 và nguồn gốc từng field.
  * =====================================================================
  *
- * Builder thuần dựng contract v1 cho checkpoint tạm và kho approved. Phân biệt content AI mới, field kế thừa/deterministic; legacy thiếu bằng chứng giữ original null.
+ * Builder thuần dựng contract v1 cho checkpoint tạm và kho approved. Phân biệt content AI mới, field kế thừa và deterministic theo content_origin.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - recoveryResult().
@@ -24,7 +24,7 @@ use Illuminate\Support\Arr;
  * - redactUrlParameters().
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
- * - INPUT : Run, kết quả canonical và cờ legacy tùy chọn.
+ * - INPUT : Run và kết quả canonical đã validate.
  * - OUTPUT: Snapshot/hash allowlist đã redact, có origin từng field và trace các bước thực sự dùng.
  * - SIDE EFFECT: Chỉ xử lý trong memory; không DB/network hoặc lưu connection/header/raw response.
  * - EXCEPTION/TRANSACTION: Không mở transaction; caller quản lý persistence và lỗi hash/JSON.
@@ -92,20 +92,20 @@ final class AiArticleSnapshot
      * =====================================================================
      *
      * INPUT:
-     * - Run đã load source/input/diagnostics; result canonical tùy chọn và cờ legacy.
+     * - Run đã load source/input/diagnostics và result canonical đã validate của worker.
      *
      * OUTPUT:
-     * - Array snapshot/hash canonical; origin và has_generated_content phân biệt AI mới, kế thừa, deterministic và legacy thiếu original.
+     * - Array snapshot/hash canonical; origin và has_generated_content suy từ generation_meta.content_origin.
      *
      * SIDE EFFECT:
-     * - Giữ nguồn/brief/profile/trace allowlist và redact trước khi hash; không persist hoặc gọi AI. Legacy không lấy draft đã sửa làm original.
+     * - Giữ nguồn/brief/profile/trace allowlist và redact trước khi hash; không persist hoặc gọi AI.
      *
      * EXCEPTION/TRANSACTION:
      * - Không mở transaction; JSON không encode được có thể ném JsonException từ ArticleInputHasher; caller quản lý lỗi lưu.
      *
      * =====================================================================
      */
-    public function make(AiImport $run, ?array $result = null, bool $legacy = false): array
+    public function make(AiImport $run, array $result): array
     {
         $input = (array) $run->input_json;
         $source = Arr::only((array) data_get($run->source_meta_json, 'article_source', []), [
@@ -118,34 +118,29 @@ final class AiArticleSnapshot
             $source = ['source_text' => (string) $run->source_text, 'content_type' => data_get($input, 'source_format', 'text')];
         }
         $source['source_url'] ??= $run->normalized_url ?: $run->source_url;
-        $draft = $result ? Arr::only((array) ($result['draft'] ?? []), self::DRAFT_FIELDS) : null;
-        if ($draft !== null && ! isset($draft['content_html']) && isset($result['draft']['content'])) {
+        $draft = Arr::only((array) ($result['draft'] ?? []), self::DRAFT_FIELDS);
+        if (! isset($draft['content_html']) && isset($result['draft']['content'])) {
             $draft['content_html'] = (string) $result['draft']['content'];
         }
-        $groups = (array) ($input['fields'] ?? $input['requested_outputs'] ?? []);
-        $hasParentSelection = $run->parent_id && $groups !== [];
-        if ($groups === [] && ! array_key_exists('requested_outputs', $input)) {
-            $groups = ['title', 'content'];
-        }
-        $groups = (array) data_get($result, 'generation_meta.requested_groups', $groups);
+        $groups = (array) data_get($result, 'generation_meta.requested_groups', []);
         $mode = (string) data_get($result, 'generation_meta.mode', 'unknown');
         $generated = (array) data_get($result, 'generation_meta.generated_fields', []);
-        $parent = (array) ($input['parent_draft_snapshot'] ?? []);
-        $inherited = (array) data_get($result, 'generation_meta.inherited_fields', $hasParentSelection ? array_keys($parent) : []);
+        $contentOrigin = data_get($result, 'generation_meta.content_origin');
+        $inherited = (array) data_get($result, 'generation_meta.inherited_fields', []);
         $origins = [];
-        foreach (array_keys($draft ?? []) as $field) {
+        foreach (array_keys($draft) as $field) {
             $origins[$field] = $mode === 'ai' && in_array($field, $generated, true) ? 'ai'
                 : (in_array($field, $inherited, true) && ! in_array($field, $generated, true) ? 'inherited' : 'source_or_deterministic');
         }
-        $hasContent = ($origins['content_html'] ?? null) === 'ai' && trim(strip_tags((string) ($draft['content_html'] ?? ''))) !== '';
+        $hasContent = $contentOrigin === 'ai'
+            && in_array('content_html', $generated, true)
+            && trim(strip_tags((string) ($draft['content_html'] ?? ''))) !== '';
         $origin = match (true) {
-            $legacy => 'legacy_unverified',
-            $result === null => 'no_generated_content',
             $hasContent && in_array('inherited', $origins, true) => 'mixed',
             $hasContent => 'ai_original',
             in_array('ai', $origins, true) => 'ai_fields_only',
-            $mode === 'deterministic' => 'deterministic',
             in_array('inherited', $origins, true) => 'inherited',
+            $mode === 'deterministic' => 'deterministic',
             default => 'source_only',
         };
         $profile = Arr::only((array) ($input['writing_profile_snapshot'] ?? []), [
@@ -164,8 +159,7 @@ final class AiArticleSnapshot
             'pipeline' => data_get($input, 'pipeline_snapshot.pipeline'), 'generation_mode' => $mode,
             'pipeline_prompt_version' => data_get($input, 'pipeline_snapshot.prompt_version'),
             'pipeline_schema_version' => data_get($input, 'pipeline_snapshot.schema_version'),
-            'inherited_from_run_id' => $run->parent_id,
-            'missing_original_reason' => $legacy ? 'legacy_candidate_may_have_been_edited' : null,
+            'inherited_from_run_id' => $run->parent_id, 'content_origin' => $contentOrigin,
         ];
         $secrets = $this->secretValues(Arr::only($input, ['ai_connection', 'image_connection']));
         $source = $this->redact($source, $secrets);
@@ -181,13 +175,13 @@ final class AiArticleSnapshot
             'parent_run_id' => $run->parent_id, 'generation_no' => max(1, (int) $run->generation_no),
             'snapshot_version' => 1, 'created_by' => $run->created_by === null ? null : (int) $run->created_by,
             'target_type' => (string) data_get($input, 'target_type', 'post'), 'operation' => $run->operation ?: 'create',
-            'generation_status' => $result === null ? $run->status : 'ready', 'content_origin' => $origin,
-            'has_generated_content' => $hasContent && ! $legacy,
+            'generation_status' => 'ready', 'content_origin' => $origin,
+            'has_generated_content' => $hasContent,
             'source_hash' => $source === [] ? null : ArticleInputHasher::hash($source),
-            'content_hash' => $draft === null ? null : ArticleInputHasher::hash($draft),
+            'content_hash' => ArticleInputHasher::hash($draft),
             'source_snapshot_json' => $source ?: null, 'draft_snapshot_json' => $draft,
             'context_snapshot_json' => $context, 'diagnostics_json' => $this->redact($diagnostics, $secrets),
-            'failure_code' => $result !== null ? null : (preg_match('/\A[A-Z0-9_]{1,80}\z/D', (string) $run->error_code) ? $run->error_code : null),
+            'failure_code' => null,
             'generation_started_at' => $run->started_at?->format('Y-m-d H:i:s'),
             'generation_completed_at' => ($run->completed_at ?? now())->format('Y-m-d H:i:s'),
         ];

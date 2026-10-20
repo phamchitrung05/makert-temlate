@@ -367,8 +367,8 @@ final class AiOutputValidationLifecycleTest extends TestCase
             ->assertJsonPath('data.draft_version', $version)->assertJsonPath('data.status', 'ready');
         $this->withToken($this->token)->getJson('/api/admin/ai-agent/sessions/'.$child->id)->assertOk()
             ->assertJsonPath('data.status', 'failed')->assertJsonPath('data.error_code', 'AI_PROVIDER_SCHEMA');
-        $this->withToken($this->token)->postJson('/api/admin/ai-agent/candidates/'.$child->id.'/apply', [
-            'fields' => ['content'],
+        $this->withToken($this->token)->postJson('/api/admin/ai-agent/candidates/'.$child->id.'/approve', [
+            'fields' => ['content'], 'expected_version' => str_repeat('0', 64), 'expected_review_version' => str_repeat('0', 64),
         ])->assertStatus(409);
         $this->assertDatabaseCount('posts', 0);
         $this->assertDatabaseCount('media_assets', 0);

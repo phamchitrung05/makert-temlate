@@ -22,6 +22,7 @@ declare module 'vue-router/auto-routes' {
     'access-control': RouteRecordInfo<'access-control', '/access-control', Record<never, never>, Record<never, never>>,
     'ai-approved': RouteRecordInfo<'ai-approved', '/ai/approved', Record<never, never>, Record<never, never>>,
     'ai-content': RouteRecordInfo<'ai-content', '/ai/content', Record<never, never>, Record<never, never>>,
+    'ai-image-prompt': RouteRecordInfo<'ai-image-prompt', '/ai/image-prompt', Record<never, never>, Record<never, never>>,
     'ai-prompt': RouteRecordInfo<'ai-prompt', '/ai/prompt', Record<never, never>, Record<never, never>>,
     'ai-prompt-add': RouteRecordInfo<'ai-prompt-add', '/ai/prompt/add', Record<never, never>, Record<never, never>>,
     'ai-prompt-edit': RouteRecordInfo<'ai-prompt-edit', '/ai/prompt/edit', Record<never, never>, Record<never, never>>,

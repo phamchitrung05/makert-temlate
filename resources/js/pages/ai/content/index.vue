@@ -29,7 +29,7 @@
 -->
 <script setup>
 import { computed, onMounted, shallowRef, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AiContentList from '@/views/ai/content/AiContentList.vue'
 import AiContentCreateForm from '@/views/ai/content/AiContentCreateForm.vue'
 import { useAiContentWorkspace } from '@/composables/useAiContentWorkspace'
@@ -47,6 +47,7 @@ import { getAlertColor } from '@/config/alertColors'
 
 const { snackbar, observeRun, showSnackbar, setSnackbarVisible } = useAiRunFeedback()
 const route = useRoute()
+const router = useRouter()
 const versionHistory = shallowRef(null)
 
 const { items, source, listLoading, listError, loadItems, updateSession, removeItem, resetSource } = useAiContentWorkspace()
@@ -65,9 +66,14 @@ const onRunFeedback = (run, fallback, options = catalog.value.outputOptions) => 
  * EXCEPTION/TRANSACTION: không có.
  * =====================================================================
  */
-function handleQueued() {
+function handleQueued(value) {
   resetSource(catalog.value.contentDefaults)
   resetContentDefaults()
+  if (value?.social_post_id && value.can_open !== false) {
+    void router.push({ name: 'marketing-social-post-list', query: { post: value.social_post_id } })
+
+    return
+  }
   showSnackbar('Đã nhận tác vụ. Theo dõi trong hàng đợi và tiếp tục nhập nguồn mới.', 'success')
 }
 

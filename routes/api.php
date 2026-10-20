@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\AdminUserRoleController;
 use App\Http\Controllers\Admin\AiArticleArchiveController;
 use App\Http\Controllers\Admin\AiContentReviewController;
 use App\Http\Controllers\Admin\AiImageGenerationController;
+use App\Http\Controllers\Admin\AiImageProfileController;
 use App\Http\Controllers\Admin\AiImportController;
 use App\Http\Controllers\Admin\AiProviderController;
 use App\Http\Controllers\Admin\AiSourcePreviewController;
@@ -242,7 +243,6 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum,ad
             Route::post('/ai-agent/sessions/{aiImport}/cancel', [AiImportController::class, 'cancel'])->whereUuid('aiImport');
             Route::delete('/ai-agent/sessions/{aiImport}', [AiImportController::class, 'destroy'])->whereUuid('aiImport');
             Route::patch('/ai-agent/candidates/{aiImport}', [AiImportController::class, 'updateCandidate'])->whereUuid('aiImport');
-            Route::post('/ai-agent/candidates/{aiImport}/apply', [AiImportController::class, 'apply'])->whereUuid('aiImport');
             Route::get('/ai-agent/candidates/{aiImport}/review', [AiContentReviewController::class, 'show'])->whereUuid('aiImport');
             Route::get('/ai-agent/candidates/{aiImport}/review/history', [AiContentReviewController::class, 'history'])->whereUuid('aiImport');
             Route::post('/ai-agent/candidates/{aiImport}/approve', [AiContentReviewController::class, 'approve'])->whereUuid('aiImport');
@@ -254,17 +254,6 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum,ad
                 Route::get('/ai-agent/candidates/{aiImport}/quality', [AiContentReviewController::class, 'quality'])->whereUuid('aiImport');
                 Route::post('/ai-agent/candidates/{aiImport}/quality/rescore', [AiContentReviewController::class, 'rescore'])->whereUuid('aiImport');
             });
-        });
-
-        Route::middleware('permission:posts.manage,admin')->group(function (): void {
-            Route::post('/posts/ai/import', [AiImportController::class, 'store']);
-            Route::get('/posts/ai/import/{aiImport}', [AiImportController::class, 'show'])->whereUuid('aiImport');
-            Route::post('/posts/ai/import/{aiImport}/regenerate', [AiImportController::class, 'regenerate'])->whereUuid('aiImport');
-            Route::post('/posts/ai/import/{aiImport}/retry', [AiImportController::class, 'retry'])->whereUuid('aiImport');
-            Route::get('/posts/ai/import/{aiImport}/candidates', [AiImportController::class, 'candidates'])->whereUuid('aiImport');
-            Route::post('/posts/ai/import/{aiImport}/apply', [AiImportController::class, 'apply'])->whereUuid('aiImport');
-            Route::post('/posts/ai/import/{aiImport}/cancel', [AiImportController::class, 'cancel'])->whereUuid('aiImport');
-            Route::delete('/posts/ai/import/{aiImport}', [AiImportController::class, 'destroy'])->whereUuid('aiImport');
         });
 
         // Post CRUD và lifecycle dùng permission chi tiết; posts.manage là alias toàn quyền.
@@ -305,6 +294,14 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum,ad
          * =====================================================================
          */
         Route::get('/ai/writing-profiles/options', [AiWritingProfileController::class, 'options']);
+        Route::get('/ai/image-profiles/options', [AiImageProfileController::class, 'options'])->middleware('can:use-ai');
+        Route::middleware('permission:ai_settings.manage,admin')->prefix('ai/image-profiles')->group(function (): void {
+            Route::get('/', [AiImageProfileController::class, 'index']);
+            Route::post('/', [AiImageProfileController::class, 'store'])->middleware('throttle:6,1');
+            Route::get('/{imageProfile}', [AiImageProfileController::class, 'show'])->whereNumber('imageProfile');
+            Route::put('/{imageProfile}', [AiImageProfileController::class, 'update'])->whereNumber('imageProfile');
+            Route::delete('/{imageProfile}', [AiImageProfileController::class, 'destroy'])->whereNumber('imageProfile');
+        });
         Route::middleware('permission:ai_settings.manage,admin')->prefix('ai/writing-profiles')->group(function (): void {
             Route::get('/', [AiWritingProfileController::class, 'index']);
             Route::post('/', [AiWritingProfileController::class, 'store']);
@@ -390,6 +387,8 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum,ad
             ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
         Route::post('/social-posts/{socialPost}/variants/facebook/generate-images', [SocialPostController::class, 'generateFacebookImages'])
             ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
+        Route::post('/social-posts/{socialPost}/variants/facebook/images/{slot}/regenerate', [SocialPostController::class, 'regenerateImageSlot'])
+            ->whereNumber('socialPost')->where('slot', '[0-9]')->middleware('permission:marketing.manage|social_posts.update,admin');
         Route::post('/social-posts/{socialPost}/variants/facebook/images/replace', [SocialPostController::class, 'replaceFacebookImages'])
             ->whereNumber('socialPost')->middleware('permission:marketing.manage|social_posts.update,admin');
         Route::post('/social-posts/{socialPost}/variants/facebook/images/reorder', [SocialPostController::class, 'reorderFacebookImages'])

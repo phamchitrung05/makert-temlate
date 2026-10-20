@@ -97,16 +97,14 @@ describe('Ai Content live catalog', () => {
   })
   afterEach(() => scope.stop())
 
-  it('loads synced model IDs including unknown capability, excluding disabled/unavailable options', async () => {
+  it('hides models with unknown capabilities and clears a stale selection', async () => {
     const state = createState({ provider: 'apikey', model: 'gpt-image-2' })
 
     await state.loadCatalog()
     await nextTick()
     expect(state.catalog.value.providerOptions.map(option => option.value)).toEqual(['empty', 'apikey', 'content'])
-    expect(state.source.value).toMatchObject({ provider: 'apikey', model: 'gpt-image-2', prompt: 'Giữ nguồn của người dùng' })
-    expect(state.catalog.value.modelOptions.map(option => option.value)).toEqual([
-      'gpt-image-2', 'gpt-image-2.5', 'gpt-image-2.5-flare', 'gpt-image-2.5-sunburst',
-    ])
+    expect(state.source.value).toMatchObject({ provider: 'apikey', model: '', prompt: 'Giữ nguồn của người dùng' })
+    expect(state.catalog.value.modelOptions).toEqual([])
     expect(service.list).toHaveBeenCalledOnce()
   })
 
@@ -126,7 +124,10 @@ describe('Ai Content live catalog', () => {
   })
 
   it('uses the saved text default initially and preserves a valid user selection on reload', async () => {
-    service.list.mockResolvedValue({ ...fixture(), settings: { default_text_model_id: 30 } })
+    const data = fixture()
+
+    data.providers[1].models[1].capabilities = ['text_generation']
+    service.list.mockResolvedValue({ ...data, settings: { default_text_model_id: 30 } })
 
     const state = createState()
 
@@ -221,7 +222,7 @@ describe('Ai Content live catalog', () => {
     expect(state.catalog.value.outputOptions[1].title).toBe('Tóm tắt từ config')
   })
 
-  it('prefers a known text model initially and exposes selected capability without changing an explicit image choice', async () => {
+  it('prefers a text model and rejects an explicit model without text capability', async () => {
     const state = createState()
 
     await state.loadCatalog()
@@ -230,11 +231,17 @@ describe('Ai Content live catalog', () => {
     expect(state.catalog.value.selectedModel.capabilities).toEqual(['text_generation'])
     state.source.value = { ...state.source.value, provider: 'apikey', model: 'gpt-image-2' }
     await nextTick()
-    expect(state.source.value.model).toBe('gpt-image-2')
-    expect(state.catalog.value.selectedModel.capabilities).toEqual([])
+    expect(state.source.value.model).toBe('')
+    expect(state.catalog.value.selectedModel).toBe(null)
   })
 
   it('repairs a selection when a model is disabled by a catalog refresh', async () => {
+    const initial = fixture()
+
+    initial.providers[1].models[0].capabilities = ['text_generation']
+    initial.providers[1].models[1].capabilities = ['text_generation']
+    service.list.mockResolvedValue(initial)
+
     const state = createState({ provider: 'apikey', model: 'gpt-image-2.5' })
 
     await state.loadCatalog()
@@ -242,12 +249,37 @@ describe('Ai Content live catalog', () => {
 
     const changed = fixture()
 
+    changed.providers[1].models[0].capabilities = ['text_generation']
     changed.providers[1].models[1].is_enabled = false
     service.list.mockResolvedValue(changed)
     await state.loadCatalog()
     await nextTick()
     expect(state.source.value.model).toBe('gpt-image-2')
     expect(state.catalog.value.modelOptions.some(option => option.value === 'gpt-image-2.5')).toBe(false)
+  })
+
+  it('loads new length options and defaults from backend and reconciles removed options', async () => {
+    const target = { ...targetFixture()[0], default_length: 'tiny', length_options: [
+      { value: 'tiny', title: 'Siêu ngắn', min_words: 10, max_words: 20, prompt: 'Viết 10–20 từ.' },
+      { value: 'custom', title: 'Tùy chỉnh', prompt: 'Một đoạn ngắn.' },
+    ], image_count: { min: 1, max: 10, default: 5 } }
+
+    targets.mockResolvedValue([target])
+
+    const state = createState()
+
+    await state.loadCatalog()
+    await nextTick()
+    expect(state.catalog.value.lengthOptions).toEqual(target.length_options)
+    expect(state.source.value).toMatchObject({ length: 'tiny', imageCount: 5 })
+    state.source.value = { ...state.source.value, length: 'custom' }
+    await nextTick()
+    await state.loadCatalog()
+    expect(state.source.value.length).toBe('custom')
+    targets.mockResolvedValue([{ ...target, length_options: [target.length_options[0]] }])
+    await state.loadCatalog()
+    await nextTick()
+    expect(state.source.value.length).toBe('tiny')
   })
 
   it('exposes loading/error and allows retry without an unhandled rejection', async () => {

@@ -12,9 +12,11 @@ use App\Http\Requests\Admin\Marketing\SocialPostUpdateRequest;
 use App\Http\Requests\Admin\Marketing\SocialPostVariantContentRequest;
 use App\Http\Resources\Marketing\SocialPostResource;
 use App\Http\Responses\BaseResponse;
+use App\Models\AiImport;
 use App\Models\SocialPost;
 use App\Models\SocialPostVariant;
 use App\Models\SocialPublication;
+use App\Models\User;
 use App\Services\Marketing\SocialPostGenerationService;
 use App\Services\Marketing\SocialPostLifecycleService;
 use App\Services\Marketing\SocialPublicationService;
@@ -96,7 +98,17 @@ final class SocialPostController extends Controller
      */
     public function show(SocialPost $socialPost, SocialPostLifecycleService $lifecycle): JsonResponse
     {
-        return BaseResponse::success(SocialPostResource::make($lifecycle->loadForResponse($socialPost)), 'Chi tiết Social Post.');
+        $payload = SocialPostResource::make($lifecycle->loadForResponse($socialPost))->resolve();
+        $payload['generation_jobs'] = AiImport::query()
+            ->where('input_social_post_id', $socialPost->id)->where('input_generation_no', $socialPost->generation_no)
+            ->whereIn('operation', ['social_caption', 'social_image_prompt', 'social_image'])
+            ->get()->map(fn ($run): array => [
+                'id' => $run->id, 'component' => data_get($run->input_json, 'component'),
+                'slot_no' => data_get($run->input_json, 'slot_no'), 'status' => $run->expires_at?->isPast() ? 'expired' : $run->status,
+                'error_code' => $run->error_code,
+            ])->values()->all();
+
+        return BaseResponse::success($payload, 'Chi tiết Social Post.');
     }
 
     /**
@@ -230,6 +242,12 @@ final class SocialPostController extends Controller
         return BaseResponse::success($result, 'Đã xếp hàng tạo gallery Facebook.', 202);
     }
 
+    /** Queue just one image slot through the same Social generation lifecycle. */
+    public function regenerateImageSlot(SocialPostGenerationRequest $request, SocialPost $socialPost, int $slot, SocialPostGenerationService $generation): JsonResponse
+    {
+        return BaseResponse::success($generation->regenerateSlot($socialPost, $slot, (int) $this->adminUser($request)->getKey(), $request->validated()), 'Đã xếp hàng tạo lại ảnh.', 202);
+    }
+
     /**
      * Gửi draft vào review sau khi caption/ảnh đã ready.
      *
@@ -351,7 +369,7 @@ final class SocialPostController extends Controller
         SocialPostLifecycleService $lifecycle,
     ): JsonResponse {
         $data = $request->validate([
-            'asset_ids' => ['array', 'max:4'],
+            'asset_ids' => ['array', 'max:10'],
             'asset_ids.*' => ['integer', 'distinct', 'exists:media_assets,id'],
         ]);
         $post = $lifecycle->update($socialPost, ['facebook_image_ids' => $data['asset_ids'] ?? []], (int) $this->adminUser($request)->getKey());
@@ -366,7 +384,7 @@ final class SocialPostController extends Controller
         MediaAssetUsageService $usages,
         SocialPostLifecycleService $lifecycle,
     ): JsonResponse {
-        $data = $request->validate(['usage_ids' => ['required', 'array', 'min:1', 'max:4'], 'usage_ids.*' => ['integer', 'distinct']]);
+        $data = $request->validate(['usage_ids' => ['required', 'array', 'min:1', 'max:10'], 'usage_ids.*' => ['integer', 'distinct']]);
         $post = $lifecycle->loadForResponse($socialPost);
         $variant = $post->variants->first(fn ($item): bool => ($item->platform?->value ?? (string) $item->platform) === 'facebook');
         abort_unless($variant instanceof SocialPostVariant, 404, 'Facebook variant không tồn tại.');
@@ -407,10 +425,10 @@ final class SocialPostController extends Controller
      * Input: Request authenticated Sanctum admin.
      * Output: User; abort 401 nếu guard không có actor.
      */
-    private function adminUser(Request $request): \App\Models\User
+    private function adminUser(Request $request): User
     {
         $user = $request->user();
-        abort_unless($user instanceof \App\Models\User, 401);
+        abort_unless($user instanceof User, 401);
 
         return $user;
     }

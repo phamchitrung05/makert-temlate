@@ -45,7 +45,7 @@ final class AiArticleArchiveSummaryResource extends JsonResource
             'archived_at' => $this->created_at?->toIso8601String(),
             'applied_target_id' => $this->applied_target_id,
             'quality_evaluation' => [
-                'status' => data_get($lifecycle, 'quality_evaluation.score_total') !== null ? 'ready' : 'legacy_or_unavailable',
+                'status' => data_get($lifecycle, 'quality_evaluation.score_total') !== null ? 'ready' : 'unavailable',
                 'score_total' => data_get($lifecycle, 'quality_evaluation.score_total'),
                 'rubric_version' => data_get($lifecycle, 'quality_evaluation.rubric_version'),
             ],

@@ -3,7 +3,7 @@
  * =====================================================================
  * CHỨC NĂNG FILE: API client AI Agent dùng chung cho mọi tài nguyên.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: unwrap(), isMissingRoute(), generationCapabilities(), fallbackCapabilities(),
+ * CÁC HÀM/METHOD TRONG FILE: unwrap(), generationCapabilities(),
  * capabilities(), listSessions(), createSession(), status(), regenerate(), retry(), cancel(),
  * review(), quality(), rescoreQuality(), reviewHistory(), approveCandidate(), rejectCandidate(),
  * applyCandidate(), targets(), updateCandidate(), removeSession().
@@ -28,21 +28,7 @@ const unwrap = response => response?.success && 'data' in response ? response.da
 
 /**
  * =====================================================================
- * CHỨC NĂNG: Nhận diện backend chưa có route generic để dùng tương thích cũ
- * =====================================================================
- * INPUT: Lỗi từ API.
- * OUTPUT: true chỉ với HTTP 404 hoặc 405.
- * SIDE EFFECT: Hàm thuần; không gửi request.
- * EXCEPTION/TRANSACTION: Không fallback cho lỗi auth, validation hoặc lỗi provider.
- * =====================================================================
- */
-const isMissingRoute = error => [404, 405].includes(Number(
-  error?.status ?? error?.statusCode ?? error?.response?.status ?? error?.data?.status,
-))
-
-/**
- * =====================================================================
- * CHỨC NĂNG: Giữ output registry backend và loại taxonomy generation legacy.
+ * CHỨC NĂNG: Giữ output registry backend và loại nhóm taxonomy khỏi lựa chọn AI.
  * =====================================================================
  * INPUT: capability/target DTO API.
  * OUTPUT: DTO mới chỉ có nhóm AI hợp lệ, giữ các field khác từ backend.
@@ -64,46 +50,10 @@ const generationCapabilities = capability => ({
   } : {}),
 })
 
-/**
- * =====================================================================
- * CHỨC NĂNG: Cấp capability tối thiểu cho backend Post cũ
- * =====================================================================
- * INPUT: Target type.
- * OUTPUT: Capability tương thích để UI vẫn hoạt động.
- * SIDE EFFECT: Chỉ tạo DTO public; không chứa key hoặc gọi provider.
- * EXCEPTION/TRANSACTION: Không dùng khi API đã trả lỗi permission/provider.
- * =====================================================================
- */
-const fallbackCapabilities = targetType => ({
-  target_type: targetType,
-  operations: ['create', 'rewrite', 'translate', 'regenerate'],
-  input_types: ['url', 'text', 'existing_record'],
-  inputs: ['url', 'file', 'html', 'text', 'prompt'],
-  outputs: targetType === 'post'
-    ? ['title', 'excerpt', 'content', 'seo', 'thumbnail']
-    : ['social_content', 'social_gallery'],
-  platforms: targetType === 'social_post' ? ['facebook'] : [],
-  platform_profiles: targetType === 'social_post' ? [{
-    key: 'facebook', label: 'Facebook', enabled: true,
-    outputs: ['social_content', 'social_gallery'],
-    editor_fields: ['content', 'cta', 'hashtags', 'link_url', 'gallery'],
-  }] : [],
-  prompts: [
-    { key: `${targetType}.create.from_url`, label: 'Tạo nội dung từ nguồn', operation: 'create' },
-    { key: `${targetType}.rewrite.technical`, label: 'Viết lại theo hướng kỹ thuật', operation: 'rewrite' },
-    { key: `${targetType}.summarize`, label: 'Tóm tắt súc tích', operation: 'summarize' },
-  ],
-  providers: [
-    { key: 'deterministic', label: 'Hệ thống (không cần API key)', models: ['deterministic'] },
-    { key: 'openai', label: 'OpenAI', models: [] },
-    { key: 'gemini', label: 'Google Gemini', models: [] },
-  ],
-})
-
 export const aiAgentService = {
   /**
    * =====================================================================
-   * CHỨC NĂNG: Đọc target catalog và loại output taxonomy legacy.
+   * CHỨC NĂNG: Đọc target catalog và loại nhóm taxonomy khỏi lựa chọn AI.
    * =====================================================================
    * INPUT: không có.
    * OUTPUT: target catalog công khai theo config backend.
@@ -153,174 +103,52 @@ export const aiAgentService = {
     return $api('/admin/ai-agent/sessions', { query })
   },
 
-  /**
-   * =====================================================================
-   * CHỨC NĂNG: Đọc capability target và fallback nếu route chưa tồn tại
-   * =====================================================================
-   * INPUT: Target type.
-   * OUTPUT: Prompt/output/provider options public.
-   * SIDE EFFECT: Gọi GET Admin API; có thể dùng DTO fallback.
-   * EXCEPTION/TRANSACTION: Lỗi khác 404/405 được truyền lên caller.
-   * =====================================================================
-   */
+  /** Input: target type và platform tùy chọn. Output: prompt/output/provider options public; chỉ GET. */
   async capabilities(targetType, platform = null) {
-    try {
-      const response = platform
-        ? await $api(`/admin/ai-agent/capabilities/${targetType}`, { query: { platform } })
-        : await $api(`/admin/ai-agent/capabilities/${targetType}`)
+    const response = platform
+      ? await $api(`/admin/ai-agent/capabilities/${targetType}`, { query: { platform } })
+      : await $api(`/admin/ai-agent/capabilities/${targetType}`)
 
-      return generationCapabilities(unwrap(response))
-    }
-    catch (error) {
-      if (!isMissingRoute(error))
-        throw error
-
-      return fallbackCapabilities(targetType)
-    }
+    return generationCapabilities(unwrap(response))
   },
 
-  /**
-   * =====================================================================
-   * CHỨC NĂNG: Tạo session nội dung qua AI Agent hoặc API Post tương thích
-   * =====================================================================
-   * INPUT: Target/input/options và requested outputs.
-   * OUTPUT: Session/job queued.
-   * SIDE EFFECT: Gọi POST Admin API; backend quản lý run, model resolution và queue.
-   * EXCEPTION/TRANSACTION: Chỉ fallback route cho target Post hợp lệ; lỗi khác truyền lên caller.
-   * =====================================================================
-   */
+  /** Input: target/input/options và requested_outputs. Output: session queued; backend quản lý model/queue. */
   async createSession(payload) {
-    try {
-      return unwrap(await $api('/admin/ai-agent/sessions', { method: 'POST', body: payload }))
-    }
-    catch (error) {
-      if (!isMissingRoute(error) || payload.target_type !== 'post' || (!payload.input?.url && !payload.input?.text))
-        throw error
-
-      const legacyPayload = {
-        language: payload.output_language ?? 'vi',
-        generate_thumbnail: payload.requested_outputs?.includes('thumbnail') ?? false,
-        instructions: payload.instructions,
-        ...(payload.input.url ? { url: payload.input.url } : { text: payload.input.text }),
-        ...(payload.provider ? { provider: payload.provider } : {}),
-        ...(payload.model ? { model: payload.model } : {}),
-        ...(payload.model_id ? { model_id: payload.model_id } : {}),
-      }
-
-      return unwrap(await $api('/admin/posts/ai/import', {
-        method: 'POST',
-        body: legacyPayload,
-      }))
-    }
+    return unwrap(await $api('/admin/ai-agent/sessions', { method: 'POST', body: payload }))
   },
 
-  /**
-   * =====================================================================
-   * CHỨC NĂNG: Đọc trạng thái session hoặc job Post
-   * =====================================================================
-   * INPUT: Session UUID và target type.
-   * OUTPUT: Tiến trình/result candidate.
-   * SIDE EFFECT: Gọi GET Admin API, không ghi Post.
-   * EXCEPTION/TRANSACTION: Chỉ fallback route cho Post; lỗi khác truyền lên caller.
-   * =====================================================================
-   */
-  async status(sessionId, targetType = 'post') {
-    try {
-      return unwrap(await $api(`/admin/ai-agent/sessions/${sessionId}`))
-    }
-    catch (error) {
-      if (!isMissingRoute(error) || targetType !== 'post')
-        throw error
-
-      return unwrap(await $api(`/admin/posts/ai/import/${sessionId}`))
-    }
+  /** Input: session UUID. Output: tiến trình/result candidate; chỉ GET, không ghi Post. */
+  async status(sessionId) {
+    return unwrap(await $api(`/admin/ai-agent/sessions/${sessionId}`))
   },
 
-  /**
-   * =====================================================================
-   * CHỨC NĂNG: Tạo candidate mới và giữ lịch sử candidate cũ
-   * =====================================================================
-   * INPUT: Session UUID và request field/prompt/model override.
-   * OUTPUT: Run/candidate child mới.
-   * SIDE EFFECT: Gọi POST Admin API.
-   * EXCEPTION/TRANSACTION: Chỉ fallback khi route generic chưa có; lỗi khác truyền lên caller.
-   * =====================================================================
-   */
+  /** Input: session UUID và field/prompt/model override. Output: run child mới, giữ lịch sử candidate cũ. */
   async regenerate(sessionId, payload) {
-    try {
-      return unwrap(await $api(`/admin/ai-agent/sessions/${sessionId}/regenerate`, { method: 'POST', body: payload }))
-    }
-    catch (error) {
-      if (!isMissingRoute(error)) throw error
-
-      return unwrap(await $api(`/admin/posts/ai/import/${sessionId}/regenerate`, {
-        method: 'POST',
-        body: payload,
-      }))
-    }
+    return unwrap(await $api(`/admin/ai-agent/sessions/${sessionId}/regenerate`, { method: 'POST', body: payload }))
   },
 
-  /**
-   * =====================================================================
-   * CHỨC NĂNG: Đưa lại session lỗi vào queue
-   * =====================================================================
-   * INPUT: Session/job UUID.
-   * OUTPUT: Run đã requeue, giữ nguyên UUID.
-   * SIDE EFFECT: Gọi POST Admin API; backend cập nhật lifecycle.
-   * EXCEPTION/TRANSACTION: Lỗi API truyền lên caller; không retry provider ngay trong browser.
-   * =====================================================================
-   */
+  /** Input: session UUID lỗi. Output: run đã requeue, giữ nguyên UUID; không retry provider trong browser. */
   async retry(sessionId) {
-    try {
-      return unwrap(await $api(`/admin/ai-agent/sessions/${sessionId}/retry`, { method: 'POST' }))
-    }
-    catch (error) {
-      if (!isMissingRoute(error)) throw error
-
-      return unwrap(await $api(`/admin/posts/ai/import/${sessionId}/retry`, { method: 'POST' }))
-    }
+    return unwrap(await $api(`/admin/ai-agent/sessions/${sessionId}/retry`, { method: 'POST' }))
   },
 
-  /**
-   * =====================================================================
-   * CHỨC NĂNG: Yêu cầu hủy run đang chạy
-   * =====================================================================
-   * INPUT: Session UUID.
-   * OUTPUT: Trạng thái cancelled hoặc terminal hiện tại.
-   * SIDE EFFECT: Gọi POST Admin API; backend dọn asset tạm theo usage.
-   * EXCEPTION/TRANSACTION: Lỗi API truyền lên caller.
-   * =====================================================================
-   */
+  /** Input: session UUID. Output: trạng thái cancelled hoặc terminal hiện tại. */
   async cancel(sessionId) {
-    try {
-      return unwrap(await $api(`/admin/ai-agent/sessions/${sessionId}/cancel`, { method: 'POST' }))
-    }
-    catch (error) {
-      if (!isMissingRoute(error)) throw error
-
-      return unwrap(await $api(`/admin/posts/ai/import/${sessionId}/cancel`, { method: 'POST' }))
-    }
+    return unwrap(await $api(`/admin/ai-agent/sessions/${sessionId}/cancel`, { method: 'POST' }))
   },
 
   /**
    * =====================================================================
-   * CHỨC NĂNG: Lưu các field được chọn của candidate vào tài nguyên
+   * CHỨC NĂNG: Duyệt candidate thành bản nháp mới qua endpoint approve duy nhất.
    * =====================================================================
-   * INPUT: Candidate UUID, fields và target tùy chọn.
-   * OUTPUT: Resource đã áp dụng ở dạng draft.
-   * SIDE EFFECT: Gọi POST Admin API; backend kiểm tra ownership/version và ghi provenance.
-   * EXCEPTION/TRANSACTION: Lỗi validation/conflict/API truyền lên caller.
+   * INPUT: candidate UUID, fields, expected_version và expected_review_version.
+   * OUTPUT: post_id/social_post_id, fields và review đã duyệt.
+   * SIDE EFFECT: POST Admin API; backend kiểm owner/version/quality gate.
+   * EXCEPTION/TRANSACTION: lỗi validation/conflict truyền lên caller; POST không tự retry.
    * =====================================================================
    */
   async applyCandidate(candidateId, payload = {}) {
-    try {
-      return unwrap(await $api(`/admin/ai-agent/candidates/${candidateId}/apply`, { method: 'POST', body: payload }))
-    }
-    catch (error) {
-      if (!isMissingRoute(error)) throw error
-
-      return unwrap(await $api(`/admin/posts/ai/import/${candidateId}/apply`, { method: 'POST', body: payload }))
-    }
+    return this.approveCandidate(candidateId, payload)
   },
 
   /** Input: UUID và AbortSignal. Output: nguồn snapshot/draft/review có quyền; chỉ GET. */
@@ -353,5 +181,3 @@ export const aiAgentService = {
     return unwrap(await $api(`/admin/ai-agent/candidates/${candidateId}/reject`, { method: 'POST', body: payload, retry: 0 }))
   },
 }
-
-export { fallbackCapabilities }

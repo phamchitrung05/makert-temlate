@@ -44,6 +44,9 @@ final class AiTaskRunResource extends JsonResource
                 'article_generation' => 'Tạo nội dung AI',
                 'image_generation' => 'Tạo ảnh AI',
                 'resource_template_processing' => 'Xử lý template',
+                'social_caption' => 'Tạo nội dung Social',
+                'social_image_prompt' => 'Chuẩn bị ảnh Social',
+                'social_image' => 'Tạo ảnh Social',
                 default => 'Tác vụ AI',
             },
             'status' => $this->status,
@@ -62,6 +65,7 @@ final class AiTaskRunResource extends JsonResource
             'media_asset_id' => $metadata['media_asset_id'] ?? null,
             'resource_version_id' => $metadata['resource_version_id'] ?? null,
             'resource_id' => $metadata['resource_id'] ?? null,
+            'social_post_id' => $metadata['social_post_id'] ?? null,
         ];
     }
 }

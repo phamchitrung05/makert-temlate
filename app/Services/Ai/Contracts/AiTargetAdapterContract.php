@@ -7,8 +7,8 @@ namespace App\Services\Ai\Contracts;
  * CHỨC NĂNG FILE: Hợp đồng adapter chuyển response AI sang domain model.
  * =====================================================================
  *
- * Adapter được đăng ký theo target (post, resource, sound...). Provider
- * không biết schema database; adapter là ranh giới duy nhất của domain.
+ * Adapter được đăng ký theo target (post). Provider không biết schema
+ * database; adapter là ranh giới duy nhất của domain.
  *
  * CÁC HÀM/METHOD TRONG FILE:
  * - key(), toPreview(), toApplyPayload().

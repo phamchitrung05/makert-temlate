@@ -13,7 +13,7 @@ use InvalidArgumentException;
 
 /**
  * =====================================================================
- * CHỨC NĂNG FILE: Registry connection/model cho text, image và client legacy.
+ * CHỨC NĂNG FILE: Registry connection/model cho text, image và provider khai báo trong config.
  * =====================================================================
  * CÁC HÀM/METHOD TRONG FILE: __construct(), get(), resolve(), resolveForRun(), connectionForRun(),
  * publicOptions(), configuredProvider(), modelOptions(), catalogAvailable().

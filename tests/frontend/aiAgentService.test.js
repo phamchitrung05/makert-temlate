@@ -7,15 +7,15 @@ const apiMocks = vi.hoisted(() => ({
 
 vi.mock('@/utils/api', () => apiMocks)
 
-import { aiAgentService, fallbackCapabilities } from '@/services/aiAgent'
+import { aiAgentService } from '@/services/aiAgent'
 
 /**
  * =====================================================================
  * CHỨC NĂNG FILE: Kiểm thử API boundary của AI Agent dùng chung.
  * =====================================================================
- * CÁC HÀM/METHOD TRONG FILE: beforeEach(), các test capability/fallback/envelope.
+ * CÁC HÀM/METHOD TRONG FILE: beforeEach(), các test capability/session/envelope.
  * INPUT: capability/session và lỗi API generic.
- * OUTPUT: payload unwrap đúng hoặc fallback Post giữ nguyên lỗi gốc.
+ * OUTPUT: payload unwrap đúng; lỗi được giữ nguyên, không tự đổi endpoint.
  * SIDE EFFECT: chỉ mock $api; không gọi mạng và không ghi database.
  * =====================================================================
  */
@@ -24,7 +24,7 @@ describe('aiAgentService', () => {
     apiMocks.$api.mockReset()
   })
 
-  it('honors backend outputs and removes only legacy taxonomy generation choices', async () => {
+  it('honors backend outputs and removes only taxonomy generation choices', async () => {
     const capability = {
       target_type: 'post', outputs: ['title', 'summary', 'taxonomy', 'suggested_tag_ids'],
       output_options: [{ value: 'title', title: 'Tiêu đề' }, { value: 'summary', title: 'Tóm tắt' }, { value: 'taxonomy', title: 'Taxonomy' }],
@@ -39,7 +39,6 @@ describe('aiAgentService', () => {
     apiMocks.$api.mockResolvedValueOnce({ success: true, data: [capability] })
     expect((await aiAgentService.targets())[0].outputs).toEqual(['title', 'summary'])
     expect(capability.outputs).toContain('taxonomy')
-    expect(fallbackCapabilities('post').outputs).toEqual(['title', 'excerpt', 'content', 'seo', 'thumbnail'])
   })
 
   it('uses the backend capability registry and unwraps its envelope', async () => {
@@ -55,12 +54,8 @@ describe('aiAgentService', () => {
     expect(apiMocks.$api).toHaveBeenCalledWith('/admin/ai-agent/capabilities/post')
   })
 
-  it('falls back to the legacy Post import endpoint when the generic session API is unavailable', async () => {
-    const genericError = Object.assign(new Error('not implemented'), { status: 404 })
-
-    apiMocks.$api
-      .mockRejectedValueOnce(genericError)
-      .mockResolvedValueOnce({ success: true, data: { job_id: 'job-1', status: 'queued' } })
+  it('creates a session on the single generic endpoint and keeps the original error', async () => {
+    apiMocks.$api.mockResolvedValueOnce({ success: true, data: { job_id: 'job-1', status: 'queued' } })
 
     await expect(aiAgentService.createSession({
       target_type: 'post',
@@ -69,75 +64,27 @@ describe('aiAgentService', () => {
       requested_outputs: ['content'],
       input: { type: 'url', url: 'https://example.test/article' },
     })).resolves.toEqual({ job_id: 'job-1', status: 'queued' })
-
-    expect(apiMocks.$api).toHaveBeenNthCalledWith(2, '/admin/posts/ai/import', {
+    expect(apiMocks.$api).toHaveBeenCalledTimes(1)
+    expect(apiMocks.$api).toHaveBeenCalledWith('/admin/ai-agent/sessions', {
       method: 'POST',
       body: {
-        url: 'https://example.test/article',
-        language: 'vi',
-        generate_thumbnail: false,
+        target_type: 'post',
+        output_language: 'vi',
         instructions: 'Giữ code',
+        requested_outputs: ['content'],
+        input: { type: 'url', url: 'https://example.test/article' },
       },
     })
-  })
 
-  it('preserves the original error for unsupported non-Post targets', async () => {
-    const genericError = new Error('not implemented')
+    const failure = Object.assign(new Error('invalid provider'), { status: 422 })
 
-    apiMocks.$api.mockRejectedValue(genericError)
-
-    await expect(aiAgentService.createSession({
-      target_type: 'resource',
-      input: { type: 'text', text: 'Documentation' },
-    })).rejects.toBe(genericError)
-  })
-
-  it('maps inline text to the legacy endpoint when generic routes are missing', async () => {
-    apiMocks.$api
-      .mockRejectedValueOnce(Object.assign(new Error('not implemented'), { status: 404 }))
-      .mockResolvedValueOnce({ success: true, data: { job_id: 'text-job', status: 'queued' } })
-
-    await expect(aiAgentService.createSession({
-      target_type: 'post',
-      output_language: 'vi',
-      requested_outputs: ['title'],
-      input: { type: 'text', text: 'Nội dung inline' },
-    })).resolves.toMatchObject({ job_id: 'text-job' })
-
-    expect(apiMocks.$api).toHaveBeenNthCalledWith(2, '/admin/posts/ai/import', {
-      method: 'POST',
-      body: {
-        text: 'Nội dung inline',
-        language: 'vi',
-        generate_thumbnail: false,
-      },
-    })
-  })
-
-  it('does not fallback after a validation or quota response', async () => {
-    const validationError = Object.assign(new Error('invalid provider'), { status: 422 })
-
-    apiMocks.$api.mockRejectedValue(validationError)
-
-    await expect(aiAgentService.createSession({
-      target_type: 'post',
-      input: { type: 'url', url: 'https://example.test/article' },
-    })).rejects.toBe(validationError)
+    apiMocks.$api.mockReset()
+    apiMocks.$api.mockRejectedValueOnce(failure)
+    await expect(aiAgentService.createSession({ target_type: 'social_post' })).rejects.toBe(failure)
     expect(apiMocks.$api).toHaveBeenCalledTimes(1)
   })
 
-  it('provides a safe UI fallback while the target capability endpoint is unavailable', () => {
-    const capability = fallbackCapabilities('sound')
-
-    expect(capability.target_type).toBe('sound')
-    expect(capability.providers.map(provider => provider.key)).toEqual([
-      'deterministic',
-      'openai',
-      'gemini',
-    ])
-  })
-
-  it('reads review/history with abort and sends decisions once without legacy fallback', async () => {
+  it('reads review/history with abort and sends decisions once', async () => {
     const controller = new AbortController()
     const record = { job_id: 'run-1', review: { status: 'pending_review' } }
     const pagination = { current_page: 1, last_page: 2, total: 3 }
@@ -152,7 +99,7 @@ describe('aiAgentService', () => {
     const payload = { fields: ['title'], expected_version: 'draft', expected_review_version: 'review' }
 
     apiMocks.$api.mockResolvedValueOnce({ success: true, data: { post_id: 5 } })
-    await expect(aiAgentService.approveCandidate('run-1', payload)).resolves.toEqual({ post_id: 5 })
+    await expect(aiAgentService.applyCandidate('run-1', payload)).resolves.toEqual({ post_id: 5 })
     expect(apiMocks.$api).toHaveBeenLastCalledWith('/admin/ai-agent/candidates/run-1/approve', { method: 'POST', body: payload, retry: 0 })
     apiMocks.$api.mockRejectedValueOnce({ status: 404 })
     await expect(aiAgentService.rejectCandidate('run-1', { reason: 'Sai nguồn' })).rejects.toEqual({ status: 404 })

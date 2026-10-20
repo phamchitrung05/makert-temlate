@@ -29,8 +29,7 @@ Dùng admin bearer token. Target `post` yêu cầu `posts.manage`; các target k
 | POST | `/ai-agent/sessions/{uuid}/retry` | Retry thủ công cùng run bị failed/cancelled/expired |
 | POST | `/ai-agent/sessions/{uuid}/cancel` | Yêu cầu hủy; không thu hồi request đã gửi upstream |
 | DELETE | `/ai-agent/sessions/{uuid}` | Xóa run terminal; active trả 409 |
-| PATCH | `/ai-agent/candidates/{uuid}` | Lưu chỉnh sửa candidate ready chưa Apply |
-| POST | `/ai-agent/candidates/{uuid}/apply` | Áp field được chọn vào Post **draft** |
+| PATCH | `/ai-agent/candidates/{uuid}` | Lưu chỉnh sửa candidate ready chưa Duyệt |
 | GET | `/ai-agent/candidates/{uuid}/review` | Nguồn đã lưu, draft và trạng thái duyệt có version |
 | GET | `/ai-agent/candidates/{uuid}/quality` | Điểm rubric, evidence, source references và eligibility theo generation/hash |
 | POST | `/ai-agent/candidates/{uuid}/quality/rescore` | Xếp chấm lại candidate; HTTP 202 |
@@ -38,7 +37,10 @@ Dùng admin bearer token. Target `post` yêu cầu `posts.manage`; các target k
 | POST | `/ai-agent/candidates/{uuid}/approve` | Duyệt, tạo một Post **draft** mới và ghi audit |
 | POST | `/ai-agent/candidates/{uuid}/reject` | Từ chối với lý do bắt buộc, không tạo Post |
 
-Các endpoint `/posts/ai/import/...` tương thích cũ vẫn được giữ; kết nối mới ưu tiên `/ai-agent`.
+Endpoint duy nhất là bộ `/ai-agent/*`. `POST /sessions` bắt buộc `requested_outputs`
+chứa ít nhất một nhóm output; SEO/thumbnail suy từ nhóm này, không nhận
+`generate_seo`/`generate_thumbnail` rời. Duyệt luôn tạo Post ở trạng thái `draft` mới,
+không áp vào Post đã có; publish đi qua workflow Post riêng.
 
 ### G2/G3 quality gate
 
@@ -364,11 +366,10 @@ theo run/Post/user; vẫn đọc được sau khi danh sách Content AI được
 Lỗi kho rollback toàn bộ thao tác duyệt, giữ checkpoint để thử lại; không lấy
 candidate đã biên tập làm original. Worker phục hồi checkpoint chỉ hoàn tất
 `ready`, không archive hay gọi lại AI. Command `ai-articles:archive` chỉ phục hồi
-archive của run đã approved, không gọi AI. Duyệt candidate cũ không có checkpoint
-vẫn tạo Post nhưng kho mang nhãn `legacy_unverified`, content null. Kiểm kê dữ liệu
-approved cũ bằng command cần `--include-legacy`; không sao chép bản đã sửa thành original.
-Kho chưa có lịch tự xóa, endpoint hoặc màn hình xem; JSON nguồn/bài/context vẫn
-private. Vòng đời binary ảnh thuộc Media Library hiện có.
+archive của run đã approved, không gọi AI. Candidate phải qua worker để có
+`generation_meta.content_origin`; regenerate từ parent thiếu field này bị từ chối
+trước khi chạy pipeline. Kho chưa có lịch tự xóa, endpoint hoặc màn hình xem;
+JSON nguồn/bài/context vẫn private. Vòng đời binary ảnh thuộc Media Library hiện có.
 
 Chi tiết contract, kiểm thử và command tại [QA kho bài AI](../qa/AI_ARTICLE_ARCHIVES_2026-10-07.md).
 Evaluator, lịch và báo cáo tiếp tục theo [kế hoạch tự đánh giá](../plans/HE_THONG_TU_DANH_GIA_DINH_KY.md).
@@ -388,7 +389,8 @@ Validation request trả `422`; quyền `403` hoặc owner `404`; xung đột/tr
 | `AI_QUALITY_EXACT_COPY` | Văn xuôi nguồn đủ dài bị sao chép nguyên văn, loại code/quote khỏi phép so sánh |
 | `AI_QUALITY_LANGUAGE` | Detector có dấu hiệu ngôn ngữ chủ đạo trái yêu cầu |
 | `AI_QUALITY_GROUNDING`, `AI_QUALITY_EDITOR` | Mất code/link/số liệu quan trọng hoặc Editor báo issue blocking |
-| `AI_LEGACY_TAXONOMY` | Run cũ vẫn yêu cầu AI tạo taxonomy; tạo run mới với taxonomy thủ công |
+| `AI_PARENT_ORIGIN_MISSING` | Regenerate từ parent thiếu `content_origin`; tạo session mới từ nguồn |
+| `AI_OUTPUTS_MISSING` | Run không có nhóm output nào được yêu cầu; tạo session mới kèm `requested_outputs` |
 | `AI_INPUT_BUDGET` | Tổng nguồn/brief/profile/schema/artifact vượt budget request của bước, mặc định 160000 ký tự; rút gọn có chủ ý, không cắt thầm |
 
 Similarity là warning thống kê từ vựng, không phải điểm văn phong và không ngưỡng 60% chung. Mặc định warning `0.85`, copy gate chỉ khi mỗi prose đủ `160` ký tự; language detector hỗ trợ vi/en với ít nhất `60` từ và có thể `undetermined`. Số mới không có nguồn là warning cần editor đọc; kiểm regex/anchors không chứng minh đầy đủ ngữ nghĩa. Các ngưỡng chưa được hiệu chỉnh bằng đánh giá người dùng thật. UI đọc `quality_checks`, `image_warnings`, `editor_warning_count`, không tự suy bài đã fact-check chỉ vì `ready`.

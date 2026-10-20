@@ -112,6 +112,14 @@ export function useAiContentGeneration(source, catalog, onSession, onFeedback = 
       if (token !== version) return
       const value = await aiAgentService.createSession(payload)
       if (token !== version) return
+      if (value.target_type === 'social_post' && value.social_post_id) {
+        for (const job of value.jobs ?? []) {
+          announceAiTaskQueued({ ...job, social_post_id: value.social_post_id }, { task_type: job.task_type, source: 'ai_content', name: 'Tạo Social Post' })
+        }
+        onQueued(value)
+
+        return
+      }
       acceptSession(value)
       if (!['failed', 'cancelled', 'expired'].includes(value.status)) {
         announceQueued(value)

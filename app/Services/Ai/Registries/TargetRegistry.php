@@ -2,6 +2,7 @@
 
 namespace App\Services\Ai\Registries;
 
+use App\Services\Ai\Contracts\AiSessionStarterContract;
 use App\Services\Ai\Contracts\AiTargetAdapterContract;
 use Illuminate\Contracts\Container\Container;
 use InvalidArgumentException;
@@ -15,7 +16,7 @@ use InvalidArgumentException;
  * được resolve sau khi target đã được bật trong config, tránh gọi tùy ý class.
  *
  * CÁC HÀM/METHOD TRONG FILE:
-     * - __construct(), get(), resolve(), adapter(), all(), platforms(), outputOptions().
+ * - __construct(), get(), resolve(), adapter(), all(), platforms(), outputOptions().
  *
  * INPUT/OUTPUT CỦA CLASS (tổng thể):
  * - INPUT : target key và service container.
@@ -148,6 +149,20 @@ final class TargetRegistry
         $class = $this->get($key)['adapter'] ?? null;
         if (! is_string($class) || ! is_a($class, AiTargetAdapterContract::class, true)) {
             throw new InvalidArgumentException("AI target [{$key}] chưa khai báo adapter hợp lệ.");
+        }
+
+        return $this->container->make($class);
+    }
+
+    /** Resolve an optional domain queue entry point from trusted target configuration. */
+    public function sessionAdapter(string $key): ?AiSessionStarterContract
+    {
+        $class = $this->get($key)['session_adapter'] ?? null;
+        if ($class === null) {
+            return null;
+        }
+        if (! is_string($class) || ! is_a($class, AiSessionStarterContract::class, true)) {
+            throw new InvalidArgumentException("AI target [{$key}] chưa khai báo session adapter hợp lệ.");
         }
 
         return $this->container->make($class);

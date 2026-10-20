@@ -606,12 +606,12 @@ class AiTask2RunApiTest extends TestCase
         $category = Category::query()->create(['name' => 'Manual', 'status' => 'active']);
         $run = $this->createRun($token);
         $draft = ['title' => 'Bài mới', 'content_html' => '<p>Nội dung bài.</p>', 'category_ids' => [$category->id], 'tag_ids' => [], 'taxonomy_origin' => 'manual'];
-        // Candidate legacy giả lập; kiểm Apply/taxonomy, không giả đã chạy worker archive.
-        $run->update(['archive_version' => null, 'status' => 'ready', 'result_json' => ['draft' => $draft]]);
-        $url = '/api/admin/ai-agent/candidates/'.$run->id.'/apply';
-        $this->withToken($token)->postJson($url, ['fields' => ['title', 'content', 'taxonomy'], 'expected_version' => str_repeat('0', 64)])->assertConflict();
+        $run->update(['status' => 'ready', 'result_json' => ['draft' => $draft]]);
+        $url = '/api/admin/ai-agent/candidates/'.$run->id.'/approve';
+        $versions = ['expected_version' => hash('sha256', json_encode($draft)), 'expected_review_version' => \App\Services\Ai\Content\AiContentReviewService::version($run)];
+        $this->withToken($token)->postJson($url, [...$versions, 'fields' => ['title', 'content', 'taxonomy'], 'expected_version' => str_repeat('0', 64)])->assertConflict();
         $this->assertDatabaseCount('posts', 0);
-        $postId = $this->withToken($token)->postJson($url, ['fields' => ['title', 'content', 'taxonomy'], 'expected_version' => hash('sha256', json_encode($draft))])->assertOk()->json('data.post_id');
+        $postId = $this->withToken($token)->postJson($url, [...$versions, 'fields' => ['title', 'content', 'taxonomy']])->assertOk()->json('data.post_id');
         $post = Post::findOrFail($postId);
         $this->assertSame('draft', $post->status->value ?? $post->status);
         $this->assertSame([$category->id], $post->categories()->pluck('categories.id')->all());

@@ -27,6 +27,7 @@ import { aiAgentService } from '@/services/aiAgent'
 
 /** Input: provider DTO. Output: model đã bật/khả dụng; không đoán capability từ tên. */
 const availableModels = provider => (provider?.models ?? []).filter(model => model.is_enabled && model.is_available)
+const textModels = provider => availableModels(provider).filter(model => model.capabilities?.includes('text_generation'))
 
 /** Input: source ref của page. Output: catalog và hàm tải lại; watcher cập nhật lựa chọn cục bộ. */
 export function useAiContentCatalog(source) {
@@ -131,6 +132,8 @@ export function useAiContentCatalog(source) {
     loading: loading.value || targetsLoading.value,
     error: error.value || targetsError.value,
     contentDefaults: contentDefaults.value,
+    lengthOptions: selectedTarget.value?.length_options ?? [],
+    imageCount: selectedTarget.value?.image_count ?? null,
     outputOptions: outputOptions.value,
     targetOptions: targets.value.map(target => ({ title: target.label, value: target.key, icon: target.icon, color: target.color })),
     inputTypes: selectedTarget.value?.inputs ?? selectedTarget.value?.input_types ?? ['url', 'text'],
@@ -140,11 +143,11 @@ export function useAiContentCatalog(source) {
       .map(profile => ({ title: profile.label, value: profile.key })),
     selectedPlatform: selectedProfile.value?.key ?? source.value.platform ?? null,
     providerOptions: activeProviders.value.map(provider => ({ title: provider.name, value: provider.key })),
-    modelOptions: availableModels(selectedProvider.value).map(model => ({
+    modelOptions: textModels(selectedProvider.value).map(model => ({
       title: model.label || model.remote_model_id,
       value: model.remote_model_id,
     })),
-    selectedModel: availableModels(selectedProvider.value).find(model => model.remote_model_id === source.value.model) ?? null,
+    selectedModel: textModels(selectedProvider.value).find(model => model.remote_model_id === source.value.model) ?? null,
     imageModelOptions: imageModelOptions.value,
     defaultImageModelId: imageModelOptions.value.find(option => option.value === settings.value.default_image_model_id)?.value
       ?? imageModelOptions.value.find(option => option.value === settings.value.fallback_image_model_id)?.value ?? null,
@@ -165,7 +168,7 @@ export function useAiContentCatalog(source) {
       ?? activeProviders.value.find(item => availableModels(item).length)
       ?? activeProviders.value[0]
 
-    const models = availableModels(provider)
+    const models = textModels(provider)
 
     const model = models.find(item => item.remote_model_id === source.value.model)
       ?? models.find(item => item.id === settings.value.default_text_model_id)
@@ -180,6 +183,19 @@ export function useAiContentCatalog(source) {
   }
 
   watch([activeProviders, settings, () => source.value.provider, () => source.value.model], reconcileSelection)
+
+  watch([selectedTarget, () => source.value.length, () => source.value.imageCount], () => {
+    const target = selectedTarget.value
+    if (!target) return
+    const options = target.length_options ?? []
+
+    const length = options.some(option => option.value === source.value.length) ? source.value.length
+      : options.find(option => option.value === target.default_length)?.value ?? options[0]?.value ?? null
+
+    const imageCount = source.value.imageCount ?? target.image_count?.default ?? null
+    if (length !== source.value.length || imageCount !== source.value.imageCount)
+      source.value = { ...source.value, length, imageCount }
+  })
 
   /** INPUT: catalog ảnh/default mới. OUTPUT: giữ model ảnh hợp lệ; mặc định ảnh độc lập model viết bài. */
   watch([imageModelOptions, settings, loading, () => source.value.imageModelId], () => {

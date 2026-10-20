@@ -80,7 +80,7 @@ final class ProcessSocialPostImagePromptJob implements ShouldBeUnique, ShouldQue
     public function failed(Throwable $exception): void
     {
         $import = AiImport::query()->find($this->importId);
-        if ($import) {
+        if ($import && (int) $import->generation_no === $this->generationNo) {
             app(SocialPostAiWorkerService::class)->fail($import, 'AI_SOCIAL_IMAGE_PROMPT_FAILED', $exception->getMessage());
         }
     }

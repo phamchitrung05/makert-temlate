@@ -33,6 +33,7 @@ class SocialPostVariant extends Model
         'social_post_id',
         'platform',
         'format',
+        'image_count',
         'content_json',
         'content_status',
         'generation_status',
@@ -57,6 +58,7 @@ class SocialPostVariant extends Model
         return [
             'platform' => SocialPlatform::class,
             'content_json' => 'array',
+            'image_count' => 'integer',
             'content_status' => SocialPostGenerationStatus::class,
             'generation_status' => SocialPostGenerationStatus::class,
             'review_status' => SocialPostReviewStatus::class,

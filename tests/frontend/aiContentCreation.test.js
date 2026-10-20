@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, shallowRef, watch } from 'vue'
 import { useAiContentWorkspace } from '@/composables/useAiContentWorkspace'
 import { useAiContentGeneration } from '@/composables/useAiContentGeneration'
+import { normalizeTask } from '@/composables/useAiTaskQueue'
 import { buildAiContentRequest, createAiContentSource, validateAiContentSource } from '@/utils/aiContentInput'
 import { useAiRunFeedback } from '@/composables/useAiRunFeedback'
 import { useAiContentActions } from '@/composables/useAiContentActions'
@@ -108,7 +109,8 @@ describe('Ai Content creation input', () => {
     expect(payload.input).toEqual({ type: 'text', text: 'Viết bài hướng dẫn Laravel', title: 'My title' })
     expect(payload.instructions).toContain('đề bài')
     expect(payload.instructions).toContain('tiếng Anh')
-    expect(payload.instructions).toContain('1.500–2.000')
+    expect(payload.length).toBe('long')
+    expect(payload.instructions).not.toContain('1.500–2.000')
     expect(payload.instructions).toContain('My title')
     expect(payload.instructions).toContain('SEO')
     expect(payload.requested_outputs).toContain('seo')
@@ -161,6 +163,45 @@ describe('Ai Content creation input', () => {
 })
 
 describe('Ai Content generation lifecycle', () => {
+  it('hands Social jobs to the queue and destination without creating an article candidate', async () => {
+    const source = shallowRef({ ...validSource(), targetType: 'social_post', type: 'text', text: 'Garden source', outputs: ['social_content', 'social_gallery'], imageModelId: 91 })
+    const socialCatalog = shallowRef({ ...catalog(), outputOptions: [{ value: 'social_content' }, { value: 'social_gallery' }], imageModelOptions: [{ value: 91 }] })
+    const onSession = vi.fn()
+    const onQueued = vi.fn()
+    const queuedEvent = vi.fn()
+
+    window.addEventListener('ai-task-queued', queuedEvent)
+
+    const result = { target_type: 'social_post', social_post_id: 12, status: 'queued', jobs: [
+      { job_id: 'caption', task_run_id: 'task-caption', task_type: 'social_caption', status: 'queued' },
+      { job_id: 'prompt', task_run_id: 'task-prompt', task_type: 'social_image_prompt', status: 'queued' },
+    ] }
+
+    service.createSession.mockResolvedValue(result)
+
+    const creation = scope.run(() => useAiContentGeneration(source, socialCatalog, onSession, vi.fn(), onQueued))
+
+    await creation.generate()
+    expect(service.createSession.mock.calls[0][0]).toMatchObject({ image_model_id: 91, target_type: 'social_post' })
+    expect(onSession).not.toHaveBeenCalled()
+    expect(onQueued).toHaveBeenCalledWith(result)
+    expect(queuedEvent).toHaveBeenCalledTimes(2)
+    expect(queuedEvent.mock.calls[0][0].detail.social_post_id).toBe(12)
+    expect(normalizeTask(queuedEvent.mock.calls[0][0].detail).social_post_id).toBe(12)
+    expect(creation.generation.value.busy).toBe(false)
+    expect(creation.generation.value.session).toBeNull()
+    window.removeEventListener('ai-task-queued', queuedEvent)
+  })
+
+  it('requires a supported image model only when Social gallery is selected', () => {
+    const source = { ...validSource(), targetType: 'social_post', outputs: ['social_gallery'], imageModelId: null }
+    const socialCatalog = { ...catalog(), outputOptions: [{ value: 'social_gallery' }, { value: 'social_content' }], imageModelOptions: [{ value: 91 }] }
+
+    expect(validateAiContentSource(source, socialCatalog)).toContain('model ảnh')
+    expect(validateAiContentSource({ ...source, imageModelId: 91 }, socialCatalog)).toBe('')
+    expect(validateAiContentSource({ ...source, outputs: ['social_content'] }, socialCatalog)).toBe('')
+  })
+
   it('shows a terminal error once, keeps the reason after list reload and ignores a failed draft', async () => {
     const state = createState()
 

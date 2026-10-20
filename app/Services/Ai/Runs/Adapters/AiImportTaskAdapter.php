@@ -4,10 +4,12 @@ namespace App\Services\Ai\Runs\Adapters;
 
 use App\Models\AiImport;
 use App\Models\AiTaskRun;
+use App\Models\SocialPost;
 use App\Models\User;
 use App\Services\Ai\Errors\AiPublicErrorMessage;
 use App\Services\Ai\Images\AiThumbnailService;
 use App\Services\Ai\Runs\Contracts\AiTaskRunAdapter;
+use App\Services\Marketing\SocialPostGenerationStateService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -208,6 +210,12 @@ final class AiImportTaskAdapter implements AiTaskRunAdapter
         $import = $this->source($source);
         if ($import->operation === 'image') {
             app(AiThumbnailService::class)->sync($import->fresh());
+        }
+        if (str_starts_with((string) $import->operation, 'social_')) {
+            $post = SocialPost::find(data_get($import->input_json, 'social_post_id'));
+            if ($post) {
+                app(SocialPostGenerationStateService::class)->refresh($post, (int) data_get($import->input_json, 'generation_no'));
+            }
         }
     }
 

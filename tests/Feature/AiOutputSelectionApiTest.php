@@ -177,19 +177,15 @@ class AiOutputSelectionApiTest extends TestCase
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Kiểm regression test_legacy_requests_without_output_selection_keep_full_generation_behavior.
-     * INPUT: fixtures/request của kịch bản regression.
-     * OUTPUT: assertions xác nhận contract và side effect mong đợi.
-
+     * CHỨC NĂNG: Kiểm request không chọn output bị từ chối trước khi tạo run.
+     * INPUT: payload không có requested_outputs.
+     * OUTPUT: 422 và không ghi run.
      * =====================================================================
      */
-    public function test_legacy_requests_without_output_selection_keep_full_generation_behavior(): void
+    public function test_requests_without_output_selection_are_rejected(): void
     {
-        $id = $this->withToken($this->token())->postJson('/api/admin/ai-agent/sessions', $this->payload())
-            ->assertAccepted()->json('data.job_id');
-        $input = AiImport::findOrFail($id)->input_json;
-
-        $this->assertArrayNotHasKey('fields', $input);
-        $this->assertArrayNotHasKey('requested_outputs', $input);
+        $this->withToken($this->token())->postJson('/api/admin/ai-agent/sessions', $this->payload())
+            ->assertUnprocessable()->assertJsonValidationErrors('requested_outputs');
+        $this->assertDatabaseCount('ai_imports', 0);
     }
 }

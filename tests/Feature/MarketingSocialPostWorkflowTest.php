@@ -9,6 +9,7 @@ use App\Models\Campaign;
 use App\Models\Product;
 use App\Models\SocialPost;
 use App\Models\User;
+use App\Services\Marketing\SocialPostAiWorkerService;
 use App\Services\Marketing\SocialPostGenerationService;
 use App\Services\Marketing\SocialPostGenerationStateService;
 use App\Services\Marketing\SocialPostLifecycleService;
@@ -68,13 +69,13 @@ final class MarketingSocialPostWorkflowTest extends TestCase
         $this->assertSame('generating', $post->fresh()->generation_status->value);
 
         (new ProcessSocialPostCaptionJob($queued['caption_job_id'], $queued['generation_no']))
-            ->handle(app(\App\Services\Marketing\SocialPostAiWorkerService::class));
+            ->handle(app(SocialPostAiWorkerService::class));
         $post->refresh();
         $this->assertNotEmpty($post->caption);
         $this->assertSame('partial', $post->generation_status->value);
 
         (new ProcessSocialPostImagePromptJob($queued['image_prompt_job_id'], $queued['generation_no']))
-            ->handle(app(\App\Services\Marketing\SocialPostAiWorkerService::class));
+            ->handle(app(SocialPostAiWorkerService::class));
         $imagePromptImport = AiImport::query()->where('operation', 'social_image_prompt')->firstOrFail();
         $imageImport = AiImport::query()->where('operation', 'social_image')->firstOrFail();
         $this->assertSame('ready', $imagePromptImport->fresh()->status);
@@ -97,6 +98,18 @@ final class MarketingSocialPostWorkflowTest extends TestCase
         $status = app(SocialPostGenerationStateService::class)->statusFor('failed', 'failed');
 
         $this->assertSame('failed', $status->value);
+    }
+
+    public function test_requested_image_count_controls_the_number_of_jobs(): void
+    {
+        [$actor, $post] = $this->fixture();
+        foreach ([1, 7] as $count) {
+            $queued = app(SocialPostGenerationService::class)->queue($post->fresh(), $actor->id, ['component' => 'image', 'image_count' => $count]);
+            (new ProcessSocialPostImagePromptJob($queued['image_prompt_job_id'], $queued['generation_no']))
+                ->handle(app(SocialPostAiWorkerService::class));
+            $this->assertSame($count, AiImport::where('parent_id', $queued['image_prompt_job_id'])->where('operation', 'social_image')->count());
+            $this->assertSame($count, $post->variants()->firstOrFail()->image_count);
+        }
     }
 
     /**

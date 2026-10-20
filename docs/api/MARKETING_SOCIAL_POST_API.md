@@ -1,5 +1,45 @@
 # Marketing Social Post API — Facebook v1
 
+## Bổ sung MP-03 — 20/10/2026
+
+`POST /api/admin/ai-agent/sessions` với `target_type: social_post`, nguồn `text`,
+`platform: facebook` và `requested_outputs: [social_content, social_gallery]`
+tạo trực tiếp Social draft qua cùng lifecycle/queue với các endpoint bên dưới.
+Chỉ chạy các output được chọn; không tạo candidate Post mới. Candidate Social
+legacy vẫn dùng API review cũ để tránh làm mất các bản đã tạo trước đợt này.
+
+Các lựa chọn được chuyển vào bounded context: `language`/`output_language`,
+`writing_profile_id`, `writing_brief`, `instructions`, `length` (key từ config),
+`image_profile_id`, `image_count` (1–10), text `provider/model/model_id` và
+`image_provider/image_model/image_model_id`. Giao diện yêu cầu model ảnh khi chọn gallery.
+Thiếu model ảnh ở API vẫn có thể tạo phần nội dung; image job báo lỗi/partial theo
+contract Social hiện có, không tự chọn model không hợp lệ.
+
+Quyền tạo: `social_posts.create`; thao tác media và xem/sửa Social giữ các quyền
+hiện có. Queue phải bất đồng bộ. Model không hợp lệ rollback draft và jobs.
+Payload trùng cùng actor trong cửa sổ idempotency trả cùng bundle; quota theo actor.
+
+Response 202 gồm `target_type`, `social_post_id`, `generation_no`, `status`,
+`job_id`, `task_run_id`, `jobs[]` (job/tracker/type/status) và `can_open`.
+Client mở route `marketing-social-post-list?post=<id>` khi có quyền xem.
+Theo dõi qua popup task hoặc `GET /api/admin/social-posts/{id}`; detail bổ sung
+`generation_jobs[]` (id/component/slot_no/status/error_code), variant có `image_count`.
+
+`POST /api/admin/social-posts/{id}/variants/facebook/images/{slot}/regenerate`
+xếp lại riêng slot 0–9 của generation hiện tại. Quyền `social_posts.update` hoặc
+`marketing.manage`; nhận image provider/model override như generation request.
+409 nếu slot đang chạy; 404 nếu không thuộc bundle hiện tại. Retry tăng attempt,
+giữ ảnh cũ cho đến khi ảnh mới attach và giữ nguyên các slot khác.
+Response 202: `job_id`, `generation_no` (attempt của image run), `slot_no`.
+
+Các `social_*` run không được retry/regenerate/edit/delete qua API candidate
+Post generic; dùng Social lifecycle. Worker kiểm trạng thái/generation trước
+và sau provider để không ghi đè khi đã hủy hoặc có generation mới.
+
+[QA MP-03](../qa/MARKETING_SOCIAL_POST_MP03.md). Các mô tả Product và gallery
+3–4 ảnh trong contract lịch sử bên dưới đã được thay bởi Social độc lập Product,
+gallery 1–10 ảnh theo yêu cầu.
+
 **Trạng thái:** Implemented — single workspace, image-first. Video chưa thuộc
 phạm vi. **Cập nhật:** 16/10/2026.
 

@@ -80,7 +80,7 @@ final class ProcessSocialPostCaptionJob implements ShouldBeUnique, ShouldQueue
     public function failed(Throwable $exception): void
     {
         $import = AiImport::query()->find($this->importId);
-        if ($import) {
+        if ($import && (int) $import->generation_no === $this->generationNo) {
             app(SocialPostAiWorkerService::class)->fail($import, 'AI_SOCIAL_CAPTION_FAILED', $exception->getMessage());
         }
     }

@@ -1,14 +1,18 @@
 # Kế hoạch Marketing Social Post
 
-**Cập nhật:** 16/10/2026
+**Cập nhật:** 20/10/2026
 **Trạng thái tổng:** IN PROGRESS — platform variant, structured Facebook content
-và ordered gallery đã có vertical slice; còn thiếu manual Ai Content adapter
-và smoke test với credential thật.
+và ordered gallery đã có vertical slice; MP-03 đã nối AI Content vào queue Social
+và kiểm thử local. Smoke test Facebook/provider ảnh thật vẫn thuộc MP-00/MP-08.
 **Phạm vi đợt đầu:** Facebook-first. Một Social Post là bundle nội dung xã hội;
-mỗi nền tảng có một cấu trúc riêng. Facebook v1 gồm content có cấu trúc và 3--4
-ảnh sản phẩm theo thứ tự. AI tạo content theo Writing Profile và tạo ảnh theo
-prompt + product context. Video được để dành cho phase TikTok sau này và không
+mỗi nền tảng có một cấu trúc riêng. Facebook hiện gồm content có cấu trúc và 1–10
+ảnh theo số lượng được chọn. AI dùng nguồn/campaign, Writing Profile và image profile;
+Social không phụ thuộc Product. Video được để dành cho phase TikTok sau này và không
 thuộc schema, UI, queue hay acceptance của Facebook v1.
+
+**Đối chiếu 20/10:** các mô tả Product/fact IDs và 3–4 ảnh trong phần thiết kế
+lịch sử bên dưới đã được thay thế bởi phạm vi MP-03 hiện tại; không khôi phục
+dependency Product khi tiếp tục các phase sau.
 
 ## 1. Mục tiêu và quyết định phạm vi
 
@@ -532,77 +536,38 @@ Rà soát trước triển khai:
 allowlist và audit độc lập; tài nguyên `Social` xuất hiện trong Ai Content cho
 manual run với cùng contract như scheduler.
 
-### MP-03 — AI tạo Facebook content và media bundle — IN PROGRESS — 4--6 ngày
+### MP-03 — AI tạo Facebook content và media bundle — DONE LOCAL — 20/10/2026
 
-Rà soát trước triển khai:
+Phạm vi hiện tại thay thế mô tả Product/3–4 ảnh cũ: Social độc lập Product từ
+18/10; gallery dùng image_count 1–10. Nguồn là text/campaign, writing profile,
+brief, ngôn ngữ, độ dài và image profile tùy chọn.
 
-- `AiImageGenerationService` hiện đã gọi `AiImageProviderContract` và upload
-  bytes thành `MediaAsset`; cần fan-out 3--4 slot, attach ordered qua variant
-  usage và giữ từng slot retryable.
-- `ProcessAiImageGenerationJob` hiện nhận `AiImport` UUID, có unique lock,
-  retry/backoff và dọn orphan asset, nhưng `mergeParentImage()` mới biết parent
-  của luồng image chung. Cần thêm adapter/completion path cho Social Post; không
-  để job ảnh tự suy đoán hoặc ghi thẳng vào Blog `Post`.
-- `AiRunService::snapshotInput()` trả sớm với operation `image`, vì vậy không
-  được giả định image run đã có writing profile/context snapshot. MP-03 phải
-  truyền bounded context và profile snapshot tường minh cho từng Social Post
-  task.
-- Không gọi provider trong HTTP request. Content và image slots có thể chạy song
-  song song, nhưng mỗi component/slot phải lưu lifecycle và kết quả riêng để
-  một lỗi không làm mất các phần còn lại.
+- [x] Context builder có allowlist, giới hạn độ dài và context hash. Không đọc
+  Product/ProductFact; schema không chấp nhận fact_ids/platform_caption ngoài contract.
+- [x] SocialPostAiAdapter được đăng ký bằng session_adapter; POST AI Content
+  tạo Social draft/variant và gọi SocialPostGenerationService trong cùng transaction.
+  Không gọi provider trong HTTP; lỗi model rollback cả draft và jobs.
+- [x] Giữ quyền social_posts.create, quota theo actor và khóa chống gửi trùng;
+  trả job IDs, tracker IDs và social_post_id để mở bài Social.
+- [x] Nội dung và image prompt dùng cùng prompt/schema/queue với Social tạo trực
+  tiếp và scheduler. Chỉ xếp những output được chọn, không tạo Blog Post/candidate giả.
+- [x] Fan-out đúng image_count, attach MediaAsset theo slot; ảnh lỗi giữ partial
+  và không làm mất nội dung/ảnh đã hoàn thành. Điều kiện duyệt dùng số ảnh đã yêu cầu.
+- [x] Snapshot nguồn/brief/độ dài/profile/model/prompt/schema/context và phiên bản;
+  metadata tracker chỉ giữ ID/hash bounded. Regenerate giữ nguồn và model đã chọn.
+- [x] Tạo lại riêng content, gallery hoặc từng image slot; slot retry tăng attempt,
+  giữ gallery cũ đến khi ảnh mới attach, không gọi lại các slot đã hoàn tất.
+- [x] Bỏ qua terminal/duplicate jobs; kiểm lại generation và trạng thái sau provider.
+  Kết quả đến sau cancel/stale không ghi đè; ảnh mới chưa attach được dọn,
+  ảnh cũ còn trong version history được giữ.
+- [x] UI chọn model ảnh, điều hướng về Social draft, polling đến terminal,
+  retry từng ảnh và mở đúng Social Post từ popup queue.
+- [x] Kiểm thử bằng provider/queue fake: API permission/rollback/dedupe,
+  selected outputs, schema, fan-out, partial failure, retry/ordering,
+  snapshot, cancel/stale và orphan cleanup. [QA MP-03](../qa/MARKETING_SOCIAL_POST_MP03.md).
 
-Luồng vertical slice:
-
-```text
-SocialPost draft (campaign/product/targets)
-        |
-        v
-Bounded context builder
-  verified product facts + campaign + profile + language/CTA + reference assets
-        |
-        +--> social_post.facebook_content (structured JSON)
-        |       title/body/bullets/cta/contact/hashtags/fact_ids
-        |
-        +--> social_post.facebook_image (structured JSON)
-                image_prompt/negative_prompt/slot_count/fact_ids
-                                |
-                                v
-                    AiImageProvider fan-out 3--4 slots -> MediaAsset[]
-                                |
-                                v
-                    variant images usage + version snapshot
-```
-
-- [x] Tạo context builder giới hạn kích thước, chỉ đưa product facts đã
-  verified/allowed, campaign message, writing profile snapshot, language/CTA,
-  visual constraints; không đưa token, secret hoặc URL tùy ý. Hash context để
-  dedupe/checkpoint và xác thực mọi fact ID AI trả về.
-- [x] Bổ sung reference asset IDs được allowlist từ product/media usage và
-  snapshot cùng Facebook variant.
-- [x] Queue Facebook content bằng prompt key `social_post.facebook_content` và
-  `AiTaskSchemaValidator`; lưu từng content block/fact IDs trong variant.
-- [ ] Nối adapter của tài nguyên `Social` trong Ai Content vào cùng queue/context
-  path để tạo thủ công không bypass lifecycle hoặc permission.
-- [x] Queue image prompt bằng `social_post.facebook_image`, fan-out 3--4 binary
-  jobs, attach ordered `MediaAsset[]`; prompt phải nhắc model không tự vẽ chính
-  xác logo, tên, ngày tháng hoặc chữ.
-- [x] Snapshot prompt key/version, profile, bounded context, fact IDs, asset IDs,
-  provider/model và generation/version vào variant version; metadata `AiTaskRun`
-  chỉ giữ hash/ID bounded, không lưu raw response hoặc secret.
-- [x] Xử lý partial failure theo content/image slot; tối thiểu 3 ảnh ready
-  mới đủ submit review. Chạy lại chỉ phần lỗi và không ghi đè version mới hơn.
-- [x] Regenerate content, từng image slot hoặc cả gallery; không xóa phần còn
-  ready. Dedupe key gồm `social_post_id + variant + component/slot + generation + provider/model`.
-- [x] Chặn stale/cancelled job ghi đè kết quả mới; dọn orphan asset nếu run
-  stale/failed và asset chưa có usage hoặc retention reference.
-- [ ] Viết tests cho Facebook content/fact allowlist, gallery schema, slot fan-out,
-  snapshot không chứa secret/`platform_caption`, queue dedupe, partial failure,
-  independent regenerate, media usage và orphan cleanup. Tests
-  dùng provider fake, không gọi API trả phí.
-
-**Kết quả cần đạt:** tạo được một Facebook variant có content có cấu trúc, 3--4
-ảnh ordered trong draft; từng phần có thể retry/regenerate,
-có version/audit snapshot và không làm phát sinh publish trước bước review.
+**Giới hạn nghiệm thu:** DONE LOCAL không thay cho chạy worker đồng thời trên
+host, provider ảnh thật hay publish Page thật; các bước đó giữ tại MP-00/MP-08/H-01.
 
 ### MP-04 — Facebook feed preview và editor — IN PROGRESS — 4--5 ngày
 
@@ -646,7 +611,7 @@ gallery 3--4 ảnh lên Page thật.
 - [x] Chọn campaign đang active và chống lặp slot bằng unique planned date/slot.
 - [x] Dispatch Facebook content và image-slot jobs theo queue; tạo đủ 3--4 ảnh
   theo từng slot và không tự publish.
-- [ ] Cho phép tạo cùng contract qua tài nguyên `Social` trong Ai Content để
+- [x] Cho phép tạo cùng contract qua tài nguyên `Social` trong Ai Content để
   editor tạo thủ công ngoài daily plan.
 - [x] Giữ quota AI hiện có và tách image job retry/backoff.
 - [x] Ghi failed job/partial generation để draft không tự publish.
@@ -661,13 +626,13 @@ và 3--4 image slots, không tự publish.
 - [x] Test deterministic text, image failure/partial và queue workflow bằng provider fake.
 - [ ] Test content contract Facebook, 3--4 image fan-out, reorder và gallery
   publish.
-- [ ] Test Ai Content resource `Social` tạo được content/image run thủ công và
+- [x] Test Ai Content resource `Social` tạo được content/image run thủ công và
   dùng cùng schema, context snapshot, permission với scheduler.
 - [x] Redact token/provider secret khỏi log và response.
 - [ ] Chạy smoke test trên Page thật và provider ảnh thật. **BLOCKED:** chờ Meta App/Page token và image provider credentials.
 - [x] Cập nhật API/ENV/runbook và QA report.
 
-Ghi chú kiểm thử toàn repository: Social Post/AI Content tests riêng đạt; lần
+Ghi chú lịch sử kiểm thử ngày 16/10 (không phải kết quả chạy lại ngày 20/10): Social Post/AI Content tests riêng đạt; lần
 chạy backend đầy đủ gần nhất có **619 passed, 2 lỗi**: lỗi parser provider legacy
 ngoài phạm vi Social Post và một lỗi `MediaTask8IntegrationTest` chỉ xuất hiện
 trong full-suite order (chạy riêng test này đạt). Test reference asset bổ sung
@@ -683,7 +648,7 @@ Meta App/Page token và image provider credentials.
 - [x] Có menu `Marketing > Social Post` ở cả hai layout.
 - [x] Tạo được product và campaign làm AI context.
 - [x] Tạo được Facebook variant có content blocks và 3--4 ảnh ordered.
-- [ ] Ai Content có resource `Social` để tạo thủ công content/image run theo
+- [x] Ai Content có resource `Social` để tạo thủ công content/image run theo
   cùng Facebook schema và context với daily planner.
 - [x] Một Social Post chọn được nhiều target/account.
 - [x] Không có scalar `platform_caption`; content nằm trong variant contract.
