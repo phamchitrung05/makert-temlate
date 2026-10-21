@@ -1,351 +1,535 @@
+<!--
+  =====================================================================
+  CHỨC NĂNG FILE: Trang tạo prompt mô tả từ hình ảnh tải lên.
+  =====================================================================
+  Người dùng tải ảnh mẫu, đặt tên gợi nhớ, chọn tỷ lệ khung hình và nhận
+  prompt mô tả chi tiết để dùng lại trong các công cụ tạo ảnh.
+
+  CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
+  - triggerFileInput(): mở hộp chọn tệp ảnh trên máy tính.
+  - handleFileSelect(): đọc file người dùng chọn từ input và đặt ảnh preview.
+  - handleDrop(): nhận file kéo-thả vào dropzone và đặt ảnh preview.
+  - copyPromptText(): sao chép nội dung prompt vào clipboard và hiển thị trạng thái.
+  - generatePrompt(): tạo prompt từ ảnh + tên + tỷ lệ đã chọn.
+  - uploadedImage/promptName/selectedRatio/copied: state form và kết quả.
+  - aspectRatios/generatedPrompt/promptTags: dữ liệu tỷ lệ và prompt mẫu.
+  - props/emits: không có; page tự quản lý state cục bộ.
+
+  INPUT/OUTPUT CỦA CLASS (tổng thể):
+  - INPUT : ảnh upload, tên prompt, tỷ lệ khung hình do người dùng chọn.
+  - OUTPUT: prompt mô tả chi tiết kèm tags và ảnh preview trong panel kết quả.
+  - SIDE EFFECT: đọc file qua URL.createObjectURL, ghi clipboard; chưa gọi API.
+  =====================================================================
+-->
 <script setup>
-/* eslint-disable camelcase -- API field names. */
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { aiImageProfilesService } from '@/services/aiImageProfiles'
-import { useAiProviderSettings } from '@/composables/useAiProviderSettings'
-import { formatAiError } from '@/utils/aiErrors'
+import { ref } from 'vue'
 
-definePage({ meta: { action: 'manage', subject: 'ai_settings' } })
+// Tham chiếu input file ẩn và trạng thái đã sao chép prompt
+const fileInputRef = ref(null)
+const copied = ref(false)
 
-const catalog = useAiProviderSettings()
-const name = ref('')
-const file = ref(null)
-const previewUrl = ref('')
-const modelId = ref(null)
-const items = ref([])
-const page = ref(1)
-const lastPage = ref(1)
-const selected = ref(null)
-const busy = ref(false)
-const loading = ref(false)
-const error = ref('')
-const notice = ref('')
-const deleting = ref(null)
-let timer
-let disposed = false
-let listVersion = 0
+// Ảnh mặc định và state form: ảnh đã tải, tên prompt, tỷ lệ đang chọn
+const defaultImage = 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=900'
+const uploadedImage = ref(defaultImage)
+const promptName = ref('Cà phê sáng – bàn gỗ')
+const selectedRatio = ref('16:9')
 
-const models = computed(() => catalog.providers.value
-  .filter(provider => provider.is_active && provider.has_api_key && ['openai', 'openai-compatible', 'gemini'].includes(provider.driver))
-  .flatMap(provider => (provider.models ?? [])
-    .filter(model => model.is_enabled && model.is_available && model.capabilities?.includes('vision') && model.capabilities?.includes('text_generation'))
-    .map(model => ({ title: `${provider.name} · ${model.label || model.remote_model_id}`, value: model.id }))))
+// Các tùy chọn tỷ lệ khung hình hiển thị trong lưới
+const aspectRatios = [
+  { ratio: '1:1', label: 'Vuông', width: 20, height: 20 },
+  { ratio: '16:9', label: 'Ngang', width: 26, height: 16 },
+  { ratio: '9:16', label: 'Dọc', width: 15, height: 24 },
+  { ratio: '4:3', label: 'Ngang', width: 24, height: 18 },
+  { ratio: '3:4', label: 'Dọc', width: 18, height: 24 },
+]
 
-const active = item => ['queued', 'analyzing'].includes(item.status)
-const statusLabel = item => ({ queued: 'Đang chờ', analyzing: 'Đang phân tích', ready: item.is_enabled ? 'Đã bật' : 'Chờ lưu và bật', failed: 'Thất bại' }[item.status] ?? item.status)
-const currentFile = computed(() => Array.isArray(file.value) ? file.value[0] : file.value)
+// Nội dung prompt mô tả chi tiết tạo ra từ ảnh
+const generatedPrompt = ref(
+  'A realistic, high-quality photo of a cup of latte coffee with latte art on a wooden table, coffee beans scattered around, a burlap sack of coffee beans, warm morning light, cozy coffee shop atmosphere, shallow depth of field, bokeh background, natural earthy tones, detailed texture, professional food photography.',
+)
 
-watch(currentFile, value => {
-  if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
-  previewUrl.value = value ? URL.createObjectURL(value) : ''
-})
+// Các từ khóa trích xuất từ ảnh
+const promptTags = ref([
+  'photorealistic',
+  'coffee',
+  'latte art',
+  'wooden table',
+  'coffee beans',
+  'warm light',
+  'shallow depth of field',
+  'bokeh',
+  'cozy atmosphere',
+  'food photography',
+])
 
-function schedule() {
-  clearTimeout(timer)
-  if (!disposed && (items.value.some(active) || (selected.value && active(selected.value))))
-    timer = setTimeout(() => load(false), 2500)
+// Mở hộp thoại chọn tệp ảnh trên máy tính
+const triggerFileInput = () => {
+  fileInputRef.value?.click()
 }
 
-async function load(showLoading = true) {
-  const version = ++listVersion
-  if (showLoading) loading.value = true
-  try {
-    const result = await aiImageProfilesService.list(page.value)
-    if (disposed || version !== listVersion) return
-    items.value = result.data
-    lastPage.value = result.last_page
-    if (selected.value && active(selected.value)) {
-      const id = selected.value.id
-      const fresh = result.data.find(item => item.id === id) ?? await aiImageProfilesService.show(id)
-      if (!disposed && selected.value?.id === id && active(selected.value)) selected.value = { ...fresh }
-    }
-    schedule()
-  }
-  catch (reason) { if (!disposed) error.value = formatAiError(reason, 'Không tải được prompt ảnh. Bấm tải lại để tiếp tục.') }
-  finally { if (!disposed && version === listVersion) loading.value = false }
+// Nhận file người dùng chọn từ input và cập nhật ảnh preview
+const handleFileSelect = event => {
+  const file = event.target.files?.[0]
+  if (file)
+    uploadedImage.value = URL.createObjectURL(file)
 }
 
-async function analyze() {
-  error.value = ''
-  notice.value = ''
-
-  const image = currentFile.value
-  if (!name.value.trim() || !image || !models.value.some(model => model.value === modelId.value)) {
-    error.value = 'Nhập tên, chọn ảnh mẫu và model có Vision.'
-
-    return
-  }
-  if (!['image/jpeg', 'image/png', 'image/webp'].includes(image.type) || image.size > 5 * 1024 * 1024) {
-    error.value = 'Chọn ảnh JPG, PNG hoặc WebP tối đa 5 MB.'
-
-    return
-  }
-  busy.value = true
-  try {
-    const body = new FormData()
-
-    body.append('name', name.value.trim())
-    body.append('image', image)
-    body.append('model_id', modelId.value)
-    selected.value = await aiImageProfilesService.create(body)
-    name.value = ''
-    file.value = null
-    page.value = 1
-    notice.value = 'Đã xếp hàng phân tích. Bạn có thể rời trang và mở lại kết quả sau.'
-    await load()
-  }
-  catch (reason) { error.value = formatAiError(reason, 'Chưa xác nhận được tác vụ. Hãy tải lại danh sách trước khi gửi lại.') }
-  finally { busy.value = false }
+// Nhận file kéo-thả vào dropzone và cập nhật ảnh preview
+const handleDrop = event => {
+  const file = event.dataTransfer.files?.[0]
+  if (file)
+    uploadedImage.value = URL.createObjectURL(file)
 }
 
-async function save() {
-  busy.value = true
-  error.value = ''
-  try {
-    const { id, name: profileName, prompt, negative_prompt, is_enabled } = selected.value
-
-    selected.value = await aiImageProfilesService.save(id, { name: profileName, prompt, negative_prompt, is_enabled })
-    notice.value = 'Đã lưu prompt. Prompt đã bật có thể chọn trong AI Content.'
-    await load()
-  }
-  catch (reason) { error.value = formatAiError(reason, 'Không lưu được prompt ảnh.') }
-  finally { busy.value = false }
+// Sao chép nội dung prompt vào clipboard và bật trạng thái "Đã chép" tạm thời
+const copyPromptText = () => {
+  navigator.clipboard.writeText(generatedPrompt.value)
+  copied.value = true
+  setTimeout(() => {
+    copied.value = false
+  }, 2000)
 }
 
-async function remove() {
-  busy.value = true
-  error.value = ''
-  try {
-    await aiImageProfilesService.remove(deleting.value.id)
-    if (selected.value?.id === deleting.value.id) selected.value = null
-    deleting.value = null
-    await load()
-  }
-  catch (reason) { error.value = formatAiError(reason, 'Không xóa được prompt ảnh.') }
-  finally { busy.value = false }
+// Tạo prompt từ ảnh, tên và tỷ lệ đã chọn (hiện log, sẽ nối API sau)
+const generatePrompt = () => {
+  console.log('Đang tạo prompt cho:', {
+    name: promptName.value,
+    ratio: selectedRatio.value,
+  })
 }
-
-async function reload() {
-  error.value = ''
-  await Promise.allSettled([catalog.load(), load()])
-}
-
-watch(page, () => load())
-onMounted(reload)
-onUnmounted(() => {
-  disposed = true
-  listVersion++
-  clearTimeout(timer)
-  if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
-})
 </script>
 
 <template>
-  <div>
-    <div class="d-flex align-center justify-space-between mb-4">
+  <div class="image-to-prompt-page">
+    <!-- ================= 1. HEADER TRANG ================= -->
+    <div class="d-flex flex-wrap justify-space-between gap-y-4 gap-x-6 mb-6">
       <div>
-        <h2>Prompt tạo ảnh</h2>
-        <p class="text-medium-emphasis mb-0">
-          Phân tích ảnh mẫu để lưu phong cách tạo ảnh cho những lần sau.
-        </p>
+        <h4 class="text-h4 font-weight-medium">
+          Tạo Prompt từ hình ảnh
+        </h4>
+        <div class="text-body-1">
+          Tải ảnh lên, đặt tên prompt, chọn tỷ lệ và nhận prompt mô tả chi tiết để dùng lại.
+        </div>
       </div>
-      <VBtn
-        variant="tonal"
-        :loading="loading"
-        :disabled="busy"
-        @click="reload"
-      >
-        Tải lại
-      </VBtn>
+      <div class="d-flex flex-wrap align-center gap-4">
+        <VBtn
+          color="secondary"
+          variant="tonal"
+          prepend-icon="tabler-history"
+        >
+          Lịch sử prompt
+        </VBtn>
+      </div>
     </div>
-    <VAlert
-      v-if="error || catalog.error.value"
-      type="error"
-      class="mb-4"
-    >
-      {{ error || catalog.error.value }}
-    </VAlert>
-    <VAlert
-      v-if="notice"
-      type="success"
-      variant="tonal"
-      class="mb-4"
-    >
-      {{ notice }}
-    </VAlert>
+
+    <!-- ================= 2. NỘI DUNG CHÍNH (2 CỘT) ================= -->
     <VRow>
+      <!-- ---------------- CỘT TRÁI: CẤU HÌNH & TẢI ẢNH ---------------- -->
       <VCol
         cols="12"
-        md="5"
+        lg="6"
       >
-        <VCard title="Phân tích ảnh mẫu">
-          <VCardText class="d-flex flex-column gap-4">
-            <AppTextField
-              v-model="name"
-              label="Tên prompt ảnh"
-              maxlength="160"
-              :disabled="busy"
-            />
-            <VFileInput
-              v-model="file"
-              label="Ảnh mẫu"
-              accept="image/jpeg,image/png,image/webp"
-              show-size
-              :disabled="busy"
-            />
-            <VImg
-              v-if="previewUrl"
-              :src="previewUrl"
-              max-height="240"
-              contain
-              alt="Ảnh mẫu đã chọn"
-            />
-            <AppSelect
-              v-model="modelId"
-              :items="models"
-              label="Model phân tích ảnh (Vision)"
-              :disabled="busy || catalog.loading.value"
-            />
-            <VAlert
-              v-if="!catalog.loading.value && !models.length"
-              type="info"
-              variant="tonal"
-            >
-              Bật model có Text generation và Vision trong AI Settings để phân tích ảnh.
-            </VAlert>
+        <VCard class="h-100 d-flex flex-column justify-space-between">
+          <VCardText>
+            <!-- Bước 1: Tải hình ảnh -->
+            <div class="mb-6">
+              <div class="d-flex align-center mb-3">
+                <VAvatar
+                  color="primary"
+                  variant="tonal"
+                  rounded
+                  size="38"
+                  class="me-3"
+                >
+                  <VIcon icon="tabler-photo" />
+                </VAvatar>
+                <div>
+                  <div class="text-subtitle-1 font-weight-medium">
+                    1. Tải hình ảnh
+                  </div>
+                  <div class="text-body-2 text-medium-emphasis">
+                    Chọn ảnh bạn muốn tạo prompt mô tả
+                  </div>
+                </div>
+              </div>
+
+              <!-- Khung bao ngoài nét đứt chứa Ảnh preview & Dropzone -->
+              <div class="upload-area-wrapper pa-3 rounded-lg">
+                <VRow
+                  dense
+                  align="stretch"
+                >
+                  <!-- Ảnh đã chọn bên trái -->
+                  <VCol
+                    cols="12"
+                    sm="7"
+                  >
+                    <div class="position-relative rounded-lg overflow-hidden h-100 upload-preview-box">
+                      <VImg
+                        v-if="uploadedImage"
+                        :src="uploadedImage"
+                        height="210"
+                        class="rounded-lg"
+                      />
+                      <div
+                        v-else
+                        class="d-flex flex-column align-center justify-center h-100 text-medium-emphasis upload-preview-empty"
+                      >
+                        <VIcon
+                          size="40"
+                          icon="tabler-photo"
+                          class="mb-1"
+                        />
+                        <span class="text-caption">Chưa có hình ảnh</span>
+                      </div>
+
+                      <!-- Nút Xóa ảnh -->
+                      <VBtn
+                        v-if="uploadedImage"
+                        icon="tabler-x"
+                        size="26"
+                        variant="flat"
+                        class="remove-img-btn"
+                        @click="uploadedImage = ''"
+                      />
+                    </div>
+                  </VCol>
+
+                  <!-- Ô kéo thả chọn ảnh bên phải -->
+                  <VCol
+                    cols="12"
+                    sm="5"
+                  >
+                    <div
+                      class="dropzone-box h-100 rounded-lg pa-4 d-flex flex-column align-center justify-center text-center"
+                      @dragover.prevent
+                      @drop.prevent="handleDrop"
+                    >
+                      <VIcon
+                        size="34"
+                        icon="tabler-cloud-upload"
+                        class="mb-2 text-medium-emphasis"
+                      />
+                      <div class="text-body-2 font-weight-medium">
+                        Kéo thả ảnh vào đây
+                      </div>
+                      <div class="text-caption text-medium-emphasis mb-3">
+                        hoặc
+                      </div>
+
+                      <VBtn
+                        color="primary"
+                        size="small"
+                        class="mb-3"
+                        @click="triggerFileInput"
+                      >
+                        Chọn ảnh
+                      </VBtn>
+                      <input
+                        ref="fileInputRef"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        class="d-none"
+                        @change="handleFileSelect"
+                      >
+
+                      <div class="text-caption text-disabled">
+                        JPG, PNG, WEBP<br>Tối đa 10MB
+                      </div>
+                    </div>
+                  </VCol>
+                </VRow>
+              </div>
+            </div>
+
+            <!-- Bước 2: Chọn tên prompt -->
+            <div class="mb-6">
+              <div class="d-flex align-center mb-3">
+                <VAvatar
+                  color="primary"
+                  variant="tonal"
+                  rounded
+                  size="38"
+                  class="me-3"
+                >
+                  <VIcon icon="tabler-wand" />
+                </VAvatar>
+                <div>
+                  <div class="text-subtitle-1 font-weight-medium">
+                    2. Chọn tên prompt
+                  </div>
+                  <div class="text-body-2 text-medium-emphasis">
+                    Lưu prompt với tên để dễ tìm lại sau này
+                  </div>
+                </div>
+              </div>
+
+              <VTextField
+                v-model="promptName"
+                placeholder="Nhập tên gợi nhớ cho prompt..."
+                maxlength="100"
+                hide-details
+              />
+              <div class="text-right text-caption text-medium-emphasis mt-1">
+                {{ promptName.length }}/100
+              </div>
+            </div>
+
+            <!-- Bước 3: Chọn tỷ lệ khung hình -->
+            <div class="mb-6">
+              <div class="d-flex align-center mb-3">
+                <VAvatar
+                  color="primary"
+                  variant="tonal"
+                  rounded
+                  size="38"
+                  class="me-3"
+                >
+                  <VIcon icon="tabler-aspect-ratio" />
+                </VAvatar>
+                <div>
+                  <div class="text-subtitle-1 font-weight-medium">
+                    3. Chọn tỷ lệ khung hình
+                  </div>
+                  <div class="text-body-2 text-medium-emphasis">
+                    Chọn tỷ lệ phù hợp với nhu cầu tạo ảnh
+                  </div>
+                </div>
+              </div>
+
+              <!-- Lưới 5 tỷ lệ khung hình -->
+              <div class="aspect-ratio-grid">
+                <div
+                  v-for="item in aspectRatios"
+                  :key="item.ratio"
+                  class="ratio-card pa-3 rounded-lg border text-center cursor-pointer d-flex flex-column align-center justify-center"
+                  :class="{ 'ratio-card-active': selectedRatio === item.ratio }"
+                  @click="selectedRatio = item.ratio"
+                >
+                  <!-- Biểu tượng mô phỏng khung hình -->
+                  <div class="ratio-shape-box mb-2 d-flex align-center justify-center">
+                    <div
+                      class="ratio-shape"
+                      :class="{ 'ratio-shape-active': selectedRatio === item.ratio }"
+                      :style="{ width: item.width + 'px', height: item.height + 'px' }"
+                    />
+                  </div>
+
+                  <div
+                    class="text-body-2 font-weight-medium"
+                    :class="selectedRatio === item.ratio ? 'text-primary' : ''"
+                  >
+                    {{ item.ratio }}
+                  </div>
+                  <div
+                    class="text-caption"
+                    :class="selectedRatio === item.ratio ? 'text-primary' : 'text-medium-emphasis'"
+                  >
+                    {{ item.label }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </VCardText>
+
+          <!-- Nút Tạo Prompt từ ảnh -->
+          <VCardText class="pt-0">
             <VBtn
-              :loading="busy"
-              :disabled="busy || !models.length"
+              block
+              color="primary"
+              size="large"
               prepend-icon="tabler-sparkles"
-              @click="analyze"
+              @click="generatePrompt"
             >
-              Phân tích &amp; tạo prompt
+              Tạo Prompt từ ảnh
             </VBtn>
-            <p class="text-caption mb-0">
-              JPG, PNG, WebP · tối đa 5 MB. AI phân tích bố cục, màu sắc, ánh sáng và phong cách.
-            </p>
           </VCardText>
         </VCard>
       </VCol>
+
+      <!-- ---------------- CỘT PHẢI: KẾT QUẢ PROMPT ---------------- -->
       <VCol
         cols="12"
-        md="7"
+        lg="6"
       >
-        <VCard
-          v-if="selected"
-          title="Kết quả phân tích"
-          class="mb-4"
-        >
-          <VCardText class="d-flex flex-column gap-4">
-            <VChip class="align-self-start">
-              {{ statusLabel(selected) }}
-            </VChip>
-            <VProgressLinear
-              v-if="active(selected)"
-              indeterminate
-            />
-            <VAlert
-              v-if="selected.error_message"
-              type="error"
-            >
-              {{ selected.error_message }}
-            </VAlert>
-            <template v-if="selected.status === 'ready'">
-              <p>{{ selected.summary }}</p>
-              <AppTextField
-                v-model="selected.name"
-                label="Tên prompt"
-                maxlength="160"
-                :disabled="busy"
-              />
-              <AppTextarea
-                v-model="selected.prompt"
-                label="Prompt tạo ảnh"
-                rows="7"
-                maxlength="6000"
-                :disabled="busy"
-                hint="{subject} sẽ được thay bằng chủ đề ảnh mới khi sử dụng."
-                persistent-hint
-              />
-              <AppTextarea
-                v-model="selected.negative_prompt"
-                label="Những chi tiết cần tránh"
-                rows="3"
-                maxlength="2000"
-                :disabled="busy"
-              />
-              <VSwitch
-                v-model="selected.is_enabled"
-                label="Bật để sử dụng khi tạo ảnh"
-                :disabled="busy"
-              />
+        <VCard class="h-100 d-flex flex-column justify-space-between">
+          <VCardText>
+            <!-- Header Kết quả & Nút Sao chép -->
+            <div class="d-flex justify-space-between align-center mb-4">
+              <div class="d-flex align-center">
+                <VAvatar
+                  color="primary"
+                  variant="tonal"
+                  rounded
+                  size="38"
+                  class="me-3"
+                >
+                  <VIcon icon="tabler-sparkles" />
+                </VAvatar>
+                <div>
+                  <div class="text-subtitle-1 font-weight-medium">
+                    Kết quả Prompt
+                  </div>
+                  <div class="text-body-2 text-medium-emphasis">
+                    Prompt mô tả chi tiết từ hình ảnh của bạn
+                  </div>
+                </div>
+              </div>
+
               <VBtn
-                :loading="busy"
-                :disabled="busy"
-                @click="save"
+                color="primary"
+                variant="tonal"
+                prepend-icon="tabler-copy"
+                size="small"
+                @click="copyPromptText"
               >
-                Lưu prompt ảnh
+                {{ copied ? 'Đã chép' : 'Sao chép' }}
               </VBtn>
-            </template>
+            </div>
+
+            <!-- Ảnh lớn xem trước -->
+            <VImg
+              :src="uploadedImage || defaultImage"
+              height="295"
+              rounded="lg"
+              class="mb-4 border result-preview-img"
+            />
+
+            <!-- Hộp văn bản Prompt kết quả -->
+            <div class="prompt-result-box pa-4 rounded-lg mb-4">
+              <p class="text-body-2 mb-0 prompt-result-text">
+                {{ generatedPrompt }}
+              </p>
+            </div>
+
+            <!-- Danh sách Tags từ khóa -->
+            <div class="d-flex flex-wrap gap-2 mb-4">
+              <VChip
+                v-for="tag in promptTags"
+                :key="tag"
+                size="small"
+                color="primary"
+                variant="tonal"
+              >
+                {{ tag }}
+              </VChip>
+            </div>
           </VCardText>
-        </VCard>
-        <VCard title="Prompt ảnh đã lưu">
-          <VList v-if="items.length">
-            <VListItem
-              v-for="item in items"
-              :key="item.id"
-              :title="item.name"
-              :subtitle="statusLabel(item)"
-              :disabled="busy"
-              @click="selected = { ...item }"
-            >
-              <template #append>
-                <VBtn
-                  icon="tabler-trash"
-                  variant="text"
-                  aria-label="Xóa prompt ảnh"
-                  :disabled="busy || active(item)"
-                  @click.stop="deleting = item"
-                />
-              </template>
-            </VListItem>
-          </VList>
-          <VCardText v-else>
-            Chưa có prompt ảnh. Tải ảnh mẫu lên để tạo prompt đầu tiên.
+
+          <!-- Thông báo đã lưu lịch sử -->
+          <VCardText class="pt-0">
+            <div class="saved-notice-box pa-4 rounded-lg d-flex align-center">
+              <VIcon
+                color="primary"
+                size="20"
+                icon="tabler-info-circle"
+                class="me-3"
+              />
+              <div class="text-body-2">
+                Prompt này đã được lưu với tên
+                <strong class="text-primary">“{{ promptName || 'Chưa đặt tên' }}”</strong>
+                trong lịch sử prompt.
+              </div>
+            </div>
           </VCardText>
-          <VPagination
-            v-if="lastPage > 1"
-            v-model="page"
-            :length="lastPage"
-            :disabled="busy"
-          />
         </VCard>
       </VCol>
     </VRow>
-    <VDialog
-      :model-value="!!deleting"
-      max-width="440"
-      @update:model-value="!busy && (deleting = null)"
-    >
-      <VCard title="Xóa prompt ảnh?">
-        <VCardText>Prompt “{{ deleting?.name }}” và ảnh mẫu sẽ bị xóa.</VCardText>
-        <VCardActions>
-          <VBtn
-            :disabled="busy"
-            @click="deleting = null"
-          >
-            Hủy
-          </VBtn>
-          <VBtn
-            color="error"
-            :loading="busy"
-            :disabled="busy"
-            @click="remove"
-          >
-            Xóa
-          </VBtn>
-        </VCardActions>
-      </VCard>
-    </VDialog>
   </div>
 </template>
+
+<style scoped>
+/* Khung bao phần upload ảnh (Bước 1) */
+.upload-area-wrapper {
+  border: 1.5px dashed rgba(var(--v-theme-primary), 0.35);
+  background-color: rgba(var(--v-theme-primary), 0.04);
+}
+
+/* Hộp ảnh preview giữ chiều cao tối thiểu */
+.upload-preview-box {
+  background-color: rgba(var(--v-theme-on-surface), 0.04);
+}
+.upload-preview-empty {
+  min-height: 210px;
+}
+
+/* Nút Xóa trên góc phải ảnh preview (scrim tối, icon sáng theo surface) */
+.remove-img-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  color: rgb(var(--v-theme-surface));
+  background-color: rgba(var(--v-theme-on-surface), 0.55);
+}
+
+/* Hộp kéo thả bên phải ảnh preview */
+.dropzone-box {
+  border: 1.5px dashed rgba(var(--v-theme-primary), 0.35);
+  background-color: rgba(var(--v-theme-primary), 0.04);
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.dropzone-box:hover {
+  border-color: rgb(var(--v-theme-primary));
+  background-color: rgba(var(--v-theme-primary), 0.08);
+}
+
+/* Lưới 5 cột cho tỷ lệ khung hình */
+.aspect-ratio-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+@media (max-width: 600px) {
+  .aspect-ratio-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.ratio-card {
+  border-color: rgba(var(--v-border-color), var(--v-border-opacity)) !important;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.ratio-card:hover {
+  border-color: rgb(var(--v-theme-primary)) !important;
+  background-color: rgba(var(--v-theme-primary), 0.04);
+}
+.ratio-card-active {
+  border: 1.5px solid rgb(var(--v-theme-primary)) !important;
+  background-color: rgba(var(--v-theme-primary), 0.08);
+}
+
+/* Hình khối mô phỏng tỷ lệ */
+.ratio-shape-box {
+  height: 28px;
+}
+.ratio-shape {
+  border: 1.8px solid rgba(var(--v-theme-on-surface), 0.5);
+  border-radius: 4px;
+  position: relative;
+}
+.ratio-shape-active {
+  border-color: rgb(var(--v-theme-primary));
+  background-color: rgba(var(--v-theme-primary), 0.12);
+}
+
+/* Nền khung ảnh kết quả khi ảnh không lấp đầy */
+.result-preview-img {
+  background-color: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+/* Hộp hiển thị kết quả Prompt */
+.prompt-result-box {
+  background-color: rgba(var(--v-theme-primary), 0.04);
+  border: 1px solid rgba(var(--v-theme-primary), 0.18);
+}
+.prompt-result-text {
+  line-height: 1.65;
+}
+
+/* Hộp thông báo lưu lịch sử ở đáy cột phải */
+.saved-notice-box {
+  background-color: rgba(var(--v-theme-primary), 0.04);
+  border: 1px solid rgba(var(--v-theme-primary), 0.18);
+}
+</style>

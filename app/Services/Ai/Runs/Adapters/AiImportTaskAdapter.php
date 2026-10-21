@@ -63,7 +63,7 @@ final class AiImportTaskAdapter implements AiTaskRunAdapter
     {
         $import = $this->source($source);
         $input = (array) $import->input_json;
-        $image = in_array($import->operation, ['image', 'social_image'], true);
+        $image = in_array($import->operation, ['image', 'social_image', 'visual_style_generate'], true);
         $social = str_starts_with((string) $import->operation, 'social_');
         $type = $social
             ? (string) $import->operation

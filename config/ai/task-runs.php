@@ -20,6 +20,7 @@
 use App\Services\Ai\Runs\Adapters\AiImportTaskAdapter;
 use App\Services\Ai\Runs\Adapters\AiWritingProfileAnalysisTaskAdapter;
 use App\Services\Ai\Runs\Adapters\ResourceTemplateTaskAdapter;
+use App\Services\Ai\Runs\Adapters\VisualStyleAnalysisTaskAdapter;
 
 return [
     /*
@@ -30,5 +31,6 @@ return [
         AiWritingProfileAnalysisTaskAdapter::class,
         AiImportTaskAdapter::class,
         ResourceTemplateTaskAdapter::class,
+        VisualStyleAnalysisTaskAdapter::class,
     ],
 ];

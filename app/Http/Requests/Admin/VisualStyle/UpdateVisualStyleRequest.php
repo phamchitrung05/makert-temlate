@@ -1,0 +1,50 @@
+<?php
+
+namespace App\Http\Requests\Admin\VisualStyle;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Whitelist payload cập nhật metadata Visual Style.
+ * =====================================================================
+ * CÁC HÀM/METHOD TRONG FILE: authorize(), rules().
+ * INPUT/OUTPUT CỦA CLASS (tổng thể):
+ * - INPUT : name/category/is_enabled từ admin HTTP.
+ * - OUTPUT: values allowlisted; DNA không sửa qua endpoint này.
+ * - SIDE EFFECT: validation, không ghi DB/gọi AI.
+ * =====================================================================
+ */
+final class UpdateVisualStyleRequest extends FormRequest
+{
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Kiểm tra quyền quản lý AI settings tại FormRequest.
+     * =====================================================================
+     * Input: actor authenticated. Output: true khi có ai_settings.manage.
+     * Side effect: đọc permissions; middleware route kiểm tra cùng quyền.
+     * =====================================================================
+     */
+    public function authorize(): bool
+    {
+        return $this->user()?->can('ai_settings.manage') ?? false;
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Validate payload cập nhật metadata style.
+     * =====================================================================
+     * Input: HTTP payload. Output: rules cho name/category/is_enabled;
+     * service chặn bật is_enabled khi style chưa active.
+     * Side effect: không ghi database.
+     * =====================================================================
+     */
+    public function rules(): array
+    {
+        return [
+            'name' => ['sometimes', 'required', 'string', 'max:160'],
+            'category' => ['sometimes', 'nullable', 'string', 'max:80'],
+            'is_enabled' => ['sometimes', 'required', 'boolean'],
+        ];
+    }
+}

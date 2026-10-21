@@ -45,6 +45,16 @@ export default [
         ],
       },
       {
+        title: 'Visual Styles',
+        icon: { icon: 'tabler-palette' },
+        action: 'manage',
+        subject: 'ai_settings',
+        children: [
+          { title: 'Danh sách', to: 'visual-styles', action: 'manage', subject: 'ai_settings' },
+          { title: 'Tạo ảnh', to: 'visual-styles-generate', action: 'manage', subject: 'ai_settings' },
+        ],
+      },
+      {
         title: 'AI Settings',
         icon: { icon: 'tabler-brain' },
         to: 'settings-ai-providers',

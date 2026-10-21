@@ -40,6 +40,9 @@ use App\Http\Controllers\Admin\SlugPreviewController;
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\TechnologyController;
 use App\Http\Controllers\Admin\TemplateShareController;
+use App\Http\Controllers\Admin\VisualStyleController;
+use App\Http\Controllers\Admin\VisualStyleGenerationController;
+use App\Http\Controllers\Admin\VisualStyleShotController;
 use App\Http\Controllers\Auth\AdminTokenController;
 use App\Http\Controllers\Auth\SanctumTokenController;
 use App\Http\Controllers\HealthController;
@@ -301,6 +304,33 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum,ad
             Route::get('/{imageProfile}', [AiImageProfileController::class, 'show'])->whereNumber('imageProfile');
             Route::put('/{imageProfile}', [AiImageProfileController::class, 'update'])->whereNumber('imageProfile');
             Route::delete('/{imageProfile}', [AiImageProfileController::class, 'destroy'])->whereNumber('imageProfile');
+        });
+        /**
+         * =====================================================================
+         * CHỨC NĂNG: Visual Style Engine — CRUD style, DNA, lifecycle và shots.
+         * =====================================================================
+         * INPUT: admin HTTP có ai_settings.manage.
+         * OUTPUT: style/shot JSON qua Resource; analyze queue qua job bất đồng bộ.
+         * =====================================================================
+         */
+        Route::middleware('permission:ai_settings.manage,admin')->prefix('ai/visual-styles')->group(function (): void {
+            Route::get('/', [VisualStyleController::class, 'index']);
+            Route::post('/', [VisualStyleController::class, 'store']);
+            Route::post('/analyze', [VisualStyleController::class, 'analyze'])->middleware('throttle:6,1');
+            Route::post('/generate', [VisualStyleGenerationController::class, 'store'])->middleware('throttle:6,1');
+            Route::get('/generations/{importId}', [VisualStyleGenerationController::class, 'show'])->whereUuid('importId');
+            Route::get('/{visualStyle}', [VisualStyleController::class, 'show'])->whereNumber('visualStyle');
+            Route::put('/{visualStyle}', [VisualStyleController::class, 'update'])->whereNumber('visualStyle');
+            Route::delete('/{visualStyle}', [VisualStyleController::class, 'destroy'])->whereNumber('visualStyle');
+            Route::put('/{visualStyle}/dna', [VisualStyleController::class, 'updateDna'])->whereNumber('visualStyle');
+            Route::post('/{visualStyle}/activate', [VisualStyleController::class, 'activate'])->whereNumber('visualStyle');
+            Route::post('/{visualStyle}/archive', [VisualStyleController::class, 'archive'])->whereNumber('visualStyle');
+            Route::post('/{visualStyle}/duplicate', [VisualStyleController::class, 'duplicate'])->whereNumber('visualStyle');
+            Route::get('/{visualStyle}/shots', [VisualStyleShotController::class, 'index'])->whereNumber('visualStyle');
+            Route::post('/{visualStyle}/shots', [VisualStyleShotController::class, 'store'])->whereNumber('visualStyle');
+            Route::post('/{visualStyle}/shots/reorder', [VisualStyleShotController::class, 'reorder'])->whereNumber('visualStyle');
+            Route::put('/{visualStyle}/shots/{shot}', [VisualStyleShotController::class, 'update'])->whereNumber(['visualStyle', 'shot']);
+            Route::delete('/{visualStyle}/shots/{shot}', [VisualStyleShotController::class, 'destroy'])->whereNumber(['visualStyle', 'shot']);
         });
         Route::middleware('permission:ai_settings.manage,admin')->prefix('ai/writing-profiles')->group(function (): void {
             Route::get('/', [AiWritingProfileController::class, 'index']);
