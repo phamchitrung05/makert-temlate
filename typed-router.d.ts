@@ -147,7 +147,6 @@ declare module 'vue-router/auto-routes' {
     'tables-data-table': RouteRecordInfo<'tables-data-table', '/tables/data-table', Record<never, never>, Record<never, never>>,
     'tables-simple-table': RouteRecordInfo<'tables-simple-table', '/tables/simple-table', Record<never, never>, Record<never, never>>,
     'visual-styles': RouteRecordInfo<'visual-styles', '/visual-styles', Record<never, never>, Record<never, never>>,
-    'visual-styles-edit': RouteRecordInfo<'visual-styles-edit', '/visual-styles/edit', Record<never, never>, Record<never, never>>,
     'visual-styles-generate': RouteRecordInfo<'visual-styles-generate', '/visual-styles/generate', Record<never, never>, Record<never, never>>,
     'wizard-examples-checkout': RouteRecordInfo<'wizard-examples-checkout', '/wizard-examples/checkout', Record<never, never>, Record<never, never>>,
     'wizard-examples-create-deal': RouteRecordInfo<'wizard-examples-create-deal', '/wizard-examples/create-deal', Record<never, never>, Record<never, never>>,

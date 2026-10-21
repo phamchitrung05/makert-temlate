@@ -3,15 +3,15 @@
   CHỨC NĂNG FILE: Danh sách Visual Style (grid card + lifecycle + số recipes).
   =====================================================================
   Trang index của Visual Style Engine: tìm kiếm/lọc status, phân trang server,
-  tạo style thủ công (dialog) hoặc từ ảnh (dialog analyze → queue AI), xem/sửa
+  tạo style từ ảnh (điều hướng Prompt tạo ảnh hoặc dialog analyze → queue AI), xem/sửa
   (điều hướng trang Edit), nhân bản, lưu trữ và xóa. Reload khi AI task ready.
   Backend `/api/admin/ai/visual-styles` trả VisualStyleResource + meta.pagination.
 
   CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
   - load(): gọi list() với search/status/page; bắt lỗi vào `error`.
-  - openCreate()/submitCreate(): tạo style thủ công (draft) rồi reload.
+  - openCreate(): điều hướng sang trang Prompt tạo ảnh để tạo style từ ảnh.
   - openAnalyze()/submitAnalyze(): queue phân tích ảnh → style queued.
-  - openEdit(): điều hướng sang trang Edit theo id.
+  - openEdit()/submitEdit(): mở dialog sửa metadata (name/category/is_enabled) + PUT update.
   - confirmAction()/runAction(): confirm dialog rồi gọi archive/duplicate/remove.
   - watcher page/search/status: reload danh sách khi filter đổi.
   - onMounted/onScopeDispose: load lần đầu + lắng nghe AI_TASK_READY_EVENT.
@@ -31,6 +31,7 @@ import { visualStylesService } from '@/services/visualStyles'
 import { AI_TASK_READY_EVENT } from '@/composables/useAiTaskQueue'
 import VisualStyleCard from '@/views/visual-styles/VisualStyleCard.vue'
 import StyleAnalyzeDialog from '@/views/visual-styles/StyleAnalyzeDialog.vue'
+import VisualStyleEditDialog from '@/views/visual-styles/VisualStyleEditDialog.vue'
 import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 
 definePage({ meta: { action: 'manage', subject: 'ai_settings' } })
@@ -49,14 +50,16 @@ const error = ref('')
 
 // Snackbar + dialog state
 const snackbar = ref({ show: false, text: '', color: 'success' })
-const createOpen = ref(false)
 const analyzeOpen = ref(false)
 const confirmOpen = ref(false)
 const confirmText = ref('')
 const pendingAction = ref(null)
 const saving = ref(false)
-const createForm = ref({ name: '', category: '' })
-const createError = ref('')
+
+// Dialog chỉnh sửa style
+const editOpen = ref(false)
+const editStyle = ref(null)
+const editError = ref('')
 
 const STATUS_OPTIONS = [
   { title: 'Tất cả', value: '' },
@@ -100,41 +103,10 @@ async function load() {
 }
 
 // =====================================================================
-// Input: không có. Output: mở dialog tạo style thủ công.
+// Input: không có. Output: điều hướng sang trang Prompt tạo ảnh để tạo từ ảnh.
 // =====================================================================
 function openCreate() {
-  createForm.value = { name: '', category: '' }
-  createError.value = ''
-  createOpen.value = true
-}
-
-// =====================================================================
-// Input: form name/category. Output: style draft mới; reload + đóng dialog.
-// Side effect: POST create; lỗi hiển thị trong dialog.
-// =====================================================================
-async function submitCreate() {
-  if (!createForm.value.name?.trim()) {
-    createError.value = 'Tên style là bắt buộc.'
-
-    return
-  }
-  saving.value = true
-  createError.value = ''
-  try {
-    await visualStylesService.create({
-      name: createForm.value.name.trim(),
-      category: createForm.value.category?.trim() || null,
-    })
-    createOpen.value = false
-    showSnackbar('Đã tạo style nháp.')
-    await load()
-  }
-  catch (reason) {
-    createError.value = reason?.data?.message ?? 'Tạo style thất bại.'
-  }
-  finally {
-    saving.value = false
-  }
+  router.push({ name: 'ai-image-prompt' })
 }
 
 // =====================================================================
@@ -161,10 +133,37 @@ async function submitAnalyze(payload) {
 }
 
 // =====================================================================
-// Input: style. Output: điều hướng sang trang Edit.
+// Input: style. Output: mở dialog chỉnh sửa metadata.
 // =====================================================================
 function openEdit(style) {
-  router.push({ name: 'visual-styles-edit', params: { id: style.id } })
+  editStyle.value = style
+  editError.value = ''
+  editOpen.value = true
+}
+
+// =====================================================================
+// Input: payload {id,name,category,is_enabled}. Output: style đã lưu + reload.
+// Side effect: PUT update; lỗi → editError trong dialog.
+// =====================================================================
+async function submitEdit(payload) {
+  saving.value = true
+  editError.value = ''
+  try {
+    await visualStylesService.update(payload.id, {
+      name: payload.name,
+      category: payload.category,
+      is_enabled: payload.is_enabled,
+    })
+    editOpen.value = false
+    showSnackbar('Đã lưu style.')
+    await load()
+  }
+  catch (reason) {
+    editError.value = reason?.data?.message ?? 'Lưu style thất bại.'
+  }
+  finally {
+    saving.value = false
+  }
 }
 
 // =====================================================================
@@ -400,64 +399,6 @@ onScopeDispose(() => {
       />
     </div>
 
-    <!-- Dialog tạo thủ công -->
-    <VDialog
-      v-model="createOpen"
-      max-width="520"
-      scrollable
-      :persistent="saving"
-    >
-      <AppDialogLayout
-        title="Tạo style mới"
-        subtitle="Style thủ công — nhập Style DNA trực tiếp, không cần ảnh"
-        :close-disabled="saving"
-        @close="createOpen = false"
-      >
-        <VCardText>
-          <VAlert
-            v-if="createError"
-            type="error"
-            variant="tonal"
-            class="mb-4"
-            density="compact"
-          >
-            {{ createError }}
-          </VAlert>
-          <AppTextField
-            v-model="createForm.name"
-            label="Tên style *"
-            placeholder="Studio ấm — góc nhìn sản phẩm"
-            class="mb-3"
-          />
-          <AppTextField
-            v-model="createForm.category"
-            label="Nhóm phong cách"
-            placeholder="ví dụ: Mỹ phẩm, Đồ uống"
-          />
-        </VCardText>
-        <template #footer>
-          <VCardActions class="justify-end">
-            <VBtn
-              color="secondary"
-              variant="tonal"
-              :disabled="saving"
-              @click="createOpen = false"
-            >
-              Hủy
-            </VBtn>
-            <VBtn
-              color="primary"
-              :loading="saving"
-              :disabled="saving"
-              @click="submitCreate"
-            >
-              Tạo style
-            </VBtn>
-          </VCardActions>
-        </template>
-      </AppDialogLayout>
-    </VDialog>
-
     <!-- Dialog phân tích ảnh -->
     <StyleAnalyzeDialog
       v-model="analyzeOpen"
@@ -465,6 +406,16 @@ onScopeDispose(() => {
       :error-message="analyzeError"
       @submit="submitAnalyze"
       @after-leave="() => {}"
+    />
+
+    <!-- Dialog chỉnh sửa style -->
+    <VisualStyleEditDialog
+      v-model="editOpen"
+      :style="editStyle"
+      :saving="saving"
+      :error-message="editError"
+      @save="submitEdit"
+      @after-leave="editStyle = null"
     />
 
     <!-- Confirm action -->

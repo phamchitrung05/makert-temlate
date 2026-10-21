@@ -14,7 +14,7 @@
 
   INPUT/OUTPUT CỦA COMPONENT (tổng thể):
   - INPUT : prop `style` (VisualStyleResource) và `busy` khóa hành động.
-  - OUTPUT: UI card + emit 'edit' | 'duplicate' | 'archive' | 'remove'.
+  - OUTPUT: UI card + emit 'edit' | 'duplicate' | 'archive' | 'remove' (edit mở dialog).
   =====================================================================
 -->
 <script setup>
@@ -105,11 +105,11 @@ const isProcessing = computed(() => ['queued', 'analyzing'].includes(props.style
       </div>
 
       <div class="d-flex align-center gap-1">
-        <VTooltip text="Xem / chỉnh sửa">
+        <VTooltip text="Chỉnh sửa">
           <template #activator="{ props: tip }">
             <VBtn
               v-bind="tip"
-              icon="tabler-eye"
+              icon="tabler-edit"
               variant="text"
               size="small"
               :disabled="busy"

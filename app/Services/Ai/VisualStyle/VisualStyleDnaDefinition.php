@@ -132,6 +132,12 @@ final class VisualStyleDnaDefinition
             throw new ValidationException($validator);
         }
 
+        // Một số provider nhiễu key (vd negative_MMODIARY, negative-space):
+        // chuẩn hoá mọi key composition chứa 'space'/'negative' về negative_space
+        // TRƯỚC khi validateSection để key lạ không bị reject — áp dụng cho cả
+        // composition gốc và composition_override trong suggested_shots.
+        $dna = $this->normalizeSpaceKeys($dna);
+
         $normalized = [
             'schema_version' => self::SCHEMA_VERSION,
             'identity' => $this->normalizeIdentity((array) ($dna['identity'] ?? [])),
@@ -151,6 +157,61 @@ final class VisualStyleDnaDefinition
         }
 
         return $normalized;
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Chuẩn hoá key nhiễu cho composition gốc và override của shot.
+     * =====================================================================
+     * Input: DNA thô. Output: DNA với composition và mọi
+     * suggested_shots[].composition_override đã map key 'space'/'negative' về negative_space.
+     * Side effect: thuần; không ghi DB, không throw.
+     * =====================================================================
+     */
+    private function normalizeSpaceKeys(array $dna): array
+    {
+        $dna = $this->normalizeCompositionKeys($dna);
+        if (isset($dna['suggested_shots']) && is_array($dna['suggested_shots'])) {
+            foreach ($dna['suggested_shots'] as $index => $shot) {
+                if (is_array($shot) && isset($shot['composition_override']) && is_array($shot['composition_override'])) {
+                    $dna['suggested_shots'][$index]['composition_override'] = $this->normalizeCompositionKeys(['composition' => $shot['composition_override']])['composition'];
+                }
+            }
+        }
+
+        return $dna;
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Chuẩn hoá key composition do một số provider nhiễu tên.
+     * =====================================================================
+     * Input: DNA thô sau validate section. Output: composition có key đúng;
+     * mọi key chứa 'space'/'negative' không khớp enum được map về negative_space.
+     * Side effect: thuần; không ghi DB.
+     * =====================================================================
+     */
+    private function normalizeCompositionKeys(array $dna): array
+    {
+        if (! isset($dna['composition']) || ! is_array($dna['composition'])) {
+            return $dna;
+        }
+        $composition = $dna['composition'];
+        foreach ($composition as $key => $value) {
+            if (in_array($key, ['negative_space'], true)) {
+                continue;
+            }
+            $lower = mb_strtolower((string) $key);
+            if (str_contains($lower, 'space') || str_contains($lower, 'negative')) {
+                unset($composition[$key]);
+                if (! array_key_exists('negative_space', $composition)) {
+                    $composition['negative_space'] = $value;
+                }
+            }
+        }
+        $dna['composition'] = $composition;
+
+        return $dna;
     }
 
     /**
@@ -194,7 +255,7 @@ final class VisualStyleDnaDefinition
             $properties[$field] = $definition;
         }
 
-        return ['type' => 'object', 'additionalProperties' => false, 'properties' => $properties];
+        return ['type' => 'object', 'additionalProperties' => true, 'properties' => $properties];
     }
 
     /**
