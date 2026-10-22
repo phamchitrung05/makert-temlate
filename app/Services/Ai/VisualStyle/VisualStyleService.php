@@ -136,8 +136,10 @@ final class VisualStyleService
      */
     public function update(AiImageProfile $style, array $values): AiImageProfile
     {
-        if (($values['is_enabled'] ?? false) && ! in_array($style->status, ['active'], true)) {
-            throw ValidationException::withMessages(['is_enabled' => 'Chỉ bật style đã activate.']);
+        // is_enabled là cờ dùng riêng (khác lifecycle active) — cho phép bật trên
+        // mọi status trừ khi style đang trong pipeline phân tích (queued/analyzing).
+        if (($values['is_enabled'] ?? false) && in_array($style->status, ['queued', 'analyzing'], true)) {
+            throw ValidationException::withMessages(['is_enabled' => 'Chờ phân tích hoàn tất trước khi bật style.']);
         }
         $style->fill([
             'name' => $values['name'] ?? $style->name,

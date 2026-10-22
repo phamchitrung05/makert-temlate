@@ -45,7 +45,8 @@ final class AnalyzeVisualStyleRequest extends FormRequest
             'name' => ['required', 'string', 'max:160'],
             'category' => ['sometimes', 'nullable', 'string', 'max:80'],
             'model_id' => ['required', 'integer', 'min:1'],
-            'image' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120', 'dimensions:max_width=8192,max_height=8192'],
+            'image' => ['required_without:media_asset_id', 'nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120', 'dimensions:max_width=8192,max_height=8192'],
+            'media_asset_id' => ['required_without:image', 'nullable', 'integer', 'min:1', 'exists:media_assets,id'],
         ];
     }
 }

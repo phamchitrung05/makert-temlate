@@ -32,6 +32,7 @@ import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 import { visualStylesService } from '@/services/visualStyles'
 import { categoryService } from '@/services/category'
 import { aiArticleTaxonomyService } from '@/services/aiArticleTaxonomy'
+import { usePrivateImage } from '@/composables/usePrivateImage'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -113,6 +114,9 @@ const taxonomyLoading = ref(false)
 const galleryImages = ref([])
 const selectedThumb = ref('')
 
+// objectURL của ảnh tham chiếu private (endpoint cần auth — fetch blob rồi objectURL)
+const { url: selectedThumbUrl } = usePrivateImage(selectedThumb)
+
 // Dữ liệu Thông tin style (Cột trái)
 const styleInfo = reactive({
   name: 'Cà phê sáng – Năng lượng tích cực',
@@ -191,6 +195,8 @@ const statusMeta = computed(() => {
   return STATUS_META[status] ?? { label: status, color: 'secondary' }
 })
 
+const isProcessing = computed(() => ['queued', 'analyzing'].includes(props.style?.status))
+
 const dnaJsonPreview = computed(() => JSON.stringify({
   identity: {
     description: styleInfo.description || undefined,
@@ -261,7 +267,7 @@ const dnaJsonPreview = computed(() => JSON.stringify({
  * SIDE EFFECT: chỉ cập nhật reactive state cục bộ.
  * =====================================================================
  */
-function syncFromStyle(data) {
+function syncFromStyle(data, { includeShots = true } = {}) {
   if (!data) return
 
   styleInfo.name = data.name || 'Cà phê sáng – Năng lượng tích cực'
@@ -358,7 +364,9 @@ function syncFromStyle(data) {
     galleryImages.value = []
   selectedThumb.value = galleryImages.value[0] ?? ''
 
-  if (Array.isArray(data.shots) && data.shots.length) {
+  // Map shots khi được phép VÀ (lần đầu cần shots, hoặc đây là nguồn đầy đủ từ API).
+  // Giữ shots hiện có khi prop không có mảng shots (list chỉ có shots_count).
+  if (includeShots && Array.isArray(data.shots) && data.shots.length) {
     shotRecipes.value = data.shots.map(shot => ({
       id: shot.id,
       code: shot.code,
@@ -385,8 +393,11 @@ async function loadStyleDetail(id) {
   if (!id) return
   try {
     const detail = await visualStylesService.show(id)
-    if (props.modelValue && props.style?.id === id)
-      syncFromStyle(detail)
+    if (props.modelValue && props.style?.id === id) {
+      // Chỉ map shots khi prop chưa có (list chỉ trả shots_count). Nếu prop đã
+      // có shots thì giữ — tránh re-map gây nháy hoặc mất dữ liệu cục bộ.
+      syncFromStyle(detail, { includeShots: !Array.isArray(props.style?.shots) || props.style.shots.length === 0 })
+    }
   }
   catch {
     // Giữ dữ liệu tóm tắt từ prop `style` nếu gọi chi tiết lỗi
@@ -474,6 +485,7 @@ function submitMeta() {
     category_ids: [...styleInfo.categoryIds],
     tag_ids: [...styleInfo.tagIds],
     is_enabled: Boolean(styleInfo.enableGeneration),
+    shots: shotRecipes.value.map(shot => ({ id: shot.id, is_active: Boolean(shot.active) })),
   })
 }
 
@@ -617,8 +629,8 @@ function onAfterLeave() {
                 <!-- Ảnh chính lớn -->
                 <div class="position-relative rounded overflow-hidden mb-3">
                   <VImg
-                    v-if="selectedThumb"
-                    :src="selectedThumb"
+                    v-if="selectedThumbUrl"
+                    :src="selectedThumbUrl"
                     height="250"
                     cover
                     class="rounded gallery-main-image"
@@ -633,7 +645,7 @@ function onAfterLeave() {
                       icon="tabler-photo-off"
                       class="mb-2"
                     />
-                    <span class="text-caption">Chưa có ảnh tham chiếu</span>
+                    <span class="text-caption">{{ selectedThumb ? 'Đang tải ảnh…' : 'Chưa có ảnh tham chiếu' }}</span>
                   </div>
                   <VBtn
                     icon="tabler-arrows-maximize"
@@ -642,7 +654,7 @@ function onAfterLeave() {
                     color="surface"
                     class="expand-btn"
                     aria-label="Phóng to ảnh"
-                    :disabled="!selectedThumb"
+                    :disabled="!selectedThumbUrl"
                   />
                 </div>
 
@@ -657,7 +669,7 @@ function onAfterLeave() {
                     class="border"
                   >
                     <VImg
-                      :src="selectedThumb"
+                      :src="selectedThumbUrl"
                       cover
                     />
                   </VAvatar>
@@ -700,9 +712,10 @@ function onAfterLeave() {
                     label="Bật dùng cho generation"
                     color="primary"
                     hide-details
+                    :disabled="isProcessing"
                   />
                   <div class="text-caption text-medium-emphasis mt-1">
-                    Chỉ bật khi style đã được phân tích và kiểm tra.
+                    {{ isProcessing ? 'Đang phân tích — chờ xong mới bật được.' : 'Bật/tắt dùng style này cho generation.' }}
                   </div>
                 </div>
 

@@ -66,8 +66,16 @@ export const visualStylesService = {
     return unwrap(await $api(`${base}/dna-meta`, { retry: 0 }))
   },
 
-  /** Input: `{ name, model_id, image: File, category? }`. Output: style status=queued (202). */
-  async analyze({ name, model_id, image, category }) {
+  /** Input: `{ name, model_id, image?: File, media_asset_id?: number, category? }`. Output: style status=queued (202). */
+  async analyze({ name, model_id, image, media_asset_id, category }) {
+    if (media_asset_id) {
+      const payload = { name, model_id, media_asset_id }
+
+      if (category)
+        payload.category = category
+
+      return unwrap(await $api(`${base}/analyze`, { method: 'POST', body: payload, retry: 0 }))
+    }
     const formData = new FormData()
 
     formData.append('name', name)

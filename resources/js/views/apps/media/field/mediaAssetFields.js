@@ -43,6 +43,11 @@ export const mediaAssetFieldConfig = Object.freeze({
     kind: 'image',
     multiple: true,
   }),
+  'visual_style.reference': Object.freeze({
+    title: 'Visual Style reference image',
+    kind: 'image',
+    multiple: false,
+  }),
   'post.og_image': Object.freeze({
     title: 'Post Open Graph image',
     kind: 'image',

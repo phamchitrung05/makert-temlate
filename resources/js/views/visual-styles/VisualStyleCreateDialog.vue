@@ -31,6 +31,7 @@
 /* eslint-disable camelcase -- Analyze payload keys follow the Laravel API contract. */
 import { computed, ref, watch } from 'vue'
 import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
+import MediaLibraryDialog from '@/views/apps/media/field/MediaLibraryDialog.vue'
 import { visualStylesService } from '@/services/visualStyles'
 import { useAiProviderSettings } from '@/composables/useAiProviderSettings'
 
@@ -59,6 +60,8 @@ const modelOptions = computed(() => providers.value
 const fileInputRef = ref(null)
 const uploadedImage = ref('')
 const imageFile = ref(null)
+const mediaLibraryOpen = ref(false)
+const selectedAsset = ref(null) // MediaAsset đã chọn từ Media Library
 const promptName = ref('')
 const modelId = ref(null)
 const selectedRatio = ref('16:9')
@@ -73,6 +76,7 @@ const generatedPrompt = ref('')
 const promptTags = ref([])
 const summaryText = ref('')
 const promptStatus = ref('')
+const resultImage = ref('') // ảnh tham chiếu của style đã phân tích (reference_image_url)
 
 // Các tùy chọn tỷ lệ khung hình hiển thị trong lưới (UI-only; chưa gửi API)
 const aspectRatios = [
@@ -84,37 +88,30 @@ const aspectRatios = [
 ]
 
 const triggerFileInput = () => {
-  fileInputRef.value?.click()
+  mediaLibraryOpen.value = true
 }
 
-const pickFile = file => {
-  if (!file || !file.type?.startsWith('image/')) {
-    error.value = 'Chọn file ảnh JPG, PNG hoặc WEBP.'
+// =====================================================================
+// Input: MediaAsset từ MediaLibraryDialog. Output: set preview + media_asset_id.
+// Side effect: đóng dialog; gỡ imageFile cũ nếu có.
+// =====================================================================
+const onMediaSelect = asset => {
+  if (!asset) return
 
-    return
-  }
-  if (file.size > 5 * 1024 * 1024) {
-    error.value = 'Ảnh tối đa 5MB.'
+  selectedAsset.value = asset
+  imageFile.value = null
 
-    return
-  }
+  const url = asset?.file?.url || asset?.file?.preview_url || null
+
+  uploadedImage.value = url || ''
+  mediaLibraryOpen.value = false
   error.value = ''
-  imageFile.value = file
-  uploadedImage.value = URL.createObjectURL(file)
-}
-
-const handleFileSelect = event => {
-  pickFile(event.target.files?.[0])
-  event.target.value = ''
-}
-
-const handleDrop = event => {
-  pickFile(event.dataTransfer.files?.[0])
 }
 
 const removeImage = () => {
   uploadedImage.value = ''
   imageFile.value = null
+  selectedAsset.value = null
 }
 
 const copyPromptText = () => {
@@ -132,7 +129,7 @@ const copyPromptText = () => {
 // =====================================================================
 const submit = () => {
   error.value = ''
-  if (!imageFile.value) {
+  if (!selectedAsset.value && !imageFile.value) {
     error.value = 'Cần ảnh tham chiếu để phân tích.'
 
     return
@@ -151,6 +148,7 @@ const submit = () => {
   emit('submit', {
     name: promptName.value.trim(),
     model_id: modelId.value,
+    media_asset_id: selectedAsset.value?.id ?? null,
     image: imageFile.value,
   })
 }
@@ -195,6 +193,7 @@ const pollResult = () => {
       analyzing.value = false
       summaryText.value = style?.summary ?? ''
       generatedPrompt.value = style?.prompt || style?.summary || ''
+      resultImage.value = style?.reference_image_url || ''
 
       const keywords = style?.dna_json?.identity?.keywords
 
@@ -225,6 +224,7 @@ const resetState = () => {
   stopPolling()
   uploadedImage.value = ''
   imageFile.value = null
+  selectedAsset.value = null
   promptName.value = ''
   modelId.value = null
   selectedRatio.value = '16:9'
@@ -236,6 +236,7 @@ const resetState = () => {
   promptTags.value = []
   summaryText.value = ''
   promptStatus.value = ''
+  resultImage.value = ''
 }
 
 const onAfterLeave = () => {
@@ -577,7 +578,7 @@ watch(() => props.modelValue, visible => {
 
                 <!-- Ảnh lớn xem trước -->
                 <VImg
-                  :src="uploadedImage || defaultImage"
+                  :src="resultImage || uploadedImage || defaultImage"
                   height="295"
                   rounded="lg"
                   class="mb-4 border result-preview-img"
@@ -691,6 +692,14 @@ watch(() => props.modelValue, visible => {
         </VCardActions>
       </template>
     </AppDialogLayout>
+
+    <!-- Media Library: chọn ảnh tham chiếu có sẵn -->
+    <MediaLibraryDialog
+      v-model:open="mediaLibraryOpen"
+      kind="image"
+      field="visual_style.reference"
+      @select="onMediaSelect"
+    />
   </VDialog>
 </template>
 

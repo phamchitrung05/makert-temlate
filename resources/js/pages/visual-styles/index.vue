@@ -13,7 +13,7 @@
   mở để dialog tự poll kết quả; reload danh sách.
   - openAnalyze()/submitAnalyze(): queue phân tích ảnh → style queued.
   - openEdit()/submitEdit(): mở dialog sửa metadata (name/category/is_enabled) + PUT update.
-  - confirmAction()/runAction(): confirm dialog rồi gọi archive/duplicate/remove.
+  - confirmAction()/runAction(): confirm dialog rồi gọi remove.
   - watcher page/search/status: reload danh sách khi filter đổi.
   - onMounted/onScopeDispose: load lần đầu + lắng nghe AI_TASK_READY_EVENT.
   - props/emits: không có; page tự quản lý state + API qua service.
@@ -160,26 +160,39 @@ function openEdit(style) {
 }
 
 // =====================================================================
-// Input: payload {id,name,category,is_enabled}. Output: style đã lưu + reload.
-// Side effect: PUT update; lỗi → editError trong dialog.
+// Input: payload {id, name?, category?, category_ids?, tag_ids?, is_enabled,
+// shots?[{id,is_active}]}. Output: style + shots đã lưu + reload.
+// Side effect: PUT update style + PUT từng shot đổi is_active; lỗi → editError.
 // =====================================================================
 async function submitEdit(payload) {
   saving.value = true
   editError.value = ''
   try {
-    await visualStylesService.update(payload.id, {
-      name: payload.name,
-      category: payload.category,
-      category_ids: payload.category_ids,
-      tag_ids: payload.tag_ids,
-      is_enabled: payload.is_enabled,
-    })
+    const body = { is_enabled: payload.is_enabled }
+
+    if (payload.name !== undefined) body.name = payload.name
+    if (payload.category !== undefined) body.category = payload.category
+    if (payload.category_ids !== undefined) body.category_ids = payload.category_ids
+    if (payload.tag_ids !== undefined) body.tag_ids = payload.tag_ids
+    await visualStylesService.update(payload.id, body)
+
+    // Lưu trạng thái is_active của từng shot recipe nếu có thay đổi
+    if (Array.isArray(payload.shots) && payload.shots.length) {
+      await Promise.all(payload.shots.map(shot =>
+        visualStylesService.updateShot(payload.id, shot.id, { is_active: shot.is_active }),
+      ))
+    }
     editOpen.value = false
     showSnackbar('Đã lưu style.')
     await load()
   }
   catch (reason) {
-    editError.value = reason?.data?.message ?? 'Lưu style thất bại.'
+    // Ưu tiên message validation cụ thể từ Laravel (errors.field) thay vì generic.
+    const errors = reason?.data?.errors ?? {}
+    const firstField = Object.keys(errors)[0]
+    const fieldMessage = firstField ? (Array.isArray(errors[firstField]) ? errors[firstField][0] : errors[firstField]) : null
+
+    editError.value = fieldMessage ?? reason?.data?.message ?? 'Lưu style thất bại.'
   }
   finally {
     saving.value = false
@@ -191,8 +204,6 @@ async function submitEdit(payload) {
 // =====================================================================
 function confirmAction(kind, style) {
   const labels = {
-    archive: `Lưu trữ “${style.name}”? Style sẽ không dùng cho generation.`,
-    duplicate: `Nhân bản “${style.name}” sang bản nháp mới?`,
     remove: `Xóa “${style.name}”? Shot recipes liên quan cũng bị xóa.`,
   }
 
@@ -203,18 +214,14 @@ function confirmAction(kind, style) {
 
 // =====================================================================
 // Input: action pending. Output: gọi API tương ứng; reload + snackbar.
-// Side effect: POST archive/duplicate hoặc DELETE; lỗi → snackbar error.
+// Side effect: DELETE; lỗi → snackbar error.
 // =====================================================================
 async function runAction() {
   const action = pendingAction.value
   if (!action) return
   saving.value = true
   try {
-    if (action.kind === 'archive')
-      await visualStylesService.archive(action.style.id)
-    else if (action.kind === 'duplicate')
-      await visualStylesService.duplicate(action.style.id)
-    else if (action.kind === 'remove')
+    if (action.kind === 'remove')
       await visualStylesService.remove(action.style.id)
     showSnackbar('Thao tác thành công.')
     await load()
@@ -395,13 +402,12 @@ onScopeDispose(() => {
         cols="12"
         sm="6"
         md="4"
+        xl="2"
       >
         <VisualStyleCard
           :style="style"
           :busy="saving"
           @edit="openEdit"
-          @duplicate="confirmAction('duplicate', $event)"
-          @archive="confirmAction('archive', $event)"
           @remove="confirmAction('remove', $event)"
         />
       </VCol>

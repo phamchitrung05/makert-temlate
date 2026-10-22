@@ -4,28 +4,29 @@
   =====================================================================
   Card tóm tắt style: thumbnail (ảnh tham chiếu khi có, icon placeholder khi
   không có URL), tên, category, chip trạng thái lifecycle, số shot recipe và
-  hành động view/edit/duplicate/archive. Không gọi API — phát event lên page.
+  hành động edit/remove. Không gọi API — phát event lên page.
   Dùng trong `pages/visual-styles/index.vue`.
 
   CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
   - statusMeta: computed map status → nhãn/màu chip.
-  - thumbnailUrl: computed URL ảnh mẫu nếu style có (backend trả `reference_url`).
-  - props/emits: `style` vào; edit/duplicate/archive ra.
+  - thumbnailUrl: computed URL ảnh mẫu nếu style có (backend trả `reference_image_url`).
+  - props/emits: `style` vào; edit/remove ra.
 
   INPUT/OUTPUT CỦA COMPONENT (tổng thể):
   - INPUT : prop `style` (VisualStyleResource) và `busy` khóa hành động.
-  - OUTPUT: UI card + emit 'edit' | 'duplicate' | 'archive' | 'remove' (edit mở dialog).
+  - OUTPUT: UI card + emit 'edit' | 'remove' (edit mở dialog).
   =====================================================================
 -->
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { usePrivateImage } from '@/composables/usePrivateImage'
 
 const props = defineProps({
   style: { type: Object, required: true },
   busy: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['edit', 'duplicate', 'archive', 'remove'])
+const emit = defineEmits(['edit', 'remove'])
 
 // Map trạng thái lifecycle style → nhãn/màu chip hiển thị
 const STATUS_META = {
@@ -41,10 +42,11 @@ const STATUS_META = {
 
 const statusMeta = computed(() => STATUS_META[props.style?.status] ?? { label: props.style?.status ?? '—', color: 'secondary' })
 
-// URL ảnh tham chiếu — backend trả khi có; giữ placeholder khi không có
-const thumbnailUrl = computed(() => props.style?.reference_url ?? props.style?.thumbnail_url ?? null)
+// URL ảnh tham chiếu — backend trả endpoint private (reference_image_url);
+// fetch qua usePrivateImage để có objectURL cho <v-img> (endpoint cần auth).
+const referenceSrc = computed(() => props.style?.reference_image_url ?? null)
+const { url: thumbnailUrl } = usePrivateImage(referenceSrc)
 
-const canArchive = computed(() => !['archived', 'queued', 'analyzing'].includes(props.style?.status))
 const isProcessing = computed(() => ['queued', 'analyzing'].includes(props.style?.status))
 </script>
 
@@ -114,30 +116,6 @@ const isProcessing = computed(() => ['queued', 'analyzing'].includes(props.style
               size="small"
               :disabled="busy"
               @click="emit('edit', style)"
-            />
-          </template>
-        </VTooltip>
-        <VTooltip text="Nhân bản">
-          <template #activator="{ props: tip }">
-            <VBtn
-              v-bind="tip"
-              icon="tabler-copy"
-              variant="text"
-              size="small"
-              :disabled="busy"
-              @click="emit('duplicate', style)"
-            />
-          </template>
-        </VTooltip>
-        <VTooltip text="Lưu trữ">
-          <template #activator="{ props: tip }">
-            <VBtn
-              v-bind="tip"
-              icon="tabler-archive"
-              variant="text"
-              size="small"
-              :disabled="busy || !canArchive"
-              @click="emit('archive', style)"
             />
           </template>
         </VTooltip>

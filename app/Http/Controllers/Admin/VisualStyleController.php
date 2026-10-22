@@ -186,7 +186,11 @@ final class VisualStyleController extends Controller
      */
     public function analyze(AnalyzeVisualStyleRequest $request, VisualStyleAnalyzerService $analyzer): JsonResponse
     {
-        $style = $analyzer->queue($request->validated(), $request->file('image'), (int) $request->user()->id);
+        $style = $analyzer->queue(
+            $request->validated(),
+            $request->file('image'),
+            (int) $request->user()->id,
+        );
 
         return BaseResponse::success(new VisualStyleResource($style), 'Đã xếp hàng phân tích phong cách.', 202);
     }

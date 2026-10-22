@@ -71,7 +71,7 @@ final class VisualStyleAnalyzerService
      * Exception: ValidationException khi queue sync/quota đầy/model thiếu Vision.
      * =====================================================================
      */
-    public function queue(array $values, UploadedFile $image, int $actorId): AiImageProfile
+    public function queue(array $values, ?UploadedFile $image, int $actorId): AiImageProfile
     {
         $connection = (string) config('queue.default');
         if (in_array(config('queue.connections.'.$connection.'.driver', $connection), ['sync', 'null'], true)) {
@@ -86,28 +86,25 @@ final class VisualStyleAnalyzerService
             || ! in_array($snapshot['driver'], ['openai', 'openai-compatible', 'gemini'], true)) {
             throw ValidationException::withMessages(['model_id' => 'Chọn model có Text generation và Vision của OpenAI, OpenAI-compatible hoặc Gemini.']);
         }
-        // Đưa ảnh tham chiếu vào MediaAsset qua pipeline chuẩn (validate → scan
-        // → checksum → Spatie collection) để mọi ảnh đều quản lý trong Media Library.
-        $asset = app(UploadMediaAssetAction::class)->handle(
-            $image,
-            MediaAssetKind::Image,
-            (string) $values['name'],
-            $actorId,
-            MediaAssetVisibility::Private,
-        );
-        $mediaItem = $asset->getFirstMedia('library');
-        $path = $mediaItem?->getPath() ?? '';
-        // Hash từ bytes media lưu vào library — nguồn thật worker đọc khi process().
-        $referenceHash = $mediaItem ? hash('sha256', (string) $mediaItem->get()) : str_repeat('0', 64);
+
+        // Resolve ảnh tham chiếu: upload mới HOẶC media_asset_id đã có trong library.
+        $resolved = $this->resolveReference($values, $image, $actorId);
+        $asset = $resolved['asset'];
+        $mediaItem = $resolved['mediaItem'];
+        $path = $resolved['path'];
+        $mime = $resolved['mime'];
+        $referenceHash = hash('sha256', $resolved['bytes']);
+
+        $isNewUpload = (bool) $image;
         try {
-            return DB::transaction(function () use ($values, $image, $actorId, $snapshot, $asset, $mediaItem, $path, $referenceHash): AiImageProfile {
+            return DB::transaction(function () use ($values, $actorId, $snapshot, $asset, $mediaItem, $path, $mime, $referenceHash): AiImageProfile {
                 $profile = AiImageProfile::query()->create([
                     'created_by' => $actorId,
                     'name' => $values['name'],
                     'category' => $values['category'] ?? null,
                     'status' => 'queued',
                     'reference_path' => $path,
-                    'reference_mime' => $image->getMimeType(),
+                    'reference_mime' => $mime,
                     'reference_hash' => $referenceHash,
                     'reference_media_id' => $asset->id,
                     'connection_snapshot_json' => $snapshot,
@@ -134,14 +131,84 @@ final class VisualStyleAnalyzerService
                 return $profile;
             });
         } catch (\Throwable $exception) {
-            // Rollback upload: xóa asset khỏi library nếu transaction profile lỗi.
-            try {
-                $asset->forceDelete();
-            } catch (\Throwable) {
-                // Giữ nguyên lỗi gốc; cleanup thất bại không chặn throw.
+            // Rollback upload: chỉ xóa asset mới tạo; media_asset_id từ library
+            // là asset người dùng đã chọn — không được xóa.
+            if ($isNewUpload) {
+                try {
+                    $asset->forceDelete();
+                } catch (\Throwable) {
+                    // Giữ nguyên lỗi gốc; cleanup thất bại không chặn throw.
+                }
             }
             throw $exception;
         }
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Resolve ảnh tham chiếu từ upload mới hoặc media_asset_id.
+     * =====================================================================
+     * Input: values (media_asset_id?) + UploadedFile nullable + actorId.
+     * Output: {asset, mediaItem, path, mime, bytes}; ValidationException khi
+     * thiếu cả hai nguồn hoặc asset không phải ảnh/không tồn tại.
+     * Side effect: upload mới tạo MediaAsset qua pipeline; không ghi DB cho
+     * đường media_asset_id (chỉ đọc file + trả MediaAsset).
+     * =====================================================================
+     *
+     * @return array{asset: \App\Models\MediaAsset, mediaItem: \Spatie\MediaLibrary\MediaCollections\Models\Media|null, path: string, mime: string, bytes: string}
+     */
+    private function resolveReference(array $values, ?UploadedFile $image, int $actorId): array
+    {
+        // Ưu tiên ảnh upload trực tiếp khi cả hai được gửi (giữ tương thích cũ).
+        if ($image) {
+            $asset = app(UploadMediaAssetAction::class)->handle(
+                $image,
+                MediaAssetKind::Image,
+                (string) $values['name'],
+                $actorId,
+                MediaAssetVisibility::Private,
+            );
+            $mediaItem = $asset->getFirstMedia('library');
+            $path = $mediaItem?->getPath() ?? '';
+            $bytes = $mediaItem && is_string($path) && file_exists($path)
+                ? file_get_contents($path)
+                : (string) ($mediaItem?->get() ?? '');
+
+            return [
+                'asset' => $asset,
+                'mediaItem' => $mediaItem,
+                'path' => $path,
+                'mime' => $image->getMimeType(),
+                'bytes' => $bytes,
+            ];
+        }
+
+        $mediaId = (int) ($values['media_asset_id'] ?? 0);
+        if ($mediaId <= 0) {
+            throw ValidationException::withMessages(['image' => 'Cần ảnh tham chiếu hoặc chọn media asset.']);
+        }
+        $asset = \App\Models\MediaAsset::query()->findOrFail($mediaId);
+        // Chỉ chấp nhận ảnh: media.kind phải là image (khớp MediaAssetKind::Image).
+        if (($asset->kind?->value ?? $asset->kind) !== 'image') {
+            throw ValidationException::withMessages(['media_asset_id' => 'Media asset được chọn phải là ảnh.']);
+        }
+        $mediaItem = $asset->getFirstMedia('library');
+        $path = $mediaItem?->getPath() ?? '';
+        if ($path === '' || ! file_exists($path)) {
+            throw ValidationException::withMessages(['media_asset_id' => 'File media không còn trên đĩa.']);
+        }
+        $bytes = file_get_contents($path);
+        if ($bytes === false || $bytes === '') {
+            throw ValidationException::withMessages(['media_asset_id' => 'Không đọc được nội dung media asset.']);
+        }
+
+        return [
+            'asset' => $asset,
+            'mediaItem' => $mediaItem,
+            'path' => $path,
+            'mime' => $mediaItem?->mime_type ?? 'image/jpeg',
+            'bytes' => $bytes,
+        ];
     }
 
     /**
@@ -162,11 +229,19 @@ final class VisualStyleAnalyzerService
         }
         $profile = AiImageProfile::query()->findOrFail($id);
         // Đọc bytes từ MediaAsset (nguồn chuẩn) hoặc fallback path raw cho style cũ.
+        // Lưu ý: MediaLibrary::get() trả StreamInterface, không phải bytes —
+        // phải đọc qua file_get_contents(path) hoặc disk để lấy nội dung thật.
         $bytes = null;
         if ($profile->reference_media_id) {
-            $bytes = $profile->referenceMedia?->getFirstMedia('library')?->get();
+            $mediaItem = $profile->referenceMedia?->getFirstMedia('library');
+            if ($mediaItem) {
+                $mediaPath = $mediaItem->getPath();
+                $bytes = is_string($mediaPath) && file_exists($mediaPath)
+                    ? file_get_contents($mediaPath)
+                    : (string) $mediaItem->get();
+            }
         }
-        if ($bytes === null) {
+        if ($bytes === null || $bytes === false || $bytes === '') {
             $bytes = Storage::disk('local')->get($profile->reference_path);
         }
         if (! hash_equals((string) $profile->reference_hash, hash('sha256', $bytes))) {
