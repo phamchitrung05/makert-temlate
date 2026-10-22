@@ -444,7 +444,9 @@ watch(
     void loadTaxonomy()
     if (currentStyle) {
       syncFromStyle(currentStyle)
-      if (currentStyle.id)
+      // Chỉ gọi loadStyleDetail khi prop chưa có mảng shots đầy đủ — prop từ
+      // card list chỉ trả shots_count, cần API show() lấy shots lần đầu.
+      if (currentStyle.id && (!Array.isArray(currentStyle.shots) || currentStyle.shots.length === 0))
         void loadStyleDetail(currentStyle.id)
     }
   },
