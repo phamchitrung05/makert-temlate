@@ -9,11 +9,11 @@
   typography, bo góc (6px) và form wrapper App* của dự án.
 
   CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
-  - syncFromStyle(): đồng bộ dữ liệu từ prop `style` (kèm fallback mặc định).
+  - syncFromStyle(): đồng bộ dữ liệu từ prop `style` sang mọi tab DNA
+  (composition/camera/lighting/environment/color_mood/subject_rules/style_constraints).
   - loadStyleDetail(): gọi API lấy chi tiết style + shots khi mở dialog.
   - statusMeta: computed nhãn và màu trạng thái lifecycle của style.
   - dnaJsonPreview: computed chuỗi JSON định dạng đẹp khi bật chế độ xem JSON.
-  - triggerAddImage(): mở bộ chọn ảnh mẫu thêm vào gallery.
   - addKeyword(): thêm từ khóa vào danh sách keywords.
   - submitMeta(): validate tên style và emit 'save' lên page cha.
   - close()/onAfterLeave(): đóng dialog và dọn state sau hiệu ứng đóng.
@@ -30,6 +30,8 @@
 import { computed, reactive, ref, watch } from 'vue'
 import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 import { visualStylesService } from '@/services/visualStyles'
+import { categoryService } from '@/services/category'
+import { aiArticleTaxonomyService } from '@/services/aiArticleTaxonomy'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -40,51 +42,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'save', 'close', 'afterLeave'])
 
-const DEFAULT_GALLERY = [
-  'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800',
-  'https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=400',
-  'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=400',
-  'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=400',
-]
-
 const DEFAULT_SUMMARY = 'Hình ảnh là cà phê với latte art trên bàn gỗ, hạt cà phê rải xung quanh, ánh sáng buổi sáng ấm áp, không gian quán cà phê, phong cách chụp ảnh sản phẩm chuyên nghiệp, tự nhiên và gần gũi. Toàn bộ ảnh phù hợp để tái tạo phong cách thương mại (bố cục cân đối, chủ thể ở giữa, nền có chiều sâu, ánh sáng mềm, bokeh nhẹ, màu nâu ấm).'
-
-const DEFAULT_SHOT_RECIPES = [
-  {
-    code: 'hero_front',
-    name: 'Hero Front View',
-    desc: 'Straight-on centered hero shot of the product.',
-    ratio: '1:1',
-    active: true,
-    thumb: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=150',
-  },
-  {
-    code: 'detail_macro',
-    name: 'Detail Macro',
-    desc: 'Tight macro crop highlighting surface and texture.',
-    ratio: '4:5',
-    active: true,
-    thumb: 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=150',
-  },
-  {
-    code: 'flat_lay_top',
-    name: 'Flat Lay Top Down',
-    desc: 'Overhead flat lay arrangement on a table.',
-    ratio: '4:5',
-    active: false,
-    thumb: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=150',
-  },
-  {
-    code: 'three_quarter_angle',
-    name: 'Three Quarter Angle',
-    desc: 'Three-quarter perspective at eye level.',
-    ratio: '4:5',
-    active: true,
-    thumb: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=150',
-  },
-]
-
-const CATEGORY_OPTIONS = ['Đồ uống', 'Lifestyle', 'Ẩm thực', 'Thương mại', 'Tối giản']
 
 const STATUS_META = {
   draft: { label: 'Nháp', color: 'secondary' },
@@ -97,30 +55,72 @@ const STATUS_META = {
   archived: { label: 'Đã lưu trữ', color: 'secondary' },
 }
 
+// Enum + nhãn Style DNA từ config backend qua dnaMeta(); options được build
+// động khi dialog mở thay vì hardcode để enum/label sửa ở config là đồng bộ.
+const dnaMeta = ref(null)
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Build option {title,value} cho một field enum từ dnaMeta.
+ * INPUT: tên section và field enum. OUTPUT: [{title, value}].
+ * SIDE EFFECT: chỉ đọc dnaMeta; trả key gốc làm title khi thiếu label.
+ * =====================================================================
+ */
+function fieldOptions(section, field) {
+  const enums = dnaMeta.value?.enums?.[section]?.[field] ?? []
+  const labels = dnaMeta.value?.labels?.[section]?.[field] ?? {}
+
+  return enums.map(value => ({ value, title: labels[value] ?? value }))
+}
+
+const OPT = computed(() => ({
+  framing: fieldOptions('composition', 'framing'),
+  subject_position: fieldOptions('composition', 'subject_position'),
+  orientation: fieldOptions('composition', 'orientation'),
+  visual_balance: fieldOptions('composition', 'visual_balance'),
+  negative_space: fieldOptions('composition', 'negative_space'),
+  shot_type: fieldOptions('camera', 'shot_type'),
+  angle: fieldOptions('camera', 'angle'),
+  lens_look: fieldOptions('camera', 'lens_look'),
+  depth_of_field: fieldOptions('camera', 'depth_of_field'),
+  focus: fieldOptions('camera', 'focus'),
+  perspective: fieldOptions('camera', 'perspective'),
+  lighting_type: fieldOptions('lighting', 'type'),
+  lighting_direction: fieldOptions('lighting', 'direction'),
+  lighting_quality: fieldOptions('lighting', 'quality'),
+  lighting_intensity: fieldOptions('lighting', 'intensity'),
+  lighting_temperature: fieldOptions('lighting', 'temperature'),
+  shadows: fieldOptions('lighting', 'shadows'),
+  highlights: fieldOptions('lighting', 'highlights'),
+  environment_type: fieldOptions('environment', 'type'),
+  background_style: fieldOptions('environment', 'background_style'),
+  background_blur: fieldOptions('environment', 'background_blur'),
+  saturation: fieldOptions('color_mood', 'saturation'),
+  contrast: fieldOptions('color_mood', 'contrast'),
+}))
+
 const activeDnaTab = ref('composition')
 const showJson = ref(false)
 const localError = ref('')
 
-// Danh sách ảnh trong Gallery
-const galleryImages = ref([...DEFAULT_GALLERY])
-const selectedThumb = ref(galleryImages.value[0])
+// Danh mục dùng chung (bảng categories) + Tag dùng chung (bảng tags)
+const categoryOptions = ref([])
+const tagOptions = ref([])
+const taxonomyLoading = ref(false)
+
+// Ảnh tham chiếu của style (local private qua reference-image endpoint);
+// DEFAULT_GALLERY chỉ dùng khi style chưa có reference_image_url.
+const galleryImages = ref([])
+const selectedThumb = ref('')
 
 // Dữ liệu Thông tin style (Cột trái)
 const styleInfo = reactive({
   name: 'Cà phê sáng – Năng lượng tích cực',
-  categories: ['Đồ uống', 'Lifestyle'],
+  categoryIds: [],
+  tagIds: [],
   enableGeneration: true,
   description:
     'Phong cách ảnh sản phẩm đồ uống cà phê trong không gian quán, ánh sáng tự nhiên ấm áp, bokeh, tone nâu ấm, mang cảm giác gần gũi và thư giãn.',
-  keywords: [
-    'coffee',
-    'latte',
-    'warm light',
-    'bokeh',
-    'cozy atmosphere',
-    'cafe interior',
-    'product photography',
-  ],
   palette: ['#3B1E14', '#8C4A27', '#F39C42', '#F5E1D3', '#E5E5E5'],
 })
 
@@ -182,8 +182,8 @@ const dnaConfig = reactive({
   avoidUnrealisticHands: true,
 })
 
-// Danh sách Shot Recipes
-const shotRecipes = ref(DEFAULT_SHOT_RECIPES.map(item => ({ ...item })))
+// Danh sách Shot Recipes (lấy từ API; không dùng mock cứng).
+const shotRecipes = ref([])
 
 const statusMeta = computed(() => {
   const status = props.style?.status || 'analyzed'
@@ -192,6 +192,9 @@ const statusMeta = computed(() => {
 })
 
 const dnaJsonPreview = computed(() => JSON.stringify({
+  identity: {
+    description: styleInfo.description || undefined,
+  },
   composition: {
     framing: dnaConfig.framing,
     subject_position: dnaConfig.subjectPosition,
@@ -232,6 +235,22 @@ const dnaJsonPreview = computed(() => JSON.stringify({
     palette: styleInfo.palette,
     mood: dnaConfig.mood.split(',').map(s => s.trim()).filter(Boolean),
   },
+  subject_rules: {
+    preserve_shape: dnaConfig.preserveShape,
+    preserve_color: dnaConfig.preserveColor,
+    preserve_logo: dnaConfig.preserveLogo,
+    preserve_text: dnaConfig.preserveText,
+    preserve_material: dnaConfig.preserveMaterial,
+    allow_perspective_change: dnaConfig.allowPerspectiveChange,
+    allow_occlusion: dnaConfig.allowOcclusion,
+  },
+  style_constraints: {
+    photorealistic: dnaConfig.photorealistic,
+    commercial_quality: dnaConfig.commercialQuality,
+    avoid_3d_render: dnaConfig.avoid3dRender,
+    avoid_illustration: dnaConfig.avoidIllustration,
+    avoid_unrealistic_hands: dnaConfig.avoidUnrealisticHands,
+  },
 }, null, 2))
 
 /**
@@ -246,16 +265,13 @@ function syncFromStyle(data) {
   if (!data) return
 
   styleInfo.name = data.name || 'Cà phê sáng – Năng lượng tích cực'
-  styleInfo.categories = data.category
-    ? String(data.category).split(',').map(item => item.trim()).filter(Boolean)
-    : ['Đồ uống', 'Lifestyle']
+  styleInfo.categoryIds = Array.isArray(data.category_ids) ? [...data.category_ids] : []
+  styleInfo.tagIds = Array.isArray(data.tag_ids) ? [...data.tag_ids] : []
   styleInfo.enableGeneration = Boolean(data.is_enabled)
 
   const dna = data.dna_json ?? {}
   if (dna.identity?.description)
     styleInfo.description = dna.identity.description
-  if (Array.isArray(dna.identity?.keywords) && dna.identity.keywords.length)
-    styleInfo.keywords = [...dna.identity.keywords]
 
   if (Array.isArray(dna.color_mood?.palette) && dna.color_mood.palette.length) {
     const hexMatches = dna.color_mood.palette
@@ -279,19 +295,81 @@ function syncFromStyle(data) {
       dnaConfig.depthLayers = dna.composition.depth_layers.join(', ')
   }
 
+  if (dna.camera) {
+    dnaConfig.shotType = dna.camera.shot_type ?? dnaConfig.shotType
+    dnaConfig.angle = dna.camera.angle ?? dnaConfig.angle
+    dnaConfig.lensLook = dna.camera.lens_look ?? dnaConfig.lensLook
+    dnaConfig.depthOfField = dna.camera.depth_of_field ?? dnaConfig.depthOfField
+    dnaConfig.focus = dna.camera.focus ?? dnaConfig.focus
+    dnaConfig.perspective = dna.camera.perspective ?? dnaConfig.perspective
+  }
+
+  if (dna.lighting) {
+    dnaConfig.lightingType = dna.lighting.type ?? dnaConfig.lightingType
+    dnaConfig.lightingDirection = dna.lighting.direction ?? dnaConfig.lightingDirection
+    dnaConfig.lightingQuality = dna.lighting.quality ?? dnaConfig.lightingQuality
+    dnaConfig.lightingIntensity = dna.lighting.intensity ?? dnaConfig.lightingIntensity
+    dnaConfig.lightingTemperature = dna.lighting.temperature ?? dnaConfig.lightingTemperature
+    dnaConfig.shadows = dna.lighting.shadows ?? dnaConfig.shadows
+    dnaConfig.highlights = dna.lighting.highlights ?? dnaConfig.highlights
+  }
+
+  if (dna.environment) {
+    dnaConfig.environmentType = dna.environment.type ?? dnaConfig.environmentType
+    dnaConfig.backgroundStyle = dna.environment.background_style ?? dnaConfig.backgroundStyle
+    dnaConfig.backgroundBlur = dna.environment.background_blur ?? dnaConfig.backgroundBlur
+    if (typeof dna.environment.background_detail === 'string' && dna.environment.background_detail)
+      dnaConfig.backgroundDetail = dna.environment.background_detail
+    if (typeof dna.environment.props === 'string' && dna.environment.props)
+      dnaConfig.props = dna.environment.props
+    if (typeof dna.environment.environment_adaptation === 'boolean')
+      dnaConfig.environmentAdaptation = dna.environment.environment_adaptation
+  }
+
+  if (dna.color_mood) {
+    dnaConfig.saturation = dna.color_mood.saturation ?? dnaConfig.saturation
+    dnaConfig.contrast = dna.color_mood.contrast ?? dnaConfig.contrast
+    if (Array.isArray(dna.color_mood.mood) && dna.color_mood.mood.length)
+      dnaConfig.mood = dna.color_mood.mood.join(', ')
+  }
+
+  if (dna.subject_rules) {
+    dnaConfig.preserveShape = dna.subject_rules.preserve_shape ?? dnaConfig.preserveShape
+    dnaConfig.preserveColor = dna.subject_rules.preserve_color ?? dnaConfig.preserveColor
+    dnaConfig.preserveLogo = dna.subject_rules.preserve_logo ?? dnaConfig.preserveLogo
+    dnaConfig.preserveText = dna.subject_rules.preserve_text ?? dnaConfig.preserveText
+    dnaConfig.preserveMaterial = dna.subject_rules.preserve_material ?? dnaConfig.preserveMaterial
+    dnaConfig.allowPerspectiveChange = dna.subject_rules.allow_perspective_change ?? dnaConfig.allowPerspectiveChange
+    dnaConfig.allowOcclusion = dna.subject_rules.allow_occlusion ?? dnaConfig.allowOcclusion
+  }
+
+  if (dna.style_constraints) {
+    dnaConfig.photorealistic = dna.style_constraints.photorealistic ?? dnaConfig.photorealistic
+    dnaConfig.commercialQuality = dna.style_constraints.commercial_quality ?? dnaConfig.commercialQuality
+    dnaConfig.avoid3dRender = dna.style_constraints.avoid_3d_render ?? dnaConfig.avoid3dRender
+    dnaConfig.avoidIllustration = dna.style_constraints.avoid_illustration ?? dnaConfig.avoidIllustration
+    dnaConfig.avoidUnrealisticHands = dna.style_constraints.avoid_unrealistic_hands ?? dnaConfig.avoidUnrealisticHands
+  }
+
+  // Ảnh tham chiếu thật của style (có thể null khi chưa analyze).
+  if (typeof data.reference_image_url === 'string' && data.reference_image_url)
+    galleryImages.value = [data.reference_image_url]
+  else
+    galleryImages.value = []
+  selectedThumb.value = galleryImages.value[0] ?? ''
+
   if (Array.isArray(data.shots) && data.shots.length) {
-    shotRecipes.value = data.shots.map((shot, idx) => ({
+    shotRecipes.value = data.shots.map(shot => ({
       id: shot.id,
       code: shot.code,
       name: shot.name,
       desc: shot.description || 'Góc chụp giữ nguyên Style DNA.',
       ratio: shot.suggested_aspect_ratio || '1:1',
       active: shot.is_active !== false,
-      thumb: DEFAULT_GALLERY[idx % DEFAULT_GALLERY.length],
     }))
   }
   else {
-    shotRecipes.value = DEFAULT_SHOT_RECIPES.map(item => ({ ...item }))
+    shotRecipes.value = []
   }
 }
 
@@ -315,11 +393,44 @@ async function loadStyleDetail(id) {
   }
 }
 
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Tải danh mục và tag dùng chung cho select khi mở dialog.
+ * INPUT: không có. OUTPUT: categoryOptions/tagOptions là [{title,value}].
+ * SIDE EFFECT: GET categories + tags active; lỗi giữ nguyên options rỗng.
+ * =====================================================================
+ */
+async function loadTaxonomy() {
+  if (categoryOptions.value.length && tagOptions.value.length) return
+  taxonomyLoading.value = true
+  if (!dnaMeta.value) {
+    visualStylesService.dnaMeta().then(meta => {
+      dnaMeta.value = meta ?? null
+    }).catch(() => {})
+  }
+  try {
+    const [cats, tags] = await Promise.all([
+      categoryService.list({ perPage: 100 }),
+      aiArticleTaxonomyService.all('tags'),
+    ])
+
+    categoryOptions.value = (cats?.items ?? cats ?? []).map(item => ({ title: item.name, value: item.id }))
+    tagOptions.value = (Array.isArray(tags) ? tags : tags?.items ?? []).map(item => ({ title: item.name, value: item.id }))
+  }
+  catch {
+    /* giữ nguyên options rỗng; user thấy select trống */
+  }
+  finally {
+    taxonomyLoading.value = false
+  }
+}
+
 watch(
   () => [props.modelValue, props.style],
   ([visible, currentStyle]) => {
     if (!visible) return
     localError.value = ''
+    void loadTaxonomy()
     if (currentStyle) {
       syncFromStyle(currentStyle)
       if (currentStyle.id)
@@ -331,27 +442,12 @@ watch(
 
 /**
  * =====================================================================
- * CHỨC NĂNG: Thao tác thêm ảnh mẫu vào gallery.
- * INPUT: sự kiện click.
- * OUTPUT: không có.
- * =====================================================================
- */
-function triggerAddImage() {
-  // Mở chọn ảnh mẫu bổ sung khi tích hợp upload nhiều ảnh
-}
-
-/**
- * =====================================================================
- * CHỨC NĂNG: Thêm từ khóa mẫu vào danh sách keywords của style.
+ * CHỨC NĂNG: Thêm từ khóa mẫu vào danh sách keywords của style (tạm giữ).
  * INPUT: sự kiện click nút Thêm.
- * OUTPUT: cập nhật mảng `styleInfo.keywords`.
+ * OUTPUT: không còn dùng — giữ cho tương lai khi nâng cấp gallery đa ảnh.
  * =====================================================================
  */
-function addKeyword() {
-  if (!styleInfo.keywords.includes('natural wood'))
-    styleInfo.keywords.push('natural wood')
-}
-
+// Bỏ triggerAddImage() — style chỉ giữ 1 ảnh tham chiếu reference_path.
 /**
  * =====================================================================
  * CHỨC NĂNG: Validate và phát sự kiện lưu thông tin style lên page.
@@ -374,7 +470,9 @@ function submitMeta() {
   emit('save', {
     id: props.style.id,
     name: styleInfo.name.trim(),
-    category: styleInfo.categories.join(', ').trim() || null,
+    category: null,
+    category_ids: [...styleInfo.categoryIds],
+    tag_ids: [...styleInfo.tagIds],
     is_enabled: Boolean(styleInfo.enableGeneration),
   })
 }
@@ -502,20 +600,41 @@ function onAfterLeave() {
             cols="12"
             lg="4"
           >
-            <!-- Khung Gallery ảnh mẫu -->
+            <!-- Khung Ảnh tham chiếu -->
             <VCard
               variant="outlined"
               class="mb-6"
             >
+              <VCardItem>
+                <template #title>
+                  Ảnh tham chiếu
+                </template>
+                <template #subtitle>
+                  Ảnh mẫu dùng để phân tích Style DNA
+                </template>
+              </VCardItem>
               <VCardText class="pa-4">
                 <!-- Ảnh chính lớn -->
                 <div class="position-relative rounded overflow-hidden mb-3">
                   <VImg
+                    v-if="selectedThumb"
                     :src="selectedThumb"
                     height="250"
                     cover
                     class="rounded gallery-main-image"
                   />
+                  <div
+                    v-else
+                    class="d-flex flex-column align-center justify-center text-medium-emphasis gallery-main-image rounded"
+                    style="height: 250px;"
+                  >
+                    <VIcon
+                      size="40"
+                      icon="tabler-photo-off"
+                      class="mb-2"
+                    />
+                    <span class="text-caption">Chưa có ảnh tham chiếu</span>
+                  </div>
                   <VBtn
                     icon="tabler-arrows-maximize"
                     size="x-small"
@@ -523,39 +642,27 @@ function onAfterLeave() {
                     color="surface"
                     class="expand-btn"
                     aria-label="Phóng to ảnh"
+                    :disabled="!selectedThumb"
                   />
                 </div>
 
-                <!-- Hàng 5 ô Thumbnail bên dưới -->
-                <div class="thumb-grid">
-                  <div
-                    v-for="(img, idx) in galleryImages"
-                    :key="idx"
-                    class="thumb-item rounded overflow-hidden cursor-pointer"
-                    :class="{ 'thumb-active': selectedThumb === img }"
-                    @click="selectedThumb = img"
+                <!-- Chỉ có 1 ảnh tham chiếu; hàng thumbnail thay bằng chú thích -->
+                <div
+                  v-if="galleryImages.length"
+                  class="d-flex align-center gap-2"
+                >
+                  <VAvatar
+                    rounded
+                    size="38"
+                    class="border"
                   >
                     <VImg
-                      :src="img"
-                      height="62"
+                      :src="selectedThumb"
                       cover
-                      class="gallery-thumb-image"
                     />
-                  </div>
-
-                  <!-- Nút + Thêm ảnh -->
-                  <div
-                    class="add-thumb-box rounded d-flex flex-column align-center justify-center cursor-pointer"
-                    @click="triggerAddImage"
-                  >
-                    <VIcon
-                      icon="tabler-plus"
-                      color="primary"
-                      size="18"
-                    />
-                    <span class="text-caption font-weight-medium text-primary">
-                      Thêm ảnh
-                    </span>
+                  </VAvatar>
+                  <div class="text-caption text-medium-emphasis">
+                    Ảnh nguồn của style này (Ảnh phân tích Style DNA).
                   </div>
                 </div>
               </VCardText>
@@ -574,11 +681,13 @@ function onAfterLeave() {
                   placeholder="Nhập tên phong cách..."
                 />
 
-                <!-- Nhóm phong cách -->
-                <AppCombobox
-                  v-model="styleInfo.categories"
-                  :items="CATEGORY_OPTIONS"
+                <!-- Nhóm phong cách (Category dùng chung) -->
+                <AppSelect
+                  v-model="styleInfo.categoryIds"
+                  :items="categoryOptions"
+                  :loading="taxonomyLoading"
                   label="Nhóm phong cách"
+                  placeholder="Chọn danh mục"
                   multiple
                   chips
                   closable-chips
@@ -604,32 +713,20 @@ function onAfterLeave() {
                   rows="3"
                 />
 
-                <!-- Từ khóa -->
+                <!-- Từ khóa (Tag dùng chung) -->
                 <div>
                   <VLabel class="mb-2 text-body-2 text-high-emphasis d-block">
                     Từ khóa
                   </VLabel>
-                  <div class="d-flex flex-wrap gap-2">
-                    <VChip
-                      v-for="kw in styleInfo.keywords"
-                      :key="kw"
-                      size="small"
-                      color="primary"
-                      variant="tonal"
-                    >
-                      {{ kw }}
-                    </VChip>
-                    <VChip
-                      size="small"
-                      variant="outlined"
-                      color="secondary"
-                      prepend-icon="tabler-plus"
-                      class="cursor-pointer"
-                      @click="addKeyword"
-                    >
-                      Thêm
-                    </VChip>
-                  </div>
+                  <AppSelect
+                    v-model="styleInfo.tagIds"
+                    :items="tagOptions"
+                    :loading="taxonomyLoading"
+                    placeholder="Chọn tag"
+                    multiple
+                    chips
+                    closable-chips
+                  />
                 </div>
 
                 <!-- Bảng màu chủ đạo -->
@@ -667,16 +764,19 @@ function onAfterLeave() {
                 </template>
                 <template #append>
                   <VBtn
-                    color="primary"
+                    variant="tonal"
+                    color="secondary"
                     size="small"
+                    :prepend-icon="showJson ? 'tabler-forms' : 'tabler-code'"
+                    @click="showJson = !showJson"
                   >
-                    Lưu DNA
+                    {{ showJson ? 'Form' : 'JSON' }}
                   </VBtn>
                 </template>
               </VCardItem>
 
               <VCardText>
-                <!-- Thanh Tabs DNA & Nút JSON -->
+                <!-- Thanh Tabs DNA -->
                 <div class="d-flex justify-space-between align-center border-b pb-2 mb-4 flex-wrap gap-2">
                   <VTabs
                     v-model="activeDnaTab"
@@ -698,16 +798,6 @@ function onAfterLeave() {
                       {{ tab.label }}
                     </VTab>
                   </VTabs>
-
-                  <VBtn
-                    variant="tonal"
-                    color="secondary"
-                    size="small"
-                    :prepend-icon="showJson ? 'tabler-forms' : 'tabler-code'"
-                    @click="showJson = !showJson"
-                  >
-                    {{ showJson ? 'Form' : 'JSON' }}
-                  </VBtn>
                 </div>
 
                 <!-- Chế độ xem JSON -->
@@ -734,7 +824,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.framing"
                           label="Khung hình"
-                          :items="['extreme_close_up', 'close_up', 'medium_close_up', 'medium', 'medium_wide', 'wide', 'extreme_wide']"
+                          :items="OPT.framing"
                         />
                       </VCol>
 
@@ -745,7 +835,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.subjectPosition"
                           label="Vị trí chủ thể"
-                          :items="['center', 'rule_of_thirds_left', 'rule_of_thirds_right', 'top_third', 'bottom_third', 'off_center']"
+                          :items="OPT.subject_position"
                         />
                       </VCol>
 
@@ -756,7 +846,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.orientation"
                           label="Hướng ảnh"
-                          :items="['square', 'landscape', 'portrait']"
+                          :items="OPT.orientation"
                         />
                       </VCol>
 
@@ -767,7 +857,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.balance"
                           label="Cân bằng"
-                          :items="['symmetric', 'asymmetric', 'dynamic', 'static']"
+                          :items="OPT.visual_balance"
                         />
                       </VCol>
 
@@ -778,7 +868,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.negativeSpace"
                           label="Khoảng trống"
-                          :items="['none', 'minimal', 'moderate', 'dominant']"
+                          :items="OPT.negative_space"
                         />
                       </VCol>
 
@@ -828,7 +918,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.shotType"
                           label="Kiểu shot"
-                          :items="['macro', 'detail', 'product_single', 'product_group', 'lifestyle', 'flat_lay', 'hero']"
+                          :items="OPT.shot_type"
                         />
                       </VCol>
                       <VCol
@@ -838,7 +928,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.angle"
                           label="Góc máy"
-                          :items="['eye_level', 'high_angle', 'low_angle', 'birds_eye', 'worms_eye', 'dutch', 'three_quarter']"
+                          :items="OPT.angle"
                         />
                       </VCol>
                       <VCol
@@ -848,7 +938,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.lensLook"
                           label="Ống kính"
-                          :items="['wide', 'standard', 'telephoto', 'macro']"
+                          :items="OPT.lens_look"
                         />
                       </VCol>
                       <VCol
@@ -858,7 +948,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.depthOfField"
                           label="Độ sâu trường ảnh"
-                          :items="['shallow', 'moderate', 'deep']"
+                          :items="OPT.depth_of_field"
                         />
                       </VCol>
                       <VCol
@@ -868,7 +958,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.focus"
                           label="Lấy nét"
-                          :items="['sharp_all', 'selective', 'soft']"
+                          :items="OPT.focus"
                         />
                       </VCol>
                       <VCol
@@ -878,7 +968,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.perspective"
                           label="Phối cảnh"
-                          :items="['frontal', 'three_quarter', 'profile', 'top_down', 'isometric']"
+                          :items="OPT.perspective"
                         />
                       </VCol>
                     </VRow>
@@ -894,7 +984,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.lightingType"
                           label="Kiểu ánh sáng"
-                          :items="['studio_softbox', 'natural_window', 'golden_hour', 'dramatic', 'backlit', 'rim', 'flat', 'mixed']"
+                          :items="OPT.lighting_type"
                         />
                       </VCol>
                       <VCol
@@ -904,7 +994,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.lightingDirection"
                           label="Hướng sáng"
-                          :items="['front', 'front_side', 'side', 'back', 'top', 'bottom', 'surround']"
+                          :items="OPT.lighting_direction"
                         />
                       </VCol>
                       <VCol
@@ -914,7 +1004,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.lightingQuality"
                           label="Chất lượng sáng"
-                          :items="['soft', 'hard', 'diffused', 'specular']"
+                          :items="OPT.lighting_quality"
                         />
                       </VCol>
                       <VCol
@@ -924,7 +1014,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.lightingIntensity"
                           label="Cường độ"
-                          :items="['low', 'medium', 'high']"
+                          :items="OPT.lighting_intensity"
                         />
                       </VCol>
                       <VCol
@@ -934,7 +1024,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.lightingTemperature"
                           label="Nhiệt độ màu"
-                          :items="['warm', 'neutral', 'cool']"
+                          :items="OPT.lighting_temperature"
                         />
                       </VCol>
                       <VCol
@@ -944,7 +1034,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.shadows"
                           label="Bóng đổ"
-                          :items="['none', 'soft', 'defined', 'hard']"
+                          :items="OPT.shadows"
                         />
                       </VCol>
                     </VRow>
@@ -960,7 +1050,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.environmentType"
                           label="Kiểu bối cảnh"
-                          :items="['studio_solid', 'studio_gradient', 'lifestyle_interior', 'lifestyle_exterior', 'abstract', 'surface_texture']"
+                          :items="OPT.environment_type"
                         />
                       </VCol>
                       <VCol
@@ -970,7 +1060,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.backgroundStyle"
                           label="Kiểu nền"
-                          :items="['solid_color', 'gradient', 'textured', 'scene', 'bokeh', 'prop_styled']"
+                          :items="OPT.background_style"
                         />
                       </VCol>
                       <VCol
@@ -980,7 +1070,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.backgroundBlur"
                           label="Làm mờ nền"
-                          :items="['none', 'slight', 'moderate', 'strong']"
+                          :items="OPT.background_blur"
                         />
                       </VCol>
                       <VCol
@@ -1011,7 +1101,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.saturation"
                           label="Độ bão hòa"
-                          :items="['desaturated', 'muted', 'natural', 'vivid', 'high']"
+                          :items="OPT.saturation"
                         />
                       </VCol>
                       <VCol
@@ -1021,7 +1111,7 @@ function onAfterLeave() {
                         <AppSelect
                           v-model="dnaConfig.contrast"
                           label="Độ tương phản"
-                          :items="['low', 'moderate', 'high']"
+                          :items="OPT.contrast"
                         />
                       </VCol>
                       <VCol cols="12">
@@ -1256,23 +1346,11 @@ function onAfterLeave() {
                         </div>
                       </td>
 
-                      <!-- Thumbnail & Code -->
+                      <!-- Code recipe -->
                       <td>
-                        <div class="d-flex align-center py-2">
-                          <VAvatar
-                            rounded
-                            size="38"
-                            class="me-3 border"
-                          >
-                            <VImg
-                              :src="recipe.thumb"
-                              cover
-                            />
-                          </VAvatar>
-                          <code class="text-body-2 font-mono text-high-emphasis">
-                            {{ recipe.code }}
-                          </code>
-                        </div>
+                        <code class="text-body-2 font-mono text-high-emphasis">
+                          {{ recipe.code }}
+                        </code>
                       </td>
 
                       <!-- Tên & Mô tả góc máy -->
@@ -1288,8 +1366,14 @@ function onAfterLeave() {
                       </td>
 
                       <!-- Tỷ lệ khung hình -->
-                      <td class="text-body-2 font-weight-medium text-high-emphasis">
-                        {{ recipe.ratio }}
+                      <td>
+                        <VChip
+                          size="small"
+                          variant="tonal"
+                          color="secondary"
+                        >
+                          {{ recipe.ratio }}
+                        </VChip>
                       </td>
 
                       <!-- Trạng thái Active -->

@@ -14,6 +14,8 @@ use App\Services\Ai\VisualStyle\VisualStyleAnalyzerService;
 use App\Services\Ai\VisualStyle\VisualStyleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * =====================================================================
@@ -50,8 +52,65 @@ final class VisualStyleController extends Controller
     public function index(Request $request, VisualStyleService $service): JsonResponse
     {
         $page = $service->index($request->only(['search', 'status', 'per_page']), (int) $request->user()->id);
+        $page->loadMissing(['categories', 'tags', 'slugs']);
 
         return BaseResponse::paginated(VisualStyleResource::collection($page), 'Danh sách visual style.');
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Trả enum + nhãn hiển thị của Style DNA cho form admin.
+     * =====================================================================
+     * Input: request đã authenticated + permission middleware. Output: enums và
+     * labels từ config ai.visual_style_dna để dialog build select động.
+     * Side effect: chỉ đọc config; không ghi DB/gọi provider.
+     * =====================================================================
+     */
+    public function dnaMeta(): JsonResponse
+    {
+        return BaseResponse::success([
+            'enums' => (array) config('ai.visual_style_dna.enums'),
+            'labels' => (array) config('ai.visual_style_dna.labels'),
+            'lists' => (array) config('ai.visual_style_dna.lists'),
+            'defaults' => (array) config('ai.visual_style_dna.defaults'),
+        ], 'Meta Style DNA.');
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Stream ảnh tham chiếu của style cho giao diện admin.
+     * =====================================================================
+     * Input: style route-bound. Output: StreamedResponse file local private.
+     * Side effect: đọc file từ disk local; chặn style của owner khác (403).
+     * =====================================================================
+     */
+    public function referenceImage(Request $request, AiImageProfile $visualStyle): StreamedResponse
+    {
+        $this->owner($request, $visualStyle);
+
+        // Nguồn chuẩn: MediaAsset đã upload qua pipeline media (reference_media_id).
+        // Fallback reference_path (path raw) cho style cũ/chưa qua media pipeline.
+        if ($visualStyle->reference_media_id) {
+            $media = $visualStyle->referenceMedia?->getFirstMedia('library');
+            abort_unless($media, 404);
+
+            return Storage::disk($media->disk)->response(
+                $media->getPathRelativeToRoot(),
+                $media->file_name,
+                [
+                    'Content-Type' => $media->mime_type ?? 'image/jpeg',
+                    'Cache-Control' => 'private, max-age=300',
+                ],
+            );
+        }
+
+        $path = (string) $visualStyle->reference_path;
+        abort_unless($path !== '' && Storage::disk('local')->exists($path), 404);
+
+        return Storage::disk('local')->response($path, null, [
+            'Content-Type' => $visualStyle->reference_mime ?: 'image/jpeg',
+            'Cache-Control' => 'private, max-age=300',
+        ]);
     }
 
     /**
@@ -81,7 +140,7 @@ final class VisualStyleController extends Controller
     {
         $this->owner($request, $visualStyle);
 
-        return BaseResponse::success(new VisualStyleResource($visualStyle->load('shots')));
+        return BaseResponse::success(new VisualStyleResource($visualStyle->load(['shots', 'categories', 'tags', 'slugs'])));
     }
 
     /**

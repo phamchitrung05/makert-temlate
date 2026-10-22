@@ -9,7 +9,7 @@
  * Systerm AI tập trung Ai Content, Ai Prompt và AI Settings, cùng route với menu dọc.
  * AI Approved hiển thị snapshot các bài AI đã duyệt lưu dài hạn.
  * Ai Prompt là nhóm mẹ chứa Writing Prompt (List đọc mẫu, Add phân tích bài
- * tham khảo) và Visual Styles (Danh sách, Tạo ảnh, Prompt tạo ảnh),
+ * tham khảo) và Visual Styles (Danh sách, Tạo ảnh),
  * cùng route với menu dọc.
  * Các mục Page/Category/Tag hiện là placeholder vì giao diện sẽ bổ sung sau.
  *
@@ -53,7 +53,6 @@ export default [
             children: [
               { title: 'Danh sách', to: 'visual-styles', action: 'manage', subject: 'ai_settings' },
               { title: 'Tạo ảnh', to: 'visual-styles-generate', action: 'manage', subject: 'ai_settings' },
-              { title: 'Prompt tạo ảnh', to: 'ai-image-prompt', action: 'manage', subject: 'ai_settings' },
             ],
           },
         ],

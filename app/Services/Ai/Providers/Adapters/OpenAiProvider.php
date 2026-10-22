@@ -116,7 +116,13 @@ final class OpenAiProvider extends AbstractStructuredAiProvider
         if (($this->connection()?->snapshot['driver'] ?? 'openai') === 'openai') {
             $payload['tool_choice'] = 'none';
         }
-        if ($this->connection() === null || in_array(AiCapability::Structured->value, $this->connection()->snapshot['capabilities'] ?? [], true)) {
+        // apikey.fan (openai-compatible) trả 502 khi kèm response_format — chỉ
+        // gửi cho driver 'openai' chính hãng; driver openai-compatible parse
+        // JSON từ content theo prompt/schema mà không cần response_format.
+        $driver = $this->connection()?->snapshot['driver'] ?? 'openai';
+        $supportsResponseFormat = $this->connection() === null
+            || in_array(AiCapability::Structured->value, $this->connection()->snapshot['capabilities'] ?? [], true);
+        if ($supportsResponseFormat && $driver === 'openai') {
             $payload['response_format'] = ['type' => 'json_object'];
         }
         $connection = $this->connection() ?? new AiConnection([

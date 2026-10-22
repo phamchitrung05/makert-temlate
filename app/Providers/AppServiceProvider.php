@@ -211,6 +211,7 @@ class AppServiceProvider extends ServiceProvider
             'social_publication' => SocialPublication::class,
             'social_post_version' => SocialPostVersion::class,
             'daily_content_plan' => DailyContentPlan::class,
+            'visual_style' => \App\Models\AiImageProfile::class,
         ]);
     }
 }

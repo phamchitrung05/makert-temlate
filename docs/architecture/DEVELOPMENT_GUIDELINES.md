@@ -135,6 +135,7 @@ Quy tắc áp dụng cho Vue:
 - Controller chỉ điều phối HTTP; không chứa business rule dài, query phức tạp hoặc transaction không có tên.
 - Validation cổng HTTP nằm trong Form Request, tách `XCreateRequest` và `XUpdateRequest` cho từng resource; rule nghiệp vụ nằm trong `App\Validators` và được repository gọi khi tạo hoặc cập nhật.
 - `TaxonomyController` là base chung cho category, tag và technology. Lớp con khai báo `repositoryInterface()`, `createRequestClass()` và `updateRequestClass()`; `resolveRequest()` gọi `validateResolved()` trên FormRequest do container tạo.
+- Khi một model mới cần **slug, category hoặc tag**, dùng lại hệ thống polymorphic chung — `HasSlug` + bảng `slugable`, pivot `categorizables`, `taggables` — không tạo cột `slug`/`category_id`/`tag_id` riêng. Đọc [SHARED_TAXONOMY.md](SHARED_TAXONOMY.md).
 - FormRequest bắt buộc phải chặn giá trị enum trước khi dữ liệu chạm vào model, vì `BaseRepository::create()` gọi `forceFill()` trước khi chạy validator của repository.
 - Authorization nằm trong Policy, Gate hoặc permission middleware của Spatie. Permission middleware phải truyền guard `admin` vì `config/auth.php` không còn guard `web`; token Sanctum được resolve qua guard `admin` khai báo với driver `sanctum`.
 - Business mutation nhiều bước nằm trong Action/Service và ghi rõ transaction boundary.

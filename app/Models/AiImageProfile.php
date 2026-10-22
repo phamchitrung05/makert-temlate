@@ -2,9 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasMediaAssets;
+use App\Models\Concerns\HasSlug;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 /**
  * =====================================================================
@@ -23,6 +27,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 final class AiImageProfile extends Model
 {
+    use HasMediaAssets, HasSlug;
+
     protected $guarded = ['id'];
 
     protected $hidden = ['reference_path', 'connection_snapshot_json', 'analysis_instructions', 'reference_hash'];
@@ -69,5 +75,86 @@ final class AiImageProfile extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Liên kết toàn bộ slug của Visual Style (HasSlug).
+     * =====================================================================
+     * Input: model hiện tại. Output: MorphMany Slug, morph name `sluggable`.
+     * Side effect: chỉ query khi nạp quan hệ; slug primary theo locale.
+     * =====================================================================
+     */
+    public function slugs(): MorphMany
+    {
+        return $this->morphMany(Slug::class, 'sluggable');
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Giá trị dùng để dựng slug (tên style) cho HasSlug.
+     * =====================================================================
+     * Input: model hiện tại. Output: chuỗi name làm nguồn slug.
+     * Side effect: không ghi DB.
+     * =====================================================================
+     */
+    public function slugSource(): string
+    {
+        return (string) $this->name;
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Tên cột nguồn slug để HasSlug phát hiện thay đổi.
+     * =====================================================================
+     * Input: không có. Output: 'name'.
+     * Side effect: không ghi DB.
+     * =====================================================================
+     */
+    public function slugSourceColumn(): string
+    {
+        return 'name';
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Gắn Category dùng chung (categorizables) cho style.
+     * =====================================================================
+     * Input: model hiện tại. Output: MorphToMany Category qua pivot categorizables.
+     * Side effect: chỉ query khi nạp quan hệ.
+     * =====================================================================
+     */
+    public function categories(): MorphToMany
+    {
+        return $this->morphToMany(Category::class, 'categorizable')
+            ->withPivot('sort_order')
+            ->withTimestamps();
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Gắn Tag dùng chung (taggables) cho style.
+     * =====================================================================
+     * Input: model hiện tại. Output: MorphToMany Tag qua pivot taggables.
+     * Side effect: chỉ query khi nạp quan hệ.
+     * =====================================================================
+     */
+    public function tags(): MorphToMany
+    {
+        return $this->morphToMany(Tag::class, 'taggable')->withTimestamps();
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: MediaAsset tham chiếu của style (FK reference_media_id).
+     * =====================================================================
+     * Input: model hiện tại. Output: BelongsTo MediaAsset; null khi style
+     * thủ công/duplicate không có ảnh nguồn qua pipeline media.
+     * Side effect: chỉ query khi nạp quan hệ.
+     * =====================================================================
+     */
+    public function referenceMedia(): BelongsTo
+    {
+        return $this->belongsTo(MediaAsset::class, 'reference_media_id');
     }
 }

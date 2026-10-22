@@ -114,4 +114,13 @@ class Tag extends Model
     {
         return $this->morphedByMany(Resource::class, 'taggable')->withTimestamps();
     }
+
+    /**
+     * Lấy Visual Style đã gắn tag này qua pivot taggables.
+     * Input: Tag hiện tại. Output: quan hệ AiImageProfile ngược.
+     */
+    public function visualStyles(): MorphToMany
+    {
+        return $this->morphedByMany(AiImageProfile::class, 'taggable')->withTimestamps();
+    }
 }

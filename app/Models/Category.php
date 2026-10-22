@@ -172,6 +172,17 @@ class Category extends Model
     }
 
     /**
+     * Lấy Visual Style đã gắn danh mục này qua pivot categorizables.
+     * Input: Category hiện tại. Output: quan hệ AiImageProfile ngược.
+     */
+    public function visualStyles(): MorphToMany
+    {
+        return $this->morphedByMany(AiImageProfile::class, 'categorizable')
+            ->withPivot('sort_order')
+            ->withTimestamps();
+    }
+
+    /**
      * =====================================================================
      * CHỨC NĂNG: Giới hạn query chỉ lấy danh mục cấp cao nhất
      * =====================================================================

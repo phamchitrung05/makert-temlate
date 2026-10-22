@@ -316,10 +316,12 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum,ad
         Route::middleware('permission:ai_settings.manage,admin')->prefix('ai/visual-styles')->group(function (): void {
             Route::get('/', [VisualStyleController::class, 'index']);
             Route::post('/', [VisualStyleController::class, 'store']);
+            Route::get('/dna-meta', [VisualStyleController::class, 'dnaMeta']);
             Route::post('/analyze', [VisualStyleController::class, 'analyze'])->middleware('throttle:6,1');
             Route::post('/generate', [VisualStyleGenerationController::class, 'store'])->middleware('throttle:6,1');
             Route::get('/generations/{importId}', [VisualStyleGenerationController::class, 'show'])->whereUuid('importId');
             Route::get('/{visualStyle}', [VisualStyleController::class, 'show'])->whereNumber('visualStyle');
+            Route::get('/{visualStyle}/reference-image', [VisualStyleController::class, 'referenceImage'])->whereNumber('visualStyle');
             Route::put('/{visualStyle}', [VisualStyleController::class, 'update'])->whereNumber('visualStyle');
             Route::delete('/{visualStyle}', [VisualStyleController::class, 'destroy'])->whereNumber('visualStyle');
             Route::put('/{visualStyle}/dna', [VisualStyleController::class, 'updateDna'])->whereNumber('visualStyle');

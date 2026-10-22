@@ -5,7 +5,7 @@
 | Thư mục | Nội dung | Tài liệu |
 | --- | --- | --- |
 | `plans/` | Kế hoạch, tiến độ và task | [Kế hoạch tổng](plans/PLAN.md) · [Marketing Social Post](plans/MARKETING_SOCIAL_POST.md) · [Resource Template](plans/RESOURCE_TEMPLATE.md) · [Public backend Blade](plans/PUBLIC_BACKEND.md) · [Tự đánh giá định kỳ](plans/HE_THONG_TU_DANH_GIA_DINH_KY.md) · [AI Task Queue Popup](plans/AI_TASK_QUEUE_POPUP.md) |
-| `architecture/` | Cấu trúc, inventory và quy ước phát triển | [Cấu trúc dự án](architecture/PROJECT_STRUCTURE.md) · [Inventory](architecture/PROJECT_INVENTORY.md) · [Quy ước code/giao diện](architecture/DEVELOPMENT_GUIDELINES.md) |
+| `architecture/` | Cấu trúc, inventory và quy ước phát triển | [Cấu trúc dự án](architecture/PROJECT_STRUCTURE.md) · [Inventory](architecture/PROJECT_INVENTORY.md) · [Quy ước code/giao diện](architecture/DEVELOPMENT_GUIDELINES.md) · [Slug/Category/Tag dùng chung](architecture/SHARED_TAXONOMY.md) |
 | `api/` | Contract dữ liệu và cách dùng API | [Roles/Permissions](api/ACCESS_MANAGEMENT_API.md) · [Marketing Social Post](api/MARKETING_SOCIAL_POST_API.md) · [AI Content pipeline](api/AI_ARTICLE_PIPELINE_API.md) · [Writing Profiles](api/AI_WRITING_PROFILES_API.md) · [Ảnh content/Gallery](api/TASK2_INLINE_MEDIA_API.md) · [Branding Settings](api/SETTINGS_BRANDING_API.md) · [Template Manifest v1 (TPL-00)](api/RESOURCE_TEMPLATE_MANIFEST_V1.md) · [Resource Template API (TPL-06–TPL-10)](api/RESOURCE_TEMPLATE_API.md) |
 | `operations/` | Môi trường local/test/production, queue và storage | [Hướng dẫn môi trường](operations/ENVIRONMENT.md) |
 | `quality/` | Protocol và rubric đánh giá chất lượng bài AI | [Đánh giá chất lượng](quality/AI_ARTICLE_QUALITY_EVALUATION.md) |

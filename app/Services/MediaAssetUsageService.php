@@ -183,11 +183,12 @@ class MediaAssetUsageService
         MediaAsset $asset,
         MediaAssetField $field,
         ?int $sortOrder = null,
+        bool $authorize = true,
     ): MediaAssetUsage {
-        return DB::transaction(function () use ($actor, $linkable, $asset, $field, $sortOrder): MediaAssetUsage {
+        return DB::transaction(function () use ($actor, $linkable, $asset, $field, $sortOrder, $authorize): MediaAssetUsage {
             $this->assertPackageMutationAllowed($linkable, $field);
             $asset = $this->lockAssets(collect([$asset]))->first();
-            $this->assertAttachable($actor, $linkable, $asset, $field);
+            $this->assertAttachable($actor, $linkable, $asset, $field, $authorize);
 
             $existing = $linkable->mediaAssetUsagesForField($field)->exists();
             if ($existing && ! $field->allowsMultiple()) {
@@ -479,6 +480,7 @@ class MediaAssetUsageService
         Model $linkable,
         mixed $asset,
         MediaAssetField $field,
+        bool $authorize = true,
     ): void {
         if (! $asset instanceof MediaAsset) {
             throw ValidationException::withMessages([
@@ -486,7 +488,9 @@ class MediaAssetUsageService
             ]);
         }
 
-        Gate::forUser($actor)->authorize('attach', $asset);
+        if ($authorize) {
+            Gate::forUser($actor)->authorize('attach', $asset);
+        }
 
         if ($asset->trashed()) {
             throw ValidationException::withMessages([

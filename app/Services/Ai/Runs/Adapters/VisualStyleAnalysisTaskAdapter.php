@@ -61,8 +61,14 @@ final class VisualStyleAnalysisTaskAdapter implements AiTaskRunAdapter
     {
         $profile = $this->source($source);
         $status = (string) $profile->status;
-        if (! in_array($status, ['queued', 'ready', 'analyzed', 'failed', 'cancelled'], true)) {
+        if (! in_array($status, ['queued', 'analyzed', 'ready', 'failed', 'cancelled'], true)) {
             $status = 'analyzing';
+        }
+        // Map status nội bộ AiImageProfile sang lifecycle tracker: analyzed → ready.
+        // Frontend chỉ nhận terminal ready/failed/cancelled/expired; giữ 'analyzed'
+        // sẽ bị normalizeTask ép về 'queued' và popup kẹt ở "Chờ xử lý".
+        if ($status === 'analyzed') {
+            $status = 'ready';
         }
         $errorCode = $status === 'failed' ? $profile->error_message : null;
 
@@ -73,7 +79,7 @@ final class VisualStyleAnalysisTaskAdapter implements AiTaskRunAdapter
             'model' => data_get($profile->connection_snapshot_json, 'model'),
             'provider' => data_get($profile->connection_snapshot_json, 'provider'),
             'status' => $status,
-            'progress' => in_array($status, ['ready', 'analyzed'], true) ? 100 : ($status === 'analyzing' ? 50 : 0),
+            'progress' => $status === 'ready' ? 100 : ($status === 'analyzing' ? 50 : 0),
             'user_id' => $profile->created_by,
             'taskable_type' => $profile::class,
             'taskable_id' => (string) $profile->getKey(),
@@ -81,7 +87,7 @@ final class VisualStyleAnalysisTaskAdapter implements AiTaskRunAdapter
             'error_code' => null,
             'error_message' => $errorCode ? mb_substr((string) $errorCode, 0, 120) : null,
             'started_at' => null,
-            'completed_at' => in_array($status, ['ready', 'analyzed', 'failed', 'cancelled'], true) ? ($profile->updated_at ?? now()) : null,
+            'completed_at' => in_array($status, ['ready', 'failed', 'cancelled'], true) ? ($profile->updated_at ?? now()) : null,
             'expires_at' => null,
         ];
     }

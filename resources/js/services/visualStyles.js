@@ -51,7 +51,7 @@ export const visualStylesService = {
     return unwrap(await $api(base, { method: 'POST', body: payload, retry: 0 }))
   },
 
-  /** Input: id + `{ name?, category?, is_enabled? }`. Output: style đã refresh. */
+  /** Input: id + `{ name?, category?, is_enabled?, category_ids?, tag_ids? }`. Output: style đã refresh. */
   async update(id, payload) {
     return unwrap(await $api(`${base}/${id}`, { method: 'PUT', body: payload, retry: 0 }))
   },
@@ -59,6 +59,11 @@ export const visualStylesService = {
   /** Input: id. Output: response xóa (style đang queued/analyzing bị 409). */
   async remove(id) {
     return unwrap(await $api(`${base}/${id}`, { method: 'DELETE', retry: 0 }))
+  },
+
+  /** Input: không có. Output: `{ enums, labels, lists, defaults }` Style DNA. */
+  async dnaMeta() {
+    return unwrap(await $api(`${base}/dna-meta`, { retry: 0 }))
   },
 
   /** Input: `{ name, model_id, image: File, category? }`. Output: style status=queued (202). */

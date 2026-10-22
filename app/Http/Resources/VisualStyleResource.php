@@ -33,6 +33,7 @@ final class VisualStyleResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'slug' => $this->whenLoaded('slugs', fn () => $this->primarySlug()?->slug),
             'category' => $this->category,
             'status' => $this->status,
             'is_enabled' => $this->is_enabled,
@@ -43,6 +44,13 @@ final class VisualStyleResource extends JsonResource
             'prompt' => $this->prompt,
             'negative_prompt' => $this->negative_prompt,
             'error_message' => $this->error_message,
+            'reference_image_url' => ($this->reference_path ?? '') !== ''
+                ? url('/api/admin/ai/visual-styles/'.$this->id.'/reference-image')
+                : null,
+            'category_ids' => $this->whenLoaded('categories', fn () => $this->categories->pluck('id')->all()),
+            'tag_ids' => $this->whenLoaded('tags', fn () => $this->tags->pluck('id')->all()),
+            'categories' => $this->whenLoaded('categories', fn () => $this->categories->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])->all()),
+            'tags' => $this->whenLoaded('tags', fn () => $this->tags->map(fn ($t) => ['id' => $t->id, 'name' => $t->name])->all()),
             'shots_count' => $this->whenCounted('shots'),
             'shots' => VisualStyleShotResource::collection($this->whenLoaded('shots')),
             'created_by' => $this->created_by,

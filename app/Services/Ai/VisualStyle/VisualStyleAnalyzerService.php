@@ -2,14 +2,20 @@
 
 namespace App\Services\Ai\VisualStyle;
 
+use App\Actions\Media\UploadMediaAssetAction;
 use App\Enums\AiCapability;
+use App\Enums\MediaAssetField;
+use App\Enums\MediaAssetKind;
+use App\Enums\MediaAssetVisibility;
 use App\Jobs\AnalyzeVisualStyleJob;
 use App\Models\AiImageProfile;
+use App\Models\User;
 use App\Models\VisualStyleShot;
 use App\Services\Ai\Data\AiTaskRequest;
 use App\Services\Ai\Providers\Catalog\ModelResolver;
 use App\Services\Ai\Registries\ProviderRegistry;
 use App\Services\Ai\Runs\AiTaskRunService;
+use App\Services\MediaAssetUsageService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -80,9 +86,21 @@ final class VisualStyleAnalyzerService
             || ! in_array($snapshot['driver'], ['openai', 'openai-compatible', 'gemini'], true)) {
             throw ValidationException::withMessages(['model_id' => 'Chọn model có Text generation và Vision của OpenAI, OpenAI-compatible hoặc Gemini.']);
         }
-        $path = $image->store('ai-visual-styles/'.$actorId, 'local');
+        // Đưa ảnh tham chiếu vào MediaAsset qua pipeline chuẩn (validate → scan
+        // → checksum → Spatie collection) để mọi ảnh đều quản lý trong Media Library.
+        $asset = app(UploadMediaAssetAction::class)->handle(
+            $image,
+            MediaAssetKind::Image,
+            (string) $values['name'],
+            $actorId,
+            MediaAssetVisibility::Private,
+        );
+        $mediaItem = $asset->getFirstMedia('library');
+        $path = $mediaItem?->getPath() ?? '';
+        // Hash từ bytes media lưu vào library — nguồn thật worker đọc khi process().
+        $referenceHash = $mediaItem ? hash('sha256', (string) $mediaItem->get()) : str_repeat('0', 64);
         try {
-            return DB::transaction(function () use ($values, $image, $actorId, $snapshot, $path): AiImageProfile {
+            return DB::transaction(function () use ($values, $image, $actorId, $snapshot, $asset, $mediaItem, $path, $referenceHash): AiImageProfile {
                 $profile = AiImageProfile::query()->create([
                     'created_by' => $actorId,
                     'name' => $values['name'],
@@ -90,13 +108,24 @@ final class VisualStyleAnalyzerService
                     'status' => 'queued',
                     'reference_path' => $path,
                     'reference_mime' => $image->getMimeType(),
-                    'reference_hash' => hash_file('sha256', $image->getRealPath()),
+                    'reference_hash' => $referenceHash,
+                    'reference_media_id' => $asset->id,
                     'connection_snapshot_json' => $snapshot,
                     'analysis_instructions' => (string) config('ai.visual_style_dna.analysis_instructions'),
                     'schema_version' => VisualStyleDnaDefinition::SCHEMA_VERSION,
                     'version' => 1,
                     'is_enabled' => false,
                 ]);
+                // Gắn asset vào field visual_style.reference để usage/quản lý đúng chuẩn.
+                // authorize=false vì asset vừa do chính actor upload qua
+                // UploadMediaAssetAction (không phải attach asset người khác).
+                app(MediaAssetUsageService::class)->attach(
+                    User::query()->findOrFail($actorId),
+                    $profile,
+                    $asset,
+                    MediaAssetField::VisualStyleReference,
+                    authorize: false,
+                );
                 $taskRun = app(AiTaskRunService::class)->register($profile);
                 // Giữ tracker id trong bản ghi trả về để popup queue hủy đúng ngay.
                 $profile->setAttribute('task_run_id', $taskRun->id);
@@ -105,7 +134,12 @@ final class VisualStyleAnalyzerService
                 return $profile;
             });
         } catch (\Throwable $exception) {
-            Storage::disk('local')->delete($path);
+            // Rollback upload: xóa asset khỏi library nếu transaction profile lỗi.
+            try {
+                $asset->forceDelete();
+            } catch (\Throwable) {
+                // Giữ nguyên lỗi gốc; cleanup thất bại không chặn throw.
+            }
             throw $exception;
         }
     }
@@ -127,7 +161,14 @@ final class VisualStyleAnalyzerService
             return;
         }
         $profile = AiImageProfile::query()->findOrFail($id);
-        $bytes = Storage::disk('local')->get($profile->reference_path);
+        // Đọc bytes từ MediaAsset (nguồn chuẩn) hoặc fallback path raw cho style cũ.
+        $bytes = null;
+        if ($profile->reference_media_id) {
+            $bytes = $profile->referenceMedia?->getFirstMedia('library')?->get();
+        }
+        if ($bytes === null) {
+            $bytes = Storage::disk('local')->get($profile->reference_path);
+        }
         if (! hash_equals((string) $profile->reference_hash, hash('sha256', $bytes))) {
             throw new \RuntimeException('Ảnh tham chiếu của tác vụ đã thay đổi.');
         }

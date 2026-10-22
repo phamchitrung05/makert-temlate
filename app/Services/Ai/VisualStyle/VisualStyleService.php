@@ -3,9 +3,10 @@
 namespace App\Services\Ai\VisualStyle;
 
 use App\Models\AiImageProfile;
+use App\Models\User;
+use App\Services\MediaAssetUsageService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -85,7 +86,7 @@ final class VisualStyleService
             unset($dna['suggested_shots']);
         }
 
-        return AiImageProfile::query()->create([
+        $style = AiImageProfile::query()->create([
             'created_by' => $actorId,
             'name' => $values['name'],
             'category' => $values['category'] ?? null,
@@ -100,6 +101,28 @@ final class VisualStyleService
             'schema_version' => $dna ? VisualStyleDnaDefinition::SCHEMA_VERSION : null,
             'version' => 1,
         ]);
+        $this->syncTaxonomy($style, $values);
+
+        return $style;
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Gắn Category/Tag dùng chung cho style khi payload cung cấp.
+     * =====================================================================
+     * Input: style đã lưu và values có category_ids[]/tag_ids[] (đã FormRequest
+     * exists). Output: pivot categorizables/taggables đồng bộ theo ids.
+     * Side effect: sync() quan hệ morph; chỉ chạy khi key tồn tại trong payload.
+     * =====================================================================
+     */
+    private function syncTaxonomy(AiImageProfile $style, array $values): void
+    {
+        if (array_key_exists('category_ids', $values)) {
+            $style->categories()->sync(array_map('intval', (array) ($values['category_ids'] ?? [])));
+        }
+        if (array_key_exists('tag_ids', $values)) {
+            $style->tags()->sync(array_map('intval', (array) ($values['tag_ids'] ?? [])));
+        }
     }
 
     /**
@@ -124,6 +147,7 @@ final class VisualStyleService
             $style->is_enabled = (bool) $values['is_enabled'];
         }
         $style->save();
+        $this->syncTaxonomy($style, $values);
 
         return $style->refresh();
     }
@@ -224,6 +248,13 @@ final class VisualStyleService
                 'summary' => $style->summary,
                 'version' => 1,
             ]);
+            // Bản sao không copy file tham chiếu — giữ reference_media_id cùng
+            // MediaAsset nguồn để không nhân đôi file/library.
+            $copy->reference_media_id = $style->reference_media_id;
+            $copy->save();
+            // Copy taxonomy dùng chung sang bản sao để style nhân bản giữ phân loại.
+            $copy->categories()->sync($style->categories()->pluck('categories.id')->all());
+            $copy->tags()->sync($style->tags()->pluck('tags.id')->all());
             foreach ($style->shots()->get() as $shot) {
                 $copy->shots()->create($shot->only([
                     'code', 'name', 'description', 'composition_override_json',
@@ -238,20 +269,20 @@ final class VisualStyleService
 
     /**
      * =====================================================================
-     * CHỨC NĂNG: Xóa style và file tham chiếu local (nếu có).
+     * CHỨC NĂNG: Xóa style; gỡ media usage, giữ asset trong library.
      * =====================================================================
      * Input: style. Output: void.
-     * Side effect: DELETE ai_image_profiles (shots cascade ở DB) + xóa file;
-     * style đang queued/analyzing bị chặn 409.
+     * Side effect: DELETE ai_image_profiles (shots cascade ở DB) + detach
+     * reference MediaAsset khỏi field visual_style.reference — asset vẫn tồn
+     * tại trong Media Library (không xóa file), không còn file raw ai-visual-styles.
      * =====================================================================
      */
     public function destroy(AiImageProfile $style): void
     {
         abort_if(in_array($style->status, ['queued', 'analyzing'], true), 409, 'Chờ phân tích hoàn tất trước khi xóa.');
-        $path = $style->reference_path;
+        $actor = $style->createdBy ?? User::query()->find($style->created_by);
+        abort_unless($actor, 500, 'Không xác định được owner để gỡ media usage.');
+        app(MediaAssetUsageService::class)->detachAll($actor, $style);
         $style->delete();
-        if (is_string($path) && $path !== '') {
-            Storage::disk('local')->delete($path);
-        }
     }
 }

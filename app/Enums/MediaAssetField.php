@@ -40,6 +40,7 @@ enum MediaAssetField: string
     case SocialPostImage = 'social_post.image';
     case SocialPostFacebookImages = 'social_post_variant.facebook.images';
     case ProductReferenceImages = 'product.reference_images';
+    case VisualStyleReference = 'visual_style.reference';
 
     /**
      * =====================================================================
@@ -80,6 +81,7 @@ enum MediaAssetField: string
             'social_post.image' => 'Social Post image',
             'social_post_variant.facebook.images' => 'Social Post Facebook image gallery',
             'product.reference_images' => 'Product reference image gallery',
+            'visual_style.reference' => 'Visual Style reference image',
         ];
     }
 
@@ -108,6 +110,7 @@ enum MediaAssetField: string
             self::SocialPostImage => MediaAssetKind::Image,
             self::SocialPostFacebookImages => MediaAssetKind::Image,
             self::ProductReferenceImages => MediaAssetKind::Image,
+            self::VisualStyleReference => MediaAssetKind::Image,
         };
     }
 
@@ -136,6 +139,7 @@ enum MediaAssetField: string
             self::SocialPostImage => false,
             self::SocialPostFacebookImages => true,
             self::ProductReferenceImages => true,
+            self::VisualStyleReference => false,
         };
     }
 

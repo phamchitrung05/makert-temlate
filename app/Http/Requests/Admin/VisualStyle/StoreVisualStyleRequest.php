@@ -44,6 +44,10 @@ final class StoreVisualStyleRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:160'],
             'category' => ['sometimes', 'nullable', 'string', 'max:80'],
+            'category_ids' => ['sometimes', 'array'],
+            'category_ids.*' => ['integer', 'exists:categories,id'],
+            'tag_ids' => ['sometimes', 'array'],
+            'tag_ids.*' => ['integer', 'exists:tags,id'],
             'dna' => ['sometimes', 'array'],
         ];
     }

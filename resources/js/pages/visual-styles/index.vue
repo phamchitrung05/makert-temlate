@@ -3,13 +3,14 @@
   CHỨC NĂNG FILE: Danh sách Visual Style (grid card + lifecycle + số recipes).
   =====================================================================
   Trang index của Visual Style Engine: tìm kiếm/lọc status, phân trang server,
-  tạo style từ ảnh (điều hướng Prompt tạo ảnh hoặc dialog analyze → queue AI), xem/sửa
+  tạo style (dialog create 2 cột / dialog analyze → queue AI), xem/sửa
   (điều hướng trang Edit), nhân bản, lưu trữ và xóa. Reload khi AI task ready.
   Backend `/api/admin/ai/visual-styles` trả VisualStyleResource + meta.pagination.
 
   CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
   - load(): gọi list() với search/status/page; bắt lỗi vào `error`.
-  - openCreate(): điều hướng sang trang Prompt tạo ảnh để tạo style từ ảnh.
+  - submitCreate(): queue phân tích từ VisualStyleCreateDialog → giữ dialog
+  mở để dialog tự poll kết quả; reload danh sách.
   - openAnalyze()/submitAnalyze(): queue phân tích ảnh → style queued.
   - openEdit()/submitEdit(): mở dialog sửa metadata (name/category/is_enabled) + PUT update.
   - confirmAction()/runAction(): confirm dialog rồi gọi archive/duplicate/remove.
@@ -26,17 +27,15 @@
 <script setup>
 /* eslint-disable camelcase -- Query keys follow the Laravel Visual Style API contract. */
 import { onMounted, onScopeDispose, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { visualStylesService } from '@/services/visualStyles'
 import { AI_TASK_READY_EVENT } from '@/composables/useAiTaskQueue'
 import VisualStyleCard from '@/views/visual-styles/VisualStyleCard.vue'
 import StyleAnalyzeDialog from '@/views/visual-styles/StyleAnalyzeDialog.vue'
+import VisualStyleCreateDialog from '@/views/visual-styles/VisualStyleCreateDialog.vue'
 import VisualStyleEditDialog from '@/views/visual-styles/VisualStyleEditDialog.vue'
 import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 
 definePage({ meta: { action: 'manage', subject: 'ai_settings' } })
-
-const router = useRouter()
 
 // State list + filter
 const items = ref([])
@@ -50,6 +49,9 @@ const error = ref('')
 
 // Snackbar + dialog state
 const snackbar = ref({ show: false, text: '', color: 'success' })
+const createOpen = ref(false)
+const createRef = ref(null)
+const createError = ref('')
 const analyzeOpen = ref(false)
 const confirmOpen = ref(false)
 const confirmText = ref('')
@@ -103,10 +105,26 @@ async function load() {
 }
 
 // =====================================================================
-// Input: không có. Output: điều hướng sang trang Prompt tạo ảnh để tạo từ ảnh.
+// Input: payload {name, model_id, image} từ VisualStyleCreateDialog.
+// Output: style queued; giữ dialog mở để dialog tự poll kết quả.
+// Side effect: POST analyze (multipart); lỗi → createError trong dialog.
 // =====================================================================
-function openCreate() {
-  router.push({ name: 'ai-image-prompt' })
+async function submitCreate(payload) {
+  saving.value = true
+  createError.value = ''
+  try {
+    const style = await visualStylesService.analyze(payload)
+
+    createRef.value?.setStyleId(style?.id ?? null)
+    showSnackbar('Đã xếp hàng phân tích phong cách. Theo dõi trong trung tâm tác vụ AI.')
+    await load()
+  }
+  catch (reason) {
+    createError.value = reason?.data?.message ?? 'Phân tích thất bại.'
+  }
+  finally {
+    saving.value = false
+  }
 }
 
 // =====================================================================
@@ -152,6 +170,8 @@ async function submitEdit(payload) {
     await visualStylesService.update(payload.id, {
       name: payload.name,
       category: payload.category,
+      category_ids: payload.category_ids,
+      tag_ids: payload.tag_ids,
       is_enabled: payload.is_enabled,
     })
     editOpen.value = false
@@ -264,7 +284,7 @@ onScopeDispose(() => {
         <VBtn
           color="primary"
           prepend-icon="tabler-plus"
-          @click="openCreate"
+          @click="createOpen = true"
         >
           Tạo style mới
         </VBtn>
@@ -360,7 +380,7 @@ onScopeDispose(() => {
         </VBtn>
         <VBtn
           color="primary"
-          @click="openCreate"
+          @click="createOpen = true"
         >
           Tạo style mới
         </VBtn>
@@ -398,6 +418,16 @@ onScopeDispose(() => {
         :disabled="loading"
       />
     </div>
+
+    <!-- Dialog tạo style (UI Prompt tạo ảnh cũ) -->
+    <VisualStyleCreateDialog
+      ref="createRef"
+      v-model="createOpen"
+      :saving="saving"
+      :error-message="createError"
+      @submit="submitCreate"
+      @after-leave="createError = ''"
+    />
 
     <!-- Dialog phân tích ảnh -->
     <StyleAnalyzeDialog

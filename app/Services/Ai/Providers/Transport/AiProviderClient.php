@@ -135,6 +135,7 @@ final class AiProviderClient
             throw new AiImportException('Không kết nối được, kết nối bị ngắt hoặc đã hết thời gian chờ provider. Hãy kiểm tra trạng thái request ở provider rồi thử lại thủ công.', 'AI_PROVIDER_TIMEOUT');
         }
         if (! $response->successful()) {
+            \Illuminate\Support\Facades\Log::warning('AI provider '.$response->status().' payload='.substr(json_encode($data), 0, 600).' resp='.substr($response->body(), 0, 500));
             $message = match ($response->status()) {
                 401 => 'API key không hợp lệ.',
                 403 => 'API key chưa có quyền thực hiện thao tác hoặc dùng model này.',
