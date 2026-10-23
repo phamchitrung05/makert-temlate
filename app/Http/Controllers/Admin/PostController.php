@@ -76,7 +76,7 @@ class PostController extends Controller
             ->orderByDesc('id')
             ->paginate($this->resolvePerPage($request), ['*'], 'page', (int) ($filters['page'] ?? 1));
 
-        return BaseResponse::paginated(PostResource::collection($paginator), 'Danh sách bài viết.');
+        return BaseResponse::paginated(PostResource::collection($paginator), config('messages.post.list'));
     }
 
     /**
@@ -102,7 +102,7 @@ class PostController extends Controller
             ])
             ->values();
 
-        return BaseResponse::success($authors, 'Danh sách tác giả bài viết.');
+        return BaseResponse::success($authors, config('messages.post.authors'));
     }
 
     /**
@@ -115,7 +115,7 @@ class PostController extends Controller
     {
         $post = $action->handle($request->validated(), $this->adminUser($request)->getKey());
 
-        return BaseResponse::created(PostResource::make($post), 'Tạo bài viết thành công.');
+        return BaseResponse::created(PostResource::make($post), config('messages.post.created'));
     }
 
     /**
@@ -128,7 +128,7 @@ class PostController extends Controller
     {
         $this->loadForResponse($post);
 
-        return BaseResponse::success(PostResource::make($post), 'Chi tiết bài viết.');
+        return BaseResponse::success(PostResource::make($post), config('messages.post.detail'));
     }
 
     /**
@@ -141,7 +141,7 @@ class PostController extends Controller
     {
         $updated = $action->handle($post, $request->validated(), $this->adminUser($request)->getKey());
 
-        return BaseResponse::success(PostResource::make($updated), 'Cập nhật bài viết thành công.');
+        return BaseResponse::success(PostResource::make($updated), config('messages.post.updated'));
     }
 
     /**
@@ -165,7 +165,7 @@ class PostController extends Controller
         $submitted = $action->handle($post, $this->adminUser($request)->getKey());
         $this->loadForResponse($submitted);
 
-        return BaseResponse::success(PostResource::make($submitted), 'Đã gửi bài viết để review.');
+        return BaseResponse::success(PostResource::make($submitted), config('messages.post.submitted_review'));
     }
 
     /**
@@ -189,7 +189,7 @@ class PostController extends Controller
         $published = $action->handle($post, $this->adminUser($request)->getKey());
         $this->loadForResponse($published);
 
-        return BaseResponse::success(PostResource::make($published), 'Xuất bản bài viết thành công.');
+        return BaseResponse::success(PostResource::make($published), config('messages.post.published'));
     }
 
     /**
@@ -218,7 +218,7 @@ class PostController extends Controller
         );
         $this->loadForResponse($rejected);
 
-        return BaseResponse::success(PostResource::make($rejected), 'Đã từ chối bài viết.');
+        return BaseResponse::success(PostResource::make($rejected), config('messages.post.rejected'));
     }
 
     /**
@@ -242,7 +242,7 @@ class PostController extends Controller
         $archived = $action->handle($post, $this->adminUser($request)->getKey());
         $this->loadForResponse($archived);
 
-        return BaseResponse::success(PostResource::make($archived), 'Đã lưu trữ bài viết.');
+        return BaseResponse::success(PostResource::make($archived), config('messages.post.archived'));
     }
 
     /**

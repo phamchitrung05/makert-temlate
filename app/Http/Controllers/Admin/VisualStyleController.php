@@ -54,7 +54,7 @@ final class VisualStyleController extends Controller
         $page = $service->index($request->only(['search', 'status', 'per_page']), (int) $request->user()->id);
         $page->loadMissing(['categories', 'tags', 'slugs']);
 
-        return BaseResponse::paginated(VisualStyleResource::collection($page), 'Danh sách visual style.');
+        return BaseResponse::paginated(VisualStyleResource::collection($page), config('messages.visual_style.list'));
     }
 
     /**
@@ -125,7 +125,7 @@ final class VisualStyleController extends Controller
     {
         $style = $service->store($request->validated(), (int) $request->user()->id);
 
-        return BaseResponse::created(new VisualStyleResource($style), 'Đã tạo visual style.');
+        return BaseResponse::created(new VisualStyleResource($style), config('messages.visual_style.created'));
     }
 
     /**
@@ -156,7 +156,7 @@ final class VisualStyleController extends Controller
         $this->owner($request, $visualStyle);
         $style = $service->update($visualStyle, $request->validated());
 
-        return BaseResponse::success(new VisualStyleResource($style), 'Đã lưu visual style.');
+        return BaseResponse::success(new VisualStyleResource($style), config('messages.visual_style.updated'));
     }
 
     /**
@@ -172,7 +172,7 @@ final class VisualStyleController extends Controller
         $this->owner($request, $visualStyle);
         $service->destroy($visualStyle);
 
-        return BaseResponse::success(null, 'Đã xóa visual style.');
+        return BaseResponse::success(null, config('messages.visual_style.deleted'));
     }
 
     /**
@@ -192,7 +192,7 @@ final class VisualStyleController extends Controller
             (int) $request->user()->id,
         );
 
-        return BaseResponse::success(new VisualStyleResource($style), 'Đã xếp hàng phân tích phong cách.', 202);
+        return BaseResponse::success(new VisualStyleResource($style), config('messages.visual_style.analyze_queued'), 202);
     }
 
     /**
@@ -209,7 +209,7 @@ final class VisualStyleController extends Controller
         $validated = $request->validated();
         $style = $service->updateDna($visualStyle, $validated['dna'], (int) $validated['expected_version']);
 
-        return BaseResponse::success(new VisualStyleResource($style), 'Đã lưu Style DNA.');
+        return BaseResponse::success(new VisualStyleResource($style), config('messages.visual_style.dna_updated'));
     }
 
     /**
@@ -224,7 +224,7 @@ final class VisualStyleController extends Controller
     {
         $this->owner($request, $visualStyle);
 
-        return BaseResponse::success(new VisualStyleResource($service->activate($visualStyle)), 'Đã activate visual style.');
+        return BaseResponse::success(new VisualStyleResource($service->activate($visualStyle)), config('messages.visual_style.activated'));
     }
 
     /**
@@ -239,7 +239,7 @@ final class VisualStyleController extends Controller
     {
         $this->owner($request, $visualStyle);
 
-        return BaseResponse::success(new VisualStyleResource($service->archive($visualStyle)), 'Đã archive visual style.');
+        return BaseResponse::success(new VisualStyleResource($service->archive($visualStyle)), config('messages.visual_style.archived'));
     }
 
     /**
@@ -255,7 +255,7 @@ final class VisualStyleController extends Controller
         $this->owner($request, $visualStyle);
         $copy = $service->duplicate($visualStyle, (int) $request->user()->id);
 
-        return BaseResponse::created(new VisualStyleResource($copy), 'Đã nhân bản visual style.');
+        return BaseResponse::created(new VisualStyleResource($copy), config('messages.visual_style.duplicated'));
     }
 
     /**

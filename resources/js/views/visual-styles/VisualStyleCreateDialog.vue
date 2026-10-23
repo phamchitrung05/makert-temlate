@@ -32,7 +32,7 @@
 import { computed, ref, watch } from 'vue'
 import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
 import MediaLibraryDialog from '@/views/apps/media/field/MediaLibraryDialog.vue'
-import { visualStylesService } from '@/services/visualStyles'
+import { useVisualStyleStore } from '@/stores/visualStyle'
 import { useAiProviderSettings } from '@/composables/useAiProviderSettings'
 
 const props = defineProps({
@@ -42,6 +42,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue', 'submit', 'close', 'afterLeave'])
+
+const store = useVisualStyleStore()
 
 const { providers, load: loadProviders } = useAiProviderSettings()
 
@@ -178,7 +180,7 @@ const pollResult = () => {
       return
     }
     try {
-      const style = await visualStylesService.show(styleId.value)
+      const style = await store.fetchStyle(styleId.value)
 
       promptStatus.value = style?.status ?? ''
       if (style?.status === 'failed') {

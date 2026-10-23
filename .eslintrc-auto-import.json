@@ -436,6 +436,8 @@
     "flattenCategoryOptions": true,
     "useUserList": true,
     "useResourceTemplate": true,
-    "useSocialPosts": true
+    "useSocialPosts": true,
+    "usePrivateImage": true,
+    "useSnackbar": true
   }
 }

@@ -28,9 +28,13 @@
 /* eslint-disable camelcase -- Filter/payload theo contract Laravel Social Post. */
 import { ref, computed, shallowRef, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { useSocialPosts } from '@/composables/useSocialPosts'
+import { storeToRefs } from 'pinia'
+import { useSocialPostStore } from '@/stores/socialPost'
+import { apiErrorMessage, apiMessage } from '@/config/messages'
+import { useSnackbar } from '@/composables/useSnackbar'
 import SocialPostCreateDialog from '@/views/marketing/social-post/components/SocialPostCreateDialog.vue'
 import SocialPostDetailDialog from '@/views/marketing/social-post/components/SocialPostDetailDialog.vue'
+import AppSnackbar from '@/components/AppSnackbar.vue'
 
 definePage({ meta: { navActiveLink: 'marketing-social-post-list' } })
 
@@ -38,13 +42,15 @@ const selectedPlatform = ref('all')
 const dateFilter = ref('')
 const viewMode = ref('grid')
 
-const {
-  items: apiPosts, stats, products, campaigns, accounts, loading, error,
-  page: currentPage, itemsPerPage, total: apiTotal, filters,
-  load, loadOptions, create, approve, reject,
-} = useSocialPosts()
+const store = useSocialPostStore()
+const { items: apiPosts, stats, products, campaigns, accounts, isLoading: loading, error: storeError, pagination: storePagination } = storeToRefs(store)
 
-itemsPerPage.value = 8
+const currentPage = ref(1)
+const itemsPerPage = ref(8)
+const filters = ref({ platform: '', created_from: '', created_to: '' })
+
+const apiTotal = computed(() => storePagination.value?.total ?? apiPosts.value.length)
+const error = computed(() => storeError.value?.data?.message ?? '')
 
 const createOpen = shallowRef(false)
 const detailOpen = shallowRef(false)
@@ -59,7 +65,7 @@ watch(() => route.query.post, value => {
 
 const actionLoading = shallowRef(false)
 const activePostId = shallowRef(null)
-const snackbar = ref({ visible: false, message: '', color: 'success' })
+const { snackbar, success: notifySuccess, error: notifyError } = useSnackbar()
 const isApiPlatform = computed(() => ['all', 'facebook'].includes(selectedPlatform.value))
 const totalItems = computed(() => isApiPlatform.value ? apiTotal.value : staticPosts.value.length)
 
@@ -308,9 +314,11 @@ function syncFilters() {
   currentPage.value = 1
 }
 
-/** Input: nội dung/màu. Output: snackbar kết quả; không gọi API. */
-function showMessage(message, color = 'success') {
-  snackbar.value = { visible: true, message, color }
+/** Input: không có. Output: list + stats từ store theo filter hiện tại. */
+function load() {
+  if (filters.value.platform && filters.value.platform !== 'facebook') return
+  void store.fetchPosts({ ...filters.value, page: currentPage.value, per_page: itemsPerPage.value })
+  void store.fetchStats()
 }
 
 /** Input: nút tạo bài. Output: tải options thật rồi mở dialog; lỗi giữ nguyên list. */
@@ -318,7 +326,8 @@ async function openCreate() {
   if (actionLoading.value) return
   actionLoading.value = true
   try {
-    if (await loadOptions()) createOpen.value = true
+    await store.fetchOptions()
+    createOpen.value = true
   } finally {
     actionLoading.value = false
   }
@@ -329,12 +338,13 @@ async function handleCreate(payload) {
   if (actionLoading.value) return
   actionLoading.value = true
   try {
-    const result = await create(payload)
+    const result = await store.createPost(payload)
 
     createOpen.value = false
-    showMessage(result.generation ? 'Đã tạo draft và xếp hàng AI.' : 'Đã tạo draft Social Post.')
+    notifySuccess(result?.generation ? 'Đã tạo draft và xếp hàng AI.' : apiMessage(result, 'Đã tạo draft Social Post.'))
+    load()
   } catch {
-    // Composable cung cấp lỗi cho snackbar; giữ form và dữ liệu để người dùng sửa.
+    // Lỗi API được đọc từ storeError vào snackbar.
   } finally {
     actionLoading.value = false
   }
@@ -357,11 +367,12 @@ async function handleReview(action, post) {
   actionLoading.value = true
   activePostId.value = post.id
   try {
-    if (action === 'approve') await approve(post.id)
-    else await reject(post.id)
-    showMessage(action === 'approve' ? 'Đã duyệt bài viết.' : 'Đã từ chối bài viết.')
+    const result = action === 'approve' ? await store.approve(post.id) : await store.reject(post.id)
+
+    notifySuccess(apiMessage(result, action === 'approve' ? 'Đã duyệt bài viết.' : 'Đã từ chối bài viết.'))
+    load()
   } catch {
-    // Thông báo lỗi từ composable được watcher đưa vào snackbar.
+    // Lỗi API được đọc từ storeError vào snackbar.
   } finally {
     actionLoading.value = false
     activePostId.value = null
@@ -370,7 +381,7 @@ async function handleReview(action, post) {
 
 watch([selectedPlatform, dateFilter, itemsPerPage], syncFilters, { flush: 'sync' })
 watch([filters, currentPage, itemsPerPage], load, { immediate: true })
-watch(error, message => { if (message) showMessage(message, 'error') })
+watch(error, message => { if (message) notifyError(apiErrorMessage(message, message)) })
 </script>
 
 <template>
@@ -810,13 +821,10 @@ watch(error, message => { if (message) showMessage(message, 'error') })
       :post-id="selectedPostId"
       @saved="load"
     />
-    <VSnackbar
-      v-model="snackbar.visible"
-      :color="snackbar.color"
+    <AppSnackbar
+      v-model="snackbar"
       :timeout="6000"
-    >
-      {{ snackbar.message }}
-    </VSnackbar>
+    />
     <VOverlay
       :model-value="actionLoading && !activePostId"
       class="align-center justify-center"

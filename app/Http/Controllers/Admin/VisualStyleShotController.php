@@ -61,7 +61,7 @@ final class VisualStyleShotController extends Controller
         $this->owner($request, $visualStyle);
         $shot = $service->create($visualStyle, $request->validated());
 
-        return BaseResponse::success(new VisualStyleShotResource($shot), 'Đã tạo shot recipe.', 201);
+        return BaseResponse::success(new VisualStyleShotResource($shot), config('messages.visual_style.shot_created'), 201);
     }
 
     /**
@@ -77,7 +77,7 @@ final class VisualStyleShotController extends Controller
         $this->owner($request, $visualStyle);
         $shot = $service->update($visualStyle, $shot, $request->validated());
 
-        return BaseResponse::success(new VisualStyleShotResource($shot), 'Đã lưu shot recipe.');
+        return BaseResponse::success(new VisualStyleShotResource($shot), config('messages.visual_style.shot_updated'));
     }
 
     /**
@@ -93,7 +93,7 @@ final class VisualStyleShotController extends Controller
         $this->owner($request, $visualStyle);
         $service->delete($visualStyle, $shot);
 
-        return BaseResponse::success(null, 'Đã xóa shot recipe.');
+        return BaseResponse::success(null, config('messages.visual_style.shot_deleted'));
     }
 
     /**
@@ -110,7 +110,7 @@ final class VisualStyleShotController extends Controller
         $this->owner($request, $visualStyle);
         $shots = $service->reorder($visualStyle, $request->validated()['ordered_ids']);
 
-        return BaseResponse::success(VisualStyleShotResource::collection($shots), 'Đã sắp xếp lại shot recipes.');
+        return BaseResponse::success(VisualStyleShotResource::collection($shots), config('messages.visual_style.shots_reordered'));
     }
 
     /**

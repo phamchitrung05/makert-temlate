@@ -339,6 +339,7 @@ declare global {
   const usePreferredLanguages: typeof import('@vueuse/core')['usePreferredLanguages']
   const usePreferredReducedMotion: typeof import('@vueuse/core')['usePreferredReducedMotion']
   const usePrevious: typeof import('@vueuse/core')['usePrevious']
+  const usePrivateImage: typeof import('./resources/js/composables/usePrivateImage.js')['usePrivateImage']
   const useProjection: typeof import('@vueuse/math')['useProjection']
   const useRafFn: typeof import('@vueuse/core')['useRafFn']
   const useRefHistory: typeof import('@vueuse/core')['useRefHistory']
@@ -363,6 +364,7 @@ declare global {
   const useSkins: typeof import('./resources/js/@core/composable/useSkins.js')['useSkins']
   const useSlots: typeof import('vue')['useSlots']
   const useSlug: typeof import('./resources/js/composables/useSlug.js')['useSlug']
+  const useSnackbar: typeof import('./resources/js/composables/useSnackbar.js')['useSnackbar']
   const useSocialPosts: typeof import('./resources/js/composables/useSocialPosts.js')['useSocialPosts']
   const useSorted: typeof import('@vueuse/core')['useSorted']
   const useSpeechRecognition: typeof import('@vueuse/core')['useSpeechRecognition']
@@ -775,6 +777,7 @@ declare module 'vue' {
     readonly usePreferredLanguages: UnwrapRef<typeof import('@vueuse/core')['usePreferredLanguages']>
     readonly usePreferredReducedMotion: UnwrapRef<typeof import('@vueuse/core')['usePreferredReducedMotion']>
     readonly usePrevious: UnwrapRef<typeof import('@vueuse/core')['usePrevious']>
+    readonly usePrivateImage: UnwrapRef<typeof import('./resources/js/composables/usePrivateImage.js')['usePrivateImage']>
     readonly useProjection: UnwrapRef<typeof import('@vueuse/math')['useProjection']>
     readonly useRafFn: UnwrapRef<typeof import('@vueuse/core')['useRafFn']>
     readonly useRefHistory: UnwrapRef<typeof import('@vueuse/core')['useRefHistory']>
@@ -799,6 +802,7 @@ declare module 'vue' {
     readonly useSkins: UnwrapRef<typeof import('./resources/js/@core/composable/useSkins.js')['useSkins']>
     readonly useSlots: UnwrapRef<typeof import('vue')['useSlots']>
     readonly useSlug: UnwrapRef<typeof import('./resources/js/composables/useSlug.js')['useSlug']>
+    readonly useSnackbar: UnwrapRef<typeof import('./resources/js/composables/useSnackbar.js')['useSnackbar']>
     readonly useSocialPosts: UnwrapRef<typeof import('./resources/js/composables/useSocialPosts.js')['useSocialPosts']>
     readonly useSorted: UnwrapRef<typeof import('@vueuse/core')['useSorted']>
     readonly useSpeechRecognition: UnwrapRef<typeof import('@vueuse/core')['useSpeechRecognition']>

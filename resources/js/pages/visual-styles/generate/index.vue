@@ -33,13 +33,20 @@
 <script setup>
 /* eslint-disable camelcase -- Request keys follow the Laravel Visual Style API contract. */
 import { computed, onMounted, onScopeDispose, ref } from 'vue'
-import { visualStylesService } from '@/services/visualStyles'
+import { storeToRefs } from 'pinia'
+import { useVisualStyleStore } from '@/stores/visualStyle'
+import { apiErrorMessage, apiMessage } from '@/config/messages'
+import { useSnackbar } from '@/composables/useSnackbar'
 import { mediaAssetService } from '@/services/mediaAsset'
+import AppSnackbar from '@/components/AppSnackbar.vue'
 import ProductUpload from '@/views/visual-styles/ProductUpload.vue'
 
 definePage({ meta: { action: 'manage', subject: 'ai_settings' } })
 
-// Form state
+const store = useVisualStyleStore()
+const { items: styles, isLoading: stylesLoading, shots, generation: run, isGenerating: generating, generationError, error: storeError } = storeToRefs(store)
+
+// Form state cục bộ — page giữ input, store giữ data + run
 const productFiles = ref([])
 const productDescription = ref('')
 const productCategory = ref('')
@@ -49,23 +56,15 @@ const aspectRatio = ref('1:1')
 const imageCount = ref(1)
 const instructions = ref('')
 
-// Data + generation state
-const styles = ref([])
-const stylesLoading = ref(false)
-const stylesError = ref('')
-const shots = ref([])
-const shotsLoading = ref(false)
-const generating = ref(false)
 const uploading = ref(false)
-const run = ref(null)
+const stylesError = ref('')
+const shotsLoading = ref(false)
 const runError = ref('')
 const retryingShot = ref(null)
-const snackbar = ref({ show: false, text: '', color: 'success' })
+const { snackbar, success: notifySuccess, error: notifyError, warning: notifyWarning } = useSnackbar()
 
 const ASPECT_RATIOS = ['1:1', '4:5', '3:4', '16:9', '9:16', '4:3', '3:2']
 const TERMINAL = ['ready', 'failed', 'cancelled', 'expired']
-
-let pollTimer = null
 
 // Chỉ style active + enabled mới generate được (backend reject style khác)
 const styleOptions = computed(() => styles.value
@@ -125,47 +124,38 @@ const flatOutputs = computed(() => {
   return list
 })
 
-function showSnackbar(text, color = 'success') {
-  snackbar.value = { show: true, text, color }
-}
-
 // =====================================================================
-// Input: không có. Output: styles cho select.
-// Side effect: GET list; lỗi vào stylesError.
+// Input: không có. Output: store nạp styles cho select.
 // =====================================================================
 async function loadStyles() {
-  stylesLoading.value = true
   stylesError.value = ''
-  try {
-    const result = await visualStylesService.list({ per_page: 50 })
 
-    styles.value = result.items ?? []
-  }
-  catch (reason) {
-    stylesError.value = reason?.data?.message ?? 'Không tải được danh sách style.'
-  }
-  finally {
-    stylesLoading.value = false
-  }
+  const result = await store.fetchStyles({ per_page: 50 })
+
+  if (result === null)
+    stylesError.value = apiErrorMessage(generationError.value ?? storeError.value)
 }
 
 // =====================================================================
 // Input: style id. Output: shots active làm recipe checkbox + auto chọn ≤4.
-// Side effect: GET show (shots eager); lỗi → snackbar.
 // =====================================================================
 async function onStyleChange(id) {
-  shots.value = []
   selectedRecipeIds.value = []
-  if (!id) return
+  if (!id) {
+    store.setShots([])
+
+    return
+  }
   shotsLoading.value = true
   try {
-    const detail = await visualStylesService.show(id)
+    const detail = await store.fetchStyle(id)
+    const detailShots = Array.isArray(detail?.shots) ? detail.shots.filter(shot => shot.is_active !== false) : []
 
-    shots.value = Array.isArray(detail.shots) ? detail.shots.filter(shot => shot.is_active !== false) : []
-    selectedRecipeIds.value = shots.value.slice(0, 4).map(shot => shot.id)
+    store.setShots(detailShots)
+    selectedRecipeIds.value = detailShots.slice(0, 4).map(shot => shot.id)
   }
   catch (reason) {
-    showSnackbar(reason?.data?.message ?? 'Không tải được recipes.', 'error')
+    notifyError(apiErrorMessage(reason))
   }
   finally {
     shotsLoading.value = false
@@ -179,7 +169,7 @@ function toggleRecipe(id) {
   const index = selectedRecipeIds.value.indexOf(id)
   if (index === -1) {
     if (selectedRecipeIds.value.length >= 4) {
-      showSnackbar('Chọn tối đa 4 recipes.', 'warning')
+      notifyWarning('Chọn tối đa 4 recipes.')
 
       return
     }
@@ -192,7 +182,6 @@ function toggleRecipe(id) {
 
 // =====================================================================
 // Input: File[] product. Output: media_ids sau upload lên Media Library.
-// Side effect: POST media-assets từng file; lỗi ném lên caller.
 // =====================================================================
 async function uploadProducts() {
   const ids = []
@@ -210,12 +199,10 @@ async function uploadProducts() {
 }
 
 // =====================================================================
-// Input: form. Output: queued generation; poll import.
-// Side effect: upload products + POST generate + đặt polling.
+// Input: form. Output: queued generation trong store; store tự poll.
 // =====================================================================
 async function generate() {
   if (!canGenerate.value) return
-  generating.value = true
   runError.value = ''
   try {
     uploading.value = true
@@ -224,7 +211,7 @@ async function generate() {
 
     uploading.value = false
 
-    const payload = {
+    const result = await store.generate({
       style_id: styleId.value,
       shot_recipe_ids: selectedRecipeIds.value,
       product: {
@@ -235,49 +222,17 @@ async function generate() {
       aspect_ratio: aspectRatio.value,
       image_count: imageCount.value,
       instructions: instructions.value?.trim() ? [instructions.value.trim()] : [],
-    }
+    })
 
-    const result = await visualStylesService.generate(payload)
-
-    run.value = result?.id ? { id: result.id, status: result.status ?? 'queued', outputs: result.outputs } : null
-    showSnackbar('Đã xếp hàng tạo ảnh. Theo dõi tiến trình bên dưới.')
-    if (run.value?.id && !TERMINAL.includes(run.value.status))
-      schedulePoll()
+    notifySuccess(apiMessage(result, 'Đã xếp hàng tạo ảnh. Theo dõi tiến trình bên dưới.'))
   }
   catch (reason) {
-    runError.value = reason?.data?.message ?? 'Gửi yêu cầu tạo ảnh thất bại.'
-    showSnackbar(runError.value, 'error')
+    runError.value = apiErrorMessage(reason)
+    notifyError(runError.value)
   }
   finally {
-    generating.value = false
     uploading.value = false
   }
-}
-
-// =====================================================================
-// Input: run.id. Output: cập nhật status + outputs; dừng poll khi terminal.
-// Side effect: GET generations/{id}; lỗi dừng poll và ghi runError.
-// =====================================================================
-async function pollRun() {
-  if (!run.value?.id) return
-  try {
-    const data = await visualStylesService.getGeneration(run.value.id)
-
-    run.value = { ...run.value, ...data }
-    if (TERMINAL.includes(data?.status))
-      clearTimeout(pollTimer)
-    else
-      schedulePoll()
-  }
-  catch (reason) {
-    clearTimeout(pollTimer)
-    runError.value = reason?.data?.message ?? 'Không đọc được trạng thái tạo ảnh.'
-  }
-}
-
-function schedulePoll() {
-  clearTimeout(pollTimer)
-  pollTimer = setTimeout(pollRun, 4000)
 }
 
 // =====================================================================
@@ -289,7 +244,7 @@ async function retryShot(item) {
   try {
     const mediaIds = run.value?.product_media_ids ?? []
 
-    const result = await visualStylesService.generate({
+    const result = await store.generate({
       style_id: styleId.value,
       shot_recipe_ids: [item.shot_id],
       product: {
@@ -302,14 +257,10 @@ async function retryShot(item) {
       instructions: [],
     })
 
-    showSnackbar('Đã xếp hàng tạo lại ảnh cho recipe này.')
-    if (result?.id) {
-      run.value = { id: result.id, status: result.status ?? 'queued', outputs: result.outputs }
-      schedulePoll()
-    }
+    notifySuccess(apiMessage(result, 'Đã xếp hàng tạo lại ảnh cho recipe này.'))
   }
   catch (reason) {
-    showSnackbar(reason?.data?.message ?? 'Retry thất bại.', 'error')
+    notifyError(apiErrorMessage(reason, 'Retry thất bại.'))
   }
   finally {
     retryingShot.value = null
@@ -317,7 +268,7 @@ async function retryShot(item) {
 }
 
 onMounted(loadStyles)
-onScopeDispose(() => clearTimeout(pollTimer))
+onScopeDispose(() => store.resetGeneration())
 </script>
 
 <template>
@@ -749,14 +700,7 @@ onScopeDispose(() => clearTimeout(pollTimer))
       </VCol>
     </VRow>
 
-    <VSnackbar
-      v-model="snackbar.show"
-      :color="snackbar.color"
-      location="bottom end"
-      :timeout="3200"
-    >
-      {{ snackbar.text }}
-    </VSnackbar>
+    <AppSnackbar v-model="snackbar" />
   </div>
 </template>
 

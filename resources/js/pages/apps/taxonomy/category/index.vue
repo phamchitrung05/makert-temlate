@@ -23,16 +23,21 @@
 -->
 <script setup>
 import { computed, onMounted, reactive, ref, shallowRef } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useSlug } from '@/composables/useSlug'
-import { categoryService } from '@/services/category'
+import { useCategoryStore } from '@/stores/category'
+import { apiErrorMessage, apiMessage } from '@/config/messages'
+import { useSnackbar } from '@/composables/useSnackbar'
 import { flattenCategoryOptions } from '@/utils/categoryTree'
 import MediaAssetField from '@/views/apps/media/field/MediaAssetField.vue'
+import AppSnackbar from '@/components/AppSnackbar.vue'
+
+const store = useCategoryStore()
+const { list: categoryItems, error: storeError, detailError: storeDetailError } = storeToRefs(store)
 
 const searchQuery = shallowRef('')
 const sortOrder = shallowRef('Sắp xếp: Thứ tự tăng dần')
-const categoryNotice = shallowRef('')
-const categoryNoticeColor = shallowRef('info')
-const isNoticeVisible = shallowRef(false)
+const { snackbar, notify } = useSnackbar()
 const categoryError = shallowRef('')
 const isLoading = shallowRef(false)
 const isSaving = shallowRef(false)
@@ -174,31 +179,6 @@ const {
 })
 
 /**
- * Chuẩn hóa lỗi API thành thông báo có thể hiển thị trong page.
- *
- * Input: lỗi ofetch/Laravel.
- * Output: message ưu tiên lỗi validation, sau đó tới message chung.
- */
-const apiErrorMessage = error => {
-  const payload = error?.data ?? error?.response?._data ?? error?.response?.data ?? {}
-  const validationMessage = Object.values(payload.errors ?? {}).flat()[0]
-
-  return validationMessage || payload.message || error?.message || 'Không thể hoàn tất thao tác Category.'
-}
-
-/**
- * Hiển thị thông báo thao tác ở góc phải màn hình.
- *
- * Input: message và màu Vuetify.
- * Output: cập nhật snackbar; không gọi API.
- */
-const notify = (message, color = 'info') => {
-  categoryNotice.value = message
-  categoryNoticeColor.value = color
-  isNoticeVisible.value = true
-}
-
-/**
  * Tải danh sách Category rồi dựng cây theo parent_id từ API.
  *
  * Input: query phân trang mặc định 100 bản ghi.
@@ -209,17 +189,14 @@ const loadCategories = async () => {
   isLoading.value = true
   categoryError.value = ''
 
-  try {
-    const response = await categoryService.list({ perPage: 100 })
+  const response = await store.fetchAllCategories()
 
-    categoriesTree.value = buildTree(response.items)
-  }
-  catch (error) {
-    categoryError.value = apiErrorMessage(error)
-  }
-  finally {
-    isLoading.value = false
-  }
+  if (response === null)
+    categoryError.value = apiErrorMessage(storeError.value, 'Không thể tải danh mục.')
+  else
+    categoriesTree.value = buildTree(categoryItems.value)
+
+  isLoading.value = false
 }
 
 /**
@@ -247,27 +224,27 @@ const editCategory = async node => {
 
   loadingCategoryId.value = node.id
 
-  try {
-    const category = await categoryService.show(node.id)
+  const category = await store.fetchCategory(node.id)
 
-    editingCategoryId.value = category.id
-    Object.assign(form, {
-      name: category.name,
-      parent: category.parentId,
-      description: category.description,
-      thumbnail: category.thumbnail,
-      thumbnailDirty: false,
-      showOnMenu: category.showOnMenu,
-      isActive: category.status === 'active',
-    })
-    resetSlug(category)
-  }
-  catch (error) {
-    notify(apiErrorMessage(error), 'error')
-  }
-  finally {
+  if (category === null) {
+    notify(apiErrorMessage(storeDetailError.value, 'Không thể tải Category.'), 'error')
     loadingCategoryId.value = null
+
+    return
   }
+
+  editingCategoryId.value = category.id
+  Object.assign(form, {
+    name: category.name,
+    parent: category.parentId,
+    description: category.description,
+    thumbnail: category.thumbnail,
+    thumbnailDirty: false,
+    showOnMenu: category.showOnMenu,
+    isActive: category.status === 'active',
+  })
+  resetSlug(category)
+  loadingCategoryId.value = null
 }
 
 /**
@@ -297,13 +274,12 @@ const saveCategory = async () => {
       isActive: form.isActive,
     }
 
-    if (isEditing.value)
-      await categoryService.update(editingCategoryId.value, payload)
-    else
-      await categoryService.create(payload)
+    const result = isEditing.value
+      ? await store.updateCategory(editingCategoryId.value, payload)
+      : await store.createCategory(payload)
 
     await loadCategories()
-    notify(isEditing.value ? 'Đã cập nhật Category.' : 'Đã tạo Category.', 'success')
+    notify(apiMessage(result, isEditing.value ? 'Đã cập nhật Category.' : 'Đã tạo Category.'), 'success')
     resetForm()
   }
   catch (error) {
@@ -331,7 +307,7 @@ const deleteCategory = async node => {
   deletingCategoryId.value = node.id
 
   try {
-    await categoryService.remove(node.id)
+    await store.removeCategory(node.id)
     if (editingCategoryId.value === node.id)
       resetForm()
     await loadCategories()
@@ -794,13 +770,10 @@ onMounted(loadCategories)
       </VCol>
     </VRow>
 
-    <VSnackbar
-      v-model="isNoticeVisible"
-      :color="categoryNoticeColor"
+    <AppSnackbar
+      v-model="snackbar"
       location="top end"
-    >
-      {{ categoryNotice }}
-    </VSnackbar>
+    />
   </div>
 </template>
 

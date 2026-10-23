@@ -27,28 +27,32 @@
 <script setup>
 /* eslint-disable camelcase -- Query keys follow the Laravel Visual Style API contract. */
 import { onMounted, onScopeDispose, ref, watch } from 'vue'
-import { visualStylesService } from '@/services/visualStyles'
+import { storeToRefs } from 'pinia'
+import { useVisualStyleStore } from '@/stores/visualStyle'
+import { apiErrorMessage, apiMessage } from '@/config/messages'
+import { useSnackbar } from '@/composables/useSnackbar'
 import { AI_TASK_READY_EVENT } from '@/composables/useAiTaskQueue'
 import VisualStyleCard from '@/views/visual-styles/VisualStyleCard.vue'
 import StyleAnalyzeDialog from '@/views/visual-styles/StyleAnalyzeDialog.vue'
 import VisualStyleCreateDialog from '@/views/visual-styles/VisualStyleCreateDialog.vue'
 import VisualStyleEditDialog from '@/views/visual-styles/VisualStyleEditDialog.vue'
 import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
+import AppSnackbar from '@/components/AppSnackbar.vue'
 
 definePage({ meta: { action: 'manage', subject: 'ai_settings' } })
 
-// State list + filter
-const items = ref([])
-const pagination = ref(null)
+const store = useVisualStyleStore()
+const { items, pagination, isLoading: loading, error: storeError, isMutating: saving } = storeToRefs(store)
+
+// State filter cục bộ — store giữ query, page giữ UI filter
 const page = ref(1)
 const perPage = ref(12)
 const search = ref('')
 const status = ref('')
-const loading = ref(false)
 const error = ref('')
 
 // Snackbar + dialog state
-const snackbar = ref({ show: false, text: '', color: 'success' })
+const { snackbar, success: notifySuccess, error: notifyError } = useSnackbar()
 const createOpen = ref(false)
 const createRef = ref(null)
 const createError = ref('')
@@ -56,12 +60,10 @@ const analyzeOpen = ref(false)
 const confirmOpen = ref(false)
 const confirmText = ref('')
 const pendingAction = ref(null)
-const saving = ref(false)
 
-// Dialog chỉnh sửa style
+// Dialog chỉnh sửa style — dialog tự load + lưu qua store, page chỉ mở + reload
 const editOpen = ref(false)
-const editStyle = ref(null)
-const editError = ref('')
+const editStyleId = ref(null)
 
 const STATUS_OPTIONS = [
   { title: 'Tất cả', value: '' },
@@ -74,129 +76,68 @@ const STATUS_OPTIONS = [
   { title: 'Lỗi', value: 'failed' },
 ]
 
-function showSnackbar(text, color = 'success') {
-  snackbar.value = { show: true, text, color }
-}
-
 // =====================================================================
-// Input: filter hiện tại. Output: items + pagination từ API.
-// Side effect: GET list; error ghi vào `error`.
+// Input: filter hiện tại. Output: store cập nhật items + pagination.
+// Side effect: GET list qua store; lỗi đọc từ storeError.
 // =====================================================================
 async function load() {
-  loading.value = true
   error.value = ''
-  try {
-    const result = await visualStylesService.list({
-      search: search.value || undefined,
-      status: status.value || undefined,
-      page: page.value,
-      per_page: perPage.value,
-    })
 
-    items.value = result.items ?? []
-    pagination.value = result.pagination ?? null
-  }
-  catch (reason) {
-    error.value = reason?.data?.message ?? 'Không tải được danh sách style.'
-  }
-  finally {
-    loading.value = false
-  }
+  const result = await store.fetchStyles({
+    search: search.value || undefined,
+    status: status.value || undefined,
+    page: page.value,
+    per_page: perPage.value,
+  })
+
+  if (result === null)
+    error.value = apiErrorMessage(storeError.value)
 }
 
 // =====================================================================
 // Input: payload {name, model_id, image} từ VisualStyleCreateDialog.
 // Output: style queued; giữ dialog mở để dialog tự poll kết quả.
-// Side effect: POST analyze (multipart); lỗi → createError trong dialog.
 // =====================================================================
 async function submitCreate(payload) {
-  saving.value = true
   createError.value = ''
   try {
-    const style = await visualStylesService.analyze(payload)
+    const result = await store.analyzeStyle(payload)
 
-    createRef.value?.setStyleId(style?.id ?? null)
-    showSnackbar('Đã xếp hàng phân tích phong cách. Theo dõi trong trung tâm tác vụ AI.')
+    createRef.value?.setStyleId(result?.data?.id ?? null)
+    notifySuccess(apiMessage(result, 'Đã xếp hàng phân tích phong cách.'))
     await load()
   }
   catch (reason) {
-    createError.value = reason?.data?.message ?? 'Phân tích thất bại.'
-  }
-  finally {
-    saving.value = false
+    createError.value = apiErrorMessage(reason, 'Phân tích thất bại.')
   }
 }
 
 // =====================================================================
-// Input: payload multipart từ StyleAnalyzeDialog. Output: style queued; reload.
-// Side effect: POST analyze (multipart); lỗi đưa vào analyzeError trong dialog.
+// Input: payload multipart từ StyleAnalyzeDialog. Output: style queued.
 // =====================================================================
 const analyzeError = ref('')
 
 async function submitAnalyze(payload) {
-  saving.value = true
   analyzeError.value = ''
+
   try {
-    await visualStylesService.analyze(payload)
+    const style = await store.analyzeStyle(payload)
+
     analyzeOpen.value = false
-    showSnackbar('Đã xếp hàng phân tích phong cách. Theo dõi trong trung tâm tác vụ AI.')
+    notifySuccess(apiMessage(style, 'Đã xếp hàng phân tích phong cách.'))
     await load()
   }
   catch (reason) {
-    analyzeError.value = reason?.data?.message ?? 'Phân tích thất bại.'
-  }
-  finally {
-    saving.value = false
+    analyzeError.value = apiErrorMessage(reason, 'Phân tích thất bại.')
   }
 }
 
 // =====================================================================
-// Input: style. Output: mở dialog chỉnh sửa metadata.
+// Input: style. Output: mở dialog chỉnh sửa — dialog tự fetch detail qua store.
 // =====================================================================
 function openEdit(style) {
-  editStyle.value = style
-  editError.value = ''
+  editStyleId.value = style.id
   editOpen.value = true
-}
-
-// =====================================================================
-// Input: payload {id, name?, category?, category_ids?, tag_ids?, is_enabled,
-// shots?[{id,is_active}]}. Output: style + shots đã lưu + reload.
-// Side effect: PUT update style + PUT từng shot đổi is_active; lỗi → editError.
-// =====================================================================
-async function submitEdit(payload) {
-  saving.value = true
-  editError.value = ''
-  try {
-    const body = { is_enabled: payload.is_enabled }
-
-    if (payload.name !== undefined) body.name = payload.name
-    if (payload.category !== undefined) body.category = payload.category
-    if (payload.category_ids !== undefined) body.category_ids = payload.category_ids
-    if (payload.tag_ids !== undefined) body.tag_ids = payload.tag_ids
-    await visualStylesService.update(payload.id, body)
-
-    // Lưu trạng thái is_active của từng shot recipe nếu có thay đổi
-    if (Array.isArray(payload.shots) && payload.shots.length) {
-      await Promise.all(payload.shots.map(shot =>
-        visualStylesService.updateShot(payload.id, shot.id, { is_active: shot.is_active }),
-      ))
-    }
-    editOpen.value = false
-    showSnackbar('Đã lưu style.')
-    await load()
-  }
-  catch (reason) {
-    // Ưu tiên message validation cụ thể từ Laravel (errors.field) thay vì generic.
-    const errors = reason?.data?.errors ?? {}
-    const firstField = Object.keys(errors)[0]
-    const fieldMessage = firstField ? (Array.isArray(errors[firstField]) ? errors[firstField][0] : errors[firstField]) : null
-
-    editError.value = fieldMessage ?? reason?.data?.message ?? 'Lưu style thất bại.'
-  }
-  finally {
-    saving.value = false
-  }
 }
 
 // =====================================================================
@@ -213,24 +154,21 @@ function confirmAction(kind, style) {
 }
 
 // =====================================================================
-// Input: action pending. Output: gọi API tương ứng; reload + snackbar.
-// Side effect: DELETE; lỗi → snackbar error.
+// Input: action pending. Output: gọi store; reload + snackbar.
 // =====================================================================
 async function runAction() {
   const action = pendingAction.value
   if (!action) return
-  saving.value = true
   try {
     if (action.kind === 'remove')
-      await visualStylesService.remove(action.style.id)
-    showSnackbar('Thao tác thành công.')
+      await store.removeStyle(action.style.id)
+    notifySuccess('Thao tác thành công.')
     await load()
   }
   catch (reason) {
-    showSnackbar(reason?.data?.message ?? 'Thao tác thất bại.', 'error')
+    notifyError(apiErrorMessage(reason))
   }
   finally {
-    saving.value = false
     pendingAction.value = null
   }
 }
@@ -415,7 +353,7 @@ onScopeDispose(() => {
 
     <!-- Pagination -->
     <div
-      v-if="pagination && pagination.last_page > 1"
+      v-if="pagination && (pagination.last_page ?? 1) > 1"
       class="d-flex justify-center mt-6"
     >
       <VPagination
@@ -447,11 +385,9 @@ onScopeDispose(() => {
     <!-- Dialog chỉnh sửa style -->
     <VisualStyleEditDialog
       v-model="editOpen"
-      :style="editStyle"
-      :saving="saving"
-      :error-message="editError"
-      @save="submitEdit"
-      @after-leave="editStyle = null"
+      :style-id="editStyleId"
+      @saved="() => {}"
+      @after-leave="editStyleId = null"
     />
 
     <!-- Confirm action -->
@@ -495,14 +431,7 @@ onScopeDispose(() => {
     </VDialog>
 
     <!-- Snackbar -->
-    <VSnackbar
-      v-model="snackbar.show"
-      :color="snackbar.color"
-      location="bottom end"
-      :timeout="3200"
-    >
-      {{ snackbar.text }}
-    </VSnackbar>
+    <AppSnackbar v-model="snackbar" />
   </div>
 </template>
 

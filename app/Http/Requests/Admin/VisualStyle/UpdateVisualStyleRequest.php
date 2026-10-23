@@ -34,8 +34,8 @@ final class UpdateVisualStyleRequest extends FormRequest
      * =====================================================================
      * CHỨC NĂNG: Validate payload cập nhật metadata style.
      * =====================================================================
-     * Input: HTTP payload. Output: rules cho name/category/is_enabled;
-     * service chặn bật is_enabled khi style chưa active.
+     * Input: HTTP payload. Output: rules cho name/category/is_enabled/shots;
+     * service chặn bật is_enabled khi style chưa active và sync is_active từng shot.
      * Side effect: không ghi database.
      * =====================================================================
      */
@@ -49,6 +49,9 @@ final class UpdateVisualStyleRequest extends FormRequest
             'tag_ids' => ['sometimes', 'array'],
             'tag_ids.*' => ['integer', 'exists:tags,id'],
             'is_enabled' => ['sometimes', 'required', 'boolean'],
+            'shots' => ['sometimes', 'array'],
+            'shots.*.id' => ['required', 'integer', 'exists:visual_style_shots,id'],
+            'shots.*.is_active' => ['required', 'boolean'],
         ];
     }
 }

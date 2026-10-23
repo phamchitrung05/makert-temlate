@@ -151,7 +151,19 @@ final class VisualStyleService
         $style->save();
         $this->syncTaxonomy($style, $values);
 
-        return $style->refresh();
+        // Shots gửi kèm trong payload: chỉ cập nhật is_active cho shot thuộc style.
+        // Code/name/override không đổi qua endpoint metadata; shots[] chỉ chứa
+        // {id, is_active} từ dialog chỉnh sửa.
+        if (array_key_exists('shots', $values)) {
+            $shotIds = collect($values['shots'])->pluck('id')->all();
+            $style->shots()->whereIn('id', $shotIds)->get()
+                ->each(function ($shot) use ($values): void {
+                    $data = collect($values['shots'])->firstWhere('id', $shot->id);
+                    $shot->forceFill(['is_active' => (bool) ($data['is_active'] ?? $shot->is_active)])->save();
+                });
+        }
+
+        return $style->refresh()->load(['shots', 'categories', 'tags', 'slugs']);
     }
 
     /**

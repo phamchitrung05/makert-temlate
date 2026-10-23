@@ -87,7 +87,7 @@ final class SocialPostController extends Controller
         )->toBase()->first();
         $stats = array_map(intval(...), (array) $totals);
 
-        return BaseResponse::paginated(SocialPostResource::collection($paginator), 'Danh sách Social Post.', ['stats' => $stats]);
+        return BaseResponse::paginated(SocialPostResource::collection($paginator), config('messages.social_post.list'), ['stats' => $stats]);
     }
 
     /**
@@ -108,7 +108,7 @@ final class SocialPostController extends Controller
                 'error_code' => $run->error_code,
             ])->values()->all();
 
-        return BaseResponse::success($payload, 'Chi tiết Social Post.');
+        return BaseResponse::success($payload, config('messages.social_post.detail'));
     }
 
     /**
@@ -135,7 +135,7 @@ final class SocialPostController extends Controller
         return BaseResponse::created([
             'post' => SocialPostResource::make($payload),
             'generation' => $queued,
-        ], 'Đã tạo Social Post draft.', ['generation' => $queued]);
+        ], config('messages.social_post.created'), ['generation' => $queued]);
     }
 
     /**
@@ -152,7 +152,7 @@ final class SocialPostController extends Controller
     ): JsonResponse {
         $updated = $lifecycle->update($socialPost, $request->validated(), (int) $this->adminUser($request)->getKey());
 
-        return BaseResponse::success(SocialPostResource::make($lifecycle->loadForResponse($updated)), 'Đã cập nhật Social Post.');
+        return BaseResponse::success(SocialPostResource::make($lifecycle->loadForResponse($updated)), config('messages.social_post.updated'));
     }
 
     /**
@@ -187,7 +187,7 @@ final class SocialPostController extends Controller
     ): JsonResponse {
         $result = $generation->queue($socialPost, (int) $this->adminUser($request)->getKey(), $request->validated());
 
-        return BaseResponse::success($result, 'Đã xếp hàng tạo caption và ảnh.', 202);
+        return BaseResponse::success($result, config('messages.social_post.generate_queued'), 202);
     }
 
     /**
@@ -203,7 +203,7 @@ final class SocialPostController extends Controller
     ): JsonResponse {
         $result = $generation->queue($socialPost, (int) $this->adminUser($request)->getKey(), [...$request->validated(), 'component' => 'caption']);
 
-        return BaseResponse::success($result, 'Đã xếp hàng tạo lại caption.', 202);
+        return BaseResponse::success($result, config('messages.social_post.regenerate_caption_queued'), 202);
     }
 
     /**
@@ -219,7 +219,7 @@ final class SocialPostController extends Controller
     ): JsonResponse {
         $result = $generation->queue($socialPost, (int) $this->adminUser($request)->getKey(), [...$request->validated(), 'component' => 'image']);
 
-        return BaseResponse::success($result, 'Đã xếp hàng tạo lại ảnh.', 202);
+        return BaseResponse::success($result, config('messages.social_post.regenerate_image_queued'), 202);
     }
 
     public function generateFacebookContent(
@@ -229,7 +229,7 @@ final class SocialPostController extends Controller
     ): JsonResponse {
         $result = $generation->queue($socialPost, (int) $this->adminUser($request)->getKey(), [...$request->validated(), 'component' => 'caption']);
 
-        return BaseResponse::success($result, 'Đã xếp hàng tạo content Facebook.', 202);
+        return BaseResponse::success($result, config('messages.social_post.facebook_content_queued'), 202);
     }
 
     public function generateFacebookImages(
@@ -239,13 +239,13 @@ final class SocialPostController extends Controller
     ): JsonResponse {
         $result = $generation->queue($socialPost, (int) $this->adminUser($request)->getKey(), [...$request->validated(), 'component' => 'image']);
 
-        return BaseResponse::success($result, 'Đã xếp hàng tạo gallery Facebook.', 202);
+        return BaseResponse::success($result, config('messages.social_post.facebook_images_queued'), 202);
     }
 
     /** Queue just one image slot through the same Social generation lifecycle. */
     public function regenerateImageSlot(SocialPostGenerationRequest $request, SocialPost $socialPost, int $slot, SocialPostGenerationService $generation): JsonResponse
     {
-        return BaseResponse::success($generation->regenerateSlot($socialPost, $slot, (int) $this->adminUser($request)->getKey(), $request->validated()), 'Đã xếp hàng tạo lại ảnh.', 202);
+        return BaseResponse::success($generation->regenerateSlot($socialPost, $slot, (int) $this->adminUser($request)->getKey(), $request->validated()), config('messages.social_post.regenerate_image_queued'), 202);
     }
 
     /**
@@ -258,7 +258,7 @@ final class SocialPostController extends Controller
     {
         $post = $lifecycle->transition($socialPost, 'submit', $this->adminUser($request));
 
-        return BaseResponse::success(SocialPostResource::make($lifecycle->loadForResponse($post)), 'Đã gửi Social Post để duyệt.');
+        return BaseResponse::success(SocialPostResource::make($lifecycle->loadForResponse($post)), config('messages.social_post.submitted_review'));
     }
 
     /**
@@ -271,7 +271,7 @@ final class SocialPostController extends Controller
     {
         $post = $lifecycle->transition($socialPost, 'approve', $this->adminUser($request));
 
-        return BaseResponse::success(SocialPostResource::make($lifecycle->loadForResponse($post)), 'Đã approve Social Post.');
+        return BaseResponse::success(SocialPostResource::make($lifecycle->loadForResponse($post)), config('messages.social_post.approved'));
     }
 
     /**
@@ -284,7 +284,7 @@ final class SocialPostController extends Controller
     {
         $post = $lifecycle->transition($socialPost, 'reject', $this->adminUser($request), $request->validated('reason'));
 
-        return BaseResponse::success(SocialPostResource::make($lifecycle->loadForResponse($post)), 'Đã reject Social Post.');
+        return BaseResponse::success(SocialPostResource::make($lifecycle->loadForResponse($post)), config('messages.social_post.rejected'));
     }
 
     /**
@@ -297,7 +297,7 @@ final class SocialPostController extends Controller
     {
         $post = $lifecycle->transition($socialPost, 'request_revision', $this->adminUser($request), $request->validated('reason'));
 
-        return BaseResponse::success(SocialPostResource::make($lifecycle->loadForResponse($post)), 'Đã yêu cầu chỉnh sửa Social Post.');
+        return BaseResponse::success(SocialPostResource::make($lifecycle->loadForResponse($post)), config('messages.social_post.revision_requested'));
     }
 
     /**
@@ -348,7 +348,7 @@ final class SocialPostController extends Controller
     {
         $post = $lifecycle->loadForResponse($socialPost);
 
-        return BaseResponse::success(SocialPostResource::make($post)->resolve(request())['variants'] ?? [], 'Các variant Social Post.');
+        return BaseResponse::success(SocialPostResource::make($post)->resolve(request())['variants'] ?? [], config('messages.social_post.variants'));
     }
 
     /** Cập nhật content blocks Facebook và reset review gate. */
@@ -359,7 +359,7 @@ final class SocialPostController extends Controller
     ): JsonResponse {
         $post = $lifecycle->update($socialPost, ['facebook_content' => $request->validated('content')], (int) $this->adminUser($request)->getKey());
 
-        return BaseResponse::success(SocialPostResource::make($lifecycle->loadForResponse($post)), 'Đã cập nhật content Facebook.');
+        return BaseResponse::success(SocialPostResource::make($lifecycle->loadForResponse($post)), config('messages.social_post.facebook_content_updated'));
     }
 
     /** Thay gallery Facebook theo thứ tự asset IDs truyền vào. */
@@ -374,7 +374,7 @@ final class SocialPostController extends Controller
         ]);
         $post = $lifecycle->update($socialPost, ['facebook_image_ids' => $data['asset_ids'] ?? []], (int) $this->adminUser($request)->getKey());
 
-        return BaseResponse::success(SocialPostResource::make($lifecycle->loadForResponse($post)), 'Đã cập nhật gallery Facebook.');
+        return BaseResponse::success(SocialPostResource::make($lifecycle->loadForResponse($post)), config('messages.social_post.facebook_gallery_updated'));
     }
 
     /** Reorder usage gallery Facebook mà không thay asset. */
@@ -390,7 +390,7 @@ final class SocialPostController extends Controller
         abort_unless($variant instanceof SocialPostVariant, 404, 'Facebook variant không tồn tại.');
         $usages->reorder($this->adminUser($request), $variant, MediaAssetField::SocialPostFacebookImages, $data['usage_ids']);
 
-        return BaseResponse::success(SocialPostResource::make($lifecycle->loadForResponse($post->fresh())), 'Đã sắp xếp gallery Facebook.');
+        return BaseResponse::success(SocialPostResource::make($lifecycle->loadForResponse($post->fresh())), config('messages.social_post.facebook_gallery_reordered'));
     }
 
     /**
@@ -404,7 +404,7 @@ final class SocialPostController extends Controller
     {
         $result = $publications->queue($socialPost, $this->adminUser($request));
 
-        return BaseResponse::success($result, 'Đã xếp hàng publish theo từng Page.', 202);
+        return BaseResponse::success($result, config('messages.social_post.publish_queued'), 202);
     }
 
     /**
@@ -416,7 +416,7 @@ final class SocialPostController extends Controller
      */
     public function retryPublication(SocialPublication $publication, SocialPublicationService $publications): JsonResponse
     {
-        return BaseResponse::success($publications->retry($publication), 'Đã xếp hàng retry publication.', 202);
+        return BaseResponse::success($publications->retry($publication), config('messages.social_post.retry_queued'), 202);
     }
 
     /**

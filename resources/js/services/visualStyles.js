@@ -25,7 +25,15 @@
  */
 import { $api } from '@/utils/api'
 
-/** Input: API response. Output: envelope data hoặc response phẳng. */
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Unwrap envelope BaseResponse lấy data payload.
+ * =====================================================================
+ * INPUT: response JSON từ Laravel (`{success, message, data, errors, meta}`).
+ * OUTPUT: `data` nếu envelope có success + data, ngược lại response nguyên.
+ * Mutation action trả `{ data, message }` để caller đọc apiMessage(.message).
+ * =====================================================================
+ */
 const unwrap = response => response?.success && 'data' in response ? response.data : response
 
 const base = '/admin/ai/visual-styles'
@@ -46,14 +54,18 @@ export const visualStylesService = {
     return unwrap(await $api(`${base}/${id}`, { retry: 0 }))
   },
 
-  /** Input: `{ name, category?, dna? }`. Output: style draft vừa tạo. */
+  /** Input: `{ name, category?, dna? }`. Output: `{ data, message }` style vừa tạo. */
   async create(payload) {
-    return unwrap(await $api(base, { method: 'POST', body: payload, retry: 0 }))
+    const response = await $api(base, { method: 'POST', body: payload, retry: 0 })
+
+    return { data: unwrap(response), message: response?.message ?? null }
   },
 
-  /** Input: id + `{ name?, category?, is_enabled?, category_ids?, tag_ids? }`. Output: style đã refresh. */
+  /** Input: id + `{ name?, category?, is_enabled?, category_ids?, tag_ids? }`. Output: `{ data, message }` style đã refresh. */
   async update(id, payload) {
-    return unwrap(await $api(`${base}/${id}`, { method: 'PUT', body: payload, retry: 0 }))
+    const response = await $api(`${base}/${id}`, { method: 'PUT', body: payload, retry: 0 })
+
+    return { data: unwrap(response), message: response?.message ?? null }
   },
 
   /** Input: id. Output: response xóa (style đang queued/analyzing bị 409). */
@@ -66,7 +78,7 @@ export const visualStylesService = {
     return unwrap(await $api(`${base}/dna-meta`, { retry: 0 }))
   },
 
-  /** Input: `{ name, model_id, image?: File, media_asset_id?: number, category? }`. Output: style status=queued (202). */
+  /** Input: `{ name, model_id, image?: File, media_asset_id?: number, category? }`. Output: `{ data, message }` style queued (202). */
   async analyze({ name, model_id, image, media_asset_id, category }) {
     if (media_asset_id) {
       const payload = { name, model_id, media_asset_id }
@@ -74,7 +86,9 @@ export const visualStylesService = {
       if (category)
         payload.category = category
 
-      return unwrap(await $api(`${base}/analyze`, { method: 'POST', body: payload, retry: 0 }))
+      const response = await $api(`${base}/analyze`, { method: 'POST', body: payload, retry: 0 })
+
+      return { data: unwrap(response), message: response?.message ?? null }
     }
     const formData = new FormData()
 
@@ -84,31 +98,41 @@ export const visualStylesService = {
       formData.append('category', category)
     formData.append('image', image)
 
-    return unwrap(await $api(`${base}/analyze`, { method: 'POST', body: formData, retry: 0 }))
+    const response = await $api(`${base}/analyze`, { method: 'POST', body: formData, retry: 0 })
+
+    return { data: unwrap(response), message: response?.message ?? null }
   },
 
-  /** Input: id + `{ dna, expected_version }`. Output: style version++. */
+  /** Input: id + `{ dna, expected_version }`. Output: `{ data, message }` style version++. */
   async updateDna(id, { dna, expected_version }) {
-    return unwrap(await $api(`${base}/${id}/dna`, {
+    const response = await $api(`${base}/${id}/dna`, {
       method: 'PUT',
       body: { dna, expected_version },
       retry: 0,
-    }))
+    })
+
+    return { data: unwrap(response), message: response?.message ?? null }
   },
 
-  /** Input: id. Output: style status=active + is_enabled. */
+  /** Input: id. Output: `{ data, message }` style status=active. */
   async activate(id) {
-    return unwrap(await $api(`${base}/${id}/activate`, { method: 'POST', retry: 0 }))
+    const response = await $api(`${base}/${id}/activate`, { method: 'POST', retry: 0 })
+
+    return { data: unwrap(response), message: response?.message ?? null }
   },
 
-  /** Input: id. Output: style status=archived + is_enabled=false. */
+  /** Input: id. Output: `{ data, message }` style status=archived. */
   async archive(id) {
-    return unwrap(await $api(`${base}/${id}/archive`, { method: 'POST', retry: 0 }))
+    const response = await $api(`${base}/${id}/archive`, { method: 'POST', retry: 0 })
+
+    return { data: unwrap(response), message: response?.message ?? null }
   },
 
-  /** Input: id. Output: style draft nhân bản (201). */
+  /** Input: id. Output: `{ data, message }` style draft nhân bản (201). */
   async duplicate(id) {
-    return unwrap(await $api(`${base}/${id}/duplicate`, { method: 'POST', retry: 0 }))
+    const response = await $api(`${base}/${id}/duplicate`, { method: 'POST', retry: 0 })
+
+    return { data: unwrap(response), message: response?.message ?? null }
   },
 
   /** Input: style id. Output: danh sách shot recipe theo sort_order. */
@@ -116,28 +140,36 @@ export const visualStylesService = {
     return unwrap(await $api(`${base}/${styleId}/shots`, { retry: 0 }))
   },
 
-  /** Input: style id + payload shot. Output: shot vừa tạo (201). */
+  /** Input: style id + payload shot. Output: `{ data, message }` shot vừa tạo (201). */
   async createShot(styleId, payload) {
-    return unwrap(await $api(`${base}/${styleId}/shots`, { method: 'POST', body: payload, retry: 0 }))
+    const response = await $api(`${base}/${styleId}/shots`, { method: 'POST', body: payload, retry: 0 })
+
+    return { data: unwrap(response), message: response?.message ?? null }
   },
 
-  /** Input: style id + shot id + payload partial. Output: shot đã refresh. */
+  /** Input: style id + shot id + payload partial. Output: `{ data, message }` shot đã refresh. */
   async updateShot(styleId, shotId, payload) {
-    return unwrap(await $api(`${base}/${styleId}/shots/${shotId}`, { method: 'PUT', body: payload, retry: 0 }))
+    const response = await $api(`${base}/${styleId}/shots/${shotId}`, { method: 'PUT', body: payload, retry: 0 })
+
+    return { data: unwrap(response), message: response?.message ?? null }
   },
 
-  /** Input: style id + shot id. Output: response xóa. */
+  /** Input: style id + shot id. Output: `{ data, message }` response xóa. */
   async deleteShot(styleId, shotId) {
-    return unwrap(await $api(`${base}/${styleId}/shots/${shotId}`, { method: 'DELETE', retry: 0 }))
+    const response = await $api(`${base}/${styleId}/shots/${shotId}`, { method: 'DELETE', retry: 0 })
+
+    return { data: unwrap(response), message: response?.message ?? null }
   },
 
-  /** Input: style id + `ordered_ids` đủ toàn bộ shot. Output: shots đã sắp lại. */
+  /** Input: style id + `ordered_ids` đủ toàn bộ shot. Output: `{ data, message }` shots đã sắp lại. */
   async reorderShots(styleId, orderedIds) {
-    return unwrap(await $api(`${base}/${styleId}/shots/reorder`, {
+    const response = await $api(`${base}/${styleId}/shots/reorder`, {
       method: 'POST',
       body: { ordered_ids: orderedIds },
       retry: 0,
-    }))
+    })
+
+    return { data: unwrap(response), message: response?.message ?? null }
   },
 
   /** Input: generate payload (style_id, shot_recipe_ids[1-4], product{media_ids,description,category}, aspect_ratio, image_count, instructions[], model_id?). Output: queued generation resource (id = AiImport UUID). */

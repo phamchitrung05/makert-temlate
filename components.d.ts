@@ -30,6 +30,7 @@ declare module 'vue' {
     AppPricing: typeof import('./resources/js/components/AppPricing.vue')['default']
     AppSearchHeader: typeof import('./resources/js/components/AppSearchHeader.vue')['default']
     AppSelect: typeof import('./resources/js/@core/components/app-form-elements/AppSelect.vue')['default']
+    AppSnackbar: typeof import('./resources/js/components/AppSnackbar.vue')['default']
     AppStepper: typeof import('./resources/js/@core/components/AppStepper.vue')['default']
     AppTextarea: typeof import('./resources/js/@core/components/app-form-elements/AppTextarea.vue')['default']
     AppTextField: typeof import('./resources/js/@core/components/app-form-elements/AppTextField.vue')['default']

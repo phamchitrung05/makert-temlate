@@ -47,7 +47,7 @@ final class VisualStyleGenerationController extends Controller
 
         return BaseResponse::success(
             new VisualStyleGenerationResource($import),
-            'Đã xếp hàng sinh ảnh theo visual style.',
+            config('messages.visual_style.generation_queued'),
             202,
         );
     }

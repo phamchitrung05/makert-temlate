@@ -1,5 +1,22 @@
+/**
+ * =====================================================================
+ * CHỨC NĂNG FILE: Wrapper tương thích — ủy quyền data User List cho user store.
+ * =====================================================================
+ *
+ * Giữ nguyên signature cũ để `pages/apps/user/list/index.vue` không đổi.
+ * Phần fetch users + role options giờ nằm trong Pinia store `user` (chia sẻ
+ * state giữa list và view/[id]); composable chỉ còn giữ filter/sort/pagination
+ * cục bộ và debounce search.
+ *
+ * INPUT/OUTPUT CỦA FILE (tổng thể):
+ * - INPUT : filter/sort/pagination từ UI.
+ * - OUTPUT: refs trỏ vào store (users/roleOptions/loading/error) + query refs.
+ * - SIDE EFFECT: điều phối watcher và gọi store.fetchUsers/fetchRoleOptions.
+ * =====================================================================
+ */
 import { computed, onMounted, onScopeDispose, shallowRef, watch } from 'vue'
-import { getCatalog, listUsers } from '@/services/accessManagement'
+import { storeToRefs } from 'pinia'
+import { useUserStore } from '@/stores/user'
 
 const DEFAULT_SORT = 'name'
 const DEFAULT_DIRECTION = 'asc'
@@ -11,21 +28,10 @@ const getApiError = error => {
   return fieldErrors.join(' ') || payload.message || 'Không thể tải danh sách người dùng.'
 }
 
-const formatRoleTitle = role => String(role ?? '')
-  .replace(/[-_]/g, ' ')
-  .replace(/\b\w/g, character => character.toUpperCase())
-
-/**
- * Quản lý query, tải dữ liệu và trạng thái của bảng User server-side.
- *
- * Input: filter, sort và pagination state từ màn hình User List.
- * Output: rows, total, options và actions để page trình bày bằng các component con.
- * Side effect: gọi API access management; request cũ không được phép ghi đè request mới.
- */
 export function useUserList() {
-  const users = shallowRef([])
-  const totalUsers = shallowRef(0)
-  const roleOptions = shallowRef([])
+  const store = useUserStore()
+  const { users, totalUsers, roleOptions, isLoading, error: storeError } = storeToRefs(store)
+
   const searchQuery = shallowRef('')
   const selectedStatus = shallowRef(null)
   const selectedRoleId = shallowRef(null)
@@ -33,8 +39,8 @@ export function useUserList() {
   const page = shallowRef(1)
   const sortBy = shallowRef(DEFAULT_SORT)
   const orderBy = shallowRef(DEFAULT_DIRECTION)
-  const isLoading = shallowRef(false)
-  const errorMessage = shallowRef('')
+
+  const errorMessage = computed(() => (storeError.value ? getApiError(storeError.value) : ''))
 
   const statusOptions = [
     { title: 'Active', value: 'active' },
@@ -43,61 +49,19 @@ export function useUserList() {
     { title: 'Suspended', value: 'suspended' },
   ]
 
-  let latestRequestId = 0
-
   const hasActiveFilters = computed(() => Boolean(searchQuery.value || selectedStatus.value || selectedRoleId.value))
 
-  const fetchUsers = async () => {
-    const requestId = ++latestRequestId
+  const fetchUsers = () => store.fetchUsers({
+    search: searchQuery.value,
+    status: selectedStatus.value,
+    roleId: selectedRoleId.value,
+    page: page.value,
+    perPage: itemsPerPage.value,
+    sort: sortBy.value,
+    direction: orderBy.value,
+  })
 
-    isLoading.value = true
-    errorMessage.value = ''
-
-    try {
-      const response = await listUsers({
-        search: searchQuery.value,
-        status: selectedStatus.value,
-        roleId: selectedRoleId.value,
-        page: page.value,
-        perPage: itemsPerPage.value,
-        sort: sortBy.value,
-        direction: orderBy.value,
-      })
-
-      if (requestId !== latestRequestId)
-        return
-
-      users.value = response?.items ?? []
-      totalUsers.value = Number(response?.itemsLength ?? response?.pagination?.total ?? 0)
-    }
-    catch (error) {
-      if (requestId !== latestRequestId)
-        return
-
-      users.value = []
-      totalUsers.value = 0
-      errorMessage.value = getApiError(error)
-    }
-    finally {
-      if (requestId === latestRequestId)
-        isLoading.value = false
-    }
-  }
-
-  const fetchRoleOptions = async () => {
-    try {
-      const catalog = await getCatalog()
-
-      roleOptions.value = (catalog?.role_options ?? []).map(role => ({
-        title: formatRoleTitle(role.name),
-        value: role.id,
-      }))
-    }
-    catch {
-      // The user table remains useful when the optional role catalog is unavailable.
-      roleOptions.value = []
-    }
-  }
+  const fetchRoleOptions = () => store.fetchRoleOptions()
 
   const updateTableOptions = options => {
     const descriptor = options?.sortBy?.[0]
@@ -142,7 +106,7 @@ export function useUserList() {
   )
 
   onScopeDispose(() => {
-    latestRequestId += 1
+    // Không reset store — user list có thể mở lại; chỉ bỏ watcher cục bộ.
   })
 
   return {

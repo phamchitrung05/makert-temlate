@@ -28,20 +28,26 @@
 <script setup>
 /* eslint-disable camelcase -- Payload/DNA keys follow the Laravel Visual Style API contract. */
 import { computed, reactive, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import AppDialogLayout from '@/components/dialogs/AppDialogLayout.vue'
-import { visualStylesService } from '@/services/visualStyles'
-import { categoryService } from '@/services/category'
+import { useVisualStyleStore } from '@/stores/visualStyle'
+import { useCategoryStore } from '@/stores/category'
+import { apiErrorMessage, apiMessage } from '@/config/messages'
+import { useSnackbar } from '@/composables/useSnackbar'
 import { aiArticleTaxonomyService } from '@/services/aiArticleTaxonomy'
 import { usePrivateImage } from '@/composables/usePrivateImage'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
-  style: { type: Object, default: null },
-  saving: { type: Boolean, default: false },
-  errorMessage: { type: String, default: '' },
+  styleId: { type: [Number, String], default: null },
 })
 
-const emit = defineEmits(['update:modelValue', 'save', 'close', 'afterLeave'])
+const emit = defineEmits(['update:modelValue', 'saved', 'close', 'afterLeave'])
+
+const store = useVisualStyleStore()
+const categoryStore = useCategoryStore()
+const { isDetailLoading, isMutating: saving, detailError } = storeToRefs(store)
+const { snackbar, success: notifySuccess } = useSnackbar()
 
 const DEFAULT_SUMMARY = 'Hình ảnh là cà phê với latte art trên bàn gỗ, hạt cà phê rải xung quanh, ánh sáng buổi sáng ấm áp, không gian quán cà phê, phong cách chụp ảnh sản phẩm chuyên nghiệp, tự nhiên và gần gũi. Toàn bộ ảnh phù hợp để tái tạo phong cách thương mại (bố cục cân đối, chủ thể ở giữa, nền có chiều sâu, ánh sáng mềm, bokeh nhẹ, màu nâu ấm).'
 
@@ -190,12 +196,12 @@ const dnaConfig = reactive({
 const shotRecipes = ref([])
 
 const statusMeta = computed(() => {
-  const status = props.style?.status || 'analyzed'
+  const status = store.current?.status || 'analyzed'
 
   return STATUS_META[status] ?? { label: status, color: 'secondary' }
 })
 
-const isProcessing = computed(() => ['queued', 'analyzing'].includes(props.style?.status))
+const isProcessing = computed(() => ['queued', 'analyzing'].includes(store.current?.status))
 
 const dnaJsonPreview = computed(() => JSON.stringify({
   identity: {
@@ -364,9 +370,10 @@ function syncFromStyle(data, { includeShots = true } = {}) {
     galleryImages.value = []
   selectedThumb.value = galleryImages.value[0] ?? ''
 
-  // Map shots khi được phép VÀ (lần đầu cần shots, hoặc đây là nguồn đầy đủ từ API).
-  // Giữ shots hiện có khi prop không có mảng shots (list chỉ có shots_count).
-  if (includeShots && Array.isArray(data.shots) && data.shots.length) {
+  // Map shots khi được phép VÀ data thật sự có mảng shots. Giữ nguyên bảng
+  // hiện có khi prop/data không mang shots (list chỉ trả shots_count) để
+  // tránh nháy rỗng trong lúc chờ fetchStyle() trả về.
+  if (includeShots && Array.isArray(data.shots)) {
     shotRecipes.value = data.shots.map(shot => ({
       id: shot.id,
       code: shot.code,
@@ -376,56 +383,42 @@ function syncFromStyle(data, { includeShots = true } = {}) {
       active: shot.is_active !== false,
     }))
   }
-  else {
-    shotRecipes.value = []
-  }
 }
 
 /**
  * =====================================================================
- * CHỨC NĂNG: Tải chi tiết Visual Style từ API khi mở dialog.
- * INPUT: id của style.
- * OUTPUT: đồng bộ đầy đủ DNA và danh sách shots.
- * SIDE EFFECT: gọi GET `/admin/ai/visual-styles/{id}`.
+ * CHỨC NĂNG: Tải chi tiết Visual Style + meta DNA + taxonomy khi dialog mở.
+ * =====================================================================
+ * INPUT: styleId prop. OUTPUT: syncFromStyle với data fresh từ store.current,
+ *   loadDnaMeta (cache), fetchCategories.
+ * SIDE EFFECT: store.fetchStyle + store.fetchShots; dialog tự quản request.
  * =====================================================================
  */
-async function loadStyleDetail(id) {
-  if (!id) return
-  try {
-    const detail = await visualStylesService.show(id)
-    if (props.modelValue && props.style?.id === id) {
-      // Chỉ map shots khi prop chưa có (list chỉ trả shots_count). Nếu prop đã
-      // có shots thì giữ — tránh re-map gây nháy hoặc mất dữ liệu cục bộ.
-      syncFromStyle(detail, { includeShots: !Array.isArray(props.style?.shots) || props.style.shots.length === 0 })
-    }
-  }
-  catch {
-    // Giữ dữ liệu tóm tắt từ prop `style` nếu gọi chi tiết lỗi
-  }
+async function loadStyleDetail() {
+  if (!props.styleId) return
+
+  const detail = await store.fetchStyle(props.styleId)
+
+  if (detail !== null && props.modelValue) syncFromStyle(detail)
 }
 
-/**
- * =====================================================================
- * CHỨC NĂNG: Tải danh mục và tag dùng chung cho select khi mở dialog.
- * INPUT: không có. OUTPUT: categoryOptions/tagOptions là [{title,value}].
- * SIDE EFFECT: GET categories + tags active; lỗi giữ nguyên options rỗng.
- * =====================================================================
- */
 async function loadTaxonomy() {
   if (categoryOptions.value.length && tagOptions.value.length) return
   taxonomyLoading.value = true
   if (!dnaMeta.value) {
-    visualStylesService.dnaMeta().then(meta => {
-      dnaMeta.value = meta ?? null
-    }).catch(() => {})
+    void store.loadDnaMeta().then(meta => {
+      if (meta) dnaMeta.value = meta
+    })
   }
   try {
-    const [cats, tags] = await Promise.all([
-      categoryService.list({ perPage: 100 }),
+    const [catsResult, tags] = await Promise.all([
+      categoryStore.fetchCategories({ perPage: 100 }),
       aiArticleTaxonomyService.all('tags'),
     ])
 
-    categoryOptions.value = (cats?.items ?? cats ?? []).map(item => ({ title: item.name, value: item.id }))
+    const catItems = catsResult === null ? [] : (catsResult.items ?? [])
+
+    categoryOptions.value = catItems.map(item => ({ title: item.name, value: item.id }))
     tagOptions.value = (Array.isArray(tags) ? tags : tags?.items ?? []).map(item => ({ title: item.name, value: item.id }))
   }
   catch {
@@ -437,18 +430,12 @@ async function loadTaxonomy() {
 }
 
 watch(
-  () => [props.modelValue, props.style],
-  ([visible, currentStyle]) => {
-    if (!visible) return
+  () => [props.modelValue, props.styleId],
+  ([visible, styleId]) => {
+    if (!visible || !styleId) return
     localError.value = ''
     void loadTaxonomy()
-    if (currentStyle) {
-      syncFromStyle(currentStyle)
-      // Chỉ gọi loadStyleDetail khi prop chưa có mảng shots đầy đủ — prop từ
-      // card list chỉ trả shots_count, cần API show() lấy shots lần đầu.
-      if (currentStyle.id && (!Array.isArray(currentStyle.shots) || currentStyle.shots.length === 0))
-        void loadStyleDetail(currentStyle.id)
-    }
+    void loadStyleDetail()
   },
   { immediate: true },
 )
@@ -468,27 +455,44 @@ watch(
  * OUTPUT: emit `save` với `{ id, name, category, is_enabled }`.
  * =====================================================================
  */
-function submitMeta() {
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Lưu metadata + is_active shots trực tiếp qua store.
+ * =====================================================================
+ * INPUT: styleInfo + shotRecipes draft. OUTPUT: emit 'saved' để page reload,
+ *   localError khi validation/lỗi API; giữ dialog mở để sửa tiếp.
+ * SIDE EFFECT: PUT style + PUT từng shot.is_active qua store.
+ * =====================================================================
+ */
+async function submitMeta() {
   if (!styleInfo.name?.trim()) {
     localError.value = 'Tên style là bắt buộc.'
 
     return
   }
   localError.value = ''
-  if (!props.style?.id) {
+  if (!props.styleId) {
     close()
 
     return
   }
-  emit('save', {
-    id: props.style.id,
-    name: styleInfo.name.trim(),
-    category: null,
-    category_ids: [...styleInfo.categoryIds],
-    tag_ids: [...styleInfo.tagIds],
-    is_enabled: Boolean(styleInfo.enableGeneration),
-    shots: shotRecipes.value.map(shot => ({ id: shot.id, is_active: Boolean(shot.active) })),
-  })
+
+  try {
+    const result = await store.updateStyle(props.styleId, {
+      name: styleInfo.name.trim(),
+      category: null,
+      category_ids: [...styleInfo.categoryIds],
+      tag_ids: [...styleInfo.tagIds],
+      is_enabled: Boolean(styleInfo.enableGeneration),
+      shots: shotRecipes.value.map(shot => ({ id: shot.id, is_active: Boolean(shot.active) })),
+    })
+
+    notifySuccess(apiMessage(result, 'Đã lưu style.'))
+    emit('saved', result)
+  }
+  catch (reason) {
+    localError.value = apiErrorMessage(reason, 'Lưu style thất bại.')
+  }
 }
 
 /**
@@ -499,7 +503,7 @@ function submitMeta() {
  * =====================================================================
  */
 function close() {
-  if (props.saving) return
+  if (saving.value) return
   emit('update:modelValue', false)
   emit('close')
 }
@@ -515,6 +519,7 @@ function onAfterLeave() {
   localError.value = ''
   showJson.value = false
   activeDnaTab.value = 'composition'
+  shotRecipes.value = []
   emit('afterLeave')
 }
 </script>
@@ -524,13 +529,13 @@ function onAfterLeave() {
     :model-value="props.modelValue"
     max-width="1440"
     scrollable
-    :persistent="props.saving"
+    :persistent="saving"
     @update:model-value="!$event && close()"
     @after-leave="onAfterLeave"
   >
     <AppDialogLayout
       close-label="Đóng chi tiết Visual Style"
-      :close-disabled="props.saving"
+      :close-disabled="saving"
       @close="close"
     >
       <!-- ================= 1. HEADER DIALOG (CỐ ĐỊNH) ================= -->
@@ -569,7 +574,7 @@ function onAfterLeave() {
                 color="secondary"
                 size="small"
                 prepend-icon="tabler-copy"
-                :disabled="props.saving"
+                :disabled="saving"
               >
                 Nhân bản
               </VBtn>
@@ -578,7 +583,7 @@ function onAfterLeave() {
                 color="secondary"
                 size="small"
                 prepend-icon="tabler-edit"
-                :disabled="props.saving"
+                :disabled="saving"
                 @click="submitMeta"
               >
                 Chỉnh sửa
@@ -587,7 +592,7 @@ function onAfterLeave() {
                 color="primary"
                 size="small"
                 prepend-icon="tabler-sparkles"
-                :disabled="props.saving"
+                :disabled="saving"
               >
                 Tạo ảnh từ style
               </VBtn>
@@ -597,15 +602,29 @@ function onAfterLeave() {
       </template>
 
       <!-- ================= 2. BODY DIALOG (2 CỘT - CHỈ VÙNG NÀY CUỘN) ================= -->
-      <VCardText class="pa-6">
+      <VCardText class="pa-6 position-relative">
+        <!-- Loading khi đang nạp chi tiết style -->
+        <VOverlay
+          :model-value="isDetailLoading"
+          class="align-center justify-center"
+          contained
+          persistent
+        >
+          <VProgressCircular
+            indeterminate
+            color="primary"
+            size="40"
+          />
+        </VOverlay>
+
         <VAlert
-          v-if="localError || props.errorMessage"
+          v-if="localError || detailError"
           type="error"
           variant="tonal"
           class="mb-6"
           density="compact"
         >
-          {{ localError || props.errorMessage }}
+          {{ localError || detailError }}
         </VAlert>
 
         <VRow>
@@ -739,9 +758,20 @@ function onAfterLeave() {
                     :loading="taxonomyLoading"
                     placeholder="Chọn tag"
                     multiple
-                    chips
-                    closable-chips
-                  />
+                  >
+                    <template #chip="{ item, props: chipProps }">
+                      <VChip
+                        v-bind="chipProps"
+                        size="small"
+                        color="#7367F0"
+                        variant="tonal"
+                        class="font-weight-medium rounded-lg"
+                        closable
+                      >
+                        {{ item.title }}
+                      </VChip>
+                    </template>
+                  </AppSelect>
                 </div>
 
                 <!-- Bảng màu chủ đạo -->
@@ -1314,8 +1344,23 @@ function onAfterLeave() {
               </VCardItem>
 
               <VCardText class="pt-0">
+                <!-- Đang tải chi tiết style (shots) — spinner thay cho nháy bảng rỗng -->
+                <div
+                  v-if="isDetailLoading && !shotRecipes.length"
+                  class="d-flex flex-column align-center justify-center py-10 text-medium-emphasis"
+                >
+                  <VProgressCircular
+                    indeterminate
+                    size="32"
+                    width="3"
+                    class="mb-3"
+                  />
+                  <span class="text-body-2">Đang tải shot recipes…</span>
+                </div>
+
                 <!-- Bảng danh sách Shot Recipes -->
                 <VTable
+                  v-else
                   density="comfortable"
                   class="recipes-table"
                 >
@@ -1435,15 +1480,15 @@ function onAfterLeave() {
           <VBtn
             color="secondary"
             variant="tonal"
-            :disabled="props.saving"
+            :disabled="saving"
             @click="close"
           >
             Đóng
           </VBtn>
           <VBtn
             color="primary"
-            :loading="props.saving"
-            :disabled="props.saving"
+            :loading="saving"
+            :disabled="saving"
             @click="submitMeta"
           >
             Lưu thay đổi
