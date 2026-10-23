@@ -90,8 +90,14 @@ final class VisualStyleGenerationService
         }
 
         $style = AiImageProfile::query()->find((int) ($values['style_id'] ?? 0));
-        if (! $style || $style->status !== 'active' || ! $style->is_enabled) {
-            throw ValidationException::withMessages(['style_id' => 'Visual style chưa active hoặc đã bị tắt.']);
+        // "Sẵn sàng generate" = đã có DNA (analyzed/active/ready) + user đã bật cờ
+        // is_enabled trong dialog edit. `active` chỉ là nhãn lifecycle — không còn
+        // bắt buộc làm điều kiện generate nữa (UI không có bước Activate riêng).
+        $usable = $style
+            && in_array($style->status, ['analyzed', 'ready', 'active'], true)
+            && $style->is_enabled;
+        if (! $usable) {
+            throw ValidationException::withMessages(['style_id' => 'Visual style chưa sẵn sàng (cần đã phân tích + bật dùng).']);
         }
 
         $shots = $this->shots($style, (array) ($values['shot_recipe_ids'] ?? []));
@@ -226,12 +232,26 @@ final class VisualStyleGenerationService
                 $shotFailed = 0;
                 foreach ($prompts as $slot => $prompt) {
                     try {
+                        // generationMeta ghi provenance vào media.custom_properties['ai_generation']:
+                        // source/style/shot/prompt dùng cho trace và regenerate.
                         $asset = $this->images->generate(
                             $connection,
                             $prompt,
                             $actorId,
                             ($shot->name ?: $shot->code).' · '.$style->name,
                             $shot->description,
+                            [
+                                'source' => 'visual_style',
+                                'operation' => 'visual_style_generate',
+                                'import_id' => (string) $import->id,
+                                'visual_style_id' => $style->id,
+                                'style_version' => (int) ($style->version ?? 1),
+                                'shot_recipe_id' => $shot->id,
+                                'shot_recipe_code' => $shot->code,
+                                'prompt_used' => $prompt,
+                                'aspect_ratio' => $aspectRatio !== '' ? $aspectRatio : ($shot->suggested_aspect_ratio ?: '1:1'),
+                                'slot_no' => $slot,
+                            ],
                         );
                         $shotOutputs[] = [
                             'slot_no' => $slot,

@@ -50,11 +50,29 @@ final class AiImageGenerationService
      * EXCEPTION/TRANSACTION: Lỗi provider/storage thành AiImportException; không giữ transaction qua HTTP.
      * =====================================================================
      */
-    public function generate(AiConnection $connection, string $prompt, int $actorId, string $title, ?string $altText = null): MediaAsset
-    {
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Gọi model ảnh rồi đưa kết quả vào Media Library
+     * =====================================================================
+     * INPUT: Connection snapshot, prompt, actor, metadata ảnh và block
+     * $generationMeta (provenance AI — source/provider/model/prompt_used/context
+     * domain do caller điền).
+     * OUTPUT: MediaAsset mới với media.custom_properties['ai_generation'].
+     * SIDE EFFECT: Gọi provider qua contract rồi upload media.
+     * EXCEPTION/TRANSACTION: Lỗi provider/storage thành AiImportException; không giữ transaction qua HTTP.
+     * =====================================================================
+     */
+    public function generate(
+        AiConnection $connection,
+        string $prompt,
+        int $actorId,
+        string $title,
+        ?string $altText = null,
+        array $generationMeta = [],
+    ): MediaAsset {
         $binary = $this->provider->generate($connection, $prompt);
 
-        return $this->upload($binary, $actorId, $title, $altText);
+        return $this->upload($binary, $actorId, $title, $altText, $connection, $generationMeta);
     }
 
     /**
@@ -67,8 +85,14 @@ final class AiImageGenerationService
      * EXCEPTION/TRANSACTION: Từ chối MIME/size sai; uploader tự quản lý transaction, không gọi lại model khi storage lỗi.
      * =====================================================================
      */
-    private function upload(string $binary, int $actorId, string $title, ?string $altText): MediaAsset
-    {
+    private function upload(
+        string $binary,
+        int $actorId,
+        string $title,
+        ?string $altText,
+        ?AiConnection $connection = null,
+        array $generationMeta = [],
+    ): MediaAsset {
         $imageInfo = @getimagesizefromstring($binary);
         if ($imageInfo === false || strlen($binary) > (int) config('ai.import.max_image_bytes', 10 * 1024 * 1024)) {
             throw new AiImportException('Provider trả ảnh không hợp lệ hoặc vượt giới hạn.', 'AI_IMAGE_INVALID');
@@ -88,7 +112,22 @@ final class AiImageGenerationService
             }
             $file = new UploadedFile($path, 'ai-generated.'.$extension, $mime, null, true);
 
-            return $this->uploader->handle($file, MediaAssetKind::Image, $title ?: 'AI generated image', $actorId, MediaAssetVisibility::Public, $altText);
+            // Provenance AI: gom source/provider/model từ snapshot connection +
+            // context domain do caller truyền (prompt_used, style_id, shot_recipe…)
+            // vào block 'ai_generation' trong media.custom_properties.
+            $customProperties = [];
+            if ($generationMeta !== [] || $connection !== null) {
+                $snapshot = (array) ($connection?->snapshot ?? []);
+                $customProperties['ai_generation'] = array_filter([
+                    'provider' => $snapshot['provider'] ?? null,
+                    'provider_id' => $snapshot['provider_id'] ?? null,
+                    'model' => $snapshot['model'] ?? null,
+                    'model_id' => $snapshot['model_id'] ?? null,
+                    'generated_at' => now()->toIso8601String(),
+                ], static fn ($v) => $v !== null) + $generationMeta;
+            }
+
+            return $this->uploader->handle($file, MediaAssetKind::Image, $title ?: 'AI generated image', $actorId, MediaAssetVisibility::Public, $altText, $customProperties);
         } catch (AiImportException $exception) {
             throw $exception;
         } catch (\Throwable) {

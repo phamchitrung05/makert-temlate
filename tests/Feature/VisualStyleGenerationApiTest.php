@@ -34,8 +34,10 @@ use Tests\UsesIsolatedDatabase;
  * - fakeImageService(): bind AiImageProviderContract offline và uploader mock.
  * - test_generate_creates_import_and_dispatches_job: POST /generate tạo AiImport
  *   queued và dispatch GenerateVisualStyleImagesJob.
- * - test_generate_rejects_invalid_style_and_recipe: style chưa active, recipe
- *   không thuộc style, quá shot_count → 422.
+ * - test_generate_rejects_invalid_style_and_recipe: style chưa sẵn sàng (draft /
+ *   analyzed nhưng tắt is_enabled), recipe không thuộc style, quá shot_count → 422.
+ * - test_generate_accepts_analyzed_enabled_style: style đã phân tích + bật dùng
+ *   được chấp nhận (không bắt buộc status='active').
  * - test_process_builds_prompt_and_uploads_per_recipe: service gọi
  *   VisualPromptBuilder đúng recipe và lưu media + prompt_used per-shot.
  * - test_process_marks_failed_shot_and_continues: shot lỗi ghi failed riêng,
@@ -99,7 +101,7 @@ final class VisualStyleGenerationApiTest extends TestCase
         return AiImageProfile::create(array_merge([
             'created_by' => User::factory()->create()->id,
             'name' => 'Test Style', 'category' => 'product',
-            'status' => 'active', 'is_enabled' => true, 'version' => 3,
+            'status' => 'analyzed', 'is_enabled' => true, 'version' => 3,
             'reference_path' => 'ref/'.Str::random(8).'.png',
             'reference_mime' => 'image/png',
             'reference_hash' => hash('sha256', 'ref'),
@@ -166,6 +168,21 @@ final class VisualStyleGenerationApiTest extends TestCase
         $this->assertSame([11, 12], $import->input_json['product']['media_ids']);
     }
 
+    public function test_generate_accepts_analyzed_enabled_style(): void
+    {
+        $token = $this->token();
+        $modelId = $this->imageModel();
+        // Style chỉ ở 'analyzed' (không qua activate) + is_enabled = đủ điều kiện.
+        $style = $this->style(['status' => 'analyzed', 'is_enabled' => true]);
+        $shot = $this->shot($style);
+
+        $this->withToken($token)->postJson('/api/admin/ai/visual-styles/generate', [
+            'style_id' => $style->id, 'shot_recipe_ids' => [$shot->id],
+            'image_count' => 1, 'model_id' => $modelId,
+        ])->assertAccepted()->assertJsonPath('data.status', 'queued');
+        Queue::assertPushed(GenerateVisualStyleImagesJob::class);
+    }
+
     public function test_generate_rejects_invalid_input(): void
     {
         $token = $this->token();
@@ -174,10 +191,16 @@ final class VisualStyleGenerationApiTest extends TestCase
         $shot = $this->shot($style);
         $otherStyle = $this->style(['status' => 'draft', 'is_enabled' => false]);
         $otherShot = $this->shot($otherStyle);
+        $disabledStyle = $this->style(['status' => 'analyzed', 'is_enabled' => false]);
+        $disabledShot = $this->shot($disabledStyle);
 
-        // Style chưa active.
+        // Style còn draft (chưa có DNA) bị reject.
         $this->withToken($token)->postJson('/api/admin/ai/visual-styles/generate', [
-            'style_id' => $otherStyle->id, 'shot_recipe_ids' => [$shot->id], 'model_id' => $modelId,
+            'style_id' => $otherStyle->id, 'shot_recipe_ids' => [$otherShot->id], 'model_id' => $modelId,
+        ])->assertUnprocessable();
+        // Style đã phân tích nhưng chưa bật dùng bị reject.
+        $this->withToken($token)->postJson('/api/admin/ai/visual-styles/generate', [
+            'style_id' => $disabledStyle->id, 'shot_recipe_ids' => [$disabledShot->id], 'model_id' => $modelId,
         ])->assertUnprocessable();
         // Recipe không thuộc style.
         $this->withToken($token)->postJson('/api/admin/ai/visual-styles/generate', [

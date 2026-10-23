@@ -63,6 +63,9 @@ class UploadMediaAssetAction
      * - $kind/$title/$actorId: metadata asset
      * - $visibility: public/private; null dùng default theo kind
      * - $altText: alt text tùy chọn cho image
+     * - $customProperties: block bổ sung merge vào media.custom_properties
+     *   (vd `ai_generation` ghi provenance ảnh AI); merge lên trên, key trùng
+     *   (checksum/scan/conversion/upload_metadata) của caller thắng.
      *
      * OUTPUT:
      * - MediaAsset: owner có một media item trong collection library
@@ -78,6 +81,7 @@ class UploadMediaAssetAction
         int $actorId,
         ?MediaAssetVisibility $visibility = null,
         ?string $altText = null,
+        array $customProperties = [],
     ): MediaAsset {
         $metadata = $this->validator->validate($file, $kind);
         $visibility ??= $this->defaultVisibility($kind);
@@ -113,6 +117,7 @@ class UploadMediaAssetAction
                 $altText,
                 $checksum,
                 $conversionStatus,
+                $customProperties,
                 $kind,
                 $metadata,
                 $scanStatus,
@@ -131,7 +136,7 @@ class UploadMediaAssetAction
                 return $asset->addMedia($localPath)
                     ->usingName($title)
                     ->usingFileName($metadata['original_name'])
-                    ->withCustomProperties([
+                    ->withCustomProperties(array_merge([
                         'checksum_sha256' => $checksum,
                         'scan_status' => $scanStatus,
                         'conversion_status' => $conversionStatus,
@@ -139,7 +144,7 @@ class UploadMediaAssetAction
                             ...$metadata,
                             'uploaded_by' => $actorId,
                         ],
-                    ])
+                    ], $customProperties))
                     ->toMediaCollection('library', $asset->mediaDisk());
             });
 

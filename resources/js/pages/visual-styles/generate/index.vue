@@ -3,7 +3,7 @@
   CHỨC NĂNG FILE: Trang Generate — tạo batch ảnh sản phẩm theo Visual Style.
   =====================================================================
   Luồng: upload ảnh sản phẩm (→ Media Library lấy media_ids) → chọn style
-  active+enabled → chọn 1-4 shot recipes → aspect_ratio + image_count +
+  đã phân tích + bật dùng → chọn 1-4 shot recipes → aspect_ratio + image_count +
   instructions → POST /generate (queue). Sau đó poll GET /generations/{importId}
   để render lưới outputs per-shot (object theo recipe_code, mỗi shot có
   images[{slot_no,status,media_asset_id,prompt_used,error_*}]); prompt_used
@@ -35,6 +35,7 @@
 import { computed, onMounted, onScopeDispose, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useVisualStyleStore } from '@/stores/visualStyle'
+import { useAiCatalogStore } from '@/stores/aiCatalog'
 import { apiErrorMessage, apiMessage } from '@/config/messages'
 import { useSnackbar } from '@/composables/useSnackbar'
 import { mediaAssetService } from '@/services/mediaAsset'
@@ -44,7 +45,9 @@ import ProductUpload from '@/views/visual-styles/ProductUpload.vue'
 definePage({ meta: { action: 'manage', subject: 'ai_settings' } })
 
 const store = useVisualStyleStore()
+const aiCatalog = useAiCatalogStore()
 const { items: styles, isLoading: stylesLoading, shots, generation: run, isGenerating: generating, generationError, error: storeError } = storeToRefs(store)
+const { modelOptions: allModelOptions } = storeToRefs(aiCatalog)
 
 // Form state cục bộ — page giữ input, store giữ data + run
 const productFiles = ref([])
@@ -55,6 +58,7 @@ const selectedRecipeIds = ref([])
 const aspectRatio = ref('1:1')
 const imageCount = ref(1)
 const instructions = ref('')
+const modelId = ref(null)
 
 const uploading = ref(false)
 const stylesError = ref('')
@@ -66,10 +70,19 @@ const { snackbar, success: notifySuccess, error: notifyError, warning: notifyWar
 const ASPECT_RATIOS = ['1:1', '4:5', '3:4', '16:9', '9:16', '4:3', '3:2']
 const TERMINAL = ['ready', 'failed', 'cancelled', 'expired']
 
-// Chỉ style active + enabled mới generate được (backend reject style khác)
+// Style "sẵn sàng generate" = đã có DNA (analyzed/active/ready) + is_enabled
+// (khớp gate ở backend; `active` là nhãn lifecycle, không phải điều kiện).
+const READY_STATUSES = ['analyzed', 'ready', 'active']
+
 const styleOptions = computed(() => styles.value
-  .filter(item => item.status === 'active' && item.is_enabled)
+  .filter(item => READY_STATUSES.includes(item.status) && item.is_enabled)
   .map(item => ({ title: item.name, value: item.id })))
+
+// Chỉ các model có capability image_generation mới sinh ảnh được — lọc từ
+// catalog dùng chung (provider active + model enabled/available).
+const imageModelOptions = computed(() => allModelOptions.value
+  .filter(model => Array.isArray(model.capabilities) && model.capabilities.includes('image_generation'))
+  .map(model => ({ title: model.label || model.remote_model_id, value: model.id, subtitle: model.provider_label })))
 
 const selectedRecipes = computed(() => shots.value.filter(shot => selectedRecipeIds.value.includes(shot.id)))
 
@@ -187,9 +200,14 @@ async function uploadProducts() {
   const ids = []
 
   for (const file of productFiles.value) {
+    // kind='image' + field='product.reference_images' bắt buộc theo
+    // MediaAssetUploadRequest — thiếu `kind` sẽ bị 422 "Dữ liệu gửi lên không hợp lệ".
     const asset = await mediaAssetService.upload({
       file,
       title: file.name,
+      kind: 'image',
+      field: 'product.reference_images',
+      visibility: 'private',
     })
 
     if (asset?.id) ids.push(asset.id)
@@ -222,6 +240,7 @@ async function generate() {
       aspect_ratio: aspectRatio.value,
       image_count: imageCount.value,
       instructions: instructions.value?.trim() ? [instructions.value.trim()] : [],
+      ...(modelId.value ? { model_id: modelId.value } : {}),
     })
 
     notifySuccess(apiMessage(result, 'Đã xếp hàng tạo ảnh. Theo dõi tiến trình bên dưới.'))
@@ -255,6 +274,7 @@ async function retryShot(item) {
       aspect_ratio: aspectRatio.value,
       image_count: 1,
       instructions: [],
+      ...(modelId.value ? { model_id: modelId.value } : {}),
     })
 
     notifySuccess(apiMessage(result, 'Đã xếp hàng tạo lại ảnh cho recipe này.'))
@@ -267,7 +287,10 @@ async function retryShot(item) {
   }
 }
 
-onMounted(loadStyles)
+onMounted(() => {
+  loadStyles()
+  void aiCatalog.ensureLoaded()
+})
 onScopeDispose(() => store.resetGeneration())
 </script>
 
@@ -364,8 +387,8 @@ onScopeDispose(() => store.resetGeneration())
             <AppSelect
               :model-value="styleId"
               :items="styleOptions"
-              label="Visual Style (active)"
-              placeholder="Chọn style đã activate"
+              label="Visual Style"
+              placeholder="Chọn style đã bật"
               :loading="stylesLoading"
               :disabled="generating || uploading"
               class="mb-2"
@@ -387,7 +410,13 @@ onScopeDispose(() => store.resetGeneration())
               density="compact"
               class="mb-4"
             >
-              Chưa có style nào ở trạng thái Hoạt động — activate một style trước.
+              Chưa có style sẵn sàng — style cần <b>đã phân tích</b> và <b>bật dùng cho generation</b> trong dialog Chỉnh sửa.
+              <RouterLink
+                :to="{ name: 'visual-styles' }"
+                class="text-primary ms-1"
+              >
+                Mở danh sách
+              </RouterLink>
             </VAlert>
 
             <!-- Bước 3: Recipes -->
@@ -494,6 +523,18 @@ onScopeDispose(() => store.resetGeneration())
                   :min="1"
                   :max="8"
                   label="Số ảnh mỗi recipe"
+                  :disabled="generating || uploading"
+                />
+              </VCol>
+              <VCol cols="12">
+                <AppSelect
+                  v-model="modelId"
+                  :items="imageModelOptions"
+                  label="Image model"
+                  placeholder="Mặc định theo cấu hình AI"
+                  hint="Model có khả năng sinh ảnh (image_generation)."
+                  persistent-hint
+                  clearable
                   :disabled="generating || uploading"
                 />
               </VCol>
