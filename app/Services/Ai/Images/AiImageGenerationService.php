@@ -69,8 +69,9 @@ final class AiImageGenerationService
         string $title,
         ?string $altText = null,
         array $generationMeta = [],
+        array $images = [],
     ): MediaAsset {
-        $binary = $this->provider->generate($connection, $prompt);
+        $binary = $this->provider->generate($connection, $prompt, $images);
 
         return $this->upload($binary, $actorId, $title, $altText, $connection, $generationMeta);
     }

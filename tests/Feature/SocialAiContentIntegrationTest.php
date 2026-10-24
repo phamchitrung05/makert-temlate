@@ -296,7 +296,7 @@ final class SocialAiContentIntegrationTest extends TestCase
         {
             public function __construct(private readonly ?\Closure $during) {}
 
-            public function generate(AiConnection $connection, string $prompt): string
+            public function generate(AiConnection $connection, string $prompt, array $images = []): string
             {
                 if ($this->during) {
                     ($this->during)();

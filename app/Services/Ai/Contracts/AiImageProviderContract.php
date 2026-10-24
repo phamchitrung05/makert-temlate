@@ -22,11 +22,13 @@ interface AiImageProviderContract
      * =====================================================================
      * CHỨC NĂNG: Tạo bytes ảnh theo giao thức của connection
      * =====================================================================
-     * INPUT: AiConnection đã kiểm tra capability và prompt người dùng.
+     * INPUT: AiConnection đã kiểm tra capability, prompt người dùng và
+     * `$images` là mảng reference image mỗi ảnh `{base64, media_type}` tùy chọn
+     * để gửi kèm prompt (image-conditioned generation).
      * OUTPUT: chuỗi binary; không tin MIME/filename do provider khai báo.
      * SIDE EFFECT: một POST tạo ảnh, có thể GET URL ảnh public đã kiểm tra SSRF.
      * EXCEPTION/TRANSACTION: AiImportException; không ghi database hoặc mở transaction.
      * =====================================================================
      */
-    public function generate(AiConnection $connection, string $prompt): string;
+    public function generate(AiConnection $connection, string $prompt, array $images = []): string;
 }

@@ -2,31 +2,30 @@
   =====================================================================
   CHỨC NĂNG FILE: Trang Generate — tạo batch ảnh sản phẩm theo Visual Style.
   =====================================================================
-  Luồng: upload ảnh sản phẩm (→ Media Library lấy media_ids) → chọn style
-  đã phân tích + bật dùng → chọn 1-4 shot recipes → aspect_ratio + image_count +
-  instructions → POST /generate (queue). Sau đó poll GET /generations/{importId}
-  để render lưới outputs per-shot (object theo recipe_code, mỗi shot có
-  images[{slot_no,status,media_asset_id,prompt_used,error_*}]); prompt_used
-  expand, retry gửi lại generate cho shot lỗi.
+  Luồng: chọn ảnh tham chiếu (từ Media Library hoặc upload mới → media_ids)
+  → chọn style đã phân tích + bật dùng → chọn 1-4 shot recipes →
+  aspect_ratio + image_count + instructions → POST /generate (queue). Sau đó
+  poll GET /generations/{importId} để render lưới outputs per-shot (object theo
+  recipe_code, mỗi shot có images[{slot_no,status,media_asset_id,prompt_used,
+  error_*}]); prompt_used expand, retry gửi lại generate cho shot lỗi.
   Backend `/api/admin/ai/visual-styles/*` qua visualStylesService +
-  mediaAssetService (upload sản phẩm).
+  mediaAssetService (upload + dialog chọn).
 
   CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
   - loadStyles(): tải style cho select (chỉ active+enabled+dna).
   - onStyleChange(): đổi style → nạp shots active làm recipe checkbox.
   - toggleRecipe(): chọn/bỏ recipe (tối đa 4).
-  - generate(): upload product files → media_ids, POST generate, poll import.
+  - generate(): gộp media_ids từ asset đã chọn, POST generate, poll import.
   - pollRun(): GET generations/{id} theo interval; dừng khi terminal.
   - retryShot(): POST generate lại cho một shot recipe.
-  - uploadProducts(): đưa File lên Media Library → media_ids.
   - flattenOutputs(): computed outputs object → danh sách {recipe,shot,image} phẳng.
   - onMounted/onScopeDispose: load styles + dọn timer.
   - props/emits: không có; page tự quản lý state + API qua service.
 
   INPUT/OUTPUT CỦA COMPONENT (tổng thể):
-  - INPUT : files sản phẩm, style + recipes + ratio/count/instructions.
+  - INPUT : files/assets ảnh tham chiếu, style + recipes + ratio/count/instructions.
   - OUTPUT: form cấu hình + grid outputs + prompt_used + retry; snackbar.
-  - SIDE EFFECT: POST media-assets upload, GET list/show, POST generate,
+  - SIDE EFFECT: GET list/show + dialog assets, POST generate,
   GET generations/{importId}; polling timer.
   =====================================================================
 -->
@@ -38,7 +37,6 @@ import { useVisualStyleStore } from '@/stores/visualStyle'
 import { useAiCatalogStore } from '@/stores/aiCatalog'
 import { apiErrorMessage, apiMessage } from '@/config/messages'
 import { useSnackbar } from '@/composables/useSnackbar'
-import { mediaAssetService } from '@/services/mediaAsset'
 import AppSnackbar from '@/components/AppSnackbar.vue'
 import ProductUpload from '@/views/visual-styles/ProductUpload.vue'
 
@@ -50,7 +48,8 @@ const { items: styles, isLoading: stylesLoading, shots, generation: run, isGener
 const { modelOptions: allModelOptions } = storeToRefs(aiCatalog)
 
 // Form state cục bộ — page giữ input, store giữ data + run
-const productFiles = ref([])
+// Ảnh tham chiếu: chỉ chọn 1 MediaAsset đã có trong Media Library (id).
+const productAssets = ref([])
 const productDescription = ref('')
 const productCategory = ref('')
 const styleId = ref(null)
@@ -89,7 +88,7 @@ const selectedRecipes = computed(() => shots.value.filter(shot => selectedRecipe
 const taskStatus = computed(() => run.value?.status ?? null)
 
 const canGenerate = computed(() =>
-  productFiles.value.length > 0
+  productAssets.value.length > 0
   && styleId.value
   && selectedRecipeIds.value.length >= 1
   && selectedRecipeIds.value.length <= 4
@@ -194,29 +193,6 @@ function toggleRecipe(id) {
 }
 
 // =====================================================================
-// Input: File[] product. Output: media_ids sau upload lên Media Library.
-// =====================================================================
-async function uploadProducts() {
-  const ids = []
-
-  for (const file of productFiles.value) {
-    // kind='image' + field='product.reference_images' bắt buộc theo
-    // MediaAssetUploadRequest — thiếu `kind` sẽ bị 422 "Dữ liệu gửi lên không hợp lệ".
-    const asset = await mediaAssetService.upload({
-      file,
-      title: file.name,
-      kind: 'image',
-      field: 'product.reference_images',
-      visibility: 'private',
-    })
-
-    if (asset?.id) ids.push(asset.id)
-  }
-
-  return ids
-}
-
-// =====================================================================
 // Input: form. Output: queued generation trong store; store tự poll.
 // =====================================================================
 async function generate() {
@@ -225,9 +201,9 @@ async function generate() {
   try {
     uploading.value = true
 
-    const mediaIds = await uploadProducts()
-
-    uploading.value = false
+    // Ảnh tham chiếu: chỉ 1 MediaAsset đã có id trong Media Library — không
+    // upload lại; product.media_ids = [asset.id].
+    const mediaIds = productAssets.value.map(a => a.id)
 
     const result = await store.generate({
       style_id: styleId.value,
@@ -261,7 +237,7 @@ async function retryShot(item) {
   if (!item?.shot_id || retryingShot.value) return
   retryingShot.value = item.shot_id
   try {
-    const mediaIds = run.value?.product_media_ids ?? []
+    const mediaIds = productAssets.value.map(a => a.id)
 
     const result = await store.generate({
       style_id: styleId.value,
@@ -324,7 +300,7 @@ onScopeDispose(() => store.resetGeneration())
       >
         <VCard class="mb-6">
           <VCardText>
-            <!-- Bước 1: Ảnh sản phẩm -->
+            <!-- Bước 1: Ảnh tham chiếu -->
             <div class="d-flex align-center mb-3">
               <VAvatar
                 color="primary"
@@ -337,15 +313,15 @@ onScopeDispose(() => store.resetGeneration())
               </VAvatar>
               <div>
                 <div class="text-subtitle-1 font-weight-medium">
-                  1. Ảnh sản phẩm
+                  1. Ảnh tham chiếu
                 </div>
                 <div class="text-body-2 text-medium-emphasis">
-                  Tải ảnh sản phẩm cần áp style
+                  Chọn 1 ảnh từ Media Library để áp style
                 </div>
               </div>
             </div>
             <ProductUpload
-              v-model:files="productFiles"
+              v-model:assets="productAssets"
               :disabled="generating || uploading"
               class="mb-3"
             />

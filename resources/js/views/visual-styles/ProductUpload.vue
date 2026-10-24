@@ -1,77 +1,69 @@
 <!--
   =====================================================================
-  CHỨC NĂNG FILE: Khu vực tải ảnh sản phẩm (multi) cho trang Generate.
+  CHỨC NĂNG FILE: Khu vực chọn ảnh tham chiếu (multi) cho trang Generate.
   =====================================================================
-  Cho phép kéo-thả hoặc chọn nhiều ảnh sản phẩm; giữ danh sách File cục bộ và
-  emit `update:files` để page dùng trong payload generate. Preview bằng
-  URL.createObjectURL; không upload lên server ở component này.
+  Nút `Chọn ảnh` mở MediaLibraryDialog để chọn MỘT MediaAsset image đã có
+  trên server; component giữ `assets` là danh sách tối đa 1 asset đã chọn —
+  page gộp `media_ids` = assets.id khi generate. Preview dùng
+  `file.preview_url`/`file.url` của MediaAssetResource; asset private hiện
+  icon placeholder.
   Dùng trong `pages/visual-styles/generate/index.vue`.
 
   CÁC HÀM/COMPUTED/WATCHER TRONG FILE:
-  - triggerFileInput(): mở hộp chọn file.
-  - handleFileSelect()/handleDrop(): thêm file ảnh vào danh sách.
-  - removeFile(): xóa file theo index và revoke object URL.
-  - previews: computed danh sách {name, url} cho thumbnail.
-  - props/emits: `files` vào; 'update:files' ra.
+  - openLibrary(): mở MediaLibraryDialog chọn asset image (single).
+  - onLibrarySelect(): nhận asset đã chọn, thay selection hiện tại (tối đa 1).
+  - removeAsset(): bỏ asset đã chọn.
+  - previews: computed danh sách {kind, name, url, asset} cho thumbnail.
+  - props/emits: `assets` vào; 'update:assets' ra.
 
   INPUT/OUTPUT CỦA COMPONENT (tổng thể):
-  - INPUT : prop `files` (File[]), `disabled`, `max`.
-  - OUTPUT: emit 'update:files' File[]; hiển thị preview + dropzone.
-  - SIDE EFFECT: tạo/revoke ObjectURL cục bộ; không gọi API.
+  - INPUT : props `assets` (MediaAsset[], tối đa 1), `disabled`, `max`.
+  - OUTPUT: emit 'update:assets' MediaAsset[].
+  - SIDE EFFECT: mở dialog Media Library; không upload file.
   =====================================================================
 -->
 <script setup>
-import { computed, ref, onScopeDispose } from 'vue'
+import { computed, ref } from 'vue'
+import MediaLibraryDialog from '@/views/apps/media/field/MediaLibraryDialog.vue'
 
 const props = defineProps({
-  files: { type: Array, default: () => [] },
+  assets: { type: Array, default: () => [] },
   disabled: { type: Boolean, default: false },
-  max: { type: Number, default: 8 },
+  max: { type: Number, default: 1 },
 })
 
-const emit = defineEmits(['update:files'])
+const emit = defineEmits(['update:assets'])
 
-const fileInputRef = ref(null)
+const isLibraryOpen = ref(false)
 
-// Object URL preview theo file; revoke khi file bị xóa/unmount
-const previews = computed(() => props.files.map(file => ({
-  name: file.name,
-  url: URL.createObjectURL(file),
+// Preview theo MediaAsset đã chọn; asset private không có preview_url → icon
+const previews = computed(() => props.assets.map((asset, index) => ({
+  kind: 'asset',
+  index,
+  asset,
+  name: asset?.title ?? asset?.file?.original_name ?? `Asset #${asset?.id}`,
+  url: asset?.file?.preview_url || asset?.file?.url || null,
 })))
 
-function triggerFileInput() {
+// Mở Media Library chọn ảnh tham chiếu đã có trên server (mỗi lần 1 ảnh)
+function openLibrary() {
   if (!props.disabled)
-    fileInputRef.value?.click()
+    isLibraryOpen.value = true
 }
 
-// Thêm các file ảnh hợp lệ, giới hạn theo `max`
-function addFiles(list) {
-  const accepted = [...list].filter(file => file.type?.startsWith('image/'))
-  const next = [...props.files, ...accepted].slice(0, props.max)
+// Nhận asset từ MediaLibraryDialog (single) — thay selection hiện tại
+function onLibrarySelect(selection) {
+  const asset = Array.isArray(selection) ? selection[0] : selection
 
-  emit('update:files', next)
+  emit('update:assets', asset?.id ? [asset] : [])
 }
 
-function handleFileSelect(event) {
-  addFiles(event.target.files ?? [])
-  event.target.value = ''
-}
-
-function handleDrop(event) {
-  if (props.disabled) return
-  addFiles(event.dataTransfer.files ?? [])
-}
-
-function removeFile(index) {
-  const next = [...props.files]
+function removeAsset(index) {
+  const next = [...props.assets]
 
   next.splice(index, 1)
-  emit('update:files', next)
+  emit('update:assets', next)
 }
-
-onScopeDispose(() => {
-  previews.value.forEach(item => URL.revokeObjectURL(item.url))
-})
 </script>
 
 <template>
@@ -79,38 +71,30 @@ onScopeDispose(() => {
     <div
       class="product-upload__zone rounded-lg pa-4 text-center"
       :class="{ 'product-upload__zone--disabled': disabled }"
-      @dragover.prevent
-      @drop.prevent="handleDrop"
-      @click="triggerFileInput"
     >
       <VIcon
         size="34"
-        icon="tabler-cloud-upload"
+        icon="tabler-photo-library"
         class="mb-2 text-medium-emphasis"
       />
       <div class="text-body-2 font-weight-medium">
-        Kéo thả ảnh sản phẩm vào đây
+        Ảnh tham chiếu
       </div>
       <div class="text-caption text-medium-emphasis mb-2">
-        hoặc bấm để chọn — JPG, PNG, WEBP (tối đa {{ max }} ảnh)
+        Chọn 1 ảnh từ Media Library
       </div>
-      <VBtn
-        size="small"
-        color="primary"
-        variant="tonal"
-        :disabled="disabled"
-        @click.stop="triggerFileInput"
-      >
-        Chọn ảnh
-      </VBtn>
-      <input
-        ref="fileInputRef"
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        multiple
-        class="d-none"
-        @change="handleFileSelect"
-      >
+      <div class="d-flex justify-center">
+        <VBtn
+          size="small"
+          color="primary"
+          variant="tonal"
+          prepend-icon="tabler-photo"
+          :disabled="disabled"
+          @click.stop="openLibrary"
+        >
+          Chọn ảnh
+        </VBtn>
+      </div>
     </div>
 
     <VRow
@@ -119,28 +103,48 @@ onScopeDispose(() => {
       class="mt-3"
     >
       <VCol
-        v-for="(item, index) in previews"
-        :key="index"
+        v-for="item in previews"
+        :key="`${item.kind}-${item.index}`"
         cols="4"
         sm="3"
       >
         <div class="position-relative rounded-lg overflow-hidden product-upload__thumb">
           <VImg
+            v-if="item.url"
             :src="item.url"
             cover
             aspect-ratio="1"
           />
+          <div
+            v-else
+            class="d-flex flex-column align-center justify-center product-upload__placeholder"
+          >
+            <VIcon
+              size="26"
+              icon="tabler-photo"
+              class="text-medium-emphasis"
+            />
+          </div>
           <VBtn
             icon="tabler-x"
             size="22"
             variant="flat"
             class="product-upload__remove"
             :disabled="disabled"
-            @click="removeFile(index)"
+            @click="removeAsset(item.index)"
           />
         </div>
       </VCol>
     </VRow>
+
+    <MediaLibraryDialog
+      v-model:open="isLibraryOpen"
+      kind="image"
+      field="product.reference_images"
+      :multiple="false"
+      :initial-selection="assets"
+      @select="onLibrarySelect"
+    />
   </div>
 </template>
 
@@ -160,7 +164,11 @@ onScopeDispose(() => {
   pointer-events: none;
 }
 .product-upload__thumb {
+  aspect-ratio: 1;
   background-color: rgba(var(--v-theme-on-surface), 0.04);
+}
+.product-upload__placeholder {
+  aspect-ratio: 1;
 }
 .product-upload__remove {
   position: absolute;

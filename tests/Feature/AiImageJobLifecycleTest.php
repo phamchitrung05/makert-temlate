@@ -148,7 +148,7 @@ final class AiImageJobLifecycleTest extends TestCase
              * OUTPUT: PNG fixture hoặc lỗi do callback; không gọi mạng.
              * =====================================================================
              */
-            public function generate(AiConnection $connection, string $prompt): string
+            public function generate(AiConnection $connection, string $prompt, array $images = []): string
             {
                 if ($this->callback) {
                     ($this->callback)();

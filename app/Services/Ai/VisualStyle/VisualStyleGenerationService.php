@@ -7,6 +7,7 @@ use App\Exceptions\AiImportException;
 use App\Jobs\GenerateVisualStyleImagesJob;
 use App\Models\AiImageProfile;
 use App\Models\AiImport;
+use App\Models\MediaAsset;
 use App\Models\VisualStyleShot;
 use App\Services\Ai\Images\AiImageGenerationService;
 use App\Services\Ai\Providers\Catalog\ModelResolver;
@@ -218,6 +219,8 @@ final class VisualStyleGenerationService
         $instructions = (array) ($input['user_instructions'] ?? []);
         $aspectRatio = (string) ($input['aspect_ratio'] ?? '');
         $actorId = (int) $import->created_by;
+        $referenceImages = $this->referenceImages($style, $product);
+        // reference images
 
         $outputs = [];
         $progressBase = 5;
@@ -252,6 +255,7 @@ final class VisualStyleGenerationService
                                 'aspect_ratio' => $aspectRatio !== '' ? $aspectRatio : ($shot->suggested_aspect_ratio ?: '1:1'),
                                 'slot_no' => $slot,
                             ],
+                            $referenceImages,
                         );
                         $shotOutputs[] = [
                             'slot_no' => $slot,
@@ -271,6 +275,7 @@ final class VisualStyleGenerationService
                         $shotFailed++;
                         $totalFail++;
                     } catch (\Throwable $exception) {
+                        // failed generation
                         $shotOutputs[] = [
                             'slot_no' => $slot,
                             'status' => 'failed',
@@ -373,6 +378,100 @@ final class VisualStyleGenerationService
         }
 
         return $prompts;
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Đọc MediaAsset của style reference + sản phẩm thành base64.
+     * =====================================================================
+     * INPUT: style (reference_media_id/reference_path) và ProductContext
+     * (media_ids). OUTPUT: mảng `{base64, media_type}` để kèm prompt.
+     * Side effect: đọc file từ disk/media library; bỏ qua asset lỗi/missing.
+     * =====================================================================
+     */
+    private function referenceImages(AiImageProfile $style, ?ProductContext $product): array
+    {
+        $images = [];
+
+        // Ảnh tham chiếu của style (media_asset_id hoặc path local).
+        $styleImage = $this->readAssetImage(
+            (int) ($style->reference_media_id ?? 0),
+            (string) ($style->reference_path ?? ''),
+            (string) ($style->reference_mime ?? 'image/png'),
+        );
+        if ($styleImage !== null) {
+            $images[] = $styleImage;
+        }
+
+        // Ảnh sản phẩm theo mediaIds trong product context — ưu tiên URL public
+        // của MediaAsset (gateway OpenAI-compatible yêu cầu image URL); local
+        // path fallback vẫn base64 cho provider chấp nhận inline data.
+        foreach ((array) ($product?->mediaIds ?? []) as $mediaId) {
+            $asset = MediaAsset::query()->find((int) $mediaId);
+            if (! $asset) {
+                continue;
+            }
+            $media = $asset->getFirstMedia('library');
+            $url = $media?->getUrl();
+            if ($url) {
+                $images[] = [
+                    'url' => $url,
+                    'media_type' => $asset->mime_type ?? 'image/jpeg',
+                ];
+                continue;
+            }
+            $path = $media?->getPath();
+            if (! $path || ! is_file($path)) {
+                continue;
+            }
+            $contents = @file_get_contents($path);
+            if ($contents === false) {
+                continue;
+            }
+            $images[] = [
+                'base64' => base64_encode($contents),
+                'media_type' => $asset->mime_type ?? 'image/jpeg',
+            ];
+        }
+
+        return $images;
+    }
+
+    /** Input: media_asset_id hoặc path local + mime. Output: `{url|base64, media_type}` hoặc null. */
+    private function readAssetImage(int $mediaId, string $path, string $mime): ?array
+    {
+        if ($mediaId > 0) {
+            $asset = MediaAsset::query()->find($mediaId);
+            $media = $asset?->getFirstMedia('library');
+            $url = $media?->getUrl();
+            if ($url) {
+                return [
+                    'url' => $url,
+                    'media_type' => $asset->mime_type ?? 'image/jpeg',
+                ];
+            }
+            $filePath = $media?->getPath();
+            if ($filePath && is_file($filePath)) {
+                $contents = @file_get_contents($filePath);
+                if ($contents !== false) {
+                    return [
+                        'base64' => base64_encode($contents),
+                        'media_type' => $asset->mime_type ?? 'image/jpeg',
+                    ];
+                }
+            }
+        }
+        if ($path !== '' && is_file(storage_path('app/private/'.$path))) {
+            $contents = @file_get_contents(storage_path('app/private/'.$path));
+            if ($contents !== false) {
+                return [
+                    'base64' => base64_encode($contents),
+                    'media_type' => $mime !== '' ? $mime : 'image/jpeg',
+                ];
+            }
+        }
+
+        return null;
     }
 
     /**

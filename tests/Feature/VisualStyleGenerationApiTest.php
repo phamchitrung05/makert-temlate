@@ -129,7 +129,7 @@ final class VisualStyleGenerationApiTest extends TestCase
         {
             public function __construct(private readonly string $bytes) {}
 
-            public function generate(AiConnection $connection, string $prompt): string
+            public function generate(AiConnection $connection, string $prompt, array $images = []): string
             {
                 return $this->bytes;
             }
@@ -263,7 +263,7 @@ final class VisualStyleGenerationApiTest extends TestCase
 
             public function __construct(private readonly string $bytes) {}
 
-            public function generate(AiConnection $connection, string $prompt): string
+            public function generate(AiConnection $connection, string $prompt, array $images = []): string
             {
                 $this->calls++;
                 if ($this->calls === 1) {
