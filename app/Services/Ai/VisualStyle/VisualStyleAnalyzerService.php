@@ -247,10 +247,15 @@ final class VisualStyleAnalyzerService
         if (! hash_equals((string) $profile->reference_hash, hash('sha256', $bytes))) {
             throw new \RuntimeException('Ảnh tham chiếu của tác vụ đã thay đổi.');
         }
+        $taxonomyContext = $this->taxonomyContext();
         $response = $this->providers->resolveForRun($profile->connection_snapshot_json)->execute(new AiTaskRequest(
             task: 'visual-style.analysis',
             systemInstructions: (string) ($profile->analysis_instructions ?: config('ai.visual_style_dna.analysis_instructions')),
-            input: ['requested_name' => $profile->name],
+            input: [
+                'requested_name' => $profile->name,
+                'existing_categories' => $taxonomyContext['categories'],
+                'existing_tags' => $taxonomyContext['tags'],
+            ],
             schema: $this->definition->schema(),
             options: [
                 'prompt_key' => 'visual-style.analyze-reference',
@@ -261,14 +266,20 @@ final class VisualStyleAnalyzerService
             ],
         ));
         $dna = $this->definition->validate($response->output);
-        DB::transaction(function () use ($id, $dna, $response): void {
+        DB::transaction(function () use ($id, $dna, $response, $taxonomyContext): void {
             // Khóa profile trước khi ghi: cancel/archive thắng thì worker không ghi đè.
             $current = AiImageProfile::query()->lockForUpdate()->findOrFail($id);
             if ($current->status !== 'analyzing') {
                 return;
             }
             $suggestedShots = (array) ($dna['suggested_shots'] ?? []);
+            // Chuyển taxonomy_suggestion thô → suggestion có ID resolve sẵn để
+            // form edit prefill; chỉ unset suggested_shots (đã tách sang bảng).
+            $resolved = $this->resolveTaxonomySuggestion((array) ($dna['taxonomy_suggestion'] ?? []), $taxonomyContext);
             unset($dna['suggested_shots']);
+            if ($resolved !== null) {
+                $dna['taxonomy_suggestion'] = $resolved;
+            }
             $current->forceFill([
                 'status' => 'analyzed',
                 'summary' => $response->output['summary'] ?? null,
@@ -277,7 +288,109 @@ final class VisualStyleAnalyzerService
                 'error_message' => null,
             ])->save();
             $this->createSuggestedShots($current, $suggestedShots);
+            $this->applyTaxonomySuggestion($current, $resolved);
         });
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Đọc taxonomy hiện có để gửi cho AI đối chiếu.
+     * =====================================================================
+     * Input: không có. Output: {categories:[{id,name}], tags:[{id,name}]} bounded;
+     * chỉ lấy bản ghi đang dùng, sắp theo tên.
+     * Side effect: chỉ đọc DB; không ghi.
+     * =====================================================================
+     *
+     * @return array{categories: array<int, array{id:int,name:string}>, tags: array<int, array{id:int,name:string}>}
+     */
+    private function taxonomyContext(): array
+    {
+        $load = function (string $model, int $limit): array {
+            return $model::query()
+                ->whereNotNull('name')->where('name', '!=', '')
+                ->orderBy('name')->limit($limit)
+                ->get(['id', 'name'])
+                ->map(fn ($item) => ['id' => (int) $item->id, 'name' => (string) $item->name])
+                ->all();
+        };
+
+        return [
+            'categories' => $load(\App\Models\Category::class, 30),
+            'tags' => $load(\App\Models\Tag::class, 50),
+        ];
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Resolve taxonomy_suggestion của AI sang ID bản ghi hiện có.
+     * =====================================================================
+     * Input: suggestion thô {action, category, tags, new_category, new_tags} và
+     *   taxonomyContext đã gửi cho AI. Output: suggestion đã kèm *_ids khi
+     *   action=match_existing; propose_new giữ tên thô + id=null (chưa tạo).
+     * Side effect: chỉ đọc taxonomyContext trong bộ nhớ; không ghi DB.
+     * =====================================================================
+     */
+    private function resolveTaxonomySuggestion(array $suggestion, array $context): ?array
+    {
+        $action = $suggestion['action'] ?? null;
+        if (! in_array($action, ['match_existing', 'propose_new'], true)) {
+            return null;
+        }
+        $byName = fn (array $list) => collect($list)->keyBy(fn ($item) => mb_strtolower($item['name']));
+
+        $categories = $byName($context['categories']);
+        $tags = $byName($context['tags']);
+
+        if ($action === 'match_existing') {
+            $category = $categories->get(mb_strtolower((string) ($suggestion['category'] ?? '')));
+            $tagIds = collect((array) ($suggestion['tags'] ?? []))
+                ->map(fn ($name) => $tags->get(mb_strtolower((string) $name))['id'] ?? null)
+                ->filter()->values()->all();
+
+            return [
+                'action' => 'match_existing',
+                'category' => $category['name'] ?? null,
+                'category_id' => $category['id'] ?? null,
+                'tags' => (array) ($suggestion['tags'] ?? []),
+                'tag_ids' => $tagIds,
+                'confidence' => $suggestion['confidence'] ?? null,
+                'reason' => $suggestion['reason'] ?? null,
+            ];
+        }
+
+        return [
+            'action' => 'propose_new',
+            'category' => null,
+            'category_id' => null,
+            'tags' => [],
+            'tag_ids' => [],
+            'new_category' => $suggestion['new_category'] ?? null,
+            'new_tags' => (array) ($suggestion['new_tags'] ?? []),
+            'confidence' => $suggestion['confidence'] ?? null,
+            'reason' => $suggestion['reason'] ?? null,
+        ];
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Gắn category/tag đã resolve vào pivot khi AI khớp bản ghi có sẵn.
+     * =====================================================================
+     * Input: style đã lock và suggestion đã resolve (category_id/tag_ids).
+     * Output: attach pivot khớp ID có sẵn; không tạo entity mới.
+     * Side effect: syncWithoutDetaching; chỉ khi match_existing có ID.
+     * =====================================================================
+     */
+    private function applyTaxonomySuggestion(AiImageProfile $style, ?array $suggestion): void
+    {
+        if (($suggestion['action'] ?? null) !== 'match_existing') {
+            return;
+        }
+        if (! empty($suggestion['category_id'])) {
+            $style->categories()->syncWithoutDetaching([(int) $suggestion['category_id']]);
+        }
+        if (! empty($suggestion['tag_ids'])) {
+            $style->tags()->syncWithoutDetaching(array_map('intval', (array) $suggestion['tag_ids']));
+        }
     }
 
     /**

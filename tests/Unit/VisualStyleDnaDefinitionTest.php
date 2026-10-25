@@ -138,4 +138,33 @@ final class VisualStyleDnaDefinitionTest extends TestCase
         $this->expectException(ValidationException::class);
         app(VisualStyleDnaDefinition::class)->validate($dna);
     }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: taxonomy_suggestion được chuẩn hóa và giữ lại trong DNA.
+     * =====================================================================
+     * Input: DNA hợp lệ kèm taxonomy_suggestion match_existing + propose_new.
+     * Output: suggestion chuẩn hóa (action/tags bounded) hoặc reject key lạ.
+     * =====================================================================
+     */
+    public function test_taxonomy_suggestion_normalized(): void
+    {
+        $dna = $this->validDna();
+        $dna['taxonomy_suggestion'] = [
+            'action' => 'match_existing',
+            'category' => 'Lifestyle',
+            'tags' => ['cà phê', 'flat lay'],
+            'confidence' => 0.9,
+            'reason' => 'Khớp nhóm lifestyle hiện có.',
+        ];
+        $normalized = app(VisualStyleDnaDefinition::class)->validate($dna);
+        $this->assertSame('match_existing', $normalized['taxonomy_suggestion']['action']);
+        $this->assertSame('Lifestyle', $normalized['taxonomy_suggestion']['category']);
+        $this->assertSame(0.9, $normalized['taxonomy_suggestion']['confidence']);
+        $this->assertContains('cà phê', $normalized['taxonomy_suggestion']['tags']);
+
+        $dna['taxonomy_suggestion']['action'] = 'weird';
+        $normalized = app(VisualStyleDnaDefinition::class)->validate($dna);
+        $this->assertSame('propose_new', $normalized['taxonomy_suggestion']['action']);
+    }
 }

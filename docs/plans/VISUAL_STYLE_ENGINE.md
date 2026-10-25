@@ -38,6 +38,24 @@ tự nhiên trước khi gọi provider.
 
 ## 3. Style DNA — schema + lưu trữ
 
+**Phân loại theo taxonomy dùng chung.** Visual Style gắn Category/Tag qua
+`categorizables`/`taggables` (xem `SHARED_TAXONOMY.md`), không dùng cột
+`category`/`tag` riêng. Khi phân tích, service gửi `existing_categories` +
+`existing_tags` (tên + id bounded, từ bảng `categories`/`tags`) làm input cho
+Vision model; AI trả `taxonomy_suggestion {action, category, tags,
+new_category, new_tags, confidence, reason}` để:
+
+- `match_existing` → gắn category/tag **hiện có** vào pivot (auto-attach), và
+  `dna_json.taxonomy_suggestion` giữ `category_id`/`tag_ids` đã resolve để
+  form edit prefill.
+- `propose_new` → **không tự tạo** taxonomy; giữ tên thô trong
+  `dna_json.taxonomy_suggestion`, dialog edit hiển thị gợi ý để admin bấm
+  "Dùng gợi ý" mới `firstOrCreate` Category/Tag rồi `sync()`.
+
+`dna_json` vẫn giữ `taxonomy_suggestion` (đã normalize trong
+`VisualStyleDnaDefinition`) để prefill một lần; cột `ai_image_profiles.category`
+scalar chỉ là nhãn hiển thị legacy, không phải nguồn phân loại.
+
 Schema v1 (lưu `config/ai/visual_style_dna.php`, enum chuẩn hóa):
 
 ```json

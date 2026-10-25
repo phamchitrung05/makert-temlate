@@ -277,6 +277,7 @@ Describe only what is visible: composition, framing, lighting direction/quality,
 For every field you are unsure about, keep the best enum guess and add that field path to confidence with a value below 0.6; omit confidence for fields that are clear.
 subject_rules and style_constraints describe how future product images should preserve the subject; keep them boolean as in the schema.
 Also return suggested_shots: 3-5 distinct shot recipe ideas that keep this same DNA but vary composition or camera angle (for example hero front view, detail macro, flat lay). Each suggested shot needs a short snake_case code, a display name, an optional description, optional composition_override and camera_override objects using the same enum fields, and an optional suggested_aspect_ratio like "1:1", "4:5", "16:9" or "9:16". Do not repeat the same angle twice.
+For taxonomy_suggestion, first look at the supplied existing_categories and existing_tags lists. If a listed entry is a good semantic match for this style, set action to "match_existing" and return that entry name in category/tags. Only use action "propose_new" when no listed entry fits; then return a short new category name and new tag names in new_category/new_tags. Prefer at most 2 categories and 6 tags. Use only names from the supplied lists when matching.
 Write the summary in Vietnamese; keep all enum values in English exactly as listed.
 PROMPT,
 ];

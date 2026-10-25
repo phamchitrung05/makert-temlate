@@ -96,6 +96,7 @@ final class VisualStyleDnaDefinition
                 'confidence' => ['type' => 'object', 'additionalProperties' => ['type' => 'number', 'minimum' => 0, 'maximum' => 1]],
                 'shot_variations' => ['type' => 'array', 'items' => ['type' => 'string', 'maxLength' => 200], 'maxItems' => 12],
                 'suggested_shots' => ['type' => 'array', 'items' => $shotSchema, 'maxItems' => 8],
+                'taxonomy_suggestion' => $this->taxonomySuggestionSchema(),
             ],
         ];
     }
@@ -127,6 +128,7 @@ final class VisualStyleDnaDefinition
             'confidence' => ['sometimes', 'array'],
             'shot_variations' => ['sometimes', 'array', 'max:12'],
             'suggested_shots' => ['sometimes', 'array', 'max:8'],
+            'taxonomy_suggestion' => ['sometimes', 'array'],
         ]);
         if ($validator->fails()) {
             throw new ValidationException($validator);
@@ -155,8 +157,65 @@ final class VisualStyleDnaDefinition
         if (isset($dna['suggested_shots'])) {
             $normalized['suggested_shots'] = $this->normalizeSuggestedShots((array) $dna['suggested_shots']);
         }
+        if (isset($dna['taxonomy_suggestion']) && is_array($dna['taxonomy_suggestion'])) {
+            $normalized['taxonomy_suggestion'] = $this->normalizeTaxonomySuggestion($dna['taxonomy_suggestion']);
+        }
 
         return $normalized;
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Schema phần taxonomy_suggestion AI trả về.
+     * =====================================================================
+     * Input: không có. Output: object schema; chỉ dùng để provider biết format.
+     * Side effect: hàm thuần.
+     * =====================================================================
+     */
+    private function taxonomySuggestionSchema(): array
+    {
+        $stringList = ['type' => 'array', 'items' => ['type' => 'string', 'maxLength' => 80], 'maxItems' => 12];
+
+        return [
+            'type' => 'object', 'additionalProperties' => false,
+            'required' => ['action'],
+            'properties' => [
+                'action' => ['type' => 'string', 'enum' => ['match_existing', 'propose_new']],
+                'category' => ['type' => 'string', 'maxLength' => 80],
+                'tags' => $stringList,
+                'new_category' => ['type' => 'string', 'maxLength' => 80],
+                'new_tags' => $stringList,
+                'confidence' => ['type' => 'number', 'minimum' => 0, 'maximum' => 1],
+                'reason' => ['type' => 'string', 'maxLength' => 500],
+            ],
+        ];
+    }
+
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Chuẩn hóa taxonomy_suggestion thô từ AI.
+     * =====================================================================
+     * Input: mảng suggestion. Output: {action, category, tags, new_category,
+     *   new_tags, confidence, reason} đã trim/bounded; action sai thì coi
+     *   propose_new nhưng giữ tags từ list.
+     * Side effect: hàm thuần; không ghi DB.
+     * =====================================================================
+     */
+    private function normalizeTaxonomySuggestion(array $suggestion): array
+    {
+        $action = in_array($suggestion['action'] ?? null, ['match_existing', 'propose_new'], true)
+            ? $suggestion['action']
+            : 'propose_new';
+
+        return [
+            'action' => $action,
+            'category' => isset($suggestion['category']) ? mb_substr(trim((string) $suggestion['category']), 0, 80) : null,
+            'tags' => $this->normalizeStringList($suggestion['tags'] ?? [], 6, 80),
+            'new_category' => isset($suggestion['new_category']) ? mb_substr(trim((string) $suggestion['new_category']), 0, 80) : null,
+            'new_tags' => $this->normalizeStringList($suggestion['new_tags'] ?? [], 6, 80),
+            'confidence' => isset($suggestion['confidence']) && is_numeric($suggestion['confidence']) ? max(0, min(1, round((float) $suggestion['confidence'], 3))) : null,
+            'reason' => isset($suggestion['reason']) ? mb_substr((string) $suggestion['reason'], 0, 500) : null,
+        ];
     }
 
     /**

@@ -46,6 +46,7 @@ const emit = defineEmits(['update:modelValue', 'saved', 'close', 'afterLeave'])
 
 const store = useVisualStyleStore()
 const categoryStore = useCategoryStore()
+const tagApplying = ref(false)
 const { isDetailLoading, isMutating: saving, detailError } = storeToRefs(store)
 const { snackbar, success: notifySuccess } = useSnackbar()
 
@@ -122,6 +123,10 @@ const selectedThumb = ref('')
 
 // objectURL của ảnh tham chiếu private (endpoint cần auth — fetch blob rồi objectURL)
 const { url: selectedThumbUrl } = usePrivateImage(selectedThumb)
+
+// Gợi ý phân loại do AI trả về trong dna_json.taxonomy_suggestion — chỉ dùng
+// để prefill khi style chưa có category/tag và để hiện gợi ý "đề xuất mới".
+const taxonomySuggestion = ref(null)
 
 // Dữ liệu Thông tin style (Cột trái)
 const styleInfo = reactive({
@@ -282,6 +287,18 @@ function syncFromStyle(data, { includeShots = true } = {}) {
   styleInfo.enableGeneration = Boolean(data.is_enabled)
 
   const dna = data.dna_json ?? {}
+
+  taxonomySuggestion.value = dna.taxonomy_suggestion ?? null
+
+  // Prefill từ gợi ý AI khi style chưa có phân loại nào (chỉ match_existing
+  // vì đã resolve sang ID thật; propose_new chỉ hiển thị nhãn gợi ý).
+  if (!styleInfo.categoryIds.length && !styleInfo.tagIds.length && taxonomySuggestion.value?.action === 'match_existing') {
+    const suggestion = taxonomySuggestion.value
+
+    if (suggestion.category_id) styleInfo.categoryIds = [suggestion.category_id]
+    if (Array.isArray(suggestion.tag_ids) && suggestion.tag_ids.length)
+      styleInfo.tagIds = suggestion.tag_ids.filter(id => Number.isInteger(id))
+  }
   if (dna.identity?.description)
     styleInfo.description = dna.identity.description
 
@@ -448,6 +465,61 @@ watch(
  * =====================================================================
  */
 // Bỏ triggerAddImage() — style chỉ giữ 1 ảnh tham chiếu reference_path.
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Tạo Category/Tag mới từ gợi ý AI rồi chọn vào select.
+ * =====================================================================
+ * INPUT: taxonomySuggestion action='propose_new'.
+ * OUTPUT: tạo entity qua taxonomy service, đưa ID vào categoryIds/tagIds và
+ *   cập nhật option select; lỗi giữ localError.
+ * SIDE EFFECT: gọi categoryStore.createCategory + POST /admin/tags.
+ * =====================================================================
+ */
+async function applyTaxonomySuggestion() {
+  const suggestion = taxonomySuggestion.value
+  if (!suggestion || suggestion.action !== 'propose_new' || tagApplying.value) return
+  tagApplying.value = true
+  localError.value = ''
+  try {
+    const createdCategoryIds = []
+    const createdTagIds = []
+
+    if (suggestion.new_category) {
+      const cat = await categoryStore.createCategory({ name: suggestion.new_category, status: 'active' })
+
+      if (cat?.id) {
+        createdCategoryIds.push(cat.id)
+        categoryOptions.value.push({ title: suggestion.new_category, value: cat.id })
+      }
+    }
+
+    const createdTagNames = []
+    for (const tagName of (suggestion.new_tags ?? [])) {
+      const result = await $api('/admin/tags', {
+        method: 'POST',
+        body: { name: tagName, status: 'active' },
+      })
+
+      const tagId = result?.data?.id ?? result?.id
+
+      if (tagId) {
+        createdTagIds.push(tagId)
+        createdTagNames.push({ title: tagName, value: tagId })
+      }
+    }
+    tagOptions.value.push(...createdTagNames)
+    styleInfo.categoryIds = createdCategoryIds
+    styleInfo.tagIds = createdTagIds
+    taxonomySuggestion.value = null
+  }
+  catch (reason) {
+    localError.value = apiErrorMessage(reason, 'Không tạo được nhóm/tag gợi ý.')
+  }
+  finally {
+    tagApplying.value = false
+  }
+}
+
 /**
  * =====================================================================
  * CHỨC NĂNG: Validate và phát sự kiện lưu thông tin style lên page.
@@ -715,16 +787,51 @@ function onAfterLeave() {
                 />
 
                 <!-- Nhóm phong cách (Category dùng chung) -->
-                <AppSelect
-                  v-model="styleInfo.categoryIds"
-                  :items="categoryOptions"
-                  :loading="taxonomyLoading"
-                  label="Nhóm phong cách"
-                  placeholder="Chọn danh mục"
-                  multiple
-                  chips
-                  closable-chips
-                />
+                <div>
+                  <AppSelect
+                    v-model="styleInfo.categoryIds"
+                    :items="categoryOptions"
+                    :loading="taxonomyLoading"
+                    label="Nhóm phong cách"
+                    placeholder="Chọn danh mục"
+                    multiple
+                    chips
+                    closable-chips
+                  />
+                  <!--
+                    Gợi ý phân loại AI sau phân tích (chỉ hiện khi style chưa
+                    được phân loại và AI đề xuất nhóm/tag mới) 
+                  -->
+                  <div
+                    v-if="taxonomySuggestion && taxonomySuggestion.action === 'propose_new' && !styleInfo.categoryIds.length"
+                    class="mt-1 pa-2 rounded text-caption taxonomy-hint"
+                  >
+                    <VIcon
+                      icon="tabler-sparkles"
+                      size="14"
+                      class="me-1 align-text-bottom"
+                    />
+                    <span class="font-weight-medium">Gợi ý AI:</span>
+                    {{ taxonomySuggestion.new_category }}
+                    <span
+                      v-if="taxonomySuggestion.new_tags?.length"
+                      class="text-medium-emphasis"
+                    >
+                      · tag: {{ taxonomySuggestion.new_tags.join(', ') }}
+                    </span>
+                    <VBtn
+                      size="x-small"
+                      variant="tonal"
+                      color="primary"
+                      class="ms-2"
+                      :loading="tagApplying"
+                      :disabled="tagApplying"
+                      @click="applyTaxonomySuggestion"
+                    >
+                      Dùng gợi ý
+                    </VBtn>
+                  </div>
+                </div>
 
                 <!-- Switch Bật dùng cho generation -->
                 <div>
@@ -1548,6 +1655,13 @@ function onAfterLeave() {
   inline-size: 28px;
   block-size: 28px;
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+/* Gợi ý phân loại AI */
+.taxonomy-hint {
+  background-color: rgba(var(--v-theme-primary), 0.06);
+  border: 1px dashed rgba(var(--v-theme-primary), 0.3);
+  color: rgb(var(--v-theme-on-surface));
 }
 
 /* Hộp Tóm tắt phân tích & JSON viewer */
