@@ -212,9 +212,9 @@ class AiContentWorkspaceApiTest extends TestCase
             'requested_outputs' => ['social_content', 'social_gallery'], 'length' => 'tiny', 'image_count' => 7];
         $id = $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', $payload)->assertAccepted()->json('data.job_id');
         $run = AiImport::findOrFail($id);
-        $this->assertSame($option, data_get($run->input_json, 'context.length'));
-        $this->assertSame(7, data_get($run->input_json, 'context.image_count'));
-        $this->assertSame($option['prompt'], data_get($run->input_json, 'context.length.prompt'));
+        $this->assertSame($option, data_get($run->input_json, 'length_snapshot'));
+        $this->assertSame(7, data_get($run->input_json, 'image_count'));
+        $this->assertSame($option['prompt'], data_get($run->input_json, 'length_snapshot.prompt'));
         $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', array_replace($payload, ['length' => 'missing']))->assertUnprocessable()->assertJsonValidationErrors('length');
         foreach ([0, 11, 1.5] as $count) {
             $this->withToken($token)->postJson('/api/admin/ai-agent/sessions', array_replace($payload, ['image_count' => $count]))->assertUnprocessable()->assertJsonValidationErrors('image_count');
@@ -237,9 +237,11 @@ class AiContentWorkspaceApiTest extends TestCase
 
         $run = $this->createRun($token, 'social_post', ['social_content']);
         $this->assertSame('social_post', $run->input_json['target_type']);
-        $this->assertSame('social_post.facebook_content', $run->input_json['prompt_key']);
-        Queue::assertPushed(ProcessSocialPostCaptionJob::class, 1);
-        Queue::assertNotPushed(ProcessAiImportJob::class);
+        $this->assertSame('social_post.facebook.create.from_text', $run->input_json['prompt_key']);
+        // Social giờ đi pipeline chuẩn giống Post: candidate queued qua ProcessAiImportJob,
+        // chỉ duyệt xong mới tạo SocialPost + queue ảnh.
+        Queue::assertPushed(ProcessAiImportJob::class, 1);
+        Queue::assertNotPushed(ProcessSocialPostCaptionJob::class);
     }
 
     /**

@@ -85,7 +85,8 @@ class AiArticleArchiveService
      */
     public function supports(AiImport $run): bool
     {
-        return $run->operation !== 'image' && data_get($run->input_json, 'target_type', 'post') === 'post';
+        return $run->operation !== 'image'
+            && in_array(data_get($run->input_json, 'target_type', 'post'), ['post', 'social_post'], true);
     }
 
     /**

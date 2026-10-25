@@ -14,7 +14,7 @@ return [
     // Add a new key here to expose another length without changing the frontend.
     'default_length' => 'medium',
     'length_options' => [
-        'status' => ['label' => 'Status Ngắn', 'min_words' => 10, 'max_words' => 20, 'prompt' => 'Viết ngắn gọn trong khoảng 10–20 từ, tập trung vào thông điệp chính.'],
+        'status' => ['label' => 'Status Ngắn', 'min_words' => 20, 'max_words' => 50, 'prompt' => 'Viết ngắn gọn trong khoảng 20–50 từ, tập trung vào thông điệp chính.'],
         'short' => ['label' => 'Ngắn', 'min_words' => 150, 'max_words' => 300, 'prompt' => 'Viết khoảng 150–300 từ nếu nguồn đủ thông tin.'],
         'medium' => ['label' => 'Trung bình', 'min_words' => 700, 'max_words' => 1000, 'prompt' => 'Viết khoảng 700–1.000 từ nếu nguồn đủ thông tin.'],
         'long' => ['label' => 'Dài', 'min_words' => 1500, 'max_words' => 2000, 'prompt' => 'Viết khoảng 1.500–2.000 từ nếu nguồn đủ thông tin.'],

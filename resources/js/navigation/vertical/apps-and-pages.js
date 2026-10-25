@@ -73,6 +73,13 @@ export default [
       { title: 'List', to: 'marketing-social-post-list' },
     ],
   },
+  {
+    title: 'Lịch Đăng Bài',
+    icon: { icon: 'tabler-calendar-time' },
+    action: 'view',
+    subject: 'marketing',
+    to: 'marketing-post-schedule',
+  },
   { heading: 'Blog' },
   {
     title: 'Post',

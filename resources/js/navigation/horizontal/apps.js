@@ -78,6 +78,12 @@ export default [
           { title: 'List', to: 'marketing-social-post-list' },
         ],
       },
+      {
+        title: 'Lịch Đăng Bài',
+        to: 'marketing-post-schedule',
+        action: 'view',
+        subject: 'marketing',
+      },
     ],
   },
   {

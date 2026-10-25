@@ -1,7 +1,6 @@
 <?php
 
 use App\Services\Ai\Targets\PostAiAdapter;
-use App\Services\Ai\Targets\SocialPostAiAdapter;
 
 /**
  * =====================================================================
@@ -43,7 +42,6 @@ return [
         'color' => 'primary',
         'permission' => 'social_posts.create',
         'adapter' => null,
-        'session_adapter' => SocialPostAiAdapter::class,
         'operations' => ['create'],
         'inputs' => ['text'],
         'outputs' => ['social_content', 'social_gallery'],

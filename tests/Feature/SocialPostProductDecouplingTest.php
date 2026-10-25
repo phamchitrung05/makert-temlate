@@ -91,6 +91,8 @@ final class SocialPostProductDecouplingTest extends TestCase
         $response->assertOk()->assertJsonPath('data.fields.0', 'content');
         $this->assertDatabaseHas('social_posts', ['caption' => 'Nội dung Facebook độc lập Product.']);
         $this->assertSame('approved', data_get($run->fresh()->source_meta_json, 'editorial.status'));
+        // Social candidate cũng lưu vào AI Approved giống Post (theo luồng đã khôi phục).
+        $this->assertDatabaseHas('ai_article_archives', ['run_id' => $run->id, 'generation_no' => $run->generation_no]);
     }
 
     /** Input: admin permission. Output: Sanctum token test. */

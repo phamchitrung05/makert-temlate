@@ -33,7 +33,8 @@ use Illuminate\Support\Arr;
 final class AiArticleSnapshot
 {
     public const DRAFT_FIELDS = ['title', 'content_html', 'excerpt', 'focus_keyword', 'seo_title',
-        'seo_description', 'canonical_url', 'robots_index', 'robots_follow', 'og_title', 'og_description'];
+        'seo_description', 'canonical_url', 'robots_index', 'robots_follow', 'og_title', 'og_description',
+        'cta', 'hashtags', 'link_url', 'gallery_prompt', 'negative_prompt', 'aspect_ratio', 'slot_count'];
 
     /**
      * =====================================================================

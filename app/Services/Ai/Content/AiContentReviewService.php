@@ -8,10 +8,13 @@ use App\Models\AiImport;
 use App\Models\MediaAsset;
 use App\Models\User;
 use App\Services\Ai\Content\Archives\AiArticleArchiveService;
+use App\Services\Ai\Content\Archives\AiArticleSnapshot;
+use App\Services\Ai\Content\Data\ArticleInputHasher;
 use App\Services\Ai\Content\Quality\ArticleQualityEvaluationService;
 use App\Services\Ai\Images\AiThumbnailService;
 use App\Services\Ai\Provenance\AiProvenanceService;
 use App\Services\Ai\Registries\TargetRegistry;
+use App\Services\Marketing\SocialPostGenerationService;
 use App\Services\Marketing\SocialPostGenerationStateService;
 use App\Services\Marketing\SocialPostLifecycleService;
 use Illuminate\Support\Facades\DB;
@@ -401,7 +404,30 @@ final class AiContentReviewService
             $appliedFields = $appliedFields === [] ? ['social_content'] : $appliedFields;
             $run->forceFill(['applied_target_id' => $post->getKey(), 'applied_fields' => $appliedFields])->save();
             $run->refresh();
-            $this->recordDecision($run, $actor, 'approved', $data['reason'] ?? null, false);
+            // Social archive vào AI Approved giống Post: stage checkpoint từ
+            // result_json khi candidate chưa có archive_pending_json (worker pipeline
+            // thường stageCompletion lúc ready; candidate social legacy/test thiếu).
+            if ($run->archive_pending_json === null) {
+                $snapshots = app(AiArticleSnapshot::class);
+                $recovery = $snapshots->recoveryResult($run, (array) $run->result_json);
+                $snapshot = $snapshots->make($run, $recovery);
+                $pending = ['snapshot' => $snapshot, 'result' => $recovery];
+                $pending['hash'] = ArticleInputHasher::hash($pending);
+                $run->forceFill(['archive_pending_json' => $pending])->save();
+            }
+            $this->recordDecision($run, $actor, 'approved', $data['reason'] ?? null);
+            // Queue generate ảnh gallery theo image_profile/image_count của candidate;
+            // caption đã có từ draft nên chỉ chạy component 'image'.
+            if (in_array('social_gallery', $appliedFields, true)) {
+                app(SocialPostGenerationService::class)->queue($post, (int) $actor->getKey(), [
+                    'component' => 'image',
+                    'image_count' => (int) ($draft['slot_count'] ?? $run->input_json['image_count'] ?? config('ai.content.social_images.default', 3)),
+                    'image_profile_id' => $run->input_json['image_profile_id'] ?? null,
+                    'image_provider' => $run->input_json['image_connection']['provider'] ?? null,
+                    'image_model' => $run->input_json['image_connection']['model'] ?? null,
+                    'image_model_id' => $run->input_json['image_connection']['model_id'] ?? null,
+                ]);
+            }
             $post->refresh();
             $generation = app(SocialPostGenerationStateService::class);
             $generation->refresh($post, (int) $post->generation_no);
