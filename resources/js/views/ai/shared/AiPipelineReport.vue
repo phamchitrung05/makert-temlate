@@ -10,9 +10,13 @@
 -->
 <script setup>
 /* eslint-disable camelcase -- Quality check key backend. */
+import { ref } from 'vue'
 import { pipelineStepLabel } from '@/utils/aiArticleOptions'
 
 const props = defineProps({ session: { type: Object, default: null } })
+
+// Trạng thái mở/thu của báo cáo tiến trình (section phẳng, không dùng accordion lồng trong card).
+const reportOpen = ref(true)
 
 /**
  * =====================================================================
@@ -59,144 +63,158 @@ const validationLabel = value => ({ evidence_not_in_source: 'Dẫn chứng khôn
 </script>
 
 <template>
-  <VExpansionPanels
+  <div
     v-if="props.session"
     class="my-4"
   >
-    <VExpansionPanel title="Tiến trình và kiểm tra bài viết">
-      <VExpansionPanelText>
-        <div class="d-flex flex-wrap gap-2 mb-3">
+    <VDivider class="mb-4" />
+    <div
+      class="d-flex align-center justify-space-between cursor-pointer mb-3"
+      role="button"
+      @click="reportOpen = !reportOpen"
+    >
+      <span class="text-body-1 font-weight-medium text-high-emphasis">
+        Tiến trình và kiểm tra bài viết
+      </span>
+      <VIcon
+        :icon="reportOpen ? 'tabler-chevron-up' : 'tabler-chevron-down'"
+        color="secondary"
+        size="20"
+      />
+    </div>
+
+    <div v-show="reportOpen">
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <VChip
+          size="small"
+          color="primary"
+        >
+          {{ pipelineStepLabel(props.session.current_step || props.session.status) }}
+        </VChip>
+        <VChip
+          v-if="props.session.writing_profile?.name"
+          size="small"
+        >
+          {{ props.session.writing_profile.name }} · v{{ props.session.writing_profile.version }}
+        </VChip>
+        <VChip
+          v-else
+          size="small"
+          color="secondary"
+        >
+          Không có mẫu văn phong
+        </VChip>
+        <VChip
+          v-if="props.session.source_format"
+          size="small"
+        >
+          Nguồn {{ props.session.source_format }}
+        </VChip>
+      </div>
+      <p class="text-caption">
+        Tiến độ là mốc xử lý. Bài sẵn sàng vẫn cần người biên tập đọc và duyệt.
+      </p>
+      <div
+        v-for="step in props.session.steps || []"
+        :key="step.key"
+        class="rounded border pa-3 mb-3"
+      >
+        <div class="d-flex flex-wrap justify-space-between gap-2 mb-2">
+          <span class="font-weight-medium">{{ pipelineStepLabel(step.key) }}</span>
           <VChip
             size="small"
-            color="primary"
+            :color="step.status === 'failed' ? 'error' : step.status === 'completed' ? 'success' : 'primary'"
           >
-            {{ pipelineStepLabel(props.session.current_step || props.session.status) }}
-          </VChip>
-          <VChip
-            v-if="props.session.writing_profile?.name"
-            size="small"
-          >
-            {{ props.session.writing_profile.name }} · v{{ props.session.writing_profile.version }}
-          </VChip>
-          <VChip
-            v-else
-            size="small"
-            color="secondary"
-          >
-            Không có mẫu văn phong
-          </VChip>
-          <VChip
-            v-if="props.session.source_format"
-            size="small"
-          >
-            Nguồn {{ props.session.source_format }}
+            {{ statusLabel(step.status) }} · lần {{ step.attempt }}
           </VChip>
         </div>
-        <p class="text-caption">
-          Tiến độ là mốc xử lý. Bài sẵn sàng vẫn cần người biên tập đọc và duyệt.
-        </p>
+        <div class="text-caption">
+          {{ formatTime(step.started_at) }} → {{ formatTime(step.completed_at) }}
+        </div>
+        <div class="text-caption mt-1">
+          {{ usageText(step.diagnostics) }}<span v-if="Number.isFinite(step.diagnostics?.latency_ms)"> · {{ (step.diagnostics.latency_ms / 1000).toFixed(1) }} giây</span>
+        </div>
         <div
-          v-for="step in props.session.steps || []"
-          :key="step.key"
-          class="rounded border pa-3 mb-3"
+          v-if="step.diagnostics?.model"
+          class="text-caption mt-1"
         >
-          <div class="d-flex flex-wrap justify-space-between gap-2 mb-2">
-            <span class="font-weight-medium">{{ pipelineStepLabel(step.key) }}</span>
-            <VChip
-              size="small"
-              :color="step.status === 'failed' ? 'error' : step.status === 'completed' ? 'success' : 'primary'"
-            >
-              {{ statusLabel(step.status) }} · lần {{ step.attempt }}
-            </VChip>
-          </div>
-          <div class="text-caption">
-            {{ formatTime(step.started_at) }} → {{ formatTime(step.completed_at) }}
-          </div>
-          <div class="text-caption mt-1">
-            {{ usageText(step.diagnostics) }}<span v-if="Number.isFinite(step.diagnostics?.latency_ms)"> · {{ (step.diagnostics.latency_ms / 1000).toFixed(1) }} giây</span>
-          </div>
-          <div
-            v-if="step.diagnostics?.model"
-            class="text-caption mt-1"
-          >
-            {{ step.diagnostics.provider }} / {{ step.diagnostics.model }}
-          </div>
-          <div
-            v-if="step.diagnostics?.prompt_version || step.diagnostics?.schema_version"
-            class="text-caption mt-1"
-          >
-            Prompt {{ step.diagnostics.prompt_version || '—' }} · {{ step.diagnostics.schema_version || '—' }}
-          </div>
-          <div
-            v-if="step.diagnostics?.error_code"
-            class="text-body-2 text-error mt-1"
-          >
-            {{ step.diagnostics.error_code }}
-          </div>
-          <p
-            v-for="(validation, index) in (step.diagnostics?.validation_errors || []).slice(0, 5)"
-            :key="index"
-            class="text-body-2 text-error mt-1 mb-0"
-          >
-            {{ validationLabel(validation.reason) }}
-          </p>
+          {{ step.diagnostics.provider }} / {{ step.diagnostics.model }}
+        </div>
+        <div
+          v-if="step.diagnostics?.prompt_version || step.diagnostics?.schema_version"
+          class="text-caption mt-1"
+        >
+          Prompt {{ step.diagnostics.prompt_version || '—' }} · {{ step.diagnostics.schema_version || '—' }}
+        </div>
+        <div
+          v-if="step.diagnostics?.error_code"
+          class="text-body-2 text-error mt-1"
+        >
+          {{ step.diagnostics.error_code }}
         </div>
         <p
-          v-if="!props.session.steps?.length"
-          class="text-caption"
+          v-for="(validation, index) in (step.diagnostics?.validation_errors || []).slice(0, 5)"
+          :key="index"
+          class="text-body-2 text-error mt-1 mb-0"
         >
-          Run này chưa có checkpoint ba bước. Nhánh ngắn hoặc chỉ trích xuất có thể không gọi đủ ba lượt.
+          {{ validationLabel(validation.reason) }}
         </p>
-        <div
-          v-if="!props.session.steps?.length && (props.session.response_diagnostics?.reported_model || props.session.response_diagnostics?.model || props.session.response_diagnostics?.usage)"
-          class="rounded border pa-3 mb-3 text-caption"
+      </div>
+      <p
+        v-if="!props.session.steps?.length"
+        class="text-caption"
+      >
+        Run này chưa có checkpoint ba bước. Nhánh ngắn hoặc chỉ trích xuất có thể không gọi đủ ba lượt.
+      </p>
+      <div
+        v-if="!props.session.steps?.length && (props.session.response_diagnostics?.reported_model || props.session.response_diagnostics?.model || props.session.response_diagnostics?.usage)"
+        class="rounded border pa-3 mb-3 text-caption"
+      >
+        <div>Một lượt AI · {{ usageText(props.session.response_diagnostics) }}</div>
+        <div>{{ props.session.response_diagnostics.reported_model || props.session.response_diagnostics.model || props.session.model || 'Không rõ model' }} · Prompt {{ props.session.response_diagnostics.prompt_version || props.session.prompt_version || '—' }}</div>
+      </div>
+      <ul
+        v-if="props.session.quality_checks?.length"
+        class="ps-5 mb-3"
+      >
+        <li
+          v-for="(check, index) in props.session.quality_checks"
+          :key="index"
+          class="text-body-2 mb-1"
         >
-          <div>Một lượt AI · {{ usageText(props.session.response_diagnostics) }}</div>
-          <div>{{ props.session.response_diagnostics.reported_model || props.session.response_diagnostics.model || props.session.model || 'Không rõ model' }} · Prompt {{ props.session.response_diagnostics.prompt_version || props.session.prompt_version || '—' }}</div>
-        </div>
-        <ul
-          v-if="props.session.quality_checks?.length"
-          class="ps-5 mb-3"
+          {{ checkLabel(check.check) }}: {{ statusLabel(check.status) }}<span v-if="check.reason"> · {{ check.reason }}</span><span v-if="check.metric !== undefined"> · {{ check.metric }}</span>
+        </li>
+      </ul>
+      <VAlert
+        v-if="props.session.image_warnings?.includes('restored_unplaced_images')"
+        type="warning"
+        variant="tonal"
+        class="mb-3"
+      >
+        AI chưa đặt đủ ảnh của bản gốc. Hệ thống đã giữ ảnh ở cuối bài; hãy kiểm tra và chuyển đến vị trí phù hợp.
+      </VAlert>
+      <VAlert
+        v-if="props.session.editor_warning_count"
+        type="warning"
+        variant="tonal"
+        class="mb-3"
+      >
+        Có {{ props.session.editor_warning_count }} nhận xét cần biên tập rà lại.
+      </VAlert>
+      <VAlert
+        v-if="props.session.error || props.session.error_code"
+        type="error"
+        variant="tonal"
+      >
+        {{ props.session.error_code }} · {{ props.session.error }}
+        <p
+          v-for="(validation, index) in (props.session.validation_errors || []).slice(0, 5)"
+          :key="index"
+          class="mb-0 mt-1"
         >
-          <li
-            v-for="(check, index) in props.session.quality_checks"
-            :key="index"
-            class="text-body-2 mb-1"
-          >
-            {{ checkLabel(check.check) }}: {{ statusLabel(check.status) }}<span v-if="check.reason"> · {{ check.reason }}</span><span v-if="check.metric !== undefined"> · {{ check.metric }}</span>
-          </li>
-        </ul>
-        <VAlert
-          v-if="props.session.image_warnings?.includes('restored_unplaced_images')"
-          type="warning"
-          variant="tonal"
-          class="mb-3"
-        >
-          AI chưa đặt đủ ảnh của bản gốc. Hệ thống đã giữ ảnh ở cuối bài; hãy kiểm tra và chuyển đến vị trí phù hợp.
-        </VAlert>
-        <VAlert
-          v-if="props.session.editor_warning_count"
-          type="warning"
-          variant="tonal"
-          class="mb-3"
-        >
-          Có {{ props.session.editor_warning_count }} nhận xét cần biên tập rà lại.
-        </VAlert>
-        <VAlert
-          v-if="props.session.error || props.session.error_code"
-          type="error"
-          variant="tonal"
-        >
-          {{ props.session.error_code }} · {{ props.session.error }}
-          <p
-            v-for="(validation, index) in (props.session.validation_errors || []).slice(0, 5)"
-            :key="index"
-            class="mb-0 mt-1"
-          >
-            {{ validationLabel(validation.reason) }}
-          </p>
-        </VAlert>
-      </VExpansionPanelText>
-    </VExpansionPanel>
-  </VExpansionPanels>
+          {{ validationLabel(validation.reason) }}
+        </p>
+      </VAlert>
+    </div>
+  </div>
 </template>
