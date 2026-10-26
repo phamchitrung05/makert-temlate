@@ -117,12 +117,23 @@ final class VisualStyleService
      */
     private function syncTaxonomy(AiImageProfile $style, array $values): void
     {
+        // Gộp id có sẵn + tên mới (proposed đã duyệt) trong một lần sync qua
+        // trait HasTaxonomy — firstOrCreate so khớp case-insensitive, không trùng.
+        // Chỉ truyền key khi payload có — trait bỏ qua nhóm không có key.
+        $payload = [];
         if (array_key_exists('category_ids', $values)) {
-            $style->categories()->sync(array_map('intval', (array) ($values['category_ids'] ?? [])));
+            $payload['categories'] = (array) $values['category_ids'];
+        }
+        if (array_key_exists('new_categories', $values)) {
+            $payload['new_categories'] = (array) $values['new_categories'];
         }
         if (array_key_exists('tag_ids', $values)) {
-            $style->tags()->sync(array_map('intval', (array) ($values['tag_ids'] ?? [])));
+            $payload['tags'] = (array) $values['tag_ids'];
         }
+        if (array_key_exists('new_tags', $values)) {
+            $payload['new_tags'] = (array) $values['new_tags'];
+        }
+        $style->syncTaxonomyWithNew($payload);
     }
 
     /**
@@ -148,22 +159,33 @@ final class VisualStyleService
         if (array_key_exists('is_enabled', $values)) {
             $style->is_enabled = (bool) $values['is_enabled'];
         }
-        $style->save();
-        $this->syncTaxonomy($style, $values);
 
-        // Shots gửi kèm trong payload: chỉ cập nhật is_active cho shot thuộc style.
-        // Code/name/override không đổi qua endpoint metadata; shots[] chỉ chứa
-        // {id, is_active} từ dialog chỉnh sửa.
-        if (array_key_exists('shots', $values)) {
-            $shotIds = collect($values['shots'])->pluck('id')->all();
-            $style->shots()->whereIn('id', $shotIds)->get()
-                ->each(function ($shot) use ($values): void {
-                    $data = collect($values['shots'])->firstWhere('id', $shot->id);
-                    $shot->forceFill(['is_active' => (bool) ($data['is_active'] ?? $shot->is_active)])->save();
-                });
-        }
+        return DB::transaction(function () use ($style, $values): AiImageProfile {
+            $style->save();
+            $this->syncTaxonomy($style, $values);
+            // Gợi ý AI đã được duyệt/gắn — clear để panel không hiện lại cùng list.
+            if (array_key_exists('new_categories', $values) || array_key_exists('new_tags', $values)) {
+                $dna = (array) $style->dna_json;
+                if (isset($dna['taxonomy_suggestion'])) {
+                    unset($dna['taxonomy_suggestion']);
+                    $style->forceFill(['dna_json' => $dna])->save();
+                }
+            }
 
-        return $style->refresh()->load(['shots', 'categories', 'tags', 'slugs']);
+            // Shots gửi kèm trong payload: chỉ cập nhật is_active cho shot thuộc style.
+            // Code/name/override không đổi qua endpoint metadata; shots[] chỉ chứa
+            // {id, is_active} từ dialog chỉnh sửa.
+            if (array_key_exists('shots', $values)) {
+                $shotIds = collect($values['shots'])->pluck('id')->all();
+                $style->shots()->whereIn('id', $shotIds)->get()
+                    ->each(function ($shot) use ($values): void {
+                        $data = collect($values['shots'])->firstWhere('id', $shot->id);
+                        $shot->forceFill(['is_active' => (bool) ($data['is_active'] ?? $shot->is_active)])->save();
+                    });
+            }
+
+            return $style->refresh()->load(['shots', 'categories', 'tags', 'slugs']);
+        });
     }
 
     /**

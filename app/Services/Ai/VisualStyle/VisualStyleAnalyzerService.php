@@ -332,40 +332,44 @@ final class VisualStyleAnalyzerService
      */
     private function resolveTaxonomySuggestion(array $suggestion, array $context): ?array
     {
-        $action = $suggestion['action'] ?? null;
-        if (! in_array($action, ['match_existing', 'propose_new'], true)) {
-            return null;
-        }
         $byName = fn (array $list) => collect($list)->keyBy(fn ($item) => mb_strtolower($item['name']));
 
         $categories = $byName($context['categories']);
         $tags = $byName($context['tags']);
 
-        if ($action === 'match_existing') {
-            $category = $categories->get(mb_strtolower((string) ($suggestion['category'] ?? '')));
-            $tagIds = collect((array) ($suggestion['tags'] ?? []))
-                ->map(fn ($name) => $tags->get(mb_strtolower((string) $name))['id'] ?? null)
-                ->filter()->values()->all();
+        $matched = (array) ($suggestion['matched'] ?? []);
+        $proposed = (array) ($suggestion['proposed'] ?? []);
+        // Format cũ (action/category/new_category) → quy về dual-list.
+        $matchedCategoryNames = (array) ($matched['categories'] ?? (isset($suggestion['category']) ? [$suggestion['category']] : []));
+        $matchedTagNames = (array) ($matched['tags'] ?? ($suggestion['tags'] ?? []));
+        $proposedCategoryNames = (array) ($proposed['new_categories'] ?? (isset($suggestion['new_category']) ? [$suggestion['new_category']] : []));
+        $proposedTagNames = (array) ($proposed['new_tags'] ?? ($suggestion['new_tags'] ?? []));
 
-            return [
-                'action' => 'match_existing',
-                'category' => $category['name'] ?? null,
-                'category_id' => $category['id'] ?? null,
-                'tags' => (array) ($suggestion['tags'] ?? []),
-                'tag_ids' => $tagIds,
-                'confidence' => $suggestion['confidence'] ?? null,
-                'reason' => $suggestion['reason'] ?? null,
-            ];
+        // Resolve matched names → {id, name} cho từng bản ghi tìm thấy.
+        $matchedCategories = collect($matchedCategoryNames)
+            ->map(fn ($name) => $categories->get(mb_strtolower((string) $name)))
+            ->filter()->values()
+            ->map(fn ($c) => ['id' => (int) $c['id'], 'name' => (string) $c['name']])
+            ->all();
+        $matchedTags = collect($matchedTagNames)
+            ->map(fn ($name) => $tags->get(mb_strtolower((string) $name)))
+            ->filter()->values()
+            ->map(fn ($t) => ['id' => (int) $t['id'], 'name' => (string) $t['name']])
+            ->all();
+
+        if ($matchedCategories === [] && $matchedTags === [] && $proposedCategoryNames === [] && $proposedTagNames === []) {
+            return null;
         }
 
         return [
-            'action' => 'propose_new',
-            'category' => null,
-            'category_id' => null,
-            'tags' => [],
-            'tag_ids' => [],
-            'new_category' => $suggestion['new_category'] ?? null,
-            'new_tags' => (array) ($suggestion['new_tags'] ?? []),
+            'matched' => [
+                'categories' => $matchedCategories,
+                'tags' => $matchedTags,
+            ],
+            'proposed' => [
+                'new_categories' => array_values(array_filter(array_map(fn ($n) => trim((string) $n) ?: null, $proposedCategoryNames))),
+                'new_tags' => array_values(array_filter(array_map(fn ($n) => trim((string) $n) ?: null, $proposedTagNames))),
+            ],
             'confidence' => $suggestion['confidence'] ?? null,
             'reason' => $suggestion['reason'] ?? null,
         ];
@@ -382,14 +386,18 @@ final class VisualStyleAnalyzerService
      */
     private function applyTaxonomySuggestion(AiImageProfile $style, ?array $suggestion): void
     {
-        if (($suggestion['action'] ?? null) !== 'match_existing') {
-            return;
+        $matched = (array) ($suggestion['matched'] ?? []);
+        $categoryIds = collect((array) ($matched['categories'] ?? []))
+            ->map(fn ($c) => (int) ($c['id'] ?? 0))
+            ->filter()->values()->all();
+        $tagIds = collect((array) ($matched['tags'] ?? []))
+            ->map(fn ($t) => (int) ($t['id'] ?? 0))
+            ->filter()->values()->all();
+        if ($categoryIds !== []) {
+            $style->categories()->syncWithoutDetaching($categoryIds);
         }
-        if (! empty($suggestion['category_id'])) {
-            $style->categories()->syncWithoutDetaching([(int) $suggestion['category_id']]);
-        }
-        if (! empty($suggestion['tag_ids'])) {
-            $style->tags()->syncWithoutDetaching(array_map('intval', (array) $suggestion['tag_ids']));
+        if ($tagIds !== []) {
+            $style->tags()->syncWithoutDetaching($tagIds);
         }
     }
 

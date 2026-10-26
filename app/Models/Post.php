@@ -6,13 +6,13 @@ use App\Enums\PostStatus;
 use App\Models\Concerns\HasMediaAssets;
 use App\Models\Concerns\HasSeoMetadata;
 use App\Models\Concerns\HasSlug;
+use App\Models\Concerns\HasTaxonomy;
 use Database\Factories\PostFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Post extends Model
 {
     /** @use HasFactory<PostFactory> */
-    use HasFactory, HasMediaAssets, HasSeoMetadata, HasSlug, SoftDeletes;
+    use HasFactory, HasMediaAssets, HasSeoMetadata, HasSlug, HasTaxonomy, SoftDeletes;
 
     protected $fillable = [
         'created_by',
@@ -78,20 +78,6 @@ class Post extends Model
     public function scopePublished(Builder $query): Builder
     {
         return $query->where('status', PostStatus::Published);
-    }
-
-    /** Input: model hiện tại. Output: danh mục được gắn qua pivot đa hình. */
-    public function categories(): MorphToMany
-    {
-        return $this->morphToMany(Category::class, 'categorizable')
-            ->withPivot('sort_order')
-            ->withTimestamps();
-    }
-
-    /** Input: model hiện tại. Output: tag được gắn qua pivot đa hình. */
-    public function tags(): MorphToMany
-    {
-        return $this->morphToMany(Tag::class, 'taggable')->withTimestamps();
     }
 
     /** Input: Post hiện tại. Output: fallback canonical theo permalink Post. */

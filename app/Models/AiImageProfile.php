@@ -4,11 +4,11 @@ namespace App\Models;
 
 use App\Models\Concerns\HasMediaAssets;
 use App\Models\Concerns\HasSlug;
+use App\Models\Concerns\HasTaxonomy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 /**
  * =====================================================================
@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
  */
 final class AiImageProfile extends Model
 {
-    use HasMediaAssets, HasSlug;
+    use HasMediaAssets, HasSlug, HasTaxonomy;
 
     protected $guarded = ['id'];
 
@@ -114,34 +114,6 @@ final class AiImageProfile extends Model
     public function slugSourceColumn(): string
     {
         return 'name';
-    }
-
-    /**
-     * =====================================================================
-     * CHỨC NĂNG: Gắn Category dùng chung (categorizables) cho style.
-     * =====================================================================
-     * Input: model hiện tại. Output: MorphToMany Category qua pivot categorizables.
-     * Side effect: chỉ query khi nạp quan hệ.
-     * =====================================================================
-     */
-    public function categories(): MorphToMany
-    {
-        return $this->morphToMany(Category::class, 'categorizable')
-            ->withPivot('sort_order')
-            ->withTimestamps();
-    }
-
-    /**
-     * =====================================================================
-     * CHỨC NĂNG: Gắn Tag dùng chung (taggables) cho style.
-     * =====================================================================
-     * Input: model hiện tại. Output: MorphToMany Tag qua pivot taggables.
-     * Side effect: chỉ query khi nạp quan hệ.
-     * =====================================================================
-     */
-    public function tags(): MorphToMany
-    {
-        return $this->morphToMany(Tag::class, 'taggable')->withTimestamps();
     }
 
     /**

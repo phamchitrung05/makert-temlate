@@ -151,20 +151,49 @@ final class VisualStyleDnaDefinitionTest extends TestCase
     {
         $dna = $this->validDna();
         $dna['taxonomy_suggestion'] = [
-            'action' => 'match_existing',
-            'category' => 'Lifestyle',
-            'tags' => ['cà phê', 'flat lay'],
+            'matched' => [
+                'categories' => ['Văn phòng phẩm'],
+                'tags' => ['studio'],
+            ],
+            'proposed' => [
+                'new_categories' => ['Thiệp cưới'],
+                'new_tags' => ['phối lớp', 'chữ in nổi'],
+            ],
             'confidence' => 0.9,
-            'reason' => 'Khớp nhóm lifestyle hiện có.',
+            'reason' => 'Văn phòng phẩm khớp; đề xuất nhóm chuyên thiệp cưới.',
         ];
         $normalized = app(VisualStyleDnaDefinition::class)->validate($dna);
-        $this->assertSame('match_existing', $normalized['taxonomy_suggestion']['action']);
-        $this->assertSame('Lifestyle', $normalized['taxonomy_suggestion']['category']);
-        $this->assertSame(0.9, $normalized['taxonomy_suggestion']['confidence']);
-        $this->assertContains('cà phê', $normalized['taxonomy_suggestion']['tags']);
+        $s = $normalized['taxonomy_suggestion'];
+        $this->assertSame(['Văn phòng phẩm'], $s['matched']['categories']);
+        $this->assertSame(['studio'], $s['matched']['tags']);
+        $this->assertSame(['Thiệp cưới'], $s['proposed']['new_categories']);
+        $this->assertSame(['phối lớp', 'chữ in nổi'], $s['proposed']['new_tags']);
+        $this->assertSame(0.9, $s['confidence']);
+    }
 
-        $dna['taxonomy_suggestion']['action'] = 'weird';
+    /**
+     * =====================================================================
+     * CHỨC NĂNG: Format cũ (action/category/new_category scalar) vẫn chuẩn hóa
+     * được sang dual-list để record cũ resolve tiếp.
+     * =====================================================================
+     */
+    public function test_taxonomy_suggestion_legacy_format_normalized(): void
+    {
+        $dna = $this->validDna();
+        $dna['taxonomy_suggestion'] = [
+            'action' => 'match_existing',
+            'category' => 'Lifestyle',
+            'tags' => ['cà phê'],
+            'new_category' => 'Thiệp cưới',
+            'new_tags' => ['wedding'],
+            'confidence' => 0.8,
+        ];
         $normalized = app(VisualStyleDnaDefinition::class)->validate($dna);
-        $this->assertSame('propose_new', $normalized['taxonomy_suggestion']['action']);
+        $s = $normalized['taxonomy_suggestion'];
+        $this->assertSame(['Lifestyle'], $s['matched']['categories']);
+        $this->assertSame(['cà phê'], $s['matched']['tags']);
+        $this->assertSame(['Thiệp cưới'], $s['proposed']['new_categories']);
+        $this->assertSame(['wedding'], $s['proposed']['new_tags']);
+        $this->assertArrayNotHasKey('action', $s);
     }
 }

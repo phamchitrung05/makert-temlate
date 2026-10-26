@@ -178,13 +178,22 @@ final class VisualStyleDnaDefinition
 
         return [
             'type' => 'object', 'additionalProperties' => false,
-            'required' => ['action'],
+            'required' => ['matched', 'proposed'],
             'properties' => [
-                'action' => ['type' => 'string', 'enum' => ['match_existing', 'propose_new']],
-                'category' => ['type' => 'string', 'maxLength' => 80],
-                'tags' => $stringList,
-                'new_category' => ['type' => 'string', 'maxLength' => 80],
-                'new_tags' => $stringList,
+                'matched' => [
+                    'type' => 'object', 'additionalProperties' => false,
+                    'properties' => [
+                        'categories' => ['type' => 'array', 'items' => ['type' => 'string', 'maxLength' => 80], 'maxItems' => 2],
+                        'tags' => $stringList,
+                    ],
+                ],
+                'proposed' => [
+                    'type' => 'object', 'additionalProperties' => false,
+                    'properties' => [
+                        'new_categories' => ['type' => 'array', 'items' => ['type' => 'string', 'maxLength' => 80], 'maxItems' => 2],
+                        'new_tags' => $stringList,
+                    ],
+                ],
                 'confidence' => ['type' => 'number', 'minimum' => 0, 'maximum' => 1],
                 'reason' => ['type' => 'string', 'maxLength' => 500],
             ],
@@ -203,16 +212,34 @@ final class VisualStyleDnaDefinition
      */
     private function normalizeTaxonomySuggestion(array $suggestion): array
     {
-        $action = in_array($suggestion['action'] ?? null, ['match_existing', 'propose_new'], true)
-            ? $suggestion['action']
-            : 'propose_new';
+        // Đọc cả format mới (matched/proposed dual-list) và format cũ
+        // (action/category/new_category scalar) để record cũ vẫn resolve được.
+        $matched = (array) ($suggestion['matched'] ?? []);
+        $proposed = (array) ($suggestion['proposed'] ?? []);
+
+        // Format cũ: matched.categories lấy từ category scalar khi action=match_existing;
+        // proposed lấy từ new_category scalar/new_tags.
+        $matchedCategories = (array) ($matched['categories'] ?? []);
+        if ($matchedCategories === [] && isset($suggestion['category'])) {
+            $matchedCategories = [(string) $suggestion['category']];
+        }
+        $matchedTags = (array) ($matched['tags'] ?? ($suggestion['tags'] ?? []));
+
+        $proposedCategories = (array) ($proposed['new_categories'] ?? []);
+        if ($proposedCategories === [] && isset($suggestion['new_category'])) {
+            $proposedCategories = [(string) $suggestion['new_category']];
+        }
+        $proposedTags = (array) ($proposed['new_tags'] ?? ($suggestion['new_tags'] ?? []));
 
         return [
-            'action' => $action,
-            'category' => isset($suggestion['category']) ? mb_substr(trim((string) $suggestion['category']), 0, 80) : null,
-            'tags' => $this->normalizeStringList($suggestion['tags'] ?? [], 6, 80),
-            'new_category' => isset($suggestion['new_category']) ? mb_substr(trim((string) $suggestion['new_category']), 0, 80) : null,
-            'new_tags' => $this->normalizeStringList($suggestion['new_tags'] ?? [], 6, 80),
+            'matched' => [
+                'categories' => $this->normalizeStringList($matchedCategories, 2, 80),
+                'tags' => $this->normalizeStringList($matchedTags, 6, 80),
+            ],
+            'proposed' => [
+                'new_categories' => $this->normalizeStringList($proposedCategories, 2, 80),
+                'new_tags' => $this->normalizeStringList($proposedTags, 6, 80),
+            ],
             'confidence' => isset($suggestion['confidence']) && is_numeric($suggestion['confidence']) ? max(0, min(1, round((float) $suggestion['confidence'], 3))) : null,
             'reason' => isset($suggestion['reason']) ? mb_substr((string) $suggestion['reason'], 0, 500) : null,
         ];

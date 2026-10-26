@@ -94,21 +94,30 @@ có slug".
 Model không giữ `category_id`/`tag_id` cột riêng — gắn qua pivot `morphToMany`
 /`morphedByMany`.
 
-### 3.1. Phía model tài nguyên (ví dụ `Post`, `Resource`)
+### 3.1. Phía model tài nguyên — trait `HasTaxonomy`
+
+Từ 26/10/2026: **không viết tay `categories()`/`tags()`** — dùng trait
+`App\Models\Concerns\HasTaxonomy` (cùng convention `HasSlug`/`HasMediaAssets`):
 
 ```php
-public function categories(): MorphToMany
-{
-    return $this->morphToMany(Category::class, 'categorizable')
-        ->withPivot('sort_order')   // pivot có sort_order
-        ->withTimestamps();
-}
+use App\Models\Concerns\HasTaxonomy;
 
-public function tags(): MorphToMany
+class Post extends Model
 {
-    return $this->morphToMany(Tag::class, 'taggable')->withTimestamps();
+    use HasTaxonomy;   // cung cấp categories() + tags() + syncTaxonomyWithNew()
 }
 ```
+
+Trait cung cấp:
+
+- `categories(): MorphToMany` — pivot `categorizables` + `sort_order` + timestamps.
+- `tags(): MorphToMany` — pivot `taggables` + timestamps.
+- `syncTaxonomyWithNew(['categories' => ids, 'new_categories' => names,
+  'tags' => ids, 'new_tags' => names])` — id có sẵn chỉ gắn pivot; tên mới được
+  `firstOrCreate` (so khớp case-insensitive, `status=active`, slug tự sinh qua
+  `HasSlug`) rồi gắn luôn. **Phải gọi trong transaction của caller.** Dùng cho
+  mọi luồng "id đã chọn + tên đề xuất" (AI suggestion, form cho phép nhập mới).
+  Trả về `['category_ids' => [...], 'tag_ids' => [...]]` đã sync.
 
 ### 3.2. Phía taxonomy (Category, Tag) — quan hệ ngược `morphedByMany`
 
@@ -146,8 +155,8 @@ xem `DEVELOPMENT_GUIDELINES.md` § Laravel.
 
 1. `use HasSlug` + định nghĩa `slugs()` (morph name `sluggable`),
    `slugSource()`, `slugSourceColumn()`.
-2. Gắn Category/Tag qua `morphToMany` tới `categorizable`/`taggable`, không
-   tạo cột FK riêng.
+2. `use HasTaxonomy` để có `categories()`/`tags()` qua pivot — không tạo cột
+   FK riêng, không viết tay `morphToMany`.
 3. Thêm `morphedByMany` ngược trên `Category`/`Tag` nếu cần đếm/filter.
 4. Slug public resolve bằng `SlugService::resolveBySlug()` — đọc từ
    `slugable`, không query cột `slug` trên model.

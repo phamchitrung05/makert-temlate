@@ -8,6 +8,7 @@ use App\Enums\ResourceVisibility;
 use App\Models\Concerns\HasMediaAssets;
 use App\Models\Concerns\HasSeoMetadata;
 use App\Models\Concerns\HasSlug;
+use App\Models\Concerns\HasTaxonomy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,7 +16,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -48,7 +48,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 class Resource extends Model
 {
     /** @use HasFactory<\Database\Factories\ResourceFactory> */
-    use HasFactory, HasMediaAssets, HasSeoMetadata, HasSlug, LogsActivity, SoftDeletes;
+    use HasFactory, HasMediaAssets, HasSeoMetadata, HasSlug, HasTaxonomy, LogsActivity, SoftDeletes;
 
     /**
      * @var list<string>
@@ -147,36 +147,6 @@ class Resource extends Model
     public function slugs(): MorphMany
     {
         return $this->morphMany(Slug::class, 'sluggable');
-    }
-
-    /**
-     * =====================================================================
-     * CHỨC NĂNG: Lấy danh mục đã gắn cho resource
-     * =====================================================================
-     *
-     * OUTPUT:
-     * - MorphToMany: Category qua pivot categorizables, có thêm sort_order
-     * Input: tham số theo chữ ký `categories()` và state đã hydrate của class.
-     */
-    public function categories(): MorphToMany
-    {
-        return $this->morphToMany(Category::class, 'categorizable')
-            ->withPivot('sort_order')
-            ->withTimestamps();
-    }
-
-    /**
-     * =====================================================================
-     * CHỨC NĂNG: Lấy tag đã gắn cho resource
-     * =====================================================================
-     *
-     * OUTPUT:
-     * - MorphToMany: Tag qua pivot taggables
-     * Input: tham số theo chữ ký `tags()` và state đã hydrate của class.
-     */
-    public function tags(): MorphToMany
-    {
-        return $this->morphToMany(Tag::class, 'taggable')->withTimestamps();
     }
 
     /**

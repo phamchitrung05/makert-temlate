@@ -46,7 +46,6 @@ const emit = defineEmits(['update:modelValue', 'saved', 'close', 'afterLeave'])
 
 const store = useVisualStyleStore()
 const categoryStore = useCategoryStore()
-const tagApplying = ref(false)
 const { isDetailLoading, isMutating: saving, detailError } = storeToRefs(store)
 const { snackbar, success: notifySuccess } = useSnackbar()
 
@@ -124,9 +123,39 @@ const selectedThumb = ref('')
 // objectURL của ảnh tham chiếu private (endpoint cần auth — fetch blob rồi objectURL)
 const { url: selectedThumbUrl } = usePrivateImage(selectedThumb)
 
-// Gợi ý phân loại do AI trả về trong dna_json.taxonomy_suggestion — chỉ dùng
-// để prefill khi style chưa có category/tag và để hiện gợi ý "đề xuất mới".
+// Gợi ý phân loại do AI trả về trong dna_json.taxonomy_suggestion — format
+// dual-list {matched:{categories[{id,name}],tags[{id,name}]}, proposed:
+// {new_categories[],new_tags[]}}. Admin tick từng item; chỉ khi Lưu mới
+// tạo record + sync. matched mặc định pre-check (đã có sẵn, chỉ cần gắn).
 const taxonomySuggestion = ref(null)
+
+// Proposed names mà user tick → đưa vào payload new_categories/new_tags.
+const checkedNewCategories = ref([])
+const checkedNewTags = ref([])
+
+// Matched ids mà user tick (pre-check mặc định) → gắn pivot khi Lưu.
+const checkedMatchedCategoryIds = ref([])
+const checkedMatchedTagIds = ref([])
+
+// Panel nhóm phong cách: matched categories + proposed new_categories.
+const hasCategorySuggestion = computed(() => {
+  const s = taxonomySuggestion.value
+  if (!s) return false
+  const m = s.matched ?? {}
+  const p = s.proposed ?? {}
+
+  return Boolean((m.categories ?? []).length || (p.new_categories ?? []).length)
+})
+
+// Panel từ khóa: matched tags + proposed new_tags.
+const hasTagSuggestion = computed(() => {
+  const s = taxonomySuggestion.value
+  if (!s) return false
+  const m = s.matched ?? {}
+  const p = s.proposed ?? {}
+
+  return Boolean((m.tags ?? []).length || (p.new_tags ?? []).length)
+})
 
 // Dữ liệu Thông tin style (Cột trái)
 const styleInfo = reactive({
@@ -289,15 +318,32 @@ function syncFromStyle(data, { includeShots = true } = {}) {
   const dna = data.dna_json ?? {}
 
   taxonomySuggestion.value = dna.taxonomy_suggestion ?? null
+  checkedNewCategories.value = []
+  checkedNewTags.value = []
+  checkedMatchedCategoryIds.value = []
+  checkedMatchedTagIds.value = []
 
-  // Prefill từ gợi ý AI khi style chưa có phân loại nào (chỉ match_existing
-  // vì đã resolve sang ID thật; propose_new chỉ hiển thị nhãn gợi ý).
-  if (!styleInfo.categoryIds.length && !styleInfo.tagIds.length && taxonomySuggestion.value?.action === 'match_existing') {
-    const suggestion = taxonomySuggestion.value
+  // Prefill matched đã tick vào select để submit gửi chung — admin rà trước
+  // khi Lưu; proposed chỉ hiện panel để tick. Hỗ trợ cả format cũ
+  // (category_id/tag_ids flat) lẫn mới (matched/proposed).
+  const suggestion = taxonomySuggestion.value
 
-    if (suggestion.category_id) styleInfo.categoryIds = [suggestion.category_id]
-    if (Array.isArray(suggestion.tag_ids) && suggestion.tag_ids.length)
-      styleInfo.tagIds = suggestion.tag_ids.filter(id => Number.isInteger(id))
+  if (suggestion) {
+    const m = suggestion.matched ?? {}
+    const matchedCats = (m.categories ?? []).map(c => (typeof c === 'object' ? c.id : c)).filter(id => Number.isInteger(id))
+    const matchedTags = (m.tags ?? []).map(t => (typeof t === 'object' ? t.id : t)).filter(id => Number.isInteger(id))
+
+    // Format cũ: category_id/tag_ids ở root.
+    const legacyCats = suggestion.category_id ? [suggestion.category_id] : []
+    const legacyTags = Array.isArray(suggestion.tag_ids) ? suggestion.tag_ids : []
+
+    checkedMatchedCategoryIds.value = matchedCats.length ? matchedCats : legacyCats
+    checkedMatchedTagIds.value = matchedTags.length ? matchedTags : legacyTags
+
+    if (!styleInfo.categoryIds.length && checkedMatchedCategoryIds.value.length)
+      styleInfo.categoryIds = [...checkedMatchedCategoryIds.value]
+    if (!styleInfo.tagIds.length && checkedMatchedTagIds.value.length)
+      styleInfo.tagIds = [...checkedMatchedTagIds.value]
   }
   if (dna.identity?.description)
     styleInfo.description = dna.identity.description
@@ -465,60 +511,8 @@ watch(
  * =====================================================================
  */
 // Bỏ triggerAddImage() — style chỉ giữ 1 ảnh tham chiếu reference_path.
-/**
- * =====================================================================
- * CHỨC NĂNG: Tạo Category/Tag mới từ gợi ý AI rồi chọn vào select.
- * =====================================================================
- * INPUT: taxonomySuggestion action='propose_new'.
- * OUTPUT: tạo entity qua taxonomy service, đưa ID vào categoryIds/tagIds và
- *   cập nhật option select; lỗi giữ localError.
- * SIDE EFFECT: gọi categoryStore.createCategory + POST /admin/tags.
- * =====================================================================
- */
-async function applyTaxonomySuggestion() {
-  const suggestion = taxonomySuggestion.value
-  if (!suggestion || suggestion.action !== 'propose_new' || tagApplying.value) return
-  tagApplying.value = true
-  localError.value = ''
-  try {
-    const createdCategoryIds = []
-    const createdTagIds = []
-
-    if (suggestion.new_category) {
-      const cat = await categoryStore.createCategory({ name: suggestion.new_category, status: 'active' })
-
-      if (cat?.id) {
-        createdCategoryIds.push(cat.id)
-        categoryOptions.value.push({ title: suggestion.new_category, value: cat.id })
-      }
-    }
-
-    const createdTagNames = []
-    for (const tagName of (suggestion.new_tags ?? [])) {
-      const result = await $api('/admin/tags', {
-        method: 'POST',
-        body: { name: tagName, status: 'active' },
-      })
-
-      const tagId = result?.data?.id ?? result?.id
-
-      if (tagId) {
-        createdTagIds.push(tagId)
-        createdTagNames.push({ title: tagName, value: tagId })
-      }
-    }
-    tagOptions.value.push(...createdTagNames)
-    styleInfo.categoryIds = createdCategoryIds
-    styleInfo.tagIds = createdTagIds
-    taxonomySuggestion.value = null
-  }
-  catch (reason) {
-    localError.value = apiErrorMessage(reason, 'Không tạo được nhóm/tag gợi ý.')
-  }
-  finally {
-    tagApplying.value = false
-  }
-}
+// Item proposed mà user tick sẽ được đưa vào payload new_categories/new_tags
+// khi bấm Lưu — server firstOrCreate + sync, không tạo từ frontend.
 
 /**
  * =====================================================================
@@ -555,9 +549,20 @@ async function submitMeta() {
       category: null,
       category_ids: [...styleInfo.categoryIds],
       tag_ids: [...styleInfo.tagIds],
+
+      // Proposed mà user tick — server firstOrCreate + sync trong cùng PUT.
+      new_categories: checkedNewCategories.value,
+      new_tags: checkedNewTags.value,
       is_enabled: Boolean(styleInfo.enableGeneration),
       shots: shotRecipes.value.map(shot => ({ id: shot.id, is_active: Boolean(shot.active) })),
     })
+
+    // Clear panel sau khi server đã apply — tránh hiện lại cùng list khi mở lại.
+    taxonomySuggestion.value = null
+    checkedNewCategories.value = []
+    checkedNewTags.value = []
+    checkedMatchedCategoryIds.value = []
+    checkedMatchedTagIds.value = []
 
     notifySuccess(apiMessage(result, 'Đã lưu style.'))
     emit('saved', result)
@@ -798,38 +803,85 @@ function onAfterLeave() {
                     chips
                     closable-chips
                   />
+
                   <!--
-                    Gợi ý phân loại AI sau phân tích (chỉ hiện khi style chưa
-                    được phân loại và AI đề xuất nhóm/tag mới) 
+                    Panel gợi ý AI cho NHÓM PHONG CÁCH: matched categories
+                    (đã có, tick để gắn) + proposed new_categories (mới, tick
+                    để tạo khi Lưu). Format dual-list từ AI phân tích mới;
+                    format cũ (category_id/new_category scalar) vẫn đọc được.
                   -->
                   <div
-                    v-if="taxonomySuggestion && taxonomySuggestion.action === 'propose_new' && !styleInfo.categoryIds.length"
-                    class="mt-1 pa-2 rounded text-caption taxonomy-hint"
+                    v-if="hasCategorySuggestion"
+                    class="mt-1 pa-3 rounded taxonomy-hint"
                   >
-                    <VIcon
-                      icon="tabler-sparkles"
-                      size="14"
-                      class="me-1 align-text-bottom"
-                    />
-                    <span class="font-weight-medium">Gợi ý AI:</span>
-                    {{ taxonomySuggestion.new_category }}
-                    <span
-                      v-if="taxonomySuggestion.new_tags?.length"
-                      class="text-medium-emphasis"
-                    >
-                      · tag: {{ taxonomySuggestion.new_tags.join(', ') }}
-                    </span>
-                    <VBtn
-                      size="x-small"
-                      variant="tonal"
-                      color="primary"
-                      class="ms-2"
-                      :loading="tagApplying"
-                      :disabled="tagApplying"
-                      @click="applyTaxonomySuggestion"
-                    >
-                      Dùng gợi ý
-                    </VBtn>
+                    <div class="d-flex align-center mb-2">
+                      <VIcon
+                        icon="tabler-sparkles"
+                        size="15"
+                        class="me-1"
+                      />
+                      <span class="text-caption font-weight-medium">Gợi ý nhóm từ AI</span>
+                      <span
+                        v-if="taxonomySuggestion?.reason"
+                        class="text-caption text-medium-emphasis ms-2 text-truncate"
+                        :title="taxonomySuggestion.reason"
+                      >
+                        — {{ taxonomySuggestion.reason }}
+                      </span>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-x-4 gap-y-1">
+                      <!-- Matched categories: đã có sẵn, chỉ cần gắn -->
+                      <VCheckbox
+                        v-for="cat in (taxonomySuggestion?.matched?.categories ?? [])"
+                        :key="'match-cat-'+cat.id"
+                        :model-value="checkedMatchedCategoryIds.includes(cat.id)"
+                        density="compact"
+                        hide-details
+                        class="suggestion-check"
+                        @update:model-value="v => {
+                          checkedMatchedCategoryIds = v
+                            ? [...checkedMatchedCategoryIds, cat.id]
+                            : checkedMatchedCategoryIds.filter(id => id !== cat.id)
+                          styleInfo.categoryIds = [...checkedMatchedCategoryIds]
+                        }"
+                      >
+                        <template #label>
+                          <span class="text-body-2">{{ cat.name }}</span>
+                          <VChip
+                            size="x-small"
+                            variant="tonal"
+                            color="info"
+                            class="ms-1"
+                          >
+                            đã có
+                          </VChip>
+                        </template>
+                      </VCheckbox>
+
+                      <!-- Proposed new categories: tên mới, tạo khi Lưu -->
+                      <VCheckbox
+                        v-for="name in (taxonomySuggestion?.proposed?.new_categories ?? (taxonomySuggestion?.new_category ? [taxonomySuggestion.new_category] : []))"
+                        :key="'new-cat-'+name"
+                        v-model="checkedNewCategories"
+                        :value="name"
+                        density="compact"
+                        hide-details
+                        class="suggestion-check"
+                      >
+                        <template #label>
+                          <span class="text-body-2">{{ name }}</span>
+                          <VChip
+                            size="x-small"
+                            variant="tonal"
+                            color="primary"
+                            class="ms-1"
+                          >
+                            nhóm mới
+                          </VChip>
+                        </template>
+                      </VCheckbox>
+                    </div>
                   </div>
                 </div>
 
@@ -879,6 +931,74 @@ function onAfterLeave() {
                       </VChip>
                     </template>
                   </AppSelect>
+
+                  <!-- Panel gợi ý AI cho TỪ KHÓA: matched tags + proposed new_tags -->
+                  <div
+                    v-if="hasTagSuggestion"
+                    class="mt-1 pa-3 rounded taxonomy-hint"
+                  >
+                    <div class="d-flex align-center mb-2">
+                      <VIcon
+                        icon="tabler-sparkles"
+                        size="15"
+                        class="me-1"
+                      />
+                      <span class="text-caption font-weight-medium">Gợi ý từ khóa từ AI</span>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-x-4 gap-y-1">
+                      <!-- Matched tags: đã có sẵn, chỉ cần gắn -->
+                      <VCheckbox
+                        v-for="tag in (taxonomySuggestion?.matched?.tags ?? [])"
+                        :key="'match-tag-'+tag.id"
+                        :model-value="checkedMatchedTagIds.includes(tag.id)"
+                        density="compact"
+                        hide-details
+                        class="suggestion-check"
+                        @update:model-value="v => {
+                          checkedMatchedTagIds = v
+                            ? [...checkedMatchedTagIds, tag.id]
+                            : checkedMatchedTagIds.filter(id => id !== tag.id)
+                          styleInfo.tagIds = [...checkedMatchedTagIds]
+                        }"
+                      >
+                        <template #label>
+                          <span class="text-body-2">{{ tag.name }}</span>
+                          <VChip
+                            size="x-small"
+                            variant="tonal"
+                            color="info"
+                            class="ms-1"
+                          >
+                            đã có
+                          </VChip>
+                        </template>
+                      </VCheckbox>
+
+                      <!-- Proposed new tags: tên mới, tạo khi Lưu -->
+                      <VCheckbox
+                        v-for="name in (taxonomySuggestion?.proposed?.new_tags ?? (taxonomySuggestion?.new_tags ?? []))"
+                        :key="'new-tag-'+name"
+                        v-model="checkedNewTags"
+                        :value="name"
+                        density="compact"
+                        hide-details
+                        class="suggestion-check"
+                      >
+                        <template #label>
+                          <span class="text-body-2">{{ name }}</span>
+                          <VChip
+                            size="x-small"
+                            variant="tonal"
+                            color="primary"
+                            class="ms-1"
+                          >
+                            tag mới
+                          </VChip>
+                        </template>
+                      </VCheckbox>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Bảng màu chủ đạo -->
@@ -1657,11 +1777,19 @@ function onAfterLeave() {
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
-/* Gợi ý phân loại AI */
+/* Panel gợi ý phân loại AI */
 .taxonomy-hint {
-  background-color: rgba(var(--v-theme-primary), 0.06);
+  background-color: rgba(var(--v-theme-primary), 0.05);
   border: 1px dashed rgba(var(--v-theme-primary), 0.3);
   color: rgb(var(--v-theme-on-surface));
+}
+
+.suggestion-check :deep(.v-selection-control) {
+  min-height: auto;
+}
+.suggestion-check :deep(.v-label) {
+  font-size: 0.8125rem;
+  opacity: 1;
 }
 
 /* Hộp Tóm tắt phân tích & JSON viewer */
