@@ -315,6 +315,18 @@ function syncFromStyle(data, { includeShots = true } = {}) {
   styleInfo.tagIds = Array.isArray(data.tag_ids) ? [...data.tag_ids] : []
   styleInfo.enableGeneration = Boolean(data.is_enabled)
 
+  // Seed select options với names từ payload ngay — tránh race loadTaxonomy
+  // render chip bằng số id (Vuetify fabricates {title: rawValue} khi chưa
+  // có item khớp). List đầy đủ merge đè sau khi fetch xong.
+  for (const c of data.categories ?? []) {
+    if (Number.isInteger(c.id) && !categoryOptions.value.some(o => o.value === c.id))
+      categoryOptions.value = [...categoryOptions.value, { title: c.name, value: c.id }]
+  }
+  for (const t of data.tags ?? []) {
+    if (Number.isInteger(t.id) && !tagOptions.value.some(o => o.value === t.id))
+      tagOptions.value = [...tagOptions.value, { title: t.name, value: t.id }]
+  }
+
   const dna = data.dna_json ?? {}
 
   taxonomySuggestion.value = dna.taxonomy_suggestion ?? null
@@ -475,14 +487,28 @@ async function loadTaxonomy() {
   }
   try {
     const [catsResult, tags] = await Promise.all([
-      categoryStore.fetchCategories({ perPage: 100 }),
-      aiArticleTaxonomyService.all('tags'),
+      categoryStore.fetchCategories({ perPage: 100, resourceType: 'visual_style' }),
+      aiArticleTaxonomyService.all('tags', undefined, 'visual_style'),
     ])
 
     const catItems = catsResult === null ? [] : (catsResult.items ?? [])
 
-    categoryOptions.value = catItems.map(item => ({ title: item.name, value: item.id }))
-    tagOptions.value = (Array.isArray(tags) ? tags : tags?.items ?? []).map(item => ({ title: item.name, value: item.id }))
+    // Merge với seeded options (id đã gắn từ payload style) — giữ title cho
+    // taxonomy đã gỡ khỏi active list mà style vẫn tham chiếu.
+    const merge = (fetched, seeded) => {
+      const ids = new Set(fetched.map(o => o.value))
+
+      return [...fetched, ...seeded.filter(o => !ids.has(o.value))]
+    }
+
+    categoryOptions.value = merge(
+      catItems.map(item => ({ title: item.name, value: item.id })),
+      categoryOptions.value,
+    )
+    tagOptions.value = merge(
+      (Array.isArray(tags) ? tags : tags?.items ?? []).map(item => ({ title: item.name, value: item.id })),
+      tagOptions.value,
+    )
   }
   catch {
     /* giữ nguyên options rỗng; user thấy select trống */

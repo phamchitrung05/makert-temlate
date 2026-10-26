@@ -4,7 +4,11 @@ namespace App\Http\Controllers\Admin\Taxonomy;
 
 use App\Http\Requests\Admin\Taxonomy\TagCreateRequest;
 use App\Http\Requests\Admin\Taxonomy\TagUpdateRequest;
+use App\Http\Resources\Taxonomy\TaxonomyItem;
+use App\Http\Responses\BaseResponse;
 use App\Repositories\Contracts\TagRepositoryInterface;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * =====================================================================
@@ -27,6 +31,29 @@ use App\Repositories\Contracts\TagRepositoryInterface;
  */
 class TagController extends TaxonomyController
 {
+    /**
+     * Input: query phân trang + `type` tùy chọn (`resource`/`visual_style`) để
+     * chỉ trả tag đã gắn vào loại tài nguyên đó qua pivot taggables.
+     * Output: danh sách Tag phân trang.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $relation = match ((string) $request->query('type')) {
+            'resource' => 'resources',
+            'visual_style' => 'visualStyles',
+            default => null,
+        };
+
+        $paginator = $this->repository()
+            ->scopeQuery(fn ($query) => $query->when($relation, fn ($q) => $q->whereHas($relation))->orderBy('id'))
+            ->paginate($this->resolvePerPage($request));
+
+        return BaseResponse::paginated(
+            TaxonomyItem::collection($paginator),
+            $this->responseMessage('list'),
+        );
+    }
+
     /**
      * =====================================================================
      * CHỨC NĂNG: Lấy khoá taxonomy dùng để tra message trong config

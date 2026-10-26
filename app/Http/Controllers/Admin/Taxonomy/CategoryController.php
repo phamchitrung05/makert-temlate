@@ -40,11 +40,26 @@ use Illuminate\Validation\ValidationException;
  */
 class CategoryController extends TaxonomyController
 {
-    /** Input: query phân trang. Output: danh sách Category có slug và posts_count. */
+    /**
+     * Input: query phân trang + `type` tùy chọn (`resource`/`post`/`visual_style`)
+     * để chỉ trả danh mục đã gắn vào loại tài nguyên đó qua pivot categorizables.
+     * Output: danh sách Category có slug và posts_count.
+     */
     public function index(Request $request): JsonResponse
     {
+        $relation = match ((string) $request->query('type')) {
+            'resource' => 'resources',
+            'post' => 'posts',
+            'visual_style' => 'visualStyles',
+            default => null,
+        };
+
         $paginator = $this->repository()
-            ->scopeQuery(fn ($query) => $query->with('slugs')->withCount('posts')->orderBy('id'))
+            ->scopeQuery(fn ($query) => $query
+                ->with('slugs')
+                ->withCount('posts')
+                ->when($relation, fn ($q) => $q->whereHas($relation))
+                ->orderBy('id'))
             ->paginate($this->resolvePerPage($request));
 
         return BaseResponse::paginated(CategoryResource::collection($paginator), $this->responseMessage('list'));

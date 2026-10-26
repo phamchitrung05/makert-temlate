@@ -80,15 +80,17 @@ const categoryService = {
   /**
    * Tải danh sách Category dạng phẳng để page dựng cây theo parent_id.
    *
-   * Input: page/perPage/search tùy chọn.
+   * Input: page/perPage/search + `resourceType` tùy chọn (`'visual_style'`
+   * chỉ trả danh mục đã gắn vào Visual Style; mặc định mọi item).
    * Output: items, tổng số và metadata phân trang.
    */
-  async list({ page = 1, perPage = 100, search = '' } = {}) {
+  async list({ page = 1, perPage = 100, search = '', resourceType } = {}) {
     const response = await $api('/admin/categories', {
       query: {
         page,
         per_page: perPage,
         search: search || undefined,
+        type: resourceType,
       },
     })
 
