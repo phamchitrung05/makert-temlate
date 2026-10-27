@@ -87,8 +87,42 @@
                 hide-details
                 style="inline-size: 150px;"
               />
+              <VBtn
+                color="primary"
+                variant="tonal"
+                size="small"
+                prepend-icon="tabler-wand"
+                class="text-none"
+                :loading="batchLoading"
+                @click="runBatch"
+              >
+                AI Lên bài tuần này
+              </VBtn>
+              <VBtn
+                color="success"
+                size="small"
+                prepend-icon="tabler-check"
+                class="text-none"
+                :loading="approveLoading"
+                @click="approveWeek"
+              >
+                Duyệt cả tuần
+              </VBtn>
             </div>
           </div>
+
+          <!-- Thông báo kết quả batch/duyệt -->
+          <VAlert
+            v-if="weekNotice"
+            type="info"
+            variant="tonal"
+            density="compact"
+            class="text-body-2"
+            closable
+            @click:close="weekNotice = ''"
+          >
+            {{ weekNotice }}
+          </VAlert>
 
           <!-- Lưới lịch 7 cột: mỗi ô ngày là hình vuông đều nhau -->
           <div class="calendar-wrapper border rounded overflow-hidden flex-grow-1">
@@ -159,11 +193,99 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
+import { postScheduleService } from '@/services/postSchedule'
 
 const calendarView = ref('month')
 const filterCampaign = ref('Tất cả chiến dịch')
 const filterPlatform = ref('Tất cả nền tảng')
+const batchLoading = ref(false)
+const approveLoading = ref(false)
+const weekNotice = ref('')
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Nạp lịch slot tuần từ API /marketing/post-schedule/week.
+ * =====================================================================
+ * INPUT : không có; gọi khi mounted.
+ * OUTPUT: đổ bài thật vào monthCells khi backend có plan; nếu rỗng giữ mẫu.
+ * SIDE EFFECT: gọi GET week; không ghi DB.
+ * =====================================================================
+ */
+const loadWeek = async () => {
+  try {
+    const res = await postScheduleService.week()
+    const items = res?.items ?? []
+    if (! Array.isArray(items) || items.length === 0)
+      return
+
+    // Gắn post vào ô ngày tương ứng của lịch mẫu theo planned_date.
+    const byDay = {}
+    for (const item of items) {
+      const day = Number(item.planned_date?.slice(-2))
+      if (! day)
+        continue
+      byDay[day] = byDay[day] ?? []
+      if (item.post)
+        byDay[day].push({ time: item.scheduled_at?.slice(11, 16) || '—', title: item.topic_title || 'Bài đăng', icon: 'tabler-calendar', iconColor: '#7367F0', post: item.post })
+    }
+    for (const cell of monthCells.value) {
+      if (! cell.muted && byDay[cell.day])
+        cell.posts = byDay[cell.day]
+    }
+  } catch {
+    // Giữ lịch mẫu khi API chưa sẵn sàng.
+  }
+}
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Chạy batch AI lên bài tuần tới thủ công.
+ * =====================================================================
+ * INPUT : không có.
+ * OUTPUT: gọi POST run-batch; hiển thị notice kết quả.
+ * SIDE EFFECT: tạo DailyContentPlan/SocialPost/jobs phía backend.
+ * =====================================================================
+ */
+const runBatch = async () => {
+  batchLoading.value = true
+  weekNotice.value = ''
+  try {
+    await postScheduleService.runBatch()
+    weekNotice.value = 'Đã chạy batch tuần tới. Bài mới sẽ xuất hiện trong lịch sau khi AI tạo xong.'
+    await loadWeek()
+  } catch {
+    weekNotice.value = 'Không chạy được batch. Kiểm tra quyền hoặc campaign đang chạy.'
+  } finally {
+    batchLoading.value = false
+  }
+}
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Duyệt toàn bộ bài pending của tuần hiện tại.
+ * =====================================================================
+ * INPUT : không có.
+ * OUTPUT: gọi POST approve-week; hiển thị số bài đã duyệt.
+ * SIDE EFFECT: transition post pending_review -> approved.
+ * =====================================================================
+ */
+const approveWeek = async () => {
+  approveLoading.value = true
+  weekNotice.value = ''
+  try {
+    const res = await postScheduleService.approveWeek()
+
+    weekNotice.value = `Đã duyệt ${res?.approved ?? 0} bài trong tuần.`
+    await loadWeek()
+  } catch {
+    weekNotice.value = 'Không duyệt được. Thử lại sau.'
+  } finally {
+    approveLoading.value = false
+  }
+}
+
+onMounted(loadWeek)
 
 // Cấu hình nền tảng: icon tabler + màu brand thật của từng nền tảng
 const platformMeta = {

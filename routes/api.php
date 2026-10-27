@@ -26,6 +26,7 @@ use App\Http\Controllers\Admin\Ai\WritingProfile\AiWritingProfileAnalysisControl
 use App\Http\Controllers\Admin\Ai\WritingProfile\AiWritingProfileController;
 use App\Http\Controllers\Admin\Taxonomy\CategoryController;
 use App\Http\Controllers\Admin\Marketing\CampaignController;
+use App\Http\Controllers\Admin\Marketing\PostScheduleController;
 use App\Http\Controllers\Admin\Marketing\ProductController;
 use App\Http\Controllers\Admin\Marketing\SocialAccountController;
 use App\Http\Controllers\Admin\Marketing\SocialPostController;
@@ -394,7 +395,17 @@ Route::middleware(['auth:sanctum', 'abilities:admin', 'account.active:sanctum,ad
             Route::get('/social-posts/{socialPost}/publications', [SocialPostController::class, 'publications'])->whereNumber('socialPost');
             Route::get('/social-posts/{socialPost}/variants', [SocialPostController::class, 'variants'])->whereNumber('socialPost');
             Route::get('/social-accounts', [SocialAccountController::class, 'index']);
+
+            // Post schedule page: đọc lịch tuần + cấu hình hệ thống.
+            Route::get('/marketing/post-schedule/week', [PostScheduleController::class, 'week']);
+            Route::get('/marketing/post-schedule/settings', [PostScheduleController::class, 'settings']);
         });
+        Route::put('/marketing/post-schedule/settings', [PostScheduleController::class, 'updateSettings'])
+            ->middleware('permission:marketing.manage|social_posts.update,admin');
+        Route::post('/marketing/post-schedule/run-batch', [PostScheduleController::class, 'runBatch'])
+            ->middleware('permission:marketing.manage|social_posts.create,admin');
+        Route::post('/marketing/post-schedule/approve-week', [PostScheduleController::class, 'approveWeek'])
+            ->middleware('permission:marketing.manage|social_posts.update,admin');
         Route::post('/marketing/products', [ProductController::class, 'store'])->middleware('permission:marketing.manage|social_posts.create,admin');
         Route::put('/marketing/products/{product}', [ProductController::class, 'update'])->whereNumber('product')->middleware('permission:marketing.manage|social_posts.update,admin');
         Route::delete('/marketing/products/{product}', [ProductController::class, 'destroy'])->whereNumber('product')->middleware('permission:marketing.manage|social_posts.delete,admin');

@@ -49,6 +49,15 @@ final class CampaignController extends Controller
                 'name' => $data['name'], 'objective' => $data['objective'] ?? null, 'message' => $data['message'] ?? null,
                 'starts_at' => $data['starts_at'] ?? null, 'ends_at' => $data['ends_at'] ?? null,
                 'timezone' => $data['timezone'] ?? 'Asia/Ho_Chi_Minh', 'status' => $data['status'] ?? 'draft',
+                'budget' => $data['budget'] ?? null,
+                'keywords_json' => $data['keywords_json'] ?? null,
+                'writing_profile_ids' => $data['writing_profile_ids'] ?? null,
+                'image_profile_ids' => $data['image_profile_ids'] ?? null,
+                'subject_media_ids' => $data['subject_media_ids'] ?? null,
+                'subject_description' => $data['subject_description'] ?? null,
+                'platforms_json' => $data['platforms_json'] ?? null,
+                'schedule_config_json' => $data['schedule_config_json'] ?? null,
+                'advanced_config_json' => $data['advanced_config_json'] ?? null,
                 'created_by' => $this->actor($request)->getKey(), 'updated_by' => $this->actor($request)->getKey(),
             ]);
             $this->syncProducts($campaign, $data['product_ids'] ?? []);
@@ -68,6 +77,15 @@ final class CampaignController extends Controller
                 'name' => $data['name'], 'objective' => $data['objective'] ?? null, 'message' => $data['message'] ?? null,
                 'starts_at' => $data['starts_at'] ?? null, 'ends_at' => $data['ends_at'] ?? null,
                 'timezone' => $data['timezone'] ?? $campaign->timezone, 'status' => $data['status'] ?? $campaign->status,
+                'budget' => array_key_exists('budget', $data) ? $data['budget'] : $campaign->budget,
+                'keywords_json' => array_key_exists('keywords_json', $data) ? $data['keywords_json'] : $campaign->keywords_json,
+                'writing_profile_ids' => array_key_exists('writing_profile_ids', $data) ? $data['writing_profile_ids'] : $campaign->writing_profile_ids,
+                'image_profile_ids' => array_key_exists('image_profile_ids', $data) ? $data['image_profile_ids'] : $campaign->image_profile_ids,
+                'subject_media_ids' => array_key_exists('subject_media_ids', $data) ? $data['subject_media_ids'] : $campaign->subject_media_ids,
+                'subject_description' => array_key_exists('subject_description', $data) ? $data['subject_description'] : $campaign->subject_description,
+                'platforms_json' => array_key_exists('platforms_json', $data) ? $data['platforms_json'] : $campaign->platforms_json,
+                'schedule_config_json' => array_key_exists('schedule_config_json', $data) ? $data['schedule_config_json'] : $campaign->schedule_config_json,
+                'advanced_config_json' => array_key_exists('advanced_config_json', $data) ? $data['advanced_config_json'] : $campaign->advanced_config_json,
                 'updated_by' => $this->actor($request)->getKey(),
             ]);
             if (array_key_exists('product_ids', $data)) {
@@ -100,6 +118,14 @@ final class CampaignController extends Controller
             'message' => $campaign->message, 'starts_at' => $campaign->starts_at?->toIso8601String(),
             'ends_at' => $campaign->ends_at?->toIso8601String(), 'timezone' => $campaign->timezone,
             'status' => $campaign->status?->value,
+            'budget' => $campaign->budget, 'keywords_json' => $campaign->keywords_json,
+            'writing_profile_ids' => $campaign->writing_profile_ids,
+            'image_profile_ids' => $campaign->image_profile_ids,
+            'subject_media_ids' => $campaign->subject_media_ids,
+            'subject_description' => $campaign->subject_description,
+            'platforms_json' => $campaign->platforms_json,
+            'schedule_config_json' => $campaign->schedule_config_json,
+            'advanced_config_json' => $campaign->advanced_config_json,
             'products' => $campaign->relationLoaded('products') ? $campaign->products->map(fn ($product): array => ['id' => (int) $product->id, 'name' => $product->name])->values()->all() : [],
         ];
     }

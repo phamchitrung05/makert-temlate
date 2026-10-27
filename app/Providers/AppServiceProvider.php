@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Actions\Media\UploadMediaAssetAction;
+use App\Models\AiWritingProfile;
 use App\Models\Campaign;
 use App\Models\Category;
 use App\Models\Customer;
@@ -212,6 +213,7 @@ class AppServiceProvider extends ServiceProvider
             'social_post_version' => SocialPostVersion::class,
             'daily_content_plan' => DailyContentPlan::class,
             'visual_style' => \App\Models\AiImageProfile::class,
+            'writing_profile' => AiWritingProfile::class,
         ]);
     }
 }

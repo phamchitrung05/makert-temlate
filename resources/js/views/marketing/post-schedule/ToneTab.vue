@@ -19,11 +19,46 @@
   =====================================================================
 -->
 <script setup>
-import { ref, reactive } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
+import { postScheduleService } from '@/services/postSchedule'
 
 const selectedToneId = ref('humorous')
 const selectedPlatform = ref('facebook')
 const selectedExampleId = ref(1)
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Nạp kho văn phong thật từ API /ai/writing-profiles/options.
+ * =====================================================================
+ * INPUT : không có; gọi khi mounted.
+ * OUTPUT: nếu API có profile, ghép vào toneList (giữ card UI hiện có).
+ * SIDE EFFECT: gọi GET options; không ghi DB. Khi rỗng/lỗi giữ dữ liệu mẫu.
+ * =====================================================================
+ */
+const loadProfiles = async () => {
+  try {
+    const res = await postScheduleService.writingProfiles()
+    const items = res?.items ?? res ?? []
+    if (! Array.isArray(items) || items.length === 0)
+      return
+
+    const mapped = items.map(p => ({
+      id: `profile-${p.id}`,
+      name: p.name,
+      emoji: '🎤',
+      bg: '#eef2ff',
+      shortDesc: p.description || 'Văn phong AI đã duyệt',
+      isDefault: res?.default_writing_profile_id === p.id,
+      fullDesc: p.description || '',
+      characteristics: [],
+      instructions: '',
+    }))
+
+    toneList.value = [...toneList.value, ...mapped]
+  } catch {
+    // Giữ dữ liệu mẫu khi API chưa sẵn sàng.
+  }
+}
 
 // Danh sách 6 văn phong
 const toneList = ref([
@@ -220,6 +255,8 @@ const resetFormForNew = () => {
 const updateTone = () => {
   console.log('Cập nhật văn phong:', form)
 }
+
+onMounted(loadProfiles)
 </script>
 
 <template>

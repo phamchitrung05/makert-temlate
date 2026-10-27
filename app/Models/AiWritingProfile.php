@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasTaxonomy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -18,6 +19,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class AiWritingProfile extends Model
 {
+    use HasTaxonomy;
+
     protected $fillable = [
         'name', 'description', 'rules_json', 'evidence_json', 'style_instructions',
         'version', 'origin', 'status', 'source_hash', 'analysis_metadata_json', 'is_enabled', 'created_by',

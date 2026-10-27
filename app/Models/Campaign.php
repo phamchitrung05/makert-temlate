@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\CampaignStatus;
+use App\Models\Concerns\HasTaxonomy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -37,11 +38,14 @@ use Spatie\Activitylog\Traits\LogsActivity;
  */
 class Campaign extends Model
 {
-    use HasFactory, LogsActivity, SoftDeletes;
+    use HasFactory, HasTaxonomy, LogsActivity, SoftDeletes;
 
     protected $fillable = [
         'name', 'objective', 'message', 'starts_at', 'ends_at', 'timezone',
         'status', 'created_by', 'updated_by',
+        'budget', 'keywords_json', 'writing_profile_ids', 'image_profile_ids',
+        'subject_media_ids', 'subject_description', 'platforms_json',
+        'schedule_config_json', 'advanced_config_json',
     ];
 
     /**
@@ -56,6 +60,14 @@ class Campaign extends Model
             'status' => CampaignStatus::class,
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
+            'budget' => 'decimal:2',
+            'keywords_json' => 'array',
+            'writing_profile_ids' => 'array',
+            'image_profile_ids' => 'array',
+            'subject_media_ids' => 'array',
+            'platforms_json' => 'array',
+            'schedule_config_json' => 'array',
+            'advanced_config_json' => 'array',
         ];
     }
 

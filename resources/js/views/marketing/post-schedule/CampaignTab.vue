@@ -12,6 +12,7 @@
   - statusMeta: map trạng thái → màu chip + nhãn.
   - platformMeta: map nền tảng → icon tabler + màu brand.
   - filteredCampaigns: danh sách đã lọc theo search.
+  - handleCampaignCreated(newCampaign): thêm chiến dịch mới tạo từ dialog vào đầu danh sách.
 
   INPUT/OUTPUT CỦA COMPONENT (tổng thể):
   - INPUT : không có props; state giữ trong component.
@@ -19,10 +20,12 @@
   =====================================================================
 -->
 <script setup>
-import { ref, computed, shallowRef } from 'vue'
+import { computed, onMounted, ref, shallowRef } from 'vue'
 import CampaignCreateDialog from '@/views/marketing/post-schedule/CampaignCreateDialog.vue'
+import { postScheduleService } from '@/services/postSchedule'
 
 const createOpen = shallowRef(false)
+const loading = ref(false)
 
 // ─── State filters ────────────────────────────────────────────────────────────
 const searchQuery = ref('')
@@ -30,13 +33,21 @@ const itemsPerPage = ref(10)
 const page = ref(1)
 const selectedRows = ref([])
 
-// ─── Trạng thái chiến dịch ────────────────────────────────────────────────────
+// ─── Trạng thái chiến dịch (map enum backend → nhãn + màu) ────────────────────
 const statusMeta = {
   'Đang chạy': { color: 'success' },
   'Sắp bắt đầu': { color: 'info' },
   'Đã hoàn thành': { color: 'secondary' },
   'Tạm dừng': { color: 'warning' },
   'Nháp': { color: 'secondary' },
+}
+
+const statusLabel = {
+  active: 'Đang chạy',
+  scheduled: 'Sắp bắt đầu',
+  completed: 'Đã hoàn thành',
+  paused: 'Tạm dừng',
+  draft: 'Nháp',
 }
 
 // ─── Nền tảng MXH: icon tabler + màu brand ────────────────────────────────────
@@ -135,6 +146,77 @@ const filteredCampaigns = computed(() => {
 
 // Chiến dịch đang chọn (hiển thị panel chi tiết bên phải)
 const selectedCampaign = ref(campaigns.value[0])
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Nạp danh sách chiến dịch từ API /marketing/campaigns.
+ * =====================================================================
+ * INPUT : không có; gọi khi mounted.
+ * OUTPUT: gán campaigns từ backend (map enum status -> nhãn VN); nếu rỗng
+ *   giữ danh sách mẫu hiện có.
+ * SIDE EFFECT: gọi GET campaigns; không ghi DB.
+ * =====================================================================
+ */
+const objectiveLabel = {
+  product: 'Product', branding: 'Branding', engagement: 'Engagement',
+  sales: 'Sales', event: 'Event', other: 'Other',
+}
+
+const loadCampaigns = async () => {
+  loading.value = true
+  try {
+    const res = await postScheduleService.campaigns()
+    const items = res?.items ?? res?.data ?? (Array.isArray(res) ? res : [])
+    if (! Array.isArray(items) || items.length === 0)
+      return
+    campaigns.value = items.map(c => {
+      const start = c.starts_at ? c.starts_at.slice(0, 10).split('-').reverse().join('/') : ''
+      const end = c.ends_at ? c.ends_at.slice(0, 10).split('-').reverse().join('/') : ''
+
+      const days = c.starts_at && c.ends_at
+        ? Math.max(1, Math.round((new Date(c.ends_at) - new Date(c.starts_at)) / 86400000) + 1)
+        : null
+
+      const status = statusLabel[c.status] || 'Nháp'
+
+      return {
+        id: c.id,
+        name: c.name,
+        subtitle: c.objective || 'Chiến dịch đăng bài tự động',
+        dateRange: start && end ? `${start} – ${end}` : '—',
+        duration: days ? `${days} ngày` : '—',
+        objective: objectiveLabel[c.objective] || 'Product',
+        fullObjective: c.objective || '',
+        platforms: c.platforms_json ?? ['fb'],
+        posts: 0,
+        progress: status === 'Đã hoàn thành' ? 100 : (status === 'Đang chạy' ? 50 : 0),
+        status,
+        image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=200',
+      }
+    })
+    selectedCampaign.value = campaigns.value[0] ?? null
+  } catch {
+    // Giữ dữ liệu mẫu khi API chưa sẵn sàng.
+  } finally {
+    loading.value = false
+  }
+}
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Thêm chiến dịch mới tạo từ CampaignCreateDialog vào danh sách
+ * =====================================================================
+ * INPUT : newCampaign - object chiến dịch do CampaignCreateDialog emit.
+ * OUTPUT: thêm vào đầu mảng campaigns và chọn làm selectedCampaign.
+ * SIDE EFFECT: cập nhật state cục bộ campaigns.
+ * =====================================================================
+ */
+function handleCampaignCreated(newCampaign) {
+  campaigns.value.unshift(newCampaign)
+  selectedCampaign.value = newCampaign
+}
+
+onMounted(loadCampaigns)
 </script>
 
 <template>
@@ -322,6 +404,9 @@ const selectedCampaign = ref(campaigns.value[0])
         </div>
       </VCol>
     </VRow>
-    <CampaignCreateDialog v-model="createOpen" />
+    <CampaignCreateDialog
+      v-model="createOpen"
+      @created="handleCampaignCreated"
+    />
   </div>
 </template>

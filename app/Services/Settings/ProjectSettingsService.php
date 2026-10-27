@@ -5,6 +5,7 @@ namespace App\Services\Settings;
 use App\Models\User;
 use App\Settings\LanguageSettings;
 use App\Settings\MailSettings;
+use App\Settings\MarketingScheduleSettings;
 use App\Settings\MediaSettings;
 use App\Settings\SecuritySettings;
 use App\Settings\SeoSettings;
@@ -36,6 +37,7 @@ final class ProjectSettingsService
         'mail' => MailSettings::class,
         'security' => SecuritySettings::class,
         'languages' => LanguageSettings::class,
+        'marketing_schedule' => MarketingScheduleSettings::class,
     ];
 
     /** Input: registry config. Output: locale có file dịch; không query DB hoặc tạo bản dịch. */
@@ -93,6 +95,18 @@ final class ProjectSettingsService
             'languages' => [
                 'default_locale' => config('app.locale', 'en'),
                 'enabled_locales' => array_column($this->locales(), 'value'),
+            ],
+            'marketing_schedule' => [
+                'default_text_model_id' => null,
+                'default_image_model_id' => null,
+                'default_language' => 'vi',
+                'default_timezone' => 'Asia/Ho_Chi_Minh',
+                'sunday_batch_enabled' => true,
+                'sunday_batch_time' => '07:00',
+                'auto_submit_review' => true,
+                'auto_schedule_publish' => true,
+                'platform_quotas_json' => null,
+                'global_pairing_rules_json' => null,
             ],
         };
     }

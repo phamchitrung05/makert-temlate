@@ -65,7 +65,7 @@ final class FacebookPublisher implements SocialPublisherContract
         if ($images === []) {
             throw new RuntimeException('Facebook variant chưa có ảnh để publish.');
         }
-        $images = array_slice($images, 0, 4);
+        $images = array_slice($images, 0, 5);
         $metadata = (array) $publication->response_metadata_json;
         $gallery = array_map(fn (MediaAsset $image): int => (int) $image->getKey(), $images);
         $mediaIds = ($metadata['gallery_asset_ids'] ?? []) === $gallery ? ($metadata['media_ids'] ?? []) : [];

@@ -18,11 +18,47 @@
   =====================================================================
 -->
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { postScheduleService } from '@/services/postSchedule'
 
 const searchQuery = ref('')
 const selectedCategory = ref('Tất cả danh mục')
 const selectedStyleId = ref('photorealistic')
+
+/**
+ * =====================================================================
+ * CHỨC NĂNG: Nạp kho visual style thật từ API /ai/image-profiles/options.
+ * =====================================================================
+ * INPUT : không có; gọi khi mounted.
+ * OUTPUT: nếu API có profile, ghép vào styleList (giữ card UI hiện có).
+ * SIDE EFFECT: gọi GET options; không ghi DB. Khi rỗng/lỗi giữ dữ liệu mẫu.
+ * =====================================================================
+ */
+const loadProfiles = async () => {
+  try {
+    const items = await postScheduleService.imageProfiles()
+    const list = Array.isArray(items) ? items : (items?.items ?? [])
+    if (! Array.isArray(list) || list.length === 0)
+      return
+
+    const mapped = list.map(p => ({
+      id: `profile-${p.id}`,
+      name: p.name,
+      shortDesc: '',
+      fullDesc: '',
+      category: 'Hiện đại',
+      tags: [],
+      usageCount: 0,
+      image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=500',
+      keywords: [],
+      prompt: '',
+    }))
+
+    styleList.value = [...styleList.value, ...mapped]
+  } catch {
+    // Giữ dữ liệu mẫu khi API chưa sẵn sàng.
+  }
+}
 
 // Danh sách 12 phong cách hình ảnh
 const styleList = ref([
@@ -237,6 +273,8 @@ const saveStyleChanges = () => {
 const deleteStyle = () => {
   console.log('Xóa phong cách:', selectedStyleId.value)
 }
+
+onMounted(loadProfiles)
 </script>
 
 <template>

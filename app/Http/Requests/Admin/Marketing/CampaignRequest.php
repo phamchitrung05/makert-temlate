@@ -35,6 +35,19 @@ final class CampaignRequest extends FormRequest
             'status' => ['sometimes', Rule::in(CampaignStatus::values())],
             'product_ids' => ['sometimes', 'array', 'max:100'],
             'product_ids.*' => ['integer', 'distinct', 'exists:products,id'],
+            'budget' => ['nullable', 'numeric', 'min:0'],
+            'keywords_json' => ['nullable', 'array'],
+            'hashtags' => ['nullable', 'array'],
+            'writing_profile_ids' => ['nullable', 'array'],
+            'writing_profile_ids.*' => ['integer', 'exists:ai_writing_profiles,id'],
+            'image_profile_ids' => ['nullable', 'array'],
+            'image_profile_ids.*' => ['integer', 'exists:ai_image_profiles,id'],
+            'subject_media_ids' => ['nullable', 'array', 'max:6'],
+            'subject_media_ids.*' => ['integer', 'exists:media_assets,id'],
+            'subject_description' => ['nullable', 'string', 'max:2000'],
+            'platforms_json' => ['nullable', 'array'],
+            'schedule_config_json' => ['nullable', 'array'],
+            'advanced_config_json' => ['nullable', 'array'],
         ];
     }
 }

@@ -37,6 +37,9 @@ class DailyContentPlan extends Model
         'planned_date', 'slot', 'timezone', 'campaign_id', 'product_id',
         'social_post_id', 'target_draft_count', 'status', 'error_code',
         'error_message', 'started_at', 'completed_at',
+        'pillar_type', 'topic_title', 'keywords_json', 'content_angle',
+        'subject_media_ids', 'subject_description', 'writing_profile_id',
+        'image_profile_id', 'image_count', 'scheduled_at',
     ];
 
     /**
@@ -54,6 +57,10 @@ class DailyContentPlan extends Model
             'status' => DailyContentPlanStatus::class,
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
+            'keywords_json' => 'array',
+            'subject_media_ids' => 'array',
+            'image_count' => 'integer',
+            'scheduled_at' => 'datetime',
         ];
     }
 
@@ -88,6 +95,28 @@ class DailyContentPlan extends Model
     public function socialPost(): BelongsTo
     {
         return $this->belongsTo(SocialPost::class);
+    }
+
+    /**
+     * Lấy writing profile đã ghép cho slot.
+     *
+     * Input: plan hiện tại.
+     * Output: BelongsTo<AiWritingProfile|null>; slot chưa ghép có thể null.
+     */
+    public function writingProfile(): BelongsTo
+    {
+        return $this->belongsTo(AiWritingProfile::class, 'writing_profile_id');
+    }
+
+    /**
+     * Lấy image profile đã ghép cho slot.
+     *
+     * Input: plan hiện tại.
+     * Output: BelongsTo<AiImageProfile|null>; slot chưa ghép có thể null.
+     */
+    public function imageProfile(): BelongsTo
+    {
+        return $this->belongsTo(AiImageProfile::class, 'image_profile_id');
     }
 
     /**
