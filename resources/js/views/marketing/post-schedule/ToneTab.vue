@@ -227,7 +227,7 @@ const updateTone = () => {
     <!-- ================= 1. DANH SÁCH VĂN PHONG (6 CARDS) ================= -->
     <div class="mb-6">
       <div class="d-flex justify-space-between align-center mb-1">
-        <div class="text-body-1 font-weight-medium text-high-emphasis">
+        <div class="text-subtitle-1 font-weight-medium text-high-emphasis">
           Danh sách văn phong
         </div>
         <VBtn
@@ -239,7 +239,7 @@ const updateTone = () => {
           Thêm văn phong
         </VBtn>
       </div>
-      <div class="text-caption text-medium-emphasis mb-3">
+      <div class="text-body-2 text-medium-emphasis mb-3">
         Chọn văn phong AI sẽ dùng khi tạo nội dung bài đăng
       </div>
 
@@ -285,7 +285,7 @@ const updateTone = () => {
               </div>
 
               <!-- Tên & Mô tả ngắn -->
-              <div class="text-caption font-weight-medium text-high-emphasis mb-1">
+              <div class="text-body-2 font-weight-medium text-high-emphasis mb-1">
                 {{ tone.name }}
               </div>
               <div class="text-caption text-medium-emphasis tone-short-desc">
@@ -384,10 +384,10 @@ const updateTone = () => {
                 class="me-3"
               />
               <div>
-                <div class="text-body-2 font-weight-medium text-high-emphasis">
+                <div class="text-body-1 font-weight-medium text-high-emphasis">
                   Đặt làm mặc định
                 </div>
-                <div class="text-caption text-medium-emphasis">
+                <div class="text-body-2 text-medium-emphasis">
                   Văn phong này sẽ được chọn mặc định khi tạo bài mới
                 </div>
               </div>
@@ -435,10 +435,10 @@ const updateTone = () => {
           <!-- Header Ví dụ nội dung & Các nút chọn nền tảng -->
           <div class="d-flex justify-space-between align-start flex-wrap gap-3 mb-4">
             <div>
-              <div class="text-body-1 font-weight-medium text-high-emphasis">
+              <div class="text-subtitle-1 font-weight-medium text-high-emphasis">
                 Ví dụ nội dung
               </div>
-              <div class="text-caption text-medium-emphasis">
+              <div class="text-body-2 text-medium-emphasis">
                 Xem trước cách AI sẽ viết bài theo văn phong này
               </div>
             </div>
@@ -487,10 +487,10 @@ const updateTone = () => {
                       />
                     </VAvatar>
                     <div>
-                      <div class="text-body-2 font-weight-medium text-high-emphasis">
+                      <div class="text-body-1 font-weight-medium text-high-emphasis">
                         Cà Phê Mộc
                       </div>
-                      <div class="text-caption text-medium-emphasis d-flex align-center">
+                      <div class="text-body-2 text-medium-emphasis d-flex align-center">
                         2 giờ trước •
                         <VIcon
                           icon="tabler-world"
@@ -536,7 +536,7 @@ const updateTone = () => {
                 </div>
 
                 <!-- Thanh tương tác (Likes, Bình luận, Chia sẻ) -->
-                <div class="d-flex justify-space-between align-center pt-2 border-t text-caption text-medium-emphasis">
+                <div class="d-flex justify-space-between align-center pt-2 border-t text-body-2 text-medium-emphasis">
                   <div class="d-flex align-center">
                     <VAvatar
                       size="18"
@@ -589,7 +589,7 @@ const updateTone = () => {
               cols="12"
               md="5"
             >
-              <div class="text-body-2 font-weight-medium text-high-emphasis mb-2">
+              <div class="text-body-1 font-weight-medium text-high-emphasis mb-2">
                 Các ví dụ khác
               </div>
 
@@ -604,7 +604,7 @@ const updateTone = () => {
                   <div class="d-flex justify-space-between align-center mb-1">
                     <div class="d-flex align-center">
                       <span class="me-2 text-body-1">{{ ex.emoji }}</span>
-                      <span class="text-body-2 font-weight-medium text-high-emphasis">
+                      <span class="text-body-1 font-weight-medium text-high-emphasis">
                         {{ ex.title }}
                       </span>
                     </div>
@@ -616,7 +616,7 @@ const updateTone = () => {
                       @click.stop="copyText(ex.fullText)"
                     />
                   </div>
-                  <div class="text-caption text-medium-emphasis line-clamp-2">
+                  <div class="text-body-2 text-medium-emphasis line-clamp-2">
                     {{ ex.snippet }}
                   </div>
                 </div>

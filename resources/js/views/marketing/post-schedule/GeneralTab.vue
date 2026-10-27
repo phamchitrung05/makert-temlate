@@ -36,10 +36,10 @@ const language = ref('Tiếng Việt')
   <div>
     <!-- Số lượng tạo bài mỗi ngày -->
     <div class="mb-6">
-      <div class="text-body-1 font-weight-medium text-high-emphasis mb-1">
+      <div class="text-subtitle-1 font-weight-medium text-high-emphasis mb-1">
         Số lượng tạo bài mỗi ngày
       </div>
-      <div class="text-caption text-medium-emphasis mb-3">
+      <div class="text-body-2 text-medium-emphasis mb-3">
         AI sẽ tự động tạo nội dung theo số lượng bạn thiết lập
       </div>
       <div class="d-flex align-center gap-3">
@@ -62,7 +62,7 @@ const language = ref('Tiếng Việt')
             @click="dailyCount++"
           />
         </div>
-        <span class="text-caption text-medium-emphasis">bài/ngày</span>
+        <span class="text-body-2 text-medium-emphasis">bài/ngày</span>
       </div>
     </div>
 
@@ -70,10 +70,10 @@ const language = ref('Tiếng Việt')
 
     <!-- Khung giờ tạo bài -->
     <div class="mb-6">
-      <div class="text-body-1 font-weight-medium text-high-emphasis mb-1">
+      <div class="text-subtitle-1 font-weight-medium text-high-emphasis mb-1">
         Khung giờ tạo bài
       </div>
-      <div class="text-caption text-medium-emphasis mb-3">
+      <div class="text-body-2 text-medium-emphasis mb-3">
         Chọn thời gian AI tự động tạo bài viết
       </div>
       <div class="d-flex flex-wrap align-center gap-2">
@@ -106,10 +106,10 @@ const language = ref('Tiếng Việt')
     <!-- Công tắc Tự động gửi duyệt & Tự động lên lịch -->
     <div class="d-flex align-center justify-space-between mb-4">
       <div class="pe-2">
-        <div class="text-body-2 font-weight-medium text-high-emphasis">
+        <div class="text-body-1 font-weight-medium text-high-emphasis">
           Tự động gửi duyệt
         </div>
-        <div class="text-caption text-medium-emphasis">
+        <div class="text-body-2 text-medium-emphasis">
           Sau khi tạo xong, bài viết sẽ được gửi đến hàng chờ duyệt
         </div>
       </div>
@@ -123,10 +123,10 @@ const language = ref('Tiếng Việt')
 
     <div class="d-flex align-center justify-space-between mb-6">
       <div class="pe-2">
-        <div class="text-body-2 font-weight-medium text-high-emphasis">
+        <div class="text-body-1 font-weight-medium text-high-emphasis">
           Tự động lên lịch sau khi duyệt
         </div>
-        <div class="text-caption text-medium-emphasis">
+        <div class="text-body-2 text-medium-emphasis">
           Tự động lên lịch đăng theo khung giờ đã thiết lập
         </div>
       </div>

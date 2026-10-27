@@ -1,5 +1,8 @@
 # Plan: Chuẩn hóa state domain sang Pinia + `createCrudStore` factory
 
+**Cập nhật:** 27/10/2026  
+**Trạng thái:** DONE — Đã triển khai `createCrudStore.js` và chuẩn hóa toàn bộ stores (`category`, `aiCatalog`, `visualStyle`, `socialPost`, `user`, `resource`, `resourceVersion`, `post`).
+
 ## Mục tiêu
 
 Đưa toàn bộ domain còn lệch pattern (gọi service trực tiếp từ page hoặc giữ shared state trong composable) về kiến trúc chuẩn của project: **page thin → Pinia store → service → Laravel API**, theo DEVELOPMENT_GUIDELINES ("route page thin: connect the Pinia store").

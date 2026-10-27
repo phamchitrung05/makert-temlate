@@ -290,6 +290,12 @@ requirement. Do not use it as the default form card.
 - Let the Vuexy theme provide card-title and label colors and font sizes. Avoid
   page-specific CSS that forces labels or titles to black; this must continue to
   work in dark mode.
+- **Font size scale (bắt buộc):** Section/Card title dùng `text-subtitle-1`
+  (hoặc `text-body-1` khi cần nhẹ hơn); body/label chính dùng `text-body-1`
+  (`0.9375rem`); body phụ, helper, table cell dùng `text-body-2` (`0.875rem`);
+  meta/caption dùng `text-caption` (`0.75rem`). Không dùng `font-size` inline
+  hoặc class custom trừ khi component đặc thù cần (ví dụ: `0.9375rem` cho title
+  trong table cell để đồng bộ với Social Post list).
 - Prefer `AppTextField`, `AppTextarea`, `AppSelect`, `AppCombobox`, and
   `AppDateTimePicker` over their raw equivalents when the wrapper exists.
 - Put labels on the App field through its `label` prop. Use `VLabel` only for a

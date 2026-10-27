@@ -250,10 +250,10 @@ const deleteStyle = () => {
         <!-- Header & Thanh công cụ tìm kiếm / lọc -->
         <div class="d-flex justify-space-between align-start flex-wrap gap-3 mb-4">
           <div>
-            <div class="text-body-1 font-weight-medium text-high-emphasis">
+            <div class="text-subtitle-1 font-weight-medium text-high-emphasis">
               Danh sách phong cách hình ảnh
             </div>
-            <div class="text-caption text-medium-emphasis">
+            <div class="text-body-2 text-medium-emphasis">
               Chọn hoặc tạo phong cách hình ảnh để AI sử dụng khi tạo ảnh cho bài đăng
             </div>
           </div>
@@ -319,14 +319,14 @@ const deleteStyle = () => {
                 </div>
 
                 <!-- Tên phong cách -->
-                <div class="text-body-2 font-weight-medium text-high-emphasis text-truncate mb-1">
+                <div class="text-body-1 font-weight-medium text-high-emphasis text-truncate mb-1">
                   {{ style.name }}
                 </div>
 
                 <!-- Mô tả ngắn -->
                 <div
                   v-if="style.shortDesc"
-                  class="text-caption text-medium-emphasis line-clamp-2 mb-2"
+                  class="text-body-2 text-medium-emphasis line-clamp-2 mb-2"
                 >
                   {{ style.shortDesc }}
                 </div>
@@ -347,7 +347,7 @@ const deleteStyle = () => {
               </div>
 
               <!-- Footer Card: Số lượng ảnh mẫu & Menu -->
-              <div class="d-flex justify-space-between align-center pt-2 border-t text-caption text-medium-emphasis">
+              <div class="d-flex justify-space-between align-center pt-2 border-t text-body-2 text-medium-emphasis">
                 <div class="d-flex align-center">
                   <VIcon
                     icon="tabler-photo"
@@ -378,7 +378,7 @@ const deleteStyle = () => {
           <div>
             <!-- Header Chi tiết & Nút Xóa -->
             <div class="d-flex justify-space-between align-center mb-3">
-              <span class="text-body-1 font-weight-medium text-high-emphasis">
+              <span class="text-subtitle-1 font-weight-medium text-high-emphasis">
                 Chi tiết phong cách
               </span>
               <VBtn

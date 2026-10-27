@@ -21,6 +21,7 @@
 <script setup>
 import { ref } from 'vue'
 import GeneralTab from '@/views/marketing/post-schedule/GeneralTab.vue'
+import CampaignTab from '@/views/marketing/post-schedule/CampaignTab.vue'
 import ScheduleTab from '@/views/marketing/post-schedule/ScheduleTab.vue'
 import ToneTab from '@/views/marketing/post-schedule/ToneTab.vue'
 import ImageStyleTab from '@/views/marketing/post-schedule/ImageStyleTab.vue'
@@ -34,6 +35,7 @@ const activeTab = ref('general')
 // Danh sách tab ánh xạ VTab ↔ VWindowItem ↔ component tương ứng.
 const tabs = [
   { value: 'general', title: 'Cài đặt chung', component: GeneralTab },
+  { value: 'campaign', title: 'Chiến Dịch', component: CampaignTab },
   { value: 'schedule', title: 'Lịch đăng', component: ScheduleTab },
   { value: 'tone', title: 'Văn phong AI', component: ToneTab },
   { value: 'image-style', title: 'Phong cách hình ảnh', component: ImageStyleTab },
@@ -253,8 +255,6 @@ const saveConfiguration = () => {
           {{ tab.title }}
         </VTab>
       </VTabs>
-
-      <VDivider />
 
       <VCardText>
         <VWindow

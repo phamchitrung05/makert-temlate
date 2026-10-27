@@ -56,6 +56,24 @@ const socialPlatforms = ref([
           </span>
         </div>
 
+        <div class="d-flex align-center">
+          <VAvatar
+            :color="pf.bg"
+            size="28"
+            rounded
+            class="me-2"
+          >
+            <VIcon
+              :icon="pf.icon"
+              :color="pf.color"
+              size="16"
+            />
+          </VAvatar>
+          <span class="text-body-1 font-weight-medium text-high-emphasis">
+            {{ pf.name }}
+          </span>
+        </div>
+
         <div class="d-flex align-center gap-2">
           <div class="d-inline-flex align-center border rounded px-1 py-0-5">
             <VBtn
@@ -65,7 +83,7 @@ const socialPlatforms = ref([
               color="secondary"
               @click="pf.quota > 0 && pf.quota--"
             />
-            <span class="px-3 text-caption font-weight-bold text-high-emphasis">
+            <span class="px-3 text-body-2 font-weight-bold text-high-emphasis">
               {{ pf.quota }}
             </span>
             <VBtn
@@ -76,7 +94,7 @@ const socialPlatforms = ref([
               @click="pf.quota++"
             />
           </div>
-          <span class="text-caption text-medium-emphasis">
+          <span class="text-body-2 text-medium-emphasis">
             bài/ngày
           </span>
         </div>

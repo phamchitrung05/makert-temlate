@@ -23,7 +23,7 @@ Các tài liệu API và QA trong `docs/` tiếp tục làm nguồn tham chiếu
 | Foundation | DONE | Dependencies, schema/migrations, môi trường local, health API, boundary public/admin |
 | Authentication và quyền | IN PROGRESS — A-02 backend DONE | Admin Sanctum, customer OAuth, token; backend quản lý role/permission bằng API thật đã xong. Hai page Vue để trống, giao diện mới do chủ dự án bổ sung sau; danh sách customer tạm hoãn |
 | Resource và taxonomy | DONE | Backend, admin CRUD, service/store và kiểm thử |
-| Resource Template | DONE — TPL-00–TPL-12 | Admin lifecycle, API/panel, secure live preview, public catalog, verified download/share, QA và runbook đã hoàn tất. [Kế hoạch chi tiết](RESOURCE_TEMPLATE.md) |
+| Resource Template | DONE — TPL-00–TPL-12 | Admin lifecycle, API/panel, secure live preview, public catalog, verified download/share, QA và runbook đã hoàn tất. [Kế hoạch chi tiết](complate/RESOURCE_TEMPLATE.md) |
 | Media và version | DONE | Media Library task 1–10: upload/security, usage, API/quyền, picker, Resource/Post/Version và QA |
 | Blog Admin/Post | IN PROGRESS | CRUD, taxonomy, SEO metadata, editor, media, P-01 workflow, P-03 HTML sanitization và P-04 bộ lọc tác giả/ngày; post_type/Gallery mở thành plan riêng |
 | AI Content | DONE trong phạm vi kỹ thuật hiện tại | Pipeline C ba bước, nguồn URL/text/HTML/file, profile/brief, duyệt/từ chối, sửa/regenerate, Apply Post nháp, thumbnail, queue dùng chung và form enqueue liên tiếp |
@@ -40,7 +40,7 @@ Ngày 07/10/2026, chủ dự án yêu cầu để tính năng chấm bài và da
 
 ### Plan bên lề đã triển khai
 
-- [AI Task Queue Popup](AI_TASK_QUEUE_POPUP.md): đã cho phép thêm nhiều văn phong liên tiếp và theo dõi các analysis/job trong popup góc phải dưới. API list có pagination/filter/scope; polling dừng ở trạng thái cuối và không thay đổi concurrency worker.
+- [AI Task Queue Popup](complate/AI_TASK_QUEUE_POPUP.md): đã cho phép thêm nhiều văn phong liên tiếp và theo dõi các analysis/job trong popup góc phải dưới. API list có pagination/filter/scope; polling dừng ở trạng thái cuối và không thay đổi concurrency worker.
 
 ## Mốc đã hoàn tất gần nhất
 
@@ -56,7 +56,7 @@ Ngày 07/10/2026, chủ dự án yêu cầu để tính năng chấm bài và da
 - [x] 08/10: hoàn tất P-01: workflow review/publish/archive Post, `published_at` server-side, permission CRUD/lifecycle riêng, audit transition và UI action/filter. [QA Post workflow](../qa/POST_WORKFLOW_2026-10-08.md).
 - [x] 08/10: hoàn tất P-03: sanitize HTML Post thủ công ở backend, giữ markup/media hợp lệ, chặn URL ảnh nguy hiểm và dùng chung sanitizer với AI. [QA Post HTML](../qa/POST_CONTENT_SANITIZATION_2026-10-08.md).
 - [x] 08/10: hoàn tất P-04 trong phạm vi đã chốt: lọc Post theo tác giả và ngày tạo, danh sách tác giả cho filter, date range inclusive, UI panel filter riêng và fake API. `post_type`/Gallery không thuộc task này; sẽ lập plan riêng sau. [QA Post filters](../qa/POST_FILTERS_2026-10-08.md).
-- [x] 08/10: hoàn tất [AI Task Queue Popup](AI_TASK_QUEUE_POPUP.md): API list analysis có scope/filter/pagination, popup Admin dùng task thật, polling terminal, Add văn phong cho phép enqueue liên tiếp, worker tạo draft và trang `/ai/prompt/edit` khôi phục nguồn để duyệt/lưu.
+- [x] 08/10: hoàn tất [AI Task Queue Popup](complate/AI_TASK_QUEUE_POPUP.md): API list analysis có scope/filter/pagination, popup Admin dùng task thật, polling terminal, Add văn phong cho phép enqueue liên tiếp, worker tạo draft và trang `/ai/prompt/edit` khôi phục nguồn để duyệt/lưu.
 - [x] 09/10: hoàn tất mở rộng queue dùng chung cho writing profile, tạo bài và tạo ảnh: `ai_task_runs`, adapter/registry, API list/detail/cancel, tracker theo owner/quyền và đồng bộ lifecycle từ worker.
 - [x] 09/10: hoàn tất Ai Content enqueue liên tiếp: form chỉ khóa trong lúc POST, reset ngay sau khi task được nhận, popup theo dõi độc lập và bổ sung tracker ID trong payload.
 - [x] 09/10: hoàn tất ổn định popup queue: task mới chỉ cập nhật badge, event đến sớm được replay, icon avatar theo mode và danh sách cuộn sát footer.
@@ -65,7 +65,7 @@ Ngày 07/10/2026, chủ dự án yêu cầu để tính năng chấm bài và da
 - [x] 09/10: hoàn tất regression quality grounding cho bài có code/link và số viết bằng chữ; giữ chặn số liệu/phiên bản bị thay đổi thật. Kiểm chứng nhóm grounding 48 tests/111 assertions và pipeline liên quan 85 tests/359 assertions.
 - [x] 09/10: triển khai Q-01 G2–G3: evaluator rubric/version, job/queue theo hash, quality gate Approve/Apply, chấm lại sau edit, vòng tròn điểm và lưu score cùng archive lifecycle. [QA G2/G3](../qa/AI_QUALITY_G2_G3_2026-10-09.md)
 - [ ] 11/10: chốt kế hoạch backend cho public website Blade: catalog Resource/Post, slug/SEO/sitemap/robots và download; giao diện Blade/CSS để chủ dự án triển khai sau. [Kế hoạch](PUBLIC_BACKEND.md)
-- [x] 14/10: đối chiếu Resource Template với schema/model/action/media security hiện có; chốt kế hoạch TPL-00–TPL-12 cho upload ZIP Stitch, template processing, live HTML preview, version promote/rollback và các phase public sau. [Kế hoạch](RESOURCE_TEMPLATE.md)
+- [x] 14/10: đối chiếu Resource Template với schema/model/action/media security hiện có; chốt kế hoạch TPL-00–TPL-12 cho upload ZIP Stitch, template processing, live HTML preview, version promote/rollback và các phase public sau. [Kế hoạch](complate/RESOURCE_TEMPLATE.md)
 - [x] 14/10: hoàn tất TPL-00: manifest canonical `template.json`, schema v1, validator bounded, normalized/raw Stitch fixture tách riêng, expected discovery/manifest, warning/blocking matrix và 47 test/548 assertions. [Contract](../api/RESOURCE_TEMPLATE_MANIFEST_V1.md) · [QA](../qa/resource-template/TPL-00.md)
 - [x] 14/10: hoàn tất TPL-01: migration/model metadata template, screen rows, processing enum, morph alias/field `template_screen.preview`, factory và 5 test/35 assertions; AI chuẩn hóa manifest trước import. [QA](../qa/resource-template/TPL-01.md)
 - [x] 14/10: hoàn tất TPL-02: package guard dùng chung, ready/default delete guard, draft invalidation và lifecycle request hardening; ResourceTemplateInvariantTest 6 test/23 assertions. [QA](../qa/resource-template/TPL-02.md)
@@ -93,7 +93,7 @@ Các ID dưới đây để theo dõi ổn định, không phải yêu cầu tri
 | P-03 | DONE | Sanitization HTML Post server-side, allowlist markup/attribute, giữ media refs hợp lệ và test XSS/URL |
 | P-04 | DONE | Lọc Post theo tác giả/ngày tạo, endpoint option tác giả, validation khoảng ngày, UI panel filter riêng và test. Không bao gồm `post_type`/Gallery; sẽ làm theo plan riêng |
 | P-05 | TODO — tạm hoãn | Chốt các Post options đang minh họa; bổ sung persistence/validation cho option được chọn. Làm sau theo yêu cầu ngày 08/10/2026 |
-| RT-01 | DONE — TPL-00–TPL-12 | Resource Template hoàn tất từ manifest/schema/fixture, extractor/process queue đến ready/promote/rollback, secure preview, public catalog, verified download/share và QA/ops. [Task chi tiết](RESOURCE_TEMPLATE.md) |
+| RT-01 | DONE — TPL-00–TPL-12 | Resource Template hoàn tất từ manifest/schema/fixture, extractor/process queue đến ready/promote/rollback, secure preview, public catalog, verified download/share và QA/ops. [Task chi tiết](complate/RESOURCE_TEMPLATE.md) |
 | AI-01 | DONE — phạm vi archive approved | Trang `AI Approved` đọc archive bài AI đã duyệt dài hạn, có filter/ngày, datatable phân trang và dialog xem snapshot gốc. Kho dùng identity đa model `target_type` + `target_id`; draft chưa duyệt vẫn tạm thời và phạm vi Resource/Sound Apply thuộc AI-04 |
 | AI-02 | TODO — tạm hoãn | Sinh thumbnail từ nội dung Post đã được người dùng biên tập. Thumbnail tạo trong AI Content và dialog prompt ảnh thủ công đã có |
 | AI-03 | TODO | Ai Prompt: lịch sử phân tích phía server, quyền source preview riêng và mở rộng idempotency khi cần |

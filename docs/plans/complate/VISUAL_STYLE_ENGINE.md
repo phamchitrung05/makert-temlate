@@ -1,7 +1,7 @@
 # Kế hoạch Visual Style Engine — Style DNA + Shot Recipes + PromptBuilder
 
-**Cập nhật:** 21/10/2026
-**Trạng thái:** DRAFT — chờ chủ dự án duyệt trước khi triển khai.
+**Cập nhật:** 27/10/2026
+**Trạng thái:** DONE — VSE-1 đến VSE-7 đã triển khai hoàn tất (Style DNA, Shot Recipes, PromptBuilder 7 layers, Generation Pipeline, Shared Taxonomy & Tests).
 **Phạm vi đợt này:** chỉ phần **Visual Style DNA + Shot Recipes + PromptBuilder
 nhiều tầng + generation pipeline**, độc lập với Content Planner (plan riêng).
 **Nguồn:** đối chiếu `visual-style-engine-master-prompt.md` với codebase thật;
@@ -253,13 +253,13 @@ TẠO ẢNH:
 
 ## 12. Definition of Done
 
-- [ ] `dna_json` lưu + validate theo `schema_version`, enum chuẩn hóa
-- [ ] Upload ảnh → AI trả DNA JSON hợp lệ (không bịa thông số, có confidence)
-- [ ] Edit DNA bằng form, version tăng khi sửa
-- [ ] CRUD shot recipes, recipe chỉ override field cần
-- [ ] PromptBuilder ghép đúng thứ tự, mỗi recipe ra prompt khác nhau
-- [ ] Generate ảnh qua queue, prompt_used + provider/model + cost lưu lại
-- [ ] Retry từng ảnh, không block request HTTP
-- [ ] Tái dùng `ai_imports`/`ai_task_runs`/`media_assets`/`AiCapability::Vision`
-- [ ] Vietnamese comment đầy đủ PHP + header block `.vue`
-- [ ] Tests cho validate + prompt builder + idempotency
+- [x] `dna_json` lưu + validate theo `schema_version`, enum chuẩn hóa
+- [x] Upload ảnh → AI trả DNA JSON hợp lệ (không bịa thông số, có confidence)
+- [x] Edit DNA bằng form, version tăng khi sửa
+- [x] CRUD shot recipes, recipe chỉ override field cần
+- [x] PromptBuilder ghép đúng thứ tự, mỗi recipe ra prompt khác nhau
+- [x] Generate ảnh qua queue, prompt_used + provider/model + cost lưu lại
+- [x] Retry từng ảnh, không block request HTTP
+- [x] Tái dùng `ai_imports`/`ai_task_runs`/`media_assets`/`AiCapability::Vision`
+- [x] Vietnamese comment đầy đủ PHP + header block `.vue`
+- [x] Tests cho validate + prompt builder + idempotency

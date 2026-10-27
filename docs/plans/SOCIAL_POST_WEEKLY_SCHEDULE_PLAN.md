@@ -1,243 +1,210 @@
-# Kế hoạch Lịch Đăng Bài Tự Động Hàng Tuần (3–5 Bài Facebook/Tuần × 3–5 Ảnh/Bài)
+# Kế hoạch Lịch Đăng Bài Tự Động Theo Chiến Dịch (Campaign-Driven Weekly Schedule & Batch Generation)
 
 **Cập nhật:** 27/10/2026  
-**Trạng thái:** APPROVED DESIGN — Tài liệu thiết kế kiến trúc & lộ trình triển khai 4 Trục (Từ khóa/Key nội dung + Ảnh chủ thể thật + Văn phong AI + Phong cách/Góc chụp ảnh).  
-**Phạm vi:** Kết nối hệ thống **Lập kế hoạch Từ khóa & Key nội dung tuần (`WeeklyContentKeyPlanner`)**, **Chủ thể/Sản phẩm thật (`Product` / `Subject Reference Media`)**, **Văn phong AI (`AiWritingProfile` - ~50 mẫu)**, **Phong cách ảnh (`AiImageProfile` / `VisualStyle` - ~20 mẫu)** và **Social Post Scheduler (`/marketing/post-schedule`)** để mỗi tuần tự động sinh **3–5 bài viết Facebook hoàn chỉnh (Content chuẩn SEO/từ khóa + 3–5 ảnh đa góc chụp giữ nguyên chủ thể thật)** và đăng theo khung giờ vàng.
+**Trạng thái:** APPROVED DESIGN — Kiến trúc **Lấy Chiến Dịch làm trung tâm (Campaign-Driven)** kết hợp **Cuốn chiếu Sáng Chủ Nhật hàng tuần (Weekly Rolling Batch)** và **4 Trục Nội dung** (Từ khóa chiến dịch + Ảnh chủ thể tham chiếu + Pool Văn phong AI + Pool Phong cách/Góc chụp ảnh).  
+**Phạm vi:** Kết nối hệ thống **Chiến dịch (`Campaign` & Wizard 5 bước)**, **Kho Văn phong AI (`AiWritingProfile` - ~50 mẫu)**, **Kho Phong cách ảnh (`AiImageProfile` / `VisualStyle` - ~20 mẫu)**, **Thư viện Ảnh tham chiếu chủ thể (`MediaAsset`)** và **Social Post Scheduler (`/marketing/post-schedule`)**. Hệ thống **chỉ tự động lên dàn ý & sinh bài viết khi có Chiến dịch đang chạy (`Active`)**, phân bổ thông minh xuyên suốt thời lượng chiến dịch (VD: 15–30 ngày) và soạn sẵn trọn bộ bài mỗi tuần vào **sáng Chủ Nhật (`07:00`)** để Admin duyệt 1 lượt.
 
 ---
 
-## 1. Mục tiêu cốt lõi & "4 Mảnh Ghép" của mỗi bài đăng
+## 1. Triết lý Vận hành Cốt lõi: "Lấy Chiến Dịch Làm Trung Tâm" (Campaign-Driven)
 
-### 1.1. Bốn nguyên liệu cấu thành mỗi bài viết
-Để AI tự động tạo ra 3–5 bài/tuần × 3–5 ảnh/bài đạt chất lượng thương mại thực tế (không lặp ý, không bịa đặt sai sản phẩm, không lệch tông), mỗi bài đăng được lắp ghép từ **4 trụ cột cốt lõi**:
+### 1.1. Nguyên tắc hoạt động
+1. **Không có Chiến dịch = Không tự sinh bài rác:**
+   - AI **chỉ hoạt động** khi có ít nhất 1 `Campaign` ở trạng thái **`Đang chạy (active)`** nằm trong khoảng thời gian hiệu lực (`starts_at <= ngày_đăng <= ends_at`).
+   - Nếu trong khoảng thời gian hiện tại không có chiến dịch nào chạy (hoặc tất cả chiến dịch đã kết thúc / tạm dừng), hệ thống **đứng yên 100%**, không tốn token hay chi phí sinh ảnh AI.
+2. **Mọi nguyên liệu tạo bài được đóng gói trọn vẹn trong Chiến Dịch (`CampaignCreateDialog` — 5 bước):**
+   - Thay vì cấu hình rời rạc ở nhiều nơi, khi tạo một Chiến dịch (ví dụ kéo dài **20 ngày**), Admin quy định toàn bộ nguyên liệu ngay trong Dialog Chiến dịch:
+     - **Thời lượng & Mục tiêu:** Ngày bắt đầu – kết thúc (`starts_at` – `ends_at`), mục tiêu (`product`, `sales`, `branding`, `engagement`...), thông điệp cốt lõi.
+     - **Từ khóa & Key nội dung (`Campaign Keywords`):** Bộ từ khóa trọng tâm và các chủ đề/hashtag xuyên suốt chiến dịch.
+     - **Pool Văn phong AI (`Selected Writing Profiles`):** Chọn ra khoảng **6–10 văn phong** phù hợp với chiến dịch từ kho 50 mẫu `AiWritingProfile`.
+     - **Pool Phong cách ảnh (`Selected Visual Styles`) & Ảnh tham chiếu chủ thể (`Subject Reference Media`):** Chọn ra **6–10 Visual Styles** từ kho 20 mẫu `AiImageProfile`, kèm **4–6 ảnh chụp thật sản phẩm/chủ thể** từ Media Library để AI xáo trộn trong phạm vi cho phép.
+     - **Tần suất & Lịch đăng (`Campaign Schedule`):** Quy định số bài/ngày hoặc các Thứ đăng bài trong tuần + khung giờ vàng + số ảnh/bài (`3–5 ảnh/bài`).
+3. **Cơ chế "Cuốn chiếu Sáng Chủ Nhật (`07:00`) — Duyệt 1 lần cho cả tuần":**
+   - Với một chiến dịch kéo dài nhiều ngày (VD: 20 ngày, vắt qua 3 tuần):
+     - **Tuần đầu tiên (khi vừa kích hoạt Chiến dịch giữa tuần):** Cho phép bấm tạo ngay các bài của những ngày còn lại trong tuần hiện tại.
+     - **Các tuần tiếp theo (07:00 sáng Chủ Nhật hàng tuần):** Hệ thống tự động kiểm tra các ngày từ **Thứ 2 → Chủ Nhật** của tuần tới có nằm trong `starts_at → ends_at` của Chiến dịch không. Nếu có, AI tự động chia mạch nội dung (Story Arc), bốc tổ hợp *(Văn phong + Visual Style + Ảnh tham chiếu)* từ Pool của Chiến dịch (không trùng với tuần trước) và **soạn sẵn trọn bộ bài viết + hình ảnh của cả tuần đó**.
+     - Toàn bộ bài tạo xong chuyển sang **`Chờ duyệt (pending_review)`** để Admin mở tab **Lịch đăng** trong ngày Chủ Nhật xem lướt và bấm **Duyệt (`Approve`) 1 lượt**.
+     - Từ Thứ 2 đến Chủ Nhật, cronjob tự động đăng các bài đã duyệt lên Fanpage khi đến đúng giờ vàng `scheduled_at`.
 
-| Trụ cột | Vai trò trong bài đăng | Nguồn dữ liệu trong hệ thống |
+### 1.2. "4 Mảnh Ghép" của mỗi bài đăng trong Chiến dịch
+
+| Trụ cột | Vai trò trong bài đăng | Nguồn dữ liệu trong Chiến dịch (`Campaign`) |
 | :--- | :--- | :--- |
-| **1. Từ khóa & Key Nội dung (`Keywords & Content Key`)** | **Viết về cái gì:** Xác định chủ đề, góc tiếp cận (`content_angle`) theo từng Thứ trong tuần và bộ từ khóa/hashtag trọng tâm (`keywords_json`). | `WeeklyContentKeyPlannerService` sinh từ Từ khóa tuần của Admin + `Campaign` (`objective`, `message`). |
-| **2. Chủ thể thật & Ảnh gốc (`Subject / Product Reference`)** | **Vẽ cái gì & Thông tin thật nào:** Khóa cứng hình dáng, bao bì, tem nhãn của sản phẩm thật xuyên suốt 3–5 bức ảnh và cung cấp thông số thật (`ProductFact`). | Chọn từ bảng `Product` (`product_id` kèm `HasMediaAssets` & `ProductFact`) hoặc chọn trực tiếp 1–3 ảnh thật từ Media Library (`subject_media_ids` + `subject_description`). |
-| **3. Văn phong AI (`Writing Profile`)** | **Viết giọng gì:** Quy định cách xưng hô, nhịp câu, cảm xúc, cách mở bài, gạch đầu dòng, kết bài và từ cấm. | Kho ~50 mẫu `AiWritingProfile` (`rules_json`), phân loại qua `HasTaxonomy` (`categories`, `tags`). |
-| **4. Phong cách ảnh & Góc chụp (`Visual Style + Shots`)** | **Vẽ như thế nào:** Quy định ánh sáng, mood màu, phông nền (`Style DNA` + `Style Reference`) và **3–5 góc máy khác nhau** cho album ảnh. | Kho ~20 mẫu `AiImageProfile` (`dna_json`, `reference_media_id`) + 3–5 `VisualStyleShot` (hoặc 5 Camera Presets chuẩn). |
-
-### 1.2. Mục tiêu vận hành
-1. **Tần suất chuẩn cho Fanpage:** Tự động lên dàn ý, tạo nháp và hẹn giờ đăng **3–5 bài viết Facebook/tuần** vào các khung giờ vàng.
-2. **Định dạng mỗi bài đăng:**
-   - **Content:** Đầy đủ cấu trúc `FacebookContent` (`title`, `body`, `bullet_points`, `cta`, `contact`, `hashtags`) bám sát **Key nội dung của ngày hôm đó**, phủ đúng **Từ khóa tuần**, đúng thông tin thật của **Sản phẩm** và đúng **Văn phong** đã chọn.
-   - **Hình ảnh:** Bộ gallery **3–5 ảnh/bài** (`aspect_ratio = 4:5` hoặc `1:1`) giữ nguyên **hình dáng Chủ thể/Sản phẩm thật**, đồng nhất về màu sắc/ánh sáng (**Style DNA**) nhưng **khác nhau về góc chụp (Shot Recipes)** để tạo thành album kể chuyện (storytelling lookbook).
-3. **Khai thác thông minh kho 50 Văn phong × 20 Phong cách ảnh (1.000 tổ hợp):**
-   - Không ghép ngẫu nhiên gây lệch tông (ví dụ: văn phong học thuật đi với ảnh hoạt hình).
-   - Không lặp lại nhàm chán cùng một giọng văn hay một màu ảnh liên tiếp trên bảng tin Fanpage.
-4. **Khép kín luồng từ UI đến Facebook Graph API:**
-   - Cấu hình tại `/marketing/post-schedule` ➔ Lên dàn ý Từ khóa & Key nội dung tuần ➔ Ghép cặp Văn phong + Style ảnh ➔ AI viết bài & vẽ 3–5 góc ảnh từ ảnh chủ thể thật ➔ Hàng chờ duyệt (`Review Gate`) ➔ Tự động đăng lên Facebook Page khi đến giờ `scheduled_at`.
+| **1. Từ khóa & Góc nội dung (`Keywords & Angle`)** | **Viết về cái gì:** Xác định chủ đề bài viết theo tiến độ chiến dịch (Mở đầu ➔ Đi sâu ➔ Chốt đơn) và phủ đúng bộ từ khóa. | `WeeklyContentKeyPlannerService` phân bổ từ `campaign.keywords_json`, `campaign.objective`, `campaign.message` theo từng ngày. |
+| **2. Ảnh tham chiếu chủ thể thật (`Subject Reference`)** | **Vẽ cái gì & Khóa nhận diện:** Khóa cứng hình dáng, bao bì, màu sắc thật của sản phẩm/không gian xuyên suốt 3–5 bức ảnh trong bài. | Bốc 1–3 ảnh từ Pool **4–6 ảnh tham chiếu** (`campaign.subject_media_ids` + `subject_description`) đã chọn ở Bước 3 của Chiến dịch. |
+| **3. Văn phong AI (`Writing Profile`)** | **Viết giọng gì:** Quy định cách xưng hô, nhịp câu, cảm xúc, mở bài, gạch đầu dòng, CTA và từ cấm. | Bốc 1 mẫu từ Pool **~10 văn phong** (`campaign.writing_profile_ids`) đã chọn ở Bước 2 của Chiến dịch. |
+| **4. Phong cách ảnh & Đa góc chụp (`Visual Style + Shots`)** | **Vẽ như thế nào:** Quy định ánh sáng, mood màu, phông nền (`Style DNA` + `Style Reference`) và **3–5 góc máy khác nhau** cho album ảnh. | Bốc 1 mẫu từ Pool **~10 style ảnh** (`campaign.image_profile_ids`) đã chọn ở Bước 3 + 3–5 `VisualStyleShot` (hoặc 5 Camera Presets chuẩn). |
 
 ---
 
-## 2. Sơ đồ tổng thể Luồng Tự Động Hóa 6 Bước (End-to-End Workflow)
+## 2. Sơ đồ tổng thể Luồng Tự Động Hóa 6 Bước Theo Chiến Dịch
 
 ```mermaid
 flowchart TD
-    B1["BƯỚC 1: Cấu hình Tuần (UI /marketing/post-schedule)\n• Chọn 3–5 ngày/tuần + Khung giờ vàng + 3–5 ảnh/bài\n• Chọn Chiến dịch + Từ khóa tuần + Sản phẩm/Ảnh chủ thể thật"]
-    --> B2["BƯỚC 2: Lên Dàn Ý & Key Nội Dung Tuần (WeeklyContentKeyPlannerService)\n• Chia Từ khóa tuần thành 3–5 Key nội dung (content_angle) theo từng Thứ\n• Gán Sản phẩm / Ảnh chủ thể thật (product_id / subject_media_ids) cho từng bài"]
-    --> B3["BƯỚC 3: Ghép Cặp Thông Minh 4 Tầng (SocialSchedulePairingService)\n• Chấm điểm chọn cặp (1 trong 50 Văn phong + 1 trong 20 Style ảnh)\n• Khớp Category/Tag (40đ) + Hợp Tone-Màu (30đ) + Chống lặp 30-60 ngày (30đ)"]
+    B1["BƯỚC 1: Tạo & Kích Hoạt Chiến Dịch (Wizard 5 Bước - CampaignCreateDialog)\n• Bước 1: Tên, Mục tiêu, Mô tả, Thời gian chạy (VD: 20 ngày)\n• Bước 2: Từ khóa chiến dịch + Chọn Pool ~10 Văn phong AI\n• Bước 3: Chọn 4–6 Ảnh tham chiếu thật + Chọn Pool ~10 Visual Styles + Số ảnh/bài (3–5)\n• Bước 4: Chọn Nền tảng + Tần suất/Ngày đăng trong tuần & Khung giờ vàng\n• Bước 5: Quy tắc xáo trộn, chống lặp & tự động gửi duyệt"]
+    --> B2["BƯỚC 2: Sáng Chủ Nhật 07:00 — Quét Chiến Dịch Đang Chạy (WeeklyContentKeyPlannerService)\n• Kiểm tra có Campaign nào Active trong tuần tới (Thứ 2 → Chủ Nhật) không?\n• Nếu KHÔNG có Campaign ➔ Dừng (Không tạo bài)\n• Nếu CÓ Campaign ➔ Lên dàn ý Key nội dung (content_angle) cho các ngày thuộc Campaign"]
+    --> B3["BƯỚC 3: Xáo Trộn Thông Minh Trong Pool Chiến Dịch (SocialSchedulePairingService)\n• Chỉ lấy Văn phong, Visual Style & Ảnh tham chiếu nằm trong Pool của Campaign đó\n• Chấm điểm ghép cặp (Tone ↔ DNA) & trừ điểm các mẫu đã dùng ở các ngày/tuần trước"]
     --> B4A & B4B
 
-    subgraph B4["BƯỚC 4: AI Sản Xuất Nội Dung & Bộ 3–5 Ảnh"]
-        B4A["4A. Viết Caption (SocialPostAiWorkerService)\n• Văn phong đã chọn (rules_json)\n• Key nội dung + Từ khóa tuần (keywords_json)\n• Thông tin thật của Sản phẩm (ProductFact)\n➔ Xuất: Title, Body, Bullets, CTA, Hashtags"]
-        B4B["4B. Vẽ 3–5 Ảnh Đa Góc (VisualPromptBuilder + ImageJob)\n• Gửi kèm 2 loại ảnh mẫu: Ảnh Style + Ảnh Sản Phẩm Thật\n• Áp 3–5 Góc chụp: Hero, Cận cảnh, Lifestyle, Góc 45°, Flat-lay\n➔ Xuất: 3–5 ảnh đúng sản phẩm thật ở 3–5 góc máy"]
+    subgraph B4["BƯỚC 4: Sáng Chủ Nhật — AI Sản Xuất Trọn Bộ Bài & Ảnh Của Tuần Tới"]
+        B4A["4A. Viết Caption cho toàn bộ bài trong tuần (SocialPostAiWorkerService)\n• Văn phong đã bốc từ Pool Campaign (rules_json)\n• Key nội dung ngày hôm đó + Từ khóa Campaign\n• Mô tả chủ thể thật\n➔ Xuất: Title, Body, Bullets, CTA, Hashtags"]
+        B4B["4B. Vẽ 3–5 Ảnh Đa Góc cho từng bài (VisualPromptBuilder + ImageJob)\n• Gửi kèm 2 loại ảnh mẫu: Ảnh Style Reference + Ảnh Tham Chiếu Chủ Thể Thật\n• Áp 3–5 Góc chụp: Hero, Cận cảnh, Lifestyle, Góc 45°, Flat-lay\n➔ Xuất: 3–5 ảnh đúng chủ thể thật ở 3–5 góc máy"]
     end
 
-    B4A & B4B --> B5["BƯỚC 5: Cổng Kiểm Duyệt (Review Gate)\n• Đủ chữ + đủ 3–5 ảnh ➔ Tự chuyển sang Chờ duyệt (pending_review)\n• Admin duyệt nhanh (hoặc bật Auto-Approve) ➔ Trạng thái: Approved"]
-    --> B6["BƯỚC 6: Tự Động Đăng Facebook Đúng Giờ (PublishScheduledSocialPostsCommand)\n• Cronjob quét 5 phút/lần các bài Approved có scheduled_at <= now()\n• Đẩy Caption + tối đa 5 ảnh lên Facebook Page (chống trùng lặp)"]
+    B4A & B4B --> B5["BƯỚC 5: Chủ Nhật Xem & Duyệt 1 Lượt Trên Lịch (ScheduleTab)\n• Toàn bộ bài tuần tới hoàn tất trong sáng Chủ Nhật ➔ Chuyển sang Chờ duyệt (pending_review)\n• Admin mở tab Lịch đăng xem trước cả tuần & bấm Duyệt (Approved)"]
+    --> B6["BƯỚC 6: Thứ 2 → Chủ Nhật Tự Động Đăng Đúng Giờ (PublishScheduledSocialPostsCommand)\n• Cronjob quét 5 phút/lần các bài Approved có scheduled_at <= now()\n• Đẩy Caption + 3–5 ảnh lên Facebook Page theo đúng khung giờ vàng"]
 ```
 
 ---
 
-## 3. Đối chiếu hiện trạng Codebase (4 luồng hiện có & Khoảng trống cần nối)
+## 3. Phân vai chi tiết giữa 7 Tab trên trang `/marketing/post-schedule`
 
-| Luồng hệ thống | Các file / Service cốt lõi đã có | Trạng thái hiện tại | Khoảng trống cần nối / nâng cấp |
-| :--- | :--- | :--- | :--- |
-| **1. Luồng Từ khóa, Chiến dịch & Chủ thể thật (`Campaign` / `Product`)** | • `app/Models/Campaign.php`<br>• `app/Models/Product.php` (đã có `HasMediaAssets` & `facts()`)<br>• `app/Models/ProductFact.php`<br>• `app/Services/Ai/VisualStyle/PromptLayers/ProductContext.php`<br>• `app/Services/Ai/VisualStyle/PromptLayers/ProductIdentityLayer.php`<br>• `app/Services/Marketing/SocialPostContextBuilder.php` | • `Campaign` đã có quan hệ nhiều-nhiều với `Product` (`campaign_products`).<br>• `Product` đã lưu ảnh chụp thật (`HasMediaAssets`) và các thông tin xác thực (`ProductFact`).<br>• `ProductContext` đã hỗ trợ lấy chủ thể từ cả `Product` model lẫn ảnh upload rời (`fromUpload`). | • **Đang bị ngắt kết nối ở Social Post:** `SocialPostContextBuilder` hiện chỉ đọc mỗi `Campaign.message` chung chung, **chưa đọc `Product`, `ProductFact`, ảnh chủ thể thật**, và chưa có cơ chế chia **Từ khóa tuần thành 3–5 Key nội dung (`content_angle`)** cho các ngày trong tuần. |
-| **2. Luồng Prompt ảnh, Ảnh tham chiếu kép & Đa góc chụp** | • `app/Models/AiImageProfile.php` (đã có `HasTaxonomy`)<br>• `app/Models/VisualStyleShot.php`<br>• `app/Services/Ai/VisualStyle/VisualPromptBuilder.php`<br>• `app/Services/Ai/VisualStyle/VisualStyleGenerationService.php`<br>• `app/Services/Ai/Images/AiImageGenerationService.php`<br>• `app/Jobs/ProcessSocialPostImageJob.php` | • Bên `VisualStyleGenerationService::referenceImages()` **đã hỗ trợ gom cả 2 loại ảnh tham chiếu** gửi xuống AI cùng lúc:<br>  1. **Ảnh 1 (`Style Reference`):** `style.reference_media_id` (định hình ánh sáng, màu sắc, bố cục).<br>  2. **Ảnh 2 (`Subject/Product Reference`):** `product.mediaIds` (ảnh chụp thật sản phẩm để khóa hình dáng chủ thể).<br>• Mỗi style đã có 3–5 `VisualStyleShot` (góc chụp khác nhau). | • Bên luồng Social Post (`SocialPostAiWorkerService::processImagePrompt` & `ProcessSocialPostImageJob`), code hiện mới chỉ nối chuỗi `"Variation slot 1..N"` và khi gọi `$images->generate(...)` **đang bỏ trống tham số `$referenceImages`**.<br>• Cần bê cơ chế `VisualPromptBuilder` + `VisualStyleShot` + `referenceImages(Style + Subject)` sang luồng tạo ảnh Social Post. |
-| **3. Luồng Văn phong (`Writing Profile`)** | • `app/Models/AiWritingProfile.php`<br>• `app/Models/Concerns/HasTaxonomy.php`<br>• `app/Services/Ai/WritingProfiles/WritingProfileService.php`<br>• `app/Services/Ai/WritingProfiles/WritingProfileSnapshotService.php` | • Hỗ trợ tạo từ bài mẫu (`reference`) hoặc thủ công (`manual`).<br>• Có `rules_json` (`tone`, `pronouns`, `emotion`, `opening`, `sentence_rhythm`, `bullets`, `ending`, `avoid`).<br>• Đã có trait `HasTaxonomy` dùng chung cho toàn hệ thống. | • Gắn trait `HasTaxonomy` (`categories()`, `tags()`) vào `AiWritingProfile` để phân nhóm văn phong (*Hài hước, Chuyên nghiệp, Thân thiện, Bán hàng, Kiến thức, Truyền cảm hứng*) đồng bộ với `AiImageProfile`. |
-| **4. Luồng Social Post & Lịch đăng** | • `app/Models/SocialPost.php` (`scheduled_at`)<br>• `app/Models/DailyContentPlan.php`<br>• `app/Services/Marketing/SocialPostGenerationService.php`<br>• `app/Services/Marketing/SocialPostGenerationStateService.php`<br>• `app/Services/Marketing/Publishing/FacebookPublisher.php`<br>• `app/Console/Commands/GenerateDailySocialPostDraftsCommand.php`<br>• UI: `resources/js/pages/marketing/post-schedule/index.vue` & 6 tabs | • Đã có pipeline tạo Caption + Gallery ảnh, kiểm duyệt (`MIN_GALLERY_IMAGES = 3`) và đăng Facebook chống trùng (`idempotency_key`).<br>• Đã có giao diện 6 tab tại `/marketing/post-schedule`. | • `GenerateDailySocialPostDraftsCommand` đang chạy cố định 2–3 bài/ngày, chưa chạy theo lịch tuần (3–5 bài/tuần) và chưa truyền Key nội dung, Chủ thể thật, Văn phong, Style ảnh, Số ảnh (3–5), Giờ hẹn đăng.<br>• `FacebookPublisher.php` (dòng 68) đang cắt `array_slice($images, 0, 4)` — cần nâng lên `5` ảnh.<br>• Chưa có command định kỳ quét `scheduled_at <= now()` để tự động publish các bài đã `approved`.<br>• UI `/marketing/post-schedule` đang dùng dữ liệu mẫu tĩnh, chưa nối API. |
+Để không bị chồng chéo giữa cài đặt hệ thống và cài đặt chiến dịch, 7 tab trên giao diện `/marketing/post-schedule` được phân vai chuẩn như sau:
 
----
-
-## 4. Kế hoạch Lên Từ Khóa Tuần & Triển Khai 3–5 Key Nội Dung (`WeeklyContentKeyPlannerService`)
-
-### 4.1. Nguồn Từ khóa & Chủ thể đầu tuần (2 chế độ linh hoạt)
-1. **Chế độ Chủ động (Admin định hướng đầu tuần):**
-   - Admin nhập nhanh **Chủ đề tuần + 3–5 từ khóa trọng tâm** (VD: *`"Cold Brew cam sả", "tỉnh táo đầu tuần", "ủ lạnh 16 tiếng", "mua 2 tặng 1"`*).
-   - Chọn **Sản phẩm chủ đạo (`Product`)** hoặc đính kèm **1–3 ảnh chụp chủ thể thật (`subject_media_ids`)** từ Media Library.
-2. **Chế độ Tự động 100% (AI tự lập kế hoạch từ Campaign):**
-   - Nếu Admin không nhập tay, `WeeklyContentKeyPlannerService` tự đọc `Campaign` (`objective`, `message`), lấy danh sách các `Product` thuộc `Campaign` (kèm ảnh thật của từng sản phẩm) và đối chiếu lịch sử 4 tuần gần nhất để tự sinh bộ từ khóa & phân bổ sản phẩm cho tuần mới không trùng lặp.
-
-### 4.2. Khung Lịch Tuần (3–5 bài/tuần) & Cách triển khai Key Nội dung + Chủ thể ảnh
-
-Mỗi tuần hệ thống vận hành **3–5 slot cố định** trải đều theo tâm lý lướt Facebook. Từ khóa tuần sẽ được tách thành **3–5 góc khai thác (`content_angle`)** khác nhau hoàn toàn:
-
-| Slot | Thứ | Giờ đăng (`scheduled_at`) | Trụ cột nội dung (`pillar_type`) | Cách triển khai Từ khóa & Key Nội dung (`content_angle`) | Nhóm Văn phong ưu tiên (`AiWritingProfile`) | Nhóm Phong cách ảnh (`AiImageProfile`) | Số ảnh | Phân vai 3–5 góc chụp trên cùng Chủ thể thật |
-| :---: | :--- | :---: | :--- | :--- | :--- | :--- | :---: | :--- |
-| **1** | **Thứ 2** | **08:00** | **`inspire`**<br>*(Khởi động tuần mới / Đời sống)* | Gắn từ khóa tuần với năng lượng tích cực sáng đầu tuần và cảm hứng trải nghiệm sản phẩm trong đời sống. | **Hài hước** hoặc **Truyền cảm hứng** *(Câu ngắn, dí dỏm, tươi mới)* | **Photorealistic / Lifestyle** *(Ánh sáng ban mai tự nhiên, ấm áp)* | **3–4 ảnh** | • **Slot 1:** Chủ thể thật trong không gian buổi sáng (Hero)<br>• **Slot 2:** Cận cảnh (Close-up) chi tiết chủ thể thật<br>• **Slot 3–4:** Góc Lifestyle sử dụng tự nhiên |
-| **2** | **Thứ 4** | **12:00** | **`knowledge`**<br>*(Chia sẻ kiến thức / Tips)* | Khai thác từ khóa tuần dưới dạng mẹo hữu ích, giải thích công dụng/thành phần dựa trên `ProductFact` xác thực. | **Chia sẻ kiến thức** hoặc **Chuyên nghiệp** *(Rõ ràng, chia bước, có bullet points)* | **Minimal / Studio Clean** *(Bố cục tối giản, nhiều khoảng trống, tập trung)* | **4 ảnh** | • **Slot 1:** Chủ thể thật chính diện rõ nét (Hook)<br>• **Slot 2:** Cận cảnh thành phần / chi tiết kỹ thuật 1<br>• **Slot 3:** Cận cảnh chất liệu / chi tiết kỹ thuật 2<br>• **Slot 4:** Bố cục tổng kết gọn gàng |
-| **3** *(Tùy chọn)* | **Thứ 5** | **19:30** | **`story`**<br>*(Câu chuyện / Hậu trường)* | Khai thác từ khóa qua câu chuyện hậu trường, sự tỉ mỉ trong quy trình/chất liệu hoặc trải nghiệm khách hàng. | **Thân thiện / Kể chuyện** *(Tâm sự nhẹ nhàng, gần gũi, tạo đồng cảm)* | **Cinematic / Warm Tone** *(Ánh sáng chiều tối, màu phim có chiều sâu)* | **3–4 ảnh** | • **Slot 1:** Góc rộng bối cảnh có chủ thể thật<br>• **Slot 2:** Khoảnh khắc tương tác với chủ thể thật (Medium)<br>• **Slot 3–4:** Đặc tả cảm xúc/chất liệu (Macro) |
-| **4** | **Thứ 6** | **17:30** | **`sales`**<br>*(Bán hàng / Sản phẩm chủ lực)* | Tập trung trực diện vào từ khóa mua hàng, lợi ích nổi bật của sản phẩm, ưu đãi cuối tuần và CTA chốt đơn rõ ràng. | **Bán hàng (Sales)** *(Nêu bật lợi ích ngay dòng đầu, có ưu đãi & CTA)* | **Commercial Product / Studio** *(Sắc nét, ánh sáng studio tôn sản phẩm)* | **5 ảnh** | • **Slot 1:** Hero shot chính diện sản phẩm thật<br>• **Slot 2:** Góc nghiêng 3/4 tôn hình khối sản phẩm thật<br>• **Slot 3:** Cận cảnh (Macro) tem nhãn/chất liệu thật<br>• **Slot 4:** Sản phẩm thật trong bối cảnh sử dụng<br>• **Slot 5:** Flat-lay tổng thể thúc đẩy chốt đơn |
-| **5** | **Chủ Nhật** | **09:00** *(hoặc 20:00)* | **`engagement`**<br>*(Tương tác cuối tuần / Minigame)* | Biến từ khóa tuần thành câu hỏi thảo luận vui, so sánh thú vị hoặc minigame nhẹ nhàng kích thích bình luận. | **Hài hước / Thân thiện** *(Vui vẻ, đặt câu hỏi mở kích thích comment)* | **Vivid / Lifestyle / Creative** *(Màu sắc tươi sáng, bắt mắt khi lướt feed nghỉ ngơi)* | **3–4 ảnh** | • **Slot 1:** Chủ thể thật ở góc nhìn bắt mắt gây tò mò<br>• **Slot 2–3:** Các góc nhìn / tình huống thú vị<br>• **Slot 4:** Bối cảnh thư giãn cuối tuần |
-
-> [!TIP]
-> **Quy tắc chọn ngày theo tần suất tuần:**
-> - Nếu chọn **3 bài/tuần**: Chạy **Thứ 2 – Thứ 4 – Thứ 6**.
-> - Nếu chọn **4 bài/tuần**: Chạy **Thứ 2 – Thứ 4 – Thứ 6 – Chủ Nhật**.
-> - Nếu chọn **5 bài/tuần**: Chạy đủ **Thứ 2 – Thứ 4 – Thứ 5 – Thứ 6 – Chủ Nhật**.
+| Tab / Component | Vai trò trong kiến trúc Campaign-Driven |
+| :--- | :--- |
+| **1. Tab `Cài đặt chung`** (`GeneralTab.vue`) | **Cấu hình Hệ thống dùng chung (Global System Config):**<br>• Chọn Model AI mặc định cho viết bài (Text LLM) và tạo ảnh (Image Generation Model).<br>• Ngôn ngữ mặc định (`Tiếng Việt`), Múi giờ hệ thống (`Asia/Ho_Chi_Minh`).<br>• Lịch chạy **Batch Sáng Chủ Nhật** toàn cục (`sunday_batch_enabled = true`, `sunday_batch_time = 07:00`).<br>• Công tắc mặc định toàn hệ thống: `Tự động gửi vào hàng chờ duyệt sau khi tạo`, `Tự động đăng khi đến giờ hẹn sau khi duyệt`. |
+| **2. Tab `Chiến Dịch`** (`CampaignTab.vue` + `CampaignCreateDialog.vue`) | **Trung tâm điều khiển chiến dịch & tạo bài:**<br>• Danh sách các chiến dịch (`Đang chạy`, `Sắp bắt đầu`, `Tạm dừng`, `Đã hoàn thành`, `Nháp`) kèm thanh tiến độ số bài đã tạo / tổng số bài dự kiến.<br>• **Wizard 5 bước (`CampaignCreateDialog.vue`)** quy định toàn bộ: Thông tin & thời hạn chiến dịch (Bước 1) ➔ Từ khóa & Pool Văn phong (Bước 2) ➔ Ảnh tham chiếu thật & Pool Visual Styles (Bước 3) ➔ Nền tảng, Tần suất & Khung giờ đăng (Bước 4) ➔ Quy tắc xáo trộn/chống lặp của chiến dịch (Bước 5). |
+| **3. Tab `Lịch đăng`** (`ScheduleTab.vue`) | **Bảng theo dõi & Duyệt bài hàng tuần:**<br>• Hiển thị lịch bài đăng theo `Tháng / Tuần / Ngày`, lọc theo Chiến dịch & Nền tảng.<br>• Hiển thị rõ các ngày nằm trong vùng hoạt động của Chiến dịch, trạng thái từng bài (`Đang lên dàn ý`, `Chờ duyệt`, `Đã duyệt`, `Đã đăng`).<br>• Cho phép click vào bài trên lịch để xem nhanh **Caption + 3–5 ảnh + Văn phong + Style ảnh**, sửa nhanh hoặc bấm **Duyệt cả tuần** vào ngày Chủ Nhật. |
+| **4. Tab `Văn phong AI`** (`ToneTab.vue`) | **Kho thư viện gốc Văn phong (Master Tone Library - ~50 mẫu):**<br>• Nơi quản lý, thêm/sửa/xóa, phân loại danh mục và xem trước toàn bộ kho `AiWritingProfile` của hệ thống.<br>• Cung cấp nguồn dữ liệu để **Bước 2 của Dialog Chiến Dịch** lấy ra cho Admin tick chọn vào Pool của từng chiến dịch. |
+| **5. Tab `Phong cách hình ảnh`** (`ImageStyleTab.vue`) | **Kho thư viện gốc Visual Styles (Master Visual Style Library - ~20 mẫu):**<br>• Nơi quản lý, tìm kiếm, lọc danh mục, chỉnh sửa Style DNA / Shot Recipes của toàn bộ kho `AiImageProfile`.<br>• Cung cấp nguồn dữ liệu để **Bước 3 của Dialog Chiến Dịch** lấy ra cho Admin tick chọn vào Pool của từng chiến dịch. |
+| **6. Tab `Nền tảng`** (`PlatformsTab.vue`) | **Cấu hình giới hạn & kết nối Nền tảng (Global Platform Guardrails):**<br>• Giới hạn trần (safety cap) số bài đăng tối đa/ngày và số ảnh tối đa/bài trên từng nền tảng (Facebook, Instagram, TikTok, YouTube) để bảo vệ tài khoản không bị spam. |
+| **7. Tab `Nâng cao`** (`AdvancedTab.vue`) | **Quy tắc AI & Thuật toán Ghép cặp mặc định:**<br>• Cấu hình trọng số thuật toán ghép cặp 4 tầng, số ngày Cooldown chống lặp Văn phong / Style ảnh giữa các tuần, quy tắc xử lý khi 2 chiến dịch trùng ngày, và cấu hình Retry khi lỗi. |
 
 ---
 
-## 5. Thuật toán Ghép cặp 4 Tầng (50 Văn phong × 20 Phong cách ảnh)
+## 4. Phân bổ Mạch Nội Dung Chiến Dịch (Story Arc) & Lịch Tuần
 
-Khi kho dữ liệu có tới **50 `AiWritingProfile`** và **20 `AiImageProfile`** ($50 \times 20 = 1.000$ tổ hợp), hệ thống sử dụng **`SocialSchedulePairingService`** để chấm điểm và chọn cặp tự động theo 4 tầng:
+Khi Admin tạo một chiến dịch dài $N$ ngày (ví dụ **20 ngày**, tần suất **3–5 bài/tuần** hoặc **1–2 bài/ngày**), `WeeklyContentKeyPlannerService` sẽ tính tổng số slot bài đăng nằm trong khoảng `starts_at → ends_at` và phân bổ theo **3 giai đoạn của Chiến dịch** kết hợp với **nhịp ngày trong tuần**:
 
-```mermaid
-flowchart TD
-    INPUT["Slot Lịch Đăng (Ngày, Trụ cột pillar_type, Từ khóa, Sản phẩm)"] --> T1
-    T1["Tầng 1: Lọc Danh mục & Tag qua HasTaxonomy (Category/Tag Filter - 40đ)"] --> T2
-    T2["Tầng 2: Ma trận Tương thích Giọng văn ↔ Thị giác (Tone-Visual Affinity - 30đ)"] --> T3
-    T3["Tầng 3: Trừ điểm Lặp lại & Thưởng tổ hợp mới (Cooldown & Freshness - 30đ)"] --> T4
-    T4["Tầng 4: Chọn Cặp (WritingProfile + ImageProfile) điểm cao nhất + Lấy 3-5 Shot Recipes"]
-```
+### 4.1. Ba giai đoạn theo dòng thời gian Chiến dịch
+1. **Giai đoạn 1 — Khơi gợi & Nhận diện (25% thời lượng đầu, VD: Ngày 1–5):**
+   - Ưu tiên góc tiếp cận `inspire` (Cảm hứng đời sống) và `story` (Câu chuyện mở màn / giới thiệu cái mới).
+2. **Giai đoạn 2 — Giá trị cốt lõi & Thuyết phục (50% thời lượng giữa, VD: Ngày 6–15):**
+   - Đan xen `knowledge` (Kiến thức, chi tiết chất liệu/thành phần sản phẩm), `story` (Trải nghiệm thực tế) và `sales` (Giới thiệu trực diện sản phẩm).
+3. **Giai đoạn 3 — Thúc đẩy hành động & Tương tác (25% thời lượng cuối, VD: Ngày 16–20):**
+   - Tập trung mạnh vào `sales` (Ưu đãi, kêu gọi hành động trước khi kết thúc chiến dịch) và `engagement` (Minigame / Câu hỏi tương tác).
 
-### Tầng 1: Đồng bộ theo Danh mục / Tag chủ đề (Trọng số: 40 điểm)
-- Sử dụng trait `HasTaxonomy` (`categories`, `tags`) cho cả `AiWritingProfile` và `AiImageProfile`.
-- Nếu Slot lịch đăng có `pillar_type` hoặc danh mục (ví dụ: `Khuyến mãi / Bán hàng` hoặc `Chia sẻ kiến thức`), hệ thống cộng **+40 điểm** cho các Văn phong và Style ảnh có trùng `category` hoặc `tag` với Slot/Campaign đó.
+### 4.2. Phân vai từng bài trong tuần & 3–5 góc chụp trên Ảnh tham chiếu thật
 
-### Tầng 2: Ma trận Tương thích Giọng văn ↔ Thị giác (Trọng số: 30 điểm)
-So khớp tự động giữa `AiWritingProfile.rules_json` (`tone`, `emotion`, `sentence_rhythm`) và `AiImageProfile.dna_json` (`color_mood`, `lighting`, `camera`, `environment`):
+| Nhịp ngày | Giờ vàng gợi ý | Trụ cột (`pillar_type`) | Cách triển khai Từ khóa Chiến dịch (`content_angle`) | Nhóm Văn phong ưu tiên (trong Pool Campaign) | Nhóm Visual Style ưu tiên (trong Pool Campaign) | Phân vai 3–5 góc chụp trên Ảnh tham chiếu thật |
+| :---: | :---: | :---: | :--- | :--- | :--- | :--- |
+| **Đầu tuần**<br>*(Thứ 2 / Thứ 3)* | **08:00** | **`inspire`**<br>*(Cảm hứng / Đời sống)* | Gắn từ khóa chiến dịch với năng lượng đầu tuần và cảm hứng trải nghiệm sản phẩm. | **Hài hước** hoặc **Truyền cảm hứng** | **Photorealistic / Lifestyle** | • **Ảnh 1:** Chủ thể thật trong không gian buổi sáng (Hero)<br>• **Ảnh 2:** Cận cảnh (Close-up) chi tiết chủ thể thật<br>• **Ảnh 3–4:** Góc Lifestyle sử dụng tự nhiên |
+| **Giữa tuần**<br>*(Thứ 4)* | **12:00** | **`knowledge`**<br>*(Kiến thức / Điểm nổi bật)* | Khai thác từ khóa dưới dạng mẹo hữu ích, điểm đặc biệt của nguyên liệu/sản phẩm. | **Chia sẻ kiến thức** hoặc **Chuyên nghiệp** | **Minimal / Studio Clean** | • **Ảnh 1:** Chủ thể thật chính diện rõ nét (Hook)<br>• **Ảnh 2–3:** Cận cảnh thành phần / chi tiết đặc trưng<br>• **Ảnh 4:** Bố cục tổng kết gọn gàng |
+| **Giữa-Cuối tuần**<br>*(Thứ 5)* | **19:30** | **`story`**<br>*(Câu chuyện / Hậu trường)* | Kể câu chuyện hậu trường, quy trình tỉ mỉ hoặc khoảnh khắc khách hàng trải nghiệm. | **Thân thiện / Kể chuyện** | **Cinematic / Warm Tone** | • **Ảnh 1:** Góc rộng bối cảnh có chủ thể thật<br>• **Ảnh 2:** Khoảnh khắc tương tác với chủ thể thật (Medium)<br>• **Ảnh 3–4:** Đặc tả cảm xúc/chất liệu (Macro) |
+| **Cuối tuần**<br>*(Thứ 6 / Thứ 7)* | **17:30** | **`sales`**<br>*(Bán hàng / Ưu đãi)* | Tập trung trực diện vào từ khóa mua hàng, lợi ích nổi bật, ưu đãi của chiến dịch và CTA chốt đơn. | **Bán hàng (Sales)** | **Commercial Product / Food Photography** | • **Ảnh 1:** Hero shot chính diện sản phẩm thật<br>• **Ảnh 2:** Góc nghiêng 3/4 tôn hình khối<br>• **Ảnh 3:** Cận cảnh (Macro) chi tiết thật<br>• **Ảnh 4:** Bối cảnh sử dụng<br>• **Ảnh 5:** Flat-lay tổng thể thúc đẩy chốt đơn |
+| **Chủ Nhật** | **09:00 / 20:00** | **`engagement`**<br>*(Tương tác / Minigame)* | Biến từ khóa chiến dịch thành câu hỏi thảo luận vui, bình chọn hoặc minigame cuối tuần. | **Hài hước / Thân thiện** | **Vivid / Lifestyle / Creative** | • **Ảnh 1:** Chủ thể thật ở góc nhìn bắt mắt gây tò mò<br>• **Ảnh 2–3:** Các góc nhìn / tình huống thú vị<br>• **Ảnh 4:** Bối cảnh thư giãn cuối tuần |
 
-| Đặc trưng Văn phong (`rules_json`) | Đặc trưng Style DNA tương thích (+30đ) | Đặc trưng Style DNA xung đột (-30đ / Loại) |
-| :--- | :--- | :--- |
-| **Hài hước / Bắt trend / Sôi nổi** | `color_mood.saturation` $\in$ `[vivid, high]`, `lighting.intensity` $\in$ `[medium, high]`, hoặc nhóm `Creative / Lifestyle` | `color_mood.saturation = desaturated`, `lighting.type = dramatic` u tối |
-| **Chuyên nghiệp / Chia sẻ kiến thức** | `composition.negative_space` $\in$ `[moderate, dominant]`, `visual_balance = symmetric`, `environment.type` $\in$ `[studio_solid, studio_gradient]` | Bố cục lộn xộn, góc máy `dutch` nghiêng ngả |
-| **Thân thiện / Kể chuyện / Truyền cảm hứng** | `lighting.temperature = warm`, `lighting.type` $\in$ `[golden_hour, natural_window]`, `environment.type` $\in$ `[lifestyle_interior, lifestyle_exterior]` | Ánh sáng `cool` lạnh lẽo, `hard shadows` gắt |
-| **Bán hàng (Sales) / Giới thiệu sản phẩm** | `style_constraints.commercial_quality = true`, `camera.shot_type` $\in$ `[hero, product_single, detail]`, `camera.focus = sharp_all` | Ảnh `soft focus` mờ ảo, `extreme_wide` chủ thể quá nhỏ |
+---
 
-### Tầng 3: Chống lặp & Phân bổ đều kho 50 × 20 (Trọng số: 30 điểm)
-Truy vấn lịch sử `SocialPostVersion` và `DailyContentPlan` trong **30–60 ngày gần nhất**:
-1. **Cooldown Văn phong (Writing Profile Cooldown):**
-   - Với 50 văn phong, một văn phong vừa được sử dụng sẽ bị phạt điểm trong **10 bài tiếp theo** (đảm bảo ít nhất 2–3 tuần không lặp lại cùng 1 văn phong).
-2. **Cooldown Phong cách ảnh (Image Style Cooldown):**
-   - Với 20 style ảnh, **cấm tuyệt đối** dùng cùng 1 `image_profile_id` cho 2 bài liên tiếp. Mỗi bài trong cùng 1 tuần bắt buộc có `image_profile_id` khác nhau.
-3. **Điểm thưởng Tổ hợp mới (Pair Exploration Bonus):**
-   - Cặp `(writing_profile_id, image_profile_id)` nào chưa từng kết hợp với nhau trong 60 ngày qua được cộng **+15 điểm**; cặp nào vừa kết hợp trong 30 ngày qua bị trừ **-20 điểm**.
+## 5. Thuật toán Xáo Trộn & Ghép Cặp Trong Pool Chiến Dịch (`SocialSchedulePairingService`)
 
-### Tầng 4: 3 Chế độ vận hành cho Admin trên UI
-1. **`auto_smart` (Mặc định):** Tự động chạy thuật toán 3 tầng trên để chọn cặp tốt nhất cho từng ngày.
-2. **`rule_by_day` (Theo nhóm từng thứ):** Admin chọn nhóm Văn phong + nhóm Style ảnh cho từng Thứ (ví dụ Thứ 2 = *Hài hước + Lifestyle*, Thứ 6 = *Bán hàng + Studio Product*), hệ thống tự xoay vòng các mẫu trong nhóm đó.
-3. **`pinned` (Ghim cố định):** Admin chỉ định đích danh `writing_profile_id` và `image_profile_id` cho một slot cụ thể.
+Khi Admin đã chọn sẵn cho Chiến dịch:
+- **Pool Văn phong:** $M$ mẫu (ví dụ 8–10 văn phong từ kho 50 mẫu).
+- **Pool Visual Styles:** $P$ mẫu (ví dụ 8–10 style từ kho 20 mẫu).
+- **Pool Ảnh tham chiếu chủ thể:** $R$ ảnh (ví dụ 4–6 ảnh thật từ Media Library).
+
+Hệ thống sẽ **chỉ lấy trong Pool của Chiến dịch đó** (nếu Admin để trống Pool thì mới fallback về toàn bộ kho 50 × 20) và chấm điểm ghép cặp theo 4 tầng:
+
+1. **Tầng 1 — Khớp Trụ cột ngày đăng (`Pillar & Taxonomy Match` - 40 điểm):**
+   - Ưu tiên các Văn phong và Visual Style trong Pool có `category` / `tag` khớp với `pillar_type` của ngày hôm đó (VD: ngày `sales` ưu tiên văn phong Bán hàng + style Sản phẩm/Đồ ăn).
+2. **Tầng 2 — Tương thích Giọng văn ↔ Thị giác (`Tone-Visual Affinity` - 30 điểm):**
+   - So khớp `AiWritingProfile.rules_json` với `AiImageProfile.dna_json` để không ghép lệch tông (không ghép giọng nghiêm túc với ảnh hoạt hình rực rỡ).
+3. **Tầng 3 — Xoay vòng không lặp trong Chiến dịch (`Campaign Pool Rotation & Cooldown` - 30 điểm):**
+   - Trong cùng 1 tuần: **Cấm tuyệt đối** 2 bài dùng trùng Văn phong hoặc trùng Visual Style.
+   - Trong suốt 20 ngày của Chiến dịch: Ưu tiên xoay vòng hết cả 8–10 Văn phong, 8–10 Visual Styles và 4–6 Ảnh tham chiếu trước khi quay vòng lại; phạt điểm các tổ hợp `(writing_profile_id, image_profile_id, subject_media_id)` đã xuất hiện ở tuần trước.
+4. **Tầng 4 — Chọn tổ hợp điểm cao nhất & sinh 3–5 Shot Recipes:**
+   - Gắn cặp `(writing_profile_id, image_profile_id, subject_media_ids)` vào slot lịch đăng.
 
 ---
 
 ## 6. Cơ chế Gửi "2 Loại Ảnh Tham Chiếu" & Sinh 3–5 Ảnh Đa Góc Chụp
 
-Khi tạo bộ $K \in [3, 5]$ bức ảnh cho 1 bài viết, hệ thống kết hợp **Ảnh tham chiếu kép (`Dual Reference Images`)** + **Lớp nhận diện chủ thể (`ProductIdentityLayer`)** + **Công thức góc chụp (`Shot Recipes`)**:
+Khi tạo bộ $K \in [3, 5]$ bức ảnh cho 1 bài viết thuộc Chiến dịch, hệ thống kết hợp **Ảnh tham chiếu kép (`Dual Reference Images`)** + **Lớp nhận diện chủ thể (`ProductIdentityLayer`)** + **Công thức góc chụp (`Shot Recipes`)**:
 
-```mermaid
-flowchart LR
-    subgraph REF["1. Gom 2 loại Ảnh Tham Chiếu (referenceImages)"]
-        R1["🖼️ Ảnh 1: Style Reference\n(style.reference_media_id)\nĐịnh hình Ánh sáng, Màu sắc, Phông nền"]
-        R2["📦 Ảnh 2: Subject/Product Reference\n(product.mediaIds / subject_media_ids)\nẢnh chụp thật Sản phẩm của bạn"]
-    end
-
-    subgraph PROMPT["2. Dựng Prompt theo từng Góc Máy (VisualPromptBuilder)"]
-        P1["ProductIdentityLayer\n(Mô tả sản phẩm thật + ProductFact)"]
-        P2["Style DNA Layers\n(Camera, Lighting, Environment, Color)"]
-        P3["3-5 VisualStyleShot\n(Hoặc 5 Camera Angle Presets)"]
-    end
-
-    REF & PROMPT --> ENGINE["3. AI Image Provider\n(Chạy K lượt cho K góc chụp)"]
-    ENGINE --> S1["Ảnh 1: Chủ thể thật - Góc Chính diện (Hero)"]
-    ENGINE --> S2["Ảnh 2: Chủ thể thật - Góc Cận cảnh (Macro/Detail)"]
-    ENGINE --> S3["Ảnh 3: Chủ thể thật - Bối cảnh sử dụng (Lifestyle)"]
-    ENGINE --> S4["Ảnh 4: Chủ thể thật - Góc nghiêng 3/4 hoặc 45°"]
-    ENGINE --> S5["Ảnh 5: Chủ thể thật - Góc từ đỉnh xuống (Flat-lay)"]
-```
-
-### 6.1. Cơ chế gom 2 loại ảnh tham chiếu (`referenceImages`)
-Mọi lượt gọi `$images->generate(...)` cho cả $K$ bức ảnh trong bài đều nhận chung mảng `$referenceImages` gồm:
-1. **Ảnh 1 — `Style Reference` (`AiImageProfile.reference_media_id`):** Giúp AI học cách đánh sáng, tông màu, chất liệu nền và độ xóa phông của phong cách đã chọn.
-2. **Ảnh 2 — `Subject / Product Reference` (Từ `Product` media hoặc `subject_media_ids`):** Là 1–3 tấm ảnh chụp thật sản phẩm của bạn. Giúp AI **khóa cứng nhận diện chủ thể** (giữ đúng hình dáng chai/hộp, bao bì, màu sắc thật, tỷ lệ kích thước) xuyên suốt cả 3–5 tấm ảnh trong cùng bài viết.
-
-### 6.2. Cơ chế đổi góc máy cho 3–5 bức ảnh trong bài
-1. **Trường hợp Style ảnh đã có các `VisualStyleShot` (`shots` active $\ge K$):**
-   - Lấy $K$ `VisualStyleShot` theo `sort_order`.
-   - Với mỗi slot $i \in \{1..K\}$, dùng `VisualPromptBuilder` kết hợp `ProductContext` (chủ thể thật) + `Style DNA` + `Shot Recipe #i` + `$referenceImages` để sinh ảnh.
-2. **Trường hợp Style ảnh chưa có đủ `VisualStyleShot` (hoặc dùng thêm cho đủ 5 ảnh):**
-   - Hệ thống tự động áp dụng **Bộ 5 Khuôn Góc Chụp Chuẩn (Standard Multi-Shot Presets)** cho từng slot thay vì chỉ ghi `"Variation slot X"`:
-     - **Slot 1 (Hero Shot):** `Hero front/three-quarter view, clear focal subject preserving exact product identity from reference image, balanced composition, inviting atmosphere.`
-     - **Slot 2 (Detail / Close-up):** `Close-up macro/detail shot of the exact same subject highlighting texture, packaging details, and craftsmanship, shallow depth of field.`
-     - **Slot 3 (Lifestyle / Context):** `Medium-wide lifestyle shot placing the exact same product in a natural real-world usage setting, warm and relatable context.`
-     - **Slot 4 (Angle Variation):** `Dynamic 45-degree or three-quarter perspective of the exact same subject showing depth, form, and surrounding complementary props.`
-     - **Slot 5 (Flat-lay / Overview):** `Top-down flat-lay or curated overview composition featuring the exact same subject with harmonious negative space.`
+1. **Ảnh 1 — `Style Reference` (`AiImageProfile.reference_media_id`):** Giúp AI học cách đánh sáng, tông màu, chất liệu nền và độ xóa phông của Visual Style được chọn trong Pool chiến dịch.
+2. **Ảnh 2 — `Subject Reference` (Lấy từ 4–6 ảnh tham chiếu của Chiến dịch `campaign.subject_media_ids`):** Giúp AI **khóa cứng nhận diện chủ thể thật** (giữ đúng hình dáng ly/chai/hộp, bao bì, màu sắc thật, không gian thật) xuyên suốt cả 3–5 tấm ảnh trong bài.
+3. **Đổi 3–5 góc máy (`VisualStyleShot` hoặc 5 Camera Angle Presets):**
+   - **Slot 1:** Hero Shot (Chính diện / góc 3/4 nổi bật chủ thể thật).
+   - **Slot 2:** Detail / Macro Close-up (Cận cảnh chi tiết, chất liệu, bề mặt chủ thể thật).
+   - **Slot 3:** Lifestyle / Context (Chủ thể thật đặt trong bối cảnh sử dụng tự nhiên).
+   - **Slot 4:** Dynamic 45° Perspective (Góc nghiêng tạo chiều sâu không gian).
+   - **Slot 5:** Flat-lay / Top-down Overview (Bố cục nhìn từ trên xuống hài hòa).
 
 ---
 
-## 7. Các hạng mục kỹ thuật cần triển khai (Implementation Tasks)
+## 7. Các hạng mục kỹ thuật & Giao diện cần triển khai (Implementation Tasks)
 
-### Phase 1: Mở rộng Schema, Taxonomy & Cấu hình Lịch tuần (Backend Foundation)
-- [ ] **Task 1.1:** Bổ sung các cột điều phối 4 Trục cho bảng `daily_content_plans` (migration mới):
-  - **Trục Từ khóa & Key nội dung:**
-    - `pillar_type` (`string nullable` — `inspire`, `knowledge`, `story`, `sales`, `engagement`)
-    - `topic_title` (`string nullable` — tiêu đề/chủ đề cụ thể của bài hôm đó)
-    - `keywords_json` (`json nullable` — danh sách từ khóa trọng tâm & hashtags của bài)
-    - `content_angle` (`text nullable` — dàn ý / key nội dung hướng dẫn AI viết bài)
-  - **Trục Chủ thể thật (`Product` đã có `product_id`, bổ sung thêm trường chọn ảnh trực tiếp):**
-    - `subject_media_ids` (`json nullable` — mảng ID `media_assets` chụp chủ thể thật nếu chọn trực tiếp)
-    - `subject_description` (`text nullable` — mô tả nhận diện chủ thể thật khi không dùng `Product` cố định)
-  - **Trục Văn phong, Style ảnh & Lịch hẹn:**
-    - `writing_profile_id` (`nullable`, FK ➔ `ai_writing_profiles.id`)
-    - `image_profile_id` (`nullable`, FK ➔ `ai_image_profiles.id`)
-    - `image_count` (`unsignedTinyInteger`, default `4` — từ 3 đến 5 ảnh/bài)
-    - `scheduled_at` (`timestamp nullable` — thời điểm dự kiến đăng bài lên Facebook)
-    - `pairing_mode` (`string`, default `'auto_smart'`)
-- [ ] **Task 1.2:** Gắn trait `HasTaxonomy` (`app/Models/Concerns/HasTaxonomy.php`) vào `AiWritingProfile` để đồng bộ hệ thống `categories()` và `tags()` với `AiImageProfile`.
-- [ ] **Task 1.3:** Định nghĩa cấu trúc lưu cài đặt Lịch đăng tuần trong `Settings` (group `marketing_schedule`):
-  - `weekly_target_count`: `3..5` (bài/tuần)
-  - `default_image_count`: `3..5` (ảnh/bài)
-  - `weekly_seed_keywords`: mảng từ khóa trọng tâm của tuần hiện tại
-  - `default_subject_media_ids` & `default_subject_description`: ảnh chủ thể mặc định của tuần (nếu có)
-  - `active_weekdays`: mảng cấu hình theo thứ (`mon`, `wed`, `thu`, `fri`, `sun`), mỗi thứ có `time_slot` (`08:00`, `12:00`...), `pillar_type`, `image_count`, `product_id` (nullable), `writing_profile_id` (nullable), `image_profile_id` (nullable).
-  - `auto_submit_review`: `boolean` (tự động chuyển sang `pending_review` khi AI tạo xong).
-  - `auto_approve`: `boolean` (tùy chọn tự động duyệt `approved` cho chế độ Full Auto-Pilot).
-  - `auto_schedule_publish`: `boolean` (tự động đăng theo `scheduled_at` sau khi `approved`).
+### Phase 1: Mở rộng Schema `campaigns`, `daily_content_plans` & Settings (Backend Foundation)
+- [ ] **Task 1.1:** Mở rộng bảng `campaigns` (migration mới) để lưu trọn vẹn cấu hình 5 bước của Wizard Chiến dịch:
+  - `budget` (`decimal(15,2) nullable` — ngân sách chiến dịch tùy chọn)
+  - `keywords_json` (`json nullable` — bộ từ khóa trọng tâm & hashtags của chiến dịch)
+  - `writing_profile_ids` (`json nullable` — mảng ID Pool ~10 `AiWritingProfile` được chọn cho chiến dịch)
+  - `image_profile_ids` (`json nullable` — mảng ID Pool ~10 `AiImageProfile` được chọn cho chiến dịch)
+  - `subject_media_ids` (`json nullable` — mảng ID 4–6 `MediaAsset` ảnh tham chiếu chủ thể thật của chiến dịch)
+  - `subject_description` (`text nullable` — mô tả nhận diện chủ thể thật để khóa prompt ảnh & viết bài)
+  - `platforms_json` (`json nullable` — danh sách nền tảng áp dụng: `['fb', 'ig', ...]`)
+  - `schedule_config_json` (`json nullable` — cấu hình tần suất: số bài/ngày hoặc các thứ trong tuần `active_weekdays`, khung giờ vàng `time_slots`, `image_count` 3–5 ảnh/bài)
+  - `advanced_config_json` (`json nullable` — chế độ ghép cặp `pairing_mode`, `auto_submit_review`, `auto_approve`, `ab_testing`, quy tắc chống lặp)
+- [ ] **Task 1.2:** Mở rộng bảng `daily_content_plans` (migration mới) gắn trực tiếp với `campaign_id`:
+  - `campaign_id` (`nullable`, FK ➔ `campaigns.id`)
+  - `pillar_type` (`string nullable` — `inspire`, `knowledge`, `story`, `sales`, `engagement`)
+  - `topic_title` (`string nullable` — tiêu đề/chủ đề cụ thể của bài hôm đó)
+  - `keywords_json` (`json nullable` — từ khóa trọng tâm của bài hôm đó)
+  - `content_angle` (`text nullable` — dàn ý / key nội dung hướng dẫn AI viết bài)
+  - `subject_media_ids` (`json nullable` — 1–3 ảnh tham chiếu chủ thể được bốc cho bài hôm đó)
+  - `subject_description` (`text nullable`)
+  - `writing_profile_id` (`nullable`, FK ➔ `ai_writing_profiles.id`)
+  - `image_profile_id` (`nullable`, FK ➔ `ai_image_profiles.id`)
+  - `image_count` (`unsignedTinyInteger`, default `4` — từ 3 đến 5 ảnh/bài)
+  - `scheduled_at` (`timestamp nullable` — thời điểm dự kiến đăng bài)
+- [ ] **Task 1.3:** Gắn trait `HasTaxonomy` vào `Campaign` và `AiWritingProfile` để đồng bộ hệ thống `categories()` và `tags()` với `AiImageProfile`.
+- [ ] **Task 1.4:** Định nghĩa cài đặt Hệ thống dùng chung trong `Settings` (group `marketing_schedule` cho `GeneralTab` & `AdvancedTab`):
+  - `default_text_provider` & `default_text_model`: Model AI viết bài mặc định
+  - `default_image_provider` & `default_image_model`: Model AI tạo ảnh mặc định
+  - `default_language`: `'vi'` (`Tiếng Việt`)
+  - `default_timezone`: `'Asia/Ho_Chi_Minh'`
+  - `sunday_batch_enabled`: `boolean` (mặc định `true` — sáng Chủ Nhật tự động quét các Chiến dịch đang chạy để lên bài cả tuần)
+  - `sunday_batch_time`: `string` (mặc định `'07:00'`)
+  - `auto_submit_review`: `boolean` (mặc định `true`)
+  - `auto_schedule_publish`: `boolean` (mặc định `true`)
+  - `platform_quotas_json`: giới hạn trần số bài/ngày trên từng nền tảng (`PlatformsTab`)
+  - `global_pairing_rules_json`: cấu hình Cooldown chống lặp & quy tắc ưu tiên khi trùng chiến dịch (`AdvancedTab`)
 
-### Phase 2: Xây dựng Engine Lên Key Nội Dung, Ghép Cặp & Sinh 3–5 Ảnh Chủ Thể Thật
-- [ ] **Task 2.1:** Tạo service `App\Services\Marketing\WeeklyContentKeyPlannerService`:
-  - Nhận `Campaign` + `weekly_seed_keywords` + danh sách `Product` (hoặc `subject_media_ids`) + các ngày hoạt động trong tuần (`3–5 slots`).
-  - Tự động phân bổ sản phẩm/chủ thể thật và sinh ra bộ `(pillar_type, topic_title, keywords_json, content_angle, subject_description)` cho từng bài trong tuần, đảm bảo 3–5 bài trong tuần có góc tiếp cận khác biệt và không trùng lặp với 4 tuần trước.
-- [ ] **Task 2.2:** Tạo service `App\Services\Marketing\SocialSchedulePairingService`:
-  - Thực thi thuật toán 4 tầng (Taxonomy match 40đ + Tone-to-DNA affinity 30đ + Cooldown 30–60 ngày 30đ) để chọn cặp `(AiWritingProfile, AiImageProfile)` tối ưu cho mỗi slot.
-- [ ] **Task 2.3:** Nâng cấp `SocialPostContextBuilder`, `SocialPostAiWorkerService` & `ProcessSocialPostImageJob`:
-  - Trong `SocialPostContextBuilder`: Truyền đầy đủ `topic_title`, `keywords_json`, `content_angle` và thông tin `Product` (`name`, `short_description`, `facts` có `is_allowed_for_ai = true`) hoặc `subject_description` vào context viết bài và vẽ ảnh.
-  - Trong `SocialPostAiWorkerService::processImagePrompt`: Tích hợp `VisualPromptBuilder`, `ProductContext` (`ProductIdentityLayer`) và `VisualStyleShot` (hoặc 5 Camera Angle Presets) để mỗi slot ảnh (`slot_no = 0..4`) có một prompt góc chụp riêng biệt nhưng khóa cứng cùng một chủ thể thật và Style DNA.
-  - Trong `ProcessSocialPostImageJob`: Gom cả **Ảnh 1 (`style.reference_media_id`)** và **Ảnh 2 (`product` media / `subject_media_ids`)** qua helper `referenceImages()` và truyền vào tham số thứ 7 của `$images->generate(..., $referenceImages)`.
-- [ ] **Task 2.4:** Cập nhật `FacebookPublisher.php`:
-  - Nâng giới hạn upload ảnh từ `array_slice($images, 0, 4)` lên `array_slice($images, 0, 5)`.
+### Phase 2: Hoàn thiện Giao diện 7 Tab & Wizard 5 Bước tại `/marketing/post-schedule` (Frontend UI)
+- [ ] **Task 2.1:** Hoàn thiện **Bước 2, 3, 4, 5 trong `CampaignCreateDialog.vue`**:
+  - Sửa lỗi ký tự `p` thừa ở dòng 1 (`p<!--`).
+  - **Bước 2 (Nội dung & Văn phong):** Ô nhập Bộ từ khóa chiến dịch (`keywords_json`), Hướng dẫn/Thông điệp bổ sung, và Lưới chọn nhanh **Pool Văn phong AI** (cho phép tick chọn nhiều văn phong, ví dụ 6–10 mẫu).
+  - **Bước 3 (Phong cách hình ảnh & Ảnh tham chiếu):** Khu vực chọn/upload **4–6 Ảnh tham chiếu chủ thể thật** (`subject_media_ids`) kèm ô nhập `Mô tả chủ thể thật`, bộ chọn số lượng ảnh/bài (`3–5 ảnh`), và Lưới chọn **Pool Visual Styles** (tick chọn 6–10 style ảnh).
+  - **Bước 4 (Nền tảng & Lịch đăng):** Chọn nền tảng đăng (`Facebook`, `Instagram`...), chọn chế độ phân bổ bài (`Số bài/ngày` hoặc `Theo các Thứ trong tuần`), chọn khung giờ vàng đăng bài, và hiển thị **Tóm tắt tự động** (VD: *"Chiến dịch 20 ngày × 1 bài/ngày = Dự kiến AI sẽ lên 20 bài viết vào mỗi sáng Chủ Nhật"*).
+  - **Bước 5 (Nâng cao):** Chọn chế độ xáo trộn Pool (`Tự động thông minh 4 tầng`, `Xoay vòng tuần tự`), công tắc tự động gửi duyệt, và nút **Lưu / Kích hoạt Chiến dịch** ở bước cuối.
+- [ ] **Task 2.2:** Thiết kế lại `GeneralTab.vue` đúng vai trò **Cài đặt Hệ thống dùng chung (Global Config)**:
+  - Cấu hình Model AI viết bài & Model AI vẽ ảnh mặc định, Ngôn ngữ mặc định, Múi giờ.
+  - Cấu hình **Lịch chạy Batch Sáng Chủ Nhật (`07:00`)** toàn cục + quy tắc khi có nhiều chiến dịch cùng chạy.
+  - Công tắc mặc định: Tự động gửi duyệt (`auto_submit_review`) & Tự động đăng đúng giờ sau khi duyệt (`auto_schedule_publish`).
+- [ ] **Task 2.3:** Nâng cấp `ScheduleTab.vue` & `CampaignTab.vue`:
+  - Trên `ScheduleTab.vue`: Thêm nút **"AI Lên bài tuần này"** (chạy batch thủ công cho chiến dịch đang chọn), hiển thị trạng thái bài (`Chờ duyệt`, `Đã duyệt`, `Đã đăng`), hiển thị chế độ xem **Tuần (`week`)** để sáng Chủ Nhật Admin xem chi tiết cả tuần (Caption, 3–5 ảnh, Văn phong, Visual Style) và bấm **Duyệt**.
+  - Trên `CampaignTab.vue`: Thêm Drawer/Panel xem nhanh cấu hình Pool của chiến dịch và nút bấm **"Phân bổ lịch bài cho chiến dịch này"**.
+- [ ] **Task 2.4:** Hoàn thiện `AdvancedTab.vue` & sửa lỗi hiển thị lặp ở `PlatformsTab.vue`:
+  - Xóa khối icon + tên nền tảng bị lặp 2 lần ở `PlatformsTab.vue`.
+  - Đưa các cài đặt Cooldown chống lặp (Văn phong, Style ảnh), chế độ ghép cặp mặc định và A/B testing vào `AdvancedTab.vue`.
 
-### Phase 3: Tự động hóa Scheduler (Lên kế hoạch Tuần, Tạo nháp & Đăng bài đúng giờ)
-- [ ] **Task 3.1:** Nâng cấp `GenerateDailySocialPostDraftsCommand` (`marketing:social-post-drafts`):
-  - Đọc cấu hình `marketing_schedule` để khởi tạo các slot `DailyContentPlan` trong tuần (nếu chưa có) thông qua `WeeklyContentKeyPlannerService` và `SocialSchedulePairingService`.
-  - Với các slot của ngày cần tạo nháp: Tạo `SocialPost` kèm `scheduled_at` đúng khung giờ vàng, lưu `image_count` (3–5) vào `SocialPostVariant`, và xếp hàng `SocialPostGenerationService::queue()`.
-- [ ] **Task 3.2:** Hỗ trợ `auto_submit_review` & `auto_approve` trong `SocialPostGenerationStateService::refresh()`:
-  - Khi cả Caption và đủ `image_count` (3–5 ảnh) chuyển sang `ready`, tự động chuyển `review_status` sang `pending_review` (hoặc `approved` nếu bật `auto_approve`).
-- [ ] **Task 3.3:** Tạo command mới `PublishScheduledSocialPostsCommand` (`marketing:publish-scheduled-posts`) và đăng ký vào `ProjectScheduleRegistry`:
-  - Chạy định kỳ mỗi 5 phút (`everyFiveMinutes()`), tìm các `SocialPost` có `review_status = approved`, `publication_status = pending`, `generation_status = ready` và `scheduled_at <= now()`, gọi `SocialPublicationService::queue()` để đăng lên Facebook Page.
+### Phase 3: Xây dựng Engine Phân Bổ Chiến Dịch, Ghép Cặp & Sinh 3–5 Ảnh Chủ Thể Thật
+- [ ] **Task 3.1:** Tạo service `App\Services\Marketing\WeeklyContentKeyPlannerService`:
+  - Quét các `Campaign` đang `active` có khoảng `(starts_at, ends_at)` giao với tuần mục tiêu. Nếu không có `Campaign` nào active $\Rightarrow$ trả về rỗng (không tạo bài).
+  - Dựa vào tiến độ ngày của chiến dịch (Giai đoạn Mở đầu / Giữa / Cuối) và `keywords_json` của chiến dịch, sinh ra bộ `(pillar_type, topic_title, keywords_json, content_angle)` cho từng ngày đăng trong tuần.
+- [ ] **Task 3.2:** Tạo service `App\Services\Marketing\SocialSchedulePairingService`:
+  - Lọc các `AiWritingProfile`, `AiImageProfile` và `subject_media_ids` nằm trong Pool của `Campaign` đó.
+  - Chấm điểm ghép cặp 4 tầng và xoay vòng không lặp lại với các bài trước đó trong cùng chiến dịch.
+- [ ] **Task 3.3:** Nâng cấp `SocialPostContextBuilder`, `SocialPostAiWorkerService`, `ProcessSocialPostImageJob` & `FacebookPublisher`:
+  - Truyền `topic_title`, `keywords_json`, `content_angle`, `subject_description` vào prompt viết bài và vẽ ảnh.
+  - Kết hợp `VisualPromptBuilder` + `VisualStyleShot` (hoặc 5 Camera Presets) + `referenceImages(Style Reference + Subject Reference)` khi sinh 3–5 ảnh cho bài viết.
+  - Nâng giới hạn upload ảnh trong `FacebookPublisher.php` từ `4` lên `5` ảnh.
 
-### Phase 4: Kết nối API cho giao diện `/marketing/post-schedule`
-- [ ] **Task 4.1:** Tạo `PostScheduleController` (trong nhóm Admin Marketing API) cung cấp các endpoint:
-  - `GET /api/admin/marketing/post-schedule/overview`: KPI thống kê thực tế, cấu hình `marketing_schedule` hiện tại, danh sách lịch bài đăng & dàn ý từ khóa trong tuần.
-  - `PUT /api/admin/marketing/post-schedule/settings`: Lưu cấu hình lịch tuần (3–5 bài/tuần, 3–5 ảnh/bài, từ khóa tuần, sản phẩm/ảnh chủ thể, công tắc tự động).
-  - `POST /api/admin/marketing/post-schedule/generate-weekly-plan`: Bấm 1 nút để AI lập ngay dàn ý **Từ khóa + Key nội dung + Ghép cặp Văn phong/Style ảnh + Chủ thể thật** cho 3–5 bài trong tuần.
-  - `PUT /api/admin/marketing/post-schedule/plans/{plan}`: Cho phép Admin sửa nhanh Từ khóa, Key nội dung, Ảnh chủ thể thật, Văn phong hoặc Style ảnh của từng slot trên lịch trước khi chạy tạo bài.
-- [ ] **Task 4.2:** Nối dữ liệu thật từ API vào 6 tab trong `resources/js/views/marketing/post-schedule/`:
-  - `GeneralTab.vue`: Cấu hình 3–5 bài/tuần, 3–5 ảnh/bài, nhập **Từ khóa trọng tâm của tuần**, chọn **Chiến dịch & Sản phẩm/Ảnh chủ thể thật**, công tắc tự động gửi duyệt & tự động đăng.
-  - `ScheduleTab.vue`: Hiển thị các slot tuần trên lưới lịch kèm **Tiêu đề Key nội dung, Từ khóa, Ảnh chủ thể thật, Văn phong & Style ảnh**, cho phép bấm tạo dàn ý tuần hoặc sửa nhanh từng slot.
-  - `ToneTab.vue`: Đồng bộ danh sách với `AiWritingProfile` (50 mẫu văn phong), hỗ trợ lọc/gắn nhóm chủ đề (`HasTaxonomy`).
-  - `ImageStyleTab.vue`: Đồng bộ danh sách với `AiImageProfile` (20 style ảnh), hiển thị ảnh mẫu Style + số lượng Shot Recipes.
-  - `PlatformsTab.vue` & `AdvancedTab.vue`: Cấu hình quota nền tảng và quy tắc Cooldown / Ghép cặp tự động.
+### Phase 4: Tự động hóa Scheduler (Batch Sáng Chủ Nhật & Tự động đăng trong tuần) + Kết nối API
+- [ ] **Task 4.1:** Nâng cấp `GenerateDailySocialPostDraftsCommand` (`marketing:social-post-drafts --weekly-batch`) chạy định kỳ `weeklyOn(0, '07:00')` (07:00 sáng Chủ Nhật):
+  - Chỉ chạy cho các ngày thuộc `Campaign` đang `active`.
+  - Khởi tạo các slot `DailyContentPlan` + `SocialPost` cho cả tuần tới (Thứ 2 → Chủ Nhật), xếp hàng tạo xong toàn bộ Caption + 3–5 ảnh/bài và chuyển sang `pending_review` để Chủ Nhật Admin duyệt.
+- [ ] **Task 4.2:** Tạo `PublishScheduledSocialPostsCommand` (`marketing:publish-scheduled-posts`) chạy mỗi 5 phút (`everyFiveMinutes()`):
+  - Tự động đăng các bài đã `approved` khi `scheduled_at <= now()`.
+- [ ] **Task 4.3:** Tạo `PostScheduleController` & nối API thật cho toàn bộ 7 tab trên `/marketing/post-schedule`.
